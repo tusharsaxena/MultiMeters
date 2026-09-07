@@ -94,11 +94,27 @@ local function unitHealth(unit)
     return f and f(unit) or nil
 end
 
---- Hand one observation to the issue #25 recording, when one is being made.
+--- Is anybody recording? ASKED BEFORE THE FIELDS TABLE IS BUILT, and that is the
+--- whole point of it existing separately from `trace` below.
 ---
---- core/Diagnostics.lua is resolved at CALL time and is allowed to be absent:
---- this module does not depend on the diagnostic existing, and the diagnostic
---- costs a nil test plus one boolean when nobody has armed it.
+--- Lua evaluates a call's arguments before the call, so `trace("prune", { ... })`
+--- builds the fields table and its nested order table whatever the recording
+--- decides afterwards. Guarding the CALL is not guarding the cost: the cost is
+--- the two tables, and they are the caller's, per unit, per prune, per refresh.
+--- performance-§2 wants one field read and one boolean test while the probe is
+--- dormant, and this is that read.
+---
+--- core/Diagnostics.lua is resolved at CALL time and is allowed to be absent —
+--- this module does not depend on the diagnostic existing — so an absent file
+--- answers false here rather than raising.
+local function armed()
+    local D = NS.Diagnostics
+    return D ~= nil and D.feignArmed == true
+end
+
+--- Hand one observation to the issue #25 recording. Callers guard with `armed()`
+--- first; the nil test here is what keeps the module honest about the file being
+--- optional, not what keeps it cheap.
 local function trace(kind, fields)
     local D = NS.Diagnostics
     if D and D.TraceFeign then D.TraceFeign(kind, fields) end
@@ -138,14 +154,18 @@ function Feign.Note(guid, unit)
         -- Recorded rather than dropped in silence. "The cast arrived and the
         -- GUID could not be keyed on" and "the cast never arrived" are the two
         -- halves of the same empty log, and only one of them is fixable here.
-        trace("cast", { order = { "unit", "guid", "kept" },
-                        unit = unit, guid = guid, kept = false })
+        if armed() then
+            trace("cast", { order = { "unit", "guid", "kept" },
+                            unit = unit, guid = guid, kept = false })
+        end
         return
     end
     if feigned[guid] == nil then feigned[guid] = "noted" end
     anyFeigned = true
-    trace("cast", { order = { "unit", "guid", "kept" },
-                    unit = unit, guid = guid, kept = true })
+    if armed() then
+        trace("cast", { order = { "unit", "guid", "kept" },
+                        unit = unit, guid = guid, kept = true })
+    end
     if State.debug and Debug then Debug("Feign", "noted %s", tostring(guid)) end
 end
 
@@ -242,6 +262,11 @@ function Feign.Prune()
         end
     end
 
+    -- Hoisted out of the walk: nothing between here and the end of this function
+    -- can arm or disarm a recording, so this is one field read per prune rather
+    -- than one per group member.
+    local recording = armed()
+
     local remaining = false
     for guid in pairs(feigned) do
         local unit = present[guid]
@@ -273,12 +298,14 @@ function Feign.Prune()
             -- own feign leaves `UnitHealth("player")` at its real figure. What
             -- another client is shown is the open question, and this records the
             -- raw readings beside the verdict so it stops being one.
-            trace("prune", {
-                order = { "unit", "guid", "hp", "feigning", "state", "evicted" },
-                unit = unit, guid = guid, hp = hp, feigning = nowFeigning,
-                state = feigned[guid] or (evicted and "<evicted>") or "?",
-                evicted = evicted and true or false,
-            })
+            if recording then
+                trace("prune", {
+                    order = { "unit", "guid", "hp", "feigning", "state", "evicted" },
+                    unit = unit, guid = guid, hp = hp, feigning = nowFeigning,
+                    state = feigned[guid] or (evicted and "<evicted>") or "?",
+                    evicted = evicted and true or false,
+                })
+            end
         end
     end
     anyFeigned = remaining

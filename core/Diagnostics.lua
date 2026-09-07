@@ -1593,7 +1593,11 @@ end
 --
 -- ARMED, NOT ALWAYS ON. `judge` fires once per death source row on every Deaths
 -- refresh, which is the one of the three that is not rare, so recording is off
--- until asked for and the hook below is a single boolean test when it is off.
+-- until asked for. What "off" costs is decided at the CALL SITES and not here:
+-- `TraceFeign` declining the observation is too late, because the fields table
+-- was built to make the call. They read `Diagnostics.feignArmed` first, and a
+-- disarmed pass therefore allocates nothing at all (tests/perf.lua's
+-- `feignTraceOff` scenario measures exactly that).
 --
 -- WHAT IT MAY HOLD. Strings and booleans, and nothing else — every field is
 -- described THROUGH `shown` AT CAPTURE TIME rather than stored raw. A secret
@@ -1605,18 +1609,41 @@ local FEIGN_TRACE_MAX = 120
 
 local feignTrace = nil
 
+--- PUBLISHED, and read by the call sites directly rather than through a function.
+---
+--- `TraceFeign` returns on its first line when nothing is armed — but a Lua call
+--- evaluates its arguments first, so a site that builds its fields table AT the
+--- call has already paid for the recording by the time this file gets to decline
+--- it. modules/Aggregator.lua and modules/Feign.lua therefore read this flag
+--- before they build anything, which is what performance-§2 means by dormant
+--- instrumentation costing one field read and one boolean test.
+---
+--- A plain boolean and not the ring itself, deliberately: both readers resolve
+--- `NS.Diagnostics` at call time and must survive this file being absent, and a
+--- nil-safe read of a boolean field is one index either way.
+Diagnostics.feignArmed = false
+
 --- Start or stop recording. Arming CLEARS: a run's evidence is one run's.
 ---
 --- @param on boolean
 --- @return boolean  whether recording is now on
 function Diagnostics.ArmFeignTrace(on)
     feignTrace = on and {} or nil
-    return feignTrace ~= nil
+    -- One state in two shapes, and this is the ONLY writer of either. Let them
+    -- disagree and the trace is silently dead in one of two ways: a false flag
+    -- over a live ring records nothing, a true flag over a nil ring makes every
+    -- site build a table for a function that drops it.
+    Diagnostics.feignArmed = feignTrace ~= nil
+    return Diagnostics.feignArmed
 end
 
+--- The accessor over the published field, and the surface everything that is not
+--- on the refresh path should ask through. The two hot sites read the field
+--- itself, because a function call is precisely the cost they are avoiding.
+---
 --- @return boolean
 function Diagnostics.IsFeignTraceArmed()
-    return feignTrace ~= nil
+    return Diagnostics.feignArmed
 end
 
 --- Record one observation, if anybody asked for observations.

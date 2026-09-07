@@ -221,6 +221,7 @@ and every column backed by a real session.
 | `applyConfig` | a settings change re-applying config and re-laying every row | recorded only |
 | `probeOverheadOff` / `probeOverheadOn` | the same refresh with brackets dormant, then armed | the zero-overhead assertions below |
 | `suspended` | a refresh with the provider suspended | **zero** meter API calls — suspend stops the reads at the source |
+| `feignTraceAbsent` / `feignTraceOff` | a **Deaths-only** refresh with `core/Diagnostics.lua`'s `TraceFeign` removed, then present and disarmed | the disarmed trace is **never called** and allocates **nothing** measurable against the absent arm |
 
 **A restricted pass costs about 29% more than an unrestricted one** — 421214 bytes against 325955
 for the same 20×7 window — and about a quarter of that gap is the harness rather than the addon: the
@@ -235,6 +236,29 @@ make *two* `GetColumn` calls per column: `modules/Window.lua` re-entered the pro
 column's group total so the cells could divide by it, while `modules/Aggregator.lua` already held
 both operands and had already divided (`cell.percent`). That doubled the addon's entire session-read
 cost on its hot path, and it was invisible because nothing counted. Now something counts.
+
+### The disarmed feign trace
+
+The same rule the probe pair is held to, applied to the other piece of instrumentation on the hot
+path. `Diagnostics.TraceFeign` returns on its first line when nothing is armed — but Lua evaluates a
+call's arguments before the call, so the `judge` site in `modules/Aggregator.lua` built a fields table
+and its nested order list **per Deaths source per refresh** whether or not anybody was recording. That
+is what `Diagnostics.feignArmed` exists for: the call sites read the flag, so the tables are never
+built. `Diagnostics.IsFeignTraceArmed()` is the accessor over the same field, for everything that is
+not on the refresh path.
+
+It is measured as a **difference**, not an absolute. One refresh's absolute figure is dominated by the
+harness (see the caveat below) and would drown two small tables per source. The baseline arm removes
+`TraceFeign` from the namespace — the addon's own documented degradation path, since both readers
+resolve `NS.Diagnostics` at call time precisely so the file may be absent — so the delta between the
+arms is the trace and nothing else. Deaths alone, because `scanColumn` takes the feign path on
+`stat.isCount` and Deaths is the one counted stat a shipped window carries.
+
+Two assertions, and the load-bearing one is the integer: a disarmed trace must not be **called**,
+because the call is where the tables are built. The byte comparison carries a 16-byte-per-iteration
+tolerance rather than demanding equality, because two measurements of an identical path in this
+harness land within a byte of each other. On the run that closed this, both arms measured 71224.1
+bytes/iter exactly, against 77944.1 and 71224.1 before the fix.
 
 ### The zero-overhead pair
 
