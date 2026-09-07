@@ -212,7 +212,7 @@ badge and any count quoted in the docs must agree with it.
 - Database: v12 -> v13 leaves a window that never stored the toggle alone
 - Database: v12 -> v13 turns the control class-colour flags into modes
 
-### test_diagnostics.lua (73)
+### test_diagnostics.lua (75)
 
 - Diagnostics: the report is published and reachable
 - Diagnostics: `/mm debug diag` reaches it without the debug log
@@ -278,6 +278,8 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: the feign trace records nothing until it is armed
 - Diagnostics: an armed trace records the cast and the unit token it arrived under
 - Diagnostics: an armed trace records what prune saw and what it decided
+- Diagnostics: the entry that simply LEFT THE GROUP says so, instead of going quiet
+- Diagnostics: an evicted entry still reads noted or down, never <evicted>
 - Diagnostics: arming a trace clears the one before it
 - Diagnostics: an empty armed trace is reported as a FINDING, not as a failure
 - Diagnostics: the feign report prints the group beside the trace
@@ -1485,7 +1487,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (34)
+### test_slash.lua (36)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1516,6 +1518,8 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `toggle` reaches the registry and reports its refusal
 - Slash: `reset-positions` moves every window and says how many
 - Slash: `debug on` / `debug off` set the logging flag; a bare `debug` moves the window
+- Slash: `debug feign` with no argument prints the recording
+- Slash: `debug feign of` names the rejected argument and leaves the trace alone
 - Slash: registration goes through AceConsole, on both tokens
 - Slash: both registered tokens reach the SAME dispatcher
 - Slash: no raw SLASH_* global is claimed anywhere
@@ -1634,7 +1638,7 @@ badge and any count quoted in the docs must agree with it.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 56 |
-| test_diagnostics.lua | 73 |
+| test_diagnostics.lua | 75 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
 | test_perfsetup.lua | 19 |
@@ -1661,9 +1665,9 @@ badge and any count quoted in the docs must agree with it.
 | test_minimap.lua | 17 |
 | test_schema.lua | 63 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 34 |
+| test_slash.lua | 36 |
 | test_options_panel.lua | 34 |
 | test_columnblocks.lua | 17 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 27 |
-| **Total** | **1500** |
+| **Total** | **1504** |

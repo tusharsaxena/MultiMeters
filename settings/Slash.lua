@@ -471,14 +471,25 @@ function doDebug(rest)
         local D = NS.Diagnostics
         if not D then return end
         local arg = tostring(rest or ""):lower():match("^%s*%S+%s+(%S+)")
-        if arg == "on" or arg == "off" then
+        if arg == nil then
+            if D.ReportFeign then D.ReportFeign() end
+        elseif arg == "on" or arg == "off" then
             local on = D.ArmFeignTrace and D.ArmFeignTrace(arg == "on") or false
             local line = on
                 and "feign trace ON — run the dungeon, then `/mm debug feign`."
                 or  "feign trace off."
             if NS.Print then NS.Print(line) end
         else
-            if D.ReportFeign then D.ReportFeign() end
+            -- NAMED AND REFUSED, following the dispatcher's own unknown-verb
+            -- pattern above. Anything that was not `on`, `off` or nothing at all
+            -- used to fall through to the report — so `/mm debug feign of`, typed
+            -- by somebody who meant `off`, printed an empty recording and left the
+            -- trace armed for the rest of the session with no line saying so. A
+            -- typo in a diagnostic verb must cost the typo and nothing else.
+            if NS.Print then
+                NS.Print("unknown feign argument '" .. arg ..
+                    "' — `/mm debug feign on|off`, or `/mm debug feign` to print the recording.")
+            end
         end
         return
     end

@@ -71,6 +71,8 @@ in-client.
 | 24 | Tooltip styling | [Tooltip appearance, anchor and offsets](#24-tooltip-appearance-anchor-and-offsets) |
 | 25 | **Targets** | [**The Targets section, and its absence mid-pull**](#25-the-targets-section-and-its-absence-mid-pull) |
 | 26 | **Export** | [**The export modal, the CSV and the chat dump**](#26-the-export-modal-the-csv-and-the-chat-dump) |
+| 27 | **Identity** | [**The identity-correlation capture (issue #22)**](#27-the-identity-correlation-capture-issue-22) |
+| 28 | **Feign trace** | [**The feign-trace verbs and what the recording says (issue #25)**](#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25) |
 
 ---
 
@@ -1685,6 +1687,56 @@ nothing.
 duplicated), instance and difficulty, both captures in full, and whether any Lua error appeared —
 the probe walks a raw source row with `pairs`, which is the one thing here that touches a shape the
 mock can only approximate.
+
+### 28. The feign-trace verbs and what the recording says (issue #25)
+
+**Why this is in-client.** The recording itself is proved headless — the harness arms it, drives all
+three boundaries and reads the report back. What the harness cannot supply is a hunter on another
+client feigning next to you, which is the entire asymmetry issue #25 is about: the local player's
+feign is filtered correctly and a party member's is not.
+
+**The verb check comes first, and it is the reason this step is scheduled at all.** It costs one line
+of typing and it protects every capture after it.
+
+```
+/mm debug feign of
+```
+
+**Pass.** One line: `unknown feign argument 'of' — /mm debug feign on|off, or /mm debug feign to
+print the recording.` **Nothing else.** No trace report, and the recording's armed state is exactly
+what it was before you typed it — confirm with `/mm debug feign`, which must still say
+`armed: false` on a fresh session.
+
+**Fail — and this is what shipped before.** The report prints in full and the trace is left armed.
+A player told to type `/mm debug feign off` who typed `of` got an empty-looking report, no
+indication anything was wrong, and a recording running for the rest of the session.
+
+**Then the capture itself.**
+
+1. `/mm debug feign on` before the pull. It answers `feign trace ON`.
+2. Run a dungeon with a **hunter in the party** — not the local player. Let them feign at least
+   twice, and if you can, have them feign and then really die.
+3. `/mm debug feign` afterwards, then `/mm debug` to open the console and copy the buffer.
+
+**What to read in it.**
+
+- **No `cast` line at all** is the single most informative outcome and is not a failed capture:
+  `UNIT_SPELLCAST_SUCCEEDED` never arrived for that unit, and the filter was never told anything.
+  The report says so in those terms.
+- **`prune` lines carry `state=noted` or `state=down`, never `<evicted>`.** `noted` means the cast
+  arrived and this client never confirmed the feign; `down` means it did. An entry evicted at `hp=0`
+  from `noted` and one evicted at `hp=0` from `down` are different findings, and a run where every
+  evicted party member reads `noted` while the local player reads `down` is the answer.
+- **`unit=<not in group>`** is the third exit: the entry was dropped because no unit token was left
+  to read. Seeing one of these against a hunter who never left the party is a roster fault, not a
+  feign fault, and it is worth reporting on its own.
+- **`N judge rows suppressed`** with no `judge` lines means the Deaths refresh ran and never met a
+  GUID any cast line had named — a different finding from a refresh that never ran.
+
+**Record for the report:** group size and composition, whether the hunter was the local player or a
+party member, the full buffer, and the Deaths count you actually saw in the window beside it.
+
+---
 
 ## What to report
 

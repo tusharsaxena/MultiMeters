@@ -271,7 +271,22 @@ function Feign.Prune()
     for guid in pairs(feigned) do
         local unit = present[guid]
         if unit == nil then
+            -- THE EXIT THAT USED TO LEAVE NO LINE. The other two eviction paths
+            -- each end in the trace below; this one dropped the entry and moved
+            -- on, so a recording that showed a cast and then silence could not
+            -- say whether the death was judged before the entry went or the entry
+            -- went first — which is the fork issue #25 turns on. It reports the
+            -- state the entry HELD, and `<not in group>` where a unit token would
+            -- be, because that absence is the verdict.
+            local prior = feigned[guid]
             feigned[guid] = nil
+            if recording then
+                trace("prune", {
+                    order = { "unit", "guid", "hp", "feigning", "state", "evicted" },
+                    unit = "<not in group>", guid = guid, hp = nil, feigning = nil,
+                    state = prior, evicted = true,
+                })
+            end
         else
             local hp = unitHealth(unit)
             -- Nil-ness first, then the comparison, and only when the figure can
@@ -284,7 +299,17 @@ function Feign.Prune()
             -- Seeing the feign is what makes the "stood back up" exit usable —
             -- see the state comment above.
             if nowFeigning == true then feigned[guid] = "down" end
-            local seenDown = (feigned[guid] == "down")
+
+            -- READ BEFORE THE EVICTION, and that is the whole point of the local.
+            -- The trace below used to report `feigned[guid]`, which the eviction
+            -- three lines down had already nilled — so every evicted row read
+            -- `<evicted>` and the two states collapsed into one. They are the race
+            -- this set exists to close: "noted" means the cast arrived and the
+            -- client never confirmed the feign, "down" means it did. An entry
+            -- going at 0 HP from "noted" and one going at 0 HP from "down" are
+            -- different findings, and the report could not tell them apart.
+            local prior = feigned[guid]
+            local seenDown = (prior == "down")
 
             local evicted = dead or (seenDown and alive and nowFeigning == false)
             if evicted then
@@ -302,7 +327,7 @@ function Feign.Prune()
                 trace("prune", {
                     order = { "unit", "guid", "hp", "feigning", "state", "evicted" },
                     unit = unit, guid = guid, hp = hp, feigning = nowFeigning,
-                    state = feigned[guid] or (evicted and "<evicted>") or "?",
+                    state = prior,
                     evicted = evicted and true or false,
                 })
             end

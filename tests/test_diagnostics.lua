@@ -1334,6 +1334,60 @@ test("Diagnostics: an armed trace records what prune saw and what it decided", f
     assertTrue(text:find("evicted=true", 1, true) ~= nil, "the verdict was recorded")
 end)
 
+test("Diagnostics: the entry that simply LEFT THE GROUP says so, instead of going quiet", function()
+    -- THE THIRD BOUNDARY, and the one most likely to explain issue #25. Of the
+    -- three ways out of the set this is the only one that used to leave no line
+    -- at all: the walk found no unit token for the GUID, dropped the entry and
+    -- moved on, so a report showing a cast and then nothing could not say whether
+    -- the death was judged before the entry went or the entry went first.
+    -- red under: an eviction branch with no trace call.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS:OnSpellSucceeded("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", FEIGN_SPELL)
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+
+    inst.mocks.setGroup({
+        { guid = "Player-1-0000000A", name = "Alpha", class = "MAGE", role = "DAMAGER" },
+    })
+    inst.NS.Roster.Forget()
+    inst.NS.Feign.Prune()
+
+    local text = feignReport(inst)
+    assertTrue(text:find("unit=<not in group>", 1, true) ~= nil,
+        "the eviction named its own verdict")
+    assertTrue(text:find("guid=Player-1-0000000B", 1, true) ~= nil,
+        "and named the GUID that left")
+end)
+
+test("Diagnostics: an evicted entry still reads noted or down, never <evicted>", function()
+    -- The two states are the whole race the set exists to close, and the trace
+    -- reported the state AFTER the eviction had cleared it — so every evicted row
+    -- read the same and the one thing a reader needed from it was gone. An entry
+    -- the client never confirmed ("noted") going at 0 HP is a different finding
+    -- from one it did confirm ("down") going at 0 HP: the first says the feign was
+    -- never visible, the second says it was visible and the health reading beat it.
+    -- red under: reporting `feigned[guid]` after the eviction has nilled it.
+    local noted = feignGroup(T.load{ enable = true })
+    noted.NS:OnSpellSucceeded("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", FEIGN_SPELL)
+    noted.NS.Diagnostics.ArmFeignTrace(true)
+    noted.mocks.setUnitHealth("party1", 0)
+    noted.NS.Feign.Prune()
+    local text = feignReport(noted)
+    assertTrue(text:find("state=noted", 1, true) ~= nil,
+        "an entry the client never confirmed was evicted as `noted`")
+
+    local down = feignGroup(T.load{ enable = true })
+    down.NS:OnSpellSucceeded("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", FEIGN_SPELL)
+    down.mocks.setUnitFeignDeath("party1", true)
+    down.mocks.setUnitHealth("party1", 500)
+    down.NS.Feign.Prune()
+    down.NS.Diagnostics.ArmFeignTrace(true)
+    down.mocks.setUnitHealth("party1", 0)
+    down.NS.Feign.Prune()
+    local downText = feignReport(down)
+    assertTrue(downText:find("state=down", 1, true) ~= nil,
+        "an entry the client had confirmed was evicted as `down`")
+end)
+
 test("Diagnostics: arming a trace clears the one before it", function()
     -- A run's evidence is one run's. red under: a buffer that accumulates across
     -- arms, which would put a previous dungeon's casts in this dungeon's report.

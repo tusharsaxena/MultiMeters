@@ -33,6 +33,22 @@ end
 
 local function joined(lines) return table.concat(lines, "\n") end
 
+--- The same, plus anything the command wrote to the debug console instead.
+---
+--- core/Diagnostics.lua redirects its own output into the DebugLog sink while a
+--- report is running, so a report typed at the slash command lands in the console
+--- buffer and never in chat. A case reading only chat would call a report that ran
+--- perfectly "no output".
+local function sayAndLog(inst, msg)
+    local buffer = inst.NS.DebugLog and inst.NS.DebugLog.buffer
+    local bufN   = buffer and #buffer or 0
+    local out    = say(inst, msg)
+    if buffer then
+        for i = bufN + 1, #buffer do out[#out + 1] = buffer[i] end
+    end
+    return out
+end
+
 local function verbNames(commands)
     local names = {}
     for _, entry in ipairs(commands) do names[#names + 1] = entry[1] end
@@ -401,6 +417,34 @@ test("Slash: `debug on` / `debug off` set the logging flag; a bare `debug` moves
     say(inst, "debug")
     assertTrue(D:IsShown() ~= shownBefore, "a bare `debug` toggles the console window")
     assertFalse(inst.NS.State.debug, "and must not touch the logging flag")
+end)
+
+test("Slash: `debug feign` with no argument prints the recording", function()
+    -- The bare verb is the READ, and it has to stay the read: a player is asked to
+    -- arm the trace before a dungeon and type this after it. The rejection added
+    -- below must not swallow it.
+    local inst = T.load()
+    local text = joined(sayAndLog(inst, "debug feign"))
+    assertTrue(text:find("feign trace", 1, true) ~= nil, text)
+end)
+
+test("Slash: `debug feign of` names the rejected argument and leaves the trace alone", function()
+    -- THE TYPO THAT COST A RUN. `on` and `off` armed and disarmed; anything else
+    -- fell through to the report — so `/mm debug feign of`, typed before a
+    -- dungeon by a player who meant `off`, printed the empty report and left the
+    -- recording armed for the rest of the session, and the player had no way to
+    -- know either. This is the addon's own unknown-verb pattern: name it, then say
+    -- what was expected.
+    -- red under: an else branch that reports instead of rejecting.
+    local inst = T.load()
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    local text = joined(sayAndLog(inst, "debug feign of"))
+    assertTrue(text:find("'of'", 1, true) ~= nil,
+        "the rejection names the argument that was refused: " .. text)
+    assertTrue(text:find("feign trace (issue #25)", 1, true) == nil,
+        "a rejected argument must not print the report: " .. text)
+    assertTrue(inst.NS.Diagnostics.IsFeignTraceArmed(),
+        "a rejected argument changes nothing about the recording")
 end)
 
 -- ---------------------------------------------------------------------------
