@@ -212,7 +212,7 @@ badge and any count quoted in the docs must agree with it.
 - Database: v12 -> v13 leaves a window that never stored the toggle alone
 - Database: v12 -> v13 turns the control class-colour flags into modes
 
-### test_diagnostics.lua (60)
+### test_diagnostics.lua (73)
 
 - Diagnostics: the report is published and reachable
 - Diagnostics: `/mm debug diag` reaches it without the debug log
@@ -274,6 +274,19 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: a candidate that DOES vary is called out as worth trying
 - Diagnostics: the audit says how many rows it sampled
 - Diagnostics: a missing isLocalPlayer is NOT called a degraded key
+- Diagnostics: the feign report is published and reachable
+- Diagnostics: the feign trace records nothing until it is armed
+- Diagnostics: an armed trace records the cast and the unit token it arrived under
+- Diagnostics: an armed trace records what prune saw and what it decided
+- Diagnostics: arming a trace clears the one before it
+- Diagnostics: an empty armed trace is reported as a FINDING, not as a failure
+- Diagnostics: the feign report prints the group beside the trace
+- Diagnostics: the feign report survives a client with none of the unit APIs
+- Diagnostics: a secret GUID costs one field and not the line
+- Diagnostics: a judge row for a GUID no cast line named is counted, not recorded
+- Diagnostics: a judge row for a GUID a cast line named is recorded
+- Diagnostics: a cast line survives a full ring of judge rows
+- Diagnostics: the ring keeps its newest entries and reads them oldest first
 
 ### test_defaults.lua (24)
 
@@ -1621,7 +1634,7 @@ badge and any count quoted in the docs must agree with it.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 56 |
-| test_diagnostics.lua | 60 |
+| test_diagnostics.lua | 73 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
 | test_perfsetup.lua | 19 |
@@ -1653,4 +1666,4 @@ badge and any count quoted in the docs must agree with it.
 | test_columnblocks.lua | 17 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 27 |
-| **Total** | **1487** |
+| **Total** | **1500** |

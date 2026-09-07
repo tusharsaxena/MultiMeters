@@ -1393,3 +1393,111 @@ test("Diagnostics: a secret GUID costs one field and not the line", function()
     assertTrue(text:find("unit=party1", 1, true) ~= nil, "the plain field survived")
     assertTrue(text:find("<secret>", 1, true) ~= nil, "the secret field was described")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The ring, and what is allowed into it
+-- ---------------------------------------------------------------------------
+--
+-- `judge` is the one of the three boundaries that is not rare: it fires once per
+-- Deaths source on every refresh, for every death in the column, while `cast`
+-- fires once per feign. A ring that admits all three on equal terms therefore
+-- fills with judgements on GUIDs nobody ever feigned, and the `cast` line the
+-- report exists to show is the first thing pushed out of it. So `judge` is
+-- admitted only for a GUID a `cast` line has already named, and the refusals are
+-- counted rather than dropped in silence — the count is itself evidence that the
+-- Deaths refresh ran at all.
+
+--- Feed the trace one `judge` observation for `guid`.
+local function judge(inst, guid, dropped)
+    inst.NS.Diagnostics.TraceFeign("judge", {
+        order = { "guid", "recap", "dropped" },
+        guid = guid, recap = "recap-1", dropped = dropped and true or false,
+    })
+end
+
+--- Feed the trace one `cast` observation for `guid`.
+local function cast(inst, unit, guid)
+    inst.NS.Diagnostics.TraceFeign("cast", {
+        order = { "unit", "guid", "kept" },
+        unit = unit, guid = guid, kept = true,
+    })
+end
+
+test("Diagnostics: a judge row for a GUID no cast line named is counted, not recorded", function()
+    -- red under: a ring that admits every judge row. A death nobody feigned is
+    -- judged on every refresh and says nothing about issue #25 — it is the noise
+    -- the admission rule exists to keep out.
+    -- A GUID DELIBERATELY OUTSIDE THE GROUP. The report prints the live roster
+    -- beside the trace, so asserting on a member's GUID would match the roster
+    -- line and pass whatever the ring did with it.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    judge(inst, "Player-1-000000FF", false)
+
+    local text = feignReport(inst)
+    assertTrue(text:find("guid=Player-1-000000FF", 1, true) == nil,
+        "the unnamed GUID's judgement was not recorded")
+    assertTrue(text:find("1 judge", 1, true) ~= nil,
+        "the refusal was counted and reported")
+end)
+
+test("Diagnostics: a judge row for a GUID a cast line named is recorded", function()
+    -- The other side of the same boundary, and the reason the rule is admission
+    -- rather than exclusion: a death row reaching `judge` with dropped=false for
+    -- a GUID a cast line named IS the finding. red under: refusing every judge
+    -- row, which would keep the ring clean and lose the answer with it.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    cast(inst, "party1", "Player-1-0000000B")
+    judge(inst, "Player-1-0000000B", false)
+
+    local text = feignReport(inst)
+    assertTrue(text:find("judge", 1, true) ~= nil, "the judgement was recorded")
+    assertTrue(text:find("dropped=false", 1, true) ~= nil, "the verdict was recorded")
+end)
+
+test("Diagnostics: a cast line survives a full ring of judge rows", function()
+    -- THE DEFECT THIS SECTION IS FOR. A twenty-source Deaths column judged on
+    -- every refresh reaches the ring's 120 entries in six passes, and under an
+    -- oldest-goes ring the single `cast` line — the one entry that says the addon
+    -- was told about the feign at all — is the first casualty.
+    -- red under: the eviction ring, where 200 judge rows push the cast out.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    cast(inst, "party1", "Player-1-0000000B")
+    for i = 1, 200 do judge(inst, string.format("Player-1-%09d", i), false) end
+
+    local text = feignReport(inst)
+    assertTrue(text:find("unit=party1", 1, true) ~= nil, "the cast line survived")
+    assertTrue(text:find("guid=Player-1-0000000B", 1, true) ~= nil,
+        "the cast line still names its GUID")
+    assertTrue(text:find("200 judge", 1, true) ~= nil,
+        "every refused row was counted")
+end)
+
+test("Diagnostics: the ring keeps its newest entries and reads them oldest first", function()
+    -- The ring is a write index into a fixed table rather than a shift, so the
+    -- read has to unwrap it. red under: a reader that walks the table from index
+    -- 1 after the write index has wrapped, which prints the newest ten entries
+    -- ahead of the hundred and ten older ones and reads as a reordered run.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    for i = 1, 130 do cast(inst, "party1", string.format("G%03d", i)) end
+
+    local text, lines = feignReport(inst)
+    assertTrue(text:find("120 entries", 1, true) ~= nil, "the ring is bounded at 120")
+    assertTrue(text:find("guid=G001", 1, true) == nil, "the oldest ten were dropped")
+    assertTrue(text:find("guid=G130", 1, true) ~= nil, "the newest was kept")
+
+    local first, last
+    for i = 1, #lines do
+        if lines[i]:find("guid=G", 1, true) then
+            first = first or lines[i]
+            last = lines[i]
+        end
+    end
+    assertTrue(first ~= nil and first:find("guid=G011", 1, true) ~= nil,
+        "the oldest surviving entry is printed first")
+    assertTrue(last ~= nil and last:find("guid=G130", 1, true) ~= nil,
+        "the newest entry is printed last")
+end)

@@ -502,7 +502,12 @@ comment, which argues the same split from the other side.
   full health for any unrecorded token and every case in `tests/test_feign.lua` sets health on
   `"player"`. `/mm debug feign on` records all three boundaries a feign crosses — the cast, each
   prune verdict with the raw readings behind it, and the per-row `ShouldDropDeath` answer — and
-  `/mm debug feign` prints them. Fix on that measurement, not on either hypothesis.
+  `/mm debug feign` prints them. The per-row answer is recorded **only for a GUID a cast line
+  named**: it fires once per death in the column on every refresh, so admitting all of them filled
+  the 120-entry ring with judgements on players who never feigned and evicted the one cast line the
+  report exists to show. The refusals are counted and the total is printed, because a large refusal
+  count beside an empty log is itself the finding — the refresh ran and never met the GUID.
+  Fix on that measurement, not on either hypothesis.
 - **A past death cannot be dated against the run it happened in, so the addon does not try.**
   Measured on a live client: the **Current** session held *zero* deaths, the **Overall** session held
   eighteen and reported `deathTimeSeconds = -1` for every one, and the session's own duration is
