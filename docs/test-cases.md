@@ -1526,7 +1526,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: Register is a no-op rather than a raise when there is no AceConsole
 - Slash: /mm list heads each block with the page AND the tab
 
-### test_options_panel.lua (34)
+### test_options_panel.lua (37)
 
 - Options: General is the FIRST page, above Windows
 - Options: every window page is marked as nested, and the two that are not are not
@@ -1546,6 +1546,9 @@ badge and any count quoted in the docs must agree with it.
 - Options: opening the panel is REFUSED under combat lockdown, with a notice
 - Options: a refused open is NOT deferred and replayed when combat ends
 - Options: a page reached from the Blizzard sidebar mid-combat refuses to render
+- Options: no settings page wires its own OnShow
+- Options: the Profiles page refuses to render mid-combat, through the library's guard
+- Options: a profile switch re-opens the Profiles page's AceConfigDialog
 - Options: a widget's set() routes through NS.SetByPath
 - Options: a checkbox's set() routes through NS.SetByPath too
 - Options: applyDefault routes through NS.SetByPath, not around it
@@ -1666,8 +1669,8 @@ badge and any count quoted in the docs must agree with it.
 | test_schema.lua | 63 |
 | test_schema_defaults.lua | 10 |
 | test_slash.lua | 36 |
-| test_options_panel.lua | 34 |
+| test_options_panel.lua | 37 |
 | test_columnblocks.lua | 17 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 27 |
-| **Total** | **1504** |
+| **Total** | **1507** |

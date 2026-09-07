@@ -454,10 +454,16 @@ second edge to catch.
   message.
 - **Combat refusal.** Enter combat (a dummy is fine here). `/mm config` **refuses** and prints one
   gray notice. It must **not** queue the request and open the panel when combat ends.
-- **Profiles page mid-combat.** With the Settings window closed, enter combat, then open Settings →
-  AddOns → Ka0s Multi Meters → **Profiles** from the Blizzard sidebar. The page must close the
-  Settings window and print the refusal — that route bypasses `/mm config` entirely, which is why the
-  page carries its own guard.
+- **Every sub-page mid-combat, from the Blizzard sidebar.** With the Settings window closed, enter
+  combat, then open Settings → AddOns → Ka0s Multi Meters from the Blizzard sidebar and walk **every**
+  sub-page in the category, **Profiles included**. Each must close the Settings window and print the
+  same gray refusal. That route bypasses `/mm config` entirely, which is why the guard lives on the
+  page rather than on the slash command — and since `M2-18` the Profiles page gets it from
+  `H.SetRenderer` like the other eight instead of from a hand-rolled copy of it, so the failure this
+  step is for is **eight pages refusing and one rendering**, or one refusing in different words.
+  (Session 1 of the 2026-09-07 remediation bundle runs the same step against AbsorbTracker and
+  KickCD, which were changed the same way. Not yet run — no client has been available since the
+  change.)
 
 ### 5. Column editor
 
@@ -1022,6 +1028,13 @@ switch back to Default → copy from Test → reset.
 - Copying a profile brings its windows across, and editing one profile's window afterwards does not
   touch the other's.
 - Resetting a profile re-seeds exactly one window.
+- **The page is still fresh after a switch made off it.** Open Profiles, page away to **General**,
+  then `/mm resetall` and confirm — that is a profile reset, so it moves the active profile out from
+  under the hidden page. Come back to Profiles: the profile list and the scope dropdowns must be
+  redrawn against the profile you are actually on. `M2-18` moved this page onto `H.SetRenderer`,
+  which draws once and then only when the library is told the page is dirty, and the
+  `PROFILE_CHANGED` listener is the only thing telling it. A stale list here means that listener is
+  not reaching `H.RefreshPanel`. **Not yet run** — no client has been available since the change.
 - **A fresh character lands on the shared `Default` profile**, not on its own. (`AceDB:New(..., true)`
   — omitting that third argument silently gives per-character profiles, which is the source of every
   "each new character has its own settings" report in the collection.)

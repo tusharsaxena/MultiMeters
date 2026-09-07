@@ -419,6 +419,83 @@ test("Options: a page reached from the Blizzard sidebar mid-combat refuses to re
     assertTrue(ctx.panel.defaultsBtn ~= nil)
 end)
 
+test("Options: no settings page wires its own OnShow", function()
+    -- CX03. `O.SetRenderer` owns the show path: the Defaults button above the
+    -- guard, the Blizzard-sidebar combat refusal, and the render-once-then-dirty
+    -- rule. A page that parks its own script on ctx.panel is not merely
+    -- duplicating that logic, it is REPLACING it -- SetScript overwrites -- so
+    -- the refusal it copies drifts from the library's the first time the library
+    -- changes and nothing says so.
+    -- red under: settings/Profiles.lua's hand-rolled OnShow, which is what this
+    -- case was written to catch.
+    local offenders = {}
+    for _, rel in ipairs(T.loadedAddonFiles) do
+        if rel:match("^settings/") then
+            local fh = io.open((T.root or ".") .. "/" .. rel, "r")
+            local src = fh and fh:read("*a") or ""
+            if fh then fh:close() end
+            src = src:gsub("%-%-[^\r\n]*", "")
+            if src:find('SetScript%(%s*"OnShow"') then offenders[#offenders + 1] = rel end
+        end
+    end
+    assertEqual(table.concat(offenders, ", "), "",
+        "these pages drive their own show path instead of H.SetRenderer")
+end)
+
+test("Options: the Profiles page refuses to render mid-combat, through the library's guard",
+function()
+    -- The page whose widget tree is AceConfigDialog's is reached from the
+    -- Blizzard sidebar exactly like the other eight, so it needs the same
+    -- refusal -- and now gets it from the same place rather than from a copy.
+    local inst = T.load()
+    local ctx = panelFor(inst, "profiles")
+    local ACD = inst.mocks.__libs["AceConfigDialog-3.0"]
+    local before = ACD.__opens or 0
+
+    inst.mocks.setRestricted(true)
+    ctx.panel:Hide()
+    ctx.panel:Show()
+
+    assertEqual(ACD.__opens or 0, before, "AceConfigDialog drew into the canvas under lockdown")
+    assertTrue(inst.mocks.__settingsClosed > 0,
+        "closing the window is what makes the refusal legible")
+    -- And the page is still drawable once combat drops: a refusal that leaves
+    -- ctx._rendered set would blank the page for the rest of the session.
+    inst.mocks.setRestricted(false)
+    ctx.panel:Hide()
+    ctx.panel:Show()
+    assertTrue((ACD.__opens or 0) > before, "the page never recovered after the refusal")
+end)
+
+test("Options: a profile switch re-opens the Profiles page's AceConfigDialog", function()
+    -- This is the property the page's old hand-rolled OnShow was protecting, and
+    -- the reason it gave for staying off SetRenderer: AceDBOptions' widget tree
+    -- re-reads the active profile only when the dialog is fed again, so a switch
+    -- made from anywhere else must reach it. Under SetRenderer that is
+    -- H.RefreshPanel(ctx, true) on PROFILE_CHANGED -- the library's own seam for
+    -- a page that repaints off its host's message bus -- and a hidden page is
+    -- marked dirty and repaints on its next show.
+    -- red under: SetRenderer with no PROFILE_CHANGED listener, which draws the
+    -- profile list once and then shows a stale one forever.
+    local inst = T.load()
+    local ctx = panelFor(inst, "profiles")
+    local ACD = inst.mocks.__libs["AceConfigDialog-3.0"]
+
+    ctx.panel:Hide()
+    ctx.panel:Show()
+    local afterFirst = ACD.__opens or 0
+    assertTrue(afterFirst > 0, "the page never drew at all")
+
+    -- Hidden, and the profile moves under it.
+    ctx.panel:Hide()
+    inst.NS.db:SetProfile("Raid")
+    assertEqual(ACD.__opens or 0, afterFirst, "a hidden page must not draw")
+
+    ctx.panel:Show()
+    assertTrue((ACD.__opens or 0) > afterFirst,
+        "the profile list is still the one drawn for the previous profile")
+end)
+
 -- ---------------------------------------------------------------------------
 -- One write seam, shared with the CLI
 -- ---------------------------------------------------------------------------
