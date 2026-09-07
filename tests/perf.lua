@@ -354,8 +354,8 @@ assert_(restricted.unitsPerIter == 0,
      .. "cached map rather than re-walking the unit API mid-pull")
         :format(restricted.unitsPerIter))
 
--- A restricted pass costs about 29% more than the unrestricted one (421214
--- against 325955 for the same 20x7 window). The gap was measured rather than
+-- A restricted pass costs about 36% more than the unrestricted one (412373.3
+-- against 303415.8 for the same 20x7 window). The gap was measured rather than
 -- assumed, by re-running this scenario with pieces removed:
 --
 --   * ~47KB is identity correlation itself — one key per source per non-sort
@@ -374,10 +374,31 @@ assert_(restricted.unitsPerIter == 0,
 --     value — does not make. It appears only in this scenario, because it is the
 --     only one that runs restricted.
 --
--- The ceiling carries the same ~3.5% headroom as the dormant one above. What it
--- catches is identity correlation GROWING; the gap to `refresh20x7` is expected
--- and is not itself a failure.
-local RESTRICTED_BYTES_CEILING = 436000   -- measured 421214 for a 20x7 pass
+-- The three sizes above still describe the shape of the gap; the totals they were
+-- taken from do not, and the ratio has moved from 29% to 36% because the
+-- unrestricted arm got cheaper faster than this one did.
+--
+-- RE-DERIVED 2026-09-08 alongside the dormant ceiling, and recorded here because
+-- a stale figure sitting next to a freshly derived one is the same defect twice.
+-- What the checkoutable trees say:
+--
+--   d879851   421214     the figure this line carried
+--   (bundle)  447916.5   docs/automated-tests/20260825-103437, 9 column reads
+--   2b880b8   400595.1   8 column reads
+--   a2cbffb   413013.3   the mid-pull identity key, +12.4K
+--   0e74319   412373.3   and unmoved since, M2-09 included
+--
+-- M2-09 is NOT in that list on purpose: the feign filter needs a GUID and a
+-- restricted pass has none, so the trace never reached this arm and gating it
+-- changed nothing here. The ~47K that came off between the 2026-08-25 bundle and
+-- 2b880b8 arrived with the pass dropping from nine column reads to eight, and
+-- pinning it to a commit is a hundred-commit range this item did not open.
+-- Recorded as observed rather than attributed.
+--
+-- The ceiling carries the same ~3.5% headroom as the dormant one above (3.55%).
+-- What it catches is identity correlation GROWING; the gap to `refresh20x7` is
+-- expected and is not itself a failure.
+local RESTRICTED_BYTES_CEILING = 427000   -- measured 412373.3 over 3 runs, 2026-09-08, +3.5%
 assert_(restricted.bytesPerIter <= RESTRICTED_BYTES_CEILING,
     ("a restricted pass allocated %.0f bytes/iter, over the %d-byte ceiling — identity "
      .. "correlation grew"):format(restricted.bytesPerIter, RESTRICTED_BYTES_CEILING))
@@ -559,9 +580,32 @@ NS.Perf.on = false
 -- it for the whole period, and this repo has a single commit, so there is nothing
 -- to bisect. Recorded as unexplained rather than attributed to a guess.
 --
--- The figure is deterministic to the byte across runs, so the headroom is the
--- same ~3.5% the previous ceiling carried, and a real regression still shows.
-local PROBE_OFF_BYTES_CEILING = 336000   -- measured 325955 for a 20x7 pass
+-- RE-DERIVED 2026-09-08 from three consecutive runs, and this time the figure
+-- went DOWN. The history is short and every step of it is a measurement rather
+-- than an inference, because the same trees are still checkoutable:
+--
+--   0e74319   303415.8   the settings revamp merged; no feign trace yet
+--   81642e6   310135.8   the issue #25 recording landed, +6720
+--   c61e25f   303415.8   M2-09 gated it, and the 6720 came back off
+--
+-- 6720 is 20 sources times 336 bytes, and 336 is the fields table plus its
+-- nested order table that the `judge` site in modules/Aggregator.lua built per
+-- Deaths source per refresh whether or not anybody was recording. This window
+-- carries one Deaths column, so it paid that once per source per pass. Section 6
+-- below measures the same 6720 in isolation, on a Deaths-only window, and that is
+-- the assertion that guards it going forward. This ceiling is not the guard for
+-- it; it is the guard for the whole pass.
+--
+-- WHICH IS THE POINT OF RE-DERIVING RATHER THAN LEAVING IT. 336000 sat 10.7%
+-- above what the pass now allocates. The 6720 that R-01 named walked in under
+-- that slack without a word, and the ceiling exited 0 while doing it. A ceiling
+-- carrying three times its stated headroom is not a loose ceiling, it is an
+-- absent one.
+--
+-- Three runs, not one, and the reason is that a single run cannot tell headroom
+-- from noise: all three reported 303415.8 to the tenth of a byte, so the margin
+-- below is genuinely margin. Same ~3.5% the block has always claimed (3.49%).
+local PROBE_OFF_BYTES_CEILING = 314000   -- measured 303415.8 over 3 runs, 2026-09-08, +3.5%
 
 assert_(probeOff.bytesPerIter <= PROBE_OFF_BYTES_CEILING,
     ("a dormant pass allocated %.0f bytes/iter, over the %d-byte ceiling — one refresh of "
