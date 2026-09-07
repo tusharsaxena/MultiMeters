@@ -1564,3 +1564,163 @@ function Diagnostics.Report()
     end
     emit = nil
 end
+
+-- ---------------------------------------------------------------------------
+-- Feign trace — where the party-member filter loses the thread (issue #25)
+-- ---------------------------------------------------------------------------
+--
+-- WHY A RECORDING AND NOT A SNAPSHOT. Every other section here answers a
+-- question the client can be asked at the moment the command is typed. This one
+-- cannot: the thing to observe is a feign, which is over by the time a player
+-- finishes typing, and the whole complaint is that the filter works for the
+-- LOCAL player and not for anybody else. So this is armed first, records while
+-- the dungeon runs, and is printed afterwards.
+--
+-- THREE BOUNDARIES, because the symptom has two candidate causes and they are
+-- indistinguishable from the count alone:
+--
+--   cast   — did UNIT_SPELLCAST_SUCCEEDED(5384) arrive at all, and under which
+--            unit token? An empty log for a party member means the addon never
+--            saw the feign, and no amount of filtering downstream can help.
+--   prune  — what did modules/Feign.lua see on the unit each pass, and what did
+--            it decide? A feigning party member evicted as "dead" is the other
+--            candidate: a feign is presented to OTHER clients as a death, and
+--            `hp <= 0` currently wins over `UnitIsFeignDeath` outright.
+--   judge  — the verdict modules/Aggregator.lua actually got per death row.
+--
+-- Whichever of the three goes wrong first is the root cause, and the log says
+-- which without anybody having to guess.
+--
+-- ARMED, NOT ALWAYS ON. `judge` fires once per death source row on every Deaths
+-- refresh, which is the one of the three that is not rare, so recording is off
+-- until asked for and the hook below is a single boolean test when it is off.
+--
+-- WHAT IT MAY HOLD. Strings and booleans, and nothing else — every field is
+-- described THROUGH `shown` AT CAPTURE TIME rather than stored raw. A secret
+-- kept in this table would be a secret this file later concatenates, and the
+-- entry it landed in would take the whole line dark exactly the way the header's
+-- session line did. Describing on the way in means a secret costs one field.
+
+local FEIGN_TRACE_MAX = 120
+
+local feignTrace = nil
+
+--- Start or stop recording. Arming CLEARS: a run's evidence is one run's.
+---
+--- @param on boolean
+--- @return boolean  whether recording is now on
+function Diagnostics.ArmFeignTrace(on)
+    feignTrace = on and {} or nil
+    return feignTrace ~= nil
+end
+
+--- @return boolean
+function Diagnostics.IsFeignTraceArmed()
+    return feignTrace ~= nil
+end
+
+--- Record one observation, if anybody asked for observations.
+---
+--- Called from modules/Feign.lua and modules/Aggregator.lua, resolved through
+--- `NS.Diagnostics` at CALL time so neither of them depends on this file loading.
+---
+--- The log is a ring: a dungeon is long, the interesting part is usually the
+--- start, and a buffer that stops recording would lose a late real death — the
+--- one entry that proves the filter does not eat those. Oldest goes.
+---
+--- @param kind string             "cast" | "prune" | "judge"
+--- @param fields table            plain field names to raw values, described here
+function Diagnostics.TraceFeign(kind, fields)
+    local log = feignTrace
+    if log == nil then return end
+
+    local parts = {}
+    for _, key in ipairs(fields.order) do
+        parts[#parts + 1] = key .. "=" .. shown(fields[key])
+    end
+
+    log[#log + 1] = kind .. "  " .. table.concat(parts, "  ")
+    if #log > FEIGN_TRACE_MAX then table.remove(log, 1) end
+end
+
+--- What the roster looks like RIGHT NOW, so a reader can put a GUID to a name.
+---
+--- The trace is all GUIDs, because a GUID is what the join is on. It is also
+--- unreadable, so the report prints the group beside it — and prints it at read
+--- time rather than storing names in the trace, which would put a name the unit
+--- API may make secret into every single entry.
+local function reportFeignRoster()
+    out("  group now:")
+    local Roster = NS.Roster
+    local group = Roster and Roster.GetGroup and Roster.GetGroup() or nil
+    if group == nil or #group == 0 then
+        out("    <no group>")
+        return
+    end
+    for i = 1, #group do
+        local e = group[i]
+        local unit = e.unit
+        -- Read the same three APIs modules/Feign.lua reads, on every member, so
+        -- the report says what a NON-feigning unit looks like too. Without the
+        -- baseline a single feigning row proves nothing: "party2 reads hp=0" is
+        -- only evidence if the other four do not.
+        out(string.format("    %s  guid=%s  hp=%s  dead=%s  feigning=%s  local=%s",
+            tostring(unit),
+            shown(e.guid),
+            unit and probe(_G.UnitHealth, unit) or "nil",
+            unit and _G.UnitIsDead and shown(_G.UnitIsDead(unit)) or "nil",
+            unit and _G.UnitIsFeignDeath and shown(_G.UnitIsFeignDeath(unit)) or "nil",
+            tostring(e.isPlayer and true or false)))
+    end
+end
+
+local function reportFeign()
+    out("|cff00ff00-- feign trace (issue #25) --|r")
+
+    local S = NS.Secrets
+    out(string.format("  restriction: %s   armed: %s",
+        S and tostring(S.IsRestricted()) or "unknown",
+        tostring(feignTrace ~= nil)))
+
+    if feignTrace == nil then
+        -- Not armed and never armed read identically from here, and both have
+        -- the same remedy, so the report gives the remedy rather than a status.
+        out("  not recording. `/mm debug feign on`, then run the dungeon with a")
+        out("  hunter in the party, then `/mm debug feign` to print this.")
+        reportFeignRoster()
+        return
+    end
+
+    if #feignTrace == 0 then
+        -- THE MOST INFORMATIVE OUTCOME THIS REPORT HAS, and it must not read as
+        -- a failed capture. No `cast` line at all, after a run with a hunter in
+        -- it, IS the answer: UNIT_SPELLCAST_SUCCEEDED never arrived for that
+        -- unit and modules/Feign.lua was never told anything to filter.
+        out("  nothing recorded.")
+        out("  If a hunter feigned during this run, that is the finding: the cast")
+        out("  event never reached the addon. Say so in the issue.")
+    else
+        out(string.format("  %d entries:", #feignTrace))
+        for i = 1, #feignTrace do out("    " .. feignTrace[i]) end
+    end
+
+    reportFeignRoster()
+end
+
+--- `/mm debug feign` — the issue #25 recording, printed.
+---
+--- Not part of `/mm debug diag`, for the reason `identity` is not: this says
+--- nothing at all unless it was armed before the run it describes.
+function Diagnostics.ReportFeign()
+    local D = NS.DebugLog
+    if D and D.Add and D.Show and D.IsShown then
+        pcall(function() D:Show() end)
+        if D:IsShown() then
+            emit = function(line) D:Add("Diag", line) end
+        end
+    end
+
+    local ok, err = pcall(reportFeign)
+    if not ok then out("  |cffff2020section failed:|r " .. tostring(err)) end
+    emit = nil
+end

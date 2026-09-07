@@ -77,7 +77,7 @@ NS.COMMANDS = {
     { "set",      "Write one setting: /mm set <path> <value>", function(a) cli:CliSet(a) end },
     { "reset",    "Reset one setting: /mm reset <path>",   function(a) cli:CliReset(a) end },
     { "resetall", "Reset every setting to its default",    function() cli:CliResetAll() end },
-    { "debug",    "Console; 'on'/'off' set logging, 'diag' a diagnostic report, 'recap' the death-recap probe, 'identity' the mid-pull correlation capture",
+    { "debug",    "Console; 'on'/'off' set logging, 'diag' a diagnostic report, 'recap' the death-recap probe, 'identity' the mid-pull correlation capture, 'feign on|off' the feign recording",
                                                                      function(a) doDebug(a) end },
     { "perf",     "Performance capture; try /mm perf help", function(a) doPerf(a) end },
     { "version",  "Print the addon version",   function() cli:CliVersion() end },
@@ -459,6 +459,27 @@ function doDebug(rest)
     -- and a pull running — rather than going quiet when it has neither.
     if word == "identity" then
         if NS.Diagnostics then NS.Diagnostics.ReportIdentity() end
+        return
+    end
+
+    -- `feign` is the issue #25 recording, and it is the only debug verb here
+    -- that takes an argument, because it is the only one that is not a read.
+    -- The other three ask the client a question at the moment they are typed; a
+    -- feign is over before a player finishes typing, so this one has to be armed
+    -- before the run and printed after it.
+    if word == "feign" then
+        local D = NS.Diagnostics
+        if not D then return end
+        local arg = tostring(rest or ""):lower():match("^%s*%S+%s+(%S+)")
+        if arg == "on" or arg == "off" then
+            local on = D.ArmFeignTrace and D.ArmFeignTrace(arg == "on") or false
+            local line = on
+                and "feign trace ON — run the dungeon, then `/mm debug feign`."
+                or  "feign trace off."
+            if NS.Print then NS.Print(line) end
+        else
+            if D.ReportFeign then D.ReportFeign() end
+        end
         return
     end
 

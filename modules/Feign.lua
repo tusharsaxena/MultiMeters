@@ -94,6 +94,16 @@ local function unitHealth(unit)
     return f and f(unit) or nil
 end
 
+--- Hand one observation to the issue #25 recording, when one is being made.
+---
+--- core/Diagnostics.lua is resolved at CALL time and is allowed to be absent:
+--- this module does not depend on the diagnostic existing, and the diagnostic
+--- costs a nil test plus one boolean when nobody has armed it.
+local function trace(kind, fields)
+    local D = NS.Diagnostics
+    if D and D.TraceFeign then D.TraceFeign(kind, fields) end
+end
+
 --- What the client says about this unit's feign, or nil where it will not say.
 ---
 --- `UnitIsFeignDeath` lingers true through a feign-then-die transition, so a
@@ -113,15 +123,29 @@ end
 
 --- Record that this GUID is feigning.
 ---
+--- `unit` is carried for the issue #25 trace and for nothing else — the set is
+--- keyed on the GUID, and the token is what says whether a feign the addon
+--- missed was a party member's or the local player's.
+---
 --- @param guid any  from the unit API, and NOT trusted to be plain
-function Feign.Note(guid)
+--- @param unit string|nil  the token the cast arrived under
+function Feign.Note(guid, unit)
     -- A secret cannot be a table key: the assignment raises before it stores
     -- anything. The unit API is not a safe source — core/Secrets.lua records a
     -- follower dungeon handing out secret pet GUIDs — so this is a real gate
     -- rather than a formality.
-    if not Secrets.IsSafeKey(guid) then return end
+    if not Secrets.IsSafeKey(guid) then
+        -- Recorded rather than dropped in silence. "The cast arrived and the
+        -- GUID could not be keyed on" and "the cast never arrived" are the two
+        -- halves of the same empty log, and only one of them is fixable here.
+        trace("cast", { order = { "unit", "guid", "kept" },
+                        unit = unit, guid = guid, kept = false })
+        return
+    end
     if feigned[guid] == nil then feigned[guid] = "noted" end
     anyFeigned = true
+    trace("cast", { order = { "unit", "guid", "kept" },
+                    unit = unit, guid = guid, kept = true })
     if State.debug and Debug then Debug("Feign", "noted %s", tostring(guid)) end
 end
 
@@ -237,11 +261,24 @@ function Feign.Prune()
             if nowFeigning == true then feigned[guid] = "down" end
             local seenDown = (feigned[guid] == "down")
 
-            if dead or (seenDown and alive and nowFeigning == false) then
+            local evicted = dead or (seenDown and alive and nowFeigning == false)
+            if evicted then
                 feigned[guid] = nil
             else
                 remaining = true
             end
+
+            -- THE LINE ISSUE #25 TURNS ON. `dead` wins outright here, ahead of
+            -- `nowFeigning`, and for the local player that never collides: your
+            -- own feign leaves `UnitHealth("player")` at its real figure. What
+            -- another client is shown is the open question, and this records the
+            -- raw readings beside the verdict so it stops being one.
+            trace("prune", {
+                order = { "unit", "guid", "hp", "feigning", "state", "evicted" },
+                unit = unit, guid = guid, hp = hp, feigning = nowFeigning,
+                state = feigned[guid] or (evicted and "<evicted>") or "?",
+                evicted = evicted and true or false,
+            })
         end
     end
     anyFeigned = remaining

@@ -208,7 +208,7 @@ that a load-time cycle between two majors.
 | `set <path> <value>` | Write one setting |
 | `reset <path>` | Reset one setting to its default |
 | `resetall` | Reset the active profile to the shipped defaults — a **profile reset**, so it is the equivalent of a new profile: extra windows are deleted and one fresh window is left. The same act as Profiles → Reset Profile; other profiles are never touched. See [settings-panel.md](settings-panel.md#reset-all-settings-vs-reset-profile) |
-| `debug` | Toggle the console window; `on` / `off` set session logging; **`diag`** prints the diagnostic report; **`recap`** prints the death-recap probe alone; **`identity`** prints the mid-pull identity-correlation capture (issue #22) |
+| `debug` | Toggle the console window; `on` / `off` set session logging; **`diag`** prints the diagnostic report; **`recap`** prints the death-recap probe alone; **`identity`** prints the mid-pull identity-correlation capture (issue #22); **`feign on`** / **`feign off`** arm and disarm the feign-death recording and **`feign`** prints it (issue #25) |
 | `perf` | Performance capture — `/mm perf help` for the run's own verbs |
 | `version` | Print the addon version, read from the TOC manifest |
 | `lock` | Lock or unlock every window for dragging. It governs movement and nothing else: unlocking no longer switches Test mode on |
@@ -490,6 +490,19 @@ comment, which argues the same split from the other side.
   plain key on the other side of the join while the restriction is up, so **a feign is counted as a
   death mid-pull and the count corrects itself the moment combat ends.** Do not "fix" this by keying
   on something secret; there is nothing to key on.
+- **The feign-death filter is reported to work for the local player and not for party members, and
+  the cause is not yet measured** ([#25](https://github.com/tusharsaxena/MultiMeters/issues/25)).
+  Two candidates fit the symptom equally well from the count alone, and they need opposite fixes:
+  either `UNIT_SPELLCAST_SUCCEEDED(5384)` never arrives for a party unit token, so
+  `modules/Feign.lua` is never told about the feign at all; or it does arrive and `Feign.Prune`
+  evicts the entry before the Deaths walk judges the row, because a feign is presented to *other*
+  clients as a death and the `hp <= 0` exit currently wins outright over `UnitIsFeignDeath`. Your own
+  feign never collides with that — `UnitHealth("player")` stays at its real figure — which is exactly
+  the asymmetry reported. **Nothing offline can tell the two apart:** `tests/wow_mock.lua` answers
+  full health for any unrecorded token and every case in `tests/test_feign.lua` sets health on
+  `"player"`. `/mm debug feign on` records all three boundaries a feign crosses — the cast, each
+  prune verdict with the raw readings behind it, and the per-row `ShouldDropDeath` answer — and
+  `/mm debug feign` prints them. Fix on that measurement, not on either hypothesis.
 - **A past death cannot be dated against the run it happened in, so the addon does not try.**
   Measured on a live client: the **Current** session held *zero* deaths, the **Overall** session held
   eighteen and reported `deathTimeSeconds = -1` for every one, and the session's own duration is

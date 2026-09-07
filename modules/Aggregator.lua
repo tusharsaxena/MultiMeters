@@ -1479,6 +1479,22 @@ local function scanColumn(pass, statKey)
         -- the alternative is silently dropping one.
         local feigned = Feign and Feign.ShouldDropDeath
             and Feign.ShouldDropDeath(src.guid, src.deathRecapID)
+        -- The verdict, recorded for the issue #25 trace. Last of the three
+        -- boundaries that recording covers: a death row that reaches here with
+        -- `dropped=false` for a GUID the `cast` line named is the filter losing
+        -- the thread between the two, and the `prune` lines in between say where.
+        -- core/Diagnostics.lua is resolved at call time and costs one nil test
+        -- plus one boolean while nobody has armed a recording.
+        if Feign then
+            local D = NS.Diagnostics
+            if D and D.TraceFeign then
+                D.TraceFeign("judge", {
+                    order = { "guid", "recap", "dropped" },
+                    guid = src.guid, recap = src.deathRecapID,
+                    dropped = feigned and true or false,
+                })
+            end
+        end
         -- Spelled as a branch and not as `not feigned and rowForSource(...) or nil`:
         -- that idiom truncates a multiple return to one value, which silently
         -- drops `isOwn` and sends every ordinary source down the pet-fold path.

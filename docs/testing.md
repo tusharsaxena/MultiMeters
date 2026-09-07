@@ -234,6 +234,40 @@ test, a `#`, or a secret used as a table key. Everything in that gap is
 only place rules R1 and R3 are checked against a client that actually enforces them. Run that file
 before claiming a non-trivial change works.
 
+## Capturing a feign trace
+
+`/mm debug feign` is the measurement [#25](https://github.com/tusharsaxena/MultiMeters/issues/25)
+is being fixed against — the Deaths column filters the local player's Feign Death correctly and
+counts a party member's. **The count alone cannot say why**, and the two causes that fit it need
+opposite fixes, so nothing is changed until this comes back.
+
+Unlike the other three debug verbs it is a **recording, not a read**. They ask the client a question
+at the moment they are typed; a feign is over before a player finishes typing, so this one is armed
+before the run:
+
+1. `/mm debug feign on` — arms the recording and empties any previous one.
+2. Run a dungeon with a **hunter other than you** in the party, and one where you also feign
+   yourself if you are the hunter. Both halves matter: the working case is the control.
+3. `/mm debug feign` — prints the log and the current group beside it.
+
+It records the three boundaries a feign crosses, and whichever goes wrong first is the root cause:
+
+| Line | Answers |
+|---|---|
+| `cast` | Did `UNIT_SPELLCAST_SUCCEEDED(5384)` arrive, and under which **unit token**? `kept` says whether the GUID could be keyed on. **No `cast` line for a party token, after a run in which that player demonstrably feigned, is the finding** — the addon was never told, and no downstream filtering can help |
+| `prune` | What `modules/Feign.lua` read on the unit that pass (`hp`, `feigning`) and what it decided (`evicted`). A party member with `hp=0 feigning=true evicted=true` is the other cause: `hp <= 0` wins outright over `UnitIsFeignDeath`, and your own feign never trips it because `UnitHealth("player")` stays at its real figure |
+| `judge` | The per-row `ShouldDropDeath` verdict `modules/Aggregator.lua` actually got. A `dropped=false` for a GUID a `cast` line named is the filter losing the thread between the two, and the `prune` lines in between say where |
+
+The group block at the bottom prints `hp`, `dead` and `feigning` for **every** member, not just a
+feigning one. That is the baseline: "party2 reads `hp=0`" is only evidence if the other four do not.
+
+The recording is armed rather than always on because `judge` fires once per death source on every
+Deaths refresh. Disarmed it costs one nil test.
+
+Offline, `tests/test_diagnostics.lua` proves the recording runs, captures all three boundaries and
+survives a client missing the unit APIs. It cannot supply the readings — `tests/wow_mock.lua`
+answers full health for any unrecorded token, which is why the party path never showed the bug.
+
 ## Capturing an identity-correlation run
 
 `/mm debug identity` is the measurement [#22](https://github.com/tusharsaxena/MultiMeters/issues/22)

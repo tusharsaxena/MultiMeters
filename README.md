@@ -82,7 +82,7 @@ Type `/mm` for the command list. `/multimeters` does the same thing if you prefe
 | `/mm reset PATH` | Reset one setting to its default |
 | `/mm resetall` | Reset every setting to defaults |
 | `/mm version` | Print the addon version |
-| `/mm debug` | Open the debug console (`on` / `off` control logging, `diag` prints a diagnostic report, `recap` the death-recap probe, `identity` the mid-pull correlation capture) |
+| `/mm debug` | Open the debug console (`on` / `off` control logging, `diag` prints a diagnostic report, `recap` the death-recap probe, `identity` the mid-pull correlation capture, `feign on`/`feign off`/`feign` the feign-death recording) |
 | `/mm perf` | Measure performance — run `/mm perf` for the workflow |
 
 Settings that belong to a window are written as `window.something`, and they apply to whichever

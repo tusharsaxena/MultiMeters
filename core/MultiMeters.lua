@@ -346,7 +346,7 @@ function NS:OnSpellSucceeded(_, unit, _castGUID, spellID)
 
     local getGUID = _G.UnitGUID
     if not getGUID then return end
-    F.Note(getGUID(unit))
+    F.Note(getGUID(unit), unit)
 end
 
 --- ADDON_RESTRICTION_STATE_CHANGED(type, state).

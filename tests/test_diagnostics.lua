@@ -1237,3 +1237,159 @@ test("Diagnostics: a missing isLocalPlayer is NOT called a degraded key", functi
     assertTrue(specLine:find("collapses", 1, true) ~= nil,
         "a missing specIconID DOES collapse the key, and the report must say so")
 end)
+
+-- ---------------------------------------------------------------------------
+-- `/mm debug feign` — the issue #25 recording
+-- ---------------------------------------------------------------------------
+--
+-- The Deaths column counts a party member's feign as a death while filtering the
+-- local player's correctly, and the count alone cannot say why: either the cast
+-- never reached the addon for that unit, or it did and the entry was evicted
+-- before the death row was judged. This recording is how the two are told apart
+-- on a live client, so what the cases below pin is that it RECORDS the three
+-- boundaries and prints them — the readings themselves are the player's to paste.
+
+--- Run the feign report and hand back everything it printed.
+local function feignReport(inst)
+    local D      = inst.NS.DebugLog
+    local buffer = D and D.buffer
+    local chatN  = #inst.mocks.__chat
+    local bufN   = buffer and #buffer or 0
+
+    inst.NS.Diagnostics.ReportFeign()
+
+    local lines = {}
+    if buffer then
+        for i = bufN + 1, #buffer do lines[#lines + 1] = buffer[i] end
+    end
+    for i = chatN + 1, #inst.mocks.__chat do lines[#lines + 1] = inst.mocks.__chat[i] end
+    return table.concat(lines, "\n"), lines
+end
+
+local FEIGN_SPELL = 5384
+
+--- A two-player group whose second member is a party unit, not the local player.
+--- The asymmetry under investigation is exactly "player" versus everybody else,
+--- so a fixture with only a player in it could not show it.
+local function feignGroup(inst)
+    inst.mocks.setGroup({
+        { guid = "Player-1-0000000A", name = "Alpha", class = "MAGE",   role = "DAMAGER" },
+        { guid = "Player-1-0000000B", name = "Beta",  class = "HUNTER", role = "DAMAGER" },
+    })
+    return inst
+end
+
+test("Diagnostics: the feign report is published and reachable", function()
+    local inst = T.load{ enable = true }
+    assertEqual(type(inst.NS.Diagnostics.ReportFeign), "function")
+    assertEqual(type(inst.NS.Diagnostics.ArmFeignTrace), "function")
+    assertEqual(type(inst.NS.Diagnostics.TraceFeign), "function")
+end)
+
+test("Diagnostics: the feign trace records nothing until it is armed", function()
+    -- red under: a recording that is always on. `judge` fires once per death
+    -- source on every Deaths refresh, which is the reason arming exists.
+    local inst = feignGroup(T.load{ enable = true })
+    assertFalse(inst.NS.Diagnostics.IsFeignTraceArmed())
+    inst.NS:OnSpellSucceeded("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", FEIGN_SPELL)
+    local text = feignReport(inst)
+    assertTrue(text:find("not recording", 1, true) ~= nil,
+        "a disarmed trace says how to arm it")
+end)
+
+test("Diagnostics: an armed trace records the cast and the unit token it arrived under", function()
+    -- THE FIRST OF THE THREE BOUNDARIES, and the one that decides between the
+    -- two candidate causes: no `cast` line for a party token means the addon was
+    -- never told about the feign at all.
+    -- red under: a trace that records the GUID without the token — the token is
+    -- the whole difference between the working case and the broken one.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    inst.NS:OnSpellSucceeded("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", FEIGN_SPELL)
+
+    local text = feignReport(inst)
+    assertTrue(text:find("cast", 1, true) ~= nil, "the cast was recorded")
+    assertTrue(text:find("unit=party1", 1, true) ~= nil, "the unit token was recorded")
+    assertTrue(text:find("kept=true", 1, true) ~= nil, "the GUID was keyed on")
+end)
+
+test("Diagnostics: an armed trace records what prune saw and what it decided", function()
+    -- THE SECOND BOUNDARY. `hp` and `feigning` are the two raw readings whose
+    -- collision is the leading hypothesis: a feign is shown to OTHER clients as
+    -- a death, and `hp <= 0` currently evicts ahead of `UnitIsFeignDeath`.
+    -- red under: recording the verdict without the readings behind it, which
+    -- would say the entry went without saying why.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS:OnSpellSucceeded("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", FEIGN_SPELL)
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+
+    inst.mocks.setUnitHealth("party1", 0)
+    inst.mocks.setUnitFeignDeath("party1", true)
+    inst.NS.Feign.Prune()
+
+    local text = feignReport(inst)
+    assertTrue(text:find("prune", 1, true) ~= nil, "the prune pass was recorded")
+    assertTrue(text:find("hp=0", 1, true) ~= nil, "the health reading was recorded")
+    assertTrue(text:find("feigning=true", 1, true) ~= nil, "the feign reading was recorded")
+    assertTrue(text:find("evicted=true", 1, true) ~= nil, "the verdict was recorded")
+end)
+
+test("Diagnostics: arming a trace clears the one before it", function()
+    -- A run's evidence is one run's. red under: a buffer that accumulates across
+    -- arms, which would put a previous dungeon's casts in this dungeon's report.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    inst.NS:OnSpellSucceeded("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", FEIGN_SPELL)
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+
+    local text = feignReport(inst)
+    assertTrue(text:find("nothing recorded", 1, true) ~= nil, "re-arming emptied the log")
+end)
+
+test("Diagnostics: an empty armed trace is reported as a FINDING, not as a failure", function()
+    -- The single most informative outcome this report has: a run with a hunter
+    -- in it and no `cast` line means UNIT_SPELLCAST_SUCCEEDED never arrived.
+    -- red under: printing "no data" and leaving the player to assume they did it
+    -- wrong, which loses the answer.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    local text = feignReport(inst)
+    assertTrue(text:find("never reached the addon", 1, true) ~= nil,
+        "an empty log names what an empty log means")
+end)
+
+test("Diagnostics: the feign report prints the group beside the trace", function()
+    -- The trace is all GUIDs, because the join is on GUIDs. A reader needs the
+    -- non-feigning members too: "party2 reads hp=0" is only evidence if the
+    -- others do not. red under: a report that prints the log alone.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.mocks.setUnitHealth("party1", 0)
+    local text = feignReport(inst)
+    assertTrue(text:find("group now", 1, true) ~= nil, "the roster is printed")
+    assertTrue(text:find("local=", 1, true) ~= nil, "each member says whether it is the player")
+end)
+
+test("Diagnostics: the feign report survives a client with none of the unit APIs", function()
+    -- The report is what a player runs when something is already wrong, so it
+    -- may not be the thing that raises. red under: an unguarded _G call.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.mocks.UnitIsFeignDeath = nil
+    inst.mocks.UnitIsDead = nil
+    local ok = pcall(function() inst.NS.Diagnostics.ReportFeign() end)
+    assertTrue(ok, "the report ran with the unit APIs missing")
+end)
+
+test("Diagnostics: a secret GUID costs one field and not the line", function()
+    -- Every field is described THROUGH `shown` at capture time, so a secret is
+    -- never stored and never concatenated later. red under: storing raw values,
+    -- which takes the whole line dark the way the header's session line went.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    inst.NS.Diagnostics.TraceFeign("cast", {
+        order = { "unit", "guid", "kept" },
+        unit = "party1", guid = inst.mocks.secret("Player-1-0000000B"), kept = false,
+    })
+    local text = feignReport(inst)
+    assertTrue(text:find("unit=party1", 1, true) ~= nil, "the plain field survived")
+    assertTrue(text:find("<secret>", 1, true) ~= nil, "the secret field was described")
+end)
