@@ -261,6 +261,30 @@ second edge to catch.
   right thing change: the cells, the title bar and session line, the "Player | Damage | Healing"
   strip, and a hovered tooltip. A control that moves the wrong surface means two groups are sharing a
   key that is supposed to be their own.
+- **Every media dropdown lists what LibSharedMedia knows NOW, not what it knew at file load
+  (`M3-02`, session 4 of the 2026-09-07 remediation bundle).** Load a media pack that registers
+  faces, borders and bar textures — SharedMedia_MyMedia, or any addon whose only job is to hand
+  LibSharedMedia more of them — then open **every** media picker this addon draws. There are eleven:
+  Frame → General's two **all surfaces** pickers (**Font**, **Bar texture**), Frame → **Border style**,
+  Bars → **Texture** and **Border style**, Tooltip → **Bar texture** and **Bar border style**, and the
+  **font** picker on each of Bars → Text style, Header → Title text, Columns → Header text and
+  Tooltip → Text. Each list must contain the faces and textures that pack registered, not merely the
+  stock Blizzard set. **Nine of the eleven are the ones this step is really for** — every picker
+  except Frame → General's two, which `settings/Schema.lua` writes out by hand rather than composing.
+
+  **Why this step exists and what it is really watching.** Those nine rows come out of
+  `LibKa0s-Options-1.0`'s schema composers, and v1.26.0 changed *when* a composer asks this addon for
+  its media list: it used to ask as a dropdown opened, and now it asks once, as the row is declared.
+  So the member `settings/Schema.lua` hands the composer has to be the deferred reader itself rather
+  than a caller of it. Get that wrong and nothing breaks loudly — no Lua error, no chat warning, no
+  red case in `lua tests/run.lua`; the row simply carries a media list built before any media addon
+  registered anything. `settings/Schema.lua` re-dresses all nine rows with its own deferred reader
+  afterwards, so today that would be caught before it reached a dropdown, but the two are independent
+  and this is the only place the pair can be seen agreeing. **A dropdown that opens and looks
+  plausible is not a pass here** — the pass is a name in it that could only have come from the media
+  pack.
+
+  Not yet run — no client has been available since the change.
 - **"Text color mode" set to Class means the right class on each surface.** On Bars → **Text style** the cells take
   **each row's** class, so a grid of mixed classes goes multi-coloured — not all one colour. On
   Tooltip → **Text** the text takes the class of the player you are **hovering**; hover two different
