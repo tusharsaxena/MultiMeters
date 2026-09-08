@@ -1526,7 +1526,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: Register is a no-op rather than a raise when there is no AceConsole
 - Slash: /mm list heads each block with the page AND the tab
 
-### test_options_panel.lua (37)
+### test_options_panel.lua (38)
 
 - Options: General is the FIRST page, above Windows
 - Options: every window page is marked as nested, and the two that are not are not
@@ -1558,6 +1558,7 @@ badge and any count quoted in the docs must agree with it.
 - Options: CreateOptionsPanel is idempotent
 - Options: CreateOptionsPanel runs the schema validator
 - Options: AceGUI is resolved once and published for the page builders
+- Options: the shared LSM30_Border slot is re-registered once, above what AGSMW left in it
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip
 - Panel: switching tabs re-renders without leaving the previous tab's widgets behind
@@ -1673,9 +1674,9 @@ badge and any count quoted in the docs must agree with it.
 | test_schema.lua | 63 |
 | test_schema_defaults.lua | 10 |
 | test_slash.lua | 36 |
-| test_options_panel.lua | 37 |
+| test_options_panel.lua | 38 |
 | test_columnblocks.lua | 17 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 27 |
 | test_eol.lua | 1 |
-| **Total** | **1508** |
+| **Total** | **1509** |

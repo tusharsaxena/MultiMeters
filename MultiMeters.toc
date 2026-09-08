@@ -52,7 +52,6 @@ core\Secrets.lua
 core\CoreSetup.lua
 core\PerfSetup.lua
 core\DebugLogSetup.lua
-core\LSMPatch.lua
 core\MultiMeters.lua
 core\Database.lua
 # `/mm debug diag`. Last in the block: it reads modules at CALL time and owns no

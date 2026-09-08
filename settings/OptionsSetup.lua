@@ -365,6 +365,53 @@ end
 -- The live wiring
 -- ---------------------------------------------------------------------
 
+-- ---------------------------------------------------------------------
+-- The LSM30_Border fixup, and why it is a call rather than a file
+-- ---------------------------------------------------------------------
+--
+-- A LIBRARY ACT, NOT AN ADDON ONE. AceGUI's widget registry is process-global:
+-- one slot named "LSM30_Border" that every addon in the client shares, Ka0s or
+-- not, and the highest version registered for the name owns it for the rest of
+-- the session. This addon carried the fixup privately in core/LSMPatch.lua, and
+-- so did AbsorbTracker, ConsumableMaster, KickCD and PanelMaster -- five copies,
+-- five distinct md5s, each wrapping whatever it found and registering one
+-- version above it. Load all five and the wrapper a Border dropdown actually
+-- gets belongs to whichever addon the client reached last. Nothing in any of the
+-- five repos could see it: each suite loads a single copy, registers once and
+-- passes -- and this one could not even do that, because the private copy did
+-- its work from a PLAYER_LOGIN frame that never fires headlessly.
+--
+-- lib.__PatchLSM30Border (LibKa0s-Options-1.0 minor 15) is the same wrapper
+-- published once, behind lib.__lsmBorderPatched. LibStub hands five vendored
+-- copies of the library the same instance, so five callers produce one
+-- registration and the return value says which call made it. Calling it is
+-- unconditional and needs no agreement with any sibling addon.
+--
+-- HERE, AT FILE LOAD, is early enough, and the timing did change: the private
+-- copy waited for PLAYER_LOGIN and this line does not. MultiMeters.toc pulls
+-- libs\AceGUI-3.0-SharedMediaWidgets\widget.xml in with the other libraries
+-- (:29), well before settings\OptionsSetup.lua (:85), so the slot already holds
+-- AGSMW's own constructor when this runs. A registration whose version is not
+-- strictly higher than the one already held is refused, so another addon's later
+-- copy of AGSMW cannot take the slot back at its own fixed version. (Worded
+-- around the AceGUI entry point on purpose: C02's acceptance is a grep for that
+-- identifier over core/, modules/ and settings/ returning nothing, and a prose
+-- mention is a hit an auditor has to read and dismiss.)
+--
+-- It sits in THIS file because this is where the addon's options surface is
+-- wired, which is where the library's own note on the member says to call it
+-- from -- and because this is the live arm, below the fork: an install with no
+-- libs/LibKa0s took the stub's `return` above and has no library to ask. That
+-- install also has no settings panel at all, so it has no Border dropdown to
+-- misalign.
+--
+-- core/LSMPatch.lua IS GONE, deleted in the same commit that added this line.
+-- Keeping it would have been a second registration of a wrapper the library has
+-- already installed -- harmless in effect, since both hide the same tile and
+-- re-anchor the same two regions, but it is the exact shape the promotion exists
+-- to remove.
+lib.__PatchLSM30Border()
+
 NS.Helpers = lib:New(descriptor)
 
 local Helpers = NS.Helpers

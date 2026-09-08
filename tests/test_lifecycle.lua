@@ -203,10 +203,13 @@ test("Lifecycle: no module registers a game event of its own", function()
         local src = fh and fh:read("*a"):gsub("%-%-[^\r\n]*", "") or ""
         if fh then fh:close() end
         local low = rel:lower()
-        -- core/MultiMeters.lua owns the addon's events; core/LSMPatch.lua owns
-        -- its own one-shot PLAYER_LOGIN frame, which is a widget hook rather
-        -- than an addon event and is documented as such in its header.
-        if low ~= "core/multimeters.lua" and low ~= "core/lsmpatch.lua" then
+        -- core/MultiMeters.lua owns the addon's events, and now owns ALL of them.
+        -- The second name that used to stand here was core/LSMPatch.lua, whose
+        -- one-shot PLAYER_LOGIN frame was a widget hook rather than an addon
+        -- event; that file is gone and the fixup is a call into LibKa0s made at
+        -- load, so the exemption went with it rather than sitting here waiting
+        -- to excuse the next listener somebody adds.
+        if low ~= "core/multimeters.lua" then
             assertNil(src:match("[^%w]RegisterEvent%s*%("),
                 rel .. " registers a game event — the fan-out in core/MultiMeters.lua owns them")
         end

@@ -128,8 +128,12 @@ Four things about how this addon calls them are worth knowing before editing a b
   that costs nothing a player can reach, because a degraded install has neither a settings panel nor
   a schema CLI.
 - **Two `LSM30_*` pickers survive outside a composer call, and they are not a group.**
-  `grep -rn 'LSM30_Font\|LSM30_Border\|LSM30_Statusbar' settings/` returns `settings/Schema.lua:1553`
-  (`window.barTexture`) and `:1561` (`window.font`), and neither is composer-able. They are two of the
+  `grep -rn 'LSM30_Font\|LSM30_Border\|LSM30_Statusbar' settings/` returns two DECLARATIONS —
+  `settings/Schema.lua:1565` (`window.barTexture`) and `:1573` (`window.font`) — and neither is
+  composer-able. The other hits are prose: three lines of the comment above
+  `settings/OptionsSetup.lua`'s `lib.__PatchLSM30Border()` call, which names `LSM30_Border` because
+  that is the widget it argues about. No `dialogControl` there, and nothing for this bullet to
+  account for. They are two of the
   four **broadcast meta rows** on Frame → General, under the *All surfaces* heading: each one *writes*
   a value into every surface that has a setting of that kind and is then read by nothing, which is
   what the note above them at `settings/Schema.lua:1512-1522` says at length. `options-ui-§16` fixes

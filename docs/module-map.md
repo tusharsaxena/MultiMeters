@@ -63,9 +63,6 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   ├── MediaSetup.lua  — the LibKa0s-Media seam: NS.Icon / NS.MediaFont, and the one
 │   │                     call that registers the library's font with LSM. Loads BEFORE
 │   │                     Constants, which resolves FONT_MONO from it
-│   ├── LSMPatch.lua    — the PLAYER_LOGIN fixup that hides the vendored LSM30_Border
-│                         widget's 42×42 preview tile. It registered the shipped font
-│                         too until the face moved into the LibKa0s payload
 │   ├── MultiMeters.lua — AceAddon bootstrap, the AceConsole printer reclaim, THE
 │                         SINGLE GAME-EVENT LISTENER (22 events, the last of them
 │                         PROBED, all but two fanned onto the bus), and
@@ -171,7 +168,6 @@ own strings entirely.
 | `PerfSetup.lua` | The perf descriptor: bucket list, suspend, resume, log routing | `NS.Perf` | `NS.Version`, and `Provider` / `WindowManager` / `Visibility` at call time |
 | `DebugLogSetup.lua` | The console descriptor (including `addonName`, which is what makes the console's own close/copy/clear draw the collection's art), the debug sink, and the steady-state sink a timer-driven pass logs through | `NS.DebugLog`, `NS.Debug`, `NS.DebugSteady`, `NS.DebugSteadyReset` | `NS.Constants.FONT_MONO`, `NS.State.debug`, `NS.Print`, `NS.SafeToString` |
 | `PoolSetup.lua` | The LibKa0s-Pool seam: the free/active halves of the window row pool. What stays in `modules/Window.lua` is what the library holds no opinion about — `pool.all` (every row ever built, so a **parked** row is re-laid-out too) and batch growth, folded into the `Acquire` factory closure. The degraded fallback is the same three members locally, parking **backward** exactly as `LibKa0s-Pool-1.0` minor 3 does; a forward-parked degraded install is the rank flicker back | `NS.Pool` | `LibKa0s-Pool-1.0`. Owns no state and registers no event |
-| `LSMPatch.lua` | The `LSM30_Border` widget fixup, and nothing else since the shipped font moved into the LibKa0s payload | nothing — side effects only | LibSharedMedia, AceGUI |
 | `MultiMeters.lua` | AceAddon promotion, the printer reclaim, all 22 game-event registrations (21 outright plus `PLAYER_IS_GLIDING_CHANGED`, probed), the fan-out onto the bus, and `NS.ShouldShow` | `NS.addon`, `NS.ShouldShow`, `NS:OnInitialize` / `OnEnable` | `NS.Constants.MSG`, `NS.State`, `NS.Secrets`, `NS.Minimap`, `NS.CreateOptionsPanel`, `NS.Slash` |
 | `Database.lua` | The AceDB instance, window shape key-fill, the monotonic id counter, seeding, migrations, and the AceDB profile callbacks | `NS.Database` (`GetWindows`, `FindWindow`, `NextWindowId`, `SeedWindows`, `EnsureWindowShape`), `NS.db`, `NS:InitDB`, `NS:RunMigrations` | `NS.defaults`, `NS.WINDOW_TEMPLATE`, `NS.DefaultWindow`, `NS.Constants.MSG` |
 | `Diagnostics.lua` | The `/mm debug diag` report: atlas probes, the formatter ladder, visibility, header, name column, cells, tooltip font and width, the Targets cross-reference, and the provider-order probe. Plus three verbs of their own — the death-recap probe (#1), the identity-correlation capture (#22) and the feign-death recording (#25). The recording is the one that is not a read: it is armed before a run, fed by `modules/Feign.lua` and `modules/Aggregator.lua` at the three boundaries a feign crosses, and printed afterwards. Every section is `pcall`-wrapped, and nothing here inspects a meter value | `NS.Diagnostics` (`Report`, `ReportDeathRecap`, `ReportIdentity`, `ReportFeign`, `ArmFeignTrace`, `IsFeignTraceArmed`, `TraceFeign`, `feignArmed`) | `NS.DebugLog`, `NS.Print`, `NS.Provider`, `NS.Constants.STATS`, `NS.Database`, `NS.Secrets`, `NS.WindowManager` |
@@ -266,12 +262,18 @@ for the same "a flat path model has no vocabulary for this shape" reason.
       TOC positions in `core/` that is load-bearing rather than conventional.
    11. `PoolSetup.lua` — after the `libs/` block and **before `modules/Window.lua`**, the pool's
       only consumer. It carries no other constraint: it publishes `NS.Pool` and captures nothing.
-   12. `LSMPatch.lua` — unconstrained now that it only patches an AceGUI widget at PLAYER_LOGIN.
-   13. `MultiMeters.lua` — after every setup file; promotes `NS` into the AceAddon object.
-   14. `Database.lua` — after `State`, before `OnInitialize` runs. Reads `NS.defaults` at *call*
+   12. `MultiMeters.lua` — after every setup file; promotes `NS` into the AceAddon object.
+   13. `Database.lua` — after `State`, before `OnInitialize` runs. Reads `NS.defaults` at *call*
        time, because `defaults/` loads later.
-   15. `Diagnostics.lua` — **last in the block, and deliberately unconstrained.** It reads every
+   14. `Diagnostics.lua` — **last in the block, and deliberately unconstrained.** It reads every
        module at *call* time and owns no state, so nothing depends on where it loads.
+
+   `LSMPatch.lua` used to sit at 12, unconstrained, patching AceGUI's `LSM30_Border`
+   from a `PLAYER_LOGIN` frame. That registration writes into a **process-global**
+   registry, so it was never this addon's private business; it is
+   `lib.__PatchLSM30Border()` in `LibKa0s-Options-1.0` now, called from
+   `settings/OptionsSetup.lua`'s live arm. See that call site for why file load is
+   early enough and why the timing change is safe.
 4. **`defaults/Profile.lua`** — after `core/Constants.lua`, whose stat catalog it captures at load.
 5. **`modules/`** — `Format` first (nothing reads another module, and `Row` and `Tooltip` both format
    on their first render), then `Provider` → `Roster` → `Feign` → `Aggregator` → `WindowManager` →

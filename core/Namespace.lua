@@ -21,7 +21,7 @@
 -- file is fine in both directions:
 -- Constants reads nothing this file publishes, and nothing here reads
 -- NS.Constants. Everything AFTER this point — State, Secrets, CoreSetup,
--- PerfSetup, DebugLogSetup, LSMPatch, MultiMeters, Database, and all of
+-- PerfSetup, DebugLogSetup, MultiMeters, Database, and all of
 -- modules/ and settings/ — may read NS.PREFIX / NS.name / NS.version at load
 -- time, so this file must stay above them.
 

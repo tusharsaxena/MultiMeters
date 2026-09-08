@@ -73,6 +73,7 @@ in-client.
 | 26 | **Export** | [**The export modal, the CSV and the chat dump**](#26-the-export-modal-the-csv-and-the-chat-dump) |
 | 27 | **Identity** | [**The identity-correlation capture (issue #22)**](#27-the-identity-correlation-capture-issue-22) |
 | 28 | **Feign trace** | [**The feign-trace verbs and what the recording says (issue #25)**](#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25) |
+| 29 | **Shared registry** | [**The Border dropdown when five Ka0s addons share one registry**](#29-the-border-dropdown-when-five-kas-addons-share-one-registry) |
 
 ---
 
@@ -393,6 +394,11 @@ second edge to catch.
   non-zero thickness too — it must also draw nothing, rather than falling back to the Ka0s edge. The
   addon has **two** LSM border settings and the rule is the same on both; the other is Tooltip → Bar
   border style, checked in §24.
+- **The closed Border style dropdown is flush with the controls beside it**, with no ~42px empty gap
+  on its left, and opening it still draws a per-row border preview on hover. A gap means
+  `lib.__PatchLSM30Border()` did not take effect. **This checks it with Multi Meters alone, which is
+  exactly the check that would have stayed green all the way through the defect §29 exists for** —
+  run §29 too whenever this one matters.
 - Six pages carry a **Defaults** button in the header (Frame, Header, Bars, Tooltip, Visibility,
   Columns); **Windows and Profiles do not.** Columns' button resets its block editor to the shipped
   catalog, ticked and ordered — it is **not** absent the way it used to be.
@@ -1811,6 +1817,45 @@ five, so run two.
   **`perf run CANCELED`**. A double-L in either is a copy of the string that did not come from the
   vendored payload.
 - No Lua errors at any point.
+
+---
+
+## 29. The Border dropdown when five Ka0s addons share one registry
+
+**Smoke, session 5. NOT YET RUN — no client was available when this step was written.**
+Run after this addon's `core/LSMPatch.lua` was deleted and `settings/OptionsSetup.lua`'s live wiring
+took the fixup over (`M4-07`), and again after the one deletion still outstanding — AbsorbTracker,
+last of the five, because its copy is the one that diverges (a callable `NS.ApplyLSMBorderPatch()`
+rather than a `PLAYER_LOGIN` frame). Five deletions, five commits, five bisect points if this goes
+wrong.
+
+**The thing under test is not Multi Meters.** AceGUI's widget registry is process-global: one slot
+named `LSM30_Border` shared by every addon in the client, Ka0s or not, and the highest version
+registered for the name owns it for the rest of the session. Five Ka0s addons each carried a private
+copy of the same wrapper, each registering one version above whatever it found, so the wrapper a
+Border dropdown actually got belonged to whichever addon the client loaded last. Nothing headless in
+any of the five repos could see it — each suite loads one copy, registers once and passes — and this
+addon's copy could not even be seen registering, because it did its work from a `PLAYER_LOGIN` frame
+that never fires under `lua tests/run.lua`.
+
+KickCD lost its private copy first (`M4-04`), then PanelMaster (`M4-05`), then ConsumableMaster
+(`M4-06`); Multi Meters is the fourth. So this run is also the evidence that one library-level
+registration dresses the dropdown in **four** addons that no longer carry their own, with one that
+still does loaded alongside them.
+
+1. Enable KickCD, PanelMaster, AbsorbTracker, ConsumableMaster and Multi Meters together, and log
+   in.
+2. Open each addon's Border dropdown in turn. This addon's are `/mm` → **Frame** → **Border style**
+   and **Tooltip** → **Bar border style**; both are `LSM30_Border` and both must look the same.
+3. Change the load order — disable and re-enable addons, or rename folders so a different one is
+   reached last — `/reload`, and walk the dropdowns again.
+
+**Expect:** in all five addons, the closed control's left edge is **flush** with the sliders and
+checkboxes stacked with it, with **no ~42px gap**, and opening it still draws the per-row hover
+previews. Nothing differs between the two passes. **Any dropdown that looks different from the
+others, or that changes when the load order changes, is the finding** — the whole point of moving
+the registration into LibKa0s is that the answer no longer depends on who loaded last. No Lua error
+at any point.
 
 ---
 

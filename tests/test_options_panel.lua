@@ -683,6 +683,54 @@ test("Options: AceGUI is resolved once and published for the page builders", fun
     assertEqual(inst.NS.AceGUI, inst.mocks.__libs["AceGUI-3.0"])
 end)
 
+test("Options: the shared LSM30_Border slot is re-registered once, above what AGSMW left in it",
+function()
+    -- red under: dropping `lib.__PatchLSM30Border()` from the live wiring below the
+    -- degradation fork in settings/OptionsSetup.lua.
+    --
+    -- This case is the whole reason core/LSMPatch.lua could sit on disk for a year
+    -- unproven. AceGUI's widget registry is process-global — one slot named
+    -- LSM30_Border shared by every addon in the client — and the private copy did its
+    -- registration from a PLAYER_LOGIN frame, which never fires headlessly. So the
+    -- suite loaded the file, registered nothing, and passed.
+    local seeded = function() return {} end
+    local inst = T.load{ mutate = function(m)
+        -- Model AGSMW having already claimed the slot, which MultiMeters.toc arranges
+        -- in the client: the widget XML comes in with the other libraries (:29), well
+        -- before settings/OptionsSetup.lua (:85). The kit's mock ships an EMPTY
+        -- registry — deliberately, so a dropdown maker sees LSM30_* as absent and falls
+        -- back — and with nothing in the slot the fixup correctly declines to wrap
+        -- anything, which would let this case pass over a call site that never ran.
+        local AceGUI = m.__libs["AceGUI-3.0"]
+        AceGUI.WidgetRegistry["LSM30_Border"]   = seeded
+        AceGUI.__widgetVersions["LSM30_Border"] = 20
+    end }
+
+    local AceGUI = inst.mocks.__libs["AceGUI-3.0"]
+    assertTrue(AceGUI.WidgetRegistry["LSM30_Border"] ~= seeded,
+        "the addon loaded without ever asking the library to fix the Border widget — "
+        .. "the closed dropdown keeps AGSMW's 42px preview tile and sits that far right "
+        .. "of every control stacked with it")
+    assertEqual(AceGUI:GetWidgetVersion("LSM30_Border"), 21,
+        "the wrapper must go in exactly ONE version above what it wrapped: lower and "
+        .. "AceGUI refuses it outright, higher and this addon is bidding against the "
+        .. "siblings instead of sharing one registration with them")
+
+    -- Idempotence is the half that only matters with siblings loaded. Every Ka0s addon
+    -- vendors its own copy of LibKa0s and LibStub hands all of them the same `lib`, so
+    -- five callers in one session must still produce ONE registration — otherwise the
+    -- outermost wrapper belongs to whoever loaded last, which is the defect this whole
+    -- move exists to end.
+    local lib = inst.mocks.LibStub("LibKa0s-Options-1.0", true)
+    local installed = AceGUI.WidgetRegistry["LSM30_Border"]
+    assertFalse(lib.__PatchLSM30Border(),
+        "a second call reported that it registered something; the sentinel is not holding")
+    assertTrue(AceGUI.WidgetRegistry["LSM30_Border"] == installed,
+        "a second call replaced the constructor — that is the wrapper stack, one level deep")
+    assertEqual(AceGUI:GetWidgetVersion("LSM30_Border"), 21,
+        "a second call bumped the version, so N addons would leave the slot at N+20")
+end)
+
 -- ---------------------------------------------------------------------------
 -- Tabs
 -- ---------------------------------------------------------------------------

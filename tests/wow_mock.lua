@@ -2184,7 +2184,8 @@ local function build()
     -- LibSharedMedia-3.0. Real enough to answer a Fetch: modules/Window.lua and
     -- modules/Row.lua resolve every font, bar texture and border through it, and a
     -- nil library sends them all down the fallback branch, leaving the LSM path
-    -- untested. core/LSMPatch.lua registers the shipped monospace font into this.
+    -- untested. core/MediaSetup.lua registers the shipped monospace face into this,
+    -- through LibKa0s-Media-1.0's own RegisterLSM.
     local media = { font = {}, statusbar = {}, border = {}, background = {}, sound = {} }
     libs["LibSharedMedia-3.0"] = {
         MediaType = { FONT = "font", STATUSBAR = "statusbar", BORDER = "border",
