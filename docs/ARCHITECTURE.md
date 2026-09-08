@@ -517,7 +517,7 @@ ratified row in the register above carrying a re-check trigger. What it does not
 nothing anywhere remarks on — "the count sitting in a bundle manifest that no document reads". This
 table is the remark, and it is why an audit **MUST NOT** re-file `layout-§1` against any file in it.
 
-Eight files, all of them suites, measured 2026-09-09 with
+One file, measured 2026-09-09 with
 
 ```
 git ls-files '*.lua' | grep -v '^libs/' | grep -v '^tests/_kit/' | xargs wc -l | sort -rn
@@ -525,39 +525,27 @@ git ls-files '*.lua' | grep -v '^libs/' | grep -v '^tests/_kit/' | xargs wc -l |
 
 | File | Lines (2026-09-09) | Disposition |
 |---|---|---|
-| `tests/test_window.lua` | 3159 | Issue [#29](https://github.com/tusharsaxena/MultiMeters/issues/29) — peels behind `modules/Window.lua`, along the seam that file took |
-| `tests/test_tooltip.lua` | 3054 | Issue [#28](https://github.com/tusharsaxena/MultiMeters/issues/28) — peels behind `modules/Tooltip.lua` |
-| `tests/wow_mock.lua` | 2270 | Issue [#34](https://github.com/tusharsaxena/MultiMeters/issues/34) — the secret simulator and the frame model out to siblings |
-| `tests/test_row.lua` | 1960 | Issue [#33](https://github.com/tusharsaxena/MultiMeters/issues/33) — peels behind `modules/Row.lua` |
-| `tests/test_export.lua` | 1887 | Issue [#32](https://github.com/tusharsaxena/MultiMeters/issues/32) — peels behind `modules/Export.lua` |
-| `tests/test_aggregator.lua` | 1840 | Issue [#30](https://github.com/tusharsaxena/MultiMeters/issues/30) — peels behind `modules/Aggregator.lua` |
-| `tests/test_diagnostics.lua` | 1838 | Issue [#31](https://github.com/tusharsaxena/MultiMeters/issues/31) — peels behind `core/Diagnostics.lua` |
-| `tests/test_schema.lua` | 1573 | Issue [#27](https://github.com/tusharsaxena/MultiMeters/issues/27) — peels behind `settings/Schema.lua` |
+| `tests/test_tooltip.lua` | 3054 | Issue [#28](https://github.com/tusharsaxena/MultiMeters/issues/28) — peels behind `modules/Tooltip.lua`, three ways, along the seam that file took |
 
 **The line counts are dated because they drift, and nothing asserts them.** What
 `tests/test_layout_cap.lua` asserts is the *membership* of this table, in both directions: a file that
 crosses 1500 and is not listed here turns the suite red, and so does a row for a file that has fallen
 back under the cap or been deleted. A figure in this column is a measurement, not a claim about today.
 
-**The seven source files are peeled, and that is why they are gone from this table rather than
-re-dated.** The 2026-09-07 cycle ruled a split out (`03_SPEC.md` § C22 non-goals) and left the
-disposition as its deliverable; that cycle is closed, and the 2026-09-09 remediation took every seam
-those dispositions named. `settings/Schema.lua` became `Schema_Compose` / `Schema` / `Schema_Paths`,
-`modules/Tooltip.lua` shed its builders and its line drawing, `modules/Window.lua` its header band and
-its placement, `modules/Aggregator.lua` identity mode and the preview, `core/Diagnostics.lua` one file
-per long-lived probe, `modules/Export.lua` the modal, and `modules/Row.lua` the name cell. Each row
-left this table the moment its file fell under the cap, which is the second direction the suite
-asserts.
+**Everything else is peeled, which is why this table is one row rather than fifteen.** The seven
+source files went first, each along the seam its own issue had already named, and the suites followed
+the modules they mirror — `tests/test_window.lua` 3159 → 1240 behind `Window_Header` and
+`Window_Placement`, `tests/wow_mock.lua` 2270 → 1466 with the secret simulator and the frame model out
+to `mock_secrets.lua` and `mock_frame.lua`, `tests/test_diagnostics.lua` 1838 → 432 with one suite per
+probe. A test file's seam is not its own to choose: it follows the module's, so a reader who opens
+`modules/Tooltip_Builders.lua` knows which suite covers it.
 
-**The suites are what remains, and they peel behind the modules they mirror.** A test file's seam is
-not its own to choose: it follows the module's, so that a reader who opens `modules/Tooltip_Builders.lua`
-knows which suite covers it. That is why each row above still names the module's issue rather than one
-of its own.
-
-**The 1000–1500 band is on notice, not in breach**: `tests/test_provider.lua` (1359),
-`settings/Schema.lua` (1350), `settings/Schema_Compose.lua` (1285) and `tests/test_database.lua` (1121)
-are in it. The two Schema files entered it by peel rather than by growth, which is the band working as
-intended — a file that lands at 1350 has 150 lines of headroom and a reader should know it.
+**The 1000–1500 band is on notice, not in breach.** It is now the busiest it has been, because a peel
+lands a file wherever the seam puts it and several landed high: `tests/test_window_header.lua` (1421),
+`tests/wow_mock.lua` (1466), `tests/test_row.lua` (1456), `settings/Schema.lua` (1350),
+`tests/test_provider.lua` (1359), `settings/Schema_Compose.lua` (1285), `tests/test_export.lua` (1275),
+`tests/test_aggregator.lua` (1255), `tests/test_window.lua` (1240) and `tests/test_database.lua` (1121).
+A file at 1456 has 44 lines of headroom, and the band exists so that whoever next edits one knows it.
 
 ### Hard-coded texture paths
 
