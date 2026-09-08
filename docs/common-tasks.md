@@ -409,7 +409,10 @@ Only worth doing for a genuinely new group of settings; five of the nine existin
 edits the active window.
 
 ```lua
-local addonName, NS = ...
+-- `_` and not `addonName`: the first vararg is the folder name, and a page file has no use
+-- for it. Ten files in this addon do read it and spell it out; every other file spells it
+-- `_`, and `luacheck` reports the difference since `M4c-06` removed the blanket that hid it.
+local _, NS = ...
 local L = NS.L
 local PAGE = "<pagekey>"
 

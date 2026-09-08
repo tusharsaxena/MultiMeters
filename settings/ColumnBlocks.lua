@@ -42,7 +42,7 @@
 -- when it was wired -- a closure over the index made the visible glyph toggle a
 -- different statistic than the one clicked.
 
-local addonName, NS = ...   -- luacheck: ignore 211/addonName
+local _, NS = ...
 
 local L = NS.L
 local H = NS.Helpers or {}
@@ -57,6 +57,18 @@ NS.BLOCK_STRIDE = NS.BLOCK_HEIGHT + 4
 
 -- The same two textures ConsumableMaster's priority list wears, so a player who
 -- runs both reads one glyph vocabulary rather than two.
+--
+-- AND THE CATALOG DOES CARRY A PAIR. `circle-check` and `ban` are both in
+-- LibKa0s-Media's ICONS, so this is a DEVIATION from library-stack-§8 -- the
+-- rule that says a mark the addon needs comes from the catalog -- and not a gap
+-- in the art. It is ratified as one: docs/ARCHITECTURE.md's deviation register
+-- carries the row, with the colour and degraded-install arguments written out
+-- and a re-check trigger that names what ends it.
+--
+-- The short version is the parity line above, and it is the argument that binds.
+-- Moving these two alone would not reduce the deviation; it would turn a shared
+-- glyph vocabulary into a split one, which is worse than the state being
+-- ratified. So they move when ConsumableMaster's do, and not before.
 local ENABLED_TEX  = "Interface\\RaidFrame\\ReadyCheck-Ready"
 local DISABLED_TEX = "Interface\\RaidFrame\\ReadyCheck-NotReady"
 local HANDLE_ICON  = "segment"

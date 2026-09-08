@@ -30,7 +30,7 @@
 -- Resolve() — a number is an id, a string is a name — rather than making the
 -- CLI look an id up first and pass one it never wanted to know about.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Const = NS.Constants
 local MSG   = Const.MSG

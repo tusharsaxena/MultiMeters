@@ -32,21 +32,25 @@
 -- because the destructive controls this page hosts are the library's, not ours.
 --
 -- ---------------------------------------------------------------------------
--- WHY THIS PAGE DOES NOT USE SetRenderer
+-- SetRenderer DRAWS THIS PAGE, AND ONE MESSAGE FINISHES THE JOB
 -- ---------------------------------------------------------------------------
 --
--- SetRenderer's contract is "draw once, and again when the library says you are
--- dirty", which is right for a page whose widgets the library owns. Here the
--- widget tree belongs to AceConfigDialog, which reuses it and re-reads the
--- current profile on every Open. So this page re-Opens on every show — cheap,
--- and the only way the profile list reflects a switch made from the slash
--- command or from another addon's copy of the same AceDB.
+-- This page goes through H.SetRenderer exactly like the other eight, and the
+-- reason is the combat refusal. The Blizzard AddOns sidebar reaches a canvas
+-- without going through OpenOptionsPanel, so a page with no guard of its own is
+-- reachable mid-pull — and that guard is the library's, inline in SetRenderer,
+-- so a page that hand-rolls its own copy has a refusal that drifts from the
+-- other eight the first time the library's wording or behaviour moves.
 --
--- That costs the combat refusal SetRenderer would have given, so it is spelled
--- out below: the Blizzard AddOns sidebar reaches a canvas without going through
--- OpenOptionsPanel, so a page with no guard of its own is reachable mid-pull.
+-- SetRenderer's contract is "draw once, and again when the library says you are
+-- dirty", and that is one draw short here: the widget tree belongs to
+-- AceConfigDialog, which re-reads the active profile only when the dialog is
+-- fed again. The missing draw is a profile switch made from somewhere else —
+-- the slash command, a reset, a copy — and the PROFILE_CHANGED listener at the
+-- foot of Build supplies exactly that. The page used to buy the same freshness
+-- by re-Opening on EVERY show, and it paid for it with the refusal above.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = NS.L
 
@@ -90,20 +94,29 @@ local function Build(mainCategory)
     container.frame:SetPoint("TOPLEFT",     ctx.body, "TOPLEFT",      8, -8)
     container.frame:SetPoint("BOTTOMRIGHT", ctx.body, "BOTTOMRIGHT", -8,  8)
 
-    ctx.panel:SetScript("OnShow", function()
-        -- The refusal SetRenderer would otherwise have provided. Closing the
-        -- window is what makes it legible; a silently blank page reads as a bug.
-        if InCombatLockdown and InCombatLockdown() then
-            if SettingsPanel and SettingsPanel.Close then
-                SettingsPanel:Close()
-            elseif HideUIPanel and SettingsPanel then
-                HideUIPanel(SettingsPanel)
-            end
-            if NS.Print then NS.Print(L["Cannot open settings during combat."]) end
-            return
-        end
+    H.SetRenderer(ctx, function()
         AceConfigDialog:Open("MultiMeters-Profiles", container)
     end)
+
+    -- The draw SetRenderer's dirty rule cannot see for itself. Every path that
+    -- makes the active profile a different thing lands on core/Database.lua's
+    -- single PROFILE_CHANGED emitter, and H.RefreshPanel is the library's own
+    -- seam for a page that repaints off its host's bus rather than off a library
+    -- widget's set(): shown, it re-renders now; hidden, it is marked dirty and
+    -- re-renders on its next show. Nothing extra is needed for a change made ON
+    -- this page — AceConfigDialog re-Opens the container itself after every
+    -- control it activates.
+    --
+    -- A PRIVATE bus target rather than NS: CallbackHandler keys callbacks by
+    -- (message, target), so a second PROFILE_CHANGED receiver registered on the
+    -- shared addon object would silently clobber the first (architecture-§4,
+    -- anti-pattern #32).
+    local bus = NS.NewBusTarget and NS.NewBusTarget()
+    if bus then
+        bus:RegisterMessage(NS.Constants.MSG.PROFILE_CHANGED, function()
+            H.RefreshPanel(ctx, true)
+        end)
+    end
 
     return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, L["Profiles"])
 end

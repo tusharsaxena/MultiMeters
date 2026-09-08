@@ -35,7 +35,7 @@
 -- locales/ loads FIRST in the TOC, ahead of core/, so this file bootstraps the
 -- namespace itself.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = setmetatable({}, {
     __index = function(_, k) return k end,
@@ -870,8 +870,6 @@ L["Available settings"] = "Available settings"
 L["Setting not found: %s"] = "Setting not found: %s"
 L["Invalid value for %s"] = "Invalid value for %s"
 L["Allowed values: %s"] = "Allowed values: %s"
-L["Cannot open settings during combat."] =
-    "cannot open settings during combat — Blizzard's category switch is protected"
 L["Windows are locked."] = "Windows are locked."
 L["Windows are unlocked."] = "Windows are unlocked."
 L["Test mode on."] = "Test mode on."

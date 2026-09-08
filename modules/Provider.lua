@@ -70,7 +70,7 @@
 -- `amountPerSecond` ships on the same source row as `totalAmount`, so one
 -- DamageDone read fills both halves of the Damage column (design §3).
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Provider = NS:NewModule("Provider", "AceEvent-3.0")
 NS.Provider = Provider

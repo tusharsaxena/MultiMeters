@@ -80,7 +80,7 @@
 -- reads it needs already exist on the provider: GetColumn enumerates the enemy
 -- sources, and GetSourceDetail hands back one enemy's spell list.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Targets = {}
 NS.Targets = Targets

@@ -20,7 +20,6 @@ local assertFalse = T.assertFalse
 local assertNil   = T.assertNil
 
 local CURRENT = 1   -- Enum.DamageMeterSessionType.Current, as the mock reports it
-local ALPHA_GUID = "Player-1-0000000A"
 
 --- A loaded instance with one session installed for every stat, plus the
 --- restriction flipped on when asked for.
@@ -1056,13 +1055,9 @@ end)
 --
 -- The Current session carries the real figure for the same deaths, and the
 -- recap ids are identical across the two in the same order (measured over three
--- live runs). So the offsets are looked up there, keyed on the id.
-
-local function deathsSession(inst, sessionType, rows)
-    inst.mocks.setSession(sessionType, inst.mocks.Enum.DamageMeterType.Deaths, {
-        combatSources = rows, maxAmount = 0, totalAmount = 0,
-    })
-end
+-- live runs). That was the reasoning behind attempt two. The block below
+-- supersedes it: measured on a live client, the Current session held no deaths
+-- to join to at all, so nothing reads the field now (core/Diagnostics.lua:677).
 
 -- ---------------------------------------------------------------------------
 -- Segment offsets — the anchor the client does not supply
@@ -1185,9 +1180,19 @@ test("The projection's field list and collectSource cannot drift apart", functio
     -- stale the first time a field is added to one and not the other. Scanned
     -- out of the source, because a drift would fail no behavioural test — it
     -- would just quietly under-report.
-    local path = "modules/Provider.lua"
-    local fh = assert(io.open(path, "r"))
-    local text = fh:read("*a")
+    -- Rooted through T.root, like codeLines at the top of this file. A bare
+    -- relative path resolves against the runner's cwd, so this scan worked
+    -- only for as long as the runner happened to be started from the repo
+    -- root; from any other directory io.open returned nil and the case
+    -- died on the assert, reporting a missing file as a drift.
+    local relPath = "modules/Provider.lua"
+    local fh = assert(io.open(T.root .. "/" .. relPath, "r"))
+    -- Normalised, because this scan is about the source, not about how the
+    -- line ends. The pattern below anchors on "\nend\n"; against a correctly
+    -- checked-out CRLF working tree that never matches, the body comes back
+    -- nil, and the case fails claiming a drift that is not there. The EOL
+    -- gate is what has an opinion about line endings; this case does not.
+    local text = fh:read("*a"):gsub("\r\n", "\n")
     fh:close()
 
     -- The WHOLE function, not the literal alone: `sourceCreatureID` is read into

@@ -26,7 +26,7 @@ fix the master-controls set and the font, border and bar blocks across the whole
 
 Almost none of the panel machinery is in this repo. The shell, the header, the lazy Defaults button,
 the five widget makers, the tab strip, the page banner, the flow engine, the landing-page builder and
-the always-shown scrollbar patch belong to `LibKa0s-Options-1.0` (`libs/LibKa0s/Options*.lua`, v1.25.0
+the always-shown scrollbar patch belong to `LibKa0s-Options-1.0` (`libs/LibKa0s/Options*.lua`, v1.26.0
 bundled), and so do the five schema composers (`OptionsCompose.lua`). What lives under `settings/` is only the part that is this addon's: **where a value lives,
 which rows belong to which page and which tab, what the window picker does, and what a reset has to
 clear that no schema row owns.**
@@ -128,8 +128,12 @@ Four things about how this addon calls them are worth knowing before editing a b
   that costs nothing a player can reach, because a degraded install has neither a settings panel nor
   a schema CLI.
 - **Two `LSM30_*` pickers survive outside a composer call, and they are not a group.**
-  `grep -rn 'LSM30_Font\|LSM30_Border\|LSM30_Statusbar' settings/` returns `settings/Schema.lua:1553`
-  (`window.barTexture`) and `:1561` (`window.font`), and neither is composer-able. They are two of the
+  `grep -rn 'LSM30_Font\|LSM30_Border\|LSM30_Statusbar' settings/` returns two DECLARATIONS —
+  `settings/Schema.lua:1565` (`window.barTexture`) and `:1573` (`window.font`) — and neither is
+  composer-able. The other hits are prose: three lines of the comment above
+  `settings/OptionsSetup.lua`'s `lib.__PatchLSM30Border()` call, which names `LSM30_Border` because
+  that is the widget it argues about. No `dialogControl` there, and nothing for this bullet to
+  account for. They are two of the
   four **broadcast meta rows** on Frame → General, under the *All surfaces* heading: each one *writes*
   a value into every surface that has a setting of that kind and is then read by nothing, which is
   what the note above them at `settings/Schema.lua:1512-1522` says at length. `options-ui-§16` fixes
@@ -385,7 +389,7 @@ visibly different from every other AceGUI widget on the player's screen, and onl
 
 `H.SetRenderer(ctx, fn)` hands both problems to the library, which owns **when** a page draws: on
 first show, and again after a refresh marked it dirty while it was hidden. Every page file in this
-addon uses it. Exactly one does not — see Profiles below.
+addon uses it, the Profiles page included — see below for the one thing it needs on top.
 
 ### Why the Defaults button is lazy for reason two only
 
@@ -419,18 +423,14 @@ addon helpfully queued it — is a window nobody asked for at a moment nobody wa
 addon it would land on top of the meter the player was reading. The refusal prints one gray notice
 line and stops.
 
-Three places re-state the guard, and each is a real hole rather than caution:
+Two places re-state the guard, and each is a real hole rather than caution:
 
-1. **`settings/Profiles.lua`'s `OnShow`.** That page does not use `SetRenderer` (below), so it gets
-   none of the library's refusal. The Blizzard AddOns sidebar reaches a canvas **without** going
-   through `NS.OpenOptionsPanel`, so a page with no guard of its own is reachable mid-pull. Its
-   handler closes the Settings window and prints — a silently blank page reads as a bug.
-2. **`settings/Columns.lua`'s `commit()`.** The library already refuses to *render* a page under
+1. **`settings/Columns.lua`'s `commit()`.** The library already refuses to *render* a page under
    lockdown, so the Columns page cannot normally be *opened* mid-pull — but a panel left open when a
    pull **starts** is still clickable. Every column mutation therefore re-checks
    `InCombatLockdown()` and prints "Columns cannot be changed during combat." rather than rebuilding
    a frame whose cells are holding secret values.
-3. **`modules/Tooltip.lua`'s `hideInCombat`**, which is a preference rather than a guard, and uses
+2. **`modules/Tooltip.lua`'s `hideInCombat`**, which is a preference rather than a guard, and uses
    `UnitAffectingCombat("player")` rather than `InCombatLockdown()` because the two differ at both
    ends of a pull and the setting is a statement about the player.
 
@@ -625,13 +625,20 @@ Ace window. An AceGUI `SimpleGroup` is parented to `ctx.body` and `AceConfigDial
 which lands the widgets inside this canvas instead of opening a second floating window over the
 settings panel.
 
-**It does not use `SetRenderer`,** and that is deliberate. `SetRenderer`'s contract is "draw once,
-and again when the library says you are dirty", which is right for a page whose widgets the library
-owns. Here the widget tree belongs to AceConfigDialog, which reuses it and re-reads the current
-profile on every `Open`. So the page re-`Open`s on every show — cheap, and the only way the profile
-list reflects a switch made from the slash command or from another addon's copy of the same AceDB.
-The cost is the combat refusal `SetRenderer` would have given, which is why the guard is spelled out
-in the page's own `OnShow`.
+**It draws through `SetRenderer`, like every other page.** That is where its combat refusal comes
+from: the Blizzard AddOns sidebar reaches a canvas without going through `NS.OpenOptionsPanel`, and a
+page carrying its own copy of the refusal has one that drifts from the other eight the moment the
+library's moves. This page hand-rolled that copy until the `CX03` sweep, and paid for it by being the
+one page the library did not draw.
+
+`SetRenderer` is one draw short here, though, and the shortfall is real: the widget tree belongs to
+AceConfigDialog, which re-reads the active profile only when the dialog is fed again, so "draw once,
+and again when the library says you are dirty" would show a profile switch made from the slash
+command as a stale profile list. The page therefore takes a private bus target and calls
+`H.RefreshPanel(ctx, true)` on `PROFILE_CHANGED` — the library's own seam for a page that repaints
+off its host's message bus. Shown, it redraws now; hidden, it is marked dirty and redraws on its next
+show. Changes made *on* the page need nothing: AceConfigDialog re-`Open`s the container itself after
+every control it activates.
 
 ---
 

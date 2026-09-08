@@ -16,6 +16,50 @@ badge and any count quoted in the docs must agree with it.
 - loadorder: the LibKa0s seams load in the order their headers pin
 - loadorder: core/MultiMeters.lua loads after every core/ setup file
 
+### test_layout_cap.lua (3)
+
+- layoutcap: every authored file over 1500 lines is named in the ARCHITECTURE.md census
+- layoutcap: no census row outlives the breach it records
+- layoutcap: every census row carries a disposition that can be followed
+
+### test_complexity_register.lua (4)
+
+- complexityregister: the stated folder tally matches the table under it
+- complexityregister: every row points at a file that still exists
+- complexityregister: no function is entered twice
+- complexityregister: every disposition can be followed
+
+### test_deviation_register.lua (1)
+
+- every deviation id the register cites is assigned by a bundle in docs/audits/
+
+### test_texture_paths.lua (5)
+
+- texturepaths: every hard-coded path in authored source is named in the ARCHITECTURE.md census
+- texturepaths: no census row outlives the path it records
+- texturepaths: every census row carries a disposition that can be followed
+- texturepaths: the deviation register carries the row the ColumnBlocks sites point at
+- texturepaths: the register row's ColumnBlocks citation names the lines the pair is on
+
+### test_docmap.lua (1)
+
+- doc map: every Tier 2 row agrees with what docs/ holds
+
+### test_doc_structure.lua (5)
+
+- docs/ARCHITECTURE.md carries the ten sections documentation-§3 names
+- every mandated hub section that has a topic doc has spilled into it
+- every anchor pointing into docs/ARCHITECTURE.md resolves to a heading
+- the player-facing history has the two homes documentation-§1 allows, and no third
+- README.md's top-level sections are the ones documentation-§1 names, in its order
+
+### test_lintconfig.lua (4)
+
+- lintconfig: .luacheckrc sets no top-level ignore
+- lintconfig: .luacheckrc switches no warning class off wholesale
+- lintconfig: every files[...] ignore is narrowed to a file or a name
+- lintconfig: no source file carries a bare inline luacheck ignore
+
 ### test_constants.lua (23)
 
 - Constants: NS.Const and NS.Constants are the same table
@@ -212,7 +256,7 @@ badge and any count quoted in the docs must agree with it.
 - Database: v12 -> v13 leaves a window that never stored the toggle alone
 - Database: v12 -> v13 turns the control class-colour flags into modes
 
-### test_diagnostics.lua (60)
+### test_diagnostics.lua (75)
 
 - Diagnostics: the report is published and reachable
 - Diagnostics: `/mm debug diag` reaches it without the debug log
@@ -274,6 +318,21 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: a candidate that DOES vary is called out as worth trying
 - Diagnostics: the audit says how many rows it sampled
 - Diagnostics: a missing isLocalPlayer is NOT called a degraded key
+- Diagnostics: the feign report is published and reachable
+- Diagnostics: the feign trace records nothing until it is armed
+- Diagnostics: an armed trace records the cast and the unit token it arrived under
+- Diagnostics: an armed trace records what prune saw and what it decided
+- Diagnostics: the entry that simply LEFT THE GROUP says so, instead of going quiet
+- Diagnostics: an evicted entry still reads noted or down, never <evicted>
+- Diagnostics: arming a trace clears the one before it
+- Diagnostics: an empty armed trace is reported as a FINDING, not as a failure
+- Diagnostics: the feign report prints the group beside the trace
+- Diagnostics: the feign report survives a client with none of the unit APIs
+- Diagnostics: a secret GUID costs one field and not the line
+- Diagnostics: a judge row for a GUID no cast line named is counted, not recorded
+- Diagnostics: a judge row for a GUID a cast line named is recorded
+- Diagnostics: a cast line survives a full ring of judge rows
+- Diagnostics: the ring keeps its newest entries and reads them oldest first
 
 ### test_defaults.lua (24)
 
@@ -331,13 +390,14 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: NS.LIBKA0S_MISSING is set on BOTH paths, not only the degraded one
 - CoreSetup: all five seams append to the shared clause rather than re-spelling it
 
-### test_perfsetup.lua (19)
+### test_perfsetup.lua (20)
 
 - PerfSetup: NS.Perf is the library instance, with the gate as a plain boolean field
 - PerfSetup: the capture ring is a SECOND SavedVariables global, outside the AceDB tree
 - PerfSetup: the capture record is stamped from the TOC manifest
 - PerfSetup: the manifest is read through NS.Version, never by naming C_AddOns
 - PerfSetup: no locale table is handed to the library
+- PerfSetup: the descriptor names the FOLDER and leaves the close control to the library
 - PerfSetup: every declared bucket is reached by a real bracket in the addon's source
 - PerfSetup: every bracket in the addon names a bucket the descriptor declares
 - PerfSetup: the bucket nesting is declared, so a reader never sums a parent with a child
@@ -1472,7 +1532,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (34)
+### test_slash.lua (36)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1503,13 +1563,15 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `toggle` reaches the registry and reports its refusal
 - Slash: `reset-positions` moves every window and says how many
 - Slash: `debug on` / `debug off` set the logging flag; a bare `debug` moves the window
+- Slash: `debug feign` with no argument prints the recording
+- Slash: `debug feign of` names the rejected argument and leaves the trace alone
 - Slash: registration goes through AceConsole, on both tokens
 - Slash: both registered tokens reach the SAME dispatcher
 - Slash: no raw SLASH_* global is claimed anywhere
 - Slash: Register is a no-op rather than a raise when there is no AceConsole
 - Slash: /mm list heads each block with the page AND the tab
 
-### test_options_panel.lua (34)
+### test_options_panel.lua (38)
 
 - Options: General is the FIRST page, above Windows
 - Options: every window page is marked as nested, and the two that are not are not
@@ -1529,6 +1591,9 @@ badge and any count quoted in the docs must agree with it.
 - Options: opening the panel is REFUSED under combat lockdown, with a notice
 - Options: a refused open is NOT deferred and replayed when combat ends
 - Options: a page reached from the Blizzard sidebar mid-combat refuses to render
+- Options: no settings page wires its own OnShow
+- Options: the Profiles page refuses to render mid-combat, through the library's guard
+- Options: a profile switch re-opens the Profiles page's AceConfigDialog
 - Options: a widget's set() routes through NS.SetByPath
 - Options: a checkbox's set() routes through NS.SetByPath too
 - Options: applyDefault routes through NS.SetByPath, not around it
@@ -1538,6 +1603,7 @@ badge and any count quoted in the docs must agree with it.
 - Options: CreateOptionsPanel is idempotent
 - Options: CreateOptionsPanel runs the schema validator
 - Options: AceGUI is resolved once and published for the page builders
+- Options: the shared LSM30_Border slot is re-registered once, above what AGSMW left in it
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip
 - Panel: switching tabs re-renders without leaving the previous tab's widgets behind
@@ -1610,21 +1676,36 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: the export modal refuses to open with no dropdown widget
 - Degraded: the addon still enables end to end with no library
 
+### test_surface_parity.lua (1)
+
+- parity: the Options stub carries every public member of the live Helpers surface
+
+### test_eol.lua (1)
+
+- eol: every tracked file carries the terminator .gitattributes declares for it
+
 ## Totals
 
 | Suite | Cases |
 |-------|------:|
 | test_loadorder.lua | 7 |
+| test_layout_cap.lua | 3 |
+| test_complexity_register.lua | 4 |
+| test_deviation_register.lua | 1 |
+| test_texture_paths.lua | 5 |
+| test_docmap.lua | 1 |
+| test_doc_structure.lua | 5 |
+| test_lintconfig.lua | 4 |
 | test_constants.lua | 23 |
 | test_secrets.lua | 38 |
 | test_compat.lua | 33 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 56 |
-| test_diagnostics.lua | 60 |
+| test_diagnostics.lua | 75 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
-| test_perfsetup.lua | 19 |
+| test_perfsetup.lua | 20 |
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
@@ -1648,9 +1729,11 @@ badge and any count quoted in the docs must agree with it.
 | test_minimap.lua | 17 |
 | test_schema.lua | 63 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 34 |
-| test_options_panel.lua | 34 |
+| test_slash.lua | 36 |
+| test_options_panel.lua | 38 |
 | test_columnblocks.lua | 17 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 27 |
-| **Total** | **1487** |
+| test_surface_parity.lua | 1 |
+| test_eol.lua | 1 |
+| **Total** | **1534** |

@@ -193,6 +193,28 @@ local shared = loadInstance()
 local SUITES = {
     -- structure and the shared vocabulary
     "test_loadorder",
+    -- The two size registers, side by side because they are the same bargain twice:
+    -- both read a table out of docs/ARCHITECTURE.md, both check membership and
+    -- disposition rather than the figures beside them, and neither runs the tool that
+    -- produced the measurement -- `wc` in one case, `lizard` in the other. A suite that
+    -- ran lizard would be the commit-time complexity gate performance-§10 forbids.
+    "test_layout_cap",
+    "test_complexity_register",
+    "test_deviation_register",
+    -- The third register, and the same bargain a third time: it reads the
+    -- "Hard-coded texture paths" table out of docs/ARCHITECTURE.md and checks
+    -- membership both ways. It differs from the two above in ONE thing, and the
+    -- difference is deliberate: its scope drops `tests/` entirely, because
+    -- library-stack-§8 is about what a player sees drawn and a path in a fixture
+    -- is an assertion about a string. layout-§1's cap binds test files and this
+    -- rule does not.
+    "test_texture_paths",
+    "test_docmap",
+    "test_doc_structure",
+    -- The suppression gate, beside the two doc registers because it is the same bargain a
+    -- third time: it reads `.luacheckrc` as Lua and refuses the blanket `ignore` `M4c-06`
+    -- removed, so a 0/0 lint stays a statement about the code.
+    "test_lintconfig",
     "test_constants",
     "test_secrets",
     "test_compat",
@@ -237,6 +259,17 @@ local SUITES = {
     "test_columns",
     -- and the whole addon with LibKa0s absent
     "test_degraded",
+    -- The stub-versus-live gate that sits beside it: test_degraded asks whether the stub
+    -- answers the calls this addon makes TODAY; this one asks whether it answers the whole
+    -- surface the library publishes. Two directions, and only the second one moves when the
+    -- library grows a member the page files have not adopted yet.
+    "test_surface_parity",
+    -- The kit has shipped one suite of its own since revision 15: the working-tree
+    -- line-ending gate, over every path `git ls-files` reports. It lives where the
+    -- rest of the kit lives rather than being re-typed into nine repositories, so it
+    -- is declared with its own `dir`. Kit.assertSuiteInventory fails the run until it
+    -- is declared, so it cannot arrive with a re-vendor and then quietly run nothing.
+    { name = "test_eol", dir = root .. "/tests/_kit/" },
 }
 
 -- ---------------------------------------------------------------------------
@@ -246,6 +279,26 @@ local SUITES = {
 -- Kit.expose merges the registry and every assertion into this table, so the
 -- suites reach `T.test`, `T.assertEqual`, `T.skip`, `T.assertSurfaceParity` and
 -- the rest off the same global they reach `T.NS` off.
+-- Where Kit.assertSurfaceParity's by-name form looks the LIVE half up (kit 15, vendored by
+-- M4-01), for tests/test_surface_parity.lua.
+--
+-- Registered explicitly, and the explicitness is the point. Kit.expose auto-wires the mock's
+-- LibStub, which is right for a repo whose stubs mirror LIBRARY TABLES; this addon's Options stub
+-- mirrors an INSTANCE instead -- what `lib:New(descriptor)` returned, decorated in place by the
+-- page files. Left to the auto-wiring, "LibKa0s-Options-1.0" resolves the four-member library
+-- table (LAYOUT, New, PatchAlwaysShowScrollbar, STRINGS) rather than the surface settings/*.lua
+-- actually calls, and the parity case goes red naming three members no stub was ever meant to
+-- carry. Watched, exactly that way, before this line existed.
+--
+-- Set BEFORE Kit.expose, which is what makes it stick: expose registers a source only when none is
+-- registered yet, precisely so a runner like this one keeps its own.
+--
+-- Only Options is named. The other five seams are not compared by name, and
+-- tests/test_surface_parity.lua's header gives the reason for each.
+Kit.setSurfaceSource{
+    ["LibKa0s-Options-1.0"] = shared.NS.Helpers,
+}
+
 _G.MULTIMETERS_TEST = Kit.expose{
     root  = root,
     -- the shared instance

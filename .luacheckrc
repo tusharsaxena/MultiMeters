@@ -1,14 +1,36 @@
 std = "lua51"
 max_line_length = false
 codes = true
--- libs/ is vendored third-party code; tests/_kit/ is a vendored harness; the docs/audits and
+-- libs/ is vendored third-party code, upstreamed from the LibKa0s repo and linted there, not here.
+-- tests/_kit/ is the same fact one level down: it is a byte copy of the library's testkit/, linted
+-- in LibKa0s as source, and linting the copy too would report every finding twice while letting the
+-- copy drift green as the original went red -- the one state the vendor-sync gate exists to make
+-- impossible. Everything else under tests/ is ours and is linted (lint-§1). The docs/audits and
 -- docs/reviews bundles are frozen snapshots and must never be "fixed" by a lint pass.
-exclude_files = { "libs/", "tests/", "docs/audits/", "docs/reviews/", "_dev/" }
-ignore = {
-  "212/self",       -- unused argument self
-  "212/event",      -- unused argument event
-  "211/addonName",  -- `local addonName, NS = ...` bootstrap header; addonName often unused
-}
+exclude_files = { "libs/", "tests/_kit/", "docs/audits/", "docs/reviews/", "_dev/" }
+
+-- NO TOP-LEVEL `ignore`, and none is coming back (lint-§1, `M4-11`). This file carried
+-- `ignore = { "212/self", "212/event", "211/addonName" }` until `M4c-06`. Every entry named
+-- something that exists in this tree, but a top-level ignore reaches all 93 files, so it silenced
+-- those codes in every file that has no business producing them too -- and one of the three was
+-- silencing thirty-two live defects rather than a convention.
+--
+-- Removing the three lines reported EIGHTY-FOUR findings: fifty-two `212/self`, thirty-two
+-- `211/addonName`, and -- worth stating -- zero `212/event`, an entry that had been earning its
+-- place in the config by naming a warning this repository does not produce. The thirty-two
+-- `211/addonName` were fixed at source, not moved into a narrower suppression: thirty-two files
+-- opened `local addonName, NS = ...` over a folder name they never read and now open
+-- `local _, NS = ...`, which is what core/PoolSetup.lua already spelled and what ConsumableMaster
+-- does. Exactly TEN files do read it -- CoreSetup, DebugLogSetup, EnvSetup, MediaSetup,
+-- MultiMeters, Namespace, PerfSetup, modules/Export, modules/Minimap and settings/Schema -- each
+-- handing it to a vendored library or a registry that cannot infer which folder it was copied
+-- into, and those keep the name. A thirty-third file, settings/ColumnBlocks.lua, was hiding the
+-- same defect behind an inline `-- luacheck: ignore 211/addonName` rather than behind the blanket;
+-- it is fixed the same way. core/CoreSetup.lua carried a `-- luacheck: ignore addonName` over a
+-- header that DOES read the name, so the directive was silencing nothing and is gone.
+--
+-- The fifty-two that remain are below, as per-file `files[...]` stanzas in luacheck's
+-- `<code>/<variable>` form. tests/test_lintconfig.lua is what keeps the blanket from re-entering.
 read_globals = {
   -- core Lua/WoW globals
   "_G", "LibStub", "CreateFrame", "GetTime", "GetTimePreciseSec",
@@ -65,3 +87,105 @@ globals = {
                        -- "reset profile" does not wipe it
   "StaticPopupDialogs", -- addon registers named popups by adding fields to this table
 }
+
+-- The test tree is linted, and these are the three globals it WRITES. Every suite READS the
+-- harness table as `_G.MULTIMETERS_TEST`, and a field read off the already-declared `_G` needs no
+-- entry at all; what needs one is tests/run.lua:287 writing it, plus the two SavedVariables tables
+-- a case clears to assert on the absent-saved-variable path. Hence `globals` and not
+-- `read_globals`. Hence also the `_G.` qualification -- spelled bare, all six writes are still
+-- reported as W122 "setting read-only field of global '_G'", which is checked both ways.
+--
+-- Declared HERE rather than at the top level on purpose, and the difference is not cosmetic. A name
+-- granted at the top level is granted to core/, modules/ and settings/ as much as to a suite, and
+-- no shipped file may ever reach for the test harness. With this stanza in place the same write
+-- planted in core/State.lua still reports, which is the scoping the stanza is here to buy.
+files["tests/"] = {
+  globals = {
+    "_G.MULTIMETERS_TEST",
+    "_G.MultiMetersDB", "_G.MultiMetersPerfDB",
+  },
+}
+
+-- ---------------------------------------------------------------------------
+-- The narrowed 212s (lint-§1, `M4c-06`)
+-- ---------------------------------------------------------------------------
+--
+-- Every stanza below names ONE file, and every entry inside it names the code AND the variable, in
+-- luacheck's `<code>/<variable>` form. That is the whole difference from the blanket this replaced:
+-- a newly-unused argument under any OTHER name -- `window`, `key`, `event`, `statKey` -- still
+-- reports in these files, and `212/self` still reports in the other seventy-nine.
+--
+-- Measured, not assumed, and the measurement has to be chosen carefully because the old top-level
+-- list was already spelled `212/self` rather than a bare `212`. A dead trailing parameter named
+-- anything else therefore reported under BOTH configs, and quoting that as proof would have been
+-- proof of nothing. What the blanket actually hid is the two shapes it named: planting an unread
+-- `local addonName, NS = ...` header AND an unused `self` in core/State.lua -- a file with no
+-- stanza -- reports both under this config (`:24:7 (W211)`, `:155:15 (W212)`) and reports zero
+-- warnings under the blanket. That is the thirty-two live defects, restated as one experiment.
+--
+-- Every one is a receiver a CALLING CONVENTION forces on a body that has no use for it, which is
+-- the only shape that earns a stanza here. Each was checked the same way -- the method is reached
+-- through a colon call, or by a library that invokes it by name as `self[name](self, ...)`.
+-- Anything else -- a parameter this addon chose to accept and then never read -- is dead code, and
+-- would be deleted rather than listed.
+
+-- `NS:InitDB` and `NS:RunMigrations` are reached as `NS:InitDB()` from core/MultiMeters.lua's
+-- OnInitialize and from the database suite; both read the AceDB handle through this file's own
+-- upvalue rather than off the namespace. `Database:OnProfileChanged` is AceDB-3.0's callback
+-- convention -- the library passes the handle and the profile key as arguments precisely so the
+-- callee does not have to reach for them through a receiver.
+files["core/Database.lua"] = { ignore = { "212/self" } }
+
+-- AceEvent-3.0 invokes a handler registered by name as `self[name](self, event, ...)`, so `self`
+-- arrives whether the body reads it or not. `OnSystemMessage` (registered at :194) hands the line
+-- straight to modules/Export.lua; `OnSpellSucceeded` (:187) reads only the spell id. Both read the
+-- namespace through this file's own upvalue.
+files["core/MultiMeters.lua"] = { ignore = { "212/self" } }
+
+-- Four more AceEvent message handlers registered by name, each named after the invalidation it
+-- answers: `Aggregator:OnMeterReset` (:2075), `Feign:OnForget` and `Feign:OnRosterChanged` (:348),
+-- `Provider:OnMeterInvalidated` (:887), `Roster:OnRosterChanged` (:540). None has a colon call site
+-- anywhere in the addon, because the library is the only caller -- which is exactly why the
+-- receiver cannot be dropped from the signature.
+files["modules/Aggregator.lua"] = { ignore = { "212/self" } }
+files["modules/Feign.lua"]      = { ignore = { "212/self" } }
+files["modules/Provider.lua"]   = { ignore = { "212/self" } }
+files["modules/Roster.lua"]     = { ignore = { "212/self" } }
+
+-- Module surfaces published on `NS` and reached by colon call from the window pipeline and from the
+-- suites -- `DrillDown:Enter/Exit/ExitAll/BuildRows/AcquireBackButton/ReleaseBackButton`,
+-- `HeaderControls:Attach/Apply/HookHover`, `Tooltip:CellTooltip/NameTooltip/SpellTooltip/Hide`,
+-- `Visibility:Allows/Evaluate`. Each takes the window (or the row) it operates on as an explicit
+-- argument and holds its own state in file-local tables, so the receiver is the call syntax and
+-- nothing more. They stay method-sugar because that is the surface docs/module-map.md publishes and
+-- the shape every call site already spells.
+files["modules/DrillDown.lua"]      = { ignore = { "212/self" } }
+files["modules/HeaderControls.lua"] = { ignore = { "212/self" } }
+files["modules/Tooltip.lua"]        = { ignore = { "212/self" } }
+files["modules/Visibility.lua"]     = { ignore = { "212/self" } }
+
+-- `WindowProto:IsTest` is a window PROTOTYPE method: it is reached as `window:IsTest()` through the
+-- metatable every window carries, so the receiver is what finds the method even when the body
+-- answers from module state.
+files["modules/Window.lua"] = { ignore = { "212/self" } }
+
+-- The seventeen-method manager surface -- Init, Create, Delete, Rename, Duplicate, CopyFrom,
+-- RefreshAll, MarkAllDirty, ResetPosition(s), SetLocked, IsLocked, SetTestMode, IsTest, Toggle,
+-- BuildListLines, Suspend. Every one is called as `NS.WindowManager:Method(...)` from the settings
+-- panel, the slash verbs and the suites, and every one reads the window registry through this
+-- file's own upvalue rather than off the receiver. Seventeen is a lot of stanzalessness to justify
+-- in one line, so the honest statement is the one the count makes: this file's whole public surface
+-- is method-sugar over module state, deliberately and consistently.
+files["modules/WindowManager.lua"] = { ignore = { "212/self" } }
+
+-- The published slash surface -- `Sl:OnSlash`, `PrintHelp`, `HelpRows`, `LandingRows`, `Register` --
+-- all five forwarding to the LibKa0s-Slash-1.0 instance in this file's `cli` upvalue, and all five
+-- listed as `NS.Slash`'s surface in docs/module-map.md. `SlashLib:New` (:126) is the
+-- library-absent stub's constructor, which has to accept the receiver because the real library's
+-- `New` is a colon call at the one site that builds `cli`.
+files["settings/Slash.lua"] = { ignore = { "212/self" } }
+
+-- The MenuUtil root stub. `root:CreateTitle/CreateDivider/CreateButton` mirror the client's own
+-- menu-root API, which production code calls as `rootDescription:CreateButton(...)` -- a mock that
+-- quietly narrowed the signature would let a caller pass here and fail in the client.
+files["tests/wow_mock.lua"] = { ignore = { "212/self" } }

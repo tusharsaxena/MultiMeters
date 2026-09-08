@@ -20,7 +20,7 @@
 -- defaults, the aggregator's per-stat read loop and the tooltip's header all
 -- read the same table.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Constants = {}
 NS.Constants = Constants

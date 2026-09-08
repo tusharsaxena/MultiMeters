@@ -23,7 +23,7 @@
 -- question about it is, and that is core/Secrets.lua's exclusive job (design §4,
 -- rule R1). Everything below passes meter numbers through untouched.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Compat = {}
 NS.Compat = Compat

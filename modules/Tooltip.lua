@@ -47,7 +47,7 @@
 -- repositioning that keeps a tooltip on screen. GameTooltip is cleared and
 -- re-owned on every hover, so nothing we add outlives the hover.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Tooltip = NS:NewModule("Tooltip", "AceEvent-3.0")
 NS.Tooltip = Tooltip
@@ -76,7 +76,14 @@ local FALLBACK_ICON = [[Interface\ICONS\INV_Misc_QuestionMark]]
 -- its icon, not to tell one target from another.
 --
 -- Ability_hunter_focusedaim: a reticle over a target, which is the closest thing
--- the shipped icon set has to "the thing you were hitting".
+-- the client's icon set has to "the thing you were hitting".
+--
+-- AND THE CATALOG HAS `target`, so this is a considered decline rather than an
+-- oversight (library-stack-§8). It is wrong here for the reason above: the slot
+-- sits in a column of Blizzard spell icons, and the catalog's marks are white
+-- with their shape in the alpha channel BY RULE, so the one line drawing a Ka0s
+-- glyph would be the one line that looked foreign. Recorded in
+-- docs/ARCHITECTURE.md's "Hard-coded texture paths" census.
 local TARGET_ICON = [[Interface\ICONS\Ability_Hunter_FocusedAim]]
 
 -- Icon edge length inside a tooltip line, in pixels. Sized to sit on the text

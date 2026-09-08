@@ -84,6 +84,15 @@ end
 
 NS.Perf = lib:New({
     name    = addonName,
+    -- THE FOLDER NAME, and a different question from the one above even though this
+    -- addon answers both with the same string. `name` is what the panel's frames are
+    -- seeded from; `addonName` is what libs/LibKa0s/PerfPanel.lua builds the close
+    -- control's texture path from, and it reads `d.addonName or d.name` -- so leaving
+    -- this out would still be right, by luck, until the day the two strings diverge.
+    -- `title` below is already a THIRD string, which is what a rename reaches for
+    -- first. Passed explicitly for the same reason core/DebugLogSetup.lua passes it,
+    -- and the two descriptors are deliberately the same shape.
+    addonName = addonName,
     title   = "Ka0s Multi Meters",
     slash   = "/mm",
     sv      = "MultiMetersPerfDB",
@@ -215,11 +224,14 @@ NS.Perf = lib:New({
     -- and the only witness was a screenshot.
     --
     -- From PerfPanel minor 4 (LibKa0s v1.10.2) the library builds that control
-    -- itself, from `addonName or name` — and `name` above IS this file's first
-    -- vararg — at the same 18px inset from the same corner. So the hook was a
+    -- itself, from `addonName or name` — both of which this descriptor now states
+    -- above — at the same 18px inset from the same corner. So the hook was a
     -- second copy of library behavior that could fall behind it, and had; deleting
     -- it is what the standard now asks for (performance-§4, debug-logging-§12,
-    -- anti-pattern #65).
+    -- anti-pattern #65). tests/test_perfsetup.lua pins BOTH directions — the name
+    -- present, the hook absent — and then shows the real panel against a spy on
+    -- the library's factory, because the descriptor's shape says nothing about
+    -- what reaches the screen.
     --
     -- Add one back only for chrome the library does not draw, and build its close
     -- control through `NS.MakeCloseButton` (core/CoreSetup.lua) — the one wrapper

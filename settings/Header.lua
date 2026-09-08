@@ -24,7 +24,7 @@
 -- re-skin still lands on this window along with the debug console and the perf
 -- panel. See modules/Window.lua's ApplyHeaderStrip.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = NS.L
 

@@ -578,13 +578,13 @@ test("Targets: two sessions do not share a map", function()
 
     -- Same session TYPE, a different stored segment, with different numbers.
     local mocks = inst.mocks
-    local ENEMY = mocks.Enum.DamageMeterType.EnemyDamageTaken
+    local ENEMY_TYPE = mocks.Enum.DamageMeterType.EnemyDamageTaken
     local guid = "Creature-0-0000-0-0-0001"
-    mocks.setSession(77, ENEMY, { combatSources = {
+    mocks.setSession(77, ENEMY_TYPE, { combatSources = {
         { sourceGUID = guid, guid = guid, sourceCreatureID = 6001,
           name = "Gulkat", totalAmount = 1 } }, maxAmount = 1, totalAmount = 1 })
     for _, key in ipairs({ guid, "creature:6001" }) do
-        mocks.setSourceDetail(77, ENEMY, key, enemyDetail{ { caster = "Alpha", amount = 4242 } })
+        mocks.setSourceDetail(77, ENEMY_TYPE, key, enemyDetail{ { caster = "Alpha", amount = 4242 } })
     end
 
     cfg.data.sessionID = 77

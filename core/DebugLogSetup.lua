@@ -30,11 +30,11 @@ local addonName, NS = ...
 -- Everything that calls NS.Debug loads after it.
 
 -- The monospace font ships to LibSharedMedia at load (debug-logging-§2), but the
--- registration is NOT repeated here: core/LSMPatch.lua owns it, under
--- NS.Constants.FONT_MONO_NAME, and it loads first. A second Register call from
--- this file added the same path under a hardcoded "JetBrains Mono" — a second LSM
--- key for one face, so the font dropdown listed it twice and a profile could
--- store the name core/LSMPatch.lua does not ship. The console takes
+-- registration is NOT repeated here: core/MediaSetup.lua owns it, through
+-- LibKa0s-Media-1.0's RegisterLSM, and it loads first. A second Register call
+-- from this file added the same path under a hardcoded "JetBrains Mono" — a
+-- second LSM key for one face, so the font dropdown listed it twice and a profile
+-- could store a name the library does not ship. The console takes
 -- NS.Constants.FONT_MONO (the PATH) directly below either way, so it needs no
 -- registration of its own.
 

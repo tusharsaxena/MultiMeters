@@ -10,11 +10,15 @@
 -- it compares and why it compares against the TAG rather than the working tree.
 --
 -- WHAT IT PROVES HERE: that `libs/LibKa0s/` and `tests/_kit/` are byte-for-byte
--- what the LibKa0s repo published at the tag CLAUDE.md says this addon bundles
--- ("Bundles [LibKa0s](...) v1.8.3 (MIT)."). The provenance line is an INPUT, not
--- a constant — a line and a payload that disagree is precisely the drift this
--- exists to catch, so the claim has to be the thing under test. Bump the line and
--- the bytes in the same commit.
+-- what the LibKa0s repo published at the tag CLAUDE.md says this addon bundles.
+-- The line it reads has the shape `Bundles [LibKa0s](...) vX.Y.Z (MIT).`, and the
+-- SHAPE is quoted here rather than today's version on purpose: this comment used
+-- to name v1.8.3, went on naming it through nine re-vendors, and by the end was
+-- pointing a reader at a tag five majors behind the payload. The provenance line
+-- is an INPUT, not a constant — a line and a payload that disagree is precisely
+-- the drift this exists to catch, so the claim has to be the thing under test.
+-- Bump the line and the bytes in the same commit; CLAUDE.md is where the current
+-- version is read, and the only place it should have to be read.
 --
 -- The gate is INSIDE the payload it checks, deliberately: a local patch to
 -- `tests/_kit/` breaks this file's own byte-identity assertion, which is the

@@ -19,7 +19,7 @@
 -- spell list it returns is unbounded, so the cap is what keeps a hover over a
 -- twenty-minute Overall session from building a hundred lines.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = NS.L
 

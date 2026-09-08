@@ -221,14 +221,18 @@ and every column backed by a real session.
 | `applyConfig` | a settings change re-applying config and re-laying every row | recorded only |
 | `probeOverheadOff` / `probeOverheadOn` | the same refresh with brackets dormant, then armed | the zero-overhead assertions below |
 | `suspended` | a refresh with the provider suspended | **zero** meter API calls — suspend stops the reads at the source |
+| `feignTraceAbsent` / `feignTraceOff` | a **Deaths-only** refresh with `core/Diagnostics.lua`'s `TraceFeign` removed, then present and disarmed | the disarmed trace is **never called** and allocates **nothing** measurable against the absent arm |
 
-**A restricted pass costs about 29% more than an unrestricted one** — 421214 bytes against 325955
-for the same 20×7 window — and about a quarter of that gap is the harness rather than the addon: the
-mock simulates a secret value as a *table* with a trapping metatable, so every secret field becomes an
-allocation the client does not make. The rest is identity correlation itself: one key per source per
-non-sort column, the lookup maps per column, and the cells they produce — cells that must carry
-`amountPerSecond` as well as the total, because the shipped text layout renders the rate for a rate
-stat. The breakdown was measured by re-running the scenario with pieces removed, not estimated.
+**A restricted pass costs about 36% more than an unrestricted one** — 412373.3 bytes against
+303415.8 for the same 20×7 window, both re-measured 2026-09-08 over three runs. A large part of that
+gap is the harness rather than the addon: the mock simulates a secret value as a *table* with a
+trapping metatable, so every secret field becomes an allocation the client does not make. The rest is
+identity correlation itself: one key per source per non-sort column, the lookup maps per column, and
+the cells they produce — cells that must carry `amountPerSecond` as well as the total, because the
+shipped text layout renders the rate for a rate stat. That breakdown was measured by re-running the
+scenario with pieces removed, not estimated, and `tests/perf.lua` carries it with the three component
+sizes; the sizes still describe the shape of the gap, but they were taken against older totals and
+their percentages of today's figure are not re-derived here.
 
 **The regression guard worth knowing by name is `refresh20x7`'s column count.** One refresh used to
 make *two* `GetColumn` calls per column: `modules/Window.lua` re-entered the provider for each
@@ -236,14 +240,42 @@ column's group total so the cells could divide by it, while `modules/Aggregator.
 both operands and had already divided (`cell.percent`). That doubled the addon's entire session-read
 cost on its hot path, and it was invisible because nothing counted. Now something counts.
 
+### The disarmed feign trace
+
+The same rule the probe pair is held to, applied to the other piece of instrumentation on the hot
+path. `Diagnostics.TraceFeign` returns on its first line when nothing is armed — but Lua evaluates a
+call's arguments before the call, so the `judge` site in `modules/Aggregator.lua` built a fields table
+and its nested order list **per Deaths source per refresh** whether or not anybody was recording. That
+is what `Diagnostics.feignArmed` exists for: the call sites read the flag, so the tables are never
+built. `Diagnostics.IsFeignTraceArmed()` is the accessor over the same field, for everything that is
+not on the refresh path.
+
+It is measured as a **difference**, not an absolute. One refresh's absolute figure is dominated by the
+harness (see the caveat below) and would drown two small tables per source. The baseline arm removes
+`TraceFeign` from the namespace — the addon's own documented degradation path, since both readers
+resolve `NS.Diagnostics` at call time precisely so the file may be absent — so the delta between the
+arms is the trace and nothing else. Deaths alone, because `scanColumn` takes the feign path on
+`stat.isCount` and Deaths is the one counted stat a shipped window carries.
+
+Two assertions, and the load-bearing one is the integer: a disarmed trace must not be **called**,
+because the call is where the tables are built. The byte comparison carries a 16-byte-per-iteration
+tolerance rather than demanding equality, because two measurements of an identical path in this
+harness land within a byte of each other. On the run that closed this, both arms measured 71224.1
+bytes/iter exactly, against 77944.1 and 71224.1 before the fix.
+
 ### The zero-overhead pair
 
 `performance-§9` requires this scenario by name, and it carries four assertions:
 
 - the dormant arm stays under an **absolute byte ceiling** (`PROBE_OFF_BYTES_CEILING`, currently
-  320000, against a measured 309297 for a 20×7 pass). The relation alone is not enough: if a
-  regression adds allocation to `Refresh` itself, both arms rise together and `off <= on` still
-  holds. **A rise in that figure IS the finding** — raise the ceiling only with a recorded reason.
+  314000, against a measured 303415.8 for a 20×7 pass — three runs, 2026-09-08, 3.5% of headroom).
+  The relation alone is not enough: if a regression adds allocation to `Refresh` itself, both arms
+  rise together and `off <= on` still holds. **A rise in that figure IS the finding** — raise the
+  ceiling only with a recorded reason. It is re-derived downward too, and for the same reason: the
+  ceiling this replaced had drifted to 10.7% of headroom, and the disarmed feign trace's 6720
+  bytes/iter walked in underneath it while the suite exited 0. A ceiling three times looser than it
+  reads is not guarding anything. `tests/perf.lua` carries the run-by-run derivation for both this
+  and `RESTRICTED_BYTES_CEILING` (427000 against 412373.3).
 - the dormant arm allocates no more than the armed one, which is what the gating idiom buys.
 - the probe changes neither how many meter API calls nor how many columns a pass costs.
 - the dormant arm reproduces the plain `refresh20x7` figure, proving the two are the same path.

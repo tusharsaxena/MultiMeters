@@ -642,13 +642,24 @@ end
 -- state and creates no widget, so a bare table is a complete home for them --
 -- given the two members they forward through, below.
 --
--- LSMValues IS SUPPLIED UNWRAPPED. The composer's media rows are declared
--- `values = function() return O.LSMValues(kind) end`, and the library's own
--- LSMValues is itself a closure factory -- so through the instance those rows
--- answer a FUNCTION where the flow engine's `enumList` unwraps exactly once and
--- then wants a table. Handing over a reader that answers the table directly is
--- both the fix and what this addon's rows already did. Reported upstream; nothing
--- here works around it beyond this one line.
+-- LSMValues IS SUPPLIED AS THE FACTORY ITSELF, NOT AS A CALLER OF IT. The
+-- composer emits its media rows as `values = O.LSMValues(kind)` and reads this
+-- member ONCE, at row-declaration time, assigning whatever comes back straight
+-- into `values` -- because the flow engine's `enumList` unwraps a row's `values`
+-- exactly once. So the member has to answer a FUNCTION: the deferred reader that
+-- the dropdown calls when it opens. `lsmValues` is exactly that factory, so it is
+-- handed over bare.
+--
+-- IT USED TO BE WRAPPED, and the wrapper was right at the time. Up to LibKa0s
+-- v1.25.0 the composer declared `values = function() return O.LSMValues(kind) end`
+-- and so called this member at RENDER time, one unwrap later -- where answering a
+-- function would have reached enumList as a function and drawn an empty dropdown.
+-- v1.26.0 moved the read to declaration time, which inverts the requirement: the
+-- old wrapper now hands the composer a table built before any media addon has
+-- registered anything, and a list frozen at file load raises nothing, warns
+-- nothing and reddens no case. It is the failure the deferral exists to prevent.
+-- The wrapper and the vendored payload therefore move in the same commit; neither
+-- is correct against the other's version.
 --
 -- WITH NO LIBRARY THERE ARE NO COMPOSERS and every block below is EMPTY. That is
 -- the deliberate cost of composing rather than copying, and it costs nothing a
@@ -658,7 +669,7 @@ end
 -- deviation in docs/ARCHITECTURE.md.
 --
 -- TWO INSTANCE MEMBERS ARE FORWARDED ONTO IT, and they are the whole of what the
--- composers reach for. `LSMValues` is read while a media row's dropdown opens;
+-- composers reach for. `LSMValues` is read once, as a media row is declared;
 -- `InlineButtonPair` is called by the ONE composer product that is not a pure
 -- function -- MasterControls' `afterGroup` hook, which draws the tab's closing
 -- button pair and therefore has to touch a widget. Both forward to NS.Helpers at
@@ -667,7 +678,7 @@ local C = {}
 do
     local optlib = LibStub and LibStub("LibKa0s-Options-1.0", true)
     if optlib and optlib.__AttachCompose then
-        C.LSMValues = function(mediaType) return lsmValues(mediaType)() end
+        C.LSMValues = lsmValues
         C.InlineButtonPair = function(ctx, left, right)
             local H = NS.Helpers
             if H and H.InlineButtonPair then return H.InlineButtonPair(ctx, left, right) end

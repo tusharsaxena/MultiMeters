@@ -69,6 +69,22 @@ The degraded path is exercised by a **real load**, never by hand-stubbing the me
 local inst = T.load{ libFiles = {} }   -- the whole addon, with LibKa0s absent
 ```
 
+### The stub is checked in both directions
+
+`tests/test_degraded.lua` asks whether the `settings/OptionsSetup.lua` stub answers the calls this
+addon makes **today** — it greps `H.Foo(` out of `settings/*.lua` and checks each one resolves.
+That cannot see a member the library publishes and the pages have not adopted yet, so the day a
+page starts calling one, the stub is silently short and nothing goes red until a player with no
+LibKa0s opens the panel.
+
+`tests/test_surface_parity.lua` is the other direction: it compares the stub against the **live
+surface**, through the kit's `T.assertSurfaceParity(stub, "LibKa0s-Options-1.0", ignore)`. A member
+arrives on the list the moment the library publishes it and stays there until that file says out
+loud why the stub does not carry it. `tests/run.lua` registers where the live half is looked up
+(`Kit.setSurfaceSource`), because this stub mirrors the **instance** `lib:New(descriptor)` returned
+and not the four-member library table LibStub answers for the same name. The other five seams are
+not compared by name, and the suite's header gives the reason for each.
+
 ### One environment detail worth knowing
 
 Nearly every client-API read in this addon is spelled `_G.C_DamageMeter`, `_G.canaccessvalue`,
@@ -122,6 +138,11 @@ lua tests/run.lua --list     # the inventory, printed; runs nothing, exits 0
 luacheck .                   # must be 0 warnings / 0 errors
 ```
 
+**Run these from the repository root.** The Lua cases do not care where you are — they root their
+file reads through `T.root`, which the runner derives from `arg[0]` — but the vendored EOL gate
+shells out to `git ls-files` in the *current* directory and refuses to report a pass it could not
+actually take. From anywhere else it reddens with "this gate cannot run".
+
 **There is no single-suite mode, and that is a design choice rather than a gap.** `Kit.run` asserts
 the declared suite list against `tests/test_*.lua` on disk **in both directions** before it loads a
 single case: a declared suite with no file is a hard error, and a suite file that is not declared is
@@ -137,6 +158,40 @@ A suite still being written is declared as `{ name = "test_foo", pending = "why"
 that field the moment its file lands. A skip is never a pass: the runner counts skips in their own
 column and prints each one with its reason.
 
+### Bisecting across the audit-remediation branch
+
+Seven commits on `feat/2026-09-07-audit-review-remediation` replay **red** from a clean clone. A
+bisect that lands on one of them will blame the wrong change. In branch order:
+
+| Commit | Item | On a clean clone |
+| --- | --- | --- |
+| `c61e25f` | M2-09 | 1495 passed, 1 failed |
+| `3d704ad` | M2-10 | 1499 passed, 1 failed |
+| `5883d17` | M2-11 | 1503 passed, 1 failed |
+| `360e39e` | M2-12 | 1503 passed, 1 failed |
+| `f932ee5` | M2-18 | 1506 passed, 1 failed |
+| `ee0d1fe` | M3-C3 | 1506 passed, 1 failed |
+| `ae2502a` | M3-02 | 1506 passed, 1 failed |
+
+It is the same single case every time — *The projection's field list and collectSource cannot drift
+apart*, in `tests/test_provider.lua`. The case scans `modules/Provider.lua` for `collectSource`'s
+body and anchored the closing bracket on `"\nend\n"`. This repo is pinned CRLF, so on a correct
+checkout every line ends `\r\n`, that anchor never matches, the body comes back `nil`, and the case
+reports a drift between the projection and `SOURCE_FIELDS` that is not there.
+
+**None of the seven introduced it.** `origin/master` at `02aff8c`, the commit this branch was cut
+from, fails the same case with the same message at 1495 passed / 1 failed. The condition is
+inherited, and it is invisible on a working tree that has been mis-normalised to LF — which is why
+every figure published before the line-ending sweep was measured green.
+
+`8eef4b8` (M4-10) closes it, by stripping CRLF before the match: 1507 passed, 0 failed. Every commit
+from there to the tip is green. So if a bisect stops on one of the seven and the case you are
+chasing is this one, `git bisect skip`. If it is not, filter the noise out with
+`lua tests/run.lua | grep FAIL` and read what is left.
+
+**The history is deliberately not being rewritten.** Rewriting seven commits mid-branch to repair a
+defect they inherited would cost more than the note you are reading.
+
 ### The inventory
 
 The **authoritative case count and per-suite breakdown** live in the generated inventory at
@@ -151,14 +206,159 @@ Whenever the suite changes — a case added, removed or renamed, or the pass cou
 the inventory **and** update the README `Tests` badge in the *same* change, never as a deferred
 follow-up.
 
+### The 1500-line cap gate
+
+`tests/test_layout_cap.lua` compares two things: every authored `.lua` git tracks, and the census
+under *Files over the 1500-line cap* in [ARCHITECTURE.md](ARCHITECTURE.md). It reads them in both
+directions, so a file that crosses the cap unremarked and a row left behind for a file that has
+stopped breaching are each a red.
+
+`layout-§1` binds **every authored file the repository tracks**, `tests/` included; vendored code
+(`libs/`, `tests/_kit/`) is the only carve-out that reaches this repo. A red is cleared by giving
+the file one of the three terminal states the rule allows — peel it, open an issue naming the seam a
+peel would follow, or ratify a register row with a re-check trigger — and then adding its row to the
+census. It is not cleared by raising `CAP`, and it must not be cleared by dropping the suite from
+`SUITES`: the inventory gate reddens on that too, which is the point of having one.
+
+The line figures in the census are dated measurements and nothing asserts them, so an ordinary edit
+to a large file does not redden this gate. Membership is the invariant, not the numbers.
+
+### The complexity register gate
+
+`tests/test_complexity_register.lua` is the same bargain one section over. It reads the table under
+*Complexity register* in [ARCHITECTURE.md](ARCHITECTURE.md) and checks that the register still says
+something a reader can act on: that the folder tally stated in its prose matches the rows beneath it,
+that every Location names a file that exists, that no function is entered twice, and that every
+disposition can be followed — a peel naming an issue number, or an accept carrying the re-check
+trigger that stops it being a permanent opt-out.
+
+**It does not run `lizard`, deliberately.** `performance-§10` says a commit MUST NOT be gated on
+complexity, and a suite that shelled out to the tool would be exactly that gate wearing a test's
+clothes. It follows that this gate cannot see a *new* warned function — only the runner can, at a
+recorded run — and it does not try to: the CCN figures and line ranges in the register are dated
+measurements, like the line counts in the cap census, and pinning them would redden the suite on
+every ordinary edit to a warned function.
+
+Why the register lives in ARCHITECTURE.md rather than in `docs/automated-tests/RESULTS.md`, which is
+where `automated-tests-§4` puts the watch list: the runner carries a disposition forward only when
+its key — function name plus file, tie-broken by CCN — is unique on both sides. Three of this
+addon's rows are `]` in `core/Database.lua`, which is `lizard`'s spelling of `migrations[n] =
+function`, so none of the three is unique on name plus file. The CCN breaks that tie for exactly one
+of them: `migrations[4]` is 17 and carries its ruling forward like any other row. `migrations[1]`
+and `migrations[12]` are both 16, so **those two** — and only those two — are unique on neither key,
+and their generated cells read blank on every run that regenerates them. The register is where
+their disposition exists at all, and the runner's Disposition column is transcribed from it.
+
+### The texture-path census gate
+
+`tests/test_texture_paths.lua` is the third register, and the same bargain a third time. It reads
+every hard-coded `Interface\` path out of the `.lua` this repository authors and the table under
+*Hard-coded texture paths* in [ARCHITECTURE.md](ARCHITECTURE.md), and compares them in both
+directions: a new path nobody argued for is a red, and so is a row for a path that has gone.
+
+`library-stack-§8` makes LibKa0s-Media's catalog the addon's vocabulary for marks, so a red is
+cleared one of two ways — use `NS.Icon`, or add the row saying why the catalog cannot answer at that
+site. Twelve rows say why today; exactly one of them defers to the deviation register rather than
+arguing in place, and two further cases hold that pointer honest — a fourth asserting the
+register row is still there, so *"register row above"* cannot quietly become a phrase, and a
+fifth asserting the row's `settings/ColumnBlocks.lua:72-73` citation still names the lines the
+two declarations are on.
+
+**The quote is part of the pattern.** An occurrence counts when it opens a string, in either form
+Lua has — `"Interface\\…"` or the long-bracket `[[Interface\…]]` — and not otherwise, because a
+comment quoting a path is prose about a texture rather than a texture. Four such lines exist here
+and the census names them. This is not a detail: the 2026-09-07 plan's own per-repo tally put this
+addon at **8**, which is what matching the doubled backslash alone returns, and it missed the seven
+long-bracket literals in `modules/` — including two the same plan's prose describes by name. The
+scope was written down; the pattern was not.
+
+**Its scope drops `tests/` entirely**, and that is the one place it differs from the two gates above.
+`layout-§1`'s cap binds test files and this rule does not: a path in a fixture is an assertion about
+a string — `tests/test_mediasetup.lua` spells the vendored icon prefix out precisely so a wrong one
+is caught — and no player ever sees it drawn.
+
+The line and pair totals in the census prose are dated measurements and nothing asserts them.
+Membership of the distinct file/path pair is the invariant, because a line number moves on every
+ordinary edit while the arrival of a *new* path is the only event the rule has an opinion about.
+
+**The register row's citation is the one exception, and it earned the fifth case the hard way.**
+That row is a reader's entry point into an argument about two named declarations rather than a
+membership claim, so it has to carry a line number — and the commit that first wrote `:60-61`
+also added the banner above the pair that pushed it to 72-73, shipping a pointer twelve lines
+short of the thing it argues about. None of the four cases before it could see that: they never
+look at a number. This one does, and it is scoped to the single citation that leads somewhere.
+
+
+### The suppression gate
+
+`tests/test_lintconfig.lua` is the fourth register, and it guards the thing the other three rest on:
+that `luacheck .` reaching 0/0 is a statement about the code rather than about `.luacheckrc`.
+
+It exists because this repo spent the whole 2026-09-07 remediation with
+`ignore = { "212/self", "212/event", "211/addonName" }` at the top of that file. That list looks
+careful — every entry names a variable, not just a code — and it was still the anti-pattern
+`lint-§1` describes. A top-level `211/addonName` does not mean "the bootstrap header may go unread";
+it means no file in the addon may ever report an unused `addonName`, and thirty-two of them were
+unread. `M4c-06` removed the three lines, watched eighty-four warnings appear, fixed the thirty-two
+at source, and moved the fifty-two receivers that remained into per-file `files[...]` stanzas that
+each say which calling convention forces the argument. `212/event` turned out to name a warning this
+repository does not produce at all.
+
+Four cases, and each is the same rule from a different side:
+
+| Case | What it refuses |
+| --- | --- |
+| no top-level ignore | `ignore = { ... }` at the top of `.luacheckrc`, however narrowly its entries are spelled |
+| no class switched off | `unused_args = false` and eight relatives — a blanket ignore spelled as a switch |
+| every stanza is narrow | a `files[...]` ignore whose key is a directory and whose entry names no variable |
+| no bare inline directive | `-- luacheck: ignore` with no code after it, anywhere in tracked Lua |
+
+It reads `.luacheckrc` **as Lua**, under a sandbox that auto-creates tables the way luacheck's own
+config loader does, so it inspects the table luacheck obeys rather than text a different spelling
+would slip past. And like `test_docmap` and the vendored EOL gate, it **fails rather than skips**
+when it cannot look: no config, an unreadable one, a chunk that will not compile, no `io.popen`, no
+git. A gate that goes quiet when it is blind reports success, which is worse than not existing.
+
 ## Verifying the vendored copies
 
 ```sh
-diff -r --strip-trailing-cr ../LibKa0s/LibKa0s libs/LibKa0s   # content — MUST be empty
+diff -r --strip-trailing-cr ../LibKa0s/LibKa0s libs/LibKa0s   # content — empty vs the CLAIMED tag
 diff -r ../LibKa0s/LibKa0s libs/LibKa0s                       # bytes  — SHOULD be empty
-diff -r --strip-trailing-cr ../LibKa0s/testkit tests/_kit      # content — MUST be empty
+diff -r --strip-trailing-cr ../LibKa0s/testkit tests/_kit      # content — empty vs the CLAIMED tag
 diff -r ../LibKa0s/testkit tests/_kit                          # bytes  — SHOULD be empty
 ```
+
+### When these diffs are supposed to be non-empty
+
+They compare against the sibling checkout's **working tree** — whatever `../LibKa0s` happens to have
+checked out — which is a different question from *"is the vendored payload the release this addon
+claims?"*. The two questions give the same answer only while the library has tagged nothing newer
+than the tag this addon has taken.
+
+Between a library release and the re-vendor that carries it they disagree, and that disagreement is
+the normal state rather than a defect. It is the state as this is written: `../LibKa0s` sits on
+**v1.27.0**, [`CLAUDE.md`](../CLAUDE.md) names **v1.26.0**, and the commands above report **306**
+differing lines for the library and **947** for the test kit. Re-vendoring to quiet them would be
+the actual mistake — it would pull an untested library release for the sake of a clean diff.
+
+**The authoritative comparison is against the tag `CLAUDE.md` names**, and that one must be empty at
+every commit:
+
+```sh
+tag=$(grep -oE 'Bundles \[LibKa0s\]\([^)]*\) v[0-9]+\.[0-9]+\.[0-9]+' CLAUDE.md \
+        | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+rm -rf "/tmp/libka0s-$tag" && mkdir -p "/tmp/libka0s-$tag"
+git -C ../LibKa0s archive "$tag" | tar -x -C "/tmp/libka0s-$tag"
+diff -r --strip-trailing-cr "/tmp/libka0s-$tag/LibKa0s" libs/LibKa0s   # MUST be empty
+diff -r --strip-trailing-cr "/tmp/libka0s-$tag/testkit" tests/_kit     # MUST be empty
+```
+
+`tests/test_vendor_sync.lua` asks exactly this question inside the suite — it greps the tag out of
+`CLAUDE.md` and reads that blob out of git — so **a green suite has already answered it**, and the
+block above is only the by-eye version for when you want to see the hunks. Which leaves the
+working-tree diffs above answering a real but different question: *how far behind the library is
+this addon?* That is release planning, not a gate.
+
 
 Run **both** halves of each pair before every commit — they are different findings, and nothing
 about "the tests are green" will tell you the copies have diverged. The library's own suite passes

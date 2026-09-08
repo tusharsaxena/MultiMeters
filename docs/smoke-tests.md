@@ -40,6 +40,13 @@ in-client.
   addon restriction.
 - **Pass** lines describe what success looks like. If a step says "should X" and X does not happen,
   the smoke test failed.
+- **What needs no smoke run at all.** A change confined to `.luacheckrc`, to a headless-only gate
+  under `tests/`, or to docs does not reach the client, and `luacheck .` at 0/0 plus
+  `lua tests/run.lua` green is its whole verification. `M4c-06` is the case this bullet was written
+  for: it removed the blanket lint suppression, renamed the unread `addonName` in thirty-three
+  bootstrap headers to `_` — a local nothing reads, in files whose behaviour is otherwise byte for
+  byte what it was — and added `tests/test_lintconfig.lua`. Recorded here rather than left to be
+  re-derived the next time the same shape lands.
 
 ## Suite
 
@@ -71,6 +78,9 @@ in-client.
 | 24 | Tooltip styling | [Tooltip appearance, anchor and offsets](#24-tooltip-appearance-anchor-and-offsets) |
 | 25 | **Targets** | [**The Targets section, and its absence mid-pull**](#25-the-targets-section-and-its-absence-mid-pull) |
 | 26 | **Export** | [**The export modal, the CSV and the chat dump**](#26-the-export-modal-the-csv-and-the-chat-dump) |
+| 27 | **Identity** | [**The identity-correlation capture (issue #22)**](#27-the-identity-correlation-capture-issue-22) |
+| 28 | **Feign trace** | [**The feign-trace verbs and what the recording says (issue #25)**](#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25) |
+| 29 | **Shared registry** | [**The Border dropdown when five Ka0s addons share one registry**](#29-the-border-dropdown-when-five-kas-addons-share-one-registry) |
 
 ---
 
@@ -259,6 +269,30 @@ second edge to catch.
   right thing change: the cells, the title bar and session line, the "Player | Damage | Healing"
   strip, and a hovered tooltip. A control that moves the wrong surface means two groups are sharing a
   key that is supposed to be their own.
+- **Every media dropdown lists what LibSharedMedia knows NOW, not what it knew at file load
+  (`M3-02`, session 4 of the 2026-09-07 remediation bundle).** Load a media pack that registers
+  faces, borders and bar textures — SharedMedia_MyMedia, or any addon whose only job is to hand
+  LibSharedMedia more of them — then open **every** media picker this addon draws. There are eleven:
+  Frame → General's two **all surfaces** pickers (**Font**, **Bar texture**), Frame → **Border style**,
+  Bars → **Texture** and **Border style**, Tooltip → **Bar texture** and **Bar border style**, and the
+  **font** picker on each of Bars → Text style, Header → Title text, Columns → Header text and
+  Tooltip → Text. Each list must contain the faces and textures that pack registered, not merely the
+  stock Blizzard set. **Nine of the eleven are the ones this step is really for** — every picker
+  except Frame → General's two, which `settings/Schema.lua` writes out by hand rather than composing.
+
+  **Why this step exists and what it is really watching.** Those nine rows come out of
+  `LibKa0s-Options-1.0`'s schema composers, and v1.26.0 changed *when* a composer asks this addon for
+  its media list: it used to ask as a dropdown opened, and now it asks once, as the row is declared.
+  So the member `settings/Schema.lua` hands the composer has to be the deferred reader itself rather
+  than a caller of it. Get that wrong and nothing breaks loudly — no Lua error, no chat warning, no
+  red case in `lua tests/run.lua`; the row simply carries a media list built before any media addon
+  registered anything. `settings/Schema.lua` re-dresses all nine rows with its own deferred reader
+  afterwards, so today that would be caught before it reached a dropdown, but the two are independent
+  and this is the only place the pair can be seen agreeing. **A dropdown that opens and looks
+  plausible is not a pass here** — the pass is a name in it that could only have come from the media
+  pack.
+
+  Not yet run — no client has been available since the change.
 - **"Text color mode" set to Class means the right class on each surface.** On Bars → **Text style** the cells take
   **each row's** class, so a grid of mixed classes goes multi-coloured — not all one colour. On
   Tooltip → **Text** the text takes the class of the player you are **hovering**; hover two different
@@ -367,6 +401,11 @@ second edge to catch.
   non-zero thickness too — it must also draw nothing, rather than falling back to the Ka0s edge. The
   addon has **two** LSM border settings and the rule is the same on both; the other is Tooltip → Bar
   border style, checked in §24.
+- **The closed Border style dropdown is flush with the controls beside it**, with no ~42px empty gap
+  on its left, and opening it still draws a per-row border preview on hover. A gap means
+  `lib.__PatchLSM30Border()` did not take effect. **This checks it with Multi Meters alone, which is
+  exactly the check that would have stayed green all the way through the defect §29 exists for** —
+  run §29 too whenever this one matters.
 - Six pages carry a **Defaults** button in the header (Frame, Header, Bars, Tooltip, Visibility,
   Columns); **Windows and Profiles do not.** Columns' button resets its block editor to the shipped
   catalog, ticked and ordered — it is **not** absent the way it used to be.
@@ -452,10 +491,16 @@ second edge to catch.
   message.
 - **Combat refusal.** Enter combat (a dummy is fine here). `/mm config` **refuses** and prints one
   gray notice. It must **not** queue the request and open the panel when combat ends.
-- **Profiles page mid-combat.** With the Settings window closed, enter combat, then open Settings →
-  AddOns → Ka0s Multi Meters → **Profiles** from the Blizzard sidebar. The page must close the
-  Settings window and print the refusal — that route bypasses `/mm config` entirely, which is why the
-  page carries its own guard.
+- **Every sub-page mid-combat, from the Blizzard sidebar.** With the Settings window closed, enter
+  combat, then open Settings → AddOns → Ka0s Multi Meters from the Blizzard sidebar and walk **every**
+  sub-page in the category, **Profiles included**. Each must close the Settings window and print the
+  same gray refusal. That route bypasses `/mm config` entirely, which is why the guard lives on the
+  page rather than on the slash command — and since `M2-18` the Profiles page gets it from
+  `H.SetRenderer` like the other eight instead of from a hand-rolled copy of it, so the failure this
+  step is for is **eight pages refusing and one rendering**, or one refusing in different words.
+  (Session 1 of the 2026-09-07 remediation bundle runs the same step against AbsorbTracker and
+  KickCD, which were changed the same way. Not yet run — no client has been available since the
+  change.)
 
 ### 5. Column editor
 
@@ -1020,6 +1065,13 @@ switch back to Default → copy from Test → reset.
 - Copying a profile brings its windows across, and editing one profile's window afterwards does not
   touch the other's.
 - Resetting a profile re-seeds exactly one window.
+- **The page is still fresh after a switch made off it.** Open Profiles, page away to **General**,
+  then `/mm resetall` and confirm — that is a profile reset, so it moves the active profile out from
+  under the hidden page. Come back to Profiles: the profile list and the scope dropdowns must be
+  redrawn against the profile you are actually on. `M2-18` moved this page onto `H.SetRenderer`,
+  which draws once and then only when the library is told the page is dirty, and the
+  `PROFILE_CHANGED` listener is the only thing telling it. A stale list here means that listener is
+  not reaching `H.RefreshPanel`. **Not yet run** — no client has been available since the change.
 - **A fresh character lands on the shared `Default` profile**, not on its own. (`AceDB:New(..., true)`
   — omitting that third argument silently gives per-character profiles, which is the source of every
   "each new character has its own settings" report in the collection.)
@@ -1685,6 +1737,164 @@ nothing.
 duplicated), instance and difficulty, both captures in full, and whether any Lua error appeared —
 the probe walks a raw source row with `pairs`, which is the one thing here that touches a shape the
 mock can only approximate.
+
+### 28. The feign-trace verbs and what the recording says (issue #25)
+
+**Why this is in-client.** The recording itself is proved headless — the harness arms it, drives all
+three boundaries and reads the report back. What the harness cannot supply is a hunter on another
+client feigning next to you, which is the entire asymmetry issue #25 is about: the local player's
+feign is filtered correctly and a party member's is not.
+
+**The verb check comes first, and it is the reason this step is scheduled at all.** It costs one line
+of typing and it protects every capture after it.
+
+```
+/mm debug feign of
+```
+
+**Pass.** One line: `unknown feign argument 'of' — /mm debug feign on|off, or /mm debug feign to
+print the recording.` **Nothing else.** No trace report, and the recording's armed state is exactly
+what it was before you typed it — confirm with `/mm debug feign`, which must still say
+`armed: false` on a fresh session.
+
+**Fail — and this is what shipped before.** The report prints in full and the trace is left armed.
+A player told to type `/mm debug feign off` who typed `of` got an empty-looking report, no
+indication anything was wrong, and a recording running for the rest of the session.
+
+**Then the capture itself.**
+
+1. `/mm debug feign on` before the pull. It answers `feign trace ON`.
+2. Run a dungeon with a **hunter in the party** — not the local player. Let them feign at least
+   twice, and if you can, have them feign and then really die.
+3. `/mm debug feign` afterwards, then `/mm debug` to open the console and copy the buffer.
+
+**What to read in it.**
+
+- **No `cast` line at all** is the single most informative outcome and is not a failed capture:
+  `UNIT_SPELLCAST_SUCCEEDED` never arrived for that unit, and the filter was never told anything.
+  The report says so in those terms.
+- **`prune` lines carry `state=noted` or `state=down`, never `<evicted>`.** `noted` means the cast
+  arrived and this client never confirmed the feign; `down` means it did. An entry evicted at `hp=0`
+  from `noted` and one evicted at `hp=0` from `down` are different findings, and a run where every
+  evicted party member reads `noted` while the local player reads `down` is the answer.
+- **`unit=<not in group>`** is the third exit: the entry was dropped because no unit token was left
+  to read. Seeing one of these against a hunter who never left the party is a roster fault, not a
+  feign fault, and it is worth reporting on its own.
+- **`N judge rows suppressed`** with no `judge` lines means the Deaths refresh ran and never met a
+  GUID any cast line had named — a different finding from a refresh that never ran.
+
+**Record for the report:** group size and composition, whether the hunter was the local player or a
+party member, the full buffer, and the Deaths count you actually saw in the window beside it.
+
+### 29. The pooled tab strip, and the perf strings, after the v1.27.0 re-vendor
+
+**Smoke, session 3. NOT YET RUN.** Two things arrived with `M4-01`'s LibKa0s v1.27.0 payload that
+only a client can settle, and nothing here may be reported as passing until someone has looked at it.
+
+`TabStrip` (`libs/LibKa0s/OptionsWidgets.lua`) no longer builds a button and a content panel per
+click: it acquires both from per-`ctx` `LibKa0s-Pool-1.0` pools and re-dresses them, re-setting
+`OnClick` on every dress. Its only headless proof counts `CreateFrame` calls on a second selection
+pass, and the case that would pin band geometry as invariant under selection cannot be written yet —
+the shared mock answers `GetHeight` with 0 for every frame and that flips at kit 16, not here. **So a
+stale label, a mis-anchored button or a band that changes height on a re-dressed tab is invisible to
+every automated check in this repo.** This addon has the widest strip surface in the collection —
+fourteen page files decorate one descriptor — so it is the likeliest place a reuse defect shows.
+
+**Steps — the strip.**
+- `/mm config`. Walk every page that draws a strip, and on each cycle every tab three times, ending
+  back on the first. **Columns** matters most: it is the one page that drives `H.TabStrip` directly
+  rather than through `H.RenderTabbedSchema`, because it is a block editor and not a schema group,
+  so it is the strip least like the other thirteen.
+- Watch three things on each pass: the **label** is that tab's own, the **selected** tab is the one
+  you pressed, and the strip's **band height** does not move as you go through it.
+
+**Steps — the strings.** `LibKa0s-Perf-1.0` minor 8 respells five player-facing strings: two
+`CANCELLED` and three `unlabelled` become `CANCELED` and `unlabeled`. No single capture shows all
+five, so run two.
+- `/mm perf start mylabel`, then `finish` — the started line and the report header both name the
+  label.
+- `/mm perf start` with no label, then `cancel`.
+
+**Pass.**
+- Every tab labelled and selected correctly on all three passes, on every page, and no band that
+  grows or shrinks. A label carried over from the previously-dressed tab, a highlight on the wrong
+  button, a body drawn under the wrong tab, or a strip whose height moves between passes is the pool
+  handing back a frame it did not finish dressing.
+- The unlabelled start line, its report header and the cancel line read **`unlabeled`** and
+  **`perf run CANCELED`**. A double-L in either is a copy of the string that did not come from the
+  vendored payload.
+- No Lua errors at any point.
+
+---
+
+## 29. The Border dropdown when five Ka0s addons share one registry
+
+**Smoke, session 5. NOT YET RUN — no client was available when this step was written.**
+Run after this addon's `core/LSMPatch.lua` was deleted and `settings/OptionsSetup.lua`'s live wiring
+took the fixup over (`M4-07`), and again after the one deletion still outstanding — AbsorbTracker,
+last of the five, because its copy is the one that diverges (a callable `NS.ApplyLSMBorderPatch()`
+rather than a `PLAYER_LOGIN` frame). Five deletions, five commits, five bisect points if this goes
+wrong.
+
+**The thing under test is not Multi Meters.** AceGUI's widget registry is process-global: one slot
+named `LSM30_Border` shared by every addon in the client, Ka0s or not, and the highest version
+registered for the name owns it for the rest of the session. Five Ka0s addons each carried a private
+copy of the same wrapper, each registering one version above whatever it found, so the wrapper a
+Border dropdown actually got belonged to whichever addon the client loaded last. Nothing headless in
+any of the five repos could see it — each suite loads one copy, registers once and passes — and this
+addon's copy could not even be seen registering, because it did its work from a `PLAYER_LOGIN` frame
+that never fires under `lua tests/run.lua`.
+
+KickCD lost its private copy first (`M4-04`), then PanelMaster (`M4-05`), then ConsumableMaster
+(`M4-06`); Multi Meters is the fourth. So this run is also the evidence that one library-level
+registration dresses the dropdown in **four** addons that no longer carry their own, with one that
+still does loaded alongside them.
+
+1. Enable KickCD, PanelMaster, AbsorbTracker, ConsumableMaster and Multi Meters together, and log
+   in.
+2. Open each addon's Border dropdown in turn. This addon's are `/mm` → **Frame** → **Border style**
+   and **Tooltip** → **Bar border style**; both are `LSM30_Border` and both must look the same.
+3. Change the load order — disable and re-enable addons, or rename folders so a different one is
+   reached last — `/reload`, and walk the dropdowns again.
+
+**Expect:** in all five addons, the closed control's left edge is **flush** with the sliders and
+checkboxes stacked with it, with **no ~42px gap**, and opening it still draws the per-row hover
+previews. Nothing differs between the two passes. **Any dropdown that looks different from the
+others, or that changes when the load order changes, is the finding** — the whole point of moving
+the registration into LibKa0s is that the answer no longer depends on who loaded last. No Lua error
+at any point.
+
+---
+
+### 30. The perf panel's close control
+
+**Smoke, session 3. NOT YET RUN — no client was available when this step was written.**
+
+`core/PerfSetup.lua` passes no `decorate` hook, so `libs/LibKa0s/PerfPanel.lua` draws the panel's
+close control itself, from the folder name the descriptor now states explicitly. That path has
+**never been looked at in a client from this addon**: for as long as the hook existed the library's
+own arm could not run, and the arm is the half a headless case can only prove by argument. The
+failure it is watching for draws nothing and raises nothing — a texture path that is never built is
+silent, which is how this panel wore a multiplication sign through a green suite once already.
+
+**Steps.**
+```
+/mm perf
+```
+Then, with the panel open, `/mm debug` so the console sits beside it.
+
+**Pass.**
+- **Exactly one** close control on the perf panel, in the panel's **top-right corner**, at the same
+  inset from the same corner it has always been at. Two stacked there means a `decorate` hook came
+  back and the library's arm ran as well; none at all means the arm did not run.
+- It is **this collection's close mark** — the same art the debug console beside it wears, and the
+  same the meter window's title bar ends in (§1). A thin grey multiplication sign is the library
+  falling back because it was not told which addon folder to build the path from, and is the exact
+  regression the explicit `addonName` exists to prevent.
+- Clicking it closes the panel, and `/mm perf` reopens it.
+- No Lua error at any point.
+
+---
 
 ## What to report
 

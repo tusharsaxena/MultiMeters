@@ -41,10 +41,12 @@ local PAGES = {
     "tooltip", "visibility", "columns", "profiles",
 }
 
--- The canvas frame name each page builds under. Used to reach a page's ctx while
--- `ctx.pageKey` is unset (see the `carries its page key` case below, which is the
--- failing test that pins the underlying defect); every other case in this suite
--- is about something else and should not be blocked behind it.
+-- The canvas frame name each page builds under. It dates from the years
+-- `ctx.pageKey` was unset (see the `carries its page key` case below), when
+-- reaching a page's ctx by key was not possible and no other case in this suite
+-- should have been blocked behind that. The key resolves now; this stays as the
+-- independent handle, so the cases below do not all rest on the one thing that
+-- case exists to check.
 local PANEL_NAME = {
     windows    = "MultiMetersWindowsPanel",
     frame      = "MultiMetersFramePanel",
@@ -174,19 +176,22 @@ test("Options: every page's subcategory is registered eagerly, before any panel 
     assertEqual(subs, #PAGES)
 end)
 
--- SUSPECTED DEFECT, pinned rather than papered over.
+-- A DEFECT THIS CASE OUTLIVED, kept because the shape that caused it can come back.
 --
--- Every settings/<page>.lua calls `H.CreatePanel(name, title, { panelKey = PAGE,
--- ... })`, while libs/LibKa0s/Options.lua:301 reads `opts.pageKey`. The key is
--- therefore dropped on the floor for all thirteen pages: `ctx.pageKey` is nil
--- everywhere, `Helpers.__panelFor(key)` — the library's published per-page handle,
--- which settings/OptionsSetup.lua's own degradation stub also publishes — resolves
--- nothing, and a renderer that raises is reported as page "?" instead of by name
--- (Options.lua:482). Nothing raises, which is exactly why it survived: the pages
--- draw correctly, because RenderSchema and RestoreDefaults are handed the page key
--- as an argument rather than reading it off the ctx.
+-- Every settings/<page>.lua used to call `H.CreatePanel(name, title,
+-- { panelKey = PAGE, ... })` while the library read `opts.pageKey` — one word
+-- apart, and no spelling of it raises. The key was dropped on the floor for every
+-- one of the nine pages: `ctx.pageKey` was nil throughout, `Helpers.__panelFor(key)` —
+-- the library's published per-page handle, which settings/OptionsSetup.lua's own
+-- degradation stub also publishes — resolved nothing, and a renderer that raised
+-- was reported as page "?" instead of by name. Nothing raised, which is exactly
+-- why it survived: the pages drew correctly, because RenderSchema and
+-- RestoreDefaults are handed the page key as an argument rather than reading it
+-- off the ctx.
 --
--- The fix is one word per page file. This case goes green when it lands.
+-- Every page file now spells it `pageKey` and this case is green. It stays because
+-- the failure mode is a silent one -- a misspelt optional key is indistinguishable
+-- from an absent one -- and this is the only thing in the repo that would notice.
 test("Options: a page's ctx carries its page key", function()
     for _, key in ipairs(PAGES) do
         local ctx = panelFor(T, key)
@@ -300,23 +305,23 @@ test("Options: the Columns page's Defaults button restores the SHIPPED column li
     -- button wired to it would have looked live and done nothing at all.
     -- red under: defaultsOnClick left pointing at H.RestoreDefaults.
     local inst = T.load()
-    local NS = inst.NS
+    local NSi = inst.NS
     local ctx = showPage(inst, "columns")
 
     assertTrue(ctx.panel.wantsDefaultsButton, "the Columns page must offer a Defaults button")
     assertTrue(ctx.panel.defaultsOnClick ~= nil, "and wire a handler to it")
 
     -- Move away from the shipped list in both ways the page can: order and which are ticked.
-    local shipped = NS.DefaultWindow(NS.Database.GetWindows()[1].id).columns
+    local shipped = NSi.DefaultWindow(NSi.Database.GetWindows()[1].id).columns
     local scrambled = {}
     for i = #shipped, 1, -1 do
         scrambled[#scrambled + 1] = { stat = shipped[i].stat, enabled = i % 2 == 0 }
     end
-    assertTrue(NS.SetByPath("window.columns", scrambled))
+    assertTrue(NSi.SetByPath("window.columns", scrambled))
 
     ctx.panel.defaultsOnClick()
 
-    local after = NS.Database.GetWindows()[1].columns
+    local after = NSi.Database.GetWindows()[1].columns
     assertEqual(#after, #shipped)
     for i, col in ipairs(shipped) do
         assertEqual(after[i].stat, col.stat, "column " .. i .. " is not the shipped statistic")
@@ -331,17 +336,17 @@ function()
     -- tab-wide, so a click on the block-editor tab must still put those rows back even though they
     -- are not the tab on screen. red under: defaultsOnClick pointed only at restoreShippedColumns.
     local inst = T.load()
-    local NS = inst.NS
+    local NSi = inst.NS
     local ctx = showPage(inst, "columns")
 
     assertTrue(ctx.panel.defaultsOnClick ~= nil, "the Columns page must wire a Defaults handler")
 
-    assertTrue(NS.SetByPath("window.columnHeader.font", "Skurri"))
-    assertTrue(NS.SetByPath("window.columnHeader.outline", "THICKOUTLINE"))
+    assertTrue(NSi.SetByPath("window.columnHeader.font", "Skurri"))
+    assertTrue(NSi.SetByPath("window.columnHeader.outline", "THICKOUTLINE"))
 
     ctx.panel.defaultsOnClick()
 
-    local w = NS.Database.GetWindows()[1]
+    local w = NSi.Database.GetWindows()[1]
     assertEqual(w.columnHeader.font, "Friz Quadrata TT",
         "the header font must be back to shipped after the page-wide Defaults click")
     assertEqual(w.columnHeader.outline, "OUTLINE",
@@ -417,6 +422,83 @@ test("Options: a page reached from the Blizzard sidebar mid-combat refuses to re
     -- built above the combat check, on every show, which is the ordering the
     -- previous case pins from the other direction.
     assertTrue(ctx.panel.defaultsBtn ~= nil)
+end)
+
+test("Options: no settings page wires its own OnShow", function()
+    -- CX03. `O.SetRenderer` owns the show path: the Defaults button above the
+    -- guard, the Blizzard-sidebar combat refusal, and the render-once-then-dirty
+    -- rule. A page that parks its own script on ctx.panel is not merely
+    -- duplicating that logic, it is REPLACING it -- SetScript overwrites -- so
+    -- the refusal it copies drifts from the library's the first time the library
+    -- changes and nothing says so.
+    -- red under: settings/Profiles.lua's hand-rolled OnShow, which is what this
+    -- case was written to catch.
+    local offenders = {}
+    for _, rel in ipairs(T.loadedAddonFiles) do
+        if rel:match("^settings/") then
+            local fh = io.open((T.root or ".") .. "/" .. rel, "r")
+            local src = fh and fh:read("*a") or ""
+            if fh then fh:close() end
+            src = src:gsub("%-%-[^\r\n]*", "")
+            if src:find('SetScript%(%s*"OnShow"') then offenders[#offenders + 1] = rel end
+        end
+    end
+    assertEqual(table.concat(offenders, ", "), "",
+        "these pages drive their own show path instead of H.SetRenderer")
+end)
+
+test("Options: the Profiles page refuses to render mid-combat, through the library's guard",
+function()
+    -- The page whose widget tree is AceConfigDialog's is reached from the
+    -- Blizzard sidebar exactly like the other eight, so it needs the same
+    -- refusal -- and now gets it from the same place rather than from a copy.
+    local inst = T.load()
+    local ctx = panelFor(inst, "profiles")
+    local ACD = inst.mocks.__libs["AceConfigDialog-3.0"]
+    local before = ACD.__opens or 0
+
+    inst.mocks.setRestricted(true)
+    ctx.panel:Hide()
+    ctx.panel:Show()
+
+    assertEqual(ACD.__opens or 0, before, "AceConfigDialog drew into the canvas under lockdown")
+    assertTrue(inst.mocks.__settingsClosed > 0,
+        "closing the window is what makes the refusal legible")
+    -- And the page is still drawable once combat drops: a refusal that leaves
+    -- ctx._rendered set would blank the page for the rest of the session.
+    inst.mocks.setRestricted(false)
+    ctx.panel:Hide()
+    ctx.panel:Show()
+    assertTrue((ACD.__opens or 0) > before, "the page never recovered after the refusal")
+end)
+
+test("Options: a profile switch re-opens the Profiles page's AceConfigDialog", function()
+    -- This is the property the page's old hand-rolled OnShow was protecting, and
+    -- the reason it gave for staying off SetRenderer: AceDBOptions' widget tree
+    -- re-reads the active profile only when the dialog is fed again, so a switch
+    -- made from anywhere else must reach it. Under SetRenderer that is
+    -- H.RefreshPanel(ctx, true) on PROFILE_CHANGED -- the library's own seam for
+    -- a page that repaints off its host's message bus -- and a hidden page is
+    -- marked dirty and repaints on its next show.
+    -- red under: SetRenderer with no PROFILE_CHANGED listener, which draws the
+    -- profile list once and then shows a stale one forever.
+    local inst = T.load()
+    local ctx = panelFor(inst, "profiles")
+    local ACD = inst.mocks.__libs["AceConfigDialog-3.0"]
+
+    ctx.panel:Hide()
+    ctx.panel:Show()
+    local afterFirst = ACD.__opens or 0
+    assertTrue(afterFirst > 0, "the page never drew at all")
+
+    -- Hidden, and the profile moves under it.
+    ctx.panel:Hide()
+    inst.NS.db:SetProfile("Raid")
+    assertEqual(ACD.__opens or 0, afterFirst, "a hidden page must not draw")
+
+    ctx.panel:Show()
+    assertTrue((ACD.__opens or 0) > afterFirst,
+        "the profile list is still the one drawn for the previous profile")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -604,6 +686,54 @@ test("Options: AceGUI is resolved once and published for the page builders", fun
     assertTrue(inst.NS.AceGUI ~= nil,
         "library-stack-§4: resolve once and hand it over, rather than per page")
     assertEqual(inst.NS.AceGUI, inst.mocks.__libs["AceGUI-3.0"])
+end)
+
+test("Options: the shared LSM30_Border slot is re-registered once, above what AGSMW left in it",
+function()
+    -- red under: dropping `lib.__PatchLSM30Border()` from the live wiring below the
+    -- degradation fork in settings/OptionsSetup.lua.
+    --
+    -- This case is the whole reason core/LSMPatch.lua could sit on disk for a year
+    -- unproven. AceGUI's widget registry is process-global — one slot named
+    -- LSM30_Border shared by every addon in the client — and the private copy did its
+    -- registration from a PLAYER_LOGIN frame, which never fires headlessly. So the
+    -- suite loaded the file, registered nothing, and passed.
+    local seeded = function() return {} end
+    local inst = T.load{ mutate = function(m)
+        -- Model AGSMW having already claimed the slot, which MultiMeters.toc arranges
+        -- in the client: the widget XML comes in with the other libraries (:29), well
+        -- before settings/OptionsSetup.lua (:85). The kit's mock ships an EMPTY
+        -- registry — deliberately, so a dropdown maker sees LSM30_* as absent and falls
+        -- back — and with nothing in the slot the fixup correctly declines to wrap
+        -- anything, which would let this case pass over a call site that never ran.
+        local AceGUI = m.__libs["AceGUI-3.0"]
+        AceGUI.WidgetRegistry["LSM30_Border"]   = seeded
+        AceGUI.__widgetVersions["LSM30_Border"] = 20
+    end }
+
+    local AceGUI = inst.mocks.__libs["AceGUI-3.0"]
+    assertTrue(AceGUI.WidgetRegistry["LSM30_Border"] ~= seeded,
+        "the addon loaded without ever asking the library to fix the Border widget — "
+        .. "the closed dropdown keeps AGSMW's 42px preview tile and sits that far right "
+        .. "of every control stacked with it")
+    assertEqual(AceGUI:GetWidgetVersion("LSM30_Border"), 21,
+        "the wrapper must go in exactly ONE version above what it wrapped: lower and "
+        .. "AceGUI refuses it outright, higher and this addon is bidding against the "
+        .. "siblings instead of sharing one registration with them")
+
+    -- Idempotence is the half that only matters with siblings loaded. Every Ka0s addon
+    -- vendors its own copy of LibKa0s and LibStub hands all of them the same `lib`, so
+    -- five callers in one session must still produce ONE registration — otherwise the
+    -- outermost wrapper belongs to whoever loaded last, which is the defect this whole
+    -- move exists to end.
+    local lib = inst.mocks.LibStub("LibKa0s-Options-1.0", true)
+    local installed = AceGUI.WidgetRegistry["LSM30_Border"]
+    assertFalse(lib.__PatchLSM30Border(),
+        "a second call reported that it registered something; the sentinel is not holding")
+    assertTrue(AceGUI.WidgetRegistry["LSM30_Border"] == installed,
+        "a second call replaced the constructor — that is the wrapper stack, one level deep")
+    assertEqual(AceGUI:GetWidgetVersion("LSM30_Border"), 21,
+        "a second call bumped the version, so N addons would leave the slot at N+20")
 end)
 
 -- ---------------------------------------------------------------------------

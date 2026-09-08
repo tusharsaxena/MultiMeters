@@ -155,8 +155,8 @@
 -- Manifest     mocks.__toc (Version / Title / Notes)
 -- Timers       mocks.__timers · mocks.__fireTimers() (base) · mocks.__flushTimers()
 
-local root = ... or "."
-local kitMockBase = dofile(root .. "/tests/_kit/mock_base.lua")
+local repoRoot = ... or "."
+local kitMockBase = dofile(repoRoot .. "/tests/_kit/mock_base.lua")
 
 -- ===========================================================================
 -- The secret simulator
@@ -2130,7 +2130,11 @@ local function build()
             addon.__modules     = {}
             addon.__moduleOrder = {}
 
-            addon.NewModule = function(host, name, ...)
+            -- The mixin list every caller passes (`"AceEvent-3.0"`) is accepted and
+            -- discarded: embedAceEvent below is unconditional, so the fake gives every
+            -- module the bus whether or not it asked. Lua drops the surplus arguments
+            -- without a vararg in the signature; naming one here only claims a use.
+            addon.NewModule = function(host, name)
                 local m = { moduleName = name, __addon = host }
                 embedAceEvent(m)
                 m.ScheduleTimer = host.ScheduleTimer
@@ -2184,7 +2188,8 @@ local function build()
     -- LibSharedMedia-3.0. Real enough to answer a Fetch: modules/Window.lua and
     -- modules/Row.lua resolve every font, bar texture and border through it, and a
     -- nil library sends them all down the fallback branch, leaving the LSM path
-    -- untested. core/LSMPatch.lua registers the shipped monospace font into this.
+    -- untested. core/MediaSetup.lua registers the shipped monospace face into this,
+    -- through LibKa0s-Media-1.0's own RegisterLSM.
     local media = { font = {}, statusbar = {}, border = {}, background = {}, sound = {} }
     libs["LibSharedMedia-3.0"] = {
         MediaType = { FONT = "font", STATUSBAR = "statusbar", BORDER = "border",

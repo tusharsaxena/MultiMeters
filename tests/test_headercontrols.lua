@@ -278,7 +278,7 @@ test("HeaderControls: the width reserved equals the width occupied", function()
     -- These are two different computations of one number -- what the title
     -- reserves on its right, and where the leftmost control actually lands -- and
     -- if they are ever derived differently a title runs underneath a button.
-    local inst, window = scene()
+    local _, window = scene()
 
     local leftmost = 0
     for _, key in ipairs({ "minimise", "lock", "settings", "segment", "reset", "export" }) do
@@ -456,7 +456,7 @@ test("HeaderControls: minimise writes through the settings seam", function()
     -- CONFIG_CHANGED, and it is what the panel's own checkbox writes through, so
     -- a direct poke leaves the panel and the window disagreeing.
     -- red under: `frameCfg.minimised = not frameCfg.minimised`.
-    local inst, window, cfg = scene()
+    local _, window, cfg = scene()
     assertFalse(cfg.frame.minimised and true or false)
 
     window.controls.minimise:_run("OnClick")
@@ -467,7 +467,7 @@ test("HeaderControls: minimise writes through the settings seam", function()
 end)
 
 test("HeaderControls: the lock button toggles this window only", function()
-    local inst, window, cfg = scene()
+    local _, window, cfg = scene()
     local before = cfg.frame.locked and true or false
     window.controls.lock:_run("OnClick")
     assertFalse((cfg.frame.locked and true or false) == before)

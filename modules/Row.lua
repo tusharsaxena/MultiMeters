@@ -52,7 +52,7 @@
 -- loads this file before either of them, and a load-time upvalue would freeze a
 -- nil in and silently kill every tooltip in the addon.
 
-local addonName, NS = ...
+local _, NS = ...
 
 -- Perf bracket upvalue (performance-§2): resolved ONCE at load, never through an
 -- NS lookup on the hot path. core/PerfSetup.lua loads before modules/, so this
@@ -249,6 +249,11 @@ local ROLE_COLORS = {
 -- The role atlas is deliberately gone with the role icon. Three roles across a
 -- whole raid identifies nobody, and it was the icon most likely to be on screen
 -- when the name column ran out of room — see drawUnitIcon's ladder.
+-- Blizzard's class atlas, cropped by coordinate below. The shared catalog carries
+-- no class art and library-stack-§8 says a mark it lacks is added UPSTREAM rather
+-- than drawn locally -- but twelve class circles are the game's own data, not a
+-- Ka0s glyph, and they change when the game's classes do. Recorded in
+-- docs/ARCHITECTURE.md's "Hard-coded texture paths" census.
 local CLASS_TEXTURE = [[Interface\TargetingFrame\UI-Classes-Circles]]
 
 --- The bar color for one cell, per the window's `bars.colorMode`.
@@ -333,6 +338,14 @@ local function fontPath(name)
     return path or Const.FONT_MONO or _G.STANDARD_TEXT_FONT
 end
 
+--- The LSM bar texture for `name`, or the client's own bar as a last resort.
+---
+--- THE FALLBACK HAS TO BE A CLIENT FILE. LibKa0s ships bar textures and they
+--- reach LSM through core/MediaSetup.lua's RegisterLSM, so the only load that
+--- gets here with nothing is one where the payload is absent -- and on that load
+--- NS.MediaTexture answers nil too. A fallback that needs the thing that is
+--- missing is not a fallback (library-stack-§8; docs/ARCHITECTURE.md's
+--- "Hard-coded texture paths").
 local function barTexture(name)
     local media = lsm()
     local path = media and name and media:Fetch("statusbar", name, true)

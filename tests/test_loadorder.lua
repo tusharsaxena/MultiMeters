@@ -93,9 +93,9 @@ end)
 
 test("loadorder: the TOC declares no duplicate file line", function()
     -- A file listed twice runs twice. Every core/ file here is written to be
-    -- loaded once — core/LSMPatch.lua registers a PLAYER_LOGIN frame, and
-    -- core/MultiMeters.lua calls AceAddon:NewAddon — so a duplicated line is a
-    -- second bootstrap, not a no-op.
+    -- loaded once — core/MultiMeters.lua calls AceAddon:NewAddon, and
+    -- core/MediaSetup.lua registers the shipped face with LibSharedMedia — so a
+    -- duplicated line is a second bootstrap, not a no-op.
     local seen, dupes = {}, {}
     for _, rel in ipairs(T.loadedAddonFiles) do
         local key = rel:lower()

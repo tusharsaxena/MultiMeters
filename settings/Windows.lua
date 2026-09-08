@@ -38,7 +38,7 @@
 -- This file therefore contains no registry logic. It contains a picker, some
 -- buttons, and a confirmation.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = NS.L
 

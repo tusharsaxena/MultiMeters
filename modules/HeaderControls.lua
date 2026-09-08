@@ -58,7 +58,7 @@
 --
 -- TOC POSITION: after modules/Window.lua, which owns the frames these attach to.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local HeaderControls = {}
 NS.HeaderControls = HeaderControls

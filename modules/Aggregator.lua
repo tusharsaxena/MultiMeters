@@ -122,7 +122,7 @@
 -- the exception and is a PLAIN number or nil: computing it is a division, so it
 -- exists only when the operands were accessible, which is only out of combat.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Aggregator = NS:NewModule("Aggregator", "AceEvent-3.0")
 NS.Aggregator = Aggregator
@@ -1429,6 +1429,29 @@ local function buildByIdentity(pass)
     end
 end
 
+--- The `judge` recorder for this pass, or nil when nobody is recording.
+---
+--- Resolved through `NS.Diagnostics` at CALL time, because core/Diagnostics.lua
+--- is optional and this file does not depend on it loading. What is new is that
+--- the ARMED FLAG is read here too, before the caller builds anything: Lua
+--- evaluates a call's arguments first, so passing a freshly built fields table to
+--- a `TraceFeign` that will decline it still costs the table. Disarmed, that was
+--- two tables — the fields and its nested order list — per Deaths source per
+--- refresh, on the addon's hot path, for a recording nobody had asked for.
+---
+--- Returning the function rather than a boolean is what lets scanColumn spend one
+--- test instead of three, and keeps the resolution out of a function that is
+--- already the most complex in the addon.
+---
+--- @param active any        the Feign module, or nil where the column is not counted
+--- @return function|nil     Diagnostics.TraceFeign while armed, otherwise nil
+local function judgeTracer(active)
+    if not active then return nil end
+    local D = NS.Diagnostics
+    if D ~= nil and D.feignArmed == true then return D.TraceFeign end
+    return nil
+end
+
 --- Read one column from the provider and index every source in it by GUID.
 ---
 --- The pet fold lives here, and so does its refusal: foldPet holds the
@@ -1469,6 +1492,11 @@ local function scanColumn(pass, statKey)
     local Feign = isCount and NS.Feign or nil
     if Feign and Feign.Prune then Feign.Prune() end
 
+    -- HOISTED OUT OF THE LOOP, and out of this function. Nothing inside the walk
+    -- can arm or disarm a recording, so the whole question is settled once per
+    -- column instead of once per death row.
+    local traceJudge = judgeTracer(Feign)
+
     for index, src in ipairs(column.sources) do
         -- ASKED PER DEATH, not per player. `ShouldDropDeath` remembers the
         -- individual deaths it judges fake, so a hunter who later dies for real
@@ -1483,17 +1511,14 @@ local function scanColumn(pass, statKey)
         -- boundaries that recording covers: a death row that reaches here with
         -- `dropped=false` for a GUID the `cast` line named is the filter losing
         -- the thread between the two, and the `prune` lines in between say where.
-        -- core/Diagnostics.lua is resolved at call time and costs one nil test
-        -- plus one boolean while nobody has armed a recording.
-        if Feign then
-            local D = NS.Diagnostics
-            if D and D.TraceFeign then
-                D.TraceFeign("judge", {
-                    order = { "guid", "recap", "dropped" },
-                    guid = src.guid, recap = src.deathRecapID,
-                    dropped = feigned and true or false,
-                })
-            end
+        -- While nobody is recording this is one nil test and the table below is
+        -- never built — which is what the comment used to claim and did not do.
+        if traceJudge then
+            traceJudge("judge", {
+                order = { "guid", "recap", "dropped" },
+                guid = src.guid, recap = src.deathRecapID,
+                dropped = feigned and true or false,
+            })
         end
         -- Spelled as a branch and not as `not feigned and rowForSource(...) or nil`:
         -- that idiom truncates a multiple return to one value, which silently

@@ -354,8 +354,8 @@ assert_(restricted.unitsPerIter == 0,
      .. "cached map rather than re-walking the unit API mid-pull")
         :format(restricted.unitsPerIter))
 
--- A restricted pass costs about 29% more than the unrestricted one (421214
--- against 325955 for the same 20x7 window). The gap was measured rather than
+-- A restricted pass costs about 36% more than the unrestricted one (412373.3
+-- against 303415.8 for the same 20x7 window). The gap was measured rather than
 -- assumed, by re-running this scenario with pieces removed:
 --
 --   * ~47KB is identity correlation itself — one key per source per non-sort
@@ -374,10 +374,31 @@ assert_(restricted.unitsPerIter == 0,
 --     value — does not make. It appears only in this scenario, because it is the
 --     only one that runs restricted.
 --
--- The ceiling carries the same ~3.5% headroom as the dormant one above. What it
--- catches is identity correlation GROWING; the gap to `refresh20x7` is expected
--- and is not itself a failure.
-local RESTRICTED_BYTES_CEILING = 436000   -- measured 421214 for a 20x7 pass
+-- The three sizes above still describe the shape of the gap; the totals they were
+-- taken from do not, and the ratio has moved from 29% to 36% because the
+-- unrestricted arm got cheaper faster than this one did.
+--
+-- RE-DERIVED 2026-09-08 alongside the dormant ceiling, and recorded here because
+-- a stale figure sitting next to a freshly derived one is the same defect twice.
+-- What the checkoutable trees say:
+--
+--   d879851   421214     the figure this line carried
+--   (bundle)  447916.5   docs/automated-tests/20260825-103437, 9 column reads
+--   2b880b8   400595.1   8 column reads
+--   a2cbffb   413013.3   the mid-pull identity key, +12.4K
+--   0e74319   412373.3   and unmoved since, M2-09 included
+--
+-- M2-09 is NOT in that list on purpose: the feign filter needs a GUID and a
+-- restricted pass has none, so the trace never reached this arm and gating it
+-- changed nothing here. The ~47K that came off between the 2026-08-25 bundle and
+-- 2b880b8 arrived with the pass dropping from nine column reads to eight, and
+-- pinning it to a commit is a hundred-commit range this item did not open.
+-- Recorded as observed rather than attributed.
+--
+-- The ceiling carries the same ~3.5% headroom as the dormant one above (3.55%).
+-- What it catches is identity correlation GROWING; the gap to `refresh20x7` is
+-- expected and is not itself a failure.
+local RESTRICTED_BYTES_CEILING = 427000   -- measured 412373.3 over 3 runs, 2026-09-08, +3.5%
 assert_(restricted.bytesPerIter <= RESTRICTED_BYTES_CEILING,
     ("a restricted pass allocated %.0f bytes/iter, over the %d-byte ceiling — identity "
      .. "correlation grew"):format(restricted.bytesPerIter, RESTRICTED_BYTES_CEILING))
@@ -559,9 +580,32 @@ NS.Perf.on = false
 -- it for the whole period, and this repo has a single commit, so there is nothing
 -- to bisect. Recorded as unexplained rather than attributed to a guess.
 --
--- The figure is deterministic to the byte across runs, so the headroom is the
--- same ~3.5% the previous ceiling carried, and a real regression still shows.
-local PROBE_OFF_BYTES_CEILING = 336000   -- measured 325955 for a 20x7 pass
+-- RE-DERIVED 2026-09-08 from three consecutive runs, and this time the figure
+-- went DOWN. The history is short and every step of it is a measurement rather
+-- than an inference, because the same trees are still checkoutable:
+--
+--   0e74319   303415.8   the settings revamp merged; no feign trace yet
+--   81642e6   310135.8   the issue #25 recording landed, +6720
+--   c61e25f   303415.8   M2-09 gated it, and the 6720 came back off
+--
+-- 6720 is 20 sources times 336 bytes, and 336 is the fields table plus its
+-- nested order table that the `judge` site in modules/Aggregator.lua built per
+-- Deaths source per refresh whether or not anybody was recording. This window
+-- carries one Deaths column, so it paid that once per source per pass. Section 6
+-- below measures the same 6720 in isolation, on a Deaths-only window, and that is
+-- the assertion that guards it going forward. This ceiling is not the guard for
+-- it; it is the guard for the whole pass.
+--
+-- WHICH IS THE POINT OF RE-DERIVING RATHER THAN LEAVING IT. 336000 sat 10.7%
+-- above what the pass now allocates. The 6720 that R-01 named walked in under
+-- that slack without a word, and the ceiling exited 0 while doing it. A ceiling
+-- carrying three times its stated headroom is not a loose ceiling, it is an
+-- absent one.
+--
+-- Three runs, not one, and the reason is that a single run cannot tell headroom
+-- from noise: all three reported 303415.8 to the tenth of a byte, so the margin
+-- below is genuinely margin. Same ~3.5% the block has always claimed (3.49%).
+local PROBE_OFF_BYTES_CEILING = 314000   -- measured 303415.8 over 3 runs, 2026-09-08, +3.5%
 
 assert_(probeOff.bytesPerIter <= PROBE_OFF_BYTES_CEILING,
     ("a dormant pass allocated %.0f bytes/iter, over the %d-byte ceiling — one refresh of "
@@ -593,6 +637,117 @@ NS.Perf.suspended = false
 assert_(suspended.apiPerIter == 0,
     ("a suspended capture still made %.2f meter API calls per pass — suspend must stop the "
      .. "reads at the source"):format(suspended.apiPerIter))
+
+-- ── 6. THE DISARMED FEIGN TRACE (performance-§2, MULTIMETERS-R-01) ──────────
+--
+-- The issue #25 recording is instrumentation, so the same rule the probe above
+-- is held to applies to it: dormant instrumentation costs one field read and one
+-- boolean test, and a table built for a function that immediately discards it is
+-- not that. `Diagnostics.TraceFeign` returns on its first line when nothing is
+-- armed — but the arguments are evaluated at the CALL, so the `judge` site in
+-- modules/Aggregator.lua built a fields table and a nested order table per Deaths
+-- source per refresh whether or not anybody was recording.
+--
+-- MEASURED AS A DIFFERENCE, not as an absolute. The absolute figure for a refresh
+-- is dominated by the harness (see the ceiling note above) and would drown two
+-- small tables per source; what is asked here is narrower and answerable exactly:
+-- does loading core/Diagnostics.lua cost a disarmed refresh anything at all? The
+-- baseline arm removes `TraceFeign` from the namespace, which is the addon's own
+-- documented degradation path — modules/Feign.lua and modules/Aggregator.lua both
+-- resolve NS.Diagnostics at call time precisely so the file may be absent — so
+-- the delta between the arms is the trace and nothing else.
+--
+-- DEATHS ALONE, because Deaths is the only column that reaches the filter:
+-- `scanColumn` takes the feign path on `stat.isCount`, and Deaths is the one
+-- counted stat a shipped window carries. Measuring it inside the seven-column
+-- window would put six columns of unrelated noise in both arms.
+
+do
+    local D = NS.Diagnostics
+    assert(D and D.TraceFeign and D.ArmFeignTrace,
+        "core/Diagnostics.lua did not publish the feign trace — this scenario would be "
+        .. "measuring its own absence")
+    assert(NS.Feign, "modules/Feign.lua did not load — the judge site is unreachable and "
+        .. "both arms below would measure the same nothing for the wrong reason")
+
+    local deaths = NS.Constants.STAT_BY_KEY.Deaths
+    assert(deaths and deaths.isCount,
+        "Deaths is no longer a counted stat — modules/Aggregator.lua gates the whole feign "
+        .. "filter on `isCount`, so this scenario has moved to whichever stat now is")
+
+    window.columns = { { stat = "Deaths", width = deaths.defaultWidth, showBar = true } }
+    inst:ApplyConfig()
+
+    -- Disarmed is the state a player is always in: `/mm debug feign on` is a
+    -- support instruction, not a default.
+    D.ArmFeignTrace(false)
+
+    local realTrace = D.TraceFeign
+    local traceCalls = 0
+
+    -- The baseline: core/Diagnostics.lua absent. Primed inside the arm, because
+    -- ApplyConfig above invalidated the row cache and a cold first pass would
+    -- land in whichever arm ran first.
+    D.TraceFeign = nil
+    inst.dirty = true
+    inst:Refresh()
+    local traceAbsent = measure("feignTraceAbsent", ITERS, function()
+        inst.dirty = true
+        inst:Refresh()
+    end)
+
+    -- The arm under test: present, loaded, and recording nothing. The wrapper
+    -- allocates nothing per call, so it cannot itself move the byte figure — it
+    -- is here to answer the sharper question underneath the bytes.
+    D.TraceFeign = function(...)
+        traceCalls = traceCalls + 1
+        return realTrace(...)
+    end
+    inst.dirty = true
+    inst:Refresh()
+    traceCalls = 0
+    local traceOff = measure("feignTraceOff", ITERS, function()
+        inst.dirty = true
+        inst:Refresh()
+    end)
+    D.TraceFeign = realTrace
+
+    -- THE ASSERTION THIS SCENARIO EXISTS FOR, and it is an integer rather than a
+    -- byte count: a disarmed trace must not be CALLED, because the call is where
+    -- the tables are built. Bytes can be argued with; this cannot.
+    assert_(traceCalls == 0,
+        ("a disarmed feign trace was called %d times over %d refreshes — the call sites "
+         .. "must read the published armed flag BEFORE building their fields table, or "
+         .. "every disarmed pass pays for a recording nobody asked for")
+            :format(traceCalls, ITERS))
+
+    -- And the same statement in bytes. TOLERANCE, not equality: two measurements
+    -- of an identical path in this harness land within a byte per iteration of
+    -- each other (probeOverheadOff and rosterCached differ by 0.3), so a strict
+    -- `==` would be a flake generator. The window is nowhere near tight enough to
+    -- matter: measured 2026-09-08, the two arms land on the SAME figure to the
+    -- tenth of a byte (71224.1 each), and the defect this replaced measured
+    -- 77944.1 against 71224.1 — 6720 bytes per pass, 336 per Deaths source, which
+    -- is the two tables.
+    local FEIGN_TRACE_BYTES_TOLERANCE = 16
+    assert_(math.abs(traceOff.bytesPerIter - traceAbsent.bytesPerIter)
+                <= FEIGN_TRACE_BYTES_TOLERANCE,
+        ("a disarmed feign trace cost %.1f bytes/iter against a refresh with the diagnostic "
+         .. "absent (%.1f against %.1f) — dormant instrumentation must allocate nothing "
+         .. "(performance-§2)")
+            :format(traceOff.bytesPerIter - traceAbsent.bytesPerIter,
+                    traceOff.bytesPerIter, traceAbsent.bytesPerIter))
+
+    -- Put the fixture back. Nothing below reads it today; a seventh scenario
+    -- added under this one would otherwise inherit a one-column window and
+    -- quietly measure a seventh of the pass it thought it was measuring.
+    window.columns = {}
+    for _, key in ipairs(STAT_KEYS) do
+        window.columns[#window.columns + 1] =
+            { stat = key, width = NS.Constants.STAT_BY_KEY[key].defaultWidth, showBar = true }
+    end
+    inst:ApplyConfig()
+end
 
 -- ── report ──────────────────────────────────────────────────────────────────
 

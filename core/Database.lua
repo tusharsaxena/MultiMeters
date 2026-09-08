@@ -17,7 +17,7 @@
 -- LATER (the `# Defaults` block follows `# Core`), which is fine because every
 -- read of NS.defaults here happens at CALL time.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Database = {}
 NS.Database = Database

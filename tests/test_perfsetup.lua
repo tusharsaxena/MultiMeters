@@ -131,6 +131,89 @@ test("PerfSetup: no locale table is handed to the library", function()
     assertNil(src:match("[\r\n]%s*L%s*="), "core/PerfSetup.lua passes an `L` to the library")
 end)
 
+test("PerfSetup: the descriptor names the FOLDER and leaves the close control to the library",
+function()
+    -- ANTI-PATTERN #64, and this addon has already been bitten by it once. The
+    -- descriptor used to carry a `decorate` hook whose entire body was
+    -- `NS.DebugLog.MakeCloseButton(frame, api.Hide)` — two arguments onto a
+    -- three-argument function — so the perf panel drew a multiplication sign
+    -- while the console two inches away wore the collection's mark. A texture
+    -- path that is never built draws nothing and raises nothing: luacheck was
+    -- clean and the whole suite was green, and the only witness was a screenshot.
+    --
+    -- THE HOOK IS GONE AND THAT IS WHAT THIS CASE GUARDS. From PerfPanel minor 4
+    -- the library draws the control itself, from `d.addonName or d.name`, at the
+    -- same inset from the same corner — so a hook here would be a second copy of
+    -- library behavior, and the branch at libs/LibKa0s/PerfPanel.lua:185-196 is
+    -- EXCLUSIVE: a host that supplies `decorate` never runs the library's arm at
+    -- all. Nothing would say so once the two drifted. Its absence is reasoned at
+    -- core/PerfSetup.lua's `NO decorate` block; this is the case that keeps the
+    -- reasoning from being re-decided by accident.
+    --
+    -- `addonName` is passed EXPLICITLY beside `name`, exactly as
+    -- core/DebugLogSetup.lua passes it, because the two fields answer two
+    -- questions — `name` seeds the frame globals, `addonName` is what a texture
+    -- path is built from — and they happen to be one string in this addon. A
+    -- descriptor that let the library fall through to `name` would be right by
+    -- luck, and `title` here is "Ka0s Multi Meters", which is what a future
+    -- rename would reach for first.
+    --
+    -- BOTH HALVES ARE ASSERTED because the descriptor's shape says nothing about
+    -- what reaches the screen: the real panel is then shown against a spy on the
+    -- library's own factory, so this tests the ARGUMENT rather than the source
+    -- text. A grep stays green under any refactor that keeps the words and
+    -- breaks the call.
+    -- red under: re-adding `decorate`; dropping `addonName`; a vendored
+    -- PerfPanel whose else arm stops carrying the folder name.
+    local NS, mocks = T.NS, T.mocks
+
+    local perfLib = mocks.LibStub("LibKa0s-Perf-1.0")
+    local realNew = perfLib.New
+    local descriptor
+    perfLib.New = function(_, d)
+        descriptor = d
+        return { on = false, suspended = false, Note = function() end }
+    end
+
+    -- A scratch namespace reading through to the live one, so the reloaded chunk
+    -- sees the real NS.Version and NS.Print while its `NS.Perf =` assignment
+    -- lands here rather than replacing the instance the rest of the suite shares.
+    local NS2 = setmetatable({}, { __index = NS })
+    T.Loader.uncache(ROOT .. "/core/PerfSetup.lua")
+    local ok, err = pcall(T.Loader.load, ROOT .. "/core/PerfSetup.lua", NS2, mocks)
+    perfLib.New = realNew
+    assertTrue(ok, "reloading core/PerfSetup.lua raised: " .. tostring(err))
+
+    assertTrue(type(descriptor) == "table",
+        "core/PerfSetup.lua did not hand LibKa0s-Perf a descriptor at all")
+    assertEqual(descriptor.addonName, "MultiMeters",
+        "the descriptor must name the addon FOLDER explicitly — reaching the same string "
+        .. "through `name` is luck, and the library reads `d.addonName or d.name`")
+    assertNil(descriptor.decorate,
+        "the descriptor must NOT carry `decorate` — the hook was a copy of PerfPanel's own "
+        .. "else arm, and supplying one takes the library's close control off the panel")
+
+    -- The live instance, built at load from the real descriptor, drawing its real panel.
+    local core = mocks.LibStub("LibKa0s-Core-1.0")
+    local realMake = core.MakeCloseButton
+    local calls, sawClick, sawName = 0, nil, nil
+    core.MakeCloseButton = function(_, onClick, name)
+        calls = calls + 1
+        sawClick, sawName = onClick, name
+        -- The factory answers nil where CreateFrame is unavailable; the arm must survive it.
+        return nil
+    end
+    local shown, showErr = pcall(NS.Perf.ShowPanel)
+    NS.Perf.HidePanel()
+    core.MakeCloseButton = realMake
+    assertTrue(shown, "showing the perf panel raised: " .. tostring(showErr))
+
+    assertEqual(calls, 1, "the library's else arm must build exactly one close control")
+    assertTrue(sawClick == NS.Perf.HidePanel, "the panel's own Hide must be the click handler")
+    assertEqual(sawName, "MultiMeters",
+        "the library was not told which addon folder to build the panel's close mark from")
+end)
+
 -- ── every declared bucket is really reached ─────────────────────────────────
 
 test("PerfSetup: every declared bucket is reached by a real bracket in the addon's source",
