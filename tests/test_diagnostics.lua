@@ -1425,12 +1425,38 @@ end)
 
 test("Diagnostics: the feign report survives a client with none of the unit APIs", function()
     -- The report is what a player runs when something is already wrong, so it
-    -- may not be the thing that raises. red under: an unguarded _G call.
+    -- may not be the thing that raises.
+    --
+    -- ASSERTING "IT DID NOT RAISE" IS NOT ENOUGH HERE, and used to be all this
+    -- case did. `Diagnostics.ReportFeign` pcalls its own body and prints
+    -- `section failed:` on a catch, so the pcall in this test returns true no
+    -- matter what the guards do -- the case could not go red under the very
+    -- mutation it names. What proves the guards held is the OUTPUT: the roster
+    -- still printed, every member still got a row, each unavailable read was
+    -- NAMED as `nil` rather than dropping its field, and the one API that IS
+    -- present still answered.
+    -- red under: an unguarded _G call, which trips the section pcall and
+    -- replaces the whole roster with one `section failed:` line.
     local inst = feignGroup(T.load{ enable = true })
     inst.mocks.UnitIsFeignDeath = nil
     inst.mocks.UnitIsDead = nil
-    local ok = pcall(function() inst.NS.Diagnostics.ReportFeign() end)
+
+    local ok, text = pcall(function() return (feignReport(inst)) end)
     assertTrue(ok, "the report ran with the unit APIs missing")
+    assertNil(text:find("section failed", 1, true),
+        "and it ran to the end rather than being caught by its own pcall")
+
+    assertTrue(text:find("group now", 1, true) ~= nil, "the roster still printed")
+    assertTrue(text:find("guid=Player-1-0000000A", 1, true) ~= nil,
+        "the local player kept a row")
+    assertTrue(text:find("guid=Player-1-0000000B", 1, true) ~= nil,
+        "and so did the party member -- the walk did not stop at the first miss")
+    assertEqual(select(2, text:gsub("dead=nil", "")), 2,
+        "both rows named the absent UnitIsDead instead of omitting the field")
+    assertEqual(select(2, text:gsub("feigning=nil", "")), 2,
+        "and both named the absent UnitIsFeignDeath")
+    assertTrue(text:find("hp=", 1, true) ~= nil,
+        "UnitHealth is still there and still answered: the guard is per field, not per row")
 end)
 
 test("Diagnostics: a secret GUID costs one field and not the line", function()
