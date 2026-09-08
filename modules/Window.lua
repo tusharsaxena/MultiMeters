@@ -670,6 +670,12 @@ function WindowProto:BuildFrame()
     -- grip's visibility is the LOCK's answer and only the lock's: ApplyLock and
     -- ApplyMinimised are its two authors and both ask the same question.
     do
+        -- THE GRIP ART IS A PAIR, and that is why it is not the catalog's.
+        -- LibKa0s-Media carries `resize`, but it is one glyph in one state; this
+        -- is -Up plus -Highlight, the two-state chrome a player already reads in
+        -- every chat window, and the catalog publishes no hover variant of
+        -- anything (library-stack-§8). Both paths are carried in
+        -- docs/ARCHITECTURE.md's "Hard-coded texture paths" census.
         local grip = CreateFrame("Button", nil, frame)
         grip:SetSize(12, 12)
         grip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)

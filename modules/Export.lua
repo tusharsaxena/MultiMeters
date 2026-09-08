@@ -1087,6 +1087,11 @@ local function makeButton(parent, text, onClick, icon)
     local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
     button:SetHeight(ROW_H)
 
+    -- The flat 1px fill standalone-windows-§1 names for a Ka0s edge, hard-coded
+    -- rather than fetched: it is a client primitive, not a mark, so it is not
+    -- something LibKa0s-Media's catalog answers for (library-stack-§8). The
+    -- whisper row below wears the same backdrop, and docs/ARCHITECTURE.md's
+    -- "Hard-coded texture paths" census carries both sites as one row.
     if button.SetBackdrop then
         button:SetBackdrop({
             bgFile   = "Interface\\Buttons\\WHITE8x8",

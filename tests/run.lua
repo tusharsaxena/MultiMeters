@@ -200,6 +200,14 @@ local SUITES = {
     -- ran lizard would be the commit-time complexity gate performance-§10 forbids.
     "test_layout_cap",
     "test_complexity_register",
+    -- The third register, and the same bargain a third time: it reads the
+    -- "Hard-coded texture paths" table out of docs/ARCHITECTURE.md and checks
+    -- membership both ways. It differs from the two above in ONE thing, and the
+    -- difference is deliberate: its scope drops `tests/` entirely, because
+    -- library-stack-§8 is about what a player sees drawn and a path in a fixture
+    -- is an assertion about a string. layout-§1's cap binds test files and this
+    -- rule does not.
+    "test_texture_paths",
     "test_constants",
     "test_secrets",
     "test_compat",

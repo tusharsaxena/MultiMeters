@@ -29,6 +29,13 @@ badge and any count quoted in the docs must agree with it.
 - complexityregister: no function is entered twice
 - complexityregister: every disposition can be followed
 
+### test_texture_paths.lua (4)
+
+- texturepaths: every hard-coded path in authored source is named in the ARCHITECTURE.md census
+- texturepaths: no census row outlives the path it records
+- texturepaths: every census row carries a disposition that can be followed
+- texturepaths: the deviation register carries the row the ColumnBlocks sites point at
+
 ### test_constants.lua (23)
 
 - Constants: NS.Const and NS.Constants are the same table
@@ -1660,6 +1667,7 @@ badge and any count quoted in the docs must agree with it.
 | test_loadorder.lua | 7 |
 | test_layout_cap.lua | 3 |
 | test_complexity_register.lua | 4 |
+| test_texture_paths.lua | 4 |
 | test_constants.lua | 23 |
 | test_secrets.lua | 38 |
 | test_compat.lua | 33 |
@@ -1700,4 +1708,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1518** |
+| **Total** | **1522** |

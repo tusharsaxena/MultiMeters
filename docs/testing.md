@@ -208,6 +208,36 @@ function`, and two of those three are CCN 16. They are unique on neither key, so
 cells read blank on every run that regenerates them. The register is where their disposition exists
 at all, and the runner's Disposition column is transcribed from it.
 
+### The texture-path census gate
+
+`tests/test_texture_paths.lua` is the third register, and the same bargain a third time. It reads
+every hard-coded `Interface\` path out of the `.lua` this repository authors and the table under
+*Hard-coded texture paths* in [ARCHITECTURE.md](ARCHITECTURE.md), and compares them in both
+directions: a new path nobody argued for is a red, and so is a row for a path that has gone.
+
+`library-stack-§8` makes LibKa0s-Media's catalog the addon's vocabulary for marks, so a red is
+cleared one of two ways — use `NS.Icon`, or add the row saying why the catalog cannot answer at that
+site. Twelve rows say why today; exactly one of them defers to the deviation register rather than
+arguing in place, and a fourth case asserts that register row is still there, so *"register row
+above"* cannot quietly become a phrase.
+
+**The quote is part of the pattern.** An occurrence counts when it opens a string, in either form
+Lua has — `"Interface\\…"` or the long-bracket `[[Interface\…]]` — and not otherwise, because a
+comment quoting a path is prose about a texture rather than a texture. Four such lines exist here
+and the census names them. This is not a detail: the 2026-09-07 plan's own per-repo tally put this
+addon at **8**, which is what matching the doubled backslash alone returns, and it missed the seven
+long-bracket literals in `modules/` — including two the same plan's prose describes by name. The
+scope was written down; the pattern was not.
+
+**Its scope drops `tests/` entirely**, and that is the one place it differs from the two gates above.
+`layout-§1`'s cap binds test files and this rule does not: a path in a fixture is an assertion about
+a string — `tests/test_mediasetup.lua` spells the vendored icon prefix out precisely so a wrong one
+is caught — and no player ever sees it drawn.
+
+The line and pair totals in the census prose are dated measurements and nothing asserts them.
+Membership of the distinct file/path pair is the invariant, because a line number moves on every
+ordinary edit while the arrival of a *new* path is the only event the rule has an opinion about.
+
 ## Verifying the vendored copies
 
 ```sh
