@@ -69,6 +69,22 @@ The degraded path is exercised by a **real load**, never by hand-stubbing the me
 local inst = T.load{ libFiles = {} }   -- the whole addon, with LibKa0s absent
 ```
 
+### The stub is checked in both directions
+
+`tests/test_degraded.lua` asks whether the `settings/OptionsSetup.lua` stub answers the calls this
+addon makes **today** — it greps `H.Foo(` out of `settings/*.lua` and checks each one resolves.
+That cannot see a member the library publishes and the pages have not adopted yet, so the day a
+page starts calling one, the stub is silently short and nothing goes red until a player with no
+LibKa0s opens the panel.
+
+`tests/test_surface_parity.lua` is the other direction: it compares the stub against the **live
+surface**, through the kit's `T.assertSurfaceParity(stub, "LibKa0s-Options-1.0", ignore)`. A member
+arrives on the list the moment the library publishes it and stays there until that file says out
+loud why the stub does not carry it. `tests/run.lua` registers where the live half is looked up
+(`Kit.setSurfaceSource`), because this stub mirrors the **instance** `lib:New(descriptor)` returned
+and not the four-member library table LibStub answers for the same name. The other five seams are
+not compared by name, and the suite's header gives the reason for each.
+
 ### One environment detail worth knowing
 
 Nearly every client-API read in this addon is spelled `_G.C_DamageMeter`, `_G.canaccessvalue`,

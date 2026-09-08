@@ -1644,6 +1644,10 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: the export modal refuses to open with no dropdown widget
 - Degraded: the addon still enables end to end with no library
 
+### test_surface_parity.lua (1)
+
+- parity: the Options stub carries every public member of the live Helpers surface
+
 ### test_eol.lua (1)
 
 - eol: every tracked file carries the terminator .gitattributes declares for it
@@ -1693,5 +1697,6 @@ badge and any count quoted in the docs must agree with it.
 | test_columnblocks.lua | 17 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 27 |
+| test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1516** |
+| **Total** | **1517** |
