@@ -1859,6 +1859,36 @@ at any point.
 
 ---
 
+### 30. The perf panel's close control
+
+**Smoke, session 3. NOT YET RUN — no client was available when this step was written.**
+
+`core/PerfSetup.lua` passes no `decorate` hook, so `libs/LibKa0s/PerfPanel.lua` draws the panel's
+close control itself, from the folder name the descriptor now states explicitly. That path has
+**never been looked at in a client from this addon**: for as long as the hook existed the library's
+own arm could not run, and the arm is the half a headless case can only prove by argument. The
+failure it is watching for draws nothing and raises nothing — a texture path that is never built is
+silent, which is how this panel wore a multiplication sign through a green suite once already.
+
+**Steps.**
+```
+/mm perf
+```
+Then, with the panel open, `/mm debug` so the console sits beside it.
+
+**Pass.**
+- **Exactly one** close control on the perf panel, in the panel's **top-right corner**, at the same
+  inset from the same corner it has always been at. Two stacked there means a `decorate` hook came
+  back and the library's arm ran as well; none at all means the arm did not run.
+- It is **this collection's close mark** — the same art the debug console beside it wears, and the
+  same the meter window's title bar ends in (§1). A thin grey multiplication sign is the library
+  falling back because it was not told which addon folder to build the path from, and is the exact
+  regression the explicit `addonName` exists to prevent.
+- Clicking it closes the panel, and `/mm perf` reopens it.
+- No Lua error at any point.
+
+---
+
 ## What to report
 
 For any failure, the minimum useful report is:

@@ -56,10 +56,12 @@ Widgets. Eight are reached through a seam file of their own (`core/CoreSetup.lua
 is resolved at each of its two call sites — `modules/Export.lua`, whose modal builds the addon's only
 dropdowns, and `settings/ColumnBlocks.lua`, whose block list is the library's `ReorderList` — because
 both widgets are built lazily on first use rather than wired at load. Every one of the nine degrades
-rather than erroring when `libs/LibKa0s` is absent. Two of them pass the addon's own **folder name** to the library (`core/CoreSetup.lua`'s `MakeCloseButton` wrapper and
-`core/DebugLogSetup.lua`'s descriptor), and a third gets there by accident of its own descriptor —
-`core/PerfSetup.lua` passes the folder name as `name`, which is what the perf panel's own close
-control is built from (`PerfPanel.lua` minor 4). This is why that file passes **no** `decorate` hook:
+rather than erroring when `libs/LibKa0s` is absent. Three of them pass the addon's own **folder name** to the library, and all three now say so
+explicitly: `core/CoreSetup.lua`'s `MakeCloseButton` wrapper, and the descriptors in
+`core/DebugLogSetup.lua` and `core/PerfSetup.lua`. The perf one used to reach the right answer only
+through `name` — `PerfPanel.lua` minor 4 reads `addonName or name`, so it was right by luck and one
+rename away from wrong — and it now states `addonName` beside `name`, the same shape the console's
+descriptor has. This is why that file passes **no** `decorate` hook:
 the one it used to carry drew a close button with the name dropped, so the panel wore a
 multiplication sign beside a console wearing the mark. The name matters because a texture path is
 absolute from `Interface\AddOns\`
