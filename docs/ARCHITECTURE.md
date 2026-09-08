@@ -628,7 +628,7 @@ gates the **tag** on the same figure, zero functions above CCN 15, evaluated by
 `and`/`or` defaulting" — is the failure anti-pattern **#53** describes: a list where everything is
 accepted is an inventory, and an inventory cannot tell you when something alarming arrives.
 
-**Measured 2026-09-08 at `80f8c9e`**, with the invocation `performance-§10` fixes and which this
+**Measured 2026-09-08 at `8ff9335`**, with the invocation `performance-§10` fixes and which this
 table may never vary from:
 
 ```
@@ -645,15 +645,15 @@ never had one.)
 nine of these twenty-three entries in ways that will not lead a reader to the code, in three
 different ways:
 
-- **A method is reported under its receiver.** `Cell@646-726` is `Cell:ApplyBorder`,
-  `Cell@1155-1231` is `Cell:ApplyIcons`, `WindowProto@312-413` is `WindowProto:BuildLayout`,
-  `Tooltip@2335-2397` is `Tooltip:CellTooltip`, `DrillDown@395-428` is `DrillDown:OnCellClick`.
+- **A method is reported under its receiver.** `Cell@659-739` is `Cell:ApplyBorder`,
+  `Cell@1168-1244` is `Cell:ApplyIcons`, `WindowProto@312-413` is `WindowProto:BuildLayout`,
+  `Tooltip@2342-2404` is `Tooltip:CellTooltip`, `DrillDown@395-428` is `DrillDown:OnCellClick`.
 - **A `t[k] = function` assignment is reported as `]`.** All three `core/Database.lua` entries are
   migration steps: `migrations[1]`, `migrations[4]`, `migrations[12]`.
-- **`(anonymous)@1961-2032` is not anonymous and does not start at 1961.** The parser opens the entry
+- **`(anonymous)@1968-2039` is not anonymous and does not start at 1968.** The parser opens the entry
   at the `function(_, event)` handed to `Secrets.SafeIterate` and closes it at the `end` of the
   enclosing function, so callback and host are reported as one row under the callback's name and with
-  the callback's parameter count. The function is `drawDeathEvents@1950-2032`, and it appears nowhere
+  the callback's parameter count. The function is `drawDeathEvents@1957-2039`, and it appears nowhere
   else in the output.
 
 **Two of these rows cannot carry a disposition forward, and that is why this table is the home of
@@ -687,20 +687,20 @@ Location cell is the file alone.
 | `scanColumn` | 34 | `modules/Aggregator.lua:1462-1565` | **Peel** — [#35](https://github.com/tusharsaxena/MultiMeters/issues/35). The per-source loop body, and the counted-column max pass under it. `M2-09` already took 36 → 34 by hoisting `judgeTracer` out, so the seam is proven rather than proposed. |
 | `DrillDown:OnCellClick` | 18 | `modules/DrillDown.lua:395-428` | **Accepted.** 20 NLOC; the count is three `f() and "x" or "none"` returns plus the Deaths ladder, and the ladder's **order** is the only thing the function records. Re-check: a second `statKey` grows a ladder of its own — two ladders are a table. |
 | `Export.ChatLines` | 27 | `modules/Export.lua:535-600` | **Peel** — [#36](https://github.com/tusharsaxena/MultiMeters/issues/36). The header build and the ranked line are two functions sharing a name; the `hasExtra` bookkeeping belongs entirely to the second. |
-| `onPrintToChat` | 16 | `modules/Export.lua:1427-1492` | **Accepted.** Four refusals, each with a recorded reason and each asked at the click because the answer changes between opening the modal and pressing the button, then a linear send. One point over. Re-check: a fifth refusal, or CCN 20. |
+| `onPrintToChat` | 16 | `modules/Export.lua:1432-1497` | **Accepted.** Four refusals, each with a recorded reason and each asked at the click because the answer changes between opening the modal and pressing the button, then a linear send. One point over. Re-check: a fifth refusal, or CCN 20. |
 | `Feign.Prune` | 25 | `modules/Feign.lua:247-337` | **Peel** — [#37](https://github.com/tusharsaxena/MultiMeters/issues/37). The `unit == nil` fork: the member who left the group and the member whose health is read are two verdicts, and the function's own comments already treat them as separate findings. |
 | `Format.DeathTime` | 19 | `modules/Format.lua:646-665` | **Accepted.** 15 NLOC at CCN 19 is `performance-§10`'s own documented artefact in its purest form: every `or` fallback scores as a decision and not one of them branches. Re-check: a third style beyond `clock` and `ago`. |
 | `onClick` | 24 | `modules/HeaderControls.lua:322-372` | **Peel** — [#38](https://github.com/tusharsaxena/MultiMeters/issues/38). A seven-way `elseif` on the control name, sharing no state across arms; a module-level dispatch table is the shape `performance-§11` permits, built once rather than per click (#52). |
 | `build` | 20 | `modules/Roster.lua:249-366` | **Accepted.** One unit walk with three outputs, and the header says why it is not three walks; the count is `unitExists` / `IsSafeKey` guards plus the nested pet read. Re-check: a fourth output joins the walk, or the pet lookup grows a second kind — then the per-unit body peels to `addMember`. |
-| `Cell:ApplyBorder` | 30 | `modules/Row.lua:646-726` | **Peel** — [#39](https://github.com/tusharsaxena/MultiMeters/issues/39). Its own comment names the seam — the art path and the flat path are mutually exclusive — and the per-side anchor chain under it is a data table. **Its ceiling row's trigger has fired**: 15 → 30. |
-| `Cell:ApplyIcons` | 19 | `modules/Row.lua:1155-1231` | **Accepted.** The slot array is `{ "unit" }` or `{}` today, so the loop is degenerate and what remains is defaulting and the left/right mirror. Re-check: a second slot returns — [#8](https://github.com/tusharsaxena/MultiMeters/issues/8) would do it — at which point the loop is real and the peel is worth taking. |
-| `eventColumns` | 19 | `modules/Tooltip.lua:1859-1912` | **Accepted.** A name-resolution ladder over one recap event where each arm is a documented client behaviour: a melee swing carries no spell at all, a heal names none, an unnamed spell shows its id rather than being dropped. Re-check: a fourth event kind. |
-| `drawDeathEvents` (`(anonymous)`) | 26 | `modules/Tooltip.lua:1950-2032` | **Peel** — [#40](https://github.com/tusharsaxena/MultiMeters/issues/40). Collect, measure, draw are already three phases in sequence; the measuring pass carries all of the `namesReadable` bookkeeping and none of the drawing. See the parser note above before opening the file. |
-| `Tooltip:CellTooltip` | 20 | `modules/Tooltip.lua:2335-2397` | **Accepted.** Linear composition — release, open, header, style, one Deaths/spell branch, five appends, then `Show` and the two fixups that must follow it. The count is defaulting; there is no tangle here to peel. Re-check: a third path joins the Deaths/spell branch. |
+| `Cell:ApplyBorder` | 30 | `modules/Row.lua:659-739` | **Peel** — [#39](https://github.com/tusharsaxena/MultiMeters/issues/39). Its own comment names the seam — the art path and the flat path are mutually exclusive — and the per-side anchor chain under it is a data table. **Its ceiling row's trigger has fired**: 15 → 30. |
+| `Cell:ApplyIcons` | 19 | `modules/Row.lua:1168-1244` | **Accepted.** The slot array is `{ "unit" }` or `{}` today, so the loop is degenerate and what remains is defaulting and the left/right mirror. Re-check: a second slot returns — [#8](https://github.com/tusharsaxena/MultiMeters/issues/8) would do it — at which point the loop is real and the peel is worth taking. |
+| `eventColumns` | 19 | `modules/Tooltip.lua:1866-1919` | **Accepted.** A name-resolution ladder over one recap event where each arm is a documented client behaviour: a melee swing carries no spell at all, a heal names none, an unnamed spell shows its id rather than being dropped. Re-check: a fourth event kind. |
+| `drawDeathEvents` (`(anonymous)`) | 26 | `modules/Tooltip.lua:1957-2039` | **Peel** — [#40](https://github.com/tusharsaxena/MultiMeters/issues/40). Collect, measure, draw are already three phases in sequence; the measuring pass carries all of the `namesReadable` bookkeeping and none of the drawing. See the parser note above before opening the file. |
+| `Tooltip:CellTooltip` | 20 | `modules/Tooltip.lua:2342-2404` | **Accepted.** Linear composition — release, open, header, style, one Deaths/spell branch, five appends, then `Show` and the two fixups that must follow it. The count is defaulting; there is no tangle here to peel. Re-check: a third path joins the Deaths/spell branch. |
 | `Visibility.ShouldShow` | 23 | `modules/Visibility.lua:239-276` | **Peel** — [#41](https://github.com/tusharsaxena/MultiMeters/issues/41). Eight copies of one line in 21 NLOC; a module-level `{ flag, probe, reason }` table and one loop is `performance-§11`'s permitted shape, and it makes the veto **order** — which the comment says is the point — data rather than line position. |
 | `WindowProto:BuildLayout` | 24 | `modules/Window.lua:312-413` | **Peel** — [#42](https://github.com/tusharsaxena/MultiMeters/issues/42). The middle third: the visible-column filter, the equal share and the placement loop. Rule R3 is the constraint on the peel — config in, numbers out, no frame read back. **Its ceiling row's trigger has fired**: 15 → 24. |
-| `place` | 18 | `modules/Window.lua:1277-1409` | **Peel** — [#43](https://github.com/tusharsaxena/MultiMeters/issues/43). 133 lines and 5 parameters, and create-once-then-dress is the split `LIBKA0S-R-01` already cut in the library's `TabStrip`. Being a closure over the enclosing method is the work, and the reason it is worth more than CCN 18 suggests. |
-| `NS.ReorderableBlocks` | 28 | `settings/ColumnBlocks.lua:215-310` | **Peel** — [#44](https://github.com/tusharsaxena/MultiMeters/issues/44). The loop body is doing three jobs — draw the block, register the row, draw the boundary rule — and everything outside it is one refusal and a descriptor. |
+| `place` | 18 | `modules/Window.lua:1283-1415` | **Peel** — [#43](https://github.com/tusharsaxena/MultiMeters/issues/43). 133 lines and 5 parameters, and create-once-then-dress is the split `LIBKA0S-R-01` already cut in the library's `TabStrip`. Being a closure over the enclosing method is the work, and the reason it is worth more than CCN 18 suggests. |
+| `NS.ReorderableBlocks` | 28 | `settings/ColumnBlocks.lua:227-322` | **Peel** — [#44](https://github.com/tusharsaxena/MultiMeters/issues/44). The loop body is doing three jobs — draw the block, register the row, draw the boundary rule — and everything outside it is one refusal and a descriptor. |
 | `doDebug` | 25 | `settings/Slash.lua:434-505` | **Peel** — [#45](https://github.com/tusharsaxena/MultiMeters/issues/45). The only verb that takes an argument is the only nested ladder; the other three name a `Diagnostics` method and collapse to a table. **The only warned function that got worse this cycle** — 23 → 25 under `M2-11`, for a good reason, which is exactly the move a watch list exists to catch. |
 
 **Eleven peels, twelve accepts, and no split lands here.** The 2026-09-07 remediation plan rules one
@@ -725,7 +725,16 @@ opt-out. It never runs `lizard`, and that is deliberate: `performance-§10` says
 be gated on complexity, and a suite that shelled out to `lizard` would be exactly that gate wearing a
 test's clothes. The CCN figures here are dated measurements, like the line counts in the census
 above, and the same rule applies — membership and disposition are the invariants, the numbers are
-prose. What re-measures them is the runner, at `M5-01`.
+prose. What re-measures them is the runner: `M5-01` ran it, and
+[`20260908-181355`](automated-tests/20260908-181355/) is the recorded reading this table was last
+reconciled against — the same 23 functions in the same order at the same 23 CCN values.
+
+**A Location range goes stale the moment anything above it moves, and nothing here goes red when it
+does.** That is the cost of the paragraph above, and it is why the commit is named: `8ff9335` is
+where these ranges resolve, and at any later commit they are a starting point rather than an
+address. Re-derive them with the one invocation at the top of this section — it takes seconds — and
+correct the column in the same change rather than leaving a register that names its own measurement
+commit and is wrong about it.
 
 ## Load order
 
