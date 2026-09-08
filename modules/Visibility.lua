@@ -135,6 +135,18 @@ local function inGroup()
     return IsInGroup() and true or false
 end
 
+--- Whether the player is alone — the state `hideWhenSolo` hides on.
+---
+--- The one veto whose state is the ABSENCE of something, so it is spelled out
+--- as its own probe rather than as a negate flag on a table row: every entry in
+--- VETOES below answers the same question, "is the state this rule hides on
+--- happening right now?", and an exception would be one more thing to get wrong.
+---
+--- @return boolean
+local function solo()
+    return not inGroup()
+end
+
 --- Whether the player is fighting.
 ---
 --- UnitAffectingCombat, never InCombatLockdown — see the COMBAT note in the
@@ -208,6 +220,28 @@ end
 -- The predicate
 -- ---------------------------------------------------------------------------
 
+-- The vetoes, most-specific state first, as data: { rule key, the probe for the
+-- state it hides on, the reason token }. Built ONCE at file scope, never inside
+-- ShouldShow — this runs per window on every context transition, and a table
+-- rebuilt per call would trade a complexity problem for an allocation one
+-- (performance-§11, anti-patterns #43).
+--
+-- THE ORDER IS THE LOAD-BEARING PART, which is why this is a list and not a
+-- keyed table. It only shows up in the REASON when two states are true at once,
+-- so it is ordered the way a player would explain it: the thing you are sitting
+-- in or on, then what you are doing, then where you are, then whether anyone is
+-- with you. Moving a row moves the answer a window gives.
+local VETOES = {
+    { "hideInVehicle",     inVehicle,   "vehicle"    },
+    { "hideWhenSkyriding", skyriding,   "skyriding"  },
+    { "hideWhenMounted",   mounted,     "mounted"    },
+    { "hideOnTaxi",        onTaxi,      "taxi"       },
+    { "hideInPetBattle",   inPetBattle, "pet battle" },
+    { "hideWhenDead",      deadOrGhost, "dead"       },
+    { "hideInHousing",     inHousing,   "housing"    },
+    { "hideWhenSolo",      solo,        "solo"       },
+}
+
 --- Whether `window` is allowed to be on screen in the current context.
 ---
 --- ORDER MATTERS, and it is: context first, then every veto. The context answers
@@ -249,18 +283,14 @@ function Visibility.ShouldShow(window)
     local context = Visibility.GetContext()
     if not rules[context] then return false, context end
 
-    -- The vetoes, most-specific state first. The order between them only shows
-    -- up in the REASON when two states are true at once, so it is ordered the way
-    -- a player would explain it: the thing you are sitting in or on, then what
-    -- you are doing, then where you are, then whether anyone is with you.
-    if rules.hideInVehicle and inVehicle() then return false, "vehicle" end
-    if rules.hideWhenSkyriding and skyriding() then return false, "skyriding" end
-    if rules.hideWhenMounted and mounted() then return false, "mounted" end
-    if rules.hideOnTaxi and onTaxi() then return false, "taxi" end
-    if rules.hideInPetBattle and inPetBattle() then return false, "pet battle" end
-    if rules.hideWhenDead and deadOrGhost() then return false, "dead" end
-    if rules.hideInHousing and inHousing() then return false, "housing" end
-    if rules.hideWhenSolo and not inGroup() then return false, "solo" end
+    -- The vetoes, in VETOES order — see that table for why the order matters.
+    -- The rule gate is a truthiness test, not `== true`: a hand-edited
+    -- SavedVariables or an older schema can carry 1 where the settings page
+    -- writes a boolean, and it still means the player switched the rule on.
+    for i = 1, #VETOES do
+        local veto = VETOES[i]
+        if rules[veto[1]] and veto[2]() then return false, veto[3] end
+    end
 
     -- Combat last, and read as two independent rules rather than one tri-state.
     -- Ticking both is a window that never shows; that is the player's business,

@@ -602,6 +602,18 @@ end
 -- list and cannot disagree about how many edges a rectangle has.
 local BORDER_SIDES = { "top", "bottom", "left", "right" }
 
+-- Where each side pins itself, and which axis carries the thickness. Both anchor
+-- points name the SAME corner on the cell's own bar, so a side spans exactly one
+-- edge; the axis it does NOT span is the one the thickness goes on -- a side
+-- given a size on both axes is a rectangle, not an edge. Built once at file
+-- scope, because this is walked per cell per layout pass.
+local BORDER_ANCHOR = {
+    top    = { "TOPLEFT",    "TOPRIGHT",    "SetHeight" },
+    bottom = { "BOTTOMLEFT", "BOTTOMRIGHT", "SetHeight" },
+    left   = { "TOPLEFT",    "BOTTOMLEFT",  "SetWidth"  },
+    right  = { "TOPRIGHT",   "BOTTOMRIGHT", "SetWidth"  },
+}
+
 --- Draw (or hide) the thin outline `bars.border` asks for.
 ---
 --- Four 1px textures rather than a BackdropTemplate child frame. A frame
@@ -656,6 +668,96 @@ local function cellBorderColor(bars, entry)
     return r, g, b, a
 end
 
+--- The player's border thickness, clamped, for BOTH paths -- the flat textures'
+--- axis size and the backdrop's edgeSize are the same dial.
+---
+--- Clamped rather than trusted: this comes from a slider with a floor, and a
+--- zero here is four invisible textures pretending to be a border. The type
+--- check is not decoration either -- a string thickness out of a hand-edited
+--- profile reaching the `<` raises in Lua 5.1.
+---
+--- @param bars table|nil  the window's `bars` config group
+--- @return number  a thickness of at least 1
+local function borderThickness(bars)
+    local size = (bars and bars.borderThickness) or 1
+    if type(size) ~= "number" or size < 1 then size = 1 end
+    return size
+end
+
+--- Hide all four flat edge textures, keeping them. The pool's premise is that
+--- widget creation happens once, so nothing here destroys anything: the
+--- `cell.border` table and each texture keep their identity across the toggle.
+---
+--- @param edges table|nil  the cell's four-texture border table, when it exists
+local function hideFlatBorder(edges)
+    if not edges then return end
+    for _, side in ipairs(BORDER_SIDES) do edges[side]:Hide() end
+end
+
+--- Create the cell's four edge textures, once.
+---
+--- @param cell table  the Cell
+--- @return table  the four-texture border table
+local function newBorderEdges(cell)
+    local edges = {}
+    for _, side in ipairs(BORDER_SIDES) do
+        -- SUBLEVEL 7, the top of the OVERLAY layer. A border drawn at the
+        -- default sublevel shares it with the two FontStrings and with
+        -- whatever the fill texture's own layer resolves to, and "shares"
+        -- means the draw order is not defined -- which is how an outline
+        -- ends up UNDER the bar it is supposed to be outlining.
+        edges[side] = cell.frame:CreateTexture(nil, "OVERLAY", nil, 7)
+    end
+    return edges
+end
+
+--- The ART path: an LSM edge file drawn as the bar's own backdrop, because an
+--- edgeFile is a nine-slice and four solid rectangles cannot draw one.
+---
+--- It takes the four flat textures down on the way through -- the two paths are
+--- mutually exclusive and both have to be cleared (see ApplyBorder).
+---
+--- @param cell table       the Cell
+--- @param bars table|nil   the window's `bars` config group
+--- @param edge string      the resolved edge file
+local function applyArtBorder(cell, bars, edge)
+    cell.frame:SetBackdrop({ edgeFile = edge, edgeSize = borderThickness(bars) })
+    if cell.frame.SetBackdropBorderColor then
+        cell.frame:SetBackdropBorderColor(cellBorderColor(bars, cell.entry))
+    end
+    hideFlatBorder(cell.border)
+end
+
+--- The FLAT path: colour, clamp and place the four edge textures, one per side.
+---
+--- THE PLAYER'S COLOUR AND THE PLAYER'S THICKNESS. Both used to be constants:
+--- one pixel, in the library skin's own edge colour, which no setting could
+--- reach -- so "Bar border" was a switch with no dial and no swatch beside it.
+--- The skin's edge is still the FALLBACK, so a window that never touches
+--- either keeps exactly the border it had.
+---
+--- ClearAllPoints precedes the two SetPoints on EVERY pass: a second layout pass
+--- re-places a side rather than stacking a second pair of anchors on it.
+---
+--- @param cell table       the Cell
+--- @param bars table|nil   the window's `bars` config group
+--- @param edges table      the cell's four-texture border table
+local function applyFlatBorder(cell, bars, edges)
+    local bar = cell.frame
+    local r, g, b, a = cellBorderColor(bars, cell.entry)
+    local size = borderThickness(bars)
+
+    for _, side in ipairs(BORDER_SIDES) do
+        local tex, anchor = edges[side], BORDER_ANCHOR[side]
+        tex:ClearAllPoints()
+        tex:SetColorTexture(r, g, b, a)
+        tex:SetPoint(anchor[1], bar, anchor[1], 0, 0)
+        tex:SetPoint(anchor[2], bar, anchor[2], 0, 0)
+        tex[anchor[3]](tex, size)
+        tex:Show()
+    end
+end
+
 function Cell:ApplyBorder(bars)
     local wanted = (bars and bars.border) and true or false
     local edge = wanted and borderEdge(bars and bars.borderStyle) or nil
@@ -666,76 +768,28 @@ function Cell:ApplyBorder(bars)
     -- whichever they left behind, drawn on top of the one they chose.
     if self.frame.SetBackdrop then
         if edge then
-            local size = (bars and bars.borderThickness) or 1
-            if type(size) ~= "number" or size < 1 then size = 1 end
-            self.frame:SetBackdrop({ edgeFile = edge, edgeSize = size })
-            if self.frame.SetBackdropBorderColor then
-                self.frame:SetBackdropBorderColor(cellBorderColor(bars, self.entry))
-            end
-            if edges then
-                for _, side in ipairs(BORDER_SIDES) do edges[side]:Hide() end
-            end
+            applyArtBorder(self, bars, edge)
             return
         end
         self.frame:SetBackdrop(nil)
     end
 
+    -- ABOVE the lazy create, and it has to stay there: the shipped default is
+    -- border = false, and hoisting the create costs four textures per cell per
+    -- row for an outline nobody asked for.
     if not (wanted or edges) then return end
 
     if not edges then
-        edges = {}
-        for _, side in ipairs(BORDER_SIDES) do
-            -- SUBLEVEL 7, the top of the OVERLAY layer. A border drawn at the
-            -- default sublevel shares it with the two FontStrings and with
-            -- whatever the fill texture's own layer resolves to, and "shares"
-            -- means the draw order is not defined -- which is how an outline
-            -- ends up UNDER the bar it is supposed to be outlining.
-            edges[side] = self.frame:CreateTexture(nil, "OVERLAY", nil, 7)
-        end
+        edges = newBorderEdges(self)
         self.border = edges
     end
 
     if not wanted then
-        for _, side in ipairs(BORDER_SIDES) do edges[side]:Hide() end
+        hideFlatBorder(edges)
         return
     end
 
-    local bar = self.frame
-
-    -- THE PLAYER'S COLOUR AND THE PLAYER'S THICKNESS. Both used to be constants:
-    -- one pixel, in the library skin's own edge colour, which no setting could
-    -- reach -- so "Bar border" was a switch with no dial and no swatch beside it.
-    -- The skin's edge is still the FALLBACK, so a window that never touches
-    -- either keeps exactly the border it had.
-    local r, g, b, a = cellBorderColor(bars, self.entry)
-    local size = (bars and bars.borderThickness) or 1
-    -- Clamped rather than trusted: this comes from a slider with a floor, and a
-    -- zero here is four invisible textures pretending to be a border.
-    if type(size) ~= "number" or size < 1 then size = 1 end
-
-    for _, side in ipairs(BORDER_SIDES) do
-        local tex = edges[side]
-        tex:ClearAllPoints()
-        tex:SetColorTexture(r, g, b, a)
-        if side == "top" then
-            tex:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-            tex:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
-            tex:SetHeight(size)
-        elseif side == "bottom" then
-            tex:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
-            tex:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
-            tex:SetHeight(size)
-        elseif side == "left" then
-            tex:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-            tex:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
-            tex:SetWidth(size)
-        else
-            tex:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
-            tex:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
-            tex:SetWidth(size)
-        end
-        tex:Show()
-    end
+    applyFlatBorder(self, bars, edges)
 end
 
 --- Skin the StatusBar itself: fill texture, fill direction, and the backdrop
@@ -1160,6 +1214,119 @@ local function newIcon(cell)
     return tex
 end
 
+-- The cell's own edge inset for the icon strip, in pixels -- and, when a row has
+-- no icons at all, the inset the name string keeps anyway. A name hard against
+-- the left edge of the column reads as touching the window frame, so this is
+-- what makes the no-icon answer TWO rather than nothing.
+local ICON_EDGE_INSET = 2
+
+--- Anchor one cell's icon textures along the name column, one per configured
+--- slot, and create the texture the first time a slot is drawn.
+---
+--- EACH ICON IS PLACED FROM THE CELL'S OWN EDGE, never from the name string
+--- beside it: the name is the thing that moves out of the way (placeNameText
+--- below). Rule R3 forbids reading a widget's geometry back at all, so every x
+--- here is arithmetic on the window's own config.
+---
+--- ClearAllPoints precedes the SetPoint on every pass -- a layout pass runs on
+--- every frame of a drag-resize, and anchors that accumulate resolve against each
+--- other, so the first pass would win forever.
+---
+--- @param cell table        the name Cell
+--- @param slots table       the configured slot names, in order
+--- @param size number       the icon's edge length
+--- @param onRight boolean   whether the strip sits at the cell's right edge
+--- @param layout table      the window's layout table
+local function placeIcons(cell, slots, size, onRight, layout)
+    local y = (layout.rowHeight - size) * -0.5
+    for i, kind in ipairs(slots) do
+        local tex = cell.icons[kind] or newIcon(cell)
+        cell.icons[kind] = tex
+        tex:ClearAllPoints()
+        tex:SetSize(size, size)
+        -- The stride is the icon plus ICON_TEXT_GAP. That gap was a literal 1
+        -- folded in here, which reads as the icon and the name touching at any
+        -- size a player would actually pick.
+        local x = ICON_EDGE_INSET + (i - 1) * (size + ICON_TEXT_GAP)
+        if onRight then
+            tex:SetPoint("TOPRIGHT", cell.frame, "TOPRIGHT", -x, y)
+        else
+            tex:SetPoint("TOPLEFT", cell.frame, "TOPLEFT", x, y)
+        end
+    end
+end
+
+--- Hide any icon texture the config has just turned off.
+---
+--- Kept rather than destroyed: the pool's whole point is that widget creation
+--- happens once, so the texture is still there when the setting comes back.
+---
+--- @param cell table   the name Cell
+--- @param slots table  the configured slot names this pass drew
+local function hideUnusedIcons(cell, slots)
+    for kind, tex in pairs(cell.icons) do
+        local wanted = false
+        for _, k in ipairs(slots) do if k == kind then wanted = true end end
+        if not wanted then tex:Hide() end
+    end
+end
+
+--- The horizontal space the icon strip reserves, in pixels.
+---
+--- FIXED SPACE FOR THE ICONS, WHETHER OR NOT A GIVEN ROW HAS THEM. Computed from
+--- the CONFIGURED slots rather than from what this row managed to draw, so a
+--- follower NPC with no spec icon leaves a gap where the icon would be instead of
+--- sliding its name left. A column whose text starts at a different x on every
+--- row is not a column.
+---
+--- @param slots table  the configured slot names
+--- @param size number  the icon's edge length
+--- @return number  the inset, never zero
+local function iconsInset(slots, size)
+    return #slots > 0 and (ICON_EDGE_INSET + #slots * (size + ICON_TEXT_GAP)) or ICON_EDGE_INSET
+end
+
+--- Place the name string clear of the icon strip.
+---
+--- IT MOVES WITH THE ICONS: a strip on the left pushes the name past it by the
+--- whole inset, a strip on the right leaves the name the cell's own edge. The two
+--- decisions are one decision and always change together.
+---
+--- AN EXPLICIT WIDTH, NOT A SECOND ANCHOR. Two-point anchoring gives the
+--- FontString a width too, but it also lets it grow to whatever the frame
+--- becomes mid-resize; a fixed width is the same number every pass and is what
+--- the truncation cap is measured against. Floored at 1, because the column can
+--- genuinely be narrower than the icon plus its insets while a player drags the
+--- window's edge in, and SetWidth(0) is a FontString that renders nothing.
+---
+--- ONE LINE, NEVER WRAPPED. A wrapped name is drawn OUTSIDE its own row -- the
+--- second line lands on top of the row below it -- which is what made the grid
+--- look shuffled whenever somebody had a long name. The cap in nameText is what
+--- shortens it; this is what guarantees the widget cannot undo that decision by
+--- reflowing.
+---
+--- @param cell table       the name Cell
+--- @param layout table     the window's layout table
+--- @param consumed number  the inset the icon strip reserved
+--- @param onRight boolean  whether the strip sits at the cell's right edge
+local function placeNameText(cell, layout, consumed, onRight)
+    local column = layout.nameColumn or {}
+    local width = (column.width or 0) - consumed - 2
+    if width < 1 then width = 1 end
+
+    cell.left:ClearAllPoints()
+    if onRight then
+        cell.left:SetPoint("LEFT", cell.frame, "LEFT", ICON_EDGE_INSET, 0)
+    else
+        cell.left:SetPoint("LEFT", cell.frame, "LEFT", consumed, 0)
+    end
+    cell.left:SetWidth(width)
+    cell.left:SetHeight(layout.rowHeight)
+
+    if cell.left.SetWordWrap then cell.left:SetWordWrap(false) end
+    if cell.left.SetMaxLines then cell.left:SetMaxLines(1) end
+end
+
 --- Lay the class / spec / role icons out along the name cell and return the
 --- text inset they consume, so the name string starts clear of them.
 ---
@@ -1182,64 +1349,11 @@ function Cell:ApplyIcons(layout)
     self.icons = self.icons or {}
 
     local onRight = (icons.position == "RIGHT")
-    local offset = 2
-    -- The gap between the icon and the name. It was 1px, which reads as the two
-    -- touching at any icon size a player would actually pick.
-    local gap = ICON_TEXT_GAP
-    for i, kind in ipairs(slots) do
-        local tex = self.icons[kind] or newIcon(self)
-        self.icons[kind] = tex
-        tex:ClearAllPoints()
-        tex:SetSize(size, size)
-        local y = (layout.rowHeight - size) * -0.5
-        if onRight then
-            tex:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -(offset + (i - 1) * (size + gap)), y)
-        else
-            tex:SetPoint("TOPLEFT", self.frame, "TOPLEFT", offset + (i - 1) * (size + gap), y)
-        end
-    end
+    placeIcons(self, slots, size, onRight, layout)
+    hideUnusedIcons(self, slots)
 
-    -- Hide any icon the config just turned off. Kept rather than destroyed: the
-    -- pool's whole point is that widget creation happens once.
-    for kind, tex in pairs(self.icons) do
-        local wanted = false
-        for _, k in ipairs(slots) do if k == kind then wanted = true end end
-        if not wanted then tex:Hide() end
-    end
-
-    -- FIXED SPACE FOR THE ICONS, WHETHER OR NOT A GIVEN ROW HAS THEM.
-    --
-    -- Computed from the CONFIGURED slots rather than from what this row managed
-    -- to draw, so a follower NPC with no spec icon leaves a gap where the icon
-    -- would be instead of sliding its name left. A column whose text starts at a
-    -- different x on every row is not a column.
-    local consumed = #slots > 0 and (offset + #slots * (size + gap)) or 2
-
-    -- AN EXPLICIT WIDTH, NOT A SECOND ANCHOR. Two-point anchoring gives the
-    -- FontString a width too, but it also lets it grow to whatever the frame
-    -- becomes mid-resize; a fixed width is the same number every pass and is what
-    -- the truncation cap is measured against.
-    local column = layout.nameColumn or {}
-    local width = (column.width or 0) - consumed - 2
-    if width < 1 then width = 1 end
-
-    self.left:ClearAllPoints()
-    if onRight then
-        self.left:SetPoint("LEFT", self.frame, "LEFT", 2, 0)
-    else
-        self.left:SetPoint("LEFT", self.frame, "LEFT", consumed, 0)
-    end
-    self.left:SetWidth(width)
-    self.left:SetHeight(layout.rowHeight)
-
-    -- ONE LINE, NEVER WRAPPED. A wrapped name is drawn OUTSIDE its own row — the
-    -- second line lands on top of the row below it — which is what made the grid
-    -- look shuffled whenever somebody had a long name. The cap in nameText is
-    -- what shortens it; this is what guarantees the widget cannot undo that
-    -- decision by reflowing.
-    if self.left.SetWordWrap then self.left:SetWordWrap(false) end
-    if self.left.SetMaxLines then self.left:SetMaxLines(1) end
-
+    local consumed = iconsInset(slots, size)
+    placeNameText(self, layout, consumed, onRight)
     return consumed
 end
 

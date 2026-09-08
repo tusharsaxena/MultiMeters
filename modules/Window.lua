@@ -258,14 +258,6 @@ end
 -- Layout — rule R3 in one function
 -- ---------------------------------------------------------------------------
 
---- Compute every coordinate this window will use, from CONFIG ONLY.
----
---- Not one widget is consulted. That is the whole point: after a cell has been
---- handed a secret value its geometry is secret too, so the only trustworthy
---- source of "where does the third column start" is the arithmetic that put it
---- there. Recomputed on a settings change, never on a refresh.
----
---- @return table layout
 --- How wide the Player column has to be, from the config alone.
 ---
 --- IT FOLLOWS "MAX NAME LENGTH", and it did not before: the cap shortened the
@@ -309,35 +301,22 @@ local function nameColumnWidth(cfg)
     return width
 end
 
-function WindowProto:BuildLayout()
-    local cfg    = self.config
-    local frame  = cfg.frame or {}
-    local rows   = cfg.rows or {}
-    local header = cfg.header or {}
-
-    local pad       = frame.padding or 6
-    local rowHeight = rows.height or 16
-    local spacing   = rows.spacing or 1
-
-    local layout = {
-        padding     = pad,
-        rowHeight   = rowHeight,
-        rowSpacing  = spacing,
-        titleHeight = (header.show ~= false) and (header.height or 18) or 0,
-        headerHeight = rowHeight * HEADER_ROW_FACTOR,
-        growUp      = (rows.growthDirection == "UP"),
-        columns     = {},
-    }
-
-    -- The name column is not a stat and can never be removed, so it is placed
-    -- first and separately (core/Constants.lua).
-    local x = 0
-    local nameWidth = nameColumnWidth(cfg)
-    layout.nameColumn = {
-        key = "name", x = x, width = nameWidth, showBar = true,
-    }
-    x = x + nameWidth + COLUMN_GAP
-
+--- The stat columns of one window: which stored entries are drawn, how wide each
+--- one is, where each one starts, and the narrowest the grid may be dragged to.
+---
+--- FROM CONFIG ONLY, like the rest of the layout. It is handed the config and
+--- three numbers and reads nothing back off a frame -- rule R3 survives the peel
+--- precisely because there is no frame argument here to break it with.
+---
+--- The name column has already been placed at x 0 by the caller, so this starts
+--- the running x past it and its seam.
+---
+--- @param cfg table  a window config
+--- @param frame table  cfg.frame, already defaulted to a table by the caller
+--- @param pad number  the frame padding
+--- @param nameWidth number  the Player column's width
+--- @return table columns, number x, number minWidth
+local function columnLayout(cfg, frame, pad, nameWidth)
     -- STAT COLUMNS SHARE WHATEVER THE FRAME HAS LEFT, EQUALLY.
     --
     -- Dragging the window wider used to leave the grid where it was and add empty
@@ -378,8 +357,10 @@ function WindowProto:BuildLayout()
         if statWidth < Const.COLUMN_MIN_WIDTH then statWidth = Const.COLUMN_MIN_WIDTH end
     end
 
+    local columns = {}
+    local x = nameWidth + COLUMN_GAP
     for _, entry in ipairs(visible) do
-        layout.columns[#layout.columns + 1] = {
+        columns[#columns + 1] = {
             key   = entry.col.stat,
             stat  = entry.stat,
             x     = x,
@@ -388,26 +369,78 @@ function WindowProto:BuildLayout()
         x = x + statWidth + COLUMN_GAP
     end
 
-    -- The smallest this window may be dragged to, both axes, from the same
-    -- arithmetic that just laid it out. Published on the layout so the resize
-    -- clamp and the layout can never disagree about it.
-    layout.minWidth = nameWidth + pad * 2
+    -- Zero visible columns is a live arm: math.max(#visible, 1) still reserves one
+    -- column of floor, so the window cannot be dragged down onto the name alone.
+    local minWidth = nameWidth + pad * 2
         + math.max(#visible, 1) * (Const.COLUMN_MIN_WIDTH + COLUMN_GAP)
-    layout.minHeight = pad * 2 + layout.titleHeight + layout.headerHeight + rowHeight
 
-    layout.rowWidth = x - COLUMN_GAP
-    layout.bodyWidth = (frame.width or 694) - pad * 2
+    return columns, x, minWidth
+end
 
-    -- How many rows FIT, from the configured frame height. `rows.maxRows == 0`
-    -- means "as many as fit", which is why this is computed rather than read off
-    -- the frame — and it is also the cap that keeps a corrupted config from
-    -- asking the pool for thousands of frames (Constants.MAX_ROWS).
-    local bodyHeight = (frame.height or 220) - pad * 2 - layout.titleHeight - layout.headerHeight
-    local fits = math.floor((bodyHeight + spacing) / (rowHeight + spacing))
+--- How many rows this window will ask the pool for.
+---
+--- `rows.maxRows == 0` means "as many as fit", which is why this is computed from
+--- the configured frame height rather than read off the frame -- and Const.MAX_ROWS
+--- is the final cap that keeps a corrupted config from asking the pool for
+--- thousands of frames.
+---
+--- @param frame table  cfg.frame, already defaulted to a table by the caller
+--- @param rows table  cfg.rows, likewise
+--- @param layout table  the layout so far: padding, titleHeight, headerHeight,
+---        rowHeight and rowSpacing are all already resolved on it
+--- @return number
+local function rowCapacity(frame, rows, layout)
+    local bodyHeight = (frame.height or 220) - layout.padding * 2
+        - layout.titleHeight - layout.headerHeight
+    local fits = math.floor((bodyHeight + layout.rowSpacing)
+        / (layout.rowHeight + layout.rowSpacing))
     if fits < 1 then fits = 1 end
     local capped = rows.maxRows or 0
     if capped > 0 and capped < fits then fits = capped end
-    layout.maxRows = math.min(fits, Const.MAX_ROWS)
+    return math.min(fits, Const.MAX_ROWS)
+end
+
+--- Compute every coordinate this window will use, from CONFIG ONLY.
+---
+--- Not one widget is consulted. That is the whole point: after a cell has been
+--- handed a secret value its geometry is secret too, so the only trustworthy
+--- source of "where does the third column start" is the arithmetic that put it
+--- there. Recomputed on a settings change, never on a refresh.
+---
+--- @return table layout
+function WindowProto:BuildLayout()
+    local cfg    = self.config
+    local frame  = cfg.frame or {}
+    local rows   = cfg.rows or {}
+    local header = cfg.header or {}
+
+    local pad       = frame.padding or 6
+    local rowHeight = rows.height or 16
+    local spacing   = rows.spacing or 1
+
+    -- The name column is not a stat and can never be removed, so it is placed
+    -- first and separately (core/Constants.lua).
+    local nameWidth = nameColumnWidth(cfg)
+    local columns, x, minWidth = columnLayout(cfg, frame, pad, nameWidth)
+
+    local layout = {
+        padding     = pad,
+        rowHeight   = rowHeight,
+        rowSpacing  = spacing,
+        titleHeight = (header.show ~= false) and (header.height or 18) or 0,
+        headerHeight = rowHeight * HEADER_ROW_FACTOR,
+        growUp      = (rows.growthDirection == "UP"),
+        columns     = columns,
+        nameColumn  = { key = "name", x = 0, width = nameWidth, showBar = true },
+        -- The smallest this window may be dragged to, both axes, from the same
+        -- arithmetic that just laid it out. Published on the layout so the resize
+        -- clamp and the layout can never disagree about it.
+        minWidth    = minWidth,
+        rowWidth    = x - COLUMN_GAP,
+        bodyWidth   = (frame.width or 694) - pad * 2,
+    }
+    layout.minHeight = pad * 2 + layout.titleHeight + layout.headerHeight + rowHeight
+    layout.maxRows = rowCapacity(frame, rows, layout)
 
     return layout
 end
@@ -1224,6 +1257,174 @@ function WindowProto:ApplySessionLine()
 end
 
 --- The column labels above the grid.
+-- ---------------------------------------------------------------------------
+-- Column headers -- built once, dressed every pass
+-- ---------------------------------------------------------------------------
+
+--- One column header widget, built. Called on the FIRST pass for an index and
+--- never again: dressing is a separate step below, so a settings change
+--- re-points and re-colours what is already there and costs no frames.
+---
+--- @param parent Frame  the header strip
+--- @param window table  the window instance, stashed for onColumnClick
+--- @return table  the button
+local function newHeaderButton(parent, window)
+    local button = CreateFrame("Button", nil, parent)
+    button.text = button:CreateFontString(nil, "OVERLAY")
+    button.text:SetPoint("LEFT", button, "LEFT", 0, 0)
+    -- The sort arrow, in the same shipped atlas the Loot History header
+    -- uses, so it reads as "a column header arrow" rather than as this
+    -- addon's own invention.
+    button.arrow = button:CreateFontString(nil, "OVERLAY")
+    button.arrow:SetPoint("LEFT", button.text, "LEFT", 0, 0)
+    button.arrow:SetJustifyH("LEFT")
+    button.arrow:Hide()
+    -- The per-column background, for `bgColorMode == "stat"`. BACKGROUND
+    -- layer so the label and the sort arrow stay above it, and built with
+    -- the button rather than on demand: these are pooled for the life of
+    -- the window like every other widget here.
+    button.bg = button:CreateTexture(nil, "BACKGROUND")
+    button.bg:SetAllPoints(button)
+    button.bg:Hide()
+    button.arrowTex = button:CreateTexture(nil, "OVERLAY")
+    button.arrowTex:SetSize(10, 10)
+    button.arrowTex:Hide()
+    button.mmWindow = window
+    button:SetScript("OnClick", onColumnClick)
+    return button
+end
+
+--- The dress context -- everything ApplyColumnHeaders resolves ONCE for the whole
+--- strip and every header then wears. Allocated once at FILE SCOPE and refilled
+--- per pass rather than per header (anti-pattern #43). ApplyColumnHeaders is
+--- never re-entered, so a single table serves every window.
+local headerDress = {}
+
+--- The sort arrow on one header. Three rungs, tried in order -- the two shipped
+--- assets, then the one atlas arrow flipped, then an ASCII character -- and
+--- exactly one of `arrow` / `arrowTex` is left shown by any of them.
+---
+--- THE COLOUR IS PASSED IN rather than re-resolved, because the arrow wears the
+--- same colour as its label and once did not: sorting by name puts the arrow on
+--- the Player header, where it was drawn in the sort column's stat colour over a
+--- label that is no longer that colour.
+---
+--- @param button table  the header button
+--- @param d table  the dress context
+--- @param tr number @param tg number @param tb number @param ta number
+local function dressSortArrow(button, d, tr, tg, tb, ta)
+    -- Placed after the label rather than at a fixed offset, so it follows
+    -- the text however long the label is. GetStringWidth is a measurement
+    -- of a FontString this window OWNS and that has never held a value --
+    -- rule R3 is about cells that have, and this is neither.
+    local after = button.text:GetStringWidth() + 3
+    local mark = NS.Icon and NS.Icon(
+        d.sortAscending and SORT_MARK_UP or SORT_MARK_DOWN)
+    local atlas = not mark and NS.Compat.FirstAtlas(
+        d.sortAscending and SORT_ATLAS_UP or SORT_ATLAS_DOWN)
+
+    if mark then
+        button.arrowTex:ClearAllPoints()
+        button.arrowTex:SetPoint("LEFT", button.text, "LEFT", after, 0)
+        button.arrowTex:SetTexture(mark)
+        -- No SetTexCoord: two assets, not one flipped. The atlas branch
+        -- below flips because it has only one arrow to flip.
+        button.arrowTex:SetTexCoord(0, 1, 0, 1)
+        button.arrowTex:SetVertexColor(tr, tg, tb)
+        button.arrowTex:Show()
+        button.arrow:Hide()
+    elseif atlas then
+        button.arrowTex:ClearAllPoints()
+        button.arrowTex:SetPoint("LEFT", button.text, "LEFT", after, 0)
+        button.arrowTex:SetAtlas(atlas)
+        -- Flipped vertically for ascending: the shipped arrow points
+        -- down, and one SetTexCoord beats a second asset to go missing.
+        if d.sortAscending then
+            button.arrowTex:SetTexCoord(0, 1, 1, 0)
+        else
+            button.arrowTex:SetTexCoord(0, 1, 0, 1)
+        end
+        button.arrowTex:Show()
+        button.arrow:Hide()
+    else
+        button.arrow:SetFont(d.font, d.size, d.flags)
+        button.arrow:SetShadowOffset(d.shadowX, d.shadowY)
+        button.arrow:SetTextColor(tr, tg, tb, ta)
+        button.arrow:SetText(d.sortAscending and SORT_ASCII_UP or SORT_ASCII_DOWN)
+        button.arrow:ClearAllPoints()
+        button.arrow:SetPoint("LEFT", button.text, "LEFT", after, 0)
+        button.arrow:Show()
+        button.arrowTex:Hide()
+    end
+end
+
+--- Everything about one column header that a settings change can move: font,
+--- colour, label, the background mode, and the sort arrow. Re-run on every pass
+--- over a button newHeaderButton built once.
+---
+--- @param button table  the header button
+--- @param key string  the column key, "name" for the Player column
+--- @param label string  the localized label
+--- @param width number  the drawn column width
+--- @param d table  the dress context
+local function dressHeaderButton(button, key, label, width, d)
+    -- LEFT-ALIGNED, both the name column and every stat column. The cells
+    -- below are right-aligned and the headers used to match them, which put
+    -- each label hard against the NEXT column's numbers and read as if it
+    -- belonged to them.
+    button.text:SetWidth(width)
+    button.text:SetHeight(d.headerHeight)
+    button.text:SetFont(d.font, d.size, d.flags)
+    button.text:SetShadowOffset(d.shadowX, d.shadowY)
+    -- PER COLUMN, and only here. `stat` mode on every other surface resolves
+    -- to one colour for the whole surface; this strip is the one place where
+    -- "per statistic" is literally per column, so each label takes the colour
+    -- of the column it labels.
+    --
+    -- THE NAME COLUMN IS NOT A STATISTIC AND MUST NOT BORROW ONE. It used to
+    -- fall through to `hr, hg, hb`, but that fallback is itself resolved
+    -- through windowStat() -- the SORT column -- so "Player" came out in the
+    -- sorted stat's colour: red on a damage-sorted window, and a different
+    -- colour every time the sort moved. White is what it says instead, the
+    -- one colour on this strip that claims no statistic. Only in `stat` mode:
+    -- every other mode's fallback is a colour the player actually chose.
+    --
+    -- Resolved into locals rather than applied inline because THE SORT ARROW
+    -- WEARS THE SAME COLOUR and had the same bug. Sorting by name puts the
+    -- arrow on the Player header, where it was drawn in the sort column's
+    -- stat colour over a label that is no longer that colour.
+    local tr, tg, tb, ta = d.hr, d.hg, d.hb, d.ha
+    if d.colorMode == "stat" then
+        if key == "name" then
+            tr, tg, tb = 1, 1, 1
+        else
+            tr, tg, tb, ta = surfaceColor("stat", d.color, key, d.hr, d.hg, d.hb, d.ha)
+        end
+    end
+    button.text:SetTextColor(tr, tg, tb, ta)
+    button.text:SetJustifyH("LEFT")
+    button.text:SetText(label)
+
+    -- The strip-wide texture and the per-column ones are mutually exclusive,
+    -- and both are set every pass: a player switching modes would otherwise
+    -- keep whichever they left behind, drawn under the one they chose.
+    if d.perColumnBG and key ~= "name" then
+        local cr, cg, cb, ca = surfaceColor("stat", d.bgColor, key,
+            d.bgr, d.bgg, d.bgb, d.bga)
+        button.bg:SetColorTexture(cr, cg, cb, ca)
+        button.bg:Show()
+    else
+        button.bg:Hide()
+    end
+
+    if key == d.sortKey then
+        dressSortArrow(button, d, tr, tg, tb, ta)
+    else
+        button.arrow:Hide()
+        button.arrowTex:Hide()
+    end
+end
+
 function WindowProto:ApplyColumnHeaders()
     local cfg    = self.config
     local layout = self.layout
@@ -1277,34 +1478,26 @@ function WindowProto:ApplyColumnHeaders()
     local aggregate = self.aggregate
     if aggregate and aggregate.identityMode then sortKey = data.sortColumn end
 
-    -- EVERY HEADER IS A BUTTON, including the name column's — clicking it sorts
+    -- Resolved ONCE for the whole strip; every header then wears it. Refilled
+    -- rather than reallocated -- see headerDress above.
+    local d = headerDress
+    d.headerHeight = layout.headerHeight
+    d.font, d.size, d.flags = colFont, colSize, flags
+    d.shadowX, d.shadowY = shadowX, shadowY
+    d.colorMode, d.color = colHeader.colorMode, colHeader.color
+    d.hr, d.hg, d.hb, d.ha = hr, hg, hb, ha
+    d.perColumnBG, d.bgColor = perColumnBG, colHeader.bgColor
+    d.bgr, d.bgg, d.bgb, d.bga = bgr, bgg, bgb, bga
+    d.sortKey = sortKey
+    d.sortAscending = data.sortAscending
+
+    -- EVERY HEADER IS A BUTTON, including the name column's -- clicking it sorts
     -- by that column, clicking it again reverses. The widget is created once per
     -- index and re-pointed, never rebuilt, so a settings change costs no frames.
     local function place(index, key, label, x, width)
         local button = self.columnHeaders[index]
         if not button then
-            button = CreateFrame("Button", nil, self.headerFrame)
-            button.text = button:CreateFontString(nil, "OVERLAY")
-            button.text:SetPoint("LEFT", button, "LEFT", 0, 0)
-            -- The sort arrow, in the same shipped atlas the Loot History header
-            -- uses, so it reads as "a column header arrow" rather than as this
-            -- addon's own invention.
-            button.arrow = button:CreateFontString(nil, "OVERLAY")
-            button.arrow:SetPoint("LEFT", button.text, "LEFT", 0, 0)
-            button.arrow:SetJustifyH("LEFT")
-            button.arrow:Hide()
-            -- The per-column background, for `bgColorMode == "stat"`. BACKGROUND
-            -- layer so the label and the sort arrow stay above it, and built with
-            -- the button rather than on demand: these are pooled for the life of
-            -- the window like every other widget here.
-            button.bg = button:CreateTexture(nil, "BACKGROUND")
-            button.bg:SetAllPoints(button)
-            button.bg:Hide()
-            button.arrowTex = button:CreateTexture(nil, "OVERLAY")
-            button.arrowTex:SetSize(10, 10)
-            button.arrowTex:Hide()
-            button.mmWindow = self
-            button:SetScript("OnClick", onColumnClick)
+            button = newHeaderButton(self.headerFrame, self)
             self.columnHeaders[index] = button
         end
 
@@ -1313,104 +1506,7 @@ function WindowProto:ApplyColumnHeaders()
         button:SetPoint("TOPLEFT", self.headerFrame, "TOPLEFT", x, 0)
         button:SetSize(width, layout.headerHeight)
 
-        -- LEFT-ALIGNED, both the name column and every stat column. The cells
-        -- below are right-aligned and the headers used to match them, which put
-        -- each label hard against the NEXT column's numbers and read as if it
-        -- belonged to them.
-        button.text:SetWidth(width)
-        button.text:SetHeight(layout.headerHeight)
-        button.text:SetFont(colFont, colSize, flags)
-        button.text:SetShadowOffset(shadowX, shadowY)
-        -- PER COLUMN, and only here. `stat` mode on every other surface resolves
-        -- to one colour for the whole surface; this strip is the one place where
-        -- "per statistic" is literally per column, so each label takes the colour
-        -- of the column it labels.
-        --
-        -- THE NAME COLUMN IS NOT A STATISTIC AND MUST NOT BORROW ONE. It used to
-        -- fall through to `hr, hg, hb`, but that fallback is itself resolved
-        -- through windowStat() -- the SORT column -- so "Player" came out in the
-        -- sorted stat's colour: red on a damage-sorted window, and a different
-        -- colour every time the sort moved. White is what it says instead, the
-        -- one colour on this strip that claims no statistic. Only in `stat` mode:
-        -- every other mode's fallback is a colour the player actually chose.
-        --
-        -- Resolved into locals rather than applied inline because THE SORT ARROW
-        -- WEARS THE SAME COLOUR and had the same bug. Sorting by name puts the
-        -- arrow on the Player header, where it was drawn in the sort column's
-        -- stat colour over a label that is no longer that colour.
-        local tr, tg, tb, ta = hr, hg, hb, ha
-        if colHeader.colorMode == "stat" then
-            if key == "name" then
-                tr, tg, tb = 1, 1, 1
-            else
-                tr, tg, tb, ta = surfaceColor("stat", colHeader.color, key, hr, hg, hb, ha)
-            end
-        end
-        button.text:SetTextColor(tr, tg, tb, ta)
-        button.text:SetJustifyH("LEFT")
-        button.text:SetText(label)
-
-        -- The strip-wide texture and the per-column ones are mutually exclusive,
-        -- and both are set every pass: a player switching modes would otherwise
-        -- keep whichever they left behind, drawn under the one they chose.
-        if perColumnBG and key ~= "name" then
-            local cr, cg, cb, ca = surfaceColor("stat", colHeader.bgColor, key,
-                bgr, bgg, bgb, bga)
-            button.bg:SetColorTexture(cr, cg, cb, ca)
-            button.bg:Show()
-        else
-            button.bg:Hide()
-        end
-
-        if key == sortKey then
-            -- Placed after the label rather than at a fixed offset, so it follows
-            -- the text however long the label is. GetStringWidth is a measurement
-            -- of a FontString this window OWNS and that has never held a value —
-            -- rule R3 is about cells that have, and this is neither.
-            local after = button.text:GetStringWidth() + 3
-            local mark = NS.Icon and NS.Icon(
-                data.sortAscending and SORT_MARK_UP or SORT_MARK_DOWN)
-            local atlas = not mark and NS.Compat.FirstAtlas(
-                data.sortAscending and SORT_ATLAS_UP or SORT_ATLAS_DOWN)
-
-            if mark then
-                button.arrowTex:ClearAllPoints()
-                button.arrowTex:SetPoint("LEFT", button.text, "LEFT", after, 0)
-                button.arrowTex:SetTexture(mark)
-                -- No SetTexCoord: two assets, not one flipped. The atlas branch
-                -- below flips because it has only one arrow to flip.
-                button.arrowTex:SetTexCoord(0, 1, 0, 1)
-                button.arrowTex:SetVertexColor(tr, tg, tb)
-                button.arrowTex:Show()
-                button.arrow:Hide()
-            elseif atlas then
-                button.arrowTex:ClearAllPoints()
-                button.arrowTex:SetPoint("LEFT", button.text, "LEFT", after, 0)
-                button.arrowTex:SetAtlas(atlas)
-                -- Flipped vertically for ascending: the shipped arrow points
-                -- down, and one SetTexCoord beats a second asset to go missing.
-                if data.sortAscending then
-                    button.arrowTex:SetTexCoord(0, 1, 1, 0)
-                else
-                    button.arrowTex:SetTexCoord(0, 1, 0, 1)
-                end
-                button.arrowTex:Show()
-                button.arrow:Hide()
-            else
-                button.arrow:SetFont(colFont, colSize, flags)
-                button.arrow:SetShadowOffset(shadowX, shadowY)
-                button.arrow:SetTextColor(tr, tg, tb, ta)
-                button.arrow:SetText(data.sortAscending and SORT_ASCII_UP or SORT_ASCII_DOWN)
-                button.arrow:ClearAllPoints()
-                button.arrow:SetPoint("LEFT", button.text, "LEFT", after, 0)
-                button.arrow:Show()
-                button.arrowTex:Hide()
-            end
-        else
-            button.arrow:Hide()
-            button.arrowTex:Hide()
-        end
-
+        dressHeaderButton(button, key, label, width, d)
         button:Show()
     end
 

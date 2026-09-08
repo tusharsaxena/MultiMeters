@@ -1849,6 +1849,69 @@ local function eventOffset(when, deathTime)
     return when - deathTime
 end
 
+--- The event's own icon, off its spell id, or nil when there is not one.
+---
+--- Both the id and the client's texture lookup are optional: a melee swing has
+--- no spell at all, and Compat is the only path to a texture that survives the
+--- API moving between expansions. The caller supplies the fallback art.
+---
+--- @param spellID any|nil
+--- @return string|number|nil
+local function eventIcon(spellID)
+    return (spellID ~= nil and Compat and Compat.GetSpellTexture)
+        and Compat.GetSpellTexture(spellID) or nil
+end
+
+--- What to call an event the client did not name, and the icon that goes with it.
+---
+--- A MELEE SWING HAS NO SPELL AT ALL — no id, no name — so it fell through to
+--- the "the client could not name this" placeholder and printed "#?", which
+--- reads as a bug in the addon rather than as a melee hit. Blizzard's own
+--- recap draws it as "Melee" with the weapon icon, and so does this.
+---
+--- Four arms and no more: a swing, a heal, a spell known only by id, and
+--- nothing at all. Every one of them returns a caption, because a line with an
+--- empty spell slot reads as a drawing fault.
+---
+--- @param kind string|nil   the event type, already through plainWord
+--- @param spellID any|nil
+--- @param icon string|number|nil  the event's own icon, kept unless a swing
+--- @return string name, string|number|nil icon
+local function eventCaption(kind, spellID, icon)
+    if kind == "SWING_DAMAGE" then
+        return L["Melee"] or "Melee", icon or MELEE_ICON
+    elseif kind == "SPELL_HEAL" or kind == "SPELL_PERIODIC_HEAL" then
+        return L["Heal"] or "Heal", icon
+    end
+    -- A spell the client cannot name is shown by id rather than dropped,
+    -- exactly as addSpellLine does it. The explicit nil branch is there
+    -- because string.format("%s", nil) raises in Lua 5.1.
+    return (spellID ~= nil) and string.format("#%s", spellID) or "#?", icon
+end
+
+--- One event's time column, sign and all, or "" when the offset was refused.
+---
+--- SPELLED WITH THE SIGN, not left to the subtraction. Every event precedes the
+--- death, so the figure is zero or negative — and the killing blow's is exactly
+--- zero, which `%.1f` renders as "0.0s" while the whole column reads in
+--- negatives. "-0.0s" is the honest one: it says "at the moment of death", not
+--- "zero seconds".
+---
+--- The drawn text and the measured text come through here together, so the
+--- column can never be sized against a string it will not render.
+---
+--- @param secondsBefore number|nil  already gated; nil when it could not be computed
+--- @return string
+local function eventTimeText(secondsBefore)
+    if secondsBefore == nil then return "" end
+    if secondsBefore > 0 then
+        return string.format("%.1fs", secondsBefore)
+    end
+    -- math.abs, not unary minus: negating a zero yields NEGATIVE zero, which
+    -- "%.1f" renders as "-0.0" and the sign above then doubles into "--0.0s".
+    return string.format("-%.1fs", math.abs(secondsBefore))
+end
+
 --- The three text columns of one event, plus the icon that heads its line.
 ---
 --- SPLIT RATHER THAN COMPOSED. One string used to hold the time, the spell, the
@@ -1865,30 +1928,13 @@ end
 --- @return string icon, any timeText, any name, any caster
 local function eventColumns(event, secondsBefore)
     local spellID = event.spellId
-    local icon = (spellID ~= nil and Compat and Compat.GetSpellTexture)
-        and Compat.GetSpellTexture(spellID) or nil
+    local icon = eventIcon(spellID)
 
-    -- A MELEE SWING HAS NO SPELL AT ALL — no id, no name — so it fell through to
-    -- the "the client could not name this" placeholder and printed "#?", which
-    -- reads as a bug in the addon rather than as a melee hit. Blizzard's own
-    -- recap draws it as "Melee" with the weapon icon, and so does this.
-    --
     -- The event type is read through `plainWord`, because it comes off a recap
     -- like everything else and comparing a secret string raises.
-    local kind = plainWord(event.event)
     local name = event.spellName
     if name == nil then
-        if kind == "SWING_DAMAGE" then
-            name = L["Melee"] or "Melee"
-            icon = icon or MELEE_ICON
-        elseif kind == "SPELL_HEAL" or kind == "SPELL_PERIODIC_HEAL" then
-            name = L["Heal"] or "Heal"
-        else
-            -- A spell the client cannot name is shown by id rather than dropped,
-            -- exactly as addSpellLine does it. The explicit nil branch is there
-            -- because string.format("%s", nil) raises in Lua 5.1.
-            name = (spellID ~= nil) and string.format("#%s", spellID) or "#?"
-        end
+        name, icon = eventCaption(plainWord(event.event), spellID, icon)
     end
 
     -- `hideCaster` may be a secret boolean, so it goes through plainTruth. An
@@ -1897,25 +1943,9 @@ local function eventColumns(event, secondsBefore)
     local caster = event.sourceName
     if plainTruth(event.hideCaster) then caster = nil end
 
-    local timeText = ""
-    if secondsBefore ~= nil then
-        -- SPELLED WITH THE SIGN, not left to the subtraction. Every event
-        -- precedes the death, so the figure is zero or negative — and the
-        -- killing blow's is exactly zero, which `%.1f` renders as "0.0s" while
-        -- the whole column reads in negatives. "-0.0s" is the honest one: it
-        -- says "at the moment of death", not "zero seconds".
-        if secondsBefore > 0 then
-            timeText = string.format("%.1fs", secondsBefore)
-        else
-            -- math.abs, not unary minus: negating a zero yields NEGATIVE
-            -- zero, which "%.1f" renders as "-0.0" and the sign above then
-            -- doubles into "--0.0s".
-            timeText = string.format("-%.1fs", math.abs(secondsBefore))
-        end
-    end
-
     return string.format("|T%s:%d:%d:0:0|t", icon or FALLBACK_ICON,
-        TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE), timeText, name, caster or ""
+        TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE), eventTimeText(secondsBefore),
+        name, caster or ""
 end
 
 --- Draw one recap event.
@@ -1948,6 +1978,101 @@ local function addEventLine(event, deathTime, maxHealth, numberStyle, style)
     frame.caster:SetText(caster)
 end
 
+--- The widest time column this recap needs, or nil when nothing could be measured.
+---
+--- The offsets are plain numbers this addon computed — the gate in `eventOffset`
+--- guarantees it — so comparing and measuring them is legal where doing the same
+--- to the names beside them would not be. The measured string comes out of
+--- `eventTimeText`, the very call the drawn line uses, so the column can never be
+--- sized against a string it will not render.
+---
+--- @return number|nil
+local function widestTimeColumn(ordered, total, deathTime, path, size, flags)
+    local widest
+    for i = 1, total do
+        local off = eventOffset(ordered[i].timestamp, deathTime)
+        if off ~= nil then
+            local w = measureText(eventTimeText(off), path, size, flags)
+            if w ~= nil and (widest == nil or w > widest) then widest = w end
+        end
+    end
+    return widest
+end
+
+--- The widest spell and caster names this recap needs — ALL OR NOTHING.
+---
+--- One unreadable caption abandons the whole measurement rather than sizing the
+--- column from the readable half — a column that fits four names out of ten is
+--- worse than one reserved for all of them. The third return says which way it
+--- went; the two widths mean nothing once it is false.
+---
+--- @return number spellW, number casterW, boolean namesReadable
+local function widestNameColumns(ordered, total, path, size, flags)
+    local spellW, casterW = 0, 0
+    for i = 1, total do
+        local name = plainWord(ordered[i].spellName)
+        local caster = plainWord(ordered[i].sourceName)
+        -- nil is fine on either — a swing has no spell name and plenty of
+        -- events name no caster. What is NOT fine is a value that is there
+        -- and may not be read, which is what plainWord answers nil for too,
+        -- so the two are told apart by asking Secrets directly.
+        if unreadable(ordered[i].spellName) or unreadable(ordered[i].sourceName) then
+            return spellW, casterW, false
+        end
+        local sw = name and measureText(name, path, size, flags) or 0
+        local cw = caster and measureText(caster, path, size, flags) or 0
+        if sw and sw > spellW then spellW = sw end
+        if cw and cw > casterW then casterW = cw end
+    end
+    return spellW, casterW, true
+end
+
+--- Size the three event columns onto the style, before any line is drawn.
+---
+--- @param ordered table   the collected events, killing blow first
+--- @param total number
+--- @param deathTime any|nil  the killing blow's timestamp
+--- @param style table    written in place
+local function measureEventColumns(ordered, total, deathTime, style)
+    local path, size, flags = style.fontPath, style.fontSize, style.fontFlags
+    style.eventTimeWidth = widestTimeColumn(ordered, total, deathTime, path, size, flags)
+
+    local spellW, casterW, namesReadable = widestNameColumns(ordered, total, path, size, flags)
+    -- A couple of characters of air, so a name that exactly fills its column
+    -- does not read as though it were clipped. Capped at the reservation, or
+    -- shrinking to fit would become growing to fit and a forty-character boss
+    -- ability would push the numbers off the edge.
+    if namesReadable then
+        local pad = charSpan(2, path, size, flags)
+        style.eventSpellWidth  = math.min(spellW + pad, charSpan(EVENT_SPELL_CHARS, path, size, flags))
+        style.eventCasterWidth = math.min(casterW + pad, charSpan(EVENT_CASTER_CHARS, path, size, flags))
+    else
+        style.eventSpellWidth, style.eventCasterWidth = nil, nil
+    end
+end
+
+--- The recap's events as a plain array, newest first, capped at COLLECT_LIMIT.
+---
+--- SafeIterate — the only legal way to walk an array whose entries may be secret
+--- — runs forwards, and `#` on the recap's own array is what rule R1 forbids, so
+--- the cap lands DURING the forward walk. What survives it is therefore the
+--- events nearest the death; capping after the reverse would keep the wrong end.
+---
+--- The per-entry gates skip with a bare `return`. `return false` would stop the
+--- walk and drop every event sitting behind one junk entry.
+---
+--- @return table
+local function collectEvents(Secrets, events)
+    local ordered = {}
+    Secrets.SafeIterate(events, function(_, event)
+        if type(event) ~= "table" then return end
+        if Secrets.CanAccessTable and not Secrets.CanAccessTable(event) then return end
+        ordered[#ordered + 1] = event
+        if #ordered >= COLLECT_LIMIT then return false end
+    end)
+    return ordered
+end
+
 --- Every event behind one death, oldest first.
 ---
 --- REVERSED FROM THE CLIENT'S ORDER, which is newest first. The killing blow
@@ -1961,17 +2086,9 @@ local function drawDeathEvents(recap, numberStyle, style)
     if not (Secrets and Secrets.SafeIterate) then return false end
     if Secrets.CanAccessTable and not Secrets.CanAccessTable(events) then return false end
 
-    -- Collected first, because the walk has to run backwards and SafeIterate —
-    -- the only legal way to measure an array whose entries may be secret — runs
-    -- forwards. `#` on it is what rule R1 forbids.
-    local ordered = {}
-    Secrets.SafeIterate(events, function(_, event)
-        if type(event) ~= "table" then return end
-        if Secrets.CanAccessTable and not Secrets.CanAccessTable(event) then return end
-        ordered[#ordered + 1] = event
-        if #ordered >= COLLECT_LIMIT then return false end
-    end)
-
+    -- Collected first, because the draw has to run backwards and the only legal
+    -- walk runs forwards. See `collectEvents`.
+    local ordered = collectEvents(Secrets, events)
     local total = #ordered
     if total == 0 then return false end
 
@@ -1980,57 +2097,7 @@ local function drawDeathEvents(recap, numberStyle, style)
     local deathTime = ordered[1].timestamp
     local maxHealth = recap.maxHealth
 
-    -- The time column is sized from THIS recap's longest offset, before any line
-    -- is drawn. The offsets are plain numbers this addon computed — the gate in
-    -- `eventOffset` guarantees it — so comparing and measuring them is legal
-    -- where doing the same to the names beside them would not be.
-    local path, size, flags = style.fontPath, style.fontSize, style.fontFlags
-    local widest, spellW, casterW = nil, 0, 0
-    -- One unreadable caption abandons the whole measurement rather than sizing
-    -- the column from the readable half — a column that fits four names out of
-    -- ten is worse than one reserved for all of them.
-    local namesReadable = true
-
-    for i = 1, total do
-        local off = eventOffset(ordered[i].timestamp, deathTime)
-        if off ~= nil then
-            local text = (off > 0) and string.format("%.1fs", off)
-                or string.format("-%.1fs", math.abs(off))
-            local w = measureText(text, path, size, flags)
-            if w ~= nil and (widest == nil or w > widest) then widest = w end
-        end
-
-        if namesReadable then
-            local name = plainWord(ordered[i].spellName)
-            local caster = plainWord(ordered[i].sourceName)
-            -- nil is fine on either — a swing has no spell name and plenty of
-            -- events name no caster. What is NOT fine is a value that is there
-            -- and may not be read, which is what plainWord answers nil for too,
-            -- so the two are told apart by asking Secrets directly.
-            if unreadable(ordered[i].spellName) or unreadable(ordered[i].sourceName) then
-                namesReadable = false
-            else
-                local sw = name and measureText(name, path, size, flags) or 0
-                local cw = caster and measureText(caster, path, size, flags) or 0
-                if sw and sw > spellW then spellW = sw end
-                if cw and cw > casterW then casterW = cw end
-            end
-        end
-    end
-
-    style.eventTimeWidth = widest
-
-    -- A couple of characters of air, so a name that exactly fills its column
-    -- does not read as though it were clipped. Capped at the reservation, or
-    -- shrinking to fit would become growing to fit and a forty-character boss
-    -- ability would push the numbers off the edge.
-    if namesReadable then
-        local pad = charSpan(2, path, size, flags)
-        style.eventSpellWidth  = math.min(spellW + pad, charSpan(EVENT_SPELL_CHARS, path, size, flags))
-        style.eventCasterWidth = math.min(casterW + pad, charSpan(EVENT_CASTER_CHARS, path, size, flags))
-    else
-        style.eventSpellWidth, style.eventCasterWidth = nil, nil
-    end
+    measureEventColumns(ordered, total, deathTime, style)
 
     for i = total, 1, -1 do
         addEventLine(ordered[i], deathTime, maxHealth, numberStyle, style)
@@ -2332,6 +2399,47 @@ end
 -- Cell tooltip — the per-spell breakdown
 -- ---------------------------------------------------------------------------
 
+--- The hovered player's class colour, or nil when the row carries no class.
+---
+--- `classFilename` is NeverSecret, which is why this keeps answering mid-pull
+--- when the bar LENGTHS cannot. A nil colour is a legitimate answer: drawLine
+--- falls back to grey.
+---
+--- @param row table|nil
+--- @return table|nil
+local function rowClassColor(row)
+    local classes = _G.RAID_CLASS_COLORS
+    return classes and row and row.classFilename and classes[row.classFilename] or nil
+end
+
+--- The player's death-clock format, from wherever it is actually kept.
+---
+--- The tooltip config block has NO copy of this key, so the hovered window's own
+--- text block is the only path by which the player's setting reaches
+--- Format.DeathTime.
+---
+--- @return string|nil
+local function deathTimeFormatFor(config, window)
+    return config.deathTimeFormat
+        or (window and window.text and window.text.deathTimeFormat)
+end
+
+--- The breakdown lines behind one cell, and how many of them were drawn.
+---
+--- DEATHS TAKES ITS OWN PATH, and never the spell one. See addDeathList.
+---
+--- @param statKey string  the HOVERED column, not the sort column
+--- @return number  lines drawn
+local function addStatBreakdown(row, statKey, config, style, window)
+    if statKey == "Deaths" then
+        return addDeathList(row, style, deathTimeFormatFor(config, window), config)
+    end
+    local source = config.showSpells and sourceDetailFor(window, statKey, row)
+    if not source then return 0 end
+    return addSpellBreakdown(source, statKey, spellLineCap(config),
+        numberStyleOf(window), style)
+end
+
 --- Show the spell breakdown behind one player's number in one column.
 ---
 --- @param row table         the aggregated row under the cursor (needs .guid)
@@ -2356,27 +2464,14 @@ function Tooltip:CellTooltip(row, statKey, anchorFrame, window)
         nr, ng, nb, 1, 0.82, 0)
 
     -- The bars wear the hovered player's class color, so a tooltip reads as
-    -- belonging to the row it came off. `classFilename` is NeverSecret, which is
-    -- why this keeps working mid-pull when the bar LENGTHS cannot.
-    local classes = _G.RAID_CLASS_COLORS
-    local color = classes and row and row.classFilename and classes[row.classFilename] or nil
+    -- belonging to the row it came off. See `rowClassColor`.
+    local color = rowClassColor(row)
     -- THE HOVERED COLUMN, not the sort column: this tooltip is the breakdown of
     -- one statistic, and that statistic is the one whose cell the pointer is on.
     config.statKey = statKey or config.statKey
     local style = lineStyle(config, color)
 
-    -- DEATHS TAKES ITS OWN PATH, and never the spell one. See addDeathList.
-    local shown = 0
-    if statKey == "Deaths" then
-        shown = addDeathList(row, style, config.deathTimeFormat
-            or (window and window.text and window.text.deathTimeFormat), config)
-    else
-        local source = config.showSpells and sourceDetailFor(window, statKey, row)
-        if source then
-            shown = addSpellBreakdown(source, statKey, spellLineCap(config),
-                numberStyleOf(window), style)
-        end
-    end
+    local shown = addStatBreakdown(row, statKey, config, style, window)
 
     if shown == 0 then
         GameTooltip:AddLine(L["No data yet"], 0.6, 0.6, 0.6)

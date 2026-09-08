@@ -514,6 +514,78 @@ local function displayName(row)
     return tostring(name)
 end
 
+--- The first line of a chat dump: addon, metric, segment and duration.
+---
+--- Built with `..` rather than table.concat, which is the house rule for any
+--- string a meter value can reach: concat raises on a secret where `..` is on
+--- the permitted list, and a formatter can hand back a handle rather than a
+--- string on a client we have not met yet.
+---
+--- Each half of the title is independently optional and losing one may only lose
+--- itself: a session that is not a string drops its own segment, a result with no
+--- `durationSeconds` (or a formatter with no Duration) drops the parenthetical,
+--- and the addon-and-metric stem is always there.
+---
+--- @param result table       an Aggregator.Build result
+--- @param stat table         the catalog stat being printed
+--- @param session string|nil the segment's name
+--- @param F table            the formatter table
+--- @return string
+local function chatHeader(result, stat, session, F)
+    local head = L["Multi Meters"] .. EM_DASH .. (L[stat.label] or stat.label)
+    -- `type()` is permitted on a secret and `..` is permitted on one; asking
+    -- whether it is the empty string is not. Window never answers "" anyway.
+    if type(session) == "string" then
+        head = head .. EM_DASH .. session
+    end
+    -- DECIDED FROM THE PLAIN INPUT, never from the formatter's answer. Duration
+    -- can hand back a secret string, and `~= ""` on one is a comparison — which
+    -- is on the forbidden list even though `..` two lines up is not.
+    -- modules/Window.lua's DurationText makes the same distinction.
+    local seconds = result.durationSeconds
+    if seconds ~= nil and F.Duration then
+        head = head .. " (" .. F.Duration(seconds) .. ")"
+    end
+    return head
+end
+
+--- One ranked line: "3. Kaosz 4.8M (240.1K, 31.2%)".
+---
+--- A row with no cell for this stat is still named and still ranked — the amount
+--- is whatever F.Number makes of nil — because a dump that silently skips a rank
+--- reads as a missing player rather than as a missing figure.
+---
+--- @param index number  the rank, which is the aggregator's order
+--- @param row table     one Aggregator.Build row
+--- @param stat table    the catalog stat being printed
+--- @param F table       the formatter table
+--- @return string
+local function chatLine(index, row, stat, F)
+    local cell = row.values and row.values[stat.key]
+    local line = index .. ". " .. displayName(row) .. " "
+        .. F.Number(cell and cell.total)
+
+    -- The parenthetical carries whatever is meaningful and nothing else: no
+    -- per-second figure for a counted stat, no share when the aggregator
+    -- could not compute one. An empty "( )" would be noise on every line of
+    -- a Deaths dump.
+    -- `hasExtra` rather than `extra ~= ""`, for the same reason the duration
+    -- in the header is decided from its input: a formatter may have put a secret
+    -- string into `extra`, and reading one back to ask whether it is empty is
+    -- a comparison. The boolean knows the answer without looking.
+    local extra, hasExtra = "", false
+    if stat.isRate and cell and cell.rate ~= nil and F.Rate then
+        extra, hasExtra = extra .. F.Rate(cell.rate), true
+    end
+    if cell and type(cell.percent) == "number" and F.Percent then
+        if hasExtra then extra = extra .. ", " end
+        extra, hasExtra = extra .. F.Percent(cell.percent), true
+    end
+    if hasExtra then line = line .. " (" .. extra .. ")" end
+
+    return line
+end
+
 --- An Aggregator.Build result as a short ranked list for chat.
 ---
 --- The first line names the addon, the metric, the segment and its duration; the
@@ -546,54 +618,12 @@ function Export.ChatLines(result, statKey, limit, session)
     local F = fmt()
     if not F then return {} end
 
-    -- Built with `..` rather than table.concat, which is the house rule for any
-    -- string a meter value can reach: concat raises on a secret where `..` is on
-    -- the permitted list, and a formatter can hand back a handle rather than a
-    -- string on a client we have not met yet.
-    local head = L["Multi Meters"] .. EM_DASH .. (L[stat.label] or stat.label)
-    -- `type()` is permitted on a secret and `..` is permitted on one; asking
-    -- whether it is the empty string is not. Window never answers "" anyway.
-    if type(session) == "string" then
-        head = head .. EM_DASH .. session
-    end
-    -- DECIDED FROM THE PLAIN INPUT, never from the formatter's answer. Duration
-    -- can hand back a secret string, and `~= ""` on one is a comparison — which
-    -- is on the forbidden list even though `..` two lines up is not.
-    -- modules/Window.lua's DurationText makes the same distinction.
-    local seconds = result.durationSeconds
-    if seconds ~= nil and F.Duration then
-        head = head .. " (" .. F.Duration(seconds) .. ")"
-    end
-
-    local lines = { head }
+    local lines = { chatHeader(result, stat, session, F) }
     local rows  = result.rows or result
 
     for index, row in ipairs(rows) do
         if index > limit then break end
-
-        local cell = row.values and row.values[stat.key]
-        local line = index .. ". " .. displayName(row) .. " "
-            .. F.Number(cell and cell.total)
-
-        -- The parenthetical carries whatever is meaningful and nothing else: no
-        -- per-second figure for a counted stat, no share when the aggregator
-        -- could not compute one. An empty "( )" would be noise on every line of
-        -- a Deaths dump.
-        -- `hasExtra` rather than `extra ~= ""`, for the same reason the duration
-        -- above is decided from its input: a formatter may have put a secret
-        -- string into `extra`, and reading one back to ask whether it is empty is
-        -- a comparison. The boolean knows the answer without looking.
-        local extra, hasExtra = "", false
-        if stat.isRate and cell and cell.rate ~= nil and F.Rate then
-            extra, hasExtra = extra .. F.Rate(cell.rate), true
-        end
-        if cell and type(cell.percent) == "number" and F.Percent then
-            if hasExtra then extra = extra .. ", " end
-            extra, hasExtra = extra .. F.Percent(cell.percent), true
-        end
-        if hasExtra then line = line .. " (" .. extra .. ")" end
-
-        lines[#lines + 1] = line
+        lines[#lines + 1] = chatLine(index, row, stat, F)
     end
 
     return lines
@@ -1428,6 +1458,33 @@ local function onExportCsv()
     showCopy((Export.CSV(result, Export.SessionLabel(invoker))))
 end
 
+--- Why this channel cannot reach anybody, or nil when it can.
+---
+--- ASKED BEFORE THE AGGREGATOR IS. A whisper with nobody named resolves to "keep
+--- it to yourself" inside ResolveChannel, which is the safe answer but a silent
+--- one — the player asked for it to reach somebody. The same goes for the
+--- channel that reads its recipient off the game: no target, or a target that
+--- cannot be whispered, would resolve to the silent SELF as well. Both are
+--- caught here, where there is still a name box on screen to point at, and
+--- before Export.Build can answer "There is nothing to export." instead.
+---
+--- The target is asked at the click rather than at the open, because the answer
+--- changes between opening the modal and pressing the button.
+---
+--- @param channel string      the chosen channel key
+--- @param whisperTo any       the contents of the name box
+--- @return string|nil         the sentence to print, or nil to carry on
+local function recipientRefusal(channel, whisperTo)
+    if channel == "WHISPER" and tostring(whisperTo):match("^%s*$") then
+        return L["Enter a name to whisper to."]
+    end
+    if channel == "TARGET" then
+        local _, noTarget = Export.TargetName()
+        if noTarget then return noTarget end
+    end
+    return nil
+end
+
 --- Rank the chosen metric and put it where the player asked.
 local function onPrintToChat()
     local available, reason = Export.Available()
@@ -1437,27 +1494,12 @@ local function onPrintToChat()
         return
     end
 
-    -- A whisper with nobody named resolves to "keep it to yourself" inside
-    -- ResolveChannel, which is the safe answer but a silent one — the player
-    -- asked for it to reach somebody. Caught here, where there is still a name
-    -- box on screen to point at.
     local channel = readExport("channel", "SELF")
     local whisperTo = readExport("whisperTo", "")
-    if channel == "WHISPER" and tostring(whisperTo):match("^%s*$") then
-        if NS.Print then NS.Print(L["Enter a name to whisper to."]) end
+    local noRecipient = recipientRefusal(channel, whisperTo)
+    if noRecipient then
+        if NS.Print then NS.Print(noRecipient) end
         return
-    end
-
-    -- The same catch for the channel that reads its recipient off the game: no
-    -- target, or a target that cannot be whispered, would resolve to the silent
-    -- SELF as well. Asked here, at the click, because the answer changes between
-    -- opening the modal and pressing the button.
-    if channel == "TARGET" then
-        local _, noTarget = Export.TargetName()
-        if noTarget then
-            if NS.Print then NS.Print(noTarget) end
-            return
-        end
     end
 
     local statKey = Export.ResolveMetric()

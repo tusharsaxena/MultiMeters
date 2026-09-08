@@ -1452,6 +1452,107 @@ local function judgeTracer(active)
     return nil
 end
 
+--- The feign verdict for one Deaths source, plus the record of it.
+---
+--- ASKED PER DEATH, not per player. `ShouldDropDeath` remembers the individual
+--- deaths it judges fake, so a hunter who later dies for real does not bring
+--- every earlier feign back into the count with them — which is exactly what
+--- asking the live set here used to do. It answers false for anything it cannot
+--- key on, including a secret guid, and that is the honest answer: "cannot tell"
+--- must mean "real death", because the alternative is silently dropping one.
+---
+--- The verdict is recorded for the issue #25 trace. Last of the three boundaries
+--- that recording covers: a death row that reaches here with `dropped=false` for
+--- a GUID the `cast` line named is the filter losing the thread between the two,
+--- and the `prune` lines in between say where. While nobody is recording this is
+--- one nil test and the table below is never built — which is what the comment
+--- used to claim and did not do.
+---
+--- @param active any            the Feign module, or nil where the column is not counted
+--- @param traceJudge function|nil  the armed recorder from judgeTracer, or nil
+--- @param src table             the provider source under judgement
+--- @return boolean|nil          truthy only for a death the filter drops
+local function judgeDeath(active, traceJudge, src)
+    local feigned = active and active.ShouldDropDeath
+        and active.ShouldDropDeath(src.guid, src.deathRecapID)
+    if traceJudge then
+        traceJudge("judge", {
+            order = { "guid", "recap", "dropped" },
+            guid = src.guid, recap = src.deathRecapID,
+            dropped = feigned and true or false,
+        })
+    end
+    return feigned
+end
+
+--- Put ONE source's figure where it belongs: its own cell, a counted pet's tally,
+--- or folded into its owner.
+---
+--- The drop stays here, ahead of `rowForSource`, because that function creates and
+--- appends the row as a side effect in all three of its branches — filtering after
+--- it would leave a phantom empty row instead of no row.
+---
+--- Every decision below is about a single source; none is about the column, which
+--- is why the walk's body is its own function.
+---
+--- @param maxAmount number|nil  the column max, nil on a counted column
+--- @param isCount boolean       whether the column tallies events rather than amounts
+--- @param touched table|nil     the counted column's set of rows to rescale, else nil
+local function placeSource(pass, statKey, src, index, isSortColumn, feigned, maxAmount, isCount, touched)
+    -- Spelled as a branch and not as `not feigned and rowForSource(...) or nil`:
+    -- that idiom truncates a multiple return to one value, which silently
+    -- drops `isOwn` and sends every ordinary source down the pet-fold path.
+    local row, isOwn
+    if not feigned then
+        row, isOwn = rowForSource(pass, src, index, isSortColumn)
+    end
+    if not row then return end
+
+    if isOwn then
+        setCell(row, statKey, src, maxAmount, isCount)
+        if touched then touched[row] = true end
+    elseif isCount then
+        -- A pet cannot die, and nothing else counts events. Reaching here
+        -- would mean a counted stat grew a pet-shaped source; tally it on
+        -- the pet's own row rather than inventing a fold for it.
+        setCell(row, statKey, src, maxAmount, true)
+        touched[row] = true
+    elseif not foldPet(row, statKey, src) then
+        pass.unfolded = pass.unfolded + 1
+    end
+
+    -- The column max belongs on every cell in the column, including ones
+    -- a pet fold created without it.
+    local cell = row.values[statKey]
+    if cell and cell.maxAmount == nil and not isCount then
+        cell.maxAmount = maxAmount
+    end
+end
+
+--- Scale a counted column to the largest tally this pass produced, and withdraw
+--- its column total.
+---
+--- Exists only for counted columns, and only because `column.maxAmount` is 0 for
+--- Deaths: a bar scaled to 0 draws full for everybody. The max here is computed
+--- out of counters this file produced — plain integers, so comparing them is
+--- legal mid-pull where comparing two meter values would not be.
+---
+--- The total is DELETED rather than republished: the session's totalAmount is not
+--- this column's, and leaving it would put a header total and a percent column of
+--- nonsense on the grid.
+local function normalizeCountedMax(pass, statKey, touched)
+    local highest = 0
+    for row in pairs(touched) do
+        local cell = row.values[statKey]
+        if cell and cell.total > highest then highest = cell.total end
+    end
+    if highest < 1 then highest = 1 end
+    for row in pairs(touched) do
+        row.values[statKey].maxAmount = highest
+    end
+    pass.columnTotals[statKey] = nil
+end
+
 --- Read one column from the provider and index every source in it by GUID.
 ---
 --- The pet fold lives here, and so does its refusal: foldPet holds the
@@ -1470,9 +1571,8 @@ local function scanColumn(pass, statKey)
 
     -- A COUNTED COLUMN HAS NO USABLE MAX FROM THE SESSION. Deaths reports
     -- maxAmount 0 along with its zero totals, and a bar scaled to 0 draws full
-    -- for everybody. The max is computed below, after the tally, out of counters
-    -- this file produced — plain integers, so comparing them is legal mid-pull
-    -- where comparing two meter values would not be.
+    -- for everybody. The max is computed by normalizeCountedMax below, after the
+    -- tally.
     local maxAmount = not isCount and column.maxAmount or nil
     local isSortColumn = (statKey == pass.sortColumn)
     local touched = isCount and {} or nil
@@ -1481,9 +1581,7 @@ local function scanColumn(pass, statKey)
     --
     -- C_DamageMeter hands a Feign Death a valid deathRecapID, so a hunter's
     -- feign arrives as an ordinary Deaths source and is counted like one. The
-    -- drop has to happen BEFORE rowForSource, because that function creates and
-    -- appends the row as a side effect in all three of its branches — filtering
-    -- after it would leave a phantom empty row instead of no row.
+    -- drop has to happen BEFORE rowForSource — see placeSource, which carries it.
     --
     -- Pruned once per pass rather than per source: modules/Feign.lua walks the
     -- group to find anyone confirmed dead, and doing that per source would walk
@@ -1498,70 +1596,11 @@ local function scanColumn(pass, statKey)
     local traceJudge = judgeTracer(Feign)
 
     for index, src in ipairs(column.sources) do
-        -- ASKED PER DEATH, not per player. `ShouldDropDeath` remembers the
-        -- individual deaths it judges fake, so a hunter who later dies for real
-        -- does not bring every earlier feign back into the count with them —
-        -- which is exactly what asking the live set here used to do. It answers
-        -- false for anything it cannot key on, including a secret guid, and that
-        -- is the honest answer: "cannot tell" must mean "real death", because
-        -- the alternative is silently dropping one.
-        local feigned = Feign and Feign.ShouldDropDeath
-            and Feign.ShouldDropDeath(src.guid, src.deathRecapID)
-        -- The verdict, recorded for the issue #25 trace. Last of the three
-        -- boundaries that recording covers: a death row that reaches here with
-        -- `dropped=false` for a GUID the `cast` line named is the filter losing
-        -- the thread between the two, and the `prune` lines in between say where.
-        -- While nobody is recording this is one nil test and the table below is
-        -- never built — which is what the comment used to claim and did not do.
-        if traceJudge then
-            traceJudge("judge", {
-                order = { "guid", "recap", "dropped" },
-                guid = src.guid, recap = src.deathRecapID,
-                dropped = feigned and true or false,
-            })
-        end
-        -- Spelled as a branch and not as `not feigned and rowForSource(...) or nil`:
-        -- that idiom truncates a multiple return to one value, which silently
-        -- drops `isOwn` and sends every ordinary source down the pet-fold path.
-        local row, isOwn
-        if not feigned then
-            row, isOwn = rowForSource(pass, src, index, isSortColumn)
-        end
-        if row then
-            if isOwn then
-                setCell(row, statKey, src, maxAmount, isCount)
-                if touched then touched[row] = true end
-            elseif isCount then
-                -- A pet cannot die, and nothing else counts events. Reaching here
-                -- would mean a counted stat grew a pet-shaped source; tally it on
-                -- the pet's own row rather than inventing a fold for it.
-                setCell(row, statKey, src, maxAmount, true)
-                touched[row] = true
-            elseif not foldPet(row, statKey, src) then
-                pass.unfolded = pass.unfolded + 1
-            end
-
-            -- The column max belongs on every cell in the column, including ones
-            -- a pet fold created without it.
-            local cell = row.values[statKey]
-            if cell and cell.maxAmount == nil and not isCount then
-                cell.maxAmount = maxAmount
-            end
-        end
+        local feigned = judgeDeath(Feign, traceJudge, src)
+        placeSource(pass, statKey, src, index, isSortColumn, feigned, maxAmount, isCount, touched)
     end
 
-    if touched then
-        local highest = 0
-        for row in pairs(touched) do
-            local cell = row.values[statKey]
-            if cell and cell.total > highest then highest = cell.total end
-        end
-        if highest < 1 then highest = 1 end
-        for row in pairs(touched) do
-            row.values[statKey].maxAmount = highest
-        end
-        pass.columnTotals[statKey] = nil
-    end
+    if touched then normalizeCountedMax(pass, statKey, touched) end
 end
 
 --- Put the pass's rows in the window's order, and say which order that was.

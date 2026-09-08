@@ -202,6 +202,16 @@ end
 -- Building the map
 -- ---------------------------------------------------------------------------
 
+--- How many members the group API says there are, 0 when the call is missing.
+---
+--- Read through _G at call time for the same reason as the unit readers above,
+--- and answered as a number so both callers can compare against it without
+--- repeating the guard.
+local function numGroupMembers()
+    local f = _G.GetNumGroupMembers
+    return (f and f()) or 0
+end
+
 --- The ordered unit tokens of the current group: the player first, then the
 --- other members in group order.
 ---
@@ -217,7 +227,7 @@ local function groupUnits()
     local units = { "player" }
 
     local inRaid   = _G.IsInRaid and _G.IsInRaid()
-    local numGroup = (_G.GetNumGroupMembers and _G.GetNumGroupMembers()) or 0
+    local numGroup = numGroupMembers()
 
     if inRaid then
         -- In a raid the player is one of raidN, so "player" would be listed
@@ -242,26 +252,77 @@ local function petUnitFor(unit)
     return unit .. "pet"
 end
 
+--- The preview roster, cached, or nil when there is no preview to cache.
+---
+--- TEST MODE MOCKS THE UNIT API, exactly as it mocks the meter.
+---
+--- The two have to move together: mocking only the meter would leave this
+--- filter dropping every invented row as "not in your group", which is the
+--- live behavior correctly applied to test data and useless. Resolved at CALL
+--- time because modules/Aggregator.lua loads after this file.
+---
+--- Answering nil is the fall-through: no test mode, or an aggregator that has
+--- no preview group, and the caller walks the real units instead.
+---
+--- cache.pets is REPLACED with a fresh empty table rather than carried over,
+--- and nothing invented is written to the remembered map — a preview must not
+--- reach SavedVariables. cache.partial is deliberately not computed either, so
+--- a preview group smaller than the real group is not read as a short build.
+local function cacheTestModeGroup()
+    if not State.testMode then return nil end
+
+    local A = NS.Aggregator
+    if not (A and A.TestGroup) then return nil end
+
+    local group, byGuid = A.TestGroup(), {}
+    for _, entry in ipairs(group) do byGuid[entry.guid] = entry end
+    cache.group, cache.byGuid, cache.pets = group, byGuid, {}
+    return group
+end
+
+--- Record this member's pet in the live and remembered owner maps.
+---
+--- Returns 1 when a pet was linked and 0 otherwise, so the caller's counter is
+--- the count of pets that actually reached the map.
+---
+--- Called only from inside the member guard, which is load-bearing: a member
+--- whose own GUID is unreadable is skipped along with its pet, and in a raid
+--- the duplicate raidN pass is skipped whole, so `raidNpet` is never consulted.
+local function linkPetOf(unit, guid, pets, seenMap)
+    local petUnit = petUnitFor(unit)
+    if not unitExists(petUnit) then return 0 end
+
+    local petGuid = unitGUID(petUnit)
+    -- THE LINE THIS FILE EXISTS TO GET RIGHT. A follower dungeon's companion
+    -- pets answer UnitGUID with a SECRET string, and keying on one raises on
+    -- every refresh for the whole run. An unreadable pet is exactly the "cannot
+    -- prove whose this is" case the header already describes, so it falls
+    -- through to the same handling: no map entry, OwnerOf answers nil, and
+    -- modules/Aggregator.lua drops the row.
+    if not Secrets.IsSafeKey(petGuid) then return 0 end
+
+    pets[petGuid] = guid
+    seenMap.pets[petGuid] = guid
+    return 1
+end
+
+--- The one line a completed build logs.
+---
+--- ONE line per build, format DEFERRED — the arguments are counters the loop
+--- already kept, so nothing is built at the call site (debug-logging-§3).
+local function logBuiltRoster(memberCount, petCount)
+    if not State.debug then return end
+    NS.Debug("Roster", "built members=%d pets=%d raid=%s", memberCount, petCount,
+        (_G.IsInRaid and _G.IsInRaid()) and "yes" or "no")
+end
+
 --- Rebuild the group array, the GUID index and the pet-owner map.
 ---
 --- One pass, three outputs, because they are derived from the same unit walk and
 --- splitting them would walk the group three times on every regroup.
 local function build()
-    -- TEST MODE MOCKS THE UNIT API, exactly as it mocks the meter.
-    --
-    -- The two have to move together: mocking only the meter would leave this
-    -- filter dropping every invented row as "not in your group", which is the
-    -- live behavior correctly applied to test data and useless. Resolved at CALL
-    -- time because modules/Aggregator.lua loads after this file.
-    if State.testMode then
-        local A = NS.Aggregator
-        if A and A.TestGroup then
-            local group, byGuid = A.TestGroup(), {}
-            for _, entry in ipairs(group) do byGuid[entry.guid] = entry end
-            cache.group, cache.byGuid, cache.pets = group, byGuid, {}
-            return group
-        end
-    end
+    local preview = cacheTestModeGroup()
+    if preview then return preview end
 
     local group, byGuid, pets = {}, {}, {}
     local petCount = 0
@@ -300,22 +361,8 @@ local function build()
                     isPlayer      = entry.isPlayer,
                 }
 
-                local petUnit = petUnitFor(unit)
-                if unitExists(petUnit) then
-                    local petGuid = unitGUID(petUnit)
-                    -- THE LINE THIS FILE EXISTS TO GET RIGHT. A follower
-                    -- dungeon's companion pets answer UnitGUID with a SECRET
-                    -- string, and keying on one raises on every refresh for the
-                    -- whole run. An unreadable pet is exactly the "cannot prove
-                    -- whose this is" case the header already describes, so it
-                    -- falls through to the same handling: no map entry, OwnerOf
-                    -- answers nil, and modules/Aggregator.lua drops the row.
-                    if Secrets.IsSafeKey(petGuid) then
-                        pets[petGuid] = guid
-                        seenMap.pets[petGuid] = guid
-                        petCount = petCount + 1
-                    end
-                end
+                -- Inside the member guard on purpose: see linkPetOf.
+                petCount = petCount + linkPetOf(unit, guid, pets, seenMap)
             end
         end
     end
@@ -346,21 +393,18 @@ local function build()
     -- MARKED, not withheld. The map is stored either way so every lookup below
     -- has something to answer from; what `partial` changes is that `ensure` will
     -- build again on the next read instead of trusting it.
-    local expected = (_G.GetNumGroupMembers and _G.GetNumGroupMembers()) or 0
+    local expected = numGroupMembers()
     cache.partial = (expected > 1 and #group < expected) or nil
     if cache.partial then
+        -- A partial build logs the partial line and NOT "built members=", which
+        -- is what makes that string a reliable grep for a build that stuck.
         if State.debug then
             NS.Debug("Roster", "partial build (%d of %d) — will retry", #group, expected)
         end
         return group
     end
 
-    -- ONE line per build, format DEFERRED — the arguments are counters the loop
-    -- already kept, so nothing is built at the call site (debug-logging-§3).
-    if State.debug then
-        NS.Debug("Roster", "built members=%d pets=%d raid=%s", #group, petCount,
-            (_G.IsInRaid and _G.IsInRaid()) and "yes" or "no")
-    end
+    logBuiltRoster(#group, petCount)
 
     return group
 end

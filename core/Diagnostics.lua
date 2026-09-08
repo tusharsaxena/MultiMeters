@@ -638,6 +638,56 @@ local function reportRecapReaders(apis)
     end
 end
 
+--- The dating section's header: window 1's session type, and the death-time
+--- format that window is ACTUALLY set to.
+---
+--- THE FORMAT IS READ OFF `cfg.text`, NOT `cfg.data.text`. `data` is where the
+--- session fields live, and both hang off the same window table, so a folded
+--- lookup prints nil for a setting the player can see in the options panel.
+local function reportDatingHeader()
+    local windows = NS.Database and NS.Database.GetWindows and NS.Database.GetWindows()
+    local cfg = windows and windows[1]
+    local text = cfg and cfg.text or {}
+    out(string.format("    window 1: sessionType=%s  text.deathTimeFormat=%s",
+        tostring(cfg and cfg.data and cfg.data.sessionType),
+        tostring(text.deathTimeFormat)))
+end
+
+--- One death's inputs, dated in both styles — or the notice that it cannot be
+--- dated at all.
+---
+--- THE SAFE-KEY GATE IS WHAT KEEPS A SECRET OUT of `P.GetRecap` and out of
+--- `string.format`. A row whose id is secret prints the notice and nothing else,
+--- and the caller still spends one of its four on it: see the cap.
+---
+--- @param F table                 the formatter, already proven to carry DeathTime
+--- @param P table                 the recap provider
+--- @param S table|nil             NS.Secrets, absent on an old client
+--- @param src table               one Deaths source row
+local function reportDatingRow(F, P, S, src)
+    local id = src.deathRecapID
+    if not (S and S.IsSafeKey(id)) then
+        out("    [id is secret — nothing can be dated from it]")
+        return
+    end
+
+    local recap = P.GetRecap and P.GetRecap(id) or nil
+    -- THE CLIENT HANDS THE EVENTS BACK NEWEST FIRST, so events[1] is the killing
+    -- blow. Dating off the last element puts the death at the fight's first
+    -- damage instead, and nothing in this output would look wrong.
+    local newest = recap and recap.events and recap.events[1]
+    local when = newest and newest.timestamp
+
+    -- `deathTimeSeconds` is printed although nothing reads it any more.
+    -- It is the field three separate attempts were built on, and seeing
+    -- it read -1 here is what a reader needs before trying a fourth.
+    out(string.format("    id=%s  row deathTimeSeconds=%s  recap timestamp=%s",
+        tostring(id), shown(src.deathTimeSeconds), shown(when)))
+    out(string.format("      clock=%s  ago=%s",
+        tostring(F.DeathTime(when, "clock")),
+        tostring(F.DeathTime(when, "ago"))))
+end
+
 --- Why each death is dated the way it is.
 ---
 --- KEPT AFTER THE FEATURE IT WAS WRITTEN FOR WAS REMOVED. "Time into the fight"
@@ -656,33 +706,14 @@ local function reportDeathDating(sources)
         return
     end
 
-    local windows = NS.Database and NS.Database.GetWindows and NS.Database.GetWindows()
-    local cfg = windows and windows[1]
-    local text = cfg and cfg.text or {}
-    out(string.format("    window 1: sessionType=%s  text.deathTimeFormat=%s",
-        tostring(cfg and cfg.data and cfg.data.sessionType),
-        tostring(text.deathTimeFormat)))
+    reportDatingHeader()
 
     local printed = 0
     for i = 1, #(sources or {}) do
-        local src = sources[i]
-        local id = src.deathRecapID
-        if not (S and S.IsSafeKey(id)) then
-            out("    [id is secret — nothing can be dated from it]")
-        else
-            local recap = P.GetRecap and P.GetRecap(id) or nil
-            local newest = recap and recap.events and recap.events[1]
-            local when = newest and newest.timestamp
-
-            -- `deathTimeSeconds` is printed although nothing reads it any more.
-            -- It is the field three separate attempts were built on, and seeing
-            -- it read -1 here is what a reader needs before trying a fourth.
-            out(string.format("    id=%s  row deathTimeSeconds=%s  recap timestamp=%s",
-                tostring(id), shown(src.deathTimeSeconds), shown(when)))
-            out(string.format("      clock=%s  ago=%s",
-                tostring(F.DeathTime(when, "clock")),
-                tostring(F.DeathTime(when, "ago"))))
-        end
+        reportDatingRow(F, P, S, sources[i])
+        -- FOUR ROWS WALKED, not four rows dated. Mid-pull every id is secret, and
+        -- an increment moved inside the dated arm would walk the whole column
+        -- looking for a fourth datable row that cannot exist.
         printed = printed + 1
         if printed >= 4 then break end
     end
@@ -1735,6 +1766,27 @@ end
 --- unreadable, so the report prints the group beside it — and prints it at read
 --- time rather than storing names in the trace, which would put a name the unit
 --- API may make secret into every single entry.
+--- One roster member's row: the same three unit reads modules/Feign.lua makes,
+--- described rather than returned.
+---
+--- THE THREE READS ARE DELIBERATELY NOT UNIFORM, and folding them into one reader
+--- changes what this row says on a live client. `hp` goes through `probe`, so it
+--- reads `<refused>` when UnitHealth raises OR is absent, and a number arrives
+--- one-decimal; `dead` and `feigning` are `_G`-guarded and read `nil` when the API
+--- is absent. `local` is `and true or false`, so it is never nil.
+---
+--- @param e table                 one NS.Roster group entry
+local function reportFeignRosterRow(e)
+    local unit = e.unit
+    out(string.format("    %s  guid=%s  hp=%s  dead=%s  feigning=%s  local=%s",
+        tostring(unit),
+        shown(e.guid),
+        unit and probe(_G.UnitHealth, unit) or "nil",
+        unit and _G.UnitIsDead and shown(_G.UnitIsDead(unit)) or "nil",
+        unit and _G.UnitIsFeignDeath and shown(_G.UnitIsFeignDeath(unit)) or "nil",
+        tostring(e.isPlayer and true or false)))
+end
+
 local function reportFeignRoster()
     out("  group now:")
     local Roster = NS.Roster
@@ -1743,20 +1795,11 @@ local function reportFeignRoster()
         out("    <no group>")
         return
     end
+    -- Every member, feigning or not, so the report says what a NON-feigning unit
+    -- looks like too. Without the baseline a single feigning row proves nothing:
+    -- "party2 reads hp=0" is only evidence if the other four do not.
     for i = 1, #group do
-        local e = group[i]
-        local unit = e.unit
-        -- Read the same three APIs modules/Feign.lua reads, on every member, so
-        -- the report says what a NON-feigning unit looks like too. Without the
-        -- baseline a single feigning row proves nothing: "party2 reads hp=0" is
-        -- only evidence if the other four do not.
-        out(string.format("    %s  guid=%s  hp=%s  dead=%s  feigning=%s  local=%s",
-            tostring(unit),
-            shown(e.guid),
-            unit and probe(_G.UnitHealth, unit) or "nil",
-            unit and _G.UnitIsDead and shown(_G.UnitIsDead(unit)) or "nil",
-            unit and _G.UnitIsFeignDeath and shown(_G.UnitIsFeignDeath(unit)) or "nil",
-            tostring(e.isPlayer and true or false)))
+        reportFeignRosterRow(group[i])
     end
 end
 
