@@ -257,8 +257,10 @@ directions: a new path nobody argued for is a red, and so is a row for a path th
 `library-stack-§8` makes LibKa0s-Media's catalog the addon's vocabulary for marks, so a red is
 cleared one of two ways — use `NS.Icon`, or add the row saying why the catalog cannot answer at that
 site. Twelve rows say why today; exactly one of them defers to the deviation register rather than
-arguing in place, and a fourth case asserts that register row is still there, so *"register row
-above"* cannot quietly become a phrase.
+arguing in place, and two further cases hold that pointer honest — a fourth asserting the
+register row is still there, so *"register row above"* cannot quietly become a phrase, and a
+fifth asserting the row's `settings/ColumnBlocks.lua:72-73` citation still names the lines the
+two declarations are on.
 
 **The quote is part of the pattern.** An occurrence counts when it opens a string, in either form
 Lua has — `"Interface\\…"` or the long-bracket `[[Interface\…]]` — and not otherwise, because a
@@ -276,6 +278,13 @@ is caught — and no player ever sees it drawn.
 The line and pair totals in the census prose are dated measurements and nothing asserts them.
 Membership of the distinct file/path pair is the invariant, because a line number moves on every
 ordinary edit while the arrival of a *new* path is the only event the rule has an opinion about.
+
+**The register row's citation is the one exception, and it earned the fifth case the hard way.**
+That row is a reader's entry point into an argument about two named declarations rather than a
+membership claim, so it has to carry a line number — and the commit that first wrote `:60-61`
+also added the banner above the pair that pushed it to 72-73, shipping a pointer twelve lines
+short of the thing it argues about. None of the four cases before it could see that: they never
+look at a number. This one does, and it is scoped to the single citation that leads somewhere.
 
 ## Verifying the vendored copies
 

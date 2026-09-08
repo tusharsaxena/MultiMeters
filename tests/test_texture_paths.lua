@@ -46,6 +46,15 @@ local REGISTER_HEADING = "## Documented deviations"
 -- retired by deletion cannot leave the reference dangling quietly.
 local COLUMNBLOCKS_RULE = "library-stack §8"
 
+-- The site that row argues about, and the pair it declines the catalog for. Spelled here in the
+-- de-escaped form `pathsIn` answers in, so both spellings a Lua source may use are matched by one
+-- constant.
+local COLUMNBLOCKS_FILE = "settings/ColumnBlocks.lua"
+local READYCHECK_PAIR = {
+    "Interface\\RaidFrame\\ReadyCheck-Ready",
+    "Interface\\RaidFrame\\ReadyCheck-NotReady",
+}
+
 --- Split a NUL-delimited blob. `git ls-files -z` because a path may contain anything but NUL, and
 --- the line-oriented form quotes such a path instead of printing it -- a quoted path would not
 --- match a file on disk and this gate would then report a breach that is really a parse failure.
@@ -257,5 +266,64 @@ function()
              "' row, but settings/ColumnBlocks.lua's two census rows defer to one. Either the " ..
              "row was retired -- in which case the two textures move to NS.Icon in the same " ..
              "commit -- or it was lost")
+    end
+end)
+
+test("texturepaths: the register row's ColumnBlocks citation names the lines the pair is on",
+function()
+    -- THE ONE LINE NUMBER IN THIS REPOSITORY THAT LEADS TO A DECISION rather than to prose. The
+    -- census above deliberately pins file/path pairs and no line numbers, because a line moves on
+    -- every ordinary edit and only a NEW path is an event the rule has an opinion about. The
+    -- register row is the exception and has to carry one: it is a reader's entry point into an
+    -- argument about two specific declarations, and "somewhere in ColumnBlocks.lua" is not an
+    -- entry point.
+    --
+    -- A citation that carries a line number carries a way to be wrong, and this one already was:
+    -- the commit that wrote `:60-61` also added the twelve-line banner above the pair that moved
+    -- it to 72-73, so the row shipped pointing twelve lines above the thing it argues about. That
+    -- is a defect no other gate here could see -- the census cases pass with the number stale,
+    -- because they never look at a number.
+    local body = slurp(COLUMNBLOCKS_FILE)
+    if not body then
+        fail(COLUMNBLOCKS_FILE .. " could not be opened; the register row's citation points into it")
+    end
+
+    local first, last, lineNo = nil, nil, 0
+    for line in (body .. "\n"):gmatch("([^\n]*)\n") do
+        lineNo = lineNo + 1
+        local opened = pathsIn(line)
+        for _, path in ipairs(READYCHECK_PAIR) do
+            if opened[path] then
+                first = first or lineNo
+                last = lineNo
+            end
+        end
+    end
+
+    if not first then
+        fail("no line of " .. COLUMNBLOCKS_FILE .. " opens a string with " ..
+             table.concat(READYCHECK_PAIR, " or ") .. " any more. If the pair moved to NS.Icon, " ..
+             "the register row and both census rows retire in the same commit")
+    end
+
+    local cited
+    for _, cells in ipairs(rowsUnder(REGISTER_HEADING)) do
+        if cells[1] and cells[1]:find(COLUMNBLOCKS_RULE, 1, true) then
+            for _, cell in ipairs(cells) do
+                local from, to = cell:match("settings/ColumnBlocks%.lua:(%d+)%-(%d+)")
+                if from then cited = { tonumber(from), tonumber(to) } end
+            end
+        end
+    end
+
+    if not cited then
+        fail("the '" .. COLUMNBLOCKS_RULE .. "' register row cites no `" .. COLUMNBLOCKS_FILE ..
+             ":<from>-<to>` span. The row argues about two declarations and has to say which")
+    end
+
+    if cited[1] ~= first or cited[2] ~= last then
+        fail(("the '%s' register row cites %s:%d-%d, but the pair it argues about is declared at " ..
+              "%d-%d. Move the citation, not the code"):format(
+             COLUMNBLOCKS_RULE, COLUMNBLOCKS_FILE, cited[1], cited[2], first, last))
     end
 end)
