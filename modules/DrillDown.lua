@@ -390,7 +390,8 @@ end
 --- @param statKey string
 --- @return boolean
 local function isRepeatClick(current, row, statKey)
-    return current ~= nil and current.guid == row.guid and current.statKey == statKey
+    if not current then return false end
+    return current.guid == row.guid and current.statKey == statKey
 end
 
 --- DEATHS IS A LADDER, and the order is the whole of it.
@@ -398,10 +399,8 @@ end
 --- The deaths view first, where the client can read a recap and the row knows
 --- which deaths to list. Blizzard's own frame second, so a client without
 --- C_DeathRecap keeps exactly the behaviour it has today rather than losing the
---- one thing that worked. Neither rung firing returns nil, and the caller falls
---- through to the ordinary spell breakdown, so the cell is never dead — even
---- though a Deaths source has no spell list and that breakdown is the "No data
---- yet" this feature exists to replace.
+--- one thing that worked. Neither rung firing returns nil, and the caller takes
+--- the ladder's last rung itself.
 ---
 --- The ladder is only ever climbed AFTER the exit toggle has been answered: a
 --- second click on a drilled Deaths cell leaves, and must not hand an id to
@@ -409,11 +408,12 @@ end
 --- @param self table  the DrillDown module, for Enter
 --- @param window table
 --- @param row table
---- @return string|nil  "enter" or "recap", or nil when neither rung fires
-local function climbDeathsLadder(self, window, row)
+--- @param statKey string  the clicked cell's stat, threaded through to Enter
+--- @return string|nil  "enter", "none" or "recap", or nil when neither rung fires
+local function climbDeathsLadder(self, window, row, statKey)
     local deaths = canReadRecaps() and copyRecapIDs(row.deaths) or nil
     if deaths ~= nil then
-        return self:Enter(window, row, "Deaths", "deaths") and "enter" or "none"
+        return self:Enter(window, row, statKey, "deaths") and "enter" or "none"
     end
     if openDeathRecap(row.deathRecapID) then
         if State.debug and Debug then
@@ -449,10 +449,13 @@ function DrillDown:OnCellClick(window, row, statKey)
     end
 
     if statKey == "Deaths" then
-        local action = climbDeathsLadder(self, window, row)
+        local action = climbDeathsLadder(self, window, row, statKey)
         if action ~= nil then return action end
     end
 
+    -- The ordinary spell breakdown is the deaths ladder's last rung, so the cell
+    -- is never dead — even though a Deaths source has no spell list and that
+    -- breakdown is the "No data yet" this feature exists to replace.
     return self:Enter(window, row, statKey) and "enter" or "none"
 end
 

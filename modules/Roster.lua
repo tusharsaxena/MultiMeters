@@ -208,8 +208,7 @@ end
 --- and answered as a number so both callers can compare against it without
 --- repeating the guard.
 local function numGroupMembers()
-    local f = _G.GetNumGroupMembers
-    return (f and f()) or 0
+    return (_G.GetNumGroupMembers and _G.GetNumGroupMembers()) or 0
 end
 
 --- The ordered unit tokens of the current group: the player first, then the
@@ -252,7 +251,8 @@ local function petUnitFor(unit)
     return unit .. "pet"
 end
 
---- The preview roster, cached, or nil when there is no preview to cache.
+--- Cache the preview roster. Answers whether test mode HANDLED the build, and
+--- the group it cached.
 ---
 --- TEST MODE MOCKS THE UNIT API, exactly as it mocks the meter.
 ---
@@ -261,23 +261,27 @@ end
 --- live behavior correctly applied to test data and useless. Resolved at CALL
 --- time because modules/Aggregator.lua loads after this file.
 ---
---- Answering nil is the fall-through: no test mode, or an aggregator that has
---- no preview group, and the caller walks the real units instead.
+--- Answering false is the fall-through: no test mode, or an aggregator that has
+--- no preview group, and the caller walks the real units instead. The handled
+--- flag is separate from the group ON PURPOSE — once test mode and TestGroup
+--- are both there, build() returns whatever TestGroup answered, exactly as the
+--- structural early return here used to guarantee. A falsy preview must not
+--- fall through to the live unit walk.
 ---
 --- cache.pets is REPLACED with a fresh empty table rather than carried over,
 --- and nothing invented is written to the remembered map — a preview must not
 --- reach SavedVariables. cache.partial is deliberately not computed either, so
 --- a preview group smaller than the real group is not read as a short build.
 local function cacheTestModeGroup()
-    if not State.testMode then return nil end
+    if not State.testMode then return false end
 
     local A = NS.Aggregator
-    if not (A and A.TestGroup) then return nil end
+    if not (A and A.TestGroup) then return false end
 
     local group, byGuid = A.TestGroup(), {}
     for _, entry in ipairs(group) do byGuid[entry.guid] = entry end
     cache.group, cache.byGuid, cache.pets = group, byGuid, {}
-    return group
+    return true, group
 end
 
 --- Record this member's pet in the live and remembered owner maps.
@@ -306,23 +310,13 @@ local function linkPetOf(unit, guid, pets, seenMap)
     return 1
 end
 
---- The one line a completed build logs.
----
---- ONE line per build, format DEFERRED — the arguments are counters the loop
---- already kept, so nothing is built at the call site (debug-logging-§3).
-local function logBuiltRoster(memberCount, petCount)
-    if not State.debug then return end
-    NS.Debug("Roster", "built members=%d pets=%d raid=%s", memberCount, petCount,
-        (_G.IsInRaid and _G.IsInRaid()) and "yes" or "no")
-end
-
 --- Rebuild the group array, the GUID index and the pet-owner map.
 ---
 --- One pass, three outputs, because they are derived from the same unit walk and
 --- splitting them would walk the group three times on every regroup.
 local function build()
-    local preview = cacheTestModeGroup()
-    if preview then return preview end
+    local handled, preview = cacheTestModeGroup()
+    if handled then return preview end
 
     local group, byGuid, pets = {}, {}, {}
     local petCount = 0
@@ -404,7 +398,12 @@ local function build()
         return group
     end
 
-    logBuiltRoster(#group, petCount)
+    -- ONE line per build, format DEFERRED — the arguments are counters the loop
+    -- already kept, so nothing is built at the call site (debug-logging-§3).
+    if State.debug then
+        NS.Debug("Roster", "built members=%d pets=%d raid=%s", #group, petCount,
+            (_G.IsInRaid and _G.IsInRaid()) and "yes" or "no")
+    end
 
     return group
 end

@@ -1869,9 +1869,10 @@ end
 --- reads as a bug in the addon rather than as a melee hit. Blizzard's own
 --- recap draws it as "Melee" with the weapon icon, and so does this.
 ---
---- Four arms and no more: a swing, a heal, a spell known only by id, and
---- nothing at all. Every one of them returns a caption, because a line with an
---- empty spell slot reads as a drawing fault.
+--- Three arms, four namings, and no way out without one: a swing, a heal, and
+--- a fall-through that shows a spell by id or, with no id at all, a bare
+--- question mark. Every path returns a caption, because a line with an empty
+--- spell slot reads as a drawing fault.
 ---
 --- @param kind string|nil   the event type, already through plainWord
 --- @param spellID any|nil
@@ -1931,10 +1932,14 @@ local function eventColumns(event, secondsBefore)
     local icon = eventIcon(spellID)
 
     -- The event type is read through `plainWord`, because it comes off a recap
-    -- like everything else and comparing a secret string raises.
+    -- like everything else and comparing a secret string raises. Read for EVERY
+    -- event, named or not: the read is a Secrets access, and moving it inside
+    -- the unnamed branch would quietly change which events are asked about.
+    local kind = plainWord(event.event)
+
     local name = event.spellName
     if name == nil then
-        name, icon = eventCaption(plainWord(event.event), spellID, icon)
+        name, icon = eventCaption(kind, spellID, icon)
     end
 
     -- `hideCaster` may be a secret boolean, so it goes through plainTruth. An
@@ -1943,9 +1948,10 @@ local function eventColumns(event, secondsBefore)
     local caster = event.sourceName
     if plainTruth(event.hideCaster) then caster = nil end
 
+    local timeText = eventTimeText(secondsBefore)
+
     return string.format("|T%s:%d:%d:0:0|t", icon or FALLBACK_ICON,
-        TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE), eventTimeText(secondsBefore),
-        name, caster or ""
+        TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE), timeText, name, caster or ""
 end
 
 --- Draw one recap event.
@@ -1978,7 +1984,8 @@ local function addEventLine(event, deathTime, maxHealth, numberStyle, style)
     frame.caster:SetText(caster)
 end
 
---- The widest time column this recap needs, or nil when nothing could be measured.
+--- The wider of `widest` and ONE event's time cell, or `widest` when the offset
+--- was refused.
 ---
 --- The offsets are plain numbers this addon computed — the gate in `eventOffset`
 --- guarantees it — so comparing and measuring them is legal where doing the same
@@ -1987,47 +1994,44 @@ end
 --- sized against a string it will not render.
 ---
 --- @return number|nil
-local function widestTimeColumn(ordered, total, deathTime, path, size, flags)
-    local widest
-    for i = 1, total do
-        local off = eventOffset(ordered[i].timestamp, deathTime)
-        if off ~= nil then
-            local w = measureText(eventTimeText(off), path, size, flags)
-            if w ~= nil and (widest == nil or w > widest) then widest = w end
-        end
-    end
+local function widerTimeCell(event, deathTime, widest, path, size, flags)
+    local off = eventOffset(event.timestamp, deathTime)
+    if off == nil then return widest end
+    local w = measureText(eventTimeText(off), path, size, flags)
+    if w ~= nil and (widest == nil or w > widest) then return w end
     return widest
 end
 
---- The widest spell and caster names this recap needs — ALL OR NOTHING.
+--- The spell and caster widths grown by ONE event — ALL OR NOTHING.
 ---
---- One unreadable caption abandons the whole measurement rather than sizing the
---- column from the readable half — a column that fits four names out of ten is
---- worse than one reserved for all of them. The third return says which way it
---- went; the two widths mean nothing once it is false.
+--- The third return is false the moment a caption cannot be read, and the caller
+--- stops asking: the two widths mean nothing once it is false.
 ---
---- @return number spellW, number casterW, boolean namesReadable
-local function widestNameColumns(ordered, total, path, size, flags)
-    local spellW, casterW = 0, 0
-    for i = 1, total do
-        local name = plainWord(ordered[i].spellName)
-        local caster = plainWord(ordered[i].sourceName)
-        -- nil is fine on either — a swing has no spell name and plenty of
-        -- events name no caster. What is NOT fine is a value that is there
-        -- and may not be read, which is what plainWord answers nil for too,
-        -- so the two are told apart by asking Secrets directly.
-        if unreadable(ordered[i].spellName) or unreadable(ordered[i].sourceName) then
-            return spellW, casterW, false
-        end
-        local sw = name and measureText(name, path, size, flags) or 0
-        local cw = caster and measureText(caster, path, size, flags) or 0
-        if sw and sw > spellW then spellW = sw end
-        if cw and cw > casterW then casterW = cw end
+--- @return number spellW, number casterW, boolean readable
+local function widerNameCells(event, spellW, casterW, path, size, flags)
+    local name = plainWord(event.spellName)
+    local caster = plainWord(event.sourceName)
+    -- nil is fine on either — a swing has no spell name and plenty of
+    -- events name no caster. What is NOT fine is a value that is there
+    -- and may not be read, which is what plainWord answers nil for too,
+    -- so the two are told apart by asking Secrets directly.
+    if unreadable(event.spellName) or unreadable(event.sourceName) then
+        return spellW, casterW, false
     end
+    local sw = name and measureText(name, path, size, flags) or 0
+    local cw = caster and measureText(caster, path, size, flags) or 0
+    if sw and sw > spellW then spellW = sw end
+    if cw and cw > casterW then casterW = cw end
     return spellW, casterW, true
 end
 
 --- Size the three event columns onto the style, before any line is drawn.
+---
+--- ONE WALK OF `ordered`, measuring the time cell and the two name cells of each
+--- event together. This runs on the hover path, where a second pass over the same
+--- array buys nothing but its own loop overhead.
+---
+--- The time column is sized from THIS recap's longest offset.
 ---
 --- @param ordered table   the collected events, killing blow first
 --- @param total number
@@ -2035,9 +2039,24 @@ end
 --- @param style table    written in place
 local function measureEventColumns(ordered, total, deathTime, style)
     local path, size, flags = style.fontPath, style.fontSize, style.fontFlags
-    style.eventTimeWidth = widestTimeColumn(ordered, total, deathTime, path, size, flags)
+    local widest, spellW, casterW = nil, 0, 0
+    -- One unreadable caption abandons the whole measurement rather than sizing
+    -- the column from the readable half — a column that fits four names out of
+    -- ten is worse than one reserved for all of them. The time column is still
+    -- measured over every event, which is why this only gates the names.
+    local namesReadable = true
 
-    local spellW, casterW, namesReadable = widestNameColumns(ordered, total, path, size, flags)
+    for i = 1, total do
+        local event = ordered[i]
+        widest = widerTimeCell(event, deathTime, widest, path, size, flags)
+        if namesReadable then
+            spellW, casterW, namesReadable =
+                widerNameCells(event, spellW, casterW, path, size, flags)
+        end
+    end
+
+    style.eventTimeWidth = widest
+
     -- A couple of characters of air, so a name that exactly fills its column
     -- does not read as though it were clipped. Capped at the reservation, or
     -- shrinking to fit would become growing to fit and a forty-character boss
@@ -2402,8 +2421,9 @@ end
 --- The hovered player's class colour, or nil when the row carries no class.
 ---
 --- `classFilename` is NeverSecret, which is why this keeps answering mid-pull
---- when the bar LENGTHS cannot. A nil colour is a legitimate answer: drawLine
---- falls back to grey.
+--- when the bar LENGTHS cannot. A nil colour is a legitimate answer: it reaches
+--- `lineStyle`, where `modeColor` with nothing to read leaves the CONFIGURED
+--- colour standing.
 ---
 --- @param row table|nil
 --- @return table|nil

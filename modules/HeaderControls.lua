@@ -322,9 +322,10 @@ end
 --- What each header control does, keyed by the control name the button carries.
 ---
 --- One row per control, built ONCE at file load: a click is a lookup, not a walk
---- down a seven-way chain, and an unknown key is a silent no-op because a missing
---- row is simply nil. Every seam an arm needs is resolved inside the arm, at call
---- time, because settings/ and modules/ load in that order.
+--- down a seven-way chain. An unknown control name is a silent no-op, but ONLY
+--- because onClick checks the row before calling it -- a missing row is nil, and
+--- calling it would raise. Every seam an arm needs is resolved inside the arm, at
+--- call time, because settings/ and modules/ load in that order.
 local ACTIONS = {
     close = function(window)
         -- WITH the reason: Window:Hide clears forcedShow only for "closed" and
@@ -396,10 +397,15 @@ local function onClick(frame)
     local window = frame.mmWindow
     local control = frame.mmControl
     if not (window and control) then return end
+    -- BEFORE the lookup, and unconditionally, because the if/elseif chain this
+    -- table replaced read window.config.frame for EVERY name it was handed --
+    -- an unrecognised one included. Behind the lookup instead, a window with no
+    -- config would raise only for the names that have a row.
+    local frameCfg = window.config.frame or {}
 
     local action = ACTIONS[control]
     if not action then return end
-    action(window, window.config.frame or {})
+    action(window, frameCfg)
 end
 
 -- ---------------------------------------------------------------------------

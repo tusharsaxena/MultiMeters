@@ -614,34 +614,6 @@ local BORDER_ANCHOR = {
     right  = { "TOPRIGHT",   "BOTTOMRIGHT", "SetWidth"  },
 }
 
---- Draw (or hide) the thin outline `bars.border` asks for.
----
---- Four 1px textures rather than a BackdropTemplate child frame. A frame
---- anchored to this StatusBar would inherit its secretness the moment the bar is
---- handed a value (rule R3), and would then be one more thing nobody may
---- measure; a texture is a leaf, exactly like the two FontStrings above it, and
---- nothing ever reads one back.
----
---- Built on FIRST USE and kept forever after, like every other widget in this
---- file — a player toggling the setting off does not destroy them, because the
---- pool's whole premise is that widget creation happens once.
----
---- The color falls back to the collection's own edge (NS.SKIN.border) when the
---- player has not picked one, so a window that never touches the setting keeps
---- the outline it always had.
----
---- TWO IMPLEMENTATIONS, AND THE CHEAP ONE IS THE DEFAULT. A border style of
---- "None" -- the shipped value -- is the four flat textures described above, and
---- costs nothing new. Any LSM edge ART needs a real backdrop, because an
---- edgeFile is a nine-slice and four solid rectangles cannot draw one, so that
---- path calls SetBackdrop on the cell itself.
----
---- THE BACKDROP GOES ON THE BAR, NOT ON A CHILD FRAME, and that distinction is
---- rule R3's: a child frame anchored to a StatusBar that has been handed a secret
---- inherits its secret anchoring, while a backdrop is textures the frame owns.
---- Nothing here reads anything back either way. It is still the one place this
---- addon decorates a frame that carries meter values, which is why it is opt-in
---- and why docs/smoke-tests.md asks for it to be checked mid-pull.
 --- The outline's colour for one cell, per the window's `bars.borderColorMode`.
 ---
 --- TWO MODES, `class` and `custom`, and `class` is THIS ROW'S PLAYER -- an outline
@@ -758,6 +730,34 @@ local function applyFlatBorder(cell, bars, edges)
     end
 end
 
+--- Draw (or hide) the thin outline `bars.border` asks for.
+---
+--- Four 1px textures rather than a BackdropTemplate child frame. A frame
+--- anchored to this StatusBar would inherit its secretness the moment the bar is
+--- handed a value (rule R3), and would then be one more thing nobody may
+--- measure; a texture is a leaf, exactly like the two FontStrings above it, and
+--- nothing ever reads one back.
+---
+--- Built on FIRST USE and kept forever after, like every other widget in this
+--- file — a player toggling the setting off does not destroy them, because the
+--- pool's whole premise is that widget creation happens once.
+---
+--- The color falls back to the collection's own edge (NS.SKIN.border) when the
+--- player has not picked one, so a window that never touches the setting keeps
+--- the outline it always had.
+---
+--- TWO IMPLEMENTATIONS, AND THE CHEAP ONE IS THE DEFAULT. A border style of
+--- "None" -- the shipped value -- is the four flat textures described above, and
+--- costs nothing new. Any LSM edge ART needs a real backdrop, because an
+--- edgeFile is a nine-slice and four solid rectangles cannot draw one, so that
+--- path calls SetBackdrop on the cell itself.
+---
+--- THE BACKDROP GOES ON THE BAR, NOT ON A CHILD FRAME, and that distinction is
+--- rule R3's: a child frame anchored to a StatusBar that has been handed a secret
+--- inherits its secret anchoring, while a backdrop is textures the frame owns.
+--- Nothing here reads anything back either way. It is still the one place this
+--- addon decorates a frame that carries meter values, which is why it is opt-in
+--- and why docs/smoke-tests.md asks for it to be checked mid-pull.
 function Cell:ApplyBorder(bars)
     local wanted = (bars and bars.border) and true or false
     local edge = wanted and borderEdge(bars and bars.borderStyle) or nil
@@ -1238,12 +1238,12 @@ local ICON_EDGE_INSET = 2
 --- @param onRight boolean   whether the strip sits at the cell's right edge
 --- @param layout table      the window's layout table
 local function placeIcons(cell, slots, size, onRight, layout)
-    local y = (layout.rowHeight - size) * -0.5
     for i, kind in ipairs(slots) do
         local tex = cell.icons[kind] or newIcon(cell)
         cell.icons[kind] = tex
         tex:ClearAllPoints()
         tex:SetSize(size, size)
+        local y = (layout.rowHeight - size) * -0.5
         -- The stride is the icon plus ICON_TEXT_GAP. That gap was a literal 1
         -- folded in here, which reads as the icon and the name touching at any
         -- size a player would actually pick.

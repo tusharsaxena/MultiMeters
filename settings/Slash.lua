@@ -427,17 +427,24 @@ end
 -- The two harness verbs
 -- ---------------------------------------------------------------------
 
---- The three READ verbs, mapped to the NS.Diagnostics method each one names.
+--- The three READ verbs, one entry each, reaching the report that verb names.
 --- Built once at file scope: this is a slash path, but a table rebuilt per call
 --- is an allocation the branches it replaced never made (performance-§11).
+---
+--- Each entry spells its call out as a LITERAL field access, exactly as the three
+--- branches this table replaced did, rather than indexing NS.Diagnostics by a
+--- stored method name. A Diagnostics that loaded but is missing the member — a
+--- stale or half-loaded core/Diagnostics.lua — must still fail the way it always
+--- did, naming the method it could not call; `D[name]()` would raise on `'?'`
+--- instead and cost the reader the one word that identifies the gap.
 ---
 --- The mapping is the whole contract: one verb reaches one report and never
 --- another, so a typo here cross-wires two commands while still printing
 --- something plausible.
 local DEBUG_REPORTS = {
-    diag     = "Report",
-    recap    = "ReportDeathRecap",
-    identity = "ReportIdentity",
+    diag     = function(D) return D.Report() end,
+    recap    = function(D) return D.ReportDeathRecap() end,
+    identity = function(D) return D.ReportIdentity() end,
 }
 
 --- `feign` is the issue #25 recording, and it is the only debug verb here that
@@ -484,16 +491,21 @@ end
 function doDebug(rest)
     local word = tostring(rest or ""):lower():match("^%s*(%S*)") or ""
 
-    -- The read verbs run WITHOUT the debug log, deliberately, which is why this
-    -- lookup and the feign branch both sit ABOVE the `NS.DebugLog` guard below.
-    -- They are what a player is asked to run when something looks wrong — typed
-    -- mid-pull, by somebody who was asked to type them — and requiring them to
-    -- open a console first is one more step between a bug and its report.
-    -- `recap` is the issue #1 probe and `identity` the issue #22 capture, each
-    -- the report the full `diag` carries without the output around it.
+    -- The three read verbs run WITHOUT the debug log, deliberately, which is why
+    -- this lookup sits ABOVE the `NS.DebugLog` guard below. They are what a
+    -- player is asked to run when something looks wrong, and requiring them to
+    -- enable a console first is one more step between a bug and its report.
+    --
+    -- `recap` is the issue #1 probe on its own — the same report the full `diag`
+    -- carries, without the forty lines of atlas and font output around it.
+    --
+    -- `identity` is the issue #22 capture, and it is typed mid-pull, by a player
+    -- who was asked to type it, so a console they must open first is a step
+    -- between us and the measurement. The report itself says what it needs — the
+    -- flag on, and a pull running — rather than going quiet when it has neither.
     local report = DEBUG_REPORTS[word]
     if report then
-        if NS.Diagnostics then NS.Diagnostics[report]() end
+        if NS.Diagnostics then report(NS.Diagnostics) end
         return
     end
 
