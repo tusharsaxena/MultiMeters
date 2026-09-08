@@ -16,6 +16,12 @@ badge and any count quoted in the docs must agree with it.
 - loadorder: the LibKa0s seams load in the order their headers pin
 - loadorder: core/MultiMeters.lua loads after every core/ setup file
 
+### test_layout_cap.lua (3)
+
+- layoutcap: every authored file over 1500 lines is named in the ARCHITECTURE.md census
+- layoutcap: no census row outlives the breach it records
+- layoutcap: every census row carries a disposition that can be followed
+
 ### test_constants.lua (23)
 
 - Constants: NS.Const and NS.Constants are the same table
@@ -1640,6 +1646,7 @@ badge and any count quoted in the docs must agree with it.
 | Suite | Cases |
 |-------|------:|
 | test_loadorder.lua | 7 |
+| test_layout_cap.lua | 3 |
 | test_constants.lua | 23 |
 | test_secrets.lua | 38 |
 | test_compat.lua | 33 |
@@ -1679,4 +1686,4 @@ badge and any count quoted in the docs must agree with it.
 | test_columns.lua | 11 |
 | test_degraded.lua | 27 |
 | test_eol.lua | 1 |
-| **Total** | **1509** |
+| **Total** | **1512** |

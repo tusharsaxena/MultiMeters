@@ -193,6 +193,7 @@ local shared = loadInstance()
 local SUITES = {
     -- structure and the shared vocabulary
     "test_loadorder",
+    "test_layout_cap",
     "test_constants",
     "test_secrets",
     "test_compat",

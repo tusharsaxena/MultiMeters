@@ -722,6 +722,7 @@ Rows are shaped `| Rule | What differs | Why | Decided | Re-check trigger |`.
 | options-ui §17 — every colour picker carries a "use class colour" companion | `window.header.bgColor` — the title bar's own background — ships with **no** companion. Every other non-palette swatch in the addon has one. | Neither answer a companion could give is true of this surface. The title bar is **one strip spanning the whole window**, so "per statistic" could only ever mean the sort column's colour — a fact already on screen twice, in that column's own header and in its arrow — and that is the same argument that took the mode off the title bar's *text* background and off the divider's `stat` option. The strip beside it, the column-header background, **does** keep a mode, and the difference is the point: that one labels the columns, so per-statistic tints each label with its own column's colour and means something (`settings/Schema.lua`, the note above `window.columnHeader.bgColorMode`). A companion added here would be a control wired to a colour nobody chose. | 2026-09-02 | The title bar grows a surface that belongs to one column or to one player — a per-row header, a sort-column tint on the strip itself — at which point "which class" and "which statistic" both have an answer and the row retires. |
 | options-ui §17 — "one resolver": the class-colour lookup is the library's | `NS.ClassRGB(classFilename)` (`core/Namespace.lua`) stays as a **second** reader of `RAID_CLASS_COLORS`, beside the library's `NS.ClassColor(unit)`. | The two answer different questions. `LibKa0s-Core-1.0`'s `ClassColor` takes a **unit token**; a meter row is a GUID and a `classFilename` out of `C_DamageMeter`, and most rows have no token at all — a player who left the group, an NPC in a damage-taken column, a follower-dungeon companion. Retiring `ClassRGB` in favour of the unit-keyed lookup would silently uncolour every one of them. The **surface** question — the window's chrome, its header, its backdrop and its border — does go through the library, via `NS.PlayerClassRGB`, which is the case the standard's clause is about; what stays private is the roster reader. Neither has a fallback the other lacks: the degraded reader in `core/CoreSetup.lua` calls `ClassRGB` too, so there is still exactly one table lookup in the addon. | 2026-09-02 | `LibKa0s-Core-1.0` grows a class-**filename** overload of `ClassColor` (or a sibling reader), at which point `ClassRGB` becomes the private copy the clause forbids and is deleted. |
 | options-ui §15, §16 — the canonical blocks are composed by the library | With `libs/LibKa0s` **absent**, the composed rows are absent from `NS.Schema` too: the Master controls tab and every font, border and bar group simply are not declared. A degraded install's schema is the hand-written half. | The alternative is a hand-written copy of each block standing behind the composer, which is precisely anti-pattern #73 and precisely the drift the composers were extracted to end — and it would be a copy nobody exercises, so it would go stale first. The cost is **nothing a player can reach**: a degraded install has no settings panel (`settings/OptionsSetup.lua` stubs it) and no schema CLI (`settings/Slash.lua` refuses `get`/`set`/`list`/`reset`/`resetall` by name), so those rows have no reader left; every stored setting still merges from `defaults/Profile.lua` and every window still draws with the player's values. `settings/Schema.lua` stamps each composed row `composed`, and `tests/test_degraded.lua` asserts the difference is exactly that set and nothing else — so a page file that raised at load is still a named failure. | 2026-09-02 | The composers move somewhere a host can reach without the library, or LibKa0s stops being an optional dependency (`DEPENDENCIES.md`), at which point the degradation branch and this row both go. |
+| layout §1 — no authored `.lua` over 1500 lines, `tests/` included | The **seven suites that mirror an over-cap module** — `tests/test_window.lua` (2737), `test_tooltip.lua` (2708), `test_row.lua` (1606), `test_aggregator.lua` (1605), `test_schema.lua` (1573), `test_diagnostics.lua` (1557), `test_export.lua` (1509) — stay over the cap and are **not** peeled on their own. The other eight breaches are not covered here: each has an open issue naming its seam (#27–#34). | **A mirror suite has no seam of its own.** Its partition is whatever partition its module ends up peeled on, and the two files already track each other closely enough that several banners are byte-identical — `modules/Window.lua:258` and `tests/test_window.lua:242` are both *Layout — rule R3 in one function*, `Window.lua:1997` and `test_window.lua:1208` both *Sorting from the column headers*, `modules/Row.lua:1119` and `test_row.lua:816` both *The name cell*, `core/Diagnostics.lua:1295` and `test_diagnostics.lua:343` both *The provider-order probe*. Peeling the suite first commits to a partition the module has not chosen yet; when the module later picks a different one, the result is two files that no longer pair, and `testing-§1`'s one-suite-per-module layout is what makes a red legible — you read the failing case name and you know which file to open. So the peel is real and it is scheduled: it happens in the module's own commit, on the module's own seam, which is also the only commit in which the moved cases can be re-pointed without guessing. Nothing here disputes that the cap binds test files — `layout-§1` is explicit that it does, and this addon is the repository whose 2026-09-07 audit filed against seven source files and none of its seven test files, which is the reading the standard was revised to end. | 2026-09-08 | The mirrored module is peeled, or its issue (#27–#33) reaches a terminal state — the suite peels along the same seam, in the same commit. A suite whose module drops under the cap without a peel loses its partner and peels on its own evidence instead. |
 
 **One row is ratified.** The register also carried a row for the drag-to-reorder block list living
 in `settings/ColumnBlocks.lua` rather than in LibKa0s, adopted because a library widget re-vendors
@@ -757,6 +758,55 @@ Three things read like deviations and are not, recorded here so the same questio
 - **`METER_RESET` has two dispatch sites.** Both are inside the one-sender contract's intent: the
   game's event and the addon's own `Provider.Reset`, which must announce even if the event never
   arrives. Every handler is idempotent. Reasoned in `modules/Provider.lua`.
+
+### Files over the 1500-line cap
+
+`layout-§1` caps every **authored** `.lua` this repository tracks at 1500 lines — `tests/` included,
+with vendored code (`libs/`, `tests/_kit/`) the only carve-out that reaches anything here; nothing in
+this repo is generated non-shipping data, so the second carve-out has no instance. It gives a file
+over the cap three terminal states: peeled, an open issue naming the seam a peel would follow, or a
+ratified row in the register above carrying a re-check trigger. What it does not allow is a breach
+nothing anywhere remarks on — "the count sitting in a bundle manifest that no document reads". This
+table is the remark, and it is why an audit **MUST NOT** re-file `layout-§1` against any file in it.
+
+Fifteen files, measured 2026-09-08 with
+
+```
+git ls-files '*.lua' | grep -v '^libs/' | grep -v '^tests/_kit/' | xargs wc -l | sort -rn
+```
+
+| File | Lines (2026-09-08) | Disposition |
+|---|---|---|
+| `settings/Schema.lua` | 3080 | Issue [#27](https://github.com/tusharsaxena/MultiMeters/issues/27) — the schema array out of the path machinery |
+| `tests/test_window.lua` | 2737 | Register row above — peels with `modules/Window.lua` ([#29](https://github.com/tusharsaxena/MultiMeters/issues/29)) |
+| `tests/test_tooltip.lua` | 2708 | Register row above — peels with `modules/Tooltip.lua` ([#28](https://github.com/tusharsaxena/MultiMeters/issues/28)) |
+| `modules/Tooltip.lua` | 2652 | Issue [#28](https://github.com/tusharsaxena/MultiMeters/issues/28) — the four tooltip builders out from under the secret-safe primitives |
+| `modules/Window.lua` | 2644 | Issue [#29](https://github.com/tusharsaxena/MultiMeters/issues/29) — header art, sorting and the segment selector out of the refresh chain |
+| `tests/wow_mock.lua` | 2266 | Issue [#34](https://github.com/tusharsaxena/MultiMeters/issues/34) — the secret simulator and the frame model out to siblings |
+| `modules/Aggregator.lua` | 2083 | Issue [#30](https://github.com/tusharsaxena/MultiMeters/issues/30) — identity mode and the correlation rectangle out of the build pipeline |
+| `core/Diagnostics.lua` | 1824 | Issue [#31](https://github.com/tusharsaxena/MultiMeters/issues/31) — one file per long-lived probe |
+| `modules/Export.lua` | 1743 | Issue [#32](https://github.com/tusharsaxena/MultiMeters/issues/32) — the pure serializer from the modal, the split its own `:50` banner already names |
+| `modules/Row.lua` | 1702 | Issue [#33](https://github.com/tusharsaxena/MultiMeters/issues/33) — the name cell out to its own file |
+| `tests/test_row.lua` | 1606 | Register row above — peels with `modules/Row.lua` ([#33](https://github.com/tusharsaxena/MultiMeters/issues/33)) |
+| `tests/test_aggregator.lua` | 1605 | Register row above — peels with `modules/Aggregator.lua` ([#30](https://github.com/tusharsaxena/MultiMeters/issues/30)) |
+| `tests/test_schema.lua` | 1573 | Register row above — peels with `settings/Schema.lua` ([#27](https://github.com/tusharsaxena/MultiMeters/issues/27)) |
+| `tests/test_diagnostics.lua` | 1557 | Register row above — peels with `core/Diagnostics.lua` ([#31](https://github.com/tusharsaxena/MultiMeters/issues/31)) |
+| `tests/test_export.lua` | 1509 | Register row above — peels with `modules/Export.lua` ([#32](https://github.com/tusharsaxena/MultiMeters/issues/32)) |
+
+**The line counts are dated because they drift, and nothing asserts them.** What
+`tests/test_layout_cap.lua` asserts is the *membership* of this table, in both directions: a file that
+crosses 1500 and is not listed here turns the suite red, and so does a row for a file that has fallen
+back under the cap or been deleted. A figure in this column is a measurement, not a claim about today.
+
+**Nothing here is peeled this cycle.** The 2026-09-07 remediation plan rules out splitting any file
+(`03_SPEC.md` § C22 non-goals): the seven source files are the largest mechanical churn available in
+this repository, they have no player-visible payoff, and they collide head-on with the feign-death and
+identity work landing in `modules/` and `core/` at the same time. The deliverable was the disposition,
+and the disposition is this table.
+
+**The 1000–1500 band is on notice, not in breach**: `tests/test_provider.lua` (1359) and
+`tests/test_database.lua` (1004) are the only two files in it. They are named here so a later reader
+can tell that the band was looked at rather than missed; neither needs a disposition until it crosses.
 
 ## Load order
 
