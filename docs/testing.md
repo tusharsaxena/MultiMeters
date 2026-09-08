@@ -168,6 +168,30 @@ census. It is not cleared by raising `CAP`, and it must not be cleared by droppi
 The line figures in the census are dated measurements and nothing asserts them, so an ordinary edit
 to a large file does not redden this gate. Membership is the invariant, not the numbers.
 
+### The complexity register gate
+
+`tests/test_complexity_register.lua` is the same bargain one section over. It reads the table under
+*Complexity register* in [ARCHITECTURE.md](ARCHITECTURE.md) and checks that the register still says
+something a reader can act on: that the folder tally stated in its prose matches the rows beneath it,
+that every Location names a file that exists, that no function is entered twice, and that every
+disposition can be followed — a peel naming an issue number, or an accept carrying the re-check
+trigger that stops it being a permanent opt-out.
+
+**It does not run `lizard`, deliberately.** `performance-§10` says a commit MUST NOT be gated on
+complexity, and a suite that shelled out to the tool would be exactly that gate wearing a test's
+clothes. It follows that this gate cannot see a *new* warned function — only the runner can, at a
+recorded run — and it does not try to: the CCN figures and line ranges in the register are dated
+measurements, like the line counts in the cap census, and pinning them would redden the suite on
+every ordinary edit to a warned function.
+
+Why the register lives in ARCHITECTURE.md rather than in `docs/automated-tests/RESULTS.md`, which is
+where `automated-tests-§4` puts the watch list: the runner carries a disposition forward only when
+its key — function name plus file, tie-broken by CCN — is unique on both sides. Three of this
+addon's rows are `]` in `core/Database.lua`, which is `lizard`'s spelling of `migrations[n] =
+function`, and two of those three are CCN 16. They are unique on neither key, so their generated
+cells read blank on every run that regenerates them. The register is where their disposition exists
+at all, and the runner's Disposition column is transcribed from it.
+
 ## Verifying the vendored copies
 
 ```sh

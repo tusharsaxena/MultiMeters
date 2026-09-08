@@ -193,7 +193,13 @@ local shared = loadInstance()
 local SUITES = {
     -- structure and the shared vocabulary
     "test_loadorder",
+    -- The two size registers, side by side because they are the same bargain twice:
+    -- both read a table out of docs/ARCHITECTURE.md, both check membership and
+    -- disposition rather than the figures beside them, and neither runs the tool that
+    -- produced the measurement -- `wc` in one case, `lizard` in the other. A suite that
+    -- ran lizard would be the commit-time complexity gate performance-§10 forbids.
     "test_layout_cap",
+    "test_complexity_register",
     "test_constants",
     "test_secrets",
     "test_compat",
