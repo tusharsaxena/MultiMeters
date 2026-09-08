@@ -659,10 +659,13 @@ different ways:
 **Two of these rows cannot carry a disposition forward, and that is why this table is the home of
 record rather than `RESULTS.md`.** The kit's runner keys the watch list on function name plus file,
 falling back to CCN to break a tie, and leaves the cell blank when neither key is unique
-(`tests/_kit/run-automated-tests.sh:537-556`, which names this addon as the case it was written for).
-Three rows here are `]` in `core/Database.lua` and two of those three are CCN 16 — so `migrations[1]`
-and `migrations[12]` are indistinguishable on both keys and will read blank on every run that
-regenerates them, forever. Their disposition exists here or nowhere.
+(`tests/_kit/run-automated-tests.sh:537-556`). Its comment names this addon, but for the tie the CCN
+*does* break — `Cell` twice in `modules/Row.lua`, at 30 and 19 — so read past it to the last line,
+"a tie the CCN cannot break either leaves the cell blank", which is the one that binds here. Three
+rows are `]` in `core/Database.lua`, none of them unique on name plus file. `migrations[4]` is CCN 17
+and the tie-break carries it forward. `migrations[1]` and `migrations[12]` are both CCN 16 — those
+two are indistinguishable on both keys and will read blank on every run that regenerates them,
+forever. Their disposition exists here or nowhere.
 
 **Two of these functions have already spent a trigger this repository wrote for them, in its own
 hand.**

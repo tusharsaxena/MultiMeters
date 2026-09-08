@@ -243,9 +243,11 @@ Why the register lives in ARCHITECTURE.md rather than in `docs/automated-tests/R
 where `automated-tests-§4` puts the watch list: the runner carries a disposition forward only when
 its key — function name plus file, tie-broken by CCN — is unique on both sides. Three of this
 addon's rows are `]` in `core/Database.lua`, which is `lizard`'s spelling of `migrations[n] =
-function`, and two of those three are CCN 16. They are unique on neither key, so their generated
-cells read blank on every run that regenerates them. The register is where their disposition exists
-at all, and the runner's Disposition column is transcribed from it.
+function`, so none of the three is unique on name plus file. The CCN breaks that tie for exactly one
+of them: `migrations[4]` is 17 and carries its ruling forward like any other row. `migrations[1]`
+and `migrations[12]` are both 16, so **those two** — and only those two — are unique on neither key,
+and their generated cells read blank on every run that regenerates them. The register is where
+their disposition exists at all, and the runner's Disposition column is transcribed from it.
 
 ### The texture-path census gate
 
