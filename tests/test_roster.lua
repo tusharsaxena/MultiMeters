@@ -373,3 +373,352 @@ test("Solo is complete, not partial", function()
     assertNil(inst.NS.State.Cache("Roster").partial,
         "a solo roster must cache, or it rebuilds four times a second forever")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The remembered half — db.global.roster
+-- ---------------------------------------------------------------------------
+--
+-- The live map answers "who is in the group RIGHT NOW", which was the wrong
+-- question for the grid: leave a dungeon and the live roster collapses to
+-- { player }, so modules/Aggregator.lua's filter threw away a session that still
+-- held everybody's numbers. Everything the build learns is therefore ALSO written
+-- to `db.global.roster`, which is SavedVariables and so is contract in its own
+-- right — its keys and its shape survive a reload and a refactor must not move
+-- either.
+
+test("Every member the build learns is remembered in db.global, as a plain copy", function()
+    local inst = grouped(PARTY)
+    inst.NS.Roster.GetGroup()
+
+    local entry = inst.NS.db.global.roster.byGuid["Player-1-0000000B"]
+    assertTrue(entry ~= nil, "the build must write what it learned to SavedVariables")
+    assertEqual(entry.guid, "Player-1-0000000B")
+    assertEqual(entry.name, "Healbot")
+    assertEqual(entry.classFilename, "PRIEST")
+    assertEqual(entry.role, "HEALER")
+    assertEqual(entry.isPlayer, false)
+
+    -- A COPY, not the live entry, and `unit` is deliberately not part of it: this
+    -- table goes to SavedVariables, the live entry is wiped on every regroup, and
+    -- a unit token is a statement about a group that will not exist by the time
+    -- the copy is read back.
+    assertNil(entry.unit, "a unit token must not be persisted; it is true for one regroup")
+    assertFalse(entry == inst.NS.State.Cache("Roster").byGuid["Player-1-0000000B"],
+        "the remembered entry must not alias the live one, which gets wiped")
+end)
+
+test("A pet link is remembered too, and a secret one never reaches SavedVariables", function()
+    -- Both halves matter. The link is what keeps a pet row alive after the group
+    -- is gone (there is no `party1pet` once you have left the party), and the
+    -- refusal is the follower-dungeon bug in its most expensive form: a secret
+    -- used as a key in a table that is then SERIALISED at logout.
+    local inst = T.load()
+    inst.mocks.setGroup(PARTY)
+    inst.mocks.setPet("player", "Pet-0-1111")
+    inst.mocks.setPet("party1", inst.mocks.secret("Pet-0-SECRET"))
+    inst.NS.Roster.Refresh()
+    inst.NS.Roster.GetGroup()
+
+    local pets = inst.NS.db.global.roster.pets
+    assertEqual(pets["Pet-0-1111"], "Player-1-0000000A")
+    local n = 0
+    for key in pairs(pets) do
+        n = n + 1
+        assertFalse(inst.mocks.isSimulatedSecret(key),
+            "a secret GUID reached SavedVariables as a KEY")
+    end
+    assertEqual(n, 1, "the unreadable pet must be left out, not entered under some other key")
+end)
+
+test("Refresh forgets the group but not the people; Forget forgets both", function()
+    -- THE BUG THE SPLIT EXISTS TO FIX. Leaving a dungeon group fires the roster
+    -- message, and wiping the remembered map there would empty the window of
+    -- everyone you had just fought beside while their numbers were still on it.
+    local inst = grouped(PARTY)
+    local R = inst.NS.Roster
+    R.GetGroup()
+
+    inst.mocks.setSolo("Player-1-0000000A", "Tankadin", "PALADIN")
+    R.Refresh()
+
+    assertEqual(#R.GetGroup(), 1, "the LIVE map is only who is actually here")
+    assertTrue(R.IsGroupMember("Player-1-0000000B"),
+        "but they were in the group while this data was collected, which is the question meant")
+    assertEqual(R.Get("Player-1-0000000B").name, "Healbot")
+
+    -- A meter reset is the one thing that clears it: the moment the numbers those
+    -- GUIDs belonged to stopped existing.
+    R.Forget()
+    local stored = inst.NS.db.global.roster
+    assertNil(next(stored.byGuid), "Forget must empty the remembered members")
+    assertNil(next(stored.pets), "and the remembered pet links with them")
+    assertEqual(type(stored.byGuid), "table", "both maps must survive as tables")
+    assertEqual(type(stored.pets), "table", "or the next build indexes a nil")
+    assertFalse(R.IsGroupMember("Player-1-0000000B"), "and a stranger is a stranger again")
+end)
+
+test("The live entry is preferred over the remembered one, never the other way round", function()
+    -- The live entry is the fresher of the two — a player who respecced has a new
+    -- role — and the remembered one is a snapshot from whenever they were last
+    -- built. Reversing the two `or` arms would pin every row to its oldest known
+    -- name and role for the life of the meter's data.
+    local inst = T.load()
+    inst.mocks.setGroup(PARTY)
+    inst.mocks.setPet("party1", "Pet-0-2222")
+    local R = inst.NS.Roster
+    R.Refresh()
+    R.GetGroup()   -- the live map is WARM, so nothing below rebuilds it
+
+    -- Poisoned after the build, and read back with no invalidation in between: a
+    -- rebuild rewrites the remembered snapshot from the live walk, so the two
+    -- only ever disagree while the cache is warm, which is exactly when every
+    -- lookup in a refresh happens.
+    inst.NS.db.global.roster.byGuid["Player-1-0000000B"].name = "StaleName"
+    inst.NS.db.global.roster.pets["Pet-0-2222"] = "Player-1-0000000C"
+
+    assertEqual(R.Get("Player-1-0000000B").name, "Healbot", "the live entry answers first")
+    assertEqual(R.OwnerOf("Pet-0-2222"), "Player-1-0000000B",
+        "and the live pet map answers before the remembered one")
+end)
+
+-- ---------------------------------------------------------------------------
+-- The guards, arm by arm
+-- ---------------------------------------------------------------------------
+
+test("A member whose own GUID is unreadable is left out, pet and all", function()
+    -- IsSafeKey guards the WHOLE member block, pet lookup included, and the
+    -- nesting is the contract: a pet attributed to a member who was never entered
+    -- would be a row pointing at an owner no lookup can resolve.
+    local inst = T.load()
+    inst.mocks.setGroup(PARTY)
+    inst.mocks.setUnit("party1", { guid = inst.mocks.secret("Player-1-SECRET"),
+                                   name = "Ghost", class = "PRIEST", role = "HEALER" })
+    inst.mocks.setPet("party1", "Pet-0-2222")
+    inst.NS.Roster.Refresh()
+
+    local R = inst.NS.Roster
+    assertEqual(#R.GetGroup(), 2, "an unjoinable member is left out rather than keyed on")
+    assertNil(R.OwnerOf("Pet-0-2222"),
+        "and its pet goes with it — unattributable, which the aggregator drops")
+end)
+
+test("The raid duplicate is skipped WHOLE, its pet unit included", function()
+    -- In a raid the player is visited twice, as "player" and as raidN, and the
+    -- first entry wins. The skip is of the entire block, so `raid1pet` is never
+    -- asked about — which costs nothing live, because the same pet answers to
+    -- "playerpet", and is exactly what stops the second pass rewriting the map.
+    local inst = T.load()
+    inst.mocks.setGroup(PARTY, { raid = true })
+    inst.mocks.setPet("raid1", "Pet-0-RAID1")
+    inst.mocks.setPet("raid2", "Pet-0-RAID2")
+    inst.NS.Roster.Refresh()
+
+    local R = inst.NS.Roster
+    assertEqual(R.Get("Player-1-0000000A").unit, "player",
+        "the GUID index must hold the `player` entry, not the raidN one")
+    assertEqual(R.OwnerOf("Pet-0-RAID2"), "Player-1-0000000B",
+        "a raid member that is NOT the duplicate has its pet read as normal")
+    assertNil(R.OwnerOf("Pet-0-RAID1"), "the duplicate's pet unit is never consulted")
+end)
+
+test("An empty unit API yields an empty group rather than a raise", function()
+    -- A client missing the unit APIs, and the frame after a zone-in before any
+    -- token has resolved, both land here. Nothing is entered and nothing raises.
+    local inst = T.load()
+    inst.mocks.setGroup{}
+    inst.NS.Roster.Refresh()
+
+    assertEqual(#inst.NS.Roster.GetGroup(), 0)
+    assertNil(inst.NS.Roster.LocalGUID(), "with no player entry there is no local GUID")
+end)
+
+test("A partial build is still STORED, so the lookups have something to answer from", function()
+    -- MARKED, not withheld. `partial` only makes `ensure` build again on the next
+    -- read; withholding the map as well would leave every lookup answering nil
+    -- for the quarter-second the group takes to resolve, which is the empty
+    -- window all over again in a shorter form.
+    local inst = T.load()
+    inst.mocks.setGroup(PARTY)
+    inst.mocks.setUnit("party1", nil)
+    inst.mocks.setUnit("party2", nil)
+    inst.NS.Roster.Refresh()
+    inst.NS.Roster.GetGroup()
+
+    local cache = inst.NS.State.Cache("Roster")
+    assertTrue(cache.byGuid["Player-1-0000000A"] ~= nil, "the short map is cached, not discarded")
+    assertTrue(cache.pets ~= nil, "and all three outputs are stored, not just the array")
+    assertTrue(inst.NS.Roster.IsGroupMember("Player-1-0000000A"))
+end)
+
+-- ---------------------------------------------------------------------------
+-- The local player
+-- ---------------------------------------------------------------------------
+
+test("Roster.LocalGUID reads the player's GUID off the built map", function()
+    -- THE ONE IDENTITY THAT SURVIVES THE RESTRICTION. C_DamageMeter hands back a
+    -- SECRET sourceGUID mid-pull, so a source can only say `isLocalPlayer` for
+    -- itself; this is the plain GUID that claim resolves to. Read off the MAP
+    -- rather than from UnitGUID("player") so the answer is the same string the
+    -- rest of the map is keyed on and the row joins its own name and class.
+    local inst = grouped(PARTY)
+    assertEqual(inst.NS.Roster.LocalGUID(), "Player-1-0000000A")
+
+    local raid = grouped(PARTY, { raid = true })
+    assertEqual(raid.NS.Roster.LocalGUID(), "Player-1-0000000A",
+        "and the raid duplicate must not cost us the isPlayer flag")
+end)
+
+-- ---------------------------------------------------------------------------
+-- Roles
+-- ---------------------------------------------------------------------------
+
+test("The player's role falls back to their specialization; another unit's cannot", function()
+    -- The role icon silently disappeared for a player who had the setting on and
+    -- could see it five minutes earlier in a dungeon: solo, or in a party that
+    -- never assigned roles, UnitGroupRolesAssigned answers "NONE". The fallback is
+    -- the player's own spec, which is what they are actually doing whether or not
+    -- anybody wrote it down — and GetSpecializationRole reads the ACTIVE spec, so
+    -- there is no such answer for an arbitrary unit.
+    local inst = T.load()
+    inst.mocks.setGroup{
+        { guid = "Player-1-0000000A", name = "Tankadin", class = "PALADIN", role = "NONE" },
+        { guid = "Player-1-0000000B", name = "Healbot",  class = "PRIEST",  role = "NONE" },
+    }
+    inst.mocks.setSpecRole("TANK")
+    inst.NS.Roster.Refresh()
+
+    local group = inst.NS.Roster.GetGroup()
+    assertEqual(group[1].role, "TANK", "the player's own spec answers where the group did not")
+    assertEqual(group[2].role, "NONE", "a party member has no such call and stays NONE")
+end)
+
+test("An assigned role beats the specialization fallback", function()
+    -- The order is load-bearing: the group's assignment is what the raid is
+    -- actually playing to, and a tank in a DPS spec doing a tank's job would
+    -- otherwise get the wrong icon.
+    local inst = T.load()
+    inst.mocks.setSolo("Player-1-00000001", "Loner", "PALADIN")   -- role DAMAGER
+    inst.mocks.setSpecRole("TANK")
+    inst.NS.Roster.Refresh()
+
+    assertEqual(inst.NS.Roster.GetGroup()[1].role, "DAMAGER")
+end)
+
+-- ---------------------------------------------------------------------------
+-- Test mode
+-- ---------------------------------------------------------------------------
+
+test("Test mode replaces the pet map and writes nothing to SavedVariables", function()
+    -- The invented group is a rendering fixture, not a fact about this account.
+    -- Persisting `Player-9999-TEST0001` would leave ten strangers in the
+    -- remembered map for the life of the meter's data, and every one of them
+    -- would pass IsGroupMember long after test mode was switched off.
+    local inst = grouped(PARTY)
+    local NS = inst.NS
+    NS.Roster:OnEnable()
+    inst.mocks.setPet("player", "Pet-0-1111")
+    NS.Roster.Refresh()
+    NS.Roster.GetGroup()
+
+    NS.State.SetTestMode(true)
+    local group = NS.Roster.GetGroup()
+    assertEqual(group[1].name, "Ka0stank", "the invented group is what the map describes")
+    assertTrue(NS.Roster.IsGroupMember(group[1].guid))
+    assertNil(NS.db.global.roster.byGuid[group[1].guid],
+        "an invented member must not reach SavedVariables")
+    -- The LIVE pet map is replaced rather than carried over, so a real pet is not
+    -- attributed to an invented owner. (OwnerOf still answers it from the
+    -- remembered map, which is the point of the remembered map.)
+    assertNil(NS.State.Cache("Roster").pets["Pet-0-1111"],
+        "test mode must not leave a real pet in the live map")
+end)
+
+test("The test-mode map is cached whole, never marked partial", function()
+    -- build() returns EARLY in test mode, before the GetNumGroupMembers
+    -- cross-check. That is deliberate: the invented group is complete by
+    -- definition, and measuring it against the size of the REAL group would mark
+    -- it short and rebuild it on every refresh for as long as test mode was on.
+    local spec = {}
+    for i = 1, 12 do
+        spec[i] = { guid = string.format("Player-1-%08X", i), name = "Raider" .. i,
+                    class = "MAGE", role = "DAMAGER" }
+    end
+    local inst = grouped(spec, { raid = true })
+    local NS = inst.NS
+    NS.Roster:OnEnable()
+    assertEqual(#NS.Roster.GetGroup(), 12)
+
+    NS.State.SetTestMode(true)
+    assertEqual(#NS.Roster.GetGroup(), #NS.Aggregator.TestGroup())
+    assertNil(NS.State.Cache("Roster").partial,
+        "a preview group smaller than the real one is not a short build")
+end)
+
+test("Test mode with no preview group falls back to the real unit walk", function()
+    -- `A and A.TestGroup` is resolved at CALL time because modules/Aggregator.lua
+    -- loads after this file, so the reference can genuinely be missing. The arm
+    -- has to fall THROUGH to the real build: returning an empty group here would
+    -- drop every source in the window with no notice to explain it.
+    local inst = grouped(PARTY)
+    local NS = inst.NS
+    NS.Roster:OnEnable()
+    NS.Aggregator.TestGroup = nil
+
+    NS.State.SetTestMode(true)
+    assertEqual(#NS.Roster.GetGroup(), 3, "the real group, rather than an empty map or a raise")
+end)
+
+-- ---------------------------------------------------------------------------
+-- The debug line
+-- ---------------------------------------------------------------------------
+--
+-- ONE line per build, format deferred, and the counters in it are the loop's own
+-- (debug-logging-§3). It is the line that diagnosed the empty window — `rows=0
+-- dropped=10` for forty seconds, then one `[Roster] built members=5` after
+-- combat — so its wording is what a bug report is grepped for.
+
+test("A completed build logs one line, with the counters the loop kept", function()
+    local inst = T.load()
+    inst.mocks.setGroup(PARTY)
+    inst.mocks.setPet("player", "Pet-0-1111")
+    inst.mocks.setPet("party1", inst.mocks.secret("Pet-0-SECRET"))
+    inst.NS.Roster.Refresh()
+    inst.NS.State.debug = true
+    inst.NS.Roster.GetGroup()
+
+    local line = inst.NS.DebugLog:LastLine()
+    -- pets=1, not 2: the unreadable pet was never entered, and a counter that
+    -- disagreed with the map would make the log lie about the interesting case.
+    assertTrue(line:find("built members=3 pets=1 raid=no", 1, true) ~= nil,
+        "got: " .. tostring(line))
+end)
+
+test("The build line says whether this was a raid", function()
+    local inst = T.load()
+    inst.mocks.setGroup(PARTY, { raid = true })
+    inst.NS.Roster.Refresh()
+    inst.NS.State.debug = true
+    inst.NS.Roster.GetGroup()
+
+    local line = inst.NS.DebugLog:LastLine()
+    assertTrue(line:find("built members=3 pets=0 raid=yes", 1, true) ~= nil,
+        "got: " .. tostring(line))
+end)
+
+test("A short build says so, and does not also claim it built the group", function()
+    -- The two are exclusive by construction — the partial arm returns — and that
+    -- is what makes "built members=" a reliable grep for a build that STUCK.
+    local inst = T.load()
+    inst.mocks.setGroup(PARTY)
+    inst.mocks.setUnit("party1", nil)
+    inst.mocks.setUnit("party2", nil)
+    inst.NS.Roster.Refresh()
+    inst.NS.State.debug = true
+    inst.NS.Roster.GetGroup()
+
+    local line = inst.NS.DebugLog:LastLine()
+    assertTrue(line:find("partial build (1 of 3) — will retry", 1, true) ~= nil,
+        "got: " .. tostring(line))
+    assertFalse(line:find("built members=", 1, true) ~= nil,
+        "a short build must not be logged as a completed one")
+end)

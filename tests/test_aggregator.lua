@@ -1603,3 +1603,238 @@ test("The feign filter cannot run mid-pull, and does not pretend to", function()
         "if this ever reads 0, the restricted build found a plain key and the "
         .. "limitation can be lifted from docs/ARCHITECTURE.md")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The column walk itself — the arms nothing else reaches (issue #35)
+-- ---------------------------------------------------------------------------
+--
+-- scanColumn is the highest-complexity function in the addon and issue #35 names
+-- the seam a later wave will cut along: the per-source walk out into one helper,
+-- the counted-column tail out into another. Everything below pins an arm of that
+-- walk that no other case in this file reaches, so that the split is provably a
+-- move rather than a rewrite. The three clauses issue #35 lists under "what must
+-- not change" — the CanCompare2 gate on the fold, the feign drop happening
+-- BEFORE rowForSource, and the judge tracer resolved once per column — each have
+-- a case here or above.
+
+test("A pet's DEATH lands on the row the merge put it on", function()
+    -- THE THIRD PLACEMENT ARM, and the only case that reaches it: a source that
+    -- is NOT its row's own (a pet, merged into its owner) in a column that
+    -- COUNTS. Pets do not die, so this exists for a client that grows a
+    -- pet-shaped source on a counted stat — and the answer is to tally it like
+    -- any other count rather than to invent a fold for it.
+    -- red under: folding the counted pet (foldPet sums totalAmount, which is 0
+    -- on every death row, so the count would silently stay 1).
+    local inst = withPet()
+    install(inst, {
+        src(ALPHA, 0, { recapID = 5 }),
+        src(PET,   0, { recapID = 6, name = "Ghoul" }),
+    }, { statKey = "Deaths", maxAmount = 0 })
+
+    mergePets(inst)
+    local rows = inst.NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } })
+    assertEqual(#rows, 1, "merging is on, so there is no separate pet row")
+    assertEqual(rows[1].guid, ALPHA)
+    assertEqual(rows[1].values.Deaths.total, 2, "both rows were counted, not summed")
+    assertEqual(#rows[1].deaths, 2, "and the drill-down lists both, as it must")
+end)
+
+test("A fold the gate refuses is COUNTED, and adds nothing on the way past", function()
+    -- THE REFUSAL ARM. foldPet answers false rather than approximating, and the
+    -- caller's only job is to tally the refusal — `unfolded` on the pass, which
+    -- reaches a player through the one debug line per pass and nowhere else.
+    -- Nothing in this file asserted that counter, so a refactor could drop the
+    -- increment (or, worse, retry the sum) with every test still green.
+    -- red under: incrementing nothing, or letting the fold through.
+    local inst = withPet()
+    local NS = inst.NS
+    NS.State.debug = true
+    -- A pet whose total is not a number at all: the fold's type gate refuses it
+    -- for the same reason the CanCompare2 gate refuses a secret one — there is
+    -- no honest sum to be had, and half a sum is worse than none.
+    install(inst, {
+        src(ALPHA, 100, { rate = 10 }),
+        src(PET,   nil, { name = "Ghoul" }),
+    }, { maxAmount = 100, totalAmount = 100 })
+
+    mergePets(inst)
+    local rows = NS.Aggregator.Build(makeWindow{})
+    assertEqual(#rows, 1, "merging is on: the pet has no row of its own")
+    assertEqual(rows[1].values.DamageDone.total, 100,
+        "the owner's own figure survived the refusal untouched")
+
+    local line = NS.DebugLog:FindLine("unfolded=")
+    assertTrue(line ~= nil and line:find("unfolded=1", 1, true) ~= nil,
+        "a refused fold that reports nothing is a number quietly missing: "
+        .. tostring(line))
+end)
+
+test("A feigned death is a SKIP, never a drop", function()
+    -- The two counters mean different things and a reader acts on them
+    -- differently: `dropped` is "the join refused this source" and prints a
+    -- `dropped guid=` line naming a cause. A feign is neither — the source was
+    -- understood perfectly and deliberately not counted. Folding the feign skip
+    -- into dropSource would inflate the counter and print a refusal reason for a
+    -- source that was never refused.
+    -- red under: routing the feign through the drop path.
+    local inst = loaded()
+    local NS = inst.NS
+    NS.State.debug = true
+    install(inst, { src(ALPHA, 0, { recapID = 29 }) }, { statKey = "Deaths", maxAmount = 0 })
+    NS.Feign.Note(ALPHA)
+
+    assertEqual(#NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } }), 0)
+
+    local line = NS.DebugLog:FindLine("unfolded=")
+    assertTrue(line ~= nil and line:find("dropped=0", 1, true) ~= nil,
+        "the feign was counted as a refusal: " .. tostring(line))
+    assertNil(NS.DebugLog:FindLine("dropped guid="),
+        "and it named a cause for a source nothing refused")
+end)
+
+test("A counted column publishes NO column total, so its percent stays empty", function()
+    -- THE TAIL'S LAST LINE, and the least obvious thing in it. The session's
+    -- `totalAmount` for Deaths is not the number this column shows — the counts
+    -- are ours — so the pass DELETES the published total rather than leaving a
+    -- figure nothing on the grid adds up to. Everything downstream reads the
+    -- absence correctly: no columnTotal on the cell, no percent, and no
+    -- sortTotal in the window header when Deaths is what the window sorts by.
+    -- red under: keeping columnTotals[statKey], which puts a header total and a
+    -- percent column of nonsense in front of the player.
+    local inst = loaded()
+    install(inst, {
+        src(ALPHA, 0, { recapID = 1 }),
+        src(BETA,  0, { recapID = 2 }),
+    }, { statKey = "Deaths", maxAmount = 0, totalAmount = 7 })
+
+    local rows = inst.NS.Aggregator.Build(
+        makeWindow{ columns = { "Deaths" }, sortColumn = "Deaths" })
+    assertNil(rows.columnTotals.Deaths, "the session's own total was republished")
+    assertNil(rows.sortTotal, "and reached the window header through the sort column")
+    assertNil(rows[1].values.Deaths.columnTotal)
+    assertNil(rows[1].values.Deaths.percent, "a percent of a total nobody can see")
+end)
+
+test("A counted column ignores the session's maxAmount, however loud", function()
+    -- The counted branch never lets `column.maxAmount` near a cell — not on the
+    -- way in, and not through the backfill that gives every other column's cells
+    -- their max. Deaths reports 0 today, which is the case the tail was written
+    -- for; this pins the OTHER direction, where the client reports a figure that
+    -- is simply not a count of anything. The scale must still come from the
+    -- counters this file produced.
+    -- red under: dropping the `not isCount` guard on either the local or the
+    -- backfill, which a split of the walk makes very easy to do.
+    local inst = loaded()
+    install(inst, {
+        src(ALPHA, 0, { recapID = 1 }),
+        src(ALPHA, 0, { recapID = 2 }),
+        src(BETA,  0, { recapID = 3 }),
+    }, { statKey = "Deaths", maxAmount = 999, totalAmount = 0 })
+
+    local rows = inst.NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } })
+    assertEqual(#rows, 2)
+    for _, row in ipairs(rows) do
+        assertEqual(row.values.Deaths.maxAmount, 2,
+            "999 reached a bar that counts to two")
+    end
+end)
+
+test("The Deaths pass prunes the feign set itself, and no other column does", function()
+    -- BOTH HALVES OF ONE GATE, asserted against the set rather than against the
+    -- grid: the prune is called from the counted column's walk and from nowhere
+    -- else on the refresh path, so a hunter who stands back up is noticed by the
+    -- next Deaths pass without any caller having to remember to ask — and a
+    -- damage-only window, which never reaches the Feign module at all, leaves
+    -- the set exactly as it found it.
+    -- red under: hoisting the prune to the top of Build (where a damage-only
+    -- window would run it too) or dropping it (where a stale feign eats every
+    -- later death for the rest of the session).
+    local inst = loaded()
+    local NS = inst.NS
+    NS.Feign.Note(ALPHA)
+    -- The client has to have SEEN the feign before "not feigning any more" means
+    -- anything — the same precondition modules/Feign.lua's prune states — and a
+    -- Deaths pass is what does the seeing.
+    inst.mocks.setUnitFeignDeath("player", true)
+    inst.mocks.setUnitHealth("player", 500)
+    install(inst, { src(BETA, 0, { recapID = 1 }) }, { statKey = "Deaths", maxAmount = 0 })
+    NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } })
+    assertTrue(NS.Feign.IsFeigned(ALPHA), "a live feign was evicted while it was still true")
+
+    -- They stand back up. A DAMAGE refresh must not be what notices.
+    inst.mocks.setUnitFeignDeath("player", false)
+    install(inst, { src(BETA, 100) }, { statKey = "DamageDone", maxAmount = 100 })
+    NS.Aggregator.Build(makeWindow{ columns = { "DamageDone" } })
+    assertTrue(NS.Feign.IsFeigned(ALPHA),
+        "a damage pass pruned a set it has no business touching")
+
+    -- The Deaths pass is, and the death it judges afterwards is a real one.
+    install(inst, { src(ALPHA, 0, { recapID = 42 }) }, { statKey = "Deaths", maxAmount = 0 })
+    assertEqual(#NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } }), 1,
+        "nothing pruned the stale feign, and it ate a real death")
+    assertEqual(NS.Feign.IsFeigned(ALPHA), false, "and the entry is gone, not merely bypassed")
+end)
+
+test("The judge verdict is recorded per death source, after the prune", function()
+    -- THE ISSUE #25 RECORDING, asserted where it is PRODUCED. tests/
+    -- test_diagnostics.lua feeds `judge` rows to the ring by hand, which proves
+    -- what the ring does with them and nothing at all about whether the Deaths
+    -- walk ever emits one — the same gap that let the feign filter ship
+    -- uncalled once already.
+    --
+    -- The ORDER is the finding, and it is why this asserts a sequence rather
+    -- than a set: `prune` says where the entry stood, and every `judge` after it
+    -- was decided against the set the prune left. A judge line ahead of the
+    -- prune would be a verdict from the previous pass's set, and the report
+    -- would read as evidence for the wrong fork.
+    -- red under: pruning per source, or resolving the tracer inside the walk and
+    -- letting a mid-walk arming change what the pass records.
+    local inst = loaded()
+    local D = inst.NS.Diagnostics
+    D.ArmFeignTrace(true)
+    local seen = {}
+    D.TraceFeign = function(kind, fields) seen[#seen + 1] = { kind = kind, fields = fields } end
+
+    inst.NS.Feign.Note(ALPHA)
+    install(inst, {
+        src(ALPHA, 0, { recapID = 9 }),
+        src(BETA,  0, { recapID = 8 }),
+    }, { statKey = "Deaths", maxAmount = 0 })
+    inst.NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } })
+
+    local kinds, judged = {}, {}
+    for _, rec in ipairs(seen) do
+        kinds[#kinds + 1] = rec.kind
+        if rec.kind == "judge" then judged[#judged + 1] = rec.fields end
+    end
+    assertEqual(table.concat(kinds, ","), "cast,prune,judge,judge",
+        "the pass records one prune, then one judgement per death source")
+
+    assertEqual(judged[1].guid, ALPHA)
+    assertEqual(judged[1].recap, 9)
+    assertEqual(judged[1].dropped, true, "the feigner's death is recorded as dropped")
+    assertEqual(judged[2].guid, BETA)
+    assertEqual(judged[2].dropped, false,
+        "and a real death is recorded as FALSE, never as nil — the report reads it")
+    assertEqual(table.concat(judged[1].order, ","), "guid,recap,dropped",
+        "the field order is the report's column order")
+end)
+
+test("A column that is not counted records no judgement at all", function()
+    -- The tracer is resolved from the Feign module, and that module is only
+    -- reached for a counted column — so a damage refresh costs no judgement, no
+    -- fields table and no ring slot, armed or not. That is the whole point of
+    -- resolving it once per column instead of once per source.
+    -- red under: resolving the tracer for every column and testing `isCount`
+    -- inside the walk, which puts a table per source back on the hot path.
+    local inst = loaded()
+    local D = inst.NS.Diagnostics
+    D.ArmFeignTrace(true)
+    local judgements = 0
+    D.TraceFeign = function(kind) if kind == "judge" then judgements = judgements + 1 end end
+
+    install(inst, { src(ALPHA, 100), src(BETA, 50) },
+        { statKey = "DamageDone", maxAmount = 100 })
+    inst.NS.Aggregator.Build(makeWindow{ columns = { "DamageDone" } })
+    assertEqual(judgements, 0, "a damage refresh recorded a feign judgement")
+end)

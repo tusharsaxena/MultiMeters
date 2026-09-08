@@ -1002,3 +1002,262 @@ test("Database: v12 -> v13 turns the control class-colour flags into modes", fun
     assertNil(w.frame.controlClassColor)
     assertNil(w.frame.controlHoverClassColor)
 end)
+
+-- ---------------------------------------------------------------------------
+-- Branch arms of the three warned steps
+-- ---------------------------------------------------------------------------
+--
+-- migrations[1], [4] and [12] are the three steps the complexity register warns
+-- on, and a wave is going to take each of them apart into helpers. The cases
+-- above pin the headline behaviour of each; the cases below pin the arms that
+-- headline never reaches — the fallbacks, the guards, and the "what if the key
+-- the step keys off is missing HERE and present THERE" shapes. Every one of them
+-- is a shape a real SavedVariables file can hold, and none of them is asserted
+-- anywhere else in this suite.
+
+test("Database v2: the widening uses the window's OWN padding, not the template's", function()
+    -- `pad = frame.padding or defaultPad` has two arms and every case above takes
+    -- the same one, because every fixture above stores padding = 6, which is also
+    -- what the template says. A player who set a wider inset needs the extra
+    -- inset counted on BOTH edges or the widening lands short and clips exactly
+    -- the column it was computed to fit.
+    --
+    -- The junk entry in `columns` is here on purpose too: the width loop skips a
+    -- non-table entry (`type(col) == "table"`) but the ARITHMETIC counts the
+    -- array's length, junk and all, so this window is sized for two columns. That
+    -- is today's behaviour rather than an opinion about it — a refactor that
+    -- filters the array before measuring it is a deliberate change to the width a
+    -- hand-edited profile lands on, and should have to come and edit this line.
+    -- red under: `pad = defaultPad`, or measuring a filtered column list.
+    local inst = preSeeded({
+        profiles = { Default = { nextWindowId = 2, windows = { {
+            id = 1,
+            frame   = { padding = 20 },
+            columns = { { stat = "Deaths", width = 44 }, "junk" },
+        } } } },
+        global = { schemaVersion = 1 },
+    })
+    local Const = inst.NS.Constants
+
+    assertEqual(inst.NS.Database.FindWindow(1).frame.width,
+        Const.NAME_COLUMN_WIDTH + 2 * (Const.COLUMN_WIDTH + Const.COLUMN_GAP) + 40,
+        "the stored padding of 20 must be counted on both edges, not the template's 6")
+end)
+
+test("Database v2: a frame with no numeric width is given one, and every window gets its own",
+function()
+    -- Two arms nothing above reaches. `type(frame.width) ~= "number"` is the arm
+    -- for a frame that never stored a width and for one a hand edit left holding
+    -- the STRING "480" — a string compares fine against a number under `<` in
+    -- neither Lua nor anyone's intent, so the type test is what stops the step
+    -- raising on it and what makes the window render at a sane size.
+    --
+    -- And the needed width is computed per WINDOW, from that window's own column
+    -- count: window 2 has no columns array at all, so it is sized for zero
+    -- columns rather than inheriting window 1's arithmetic.
+    -- red under: hoisting `needed` out of the window loop, or dropping the type
+    -- test in favour of `frame.width < needed` alone.
+    local inst = preSeeded({
+        profiles = { Default = { nextWindowId = 3, windows = {
+            { id = 1, frame = { width = "480", padding = 6 },
+              columns = { { stat = "Deaths", width = 44 }, { stat = "Interrupts", width = 48 } } },
+            { id = 2, frame = { width = 100, padding = 6 } },
+        } } },
+        global = { schemaVersion = 1 },
+    })
+    local Const = inst.NS.Constants
+
+    assertEqual(inst.NS.Database.FindWindow(1).frame.width,
+        Const.NAME_COLUMN_WIDTH + 2 * (Const.COLUMN_WIDTH + Const.COLUMN_GAP) + 12,
+        "a non-number width must be replaced, not compared against")
+    assertEqual(inst.NS.Database.FindWindow(2).frame.width, Const.NAME_COLUMN_WIDTH + 12,
+        "a window with no columns is sized for none of them")
+end)
+
+test("Database v5: a stored false and a stored 0 are lifted, not read as unset", function()
+    -- The same trap the `== nil` merge exists for, one step over. `mergePets` is a
+    -- BOOLEAN and `throttle` is a number whose floor is 0, so a step written as
+    -- `lifted.mergePets = data.mergePets or profile.data.mergePets` would take a
+    -- deliberate "off" and a deliberate "as fast as it goes" and quietly replace
+    -- both with whatever AceDB had already merged in at the profile address.
+    -- The window's value wins outright, whatever that value is.
+    -- red under: any truthiness test in place of `~= nil`.
+    local inst = v4Data({ { id = 1, data = { mergePets = false, throttle = 0 } } },
+        { mergePets = true, throttle = 5 })
+
+    assertEqual(inst.NS.db.profile.data.mergePets, false, "a stored false is a value, not an absence")
+    assertEqual(inst.NS.db.profile.data.throttle, 0, "a stored 0 is a value, not an absence")
+end)
+
+test("Database v5: only the key the window actually carried is lifted", function()
+    -- The two keys are lifted independently. A window that set `mergePets` and
+    -- never touched `throttle` must not drag a throttle along with it — whatever
+    -- sits at the profile address stays there, because the window expressed no
+    -- intent about it.
+    -- red under: lifting both keys whenever either is present.
+    local inst = v4Data({ { id = 1, data = { mergePets = true } } }, { throttle = 5 })
+
+    assertEqual(inst.NS.db.profile.data.mergePets, true)
+    assertEqual(inst.NS.db.profile.data.throttle, 5, "an untouched key must be left where it was")
+end)
+
+test("Database v5: only the FIRST window is consulted, even when it carries neither key", function()
+    -- The rule is "the first window's values win", not "the first window that has
+    -- an opinion wins". A first window with no `data` block at all means nothing
+    -- is lifted and the profile keeps the shipped defaults — the second window
+    -- does NOT get a vote, because a window the player had forgotten about
+    -- outvoting the one at the top of their picker is exactly the alternative the
+    -- step's comment rules out.
+    --
+    -- The prune still runs over every window, though: it is outside the lift.
+    -- red under: scanning for the first window that has the keys, or moving the
+    -- prune inside the `if data and ...` block.
+    local inst = v4Data({
+        { id = 1, data = { sortColumn = "Healing" } },
+        { id = 2, data = { mergePets = true, throttle = 2 } },
+    })
+
+    assertEqual(inst.NS.DataSetting("throttle"), 0.25, "the second window must not have been lifted")
+    assertEqual(inst.NS.DataSetting("mergePets"), false)
+    assertNil(inst.NS.Database.FindWindow(2).data.throttle, "the prune runs whether or not a lift did")
+    assertNil(inst.NS.Database.FindWindow(2).data.mergePets)
+end)
+
+test("Database v5: a first window whose data block is not a table lifts nothing", function()
+    -- A hand-edited profile. `type(first.data) == "table"` is the guard, and what
+    -- it buys is that the step declines rather than raising at login — losing a
+    -- migration is recoverable, a login that raises is not.
+    local inst = v4Data({
+        { id = 1, data = "junk" },
+        { id = 2, data = { throttle = 3 } },
+    })
+
+    assertEqual(inst.NS.DataSetting("throttle"), 0.25)
+    assertEqual(inst.NS.db.global.schemaVersion, 13)
+end)
+
+test("Database v5: EVERY profile lifts from its OWN first window", function()
+    -- The same reason the v2 case walks every profile: a profile the player has
+    -- not activated this session is still theirs, and schemaVersion is stamped
+    -- account-wide, so a step that skips it never gets a second chance.
+    --
+    -- The inactive profile also proves the `or {}` arm: it had no `data` table of
+    -- its own, so one is created holding exactly what was lifted.
+    -- red under: lifting into db.profile rather than into each walked profile.
+    local inst = preSeeded({
+        profiles = {
+            Default = { windows = { { id = 1, name = "A", data = { throttle = 0.5 } } } },
+            Raid    = { windows = { { id = 7, name = "R",
+                data = { throttle = 3, mergePets = true } } } },
+        },
+        global = { schemaVersion = 4 },
+    })
+    local raid = inst.NS.db.sv.profiles.Raid
+
+    assertEqual(inst.NS.db.profile.data.throttle, 0.5, "the active profile took its own window's")
+    assertEqual(raid.data.throttle, 3, "and the inactive Raid profile took its own")
+    assertEqual(raid.data.mergePets, true)
+    assertNil(raid.windows[1].data.throttle, "the inactive profile's window was pruned too")
+end)
+
+test("Database: v12 -> v13 keeps the rest of an existing header block", function()
+    -- The `type(w.header) ~= "table"` arm builds a header when there is none; the
+    -- other arm has to leave the one that is there alone apart from `show`. A step
+    -- that assigned `w.header = { show = frame.titleBar }` would take every font,
+    -- colour and height the player set on their title bar with it.
+    -- red under: replacing the header table instead of writing one key into it.
+    local inst = preSeeded({
+        profiles = { Default = { nextWindowId = 3, windows = {
+            { id = 1, name = "A", header = { show = true, fontSize = 17 },
+              frame = { titleBar = false } },
+            { id = 2, name = "B", header = { show = false }, frame = { titleBar = true } },
+        } } },
+        global = { schemaVersion = 12 },
+    })
+    local w1, w2 = inst.NS.Database.FindWindow(1), inst.NS.Database.FindWindow(2)
+
+    assertEqual(w1.header.fontSize, 17, "the rest of the header block must survive the move")
+    -- And the moved value WINS over whatever `header.show` already held. The two
+    -- keys are the same switch at two addresses for exactly one release, and the
+    -- one the player's Frame page was writing is the one that means something.
+    assertFalse(w1.header.show, "the stored frame.titleBar beat the stale header.show")
+    assertTrue(w2.header.show, "and a stored true carries across as readily as a false")
+    assertNil(w1.frame.titleBar)
+    assertNil(w2.frame.titleBar)
+end)
+
+test("Database: v12 -> v13 overwrites a control colour mode that was already there", function()
+    -- Deliberately NOT the `== nil` guard migrations[6] uses, and the difference is
+    -- easy to lose in a refactor that folds the two boolean-to-mode steps into one
+    -- shared helper. `controlColorMode` did not exist as a setting before v13, so
+    -- anything sitting at that address arrived from a hand edit or a merge and
+    -- carries no intent; the boolean is the only value the player ever set.
+    -- red under: `if frame.controlColorMode == nil then`.
+    local inst = preSeeded({
+        profiles = { Default = { nextWindowId = 2, windows = { { id = 1, name = "A", frame = {
+            controlColorMode      = "custom", controlClassColor      = true,
+            controlHoverColorMode = "class",  controlHoverClassColor = false,
+        } } } } },
+        global = { schemaVersion = 12 },
+    })
+    local frame = inst.NS.Database.FindWindow(1).frame
+
+    assertEqual(frame.controlColorMode, "class", "the boolean is the value with intent behind it")
+    assertEqual(frame.controlHoverColorMode, "custom")
+    assertNil(frame.controlClassColor)
+    assertNil(frame.controlHoverClassColor)
+end)
+
+test("Database: v12 -> v13 maps each control flag on its own", function()
+    -- The mirror image of the case above the v13 block ends on, which sets the
+    -- base flag true and the hover flag false. The two are read and written
+    -- separately, so a helper that took one flag and applied it to both surfaces
+    -- would pass that case and fail this one.
+    -- red under: deriving the hover mode from the base flag.
+    local inst = preSeeded({
+        profiles = { Default = { nextWindowId = 2, windows = { { id = 1, name = "A",
+            frame = { controlClassColor = false, controlHoverClassColor = true } } } } },
+        global = { schemaVersion = 12 },
+    })
+    local frame = inst.NS.Database.FindWindow(1).frame
+
+    assertEqual(frame.controlColorMode, "custom")
+    assertEqual(frame.controlHoverColorMode, "class")
+end)
+
+test("Database: v12 -> v13 leaves a window with no frame block at all alone", function()
+    -- `type(frame) == "table"` guards both halves of the step. A window written
+    -- before the frame group existed, or hand-edited down to nothing, must reach
+    -- the shipped defaults through the merge rather than take the login down or
+    -- pick up a mode the step invented for it.
+    local inst = preSeeded({
+        profiles = { Default = { nextWindowId = 2,
+            windows = { { id = 1, name = "A" } } } },
+        global   = { schemaVersion = 12 },
+    })
+    local w = inst.NS.Database.FindWindow(1)
+
+    assertEqual(inst.NS.db.global.schemaVersion, 13)
+    assertTrue(w.header.show, "the shipped default arrived through the merge")
+    assertEqual(w.frame.controlColorMode, "custom", "and so did the mode, not from the step")
+end)
+
+test("Database: v12 -> v13 walks every saved profile, not just the active one", function()
+    -- The third step to need this said about it, for the third time for the same
+    -- reason: schemaVersion is account-wide, so the inactive profile's one chance
+    -- at v13 is this pass.
+    -- red under: iterating `{ db.profile }` instead of db.sv.profiles.
+    local inst = preSeeded({
+        profiles = {
+            Default = { windows = { { id = 1, name = "A", frame = { titleBar = false } } } },
+            Raid    = { windows = { { id = 7, name = "R",
+                frame = { titleBar = false, controlClassColor = true } } } },
+        },
+        global = { schemaVersion = 12 },
+    })
+    local raid = inst.NS.db.sv.profiles.Raid.windows[1]
+
+    assertFalse(raid.header.show, "the inactive profile's title bar stayed off")
+    assertEqual(raid.frame.controlColorMode, "class")
+    assertNil(raid.frame.titleBar)
+end)

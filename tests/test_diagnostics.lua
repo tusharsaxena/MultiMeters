@@ -871,6 +871,174 @@ test("Diagnostics: the recap probe reports why a death is dated the way it is", 
     end
 end)
 
+test("Diagnostics: the dating header prints the format the window is ACTUALLY set to", function()
+    -- The section's whole value is that it prints its INPUTS, and the format in
+    -- force is the first of them: read "clock" out of a window set to "ago" and
+    -- every line below it is being read against the wrong ladder.
+    --
+    -- It is read off the window's own `text` table, NOT off `data`. The two sit
+    -- side by side on a window and `data` is where the session fields live, so a
+    -- refactor that folds both lookups into one path is exactly how this line
+    -- starts printing nil for a setting the player can see in the panel.
+    -- red under: reading cfg.data.deathTimeFormat, or defaulting the format.
+    local inst = T.load{ enable = true }
+    deathsSession(inst, { death("Player-1-0000000A", "Me", true, 901, 1356) })
+    inst.NS.Database.GetWindows()[1].text.deathTimeFormat = "ago"
+
+    local text = recapReport(inst)
+    assertTrue(text:find("    window 1: sessionType=1  text.deathTimeFormat=ago", 1, true) ~= nil,
+        "the dating header must name the session and the format, both from window 1")
+end)
+
+test("Diagnostics: the formatter is resolved as Numbers first, and asked for both styles by name", function()
+    -- `NS.Numbers` and `NS.Format` are two names for one table today, which is
+    -- what makes the preference invisible until it is pinned: swap the order and
+    -- nothing here changes until the day the printer takes `NS.Format` back.
+    -- The stub answers only to the first name, so it answering IS the ordering.
+    --
+    -- It also pins the call itself: the style is the SECOND argument, and both
+    -- styles are printed side by side, clock before ago, so a reader can see the
+    -- two agreeing on one death.
+    -- red under: resolving NS.Format first, or dropping either style.
+    local inst = T.load{ enable = true }
+    deathsSession(inst, { death("Player-1-0000000A", "Me", true, 901, 1356) })
+    withRecapsFor(inst)
+    inst.NS.Numbers = { DeathTime = function(_, style) return "NUM:" .. tostring(style) end }
+
+    local text = recapReport(inst)
+    assertTrue(text:find("clock=NUM:clock  ago=NUM:ago", 1, true) ~= nil,
+        "NS.Numbers must win, and must be called with the style as its second argument")
+end)
+
+test("Diagnostics: with NS.Numbers gone the dating falls through to NS.Format", function()
+    -- The fallback is not decoration: `NS.Numbers` is an alias modules/Format.lua
+    -- publishes, and a diagnostic that goes silent because an alias moved would
+    -- be reporting on this addon's naming rather than on the client.
+    -- red under: reading only one of the two names.
+    local inst = T.load{ enable = true }
+    deathsSession(inst, { death("Player-1-0000000A", "Me", true, 901, 1356) })
+    withRecapsFor(inst)
+    inst.NS.Numbers = nil
+
+    local text = recapReport(inst)
+    assertTrue(text:find("clock=%d%d:%d%d:%d%d") ~= nil,
+        "NS.Format still dates the death when the alias is gone")
+end)
+
+test("Diagnostics: with no formatter at all it says so and dates nothing", function()
+    -- The refusal path. Printing a header and then four rows of `nil` would read
+    -- as a client that answered nothing, which is a different finding entirely —
+    -- so the section names its own missing tool and stops.
+    -- red under: dropping the guard, or continuing past it.
+    local inst = T.load{ enable = true }
+    deathsSession(inst, { death("Player-1-0000000A", "Me", true, 901, 1356) })
+    withRecapsFor(inst)
+    -- One assignment reaches both names: they are the same table.
+    inst.NS.Format.DeathTime = nil
+
+    local text = recapReport(inst)
+    assertTrue(text:find("    formatter or provider unavailable", 1, true) ~= nil,
+        "the section must name what it is missing")
+    assertNil(text:find("row deathTimeSeconds=", 1, true),
+        "and print no rows below it")
+end)
+
+test("Diagnostics: the dating stops at four deaths", function()
+    -- This report is pasted by hand into an issue. A twenty-death wipe would
+    -- bury the sections below it, so the section takes the first four and stops
+    -- — the same four the probes above it cover.
+    -- red under: dating every source, or dating fewer than four.
+    local inst = T.load{ enable = true }
+    deathsSession(inst, {
+        death("Player-1-0000000A", "Me",  true,  901, 111),
+        death("Player-1-0000000B", "Bee", false, 902, 222),
+        death("Player-1-0000000C", "Cee", false, 903, 333),
+        death("Player-1-0000000D", "Dee", false, 904, 444),
+        death("Player-1-0000000E", "Eee", false, 905, 555),
+        death("Player-1-0000000F", "Eff", false, 906, 666),
+    })
+    withRecapsFor(inst)
+
+    local text = recapReport(inst)
+    assertEqual(select(2, text:gsub("row deathTimeSeconds=", "")), 4,
+        "exactly four deaths are dated")
+    assertTrue(text:find("row deathTimeSeconds=111", 1, true) ~= nil,
+        "and they are the FIRST four, in the order the column reported them")
+    assertNil(text:find("row deathTimeSeconds=555", 1, true),
+        "the fifth death is not dated")
+end)
+
+test("Diagnostics: a secret id costs the row its dating, and still spends one of the four", function()
+    -- Two behaviours in one, because they are one line apart and a refactor that
+    -- tidies the loop will meet both at once.
+    --
+    -- A secret `deathRecapID` cannot be dated from AT ALL — it cannot be handed
+    -- to the client and it cannot be printed — so the row says that instead of
+    -- printing a line of nils that reads like a client refusal.
+    --
+    -- And the count advances anyway. The cap is on ROWS WALKED, not on rows
+    -- successfully dated: mid-pull every id is secret, and a cap that only
+    -- counted the successes would walk the whole column looking for a fourth
+    -- that cannot exist.
+    -- red under: moving the increment inside the else arm.
+    local inst = T.load{ enable = true }
+    deathsSession(inst, {
+        death("Player-1-0000000A", "Me",  true,  inst.mocks.secret(901), 111),
+        death("Player-1-0000000B", "Bee", false, inst.mocks.secret(902), 222),
+        death("Player-1-0000000C", "Cee", false, inst.mocks.secret(903), 333),
+        death("Player-1-0000000D", "Dee", false, inst.mocks.secret(904), 444),
+        death("Player-1-0000000E", "Eee", false, 905, 777),
+    })
+    inst.mocks.setSecretsAccessible(false)
+
+    local text = recapReport(inst)
+    assertEqual(select(2, text:gsub("%[id is secret", "")), 4,
+        "each secret id is named as one, and four of them fill the cap")
+    assertNil(text:find("row deathTimeSeconds=777", 1, true),
+        "so the plain fifth death is never reached")
+end)
+
+test("Diagnostics: a death the client holds no recap for still gets its row", function()
+    -- The absent recap IS a finding — it is the answer to "does an id resolve
+    -- for a death from earlier in the run" — and it only reads as one if the row
+    -- prints with the gaps named. A row skipped for want of a timestamp looks
+    -- like a death the report never saw.
+    -- red under: `if recap then` around the printing.
+    local inst = T.load{ enable = true }
+    deathsSession(inst, { death("Player-1-0000000A", "Me", true, 901, 1356) })
+    inst.mocks.setDeathRecap({ HasRecapEvents = function() return false end })
+
+    local text = recapReport(inst)
+    assertTrue(text:find("id=901  row deathTimeSeconds=1356  recap timestamp=nil", 1, true) ~= nil,
+        "the row still names the id and the field the failed derivations were built on")
+    assertTrue(text:find("clock=nil  ago=nil", 1, true) ~= nil,
+        "and both styles say nil rather than the row vanishing")
+end)
+
+test("Diagnostics: the death is dated off the NEWEST event, which is events[1]", function()
+    -- The client hands the recap back newest-first, and dating a death off the
+    -- wrong end of that array puts the death at the moment the fight's first
+    -- damage landed instead of at the moment it killed them. Nothing in the
+    -- output would look wrong; the number would just be minutes out.
+    -- red under: events[#events], or the last event seen by a walk.
+    local inst = T.load{ enable = true }
+    deathsSession(inst, { death("Player-1-0000000A", "Me", true, 901, 1356) })
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function()
+            return {
+                { spellId = 1, spellName = "Killing blow", amount = 1, timestamp = 1700009999 },
+                { spellId = 2, spellName = "First hit",    amount = 1, timestamp = 1700000001 },
+            }
+        end,
+        GetRecapMaxHealth = function() return 1000 end,
+    })
+
+    local text = recapReport(inst)
+    assertTrue(text:find("recap timestamp=1700009999", 1, true) ~= nil,
+        "the first entry in the array is the one the death is dated from")
+end)
+
 test("Diagnostics: the header section covers every control, by walking them", function()
     -- IT HAS ALREADY FAILED SILENTLY ONCE HERE. The previous version named three
     -- button fields inside `if button then`, so when the controls moved to
@@ -1472,6 +1640,93 @@ test("Diagnostics: a secret GUID costs one field and not the line", function()
     local text = feignReport(inst)
     assertTrue(text:find("unit=party1", 1, true) ~= nil, "the plain field survived")
     assertTrue(text:find("<secret>", 1, true) ~= nil, "the secret field was described")
+end)
+
+test("Diagnostics: every roster row carries all six fields, in one fixed order", function()
+    -- The join is on GUIDs and the GUID is unreadable, so this row is the only
+    -- thing that lets a reader put "party1" to an entry in the trace. Each field
+    -- is load-bearing: the token, the GUID it joins on, the three readings
+    -- modules/Feign.lua makes, and whether this is the local player — the
+    -- asymmetry under investigation in issue #25 is exactly player versus
+    -- everybody else.
+    --
+    -- The health goes through `probe`, which renders a number to ONE DECIMAL. It
+    -- looks like a stray format and is not: it is the same describe-do-not-read
+    -- path every possibly-secret value in this file takes, and "hp=0.0" beside
+    -- "hp=100.0" is the whole shape of the evidence a feign leaves.
+    -- red under: reordering the fields, dropping the baseline members, or
+    -- reading UnitHealth directly instead of through probe.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.mocks.setUnitHealth("party1", 0)
+
+    local text = feignReport(inst)
+    assertTrue(text:find(
+        "    player  guid=Player-1-0000000A  hp=100.0  dead=false  feigning=false  local=true",
+        1, true) ~= nil, "the local player's row")
+    assertTrue(text:find(
+        "    party1  guid=Player-1-0000000B  hp=0.0  dead=false  feigning=false  local=false",
+        1, true) ~= nil,
+        "and the party member's, so the feigning row has a baseline to be read against")
+end)
+
+test("Diagnostics: with no group the roster says so instead of printing a bare header", function()
+    -- Both arms of the same guard, because both happen: `/mm debug feign` run
+    -- solo has an empty group, and run before the roster module has built has no
+    -- roster at all. Either way the report must SAY there is nobody rather than
+    -- printing "group now:" and then nothing, which reads as a walk that broke.
+    -- red under: dropping either half of the nil-or-empty test.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS.Roster.GetGroup = function() return {} end
+    local text = feignReport(inst)
+    assertTrue(text:find("    <no group>", 1, true) ~= nil, "an empty group says so")
+    assertNil(text:find("  hp=", 1, true), "and prints no member rows")
+
+    local bare = feignGroup(T.load{ enable = true })
+    bare.NS.Roster = nil
+    local bareText = feignReport(bare)
+    assertTrue(bareText:find("    <no group>", 1, true) ~= nil,
+        "and so does a report run before there is a Roster to ask")
+end)
+
+test("Diagnostics: a unit read that REFUSES is named, and the row survives it", function()
+    -- Geometry and unit reads off a restricted client raise rather than return,
+    -- and a refusal is itself the finding: "this unit is in the secret set" is
+    -- exactly what tells a reader why the filter could not see the feign. The
+    -- read is wrapped for that reason and not for tidiness.
+    --
+    -- `<refused>` is also what an ABSENT UnitHealth reads as, unlike `dead` and
+    -- `feigning`, which are guarded and read `nil`. The asymmetry is real and
+    -- worth keeping: a refactor that folds the three reads into one uniform
+    -- helper changes what this row says on a live client.
+    -- red under: an unwrapped UnitHealth call, which trips the section pcall and
+    -- replaces the whole roster with one `section failed:` line.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.mocks.UnitHealth = function() error("this unit is restricted") end
+
+    local text = feignReport(inst)
+    assertNil(text:find("section failed", 1, true), "the refusal did not take the report down")
+    assertEqual(select(2, text:gsub("hp=<refused>", "")), 2,
+        "both rows named the refusal rather than dropping the field")
+    assertTrue(text:find("local=true", 1, true) ~= nil,
+        "and the fields beside it still printed")
+end)
+
+test("Diagnostics: the roster is printed BELOW the entries, on the armed path too", function()
+    -- The roster is the key to the trace, so it is printed once the trace has
+    -- been read rather than above it — and it is printed on every path, armed or
+    -- not, because a reader given entries and no names has GUIDs and nothing to
+    -- join them to.
+    -- red under: hanging the roster off the disarmed early return alone.
+    local inst = feignGroup(T.load{ enable = true })
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    inst.NS:OnSpellSucceeded("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", FEIGN_SPELL)
+
+    local text = feignReport(inst)
+    local entries = text:find("entries:", 1, true)
+    local roster  = text:find("group now:", 1, true)
+    assertTrue(entries ~= nil, "the armed trace printed its entries")
+    assertTrue(roster ~= nil, "and the roster came with them")
+    assertTrue(roster > entries, "the roster reads below the trace it explains")
 end)
 
 -- ---------------------------------------------------------------------------

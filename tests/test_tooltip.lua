@@ -2706,3 +2706,349 @@ test("Tooltip: a SECRET name falls back to the fixed reservation", function()
     local line = spellLines(inst)[1]
     assertTrue(line.label:GetWidth() > 0, "the column lost its reservation entirely")
 end)
+
+-- ---------------------------------------------------------------------------
+-- Characterization: the three warned functions (issue #40)
+-- ---------------------------------------------------------------------------
+--
+-- `eventColumns`, `drawDeathEvents` and `Tooltip:CellTooltip` are all above the
+-- complexity ceiling and are queued for a split — collect / measure / draw, in
+-- drawDeathEvents' case. Everything below pins behaviour that has never been
+-- asserted anywhere and that a seam cut through the middle of these functions
+-- could take with it: the arms of the naming chain nothing reached, the four
+-- refusals, the collect ceiling, and the all-or-nothing measurement rule the
+-- issue names under "what must not change".
+--
+-- Every case here was written and run against the UNREFACTORED code, which is
+-- the only order in which a characterization test proves anything
+-- (performance-§11).
+
+test("Tooltip: an event with no id and no name reads as #? under the question mark", function()
+    -- The LAST arm of eventColumns' naming chain, and the only one nothing
+    -- reached: not a swing, not a heal, and no spell id to fall back on either.
+    -- The explicit nil branch is there because string.format("%s", nil) raises in
+    -- Lua 5.1, so a refactor that "simplifies" it to one format call takes the
+    -- whole tooltip down on an event the client declined to name.
+    -- red under: formatting the nil id, or dropping the fallback icon.
+    local inst, cfg, anchor, row = deathBench()
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function()
+            return { { event = "SPELL_DAMAGE", amount = 1, currentHP = 1,
+                       timestamp = 1000 } }
+        end,
+        GetRecapMaxHealth = function() return 1000 end,
+    })
+    inst.NS.Tooltip:SpellTooltip(row, anchor, cfg)
+
+    assertEqual(spellLines(inst)[1].label:GetText(), "#?")
+    -- No id means no texture lookup either, so the line heads with the addon's
+    -- own fallback rather than with an empty `|T|t`.
+    assertTrue(table.concat(lineTexts(inst), "\n"):find(
+        "|T" .. [[Interface\ICONS\INV_Misc_QuestionMark]] .. ":14:14:0:0|t", 1, true) ~= nil,
+        "an unnamed event lost its fallback icon")
+end)
+
+test("Tooltip: a DIRECT heal with no spell id reads as Heal too", function()
+    -- The heal arm tests two event types and the suite only ever reached
+    -- SPELL_PERIODIC_HEAL. A refactor that rewrites the chain as a lookup table
+    -- is exactly the kind that keeps one of a pair and loses the other.
+    local inst, cfg, anchor, row = deathBench()
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function()
+            return { { event = "SPELL_HEAL", amount = 500, currentHP = 800,
+                       timestamp = 1000 } }
+        end,
+        GetRecapMaxHealth = function() return 1000 end,
+    })
+    inst.NS.Tooltip:SpellTooltip(row, anchor, cfg)
+    assertEqual(spellLines(inst)[1].label:GetText(), "Heal")
+end)
+
+test("Tooltip: an event AFTER the moment of death keeps the sign OFF", function()
+    -- The positive arm of the time column. Element one is the killing blow and
+    -- the client sends the array newest first, so every offset is normally zero
+    -- or negative — but the sign is SPELLED rather than left to the subtraction,
+    -- and that is only visible on an offset the spelling has to leave alone.
+    -- red under: string.format("-%.1fs", math.abs(off)) for every offset, which
+    -- renders a later event as though it preceded the death.
+    local inst, cfg, anchor, row = deathBench()
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function()
+            return { { spellId = 1, spellName = "Blow", amount = 1,
+                       currentHP = 1, timestamp = 1000 },
+                     { spellId = 2, spellName = "After", amount = 1,
+                       currentHP = 1, timestamp = 1004 } }
+        end,
+        GetRecapMaxHealth = function() return 1000 end,
+    })
+    inst.NS.Tooltip:SpellTooltip(row, anchor, cfg)
+
+    -- The draw runs backwards, so the second element is the FIRST line.
+    local first = spellLines(inst)[1]
+    assertEqual(first.label:GetText(), "After", "the draw stopped running backwards")
+    assertEqual(first.time:GetText(), "4.0s")
+end)
+
+test("Tooltip: a refused offset empties the time slot and reserves the column", function()
+    -- Two facts in one, because they are the same arm seen from both ends.
+    -- eventOffset refuses the subtraction while the timestamps are secret, so
+    -- `secondsBefore` is nil and the time text is EXACTLY empty — never "0.0s",
+    -- which would claim every event landed at the moment of death. And `widest`
+    -- is then never set, so the column falls back to the "-9.9s" reservation
+    -- rather than collapsing to nothing.
+    -- red under: defaulting the offset to zero, or sizing the column from a nil.
+    local function timeSlot(events, secretsOff)
+        local inst, cfg, anchor, row = deathBench()
+        inst.mocks.setDeathRecap({
+            HasRecapEvents = function() return true end,
+            GetRecapEvents = function() return events(inst) end,
+            GetRecapMaxHealth = function() return 1000 end,
+        })
+        if secretsOff then inst.mocks.setSecretsAccessible(false) end
+        assertTrue(pcall(function() inst.NS.Tooltip:SpellTooltip(row, anchor, cfg) end),
+            "a refused offset raised")
+        return spellLines(inst)[1]
+    end
+
+    -- A recap spanning 900 seconds measures "-900.0s", which is wider than the
+    -- constant floor — so the fallback below is falsifiable.
+    local measured = timeSlot(function()
+        return { { spellId = 1, amount = 1, currentHP = 1, timestamp = 1000 },
+                 { spellId = 1, amount = 1, currentHP = 1, timestamp = 100 } }
+    end)
+    local refused = timeSlot(function(inst)
+        return { { spellId = 1, amount = 1, currentHP = 1,
+                   timestamp = inst.mocks.secret(1000) },
+                 { spellId = 1, amount = 1, currentHP = 1,
+                   timestamp = inst.mocks.secret(100) } }
+    end, true)
+
+    assertEqual(refused.time:GetText(), "",
+        "a refused subtraction must render nothing, never a figure")
+    assertTrue(refused.time:IsShown(), "the time column collapsed instead of reserving")
+    assertTrue(refused.time:GetWidth() > 0, "the time column lost its reservation")
+    assertTrue(refused.time:GetWidth() < measured.time:GetWidth(),
+        "the refused column was not sized from the constant floor")
+end)
+
+test("Tooltip: a recap whose events are not an array says so and draws nothing", function()
+    -- The first of drawDeathEvents' four refusals. The client is allowed to hand
+    -- back something that is not an array and modules/Compat.lua passes it
+    -- through untouched on purpose, so the type test here is the only thing
+    -- between it and an iteration.
+    -- red under: hoisting the type test into a collect helper that is called
+    -- after the array has already been indexed.
+    local inst, cfg, anchor, row = deathBench()
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function() return "not an array" end,
+    })
+    assertTrue(pcall(function() inst.NS.Tooltip:SpellTooltip(row, anchor, cfg) end),
+        "a non-array recap raised")
+
+    assertEqual(#spellLines(inst), 0, "a carrier was drawn for a recap with no events")
+    assertTrue(table.concat(lineTexts(inst), "\n"):find(
+        "No recap stored for this death", 1, true) ~= nil,
+        "the refusal must say so rather than leave an empty frame")
+end)
+
+test("Tooltip: an EMPTY event array is a refusal, not an empty list", function()
+    -- The `total == 0` arm, which is the one a split into collect/measure/draw
+    -- has to keep on the DRAW side: an ordered array of length zero must still
+    -- reach the caller as `false`, or the death gets a header, a gap, a caption
+    -- and then nothing at all — the empty tooltip the sentence exists to avoid.
+    local inst, cfg, anchor, row = deathBench()
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function() return {} end,
+    })
+    inst.NS.Tooltip:SpellTooltip(row, anchor, cfg)
+
+    assertEqual(#spellLines(inst), 0)
+    assertTrue(table.concat(lineTexts(inst), "\n"):find(
+        "No recap stored for this death", 1, true) ~= nil,
+        "an empty array drew a headless section instead of the sentence")
+end)
+
+test("Tooltip: a SECRET event array is refused whole, never indexed", function()
+    -- The CanAccessTable guard. Indexing a secret table RAISES — the mock traps
+    -- it, exactly as the client does — so this is not a tidiness check: without
+    -- the gate the walk below it takes the tooltip down mid-pull.
+    -- red under: moving the guard inside the SafeIterate callback, where the
+    -- first index has already happened.
+    local inst, cfg, anchor, row = deathBench()
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function()
+            return inst.mocks.secretTable({
+                { spellId = 1, spellName = "Volley", amount = 1,
+                  currentHP = 1, timestamp = 1000 },
+            })
+        end,
+        GetRecapMaxHealth = function() return inst.mocks.secret(1000) end,
+    })
+    inst.mocks.setSecretsAccessible(false)
+
+    assertTrue(pcall(function() inst.NS.Tooltip:SpellTooltip(row, anchor, cfg) end),
+        "the secret event array was indexed")
+    assertEqual(#spellLines(inst), 0)
+    assertTrue(table.concat(lineTexts(inst), "\n"):find(
+        "No recap stored for this death", 1, true) ~= nil)
+end)
+
+test("Tooltip: an entry that is not a table is skipped, and the rest still draw", function()
+    -- The per-entry gate inside the collect. SafeIterate stops at the first NIL
+    -- and at nothing else, so a junk entry mid-array is reached and has to be
+    -- stepped over rather than taken as the end of the list.
+    -- red under: returning false from the callback on a bad entry, which would
+    -- stop the walk and silently drop every event behind it.
+    local inst, cfg, anchor, row = deathBench()
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function()
+            return { { spellId = 1, spellName = "Newest", amount = 1,
+                       currentHP = 1, timestamp = 1000 },
+                     "junk",
+                     { spellId = 2, spellName = "Oldest", amount = 1,
+                       currentHP = 1, timestamp = 900 } }
+        end,
+        GetRecapMaxHealth = function() return 1000 end,
+    })
+    inst.NS.Tooltip:SpellTooltip(row, anchor, cfg)
+
+    local lines = spellLines(inst)
+    assertEqual(#lines, 2, "the junk entry ended the walk instead of being skipped")
+    assertEqual(lines[1].label:GetText(), "Oldest", "oldest still reads first")
+    assertEqual(lines[2].label:GetText(), "Newest")
+end)
+
+test("Tooltip: the collect stops at 64 events, keeping the NEWEST of them", function()
+    -- COLLECT_LIMIT, which nothing reached: every fixture in this file holds two
+    -- events and a live recap holds ten. The ceiling is a real bound on the
+    -- number of carrier frames one hover creates, and WHICH end it drops matters
+    -- — the client sends newest first, so the walk keeps the events nearest the
+    -- death and discards the far end of a very long pull.
+    -- red under: a collect helper that walks the array without the stop, or one
+    -- that reverses before capping and so keeps the OLDEST 64.
+    local inst, cfg, anchor, row = deathBench()
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function()
+            local out = {}
+            for i = 1, 70 do
+                out[i] = { spellId = i, spellName = "E" .. i, amount = 1,
+                           currentHP = 1, timestamp = 1000 - i }
+            end
+            return out
+        end,
+        GetRecapMaxHealth = function() return 1000 end,
+    })
+    inst.NS.Tooltip:SpellTooltip(row, anchor, cfg)
+
+    local lines = spellLines(inst)
+    assertEqual(#lines, 64, "the collect ceiling moved")
+    -- Drawn backwards, so the last line is element one — the killing blow — and
+    -- the first line is element 64, the oldest event that survived the cap.
+    assertEqual(lines[#lines].label:GetText(), "E1", "the killing blow was capped away")
+    assertEqual(lines[1].label:GetText(), "E64", "the wrong end of the array was kept")
+end)
+
+test("Tooltip: ONE unreadable caption abandons the whole measurement", function()
+    -- ISSUE #40's headline invariant, and the one a measure helper extracted out
+    -- of this loop is most likely to lose: `namesReadable` is all-or-nothing on
+    -- purpose. A column sized from the four names that happened to be readable
+    -- fits four names out of ten, which is worse than one reserved for all of
+    -- them — the reader cannot tell a clipped name from a short one.
+    -- red under: sizing from the readable half, or breaking out of the loop on
+    -- the first unreadable name (which would also skip the TIME measurement of
+    -- every event behind it).
+    local function spellWidth(secondName)
+        local inst, cfg, anchor, row = deathBench()
+        inst.mocks.setDeathRecap({
+            HasRecapEvents = function() return true end,
+            GetRecapEvents = function()
+                return { { spellId = 1, spellName = "Ka", sourceName = "Kb",
+                           amount = 1, currentHP = 1, timestamp = 1000 },
+                         { spellId = 2, spellName = secondName(inst),
+                           sourceName = "Kb", amount = 1, currentHP = 1,
+                           timestamp = 900 } }
+            end,
+            GetRecapMaxHealth = function() return 1000 end,
+        })
+        inst.mocks.setSecretsAccessible(false)
+        assertTrue(pcall(function() inst.NS.Tooltip:SpellTooltip(row, anchor, cfg) end),
+            "a mixed-readability recap raised")
+        return spellLines(inst)[1].label:GetWidth()
+    end
+
+    local allReadable = spellWidth(function() return "Kc" end)
+    local oneSecret   = spellWidth(function(inst) return inst.mocks.secret("Kc") end)
+    assertTrue(oneSecret > allReadable,
+        "one secret caption sized the column from the readable half")
+end)
+
+test("modules/Tooltip.lua never applies `#` to a recap's event array", function()
+    -- Rule R1 on the death path, stated as a source check because the failure it
+    -- guards cannot be provoked from outside: `#` on a secret table raises, and
+    -- the recap array is exactly the table this file is handed by the client.
+    -- `#ordered` is fine and deliberately not matched — that is the plain array
+    -- this file built for itself, which is the whole reason the collect exists.
+    -- red under: a collect helper that measures `events` before walking it.
+    local fh = assert(io.open(T.root .. "/modules/Tooltip.lua", "r"))
+    local n, offenders, sawSafeIterate = 0, {}, false
+    for line in fh:lines() do
+        n = n + 1
+        if not line:match("^%s*%-%-") then
+            local code = line:gsub("%s%-%-.*$", "")
+            if code:find("SafeIterate", 1, true) then sawSafeIterate = true end
+            if code:find("#%s*events") or code:find("#%s*recap%.events") then
+                offenders[#offenders + 1] = "modules/Tooltip.lua:" .. n
+            end
+        end
+    end
+    fh:close()
+    assertTrue(sawSafeIterate, "the event walk must go through NS.Secrets.SafeIterate")
+    assertEqual(#offenders, 0, table.concat(offenders, ", "))
+end)
+
+test("Tooltip: a stat key the catalog does not know heads with the key itself", function()
+    -- CellTooltip's header arm nothing reached. `Const.STAT_BY_KEY` is a lookup
+    -- that can miss — a column added to a saved profile and later renamed leaves
+    -- exactly this — and the fallback is the raw key rather than a blank right
+    -- half, so the tooltip still says which column it is the breakdown of.
+    -- red under: `L[stat.label]` without the guard, which raises on the nil.
+    local inst, cfg, anchor = bench()
+    assertTrue(pcall(function()
+        inst.NS.Tooltip:CellTooltip(makeRow(), "NotAStatKey", anchor, cfg)
+    end), "an unknown stat key raised")
+    assertEqual(inst.mocks.GameTooltip.__lines[1].right, "NotAStatKey")
+end)
+
+test("Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block", function()
+    -- The setting lives at `window.text.deathTimeFormat` (settings/Schema.lua)
+    -- and the tooltip config block has no copy of it, so CellTooltip's two-term
+    -- `or` is the ONLY thing that carries the player's choice to the formatter.
+    -- Nothing asserted it, and a refactor that reads only `config` would leave
+    -- the option in the panel with no effect at all.
+    -- red under: dropping the window.text fallback.
+    local inst, cfg, anchor = bench()
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function(id) return { { spellId = 1, timestamp = id } } end,
+        GetRecapMaxHealth = function() return 100 end,
+    })
+    local window = inst.NS.Database.GetWindows()[1]
+    window.text.deathTimeFormat = "ago"
+    inst.NS.Tooltip:CellTooltip(deadGridRow(), "Deaths", anchor, cfg)
+
+    local slots = {}
+    for _, line in ipairs(spellLines(inst)) do slots[#slots + 1] = line.amount:GetText() end
+    local joined = table.concat(slots, "\n")
+    assertTrue(joined:find("ago", 1, true) ~= nil,
+        "the window's timestamp style never reached the formatter, got " .. joined)
+    assertTrue(joined:find(inst.mocks.date("%H:%M:%S", 29), 1, true) == nil,
+        "the clock was drawn although the window asked for elapsed time")
+end)

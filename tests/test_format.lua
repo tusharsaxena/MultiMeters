@@ -499,3 +499,130 @@ test("Format.DeathTime never inspects a secret", function()
     assertTrue(pcall(F.DeathTime, secret, "clock", 1787381686))
     assertTrue(nil == F.DeathTime(secret, "clock", 1787381686))
 end)
+
+-- ---------------------------------------------------------------------------
+-- Format.DeathTime — the arms nothing above reaches (characterization,
+-- performance-§11)
+-- ---------------------------------------------------------------------------
+--
+-- The cases above pin the two headline answers: a wall clock, and "8 minutes
+-- ago". What they do NOT pin is every other arm of the same function — the
+-- minute/second boundary, the clamp, the two ways `now` can be refused, and the
+-- style that is neither "clock" nor "ago". Each of those is a branch a rewrite
+-- can drop without any existing case going red, so each gets a case here.
+
+test("Format.DeathTime: the seconds/minutes boundary and the exact strings", function()
+    local inst = T.load()
+    local F = inst.NS.Numbers or inst.NS.Format
+    local now = 1787381686
+    -- Under a minute reads in whole seconds; 60 is the first reading that is
+    -- allowed to say "minutes" at all. The header calls the seconds branch out
+    -- by name — "0 min ago" for a death that happened while you were reading the
+    -- tooltip is worse than saying nothing — so the boundary is the contract and
+    -- not an implementation detail.
+    assertEqual(F.DeathTime(now - 59, "ago", now), "59s ago")
+    assertEqual(F.DeathTime(now - 60, "ago", now), "1m ago")
+    -- Minutes TRUNCATE rather than round: 119 seconds is one minute, not two. A
+    -- refactor reaching for a tidier `math.floor(x / 60 + 0.5)` changes every
+    -- second reading in the tooltip.
+    assertEqual(F.DeathTime(now - 119, "ago", now), "1m ago")
+    assertEqual(F.DeathTime(now - 500, "ago", now), "8m ago")
+    -- There is NO hour rung. An hour-old death reads "60m ago", deliberately —
+    -- a session that long is the exception and a third unit would be a third
+    -- string to translate for it.
+    assertEqual(F.DeathTime(now - 3600, "ago", now), "60m ago")
+end)
+
+test("Format.DeathTime clamps a death in the future to zero", function()
+    local inst = T.load()
+    local F = inst.NS.Numbers or inst.NS.Format
+    local now = 1787381686
+    -- The recap's clock and ours are two different clocks, and a death stamped a
+    -- second ahead of `now` is ordinary. Clamped, so the reader never sees
+    -- "-1m ago" or a negative second count.
+    assertEqual(F.DeathTime(now + 5, "ago", now), "0s ago")
+    assertEqual(F.DeathTime(now, "ago", now), "0s ago")
+end)
+
+test("Format.DeathTime treats any unknown style as the clock", function()
+    local inst = T.load()
+    local F = inst.NS.Numbers or inst.NS.Format
+    local when = 1787381686
+    local clock = inst.mocks.date("%H:%M:%S", when)
+    -- "ago" is the ONLY special style; everything else falls through. This is
+    -- what makes the removed third style ("how far into the fight", issue #18)
+    -- safe to leave in a saved profile: a stored `style = "elapsed"` renders a
+    -- wall clock rather than nil and an em dash.
+    assertEqual(F.DeathTime(when, "elapsed", when), clock)
+    assertEqual(F.DeathTime(when, "fight", when), clock)
+    assertEqual(F.DeathTime(when, "AGO", when), clock, "the style match is case-sensitive")
+end)
+
+test("Format.DeathTime falls back to the clock when 'now' cannot be had", function()
+    local inst = T.load()
+    local F = inst.NS.Numbers or inst.NS.Format
+    local when = 1787381686
+    local clock = inst.mocks.date("%H:%M:%S", when)
+
+    -- A REFUSED comparison is not a refused format. `when` is accessible here and
+    -- `now` is not, so the countdown cannot be computed — but the wall clock
+    -- still can, and that is what the reader gets. Answering nil here would draw
+    -- an em dash over a timestamp we are holding.
+    inst.mocks.setSecretsAccessible(false)
+    local secretNow = inst.mocks.secret(when + 300)
+    assertTrue(pcall(F.DeathTime, when, "ago", secretNow), "a secret 'now' must not raise")
+    assertEqual(F.DeathTime(when, "ago", secretNow), clock)
+
+    -- Same answer when there is no clock in the client at all: `time` absent is
+    -- the degraded case, and it degrades to the clock rather than to nothing.
+    local realTime = inst.mocks.time
+    inst.mocks.time = nil
+    local out = F.DeathTime(when, "ago")
+    inst.mocks.time = realTime
+    assertEqual(out, clock, "no time() means no countdown, but still a clock")
+end)
+
+test("Format.DeathTime defaults 'now' to the client clock", function()
+    local inst = T.load()
+    local F = inst.NS.Numbers or inst.NS.Format
+    local realTime = inst.mocks.time
+    -- The third argument exists so the suite can pin the arithmetic; the CALLERS
+    -- (modules/Tooltip.lua, modules/DrillDown.lua) pass two arguments and rely on
+    -- `time()` being read fresh on every call. Pinned by moving the clock and
+    -- watching the same death read differently.
+    inst.mocks.time = function() return 1787381686 end
+    local first = F.DeathTime(1787381686 - 120, "ago")
+    inst.mocks.time = function() return 1787381686 + 180 end
+    local second = F.DeathTime(1787381686 - 120, "ago")
+    inst.mocks.time = realTime
+    assertEqual(first, "2m ago")
+    assertEqual(second, "5m ago", "time() must be read per call, not cached")
+end)
+
+test("Format.DeathTime routes both countdown strings through the locale", function()
+    local inst = T.load()
+    local F = inst.NS.Numbers or inst.NS.Format
+    local now = 1787381686
+    -- Both readings are L keys, not literals baked into the format call. A
+    -- translator changes the unit and the word order here; the "%d" is the only
+    -- part the module owns.
+    inst.NS.L["%ds ago"] = "vor %ds"
+    inst.NS.L["%dm ago"] = "vor %dm"
+    assertEqual(F.DeathTime(now - 30, "ago", now), "vor 30s")
+    assertEqual(F.DeathTime(now - 600, "ago", now), "vor 10m")
+end)
+
+test("Format.DeathTime refuses a secret timestamp in either style", function()
+    local inst = T.load()
+    local F = inst.NS.Numbers or inst.NS.Format
+    inst.mocks.setSecretsAccessible(false)
+    local secret = inst.mocks.secret(1787381686)
+    -- The "clock" half of this is pinned above; the "ago" half is the one that
+    -- would raise, because it subtracts. The guard is on `when` at the top of the
+    -- function and covers both, and it answers nil — the caller draws an em dash.
+    assertTrue(pcall(F.DeathTime, secret, "ago", 1787381686))
+    assertTrue(nil == F.DeathTime(secret, "ago", 1787381686))
+    -- The refusal comes BEFORE `date` is reached, so an inaccessible timestamp is
+    -- never handed to a client API either.
+    assertTrue(nil == F.DeathTime(secret, "ago"))
+end)

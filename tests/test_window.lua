@@ -2735,3 +2735,425 @@ test("pool: every row built lands in `all`, including the batch surplus", functi
     assertEqual(#window.pool.free + #window.pool.active, #window.pool.all,
         "and every tracked row is accounted for as either parked or out")
 end)
+
+-- ---------------------------------------------------------------------------
+-- BuildLayout, pinned for the split (issue #42)
+-- ---------------------------------------------------------------------------
+--
+-- WindowProto:BuildLayout is CCN 24 and a later wave peels the column arithmetic
+-- out of it. Everything below is a property of the layout table that a peel could
+-- silently move: the cases above cover the equal-share formula, the two filters
+-- and the row cap, and these cover the rest of the table and the arms nothing
+-- else reaches. They are written against the UNREFACTORED function, which is the
+-- only order in which they mean anything (performance-§11).
+
+test("The stored per-column width is what a NEW column is born at, never the drawn one", function()
+    -- The whole point of the share: `col.width` describes the shape a column is
+    -- CREATED with (core/Database.lua's v1->v2 migration writes it), and the
+    -- drawn width comes from the frame. A helper that started honouring the
+    -- stored number would bring back the bug the share replaced — a window
+    -- dragged wider keeping its grid and growing empty space on the right.
+    -- red under: `width = entry.col.width or statWidth`, or a peel that writes
+    -- the computed share back onto the stored entry.
+    local _, window, cfg = scene()
+    cfg.frame.width = 500
+    cfg.text.maxNameLength = 0
+    cfg.columns = {
+        { stat = "DamageDone", enabled = true, width = 999 },
+        { stat = "Interrupts", enabled = true, width = 7   },
+    }
+    local layout = window:BuildLayout()
+
+    assertEqual(layout.columns[1].width, layout.columns[2].width,
+        "two columns with different stored widths still share equally")
+    assertFalse(layout.columns[1].width == 999)
+    assertEqual(cfg.columns[1].width, 999, "and the stored shape is not rewritten")
+    assertEqual(cfg.columns[2].width, 7)
+end)
+
+test("The name column is excluded from the share, and is not sized by the frame", function()
+    -- Two facts in one place because they are the same rule: a name does not get
+    -- longer because the window did, so the name column is subtracted from the
+    -- available width rather than counted into the divisor.
+    -- red under: a peel that divides by #visible + 1, or one that hands the name
+    -- column a share of its own.
+    local _, window, cfg = scene()
+    cfg.text.maxNameLength = 0
+    cfg.columns = {
+        { stat = "DamageDone", enabled = true },
+        { stat = "Interrupts", enabled = true },
+    }
+
+    cfg.frame.width = 500
+    local narrow = window:BuildLayout()
+    cfg.frame.width = 700
+    local wide = window:BuildLayout()
+
+    assertEqual(wide.nameColumn.width, narrow.nameColumn.width,
+        "the name column does not grow with the frame")
+    -- 200 more pixels across two columns is 100 each: the divisor is the STAT
+    -- columns alone. Divided three ways it would be 66.
+    assertEqual(wide.columns[1].width - narrow.columns[1].width, 100)
+    assertEqual(wide.columns[2].width - narrow.columns[2].width, 100)
+end)
+
+test("The name column is placed first, at x 0, and carries its bar unconditionally", function()
+    -- It is not a statistic and can never be removed, which is why it is placed
+    -- separately from the loop. A peel that folded it into the column array would
+    -- put it at the mercy of the `enabled` filter.
+    local _, window = scene()
+    local layout = window:BuildLayout()
+
+    assertEqual(layout.nameColumn.key, "name")
+    assertEqual(layout.nameColumn.x, 0)
+    assertTrue(layout.nameColumn.showBar, "the name column's bar is not a setting")
+end)
+
+test("A window with every column disabled still lays out", function()
+    -- The zero-column arm: nothing divides by #visible, `rowWidth` is the name
+    -- column alone with no trailing seam, and `minWidth` still reserves room for
+    -- ONE column so the window cannot be dragged down to a bare name strip it
+    -- could never grow a column back into.
+    -- red under: a peel that divides by zero, or one that drops the max(#visible, 1).
+    local inst, window, cfg = scene()
+    local Const = inst.NS.Constants
+    cfg.text.maxNameLength = 0
+    cfg.columns = { { stat = "DamageDone", enabled = false } }
+
+    local layout = window:BuildLayout()
+    assertEqual(#layout.columns, 0)
+    assertEqual(layout.rowWidth, Const.NAME_COLUMN_WIDTH,
+        "the row is the name column, and no seam hangs off its right edge")
+    assertEqual(layout.minWidth,
+        Const.NAME_COLUMN_WIDTH + (cfg.frame.padding or 6) * 2
+            + Const.COLUMN_MIN_WIDTH + Const.COLUMN_GAP,
+        "an empty grid still reserves one column's worth of floor")
+end)
+
+test("Hiding the title bar takes its height out of the layout, not out of the header strip", function()
+    -- `header.show == false` is the one arm that zeroes a height, and the column
+    -- strip is NOT part of it — the labels above the grid stay whatever the row
+    -- height says. Both numbers feed minHeight and the body's top offset, so a
+    -- peel that conflated them would either float the grid or overlap it.
+    local _, window, cfg = scene()
+    cfg.rows.height   = 16
+    cfg.header.show   = true
+    cfg.header.height = 18
+
+    local shown = window:BuildLayout()
+    assertEqual(shown.titleHeight, 18)
+    assertEqual(shown.headerHeight, 16, "the column strip is one row tall")
+
+    cfg.header.show = false
+    local hidden = window:BuildLayout()
+    assertEqual(hidden.titleHeight, 0)
+    assertEqual(hidden.headerHeight, 16, "hiding the title bar does not hide the labels")
+    assertEqual(shown.minHeight - hidden.minHeight, 18,
+        "and the floor drops by exactly the bar that went away")
+end)
+
+test("bodyWidth is the frame minus its padding, whatever the grid inside it costs", function()
+    -- `rowWidth` is what the columns add up to and `bodyWidth` is what the frame
+    -- offers; they are different questions and a narrow window makes them differ.
+    -- red under: a peel that publishes one of them twice.
+    local _, window, cfg = scene()
+    cfg.frame.width   = 500
+    cfg.frame.padding = 6
+    local layout = window:BuildLayout()
+
+    assertEqual(layout.bodyWidth, 488)
+    assertFalse(layout.rowWidth == layout.bodyWidth,
+        "the fixture must make the two numbers distinguishable")
+end)
+
+test("growUp is a boolean off growthDirection, and nothing else", function()
+    -- Read once here and consulted per row by Render. Any value that is not the
+    -- string "UP" grows down, which is what keeps an unmigrated profile drawing
+    -- the way it always did.
+    local _, window, cfg = scene()
+    cfg.rows.growthDirection = "UP"
+    assertTrue(window:BuildLayout().growUp)
+    cfg.rows.growthDirection = "DOWN"
+    assertFalse(window:BuildLayout().growUp)
+    cfg.rows.growthDirection = nil
+    assertFalse(window:BuildLayout().growUp, "an absent setting grows down")
+end)
+
+test("A window too short for even one row still asks the pool for one", function()
+    -- The `fits < 1` floor. Zero rows is a window that draws nothing and says
+    -- nothing about why, and a negative count reaches Render as a loop that never
+    -- runs — so the arithmetic bottoms out at one drawn row and the resize clamp
+    -- (minHeight) is what actually stops the player getting here.
+    local _, window, cfg = scene()
+    cfg.frame.height = 1
+    cfg.rows.maxRows = 0
+    assertEqual(window:BuildLayout().maxRows, 1)
+end)
+
+test("A maxRows cap LARGER than the frame holds does not win", function()
+    -- The cap is a ceiling, never a floor: `capped > 0 and capped < fits`. A peel
+    -- that dropped the second half would draw rows out through the bottom of the
+    -- frame on any window whose cap was set high and then dragged shorter.
+    local _, window, cfg = scene()
+    cfg.frame.height = 220
+    cfg.rows.maxRows = 0
+    local fits = window:BuildLayout().maxRows
+
+    cfg.rows.maxRows = fits + 5
+    assertEqual(window:BuildLayout().maxRows, fits,
+        "the frame height still decides when the cap is looser than it is")
+end)
+
+test("BuildLayout survives a config with the sub-tables missing, on the shipped numbers", function()
+    -- Every read in here is `x or <default>`, and those defaults are the shipped
+    -- window: 694x220, 6px padding, 16px rows, 1px spacing, an 18px title bar.
+    -- A profile that lost a sub-table to a failed migration lays out rather than
+    -- erroring on a nil index, and it lays out looking like a new window.
+    -- red under: a peel that reads `cfg.frame.width` through a helper that was
+    -- handed the table rather than the default.
+    local inst, window, cfg = scene()
+    local Const = inst.NS.Constants
+    cfg.frame  = {}
+    cfg.rows   = {}
+    cfg.header = {}
+    cfg.text   = {}
+    cfg.columns = { { stat = "DamageDone", enabled = true } }
+
+    local layout = window:BuildLayout()
+    assertEqual(layout.padding, 6)
+    assertEqual(layout.rowHeight, 16)
+    assertEqual(layout.rowSpacing, 1)
+    assertEqual(layout.titleHeight, 18, "an absent `show` is not `show == false`")
+    assertEqual(layout.bodyWidth, 694 - 12, "the shipped frame width")
+    assertEqual(layout.nameColumn.width, Const.NAME_COLUMN_WIDTH,
+        "no cap means the shipped name column")
+    assertTrue(layout.maxRows > 1, "and the shipped height fits more than one row")
+end)
+
+-- ---------------------------------------------------------------------------
+-- The column-header place() closure, pinned for the split (issue #43)
+-- ---------------------------------------------------------------------------
+--
+-- 133 lines and CCN 18, and the split it is headed for is create-once/dress —
+-- the same seam LibKa0s' TabStrip was cut along. The cases above cover the label,
+-- the colours and which header wears the arrow; these cover the create/dress
+-- boundary itself, the placement, the mutually-exclusive backgrounds and the two
+-- lower rungs of the arrow ladder.
+
+test("Header buttons are created ONCE per index and re-pointed, never rebuilt", function()
+    -- The invariant the split has to preserve: a settings change costs no frames.
+    -- WoW never truly frees one, so a header strip that rebuilt itself on every
+    -- ApplyConfig would leak a button per column per settings change, all session.
+    -- red under: a `newHeaderButton` called unconditionally rather than on the miss.
+    local inst, window, cfg = scene{ configure = function(c)
+        c.columns = {
+            { stat = "DamageDone",  enabled = true },
+            { stat = "HealingDone", enabled = true },
+        }
+    end }
+
+    local first = {}
+    for i, button in ipairs(window.columnHeaders) do first[i] = button end
+    assertTrue(#first >= 3, "the fixture needs the name column and two stat columns")
+
+    local framesBefore = #inst.mocks.__frames
+    cfg.columnHeader.size = 21
+    cfg.columnHeader.colorMode = "stat"
+    window:ApplyColumnHeaders()
+    window:ApplyColumnHeaders()
+
+    assertEqual(#inst.mocks.__frames, framesBefore,
+        "dressing a header must not build one")
+    for i, button in ipairs(first) do
+        assertTrue(window.columnHeaders[i] == button, "header " .. i .. " was rebuilt")
+    end
+end)
+
+test("A column that goes away HIDES its header; it does not destroy it", function()
+    -- The tail loop, `#layout.columns + 2` onward. These are pooled for the life
+    -- of the window like every other widget here, so turning a column off and on
+    -- again has to hand back the SAME button rather than a new one.
+    -- red under: a tail loop that starts at + 1 (which would hide the last live
+    -- header) or one that drops the surplus on the floor.
+    local _, window, cfg = scene{ configure = function(c)
+        c.columns = {
+            { stat = "DamageDone",  enabled = true },
+            { stat = "HealingDone", enabled = true },
+            { stat = "Interrupts",  enabled = true },
+        }
+    end }
+    local third = window.columnHeaders[4]
+    assertTrue(third ~= nil and third:IsShown(), "the fixture must draw three stat columns")
+
+    cfg.columns[3].enabled = false
+    window:ApplyConfig()
+    assertTrue(window.columnHeaders[4] == third, "the surplus header was thrown away")
+    assertFalse(third:IsShown(), "and a column that is off must not still label the grid")
+    assertTrue(window.columnHeaders[3]:IsShown(), "the last LIVE header is still drawn")
+
+    cfg.columns[3].enabled = true
+    window:ApplyConfig()
+    assertTrue(window.columnHeaders[4] == third, "and it comes back rather than being rebuilt")
+    assertTrue(third:IsShown())
+end)
+
+test("Every header sits exactly over the column it labels, from the same layout", function()
+    -- Both are read off the ONE layout table, which is what makes a header
+    -- incapable of drifting from the cells under it. A dress helper handed its own
+    -- copy of the arithmetic is exactly how that drift starts.
+    local _, window, cfg = scene{ configure = function(c)
+        c.columns = {
+            { stat = "DamageDone", enabled = true },
+            { stat = "Interrupts", enabled = true },
+        }
+    end }
+    cfg.frame.width = 620
+    window:ApplyConfig()
+    local layout = window.layout
+
+    local function placedAt(button)
+        assertEqual(button:GetNumPoints(), 1, "a re-pointed header carries exactly one point")
+        local point, relativeTo, relativePoint, x, y = button:GetPoint(1)
+        assertEqual(point, "TOPLEFT")
+        assertEqual(relativePoint, "TOPLEFT")
+        assertTrue(relativeTo == window.headerFrame, "headers hang off the strip, not the window")
+        assertEqual(y, 0)
+        return x
+    end
+
+    assertEqual(placedAt(window.columnHeaders[1]), layout.nameColumn.x)
+    assertEqual(window.columnHeaders[1]:GetWidth(), layout.nameColumn.width)
+    for i, col in ipairs(layout.columns) do
+        local button = window.columnHeaders[i + 1]
+        assertEqual(placedAt(button), col.x, "header " .. i .. " is off its column")
+        assertEqual(button:GetWidth(), col.width)
+        assertEqual(button:GetHeight(), layout.headerHeight)
+        assertEqual(button.text:GetWidth(), col.width,
+            "the label fills its column, which is what makes LEFT alignment read")
+    end
+end)
+
+test("The Player header is a Button like every other, not a label with a gap beside it", function()
+    -- It is the one header that labels no statistic, and it was once the one that
+    -- could be sorted by without saying so. Being the same widget type as the rest
+    -- is what keeps it clickable and what a split must not quietly change.
+    local _, window = scene()
+    local name = window.columnHeaders[1]
+
+    assertEqual(name:GetObjectType(), "Button")
+    assertEqual(name.mmKey, "name")
+    assertTrue(name:GetScript("OnClick") ~= nil)
+    assertTrue(name.mmWindow ~= nil, "the handler reaches its window off the button")
+    assertEqual(name:GetObjectType(), window.columnHeaders[2]:GetObjectType())
+end)
+
+test("The strip background and the per-column ones are mutually exclusive, both ways", function()
+    -- BOTH ARE WRITTEN EVERY PASS. A player switching modes would otherwise keep
+    -- whichever they left behind, drawn underneath the one they chose — and the
+    -- per-column texture is the only one that can carry a stat colour, while the
+    -- strip texture is the only one that can carry a class colour.
+    -- red under: a dress helper that only ever SHOWS a background.
+    local inst, window, cfg = scene{ configure = function(c)
+        c.columns = { { stat = "DamageDone", enabled = true } }
+        c.columnHeader.bgColorMode = "stat"
+        c.columnHeader.bgColor = { r = 0, g = 0, b = 1, a = 1 }
+    end }
+    window:ApplyColumnHeaders()
+
+    local nameButton, damage = window.columnHeaders[1], window.columnHeaders[2]
+    assertFalse(window.headerBg:IsShown(), "per-column mode stands the strip texture down")
+    assertTrue(damage.bg:IsShown(), "and paints one rectangle per column instead")
+    assertFalse(nameButton.bg:IsShown(),
+        "the Player column is not a statistic and has no stat colour to take")
+
+    local want = inst.NS.Constants.STAT_COLORS["DamageDone"]
+    local got = damage.bg.__colorTexture
+    assertTrue(got ~= nil, "the per-column texture was never given a colour")
+    assertEqual(got[1], want[1])
+    assertEqual(got[2], want[2])
+    assertEqual(got[3], want[3])
+
+    -- And back. This is the half that was left behind.
+    cfg.columnHeader.bgColorMode = "custom"
+    window:ApplyColumnHeaders()
+    assertTrue(window.headerBg:IsShown(), "the strip texture must come back")
+    assertFalse(damage.bg:IsShown(), "and the per-column one must go")
+end)
+
+test("The sort arrow follows the LABEL, rather than sitting at a fixed offset", function()
+    -- Placed at the label's own measured width plus three, so a long header and a
+    -- short one both get an arrow tucked against the text. The measurement is of a
+    -- FontString this window owns that has never held a value — rule R3 is about
+    -- cells that have.
+    -- red under: a dress helper that anchors the arrow to the button's RIGHT edge,
+    -- which puts it over the next column's numbers on a narrow grid.
+    local _, window, cfg = scene{ sortMode = "value" }
+    cfg.data.sortColumn = "DamageDone"
+    window:ApplyColumnHeaders()
+
+    local damage = window.columnHeaders[2]
+    assertTrue(damage.arrowTex:IsShown(), "the fixture must reach the texture rung")
+    local point, relativeTo, relativePoint, x = damage.arrowTex:GetPoint(1)
+    assertEqual(point, "LEFT")
+    assertEqual(relativePoint, "LEFT")
+    assertTrue(relativeTo == damage.text, "the arrow hangs off the label, not the button")
+    assertEqual(x, damage.text:GetStringWidth() + 3)
+end)
+
+test("The atlas rung flips ONE texture with SetTexCoord, and only for ascending", function()
+    -- `auctionhouse-ui-sortarrow` points down as shipped, so the ascending form is
+    -- the same asset flipped vertically — one SetTexCoord rather than a second
+    -- asset to go missing, which is how the first two attempts at this art failed.
+    -- red under: a dress helper that sets the coord once and leaves it, so the
+    -- arrow keeps whichever direction it was last drawn in.
+    local inst, window, cfg = scene{ sortMode = "value" }
+    cfg.data.sortColumn = "DamageDone"
+    local realIcon = inst.NS.Icon
+    inst.NS.Icon = function() return nil end   -- stand the shipped art down
+
+    cfg.data.sortAscending = false
+    window:ApplyColumnHeaders()
+    local damage = window.columnHeaders[2]
+    assertEqual(damage.arrowTex:GetAtlas(), "auctionhouse-ui-sortarrow")
+    local a, b, c, d = damage.arrowTex:GetTexCoord()
+    assertEqual(a, 0); assertEqual(b, 1); assertEqual(c, 0); assertEqual(d, 1)
+
+    cfg.data.sortAscending = true
+    window:ApplyColumnHeaders()
+    a, b, c, d = damage.arrowTex:GetTexCoord()
+    assertEqual(a, 0); assertEqual(b, 1)
+    assertEqual(c, 1, "ascending is the shipped arrow turned upside down")
+    assertEqual(d, 0)
+
+    inst.NS.Icon = realIcon
+end)
+
+test("With no art and no atlas the arrow is an ASCII character, and a legible one", function()
+    -- The bottom rung, and it is NOT a placeholder: `v` and `^` are what this
+    -- draws on a client where nothing else resolves. The two failures before it
+    -- were a texture path that did not exist (silent) and a Unicode glyph the game
+    -- font lacks (a box) — both named at authoring time and never asked about.
+    -- red under: a dress helper that leaves the FontString empty, or one that
+    -- shows the texture and the glyph at once.
+    local inst, window, cfg = scene{ sortMode = "value" }
+    cfg.data.sortColumn = "DamageDone"
+    inst.NS.Icon = function() return nil end
+    inst.mocks.setAtlases({})
+
+    cfg.data.sortAscending = false
+    window:ApplyColumnHeaders()
+    local damage = window.columnHeaders[2]
+    assertTrue(damage.arrow:IsShown(), "the ASCII rung has to draw when the two above cannot")
+    assertFalse(damage.arrowTex:IsShown(), "and never both at once")
+    assertEqual(damage.arrow:GetText(), "v")
+
+    cfg.data.sortAscending = true
+    window:ApplyColumnHeaders()
+    assertEqual(damage.arrow:GetText(), "^")
+
+    -- The glyph is text on this rung, so it takes the strip's font and shadow
+    -- rather than being left fontless — which is the error that once took the
+    -- whole addon down at BuildFrame.
+    local font, size = damage.arrow:GetFont()
+    assertTrue(font ~= nil and size ~= nil, "the fallback glyph was never given a font")
+end)

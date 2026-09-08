@@ -687,6 +687,216 @@ test("A window that sets neither keeps the border it always had", function()
     end
 end)
 
+test("The border setting off builds no texture at all", function()
+    -- THE REFUSAL PATH, and it is a memory question rather than a cosmetic one:
+    -- `not (wanted or edges)` is what stops a grid of forty rows times six
+    -- columns from creating two hundred and forty textures nobody asked for.
+    -- The shipped default is off, so this is the path almost every window takes.
+    -- red under: hoisting the lazy create above the guard "so the table always
+    -- exists".
+    local _, _, row = bench()
+    local cell = row.cells.DamageDone
+
+    assertNil(cell.border, "an untouched window paid for four textures per cell")
+    assertNil(cell.frame.__backdrop, "and for a backdrop it never asked for")
+end)
+
+test("Turning the border off hides all four sides and keeps the textures", function()
+    -- The OTHER arm of the same guard: once the textures exist the function must
+    -- reach them to put them down, and it must put down ALL FOUR -- a hide loop
+    -- that stopped at the first side leaves an L on screen after the player
+    -- switched the setting off. Kept rather than destroyed, because the pool's
+    -- whole premise is that widget creation happens once.
+    -- red under: hiding only `top`, or nil-ing `self.border` on the way out.
+    local _, window, row, cfg = bench(function(c) c.bars.border = true end)
+    local cell = row.cells.DamageDone
+    local edges = cell.border
+    local top = edges.top
+
+    cfg.bars.border = false
+    row:ApplyLayout(window.layout)
+
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do
+        assertEqual(cell.border[side]:IsShown(), false, side .. " survived the setting")
+    end
+    assertTrue(cell.border == edges, "the table was rebuilt rather than re-used")
+    assertTrue(cell.border.top == top, "and so was the texture the pool promised to keep")
+end)
+
+test("Each of the four sides is anchored to its own two corners", function()
+    -- THE PER-SIDE CHAIN, pinned corner by corner. Each side spans one edge of
+    -- the cell with TWO anchors and takes its thickness on the ONE axis that is
+    -- not spanned -- top and bottom get a height, left and right a width. Swap a
+    -- pair (BOTTOMLEFT for TOPLEFT on `left`, say) and the outline still draws,
+    -- still colours, still measures the same in every existing case, and is
+    -- simply in the wrong place; swap the axis and a side vanishes at width 0.
+    -- Nothing else in this suite looks at where a border texture is.
+    -- red under: any transcription slip in a data table of anchor pairs.
+    local _, _, row = bench(function(c)
+        c.bars.border          = true
+        c.bars.borderThickness = 3
+    end)
+    local cell = row.cells.DamageDone
+    local bar = cell.frame
+    local edges = cell.border
+
+    local expected = {
+        top    = { "TOPLEFT",    "TOPRIGHT"    },
+        bottom = { "BOTTOMLEFT", "BOTTOMRIGHT" },
+        left   = { "TOPLEFT",    "BOTTOMLEFT"  },
+        right  = { "TOPRIGHT",   "BOTTOMRIGHT" },
+    }
+    for side, corners in pairs(expected) do
+        local tex = edges[side]
+        assertEqual(tex:GetNumPoints(), 2, side .. " does not span its edge")
+        for i = 1, 2 do
+            local point, relativeTo, relativePoint, x, y = tex:GetPoint(i)
+            assertEqual(point, corners[i], side .. " anchor " .. i)
+            assertTrue(relativeTo == bar, side .. " is not anchored to its own cell")
+            assertEqual(relativePoint, corners[i], side .. " relative point " .. i)
+            assertEqual(x, 0, side .. " is inset horizontally")
+            assertEqual(y, 0, side .. " is inset vertically")
+        end
+        assertEqual(tex:IsShown(), true, side .. " was drawn but never shown")
+    end
+
+    -- The thickness goes on the axis the side does NOT span. A texture left at
+    -- the default 0 on the other axis is how a border loses a side.
+    assertEqual(edges.top:GetHeight(), 3)
+    assertEqual(edges.bottom:GetHeight(), 3)
+    assertEqual(edges.left:GetWidth(), 3)
+    assertEqual(edges.right:GetWidth(), 3)
+    assertEqual(edges.top:GetWidth(), 0, "top took a width as well as a height")
+    assertEqual(edges.left:GetHeight(), 0, "left took a height as well as a width")
+
+    -- Exactly four, named exactly these. A rectangle has four edges and the
+    -- create loop, the hide loop and the tint loop all walk the one list.
+    local count = 0
+    for _ in pairs(edges) do count = count + 1 end
+    assertEqual(count, 4, "the side list grew or shrank")
+end)
+
+test("A second layout pass re-places the border rather than stacking anchors", function()
+    -- ClearAllPoints before the two SetPoints. A layout pass runs on every
+    -- settings change and on every frame of a drag-resize; anchors that
+    -- accumulate are anchors the client resolves against each other, and the
+    -- first pair wins forever after.
+    -- red under: dropping the ClearAllPoints when the chain becomes a loop.
+    local _, window, row = bench(function(c) c.bars.border = true end)
+    local edges = row.cells.DamageDone.border
+
+    row:ApplyLayout(window.layout)
+    row:ApplyLayout(window.layout)
+
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do
+        assertEqual(edges[side]:GetNumPoints(), 2, side .. " accumulated anchors")
+    end
+end)
+
+test("A thickness under one pixel is clamped to one, on both paths", function()
+    -- FOUR INVISIBLE TEXTURES PRETENDING TO BE A BORDER. The slider has a floor
+    -- but a profile written by an older build -- or by hand -- does not, and
+    -- SetHeight(0) is a side that is simply not there while the setting reads
+    -- "on". The art path clamps for the same reason: edgeSize 0 draws nothing.
+    -- red under: trusting the config value on either path.
+    local inst, window, row = bench(function(c)
+        c.bars.border          = true
+        c.bars.borderThickness = 0
+    end)
+    local cell = row.cells.DamageDone
+    assertEqual(cell.border.top:GetHeight(), 1, "a zero thickness drew nothing at all")
+    assertEqual(cell.border.left:GetWidth(), 1)
+
+    -- Not a number at all -- the same clamp, because `size < 1` on a string
+    -- raises in Lua 5.1 and a border must never be the thing that breaks a row.
+    window.config.bars.borderThickness = "3"
+    row:ApplyLayout(window.layout)
+    assertEqual(cell.border.top:GetHeight(), 1, "a string thickness was trusted")
+
+    inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
+    window.config.bars.borderStyle     = "Ka0s Edge"
+    window.config.bars.borderThickness = 0
+    row:ApplyLayout(window.layout)
+    assertEqual(cell.frame.__backdrop.edgeSize, 1, "the art path skipped the clamp")
+end)
+
+test("The art path takes the edge FILE and the swatch's colour", function()
+    -- The nine-slice reaches the backdrop as `edgeFile`, and the colour beside it
+    -- reaches SetBackdropBorderColor -- the art path's answer to the flat path's
+    -- SetColorTexture. Both are cellBorderColor's, so the two paths cannot end up
+    -- reading different swatches for the same setting.
+    -- red under: an art path that draws the library's edge tint over the
+    -- player's, which is what "no colour call at all" looks like on screen.
+    local inst, window, row = bench(function(c)
+        c.bars.border      = true
+        c.bars.borderColor = { r = 1, g = 0, b = 0, a = 0.5 }
+    end)
+    inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
+    window.config.bars.borderStyle = "Ka0s Edge"
+    row:ApplyLayout(window.layout)
+
+    local frame = row.cells.DamageDone.frame
+    assertEqual(frame.__backdrop.edgeFile, "Interface\\Test\\Edge",
+        "the style the player picked did not reach the backdrop")
+    local c = frame.__backdropBorderColor
+    assertEqual(c[1], 1, "the art border ignored the swatch")
+    assertEqual(c[2], 0)
+    assertEqual(c[4], 0.5, "the swatch's alpha did not survive the art path")
+end)
+
+test("The art path answers the colour mode too, and it is the ROW'S class", function()
+    -- The same reading the flat outline takes, and it has to be the same reading:
+    -- a player who switches from the flat border to an LSM edge is changing how
+    -- the outline is DRAWN, not who it is about.
+    -- red under: an art path that only ever reads the custom swatch.
+    local inst, window, row = bench(function(c)
+        c.bars.border          = true
+        c.bars.borderColor     = { r = 1, g = 0, b = 0, a = 0.4 }
+        c.bars.borderColorMode = "class"
+    end)
+    inst.mocks.RAID_CLASS_COLORS.PRIEST = { r = 0.11, g = 0.22, b = 0.33 }
+    inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
+    window.config.bars.borderStyle = "Ka0s Edge"
+
+    -- The entry first: ApplyBorder runs on a LAYOUT, and the class it paints is
+    -- the one the cell is currently drawing.
+    row:Update(entry({ DamageDone = { total = 100, maxAmount = 100 } },
+        { classFilename = "PRIEST" }), 1)
+    row:ApplyLayout(window.layout)
+
+    local c = row.cells.DamageDone.frame.__backdropBorderColor
+    assertEqual(c[1], 0.11, "the art outline did not take the row's class")
+    assertEqual(c[2], 0.22)
+    assertEqual(c[3], 0.33)
+    assertEqual(c[4], 0.4)
+end)
+
+test("Switching from the flat outline to art takes ALL FOUR sides down", function()
+    -- The mutual exclusion, in the direction that actually leaks. The suite's
+    -- other case reaches art from a cell that never built the flat textures and
+    -- can only check them if they happen to exist; this one builds them first, on
+    -- purpose, which is what a player who had "None" selected has. Four solid
+    -- rectangles left under a nine-slice are a double border at every corner.
+    -- red under: hiding only `top`, or returning before the hide loop.
+    local inst, window, row = bench(function(c)
+        c.bars.border      = true
+        c.bars.borderStyle = "None"
+    end)
+    local cell = row.cells.DamageDone
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do
+        assertEqual(cell.border[side]:IsShown(), true, side .. " was not drawn to begin with")
+    end
+
+    inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
+    window.config.bars.borderStyle = "Ka0s Edge"
+    row:ApplyLayout(window.layout)
+
+    assertTrue(cell.frame.__backdrop ~= nil, "the art never arrived")
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do
+        assertEqual(cell.border[side]:IsShown(), false, side .. " was left under the art")
+    end
+end)
+
 test("Per-statistic cell text is the colour of the column the cell is in", function()
     -- PER STATISTIC IS PER COLUMN in a cell: the number takes the colour of the
     -- column it sits in, which is the same palette the bar behind it uses in
@@ -1170,6 +1380,150 @@ test("The name starts clear of the icon, with a gap you can see", function()
     local _, _, _, xOfs = left:GetPoint(1)
     assertEqual(xOfs, 2 + (cfg.icons.size or 14) + gap,
         "the name does not start clear of the icon plus its gap")
+end)
+
+test("Icons on the RIGHT anchor to the right edge and give the name the left one", function()
+    -- THE OTHER ARM, and it is two decisions rather than one: the icon changes
+    -- corner AND the name stops being inset, because the space the icon consumes
+    -- is now on the far side of the string. Get one without the other and the
+    -- name either overlaps the icon or starts a stride further in than it needs
+    -- to. Nothing else in this suite sets `icons.position`.
+    -- red under: folding the two branches into one signed offset and losing the
+    -- name's own anchor with them.
+    local inst, window, row, cfg = bench(function(c)
+        c.icons.showIcon = true
+        c.icons.position = "RIGHT"
+    end)
+    local cell = row.nameCell
+    local size = cfg.icons.size or 14
+    local gap  = inst.NS.ICON_TEXT_GAP
+
+    local point, relativeTo, relativePoint, x = cell.icons.unit:GetPoint(1)
+    assertEqual(point, "TOPRIGHT", "the icon stayed on the left")
+    assertTrue(relativeTo == cell.frame)
+    assertEqual(relativePoint, "TOPRIGHT")
+    assertEqual(x, -2, "the first slot sits two pixels in from the edge it is anchored to")
+
+    local lPoint, _, _, lx = cell.left:GetPoint(1)
+    assertEqual(lPoint, "LEFT")
+    assertEqual(lx, 2, "the name is still inset for an icon that is no longer beside it")
+
+    -- The RESERVED WIDTH does not change with the side: the column gives up the
+    -- same space either way, so a player toggling the position does not watch
+    -- every name in the grid grow and shrink.
+    assertEqual(cell.left:GetWidth(), window.layout.nameColumn.width - (2 + size + gap) - 2,
+        "the right-hand layout reserved a different amount of room")
+end)
+
+test("The icon takes its configured size and is centred in the row", function()
+    -- The vertical centring is `(rowHeight - size) * -0.5`, which is the only
+    -- arithmetic in this function -- and an icon larger than the shipped 14 is
+    -- exactly when getting it wrong shows, because half of it hangs into the row
+    -- above. The stride the name is pushed by is the SAME size plus the gap.
+    -- red under: a constant y, or a centring that forgets the sign.
+    local inst, window, row = bench(function(c)
+        c.icons.showIcon = true
+        c.icons.size     = 20
+    end)
+    local cell = row.nameCell
+    local gap  = inst.NS.ICON_TEXT_GAP
+    local tex  = cell.icons.unit
+
+    assertEqual(tex:GetWidth(), 20, "the size setting did not reach the texture")
+    assertEqual(tex:GetHeight(), 20)
+
+    local _, _, _, x, y = tex:GetPoint(1)
+    assertEqual(x, 2)
+    assertEqual(y, (window.layout.rowHeight - 20) * -0.5, "the icon is not centred on the row")
+
+    local _, _, _, lx = cell.left:GetPoint(1)
+    assertEqual(lx, 2 + 20 + gap, "the name did not move with the bigger icon")
+    assertEqual(cell.left:GetHeight(), window.layout.rowHeight,
+        "the name string does not fill the row it sits in")
+end)
+
+test("ApplyIcons returns the inset it consumed, and never zero", function()
+    -- The RETURN VALUE is the contract with the name string, and the no-icon
+    -- answer is TWO, not nothing: a name hard against the left edge of the
+    -- column reads as touching the window frame. The caller in RowProto:ApplyLayout
+    -- discards it today, which is exactly why a refactor could drop it unnoticed.
+    -- red under: returning 0 when the slot list is empty.
+    local inst, window, row, cfg = bench(function(c) c.icons.showIcon = true end)
+    local size = cfg.icons.size or 14
+    local gap  = inst.NS.ICON_TEXT_GAP
+
+    assertEqual(row.nameCell:ApplyIcons(window.layout), 2 + size + gap)
+
+    cfg.icons.showIcon = false
+    assertEqual(row.nameCell:ApplyIcons(window.layout), 2,
+        "a column with no icons still keeps the name off the edge")
+end)
+
+test("The slot list and the drawn flag are what SetPlayer reads", function()
+    -- `iconOrder` and `iconsShown` are this function's OUTPUT, read by the row
+    -- draw a moment later: SetPlayer draws into whatever texture it finds and
+    -- would otherwise show an icon this pass has just hidden. They are the two
+    -- fields most likely to be renamed or dropped by a split, and neither is
+    -- asserted anywhere else.
+    -- red under: setting `iconsShown` from `icons.showIcon` rather than from the
+    -- slot list that was actually laid out.
+    local _, window, row, cfg = bench(function(c) c.icons.showIcon = true end)
+    local cell = row.nameCell
+
+    assertEqual(cell.iconsShown, true)
+    assertEqual(#cell.iconOrder, 1, "one slot, not three")
+    assertEqual(cell.iconOrder[1], "unit")
+
+    cfg.icons.showIcon = false
+    row.nameCell:ApplyIcons(window.layout)
+    assertEqual(cell.iconsShown, false)
+    assertEqual(#cell.iconOrder, 0, "the slot list outlived the setting")
+end)
+
+test("A narrow name column still leaves the string a width of at least one", function()
+    -- SetWidth(0) is a FontString that renders nothing, and a negative width is
+    -- worse -- the column can genuinely be narrower than the icon plus its
+    -- insets while a player drags the window's edge in. The floor is what keeps
+    -- a name visible through the drag.
+    -- red under: trusting `column.width - consumed - 2`.
+    local _, window, row = bench()
+
+    row.nameCell:ApplyIcons({ rowHeight = window.layout.rowHeight, nameColumn = { width = 4 } })
+    assertEqual(row.nameCell.left:GetWidth(), 1, "the name string was given no width at all")
+
+    -- And a layout with no name column at all is a shape this must survive
+    -- rather than raise on: `layout.nameColumn or {}` is the guard.
+    row.nameCell:ApplyIcons({ rowHeight = window.layout.rowHeight })
+    assertEqual(row.nameCell.left:GetWidth(), 1)
+end)
+
+test("A window config with no icons group at all draws a name and does not raise", function()
+    -- The `or {}` guards. A profile written before the icon group existed reaches
+    -- here with `config.icons` nil, and a name column that raises takes the whole
+    -- row draw with it -- every number in the grid, for a missing decoration.
+    -- red under: reading `config.icons.showIcon` directly.
+    local _, window, row, cfg = bench()
+    cfg.icons = nil
+
+    local consumed = row.nameCell:ApplyIcons(window.layout)
+    assertEqual(consumed, 2, "an absent icon group asked for icon-sized space")
+    assertTrue(row.nameCell.left:GetWidth() > 0)
+end)
+
+test("Re-laying the icons out does not stack anchors on the texture or the name", function()
+    -- ClearAllPoints on both, and for the reason the border has it: a layout pass
+    -- runs on every frame of a drag-resize, and anchors that accumulate resolve
+    -- against each other so the first pass wins forever.
+    -- red under: dropping either ClearAllPoints while moving the placement into a
+    -- helper.
+    local _, window, row = bench(function(c) c.icons.showIcon = true end)
+    local cell = row.nameCell
+
+    row.nameCell:ApplyIcons(window.layout)
+    row.nameCell:ApplyIcons(window.layout)
+
+    assertEqual(cell.icons.unit:GetNumPoints(), 1, "the icon accumulated anchors")
+    assertEqual(cell.left:GetNumPoints(), 1, "the name string accumulated anchors")
 end)
 
 -- ---------------------------------------------------------------------------

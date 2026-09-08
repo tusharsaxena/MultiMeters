@@ -813,6 +813,145 @@ test("Export.ChatLines refuses to the empty array while restricted", function()
     assertEqual(#lines, 0, "not even the header line: an empty dump is the refusal")
 end)
 
+test("Export.ChatLines refuses anything that is not a result table", function()
+    -- Export.Build answers nil on a load with no aggregator, and onPrintToChat's
+    -- "nothing to export" branch is the only thing between that nil and here. The
+    -- guard is the second one, and it must stay: `result.durationSeconds` on a nil
+    -- is a raise inside a click handler.
+    local ChatLines = T.NS.Export.ChatLines
+    assertEqual(#ChatLines(nil, "DamageDone", 5, "Ulgrax"), 0)
+    assertEqual(#ChatLines("DamageDone", "DamageDone", 5, "Ulgrax"), 0)
+    assertEqual(#ChatLines(7, "DamageDone", 5, "Ulgrax"), 0)
+    assertEqual(type(ChatLines(nil)), "table", "an empty array, never nil")
+end)
+
+test("Export.ChatLines joins an empty segment name rather than asking whether it is empty", function()
+    -- THE HOUSE RULE THIS PINS. `..` is on docs/data-flow.md's permitted list and
+    -- `== ""` is a comparison, which is not — so the session is admitted on
+    -- `type() == "string"` alone and an empty one lands in the header as an empty
+    -- one. Window never answers "", so nobody sees this; the case exists so a
+    -- refactor that "tidies" the test into `session ~= ""` goes red.
+    -- red under: any comparison against the session string.
+    local lines = T.NS.Export.ChatLines(chatFixture(), "DamageDone", 1, "")
+    assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage" .. EM_DASH .. " (2:14)")
+end)
+
+test("Export.ChatLines omits a segment name that is not a string", function()
+    -- The other arm of the same `type()` test, and the one that keeps a stray
+    -- number or table out of a `..` that would then read a handle.
+    local lines = T.NS.Export.ChatLines(chatFixture(), "DamageDone", 1, 42)
+    assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage (2:14)")
+end)
+
+test("Export.ChatLines takes the duration from the result and never from the formatter", function()
+    -- DECIDED FROM THE PLAIN INPUT. `result.durationSeconds` is a number the
+    -- aggregator put there; F.Duration's answer is a string a formatter built,
+    -- and asking whether THAT is empty is a comparison on a value the meter may
+    -- be hiding. modules/Window.lua's DurationText makes the same distinction.
+    -- red under: `if F.Duration(seconds) ~= "" then`.
+    local result = built({ row("Kaosz", { DamageDone = cell(100) }) }, nil)
+    local lines = T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
+    assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage" .. EM_DASH .. "Ulgrax",
+        "no duration at all when the result carries none")
+end)
+
+test("Export.ChatLines asks the formatter for the amount, the rate and the share by name", function()
+    -- A STAND-IN FORMATTER, so the assertion is about which member is asked for
+    -- and in what order rather than about how NS.Format happens to round today.
+    -- The parenthetical is rate then share, joined with ", " — the order a reader
+    -- of a chat dump learns once and then relies on.
+    local inst = T.load()
+    inst.NS.Format = {
+        Number  = function(v) return "N:" .. tostring(v) end,
+        Rate    = function(v) return "R:" .. tostring(v) end,
+        Percent = function(v) return "P:" .. tostring(v) end,
+    }
+    inst.NS.NumberFormat = inst.NS.Format
+
+    local result = built({
+        row("Kaosz", { DamageDone = cell(100, { rate = 5, percent = 3 }) }),
+    }, 134)
+    local lines = inst.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
+
+    -- A formatter with no Duration takes the duration out of the header, which is
+    -- the second arm of the `seconds ~= nil and F.Duration` guard: the member is
+    -- optional, and a degraded one must cost a line its parenthetical rather than
+    -- raising inside a click.
+    assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage" .. EM_DASH .. "Ulgrax")
+    assertEqual(lines[2], "1. Kaosz N:100 (R:5, P:3)")
+
+    -- Each formatter member is independently optional, and losing one must lose
+    -- only its own half of the parenthetical.
+    inst.NS.Format.Rate = nil
+    assertEqual(inst.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2],
+        "1. Kaosz N:100 (P:3)")
+    inst.NS.Format.Percent = nil
+    assertEqual(inst.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2],
+        "1. Kaosz N:100")
+end)
+
+test("Export.ChatLines carries the rate alone when the aggregator computed no share", function()
+    -- The first arm of the `extra` bookkeeping without the second. `hasExtra` is a
+    -- BOOLEAN rather than `extra ~= ""` — reading a formatter's string back to ask
+    -- whether it is empty is a comparison on a value that may be secret — so this
+    -- is what proves the boolean tracks the first arm on its own.
+    -- red under: `if extra ~= "" then line = line .. ...`.
+    local result = built({
+        row("Kaosz", { DamageDone = cell(100000, { rate = 5000 }) }),
+    }, 60)
+    local lines = T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
+    assertEqual(lines[2], "1. Kaosz 100.0K (5.0K)", "no comma, and nothing after it")
+end)
+
+test("Export.ChatLines drops a share the aggregator did not answer as a number", function()
+    -- `percent` is the aggregator's ONE derived number and reaches a cell as a
+    -- plain Lua number or as nil. Anything else is a shape this module did not
+    -- produce and will not print — the `type(cell.percent) == "number"` test is
+    -- what keeps a string or a handle out of the `..` behind it.
+    local result = built({
+        row("Kaosz", { DamageDone = cell(100000, { rate = 5000, percent = "31.2" }) }),
+    }, 60)
+    local lines = T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
+    assertEqual(lines[2], "1. Kaosz 100.0K (5.0K)")
+end)
+
+test("Export.ChatLines prints a zero share rather than reading it as absent", function()
+    -- nil is "cannot be known right now"; zero is an answer, and a player who
+    -- contributed nothing to a fight is entitled to read that they did.
+    -- red under: `if cell.percent and ...`, which is the same bug for `false` too.
+    local result = built({ row("Kaosz", { DamageDone = cell(100, { percent = 0 }) }) }, 60)
+    assertEqual(T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2],
+        "1. Kaosz 100 (0.0%)")
+end)
+
+test("Export.ChatLines names a row that has no cell for the metric anyway", function()
+    -- A ranked list of nine stats built from a window showing one can hand a row
+    -- that never scored on this metric. It is still a row, and the formatter's
+    -- answer for nil is what fills the amount — dropping the row instead would
+    -- renumber every rank under it.
+    local result = built({ row("Kaosz", { Deaths = cell(2) }) }, 60)
+    assertEqual(T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2], "1. Kaosz ")
+end)
+
+test("Export.ChatLines reads the rows off result.rows when it is not the result itself", function()
+    -- Aggregator.Build points `rows` back at the result, and every fixture above
+    -- reproduces that identity. This is the other shape the `result.rows or result`
+    -- fallback covers: a caller that assembled a result by hand.
+    local result = { rows = { row("Solo", { DamageDone = cell(1000) }) }, durationSeconds = 60 }
+    local lines = T.NS.Export.ChatLines(result, "DamageDone", 5, "Ulgrax")
+    assertEqual(#lines, 2)
+    assertEqual(lines[2], "1. Solo 1.0K")
+end)
+
+test("Export.ChatLines answers a header and nothing under it for a result with no rows", function()
+    -- Not the empty array: an empty array is the REFUSAL, and onPrintToChat tells
+    -- the two apart by asking Export.Build first. A header alone is "the segment
+    -- exists and nobody is in it".
+    local lines = T.NS.Export.ChatLines(built({}, 60), "DamageDone", 5, "Ulgrax")
+    assertEqual(#lines, 1)
+    assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage" .. EM_DASH .. "Ulgrax (1:00)")
+end)
+
 -- ---------------------------------------------------------------------------
 -- Channels
 -- ---------------------------------------------------------------------------
@@ -1506,4 +1645,243 @@ test("Export: the copy window is built once and reused", function()
     T.NS.Export.__showCopy("second")
     assertTrue(T.NS.Export.__copyWindow:GetFrame() == f,
         "a rebuild per open leaks a frame per open — frames are never destroyed in WoW")
+end)
+
+-- ---------------------------------------------------------------------------
+-- The Print to Chat click
+-- ---------------------------------------------------------------------------
+--
+-- The button's handler is a file-local, so these cases reach it the way a player
+-- does: `modal.chatButton:__fire("OnClick")`. Nothing above this divider touched
+-- it, and it is where the module's five refusals, the flood warning and the
+-- confirmation line actually live — every one of them a string a player reads,
+-- and therefore contract.
+--
+-- WHY EXPORT.BUILD IS STUBBED. tests/test_aggregator.lua owns what comes through
+-- that door and the end-to-end case above proves this module goes through it. A
+-- click driven off a hand-built result is a case about the CLICK: which refusal
+-- fires, in which order, and what leaves the client. The stub also records the
+-- sort column, which is the one argument the click chooses rather than passes on.
+
+--- A modal open on a stubbed build, with everything it says and sends captured.
+---
+--- @param result table|nil  what Export.Build should answer
+--- @return table  { inst, modal, said, sent, sortColumn }
+local function printer(result)
+    local inst = T.load()
+    local ctx = { inst = inst, said = {}, sent = {} }
+
+    inst.NS.Print = function(msg) ctx.said[#ctx.said + 1] = msg end
+    inst.mocks.SendChatMessage = function(text, chatType, _, target)
+        ctx.sent[#ctx.sent + 1] = { text = text, chatType = chatType, target = target }
+    end
+    inst.NS.Export.Build = function(_, sortColumn)
+        ctx.built, ctx.sortColumn = true, sortColumn
+        return result
+    end
+
+    ctx.modal = inst.NS.Export.Open({ data = { sessionType = Const.SESSION_TYPE.Current } })
+    return ctx
+end
+
+--- Store an export choice the way the modal's selectors do.
+---
+--- @param ctx table
+--- @param key string
+--- @param value any
+local function choose(ctx, key, value)
+    local profile = ctx.inst.NS.db.profile
+    profile.export = profile.export or {}
+    profile.export[key] = value
+end
+
+--- Press Print to Chat.
+--- @param ctx table
+local function click(ctx)
+    ctx.modal.chatButton:__fire("OnClick")
+end
+
+--- Two ranked rows, in the order they are meant to come back out in.
+--- @return table
+local function printFixture()
+    return built({
+        row("Kaosz", { DamageDone = cell(4821993, { rate = 84210, percent = 31.2 }),
+                       Deaths     = cell(1) }),
+        row("Brewz", { DamageDone = cell(4100000, { rate = 71900, percent = 26.6 }),
+                       Deaths     = cell(2) }),
+    }, 134)
+end
+
+test("Print to Chat re-checks the restriction at the click, not at the open", function()
+    -- The greyed-out button is a HINT rather than a guarantee: the modal may have
+    -- been opened out of combat and pressed ten seconds into a pull. The click
+    -- says the reason and repaints, so the modal that just refused is also the
+    -- modal that now explains itself.
+    -- red under: trusting the enabled state the open left behind.
+    local ctx = printer(printFixture())
+    ctx.inst.mocks.setRestricted(true)
+    click(ctx)
+
+    assertEqual(#ctx.said, 1)
+    assertEqual(ctx.said[1], RESTRICTED_REASON)
+    assertEqual(#ctx.sent, 0, "nothing may leave the client while the restriction is up")
+    assertNil(ctx.built, "and nothing may be built, either")
+    assertEqual(ctx.modal.warning:GetText(), RESTRICTED_REASON,
+        "the refusal repainted the modal rather than only printing")
+end)
+
+test("Print to Chat names a blank whisper recipient before it builds anything", function()
+    -- A whisper with nobody named resolves to the silent SELF inside
+    -- ResolveChannel, which is safe and reads as broken. Caught HERE, while there
+    -- is still a name box on screen to point at — and caught BEFORE the build, so
+    -- an empty segment cannot answer with the wrong sentence.
+    -- red under: moving the whisper check below Export.Build.
+    for _, blank in ipairs({ "", "   " }) do
+        local ctx = printer(printFixture())
+        choose(ctx, "channel", "WHISPER")
+        choose(ctx, "whisperTo", blank)
+        click(ctx)
+
+        assertEqual(#ctx.said, 1, "one sentence, and only one")
+        assertEqual(ctx.said[1], "Enter a name to whisper to.")
+        assertNil(ctx.built, "the refusal comes before the aggregator is asked")
+        assertEqual(#ctx.sent, 0)
+    end
+end)
+
+test("Print to Chat asks the game for the target at the click", function()
+    -- READ AT SEND TIME, never stored: a remembered target is a name that was true
+    -- when the modal opened and is a stranger by the time the button is pressed.
+    -- The two refusals are separate sentences because they are separate mistakes.
+    local ctx = printer(printFixture())
+    choose(ctx, "channel", "TARGET")
+
+    ctx.inst.mocks.setUnit("target", nil)
+    click(ctx)
+    assertEqual(ctx.said[#ctx.said], "You have no target to whisper to.")
+
+    ctx.inst.mocks.setUnit("target",
+        { guid = "Creature-1-00000001", name = "Ulgrax", isPlayer = false })
+    click(ctx)
+    assertEqual(ctx.said[#ctx.said], "Your target is not a player.")
+
+    assertNil(ctx.built, "neither refusal reached the aggregator")
+    assertEqual(#ctx.sent, 0)
+end)
+
+test("Print to Chat whispers the player currently targeted", function()
+    -- The other arm: a real player target is resolved to a WHISPER addressed to
+    -- them, which is the whole point of the "Whisper my target" channel.
+    local ctx = printer(printFixture())
+    choose(ctx, "channel", "TARGET")
+    ctx.inst.mocks.setUnit("target", { guid = "Player-1-0000000B", name = "Brewz", isPlayer = true })
+    click(ctx)
+
+    assertEqual(ctx.sent[1].chatType, "WHISPER")
+    assertEqual(ctx.sent[1].target, "Brewz")
+end)
+
+test("Print to Chat says so rather than swallowing a click with nothing to export", function()
+    -- A window showing "Waiting for combat data" has nothing to rank, and a dialog
+    -- that answers a press with nothing at all reads as broken rather than empty.
+    local ctx = printer(built({}, 60))
+    click(ctx)
+    assertEqual(#ctx.said, 1)
+    assertEqual(ctx.said[1], "There is nothing to export.")
+    assertEqual(#ctx.sent, 0)
+end)
+
+test("Print to Chat builds with the chosen metric as the SORT COLUMN", function()
+    -- So "top 5 healing" is the top five healers rather than the top five damage
+    -- dealers listed with their healing beside them. The same key then picks the
+    -- column the lines print, which is why the header below names it too.
+    -- red under: Export.Build(invoker) with no sort column.
+    local ctx = printer(printFixture())
+    choose(ctx, "metric", "Deaths")
+    choose(ctx, "lines", 5)
+    click(ctx)
+
+    assertEqual(ctx.sortColumn, "Deaths")
+    assertEqual(ctx.said[1], "Multi Meters" .. EM_DASH .. "Deaths" .. EM_DASH .. "Current (2:14)")
+    assertEqual(ctx.said[2], "1. Kaosz 1")
+end)
+
+test("Print to Chat leaves the lines themselves as the confirmation on SELF", function()
+    -- The lines are sitting in the chat frame; a summary under them would be one
+    -- line of noise per export.
+    -- red under: confirming unconditionally.
+    local ctx = printer(printFixture())
+    choose(ctx, "channel", "SELF")
+    choose(ctx, "lines", 5)
+    click(ctx)
+
+    assertEqual(#ctx.said, 3, "a header and two ranked lines, and nothing else")
+    assertEqual(ctx.said[3], "2. Brewz 4.1M (71.9K, 26.6%)")
+    assertEqual(#ctx.sent, 0, "SELF never reaches the server")
+end)
+
+test("Print to Chat confirms a send that left the client, without counting the header", function()
+    -- The header line is not a ranked row. A confirmation that counted it would
+    -- report three rows for a two-player group, which is the sort of off-by-one
+    -- nobody reports and everybody notices.
+    local ctx = printer(printFixture())
+    choose(ctx, "channel", "PARTY")
+    choose(ctx, "lines", 5)
+    click(ctx)
+
+    assertEqual(#ctx.said, 1)
+    assertEqual(ctx.said[1], "Exported 2 rows to chat.")
+    assertEqual(ctx.sent[1].chatType, "PARTY", "the first line leaves inside the click")
+    ctx.inst.mocks.__fireTimers()
+    assertEqual(#ctx.sent, 3, "and the staggered tail follows")
+end)
+
+test("Print to Chat warns BEFORE a Say dump the server may truncate", function()
+    -- SAID BEFORE THE SEND, and only where it is true. Say and Yell out in the
+    -- world have to leave inside this click, so the stagger that keeps a long dump
+    -- whole is not available and the server may drop the tail. A player who sees
+    -- four of their ten lines arrive deserves to know it was the flood rule.
+    -- red under: warning after Export.Send, where the truncation has happened.
+    local rows = {}
+    for i = 1, 12 do rows[i] = row("Mock" .. i, { DamageDone = cell(1000 - i) }) end
+    local ctx = printer(built(rows, 60))
+    choose(ctx, "channel", "SAY")
+    choose(ctx, "lines", 12)
+    ctx.inst.mocks.setInstance(nil)
+    click(ctx)
+
+    -- The count is the LINE count, header included: thirteen messages is what the
+    -- server is being asked to take in one frame.
+    assertEqual(ctx.said[1],
+        "Say and Yell go out all at once outside instances, so the server may drop some of "
+        .. "13 lines. Fewer lines, or a group channel, will arrive whole.")
+    assertEqual(ctx.said[2], "Exported 12 rows to chat.")
+    assertEqual(#ctx.sent, 13, "the whole dump went out inside the click, flood risk and all")
+end)
+
+test("Print to Chat does not warn where the stagger is available or the dump is short", function()
+    -- Two arms of the same guard. Inside an instance Blizzard exempts SAY, so the
+    -- staggered path is the one a raid actually takes and there is nothing to warn
+    -- about; outdoors, a dump inside one batch cannot trip the counter either.
+    -- red under: warning on every SAY, which would cry wolf on the common case.
+    local rows = {}
+    for i = 1, 12 do rows[i] = row("Mock" .. i, { DamageDone = cell(1000 - i) }) end
+
+    local inside = printer(built(rows, 60))
+    choose(inside, "channel", "SAY")
+    choose(inside, "lines", 12)
+    inside.inst.mocks.setInstance("raid")
+    click(inside)
+    assertEqual(#inside.said, 1, "the confirmation alone")
+    assertEqual(inside.said[1], "Exported 12 rows to chat.")
+    assertEqual(#inside.sent, 1, "and the tail is on timers, which is the point of not warning")
+
+    local short = printer(built(rows, 60))
+    choose(short, "channel", "SAY")
+    choose(short, "lines", 4)
+    short.inst.mocks.setInstance(nil)
+    click(short)
+    assertEqual(#short.said, 1)
+    assertEqual(short.said[1], "Exported 4 rows to chat.",
+        "five lines is not more than one batch, so there is nothing to warn about")
 end)

@@ -861,3 +861,299 @@ test("HeaderControls: the gear opens the panel", function()
     window.controls.settings:_run("OnClick")
     assertEqual(opened, 1, "the gear opened nothing")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The click chain, arm by arm
+-- ---------------------------------------------------------------------------
+--
+-- `onClick` is one seven-way `elseif` on `frame.mmControl` and issue #38 will
+-- fold it into a module-level dispatch table. Nothing in the chain shares state
+-- with anything else in it, which is exactly why a table can replace it -- and
+-- exactly why a mis-keyed row, a dropped guard or a reordered pair of calls
+-- would go unnoticed. The cases below pin each arm's OWN outcome, the two guards
+-- in front of the chain, and the two orderings the comments call load-bearing,
+-- so the fold has something to be checked against.
+
+--- The handler itself, so a case can drive it with a synthetic frame that no
+--- control on any window would ever produce.
+local function clickHandler(window)
+    return window.controls.close:GetScript("OnClick")
+end
+
+--- Record every write through the settings seam instead of performing it.
+---
+--- Returns the log. Nothing reaches the config table while this is installed,
+--- which is what lets a case tell "wrote through the seam" apart from "poked the
+--- table and happened to end up with the same value".
+local function recordWrites(inst)
+    local writes = {}
+    inst.NS.SetByPath = function(path, value)
+        writes[#writes + 1] = { path = path, value = value }
+        return true
+    end
+    return writes
+end
+
+test("HeaderControls: a click with no window, or no control, does nothing", function()
+    -- The two guards in front of the chain. They are cheap and they look
+    -- redundant -- every button this file builds carries both fields -- but the
+    -- handler is a plain function on a frame, and a dispatch table that is
+    -- indexed before the guards run would raise on the first nil instead of
+    -- returning. Silently doing nothing is the pinned behaviour.
+    -- red under: `ACTIONS[frame.mmControl](frame.mmWindow, ...)` ahead of the guards.
+    local inst, window = scene()
+    local onClick = clickHandler(window)
+    local writes = recordWrites(inst)
+    assertTrue(window.frame:IsShown(), "the fixture window starts hidden")
+
+    onClick({})
+    onClick({ mmWindow = window })
+    onClick({ mmControl = "close" })
+
+    assertTrue(window.frame:IsShown(), "a guarded click reached an arm anyway")
+    assertEqual(#writes, 0, "a guarded click wrote through the settings seam")
+end)
+
+test("HeaderControls: a control name the chain does not know is a silent no-op", function()
+    -- The chain has no `else`, so an unrecognised name falls out of the bottom
+    -- and nothing happens. A lookup table has to answer the same way: a missing
+    -- key is a name this file does not serve, not an error to raise at a player.
+    -- red under: an ACTIONS lookup called without checking the row exists.
+    local inst, window = scene()
+    local onClick = clickHandler(window)
+    local writes = recordWrites(inst)
+
+    local ok, err = pcall(onClick, { mmWindow = window, mmControl = "notacontrol" })
+    assertTrue(ok, "an unknown control name raised: " .. tostring(err))
+    assertTrue(window.frame:IsShown(), "an unknown control name reached an arm")
+    assertEqual(#writes, 0)
+end)
+
+test("HeaderControls: the two toggles name the EXACT settings paths", function()
+    -- The path string IS the contract -- NS.SetByPath resolves it against the
+    -- schema index and answers `Setting not found` for anything else, silently
+    -- from a click's point of view. `window.frame.minimised` and
+    -- `window.frame.locked`, and the value written is a BOOLEAN rather than
+    -- whatever truthy thing was stored.
+    -- red under: a table row spelling `windows.frame.minimised`.
+    local inst, window, cfg = scene()
+    local writes = recordWrites(inst)
+
+    window.controls.minimise:_run("OnClick")
+    window.controls.lock:_run("OnClick")
+
+    assertEqual(#writes, 2)
+    assertEqual(writes[1].path, "window.frame.minimised")
+    assertEqual(writes[1].value, true)
+    assertEqual(writes[2].path, "window.frame.locked")
+    assertEqual(writes[2].value, true)
+    assertFalse(cfg.frame.minimised and true or false,
+        "the click poked the config table as well as writing through the seam")
+end)
+
+test("HeaderControls: a toggle inverts what is STORED, as a boolean", function()
+    -- `not (frameCfg.locked and true or false)` rather than `not frameCfg.locked`,
+    -- so a profile holding a truthy non-boolean -- which SavedVariables can carry
+    -- across a schema change -- still writes `false` rather than `nil`. A schema
+    -- row that validates booleans refuses nil, and the toggle would stop working
+    -- for exactly the profiles that most needed it to.
+    -- red under: `write(window, "locked", not frameCfg.locked)`.
+    local inst, window, cfg = scene()
+    local writes = recordWrites(inst)
+
+    cfg.frame.locked = "yes"
+    cfg.frame.minimised = true
+    window.controls.lock:_run("OnClick")
+    window.controls.minimise:_run("OnClick")
+
+    assertEqual(writes[1].value, false, "a truthy stored value did not invert to false")
+    assertEqual(writes[2].value, false)
+end)
+
+test("HeaderControls: a toggle points the seam at this window BEFORE it writes", function()
+    -- ORDER, not merely presence. `window.`-prefixed paths resolve against the
+    -- ONE active window id, so a write that lands before the id is set lands on
+    -- whichever window the panel was last left on -- the bug the "clicked ON"
+    -- case above pins by outcome. This pins the mechanism, because a dispatch
+    -- table is exactly the shape in which the two lines get swapped.
+    -- red under: set(...) ahead of NS.State.SetActiveWindow.
+    local inst, window = scene()
+    local log = {}
+    local realSet = inst.NS.State.SetActiveWindow
+    inst.NS.State.SetActiveWindow = function(id)
+        log[#log + 1] = "active:" .. tostring(id)
+        return realSet(id)
+    end
+    inst.NS.SetByPath = function(path) log[#log + 1] = "write:" .. tostring(path) end
+
+    window.controls.lock:_run("OnClick")
+
+    assertEqual(log[1], "active:" .. tostring(window.id))
+    assertEqual(log[2], "write:window.frame.locked")
+end)
+
+test("HeaderControls: with no settings seam a toggle changes nothing and raises nothing", function()
+    -- NS.SetByPath is resolved at CALL time because settings/ loads after
+    -- modules/, and on a load that never got there it is simply absent. The
+    -- click must return quietly rather than erroring in a player's face every
+    -- time they reach for the padlock.
+    -- red under: an ACTIONS row calling NS.SetByPath unguarded.
+    local inst, window, cfg = scene()
+    inst.NS.SetByPath = nil
+
+    local ok, err = pcall(function() window.controls.minimise:_run("OnClick") end)
+    assertTrue(ok, "a click with no settings seam raised: " .. tostring(err))
+    assertFalse(cfg.frame.minimised and true or false,
+        "the click fell back to poking the config table")
+end)
+
+test("HeaderControls: the gear sets the active window BEFORE it opens the panel", function()
+    -- OpenOptionsPanel takes no arguments: the active id is the only way it is
+    -- told which window it is about, so a panel opened first opens on the wrong
+    -- one and then corrects itself -- or does not.
+    -- red under: OpenOptionsPanel() ahead of SetActiveWindow.
+    local inst, window = scene()
+    local log = {}
+    local realSet = inst.NS.State.SetActiveWindow
+    inst.NS.State.SetActiveWindow = function(id)
+        log[#log + 1] = "active"
+        return realSet(id)
+    end
+    inst.NS.OpenOptionsPanel = function() log[#log + 1] = "open" end
+
+    window.controls.settings:_run("OnClick")
+
+    assertEqual(log[1], "active")
+    assertEqual(log[2], "open")
+    assertEqual(#log, 2, "the gear did something else as well")
+end)
+
+test("HeaderControls: the gear still points the panel when there is no panel", function()
+    -- The two halves of the gear arm are independently guarded: settings/ may be
+    -- absent, and the id must still be set so that whatever opens the panel
+    -- later opens it on the right window.
+    -- red under: one `if` around both calls.
+    local inst, window = scene()
+    inst.NS.OpenOptionsPanel = nil
+
+    local ok, err = pcall(function() window.controls.settings:_run("OnClick") end)
+    assertTrue(ok, "the gear raised with no panel to open: " .. tostring(err))
+    assertEqual(inst.NS.State.activeWindowId, window.id)
+end)
+
+test("HeaderControls: reset PREFERS the centred dialog over the bare popup", function()
+    -- Two arms, and the order between them is the whole point: settings/General.lua
+    -- owns the dialog and centres it, and the bare StaticPopup_Show behind it is
+    -- the degraded path only. A refactor that reached for the global first would
+    -- pass every existing case -- the same dialog opens -- while quietly losing
+    -- the centring the "opens in the CENTRE" case above was written for.
+    -- red under: testing _G.StaticPopup_Show ahead of NS.ShowResetMeterData.
+    local inst, window = scene()
+    local centred, bare = 0, 0
+    inst.NS.ShowResetMeterData = function() centred = centred + 1 end
+    inst.mocks.StaticPopup_Show = function() bare = bare + 1 end
+
+    window.controls.reset:_run("OnClick")
+
+    assertEqual(centred, 1, "the reset did not go through settings/General.lua")
+    assertEqual(bare, 0, "the reset also fired the degraded popup")
+end)
+
+test("HeaderControls: with settings/ absent the reset falls back to the bare popup", function()
+    -- The degraded arm, and the exact key it names: an uncentred confirmation
+    -- still beats no confirmation, and a StaticPopup_Show handed the wrong name
+    -- shows NOTHING -- which is a reset button that silently does not ask.
+    -- Cleared AFTER the window is built, which is also what pins that the seam is
+    -- resolved at call time rather than captured at attach.
+    -- red under: an ACTIONS row holding NS.ShowResetMeterData in an upvalue.
+    local inst, window = scene()
+    inst.NS.ShowResetMeterData = nil
+    local asked = {}
+    inst.mocks.StaticPopup_Show = function(key) asked[#asked + 1] = key end
+
+    window.controls.reset:_run("OnClick")
+
+    assertEqual(#asked, 1)
+    assertEqual(asked[1], "MULTIMETERS_RESET_METER_DATA")
+end)
+
+test("HeaderControls: reset with no popup API at all raises nothing", function()
+    -- The bottom of the ladder. StaticPopup_Show is read off _G every time
+    -- precisely because a client that has not finished loading it is a real
+    -- state, and the button must be inert rather than fatal there.
+    -- red under: `_G.StaticPopup_Show("MULTIMETERS_RESET_METER_DATA")`.
+    local inst, window = scene()
+    inst.NS.ShowResetMeterData = nil
+    inst.mocks.StaticPopup_Show = nil
+
+    local ok, err = pcall(function() window.controls.reset:_run("OnClick") end)
+    assertTrue(ok, "the reset raised with no popup API: " .. tostring(err))
+end)
+
+test("HeaderControls: segment and export are opened ON the window, or not at all", function()
+    -- Both arms are method calls -- `window:OpenSegmentMenu()` and `E:Open(window)`
+    -- -- and both are guarded because either seam can be missing on a partial
+    -- load. A dispatch table row that dropped the colon would hand the menu the
+    -- wrong self and Export a nil window, neither of which raises here.
+    -- red under: `window.OpenSegmentMenu()` / `E.Open(window)`.
+    local inst, window = scene()
+    local menuSelf
+    window.OpenSegmentMenu = function(self) menuSelf = self end
+    local openSelf, openArg
+    inst.NS.Export.Open = function(self, arg) openSelf, openArg = self, arg end
+
+    window.controls.segment:_run("OnClick")
+    window.controls.export:_run("OnClick")
+    assertTrue(menuSelf == window, "the segment menu was opened on something else")
+    assertTrue(openSelf == inst.NS.Export, "Export.Open was not called on Export")
+    assertTrue(openArg == window, "Export was handed something other than the window")
+
+    -- And with both seams gone, which is a degraded load rather than a bug.
+    window.OpenSegmentMenu = nil
+    inst.NS.Export = nil
+    local ok, err = pcall(function()
+        window.controls.segment:_run("OnClick")
+        window.controls.export:_run("OnClick")
+    end)
+    assertTrue(ok, "a click with the seam absent raised: " .. tostring(err))
+end)
+
+test("HeaderControls: close hides the window AS a deliberate close", function()
+    -- The reason string is not decoration. Window:Hide clears `forcedShow` only
+    -- for "closed" and "toggled", so a close that passed no reason would leave
+    -- the explicit show standing and the window would come back on the next
+    -- settings edit -- the X undone by something the player did not connect to it.
+    -- red under: `window:Hide()`.
+    local _, window = scene()
+    window:Show()
+    assertTrue(window.forcedShow and true or false, "the fixture did not force a show")
+
+    window.controls.close:_run("OnClick")
+
+    assertFalse(window.frame:IsShown())
+    assertFalse(window.forcedShow and true or false,
+        "the close left the forced show standing")
+end)
+
+test("HeaderControls: only the two toggles write to the settings seam", function()
+    -- The arms do not share state, and this is what says so: driving all seven
+    -- controls must produce exactly two writes. A dispatch table that keyed a row
+    -- twice, or fell through to a shared default, shows up here as a third write
+    -- or a missing one and nowhere else.
+    -- red under: an ACTIONS table with a duplicated or misspelled key.
+    local inst, window = scene()
+    window.OpenSegmentMenu = function() end
+    inst.NS.OpenOptionsPanel = function() end
+    inst.NS.ShowResetMeterData = function() end
+    inst.NS.Export.Open = function() end
+    local writes = recordWrites(inst)
+
+    for _, key in ipairs({ "close", "minimise", "lock", "settings",
+                           "segment", "reset", "export" }) do
+        window.controls[key]:_run("OnClick")
+    end
+
+    assertEqual(#writes, 2, "the strip wrote to the settings seam an unexpected number of times")
+    assertEqual(writes[1].path, "window.frame.minimised")
+    assertEqual(writes[2].path, "window.frame.locked")
+end)

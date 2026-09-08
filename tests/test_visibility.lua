@@ -660,3 +660,240 @@ test("A profile change forgets the old answers and re-evaluates", function()
     NS.Visibility:OnProfileChanged()
     assertEqual(select(2, NS.Visibility.LastResult(cfg.id)), "world")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The veto ORDER, as an order
+-- ---------------------------------------------------------------------------
+--
+-- The cases above prove each veto hides its own state. What none of them proves
+-- is the SEQUENCE the vetoes are consulted in, and the function's own comment
+-- says the sequence is the point: "the order between them only shows up in the
+-- REASON when two states are true at once, so it is ordered the way a player
+-- would explain it -- the thing you are sitting in or on, then what you are
+-- doing, then where you are, then whether anyone is with you."
+--
+-- That ordering is currently implied by nothing but line position in an
+-- eight-line if-chain. Any rewrite that turns those eight lines into a table and
+-- a loop -- and one is planned -- reorders them the moment a row is typed out of
+-- sequence, and every per-veto case above still passes, because each of those
+-- drives exactly one state at a time. `/mm debug diag` would then start naming
+-- the wrong reason for a player with two states live at once, which is the one
+-- question that tool exists to answer.
+
+--- Every veto's state driven at once, in a context that has already said yes.
+local function everyStateAtOnce()
+    local inst = T.load()
+    inst.mocks.setInstance("party")
+    inst.mocks.setSolo()            -- the last veto in the chain
+    inst.mocks.setInVehicle(true)
+    inst.mocks.setCanGlide(true)
+    inst.mocks.setMounted(true)
+    inst.mocks.setOnTaxi(true)
+    inst.mocks.setInPetBattle(true)
+    inst.mocks.setDeadOrGhost(true)
+    inst.mocks.setInHousing(true)
+    return inst
+end
+
+-- The chain in the order the module walks it. Read as: with every state live and
+-- every rule on, the reason is the first row; switch that row's rule off and the
+-- reason becomes the second, and so on down.
+local VETO_ORDER = {
+    { "hideInVehicle",     "vehicle"    },
+    { "hideWhenSkyriding", "skyriding"  },
+    { "hideWhenMounted",   "mounted"    },
+    { "hideOnTaxi",        "taxi"       },
+    { "hideInPetBattle",   "pet battle" },
+    { "hideWhenDead",      "dead"       },
+    { "hideInHousing",     "housing"    },
+    { "hideWhenSolo",      "solo"       },
+}
+
+test("With every state live at once, the vetoes answer in one fixed order", function()
+    local inst = everyStateAtOnce()
+    local rules = defaultRules()
+    for _, row in ipairs(VETO_ORDER) do rules[row[1]] = true end
+
+    -- Peel the winner off the front and the next row must take its place. Eight
+    -- assertions, each of which fails the instant two rows swap places.
+    for i, row in ipairs(VETO_ORDER) do
+        local show, reason = inst.NS.Visibility.ShouldShow(windowWith(rules))
+        assertEqual(show, false, row[1] .. " should still have hidden the window")
+        assertEqual(reason, row[2],
+            "veto " .. i .. " must be " .. row[2] .. ", not what answered instead")
+        rules[row[1]] = false
+    end
+
+    -- And with all eight switched off the states themselves object to nothing.
+    assertEqual(select(2, inst.NS.Visibility.ShouldShow(windowWith(rules))), "dungeon")
+end)
+
+test("Every veto is decided before the combat pair, not after it", function()
+    local inst = everyStateAtOnce()
+
+    -- Both combat rules on is a window that never shows, so combat WILL have
+    -- something to say whichever side of the pull the player is on. It still may
+    -- not say it first: combat is the fallthrough at the bottom of the function,
+    -- below every veto, and a refactor that folded the combat pair into the same
+    -- table would put it wherever its row landed.
+    for _, row in ipairs(VETO_ORDER) do
+        local rules = defaultRules()
+        rules[row[1]] = true
+        rules.hideInCombat, rules.hideOutOfCombat = true, true
+
+        inst.mocks.setInCombat(false)
+        assertEqual(select(2, inst.NS.Visibility.ShouldShow(windowWith(rules))), row[2],
+            row[1] .. " lost to `out of combat`")
+        inst.mocks.setInCombat(true)
+        assertEqual(select(2, inst.NS.Visibility.ShouldShow(windowWith(rules))), row[2],
+            row[1] .. " lost to `in combat`")
+    end
+    inst.mocks.setInCombat(false)
+end)
+
+-- ---------------------------------------------------------------------------
+-- Every context arm, on and off
+-- ---------------------------------------------------------------------------
+
+test("Each context switched off hides with its own name, and only its own", function()
+    local inst = T.load()
+    local V = inst.NS.Visibility
+    inst.mocks.setSolo()
+
+    -- One row per arm of `CONTEXT_BY_INSTANCE_TYPE` plus the delve probe and the
+    -- fallthrough. The cases above pin the map (token in, name out) and the world
+    -- refusal; what is pinned here is the OTHER half -- that the context gate
+    -- returns the same name it was keyed by, for every context, on both answers.
+    -- A refactor that keyed the lookup off the instance token instead of the
+    -- player-facing name would still pass every map case and would report
+    -- "party" to `/mm debug diag` where the settings page says "dungeon".
+    local CASES = {
+        { "dungeon",      function(m) m.setDelve(false) m.setInstance("party") end    },
+        { "raid",         function(m) m.setDelve(false) m.setInstance("raid") end     },
+        { "arena",        function(m) m.setDelve(false) m.setInstance("arena") end    },
+        { "battleground", function(m) m.setDelve(false) m.setInstance("pvp") end      },
+        { "scenario",     function(m) m.setDelve(false) m.setInstance("scenario") end },
+        { "world",        function(m) m.setDelve(false) m.setInstance(nil) end        },
+        { "delve",        function(m) m.setDelve(true) end                            },
+    }
+
+    for _, case in ipairs(CASES) do
+        local name, drive = case[1], case[2]
+        drive(inst.mocks)
+        assertEqual(V.GetContext(), name, "the fixture did not reach " .. name)
+
+        local rules = defaultRules()
+        local show, reason = V.ShouldShow(windowWith(rules))
+        assertEqual(show, true, name .. " ships on and must show")
+        assertEqual(reason, name, "a shown window names its context")
+
+        rules[name] = false
+        show, reason = V.ShouldShow(windowWith(rules))
+        assertEqual(show, false, name .. " switched off must hide")
+        assertEqual(reason, name, name .. " must hide under its own name")
+    end
+end)
+
+test("A context key is show-shaped; a veto key is hide-shaped", function()
+    local inst = allowedInstance()
+
+    -- The two halves of the settings schema read absence in OPPOSITE directions,
+    -- and that asymmetry is load-bearing rather than an oversight. A missing veto
+    -- key means "nothing objects" (see the block comment above), but a missing
+    -- CONTEXT key means "not here" -- the gate is `if not rules[context]`, so a
+    -- rules table that names no contexts at all hides everywhere and says where.
+    local show, reason = inst.NS.Visibility.ShouldShow(windowWith({}))
+    assertEqual(show, false, "an empty rules table is not the same as no rules table")
+    assertEqual(reason, "dungeon")
+
+    -- One key, and the window is allowed in exactly that one place.
+    assertEqual(inst.NS.Visibility.ShouldShow(windowWith({ dungeon = true })), true)
+end)
+
+test("Both gates read truthiness, not `== true`", function()
+    local inst = allowedInstance()
+    inst.mocks.setSolo()
+
+    -- Hand-edited SavedVariables and every profile written by an older schema
+    -- carry whatever the editor typed. `1` is not `true`, and a refactor that
+    -- tightened either gate to an equality test would hide a window whose owner
+    -- had switched its context ON, and show one whose veto they had switched on.
+    local rules = { dungeon = 1, hideWhenSolo = 1 }
+    local show, reason = inst.NS.Visibility.ShouldShow(windowWith(rules))
+    assertEqual(show, false)
+    assertEqual(reason, "solo", "a truthy veto value must still veto")
+
+    rules.hideWhenSolo = nil
+    assertEqual(inst.NS.Visibility.ShouldShow(windowWith(rules)), true,
+        "a truthy context value must still allow")
+end)
+
+-- ---------------------------------------------------------------------------
+-- The two refusals
+-- ---------------------------------------------------------------------------
+
+test("Anything that is not a table is `no window`, whatever it is", function()
+    -- The ladder in core/MultiMeters.lua makes the same check, so this one only
+    -- ever fires for a direct caller -- `/mm debug diag`, a test, a future module.
+    -- It still has to answer the same way for every shape, because "no window" is
+    -- the token the diagnostic prints and a nil-only guard would let a string
+    -- through to index `window.visibility` and raise.
+    for _, value in ipairs{ "window", 7, true, print } do
+        local show, reason = T.NS.Visibility.ShouldShow(value)
+        assertEqual(show, false, tostring(value) .. " is not a window")
+        assertEqual(reason, "no window")
+    end
+end)
+
+test("A visibility field that is not a table reads as `no rules`, not as hide", function()
+    local inst = allowedInstance()
+    inst.mocks.setSolo()
+    inst.mocks.setMounted(true)
+
+    -- The absent case is pinned above; these are the shapes a hand-edited
+    -- SavedVariables actually produces, and every one of them has to mean
+    -- "nothing objects" rather than "hide it". `false` is the dangerous one: a
+    -- guard written as `if not rules then` would fall straight through to
+    -- `rules[context]` and raise on the next line.
+    for _, value in ipairs{ false, "", 0, print } do
+        local show, reason = inst.NS.Visibility.ShouldShow({ id = 1, visibility = value })
+        assertEqual(show, true, "visibility = " .. tostring(value) .. " must not hide")
+        assertEqual(reason, "no rules")
+    end
+end)
+
+-- ---------------------------------------------------------------------------
+-- What belongs to the ladder and not to this function
+-- ---------------------------------------------------------------------------
+
+test("The master enable, test mode and perf suspend are NOT read here", function()
+    local inst = T.load()
+    local NS = inst.NS
+    inst.mocks.setInstance("party")
+    inst.mocks.setSolo()
+
+    -- Steps 0 to 2 of NS.ShouldShow. They apply to every window rather than to a
+    -- window's own rules, and duplicating them here would give the addon two
+    -- places that can answer "why is my window not showing" differently -- with
+    -- the two answers free to disagree the moment one of the four moves.
+    NS.Perf.suspended       = true
+    NS.State.testMode       = true
+    NS.db.profile.enabled   = false
+
+    local window = windowWith(defaultRules())
+    local show, reason = NS.Visibility.ShouldShow(window)
+    assertEqual(show, true, "a per-window predicate must not read the addon-wide flags")
+    assertEqual(reason, "dungeon")
+
+    -- And test mode's one-way force belongs to step 2 as well: it can show a
+    -- window the rules would hide, but it does that in the ladder, above this
+    -- function, and never by making this function lie about the rules.
+    local rules = defaultRules()
+    rules.dungeon = false
+    show, reason = NS.Visibility.ShouldShow(windowWith(rules))
+    assertEqual(show, false)
+    assertEqual(reason, "dungeon")
+
+    NS.Perf.suspended = false
+    NS.State.testMode = false
+end)
