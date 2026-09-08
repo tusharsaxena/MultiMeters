@@ -1180,8 +1180,13 @@ test("The projection's field list and collectSource cannot drift apart", functio
     -- stale the first time a field is added to one and not the other. Scanned
     -- out of the source, because a drift would fail no behavioural test — it
     -- would just quietly under-report.
-    local path = "modules/Provider.lua"
-    local fh = assert(io.open(path, "r"))
+    -- Rooted through T.root, like codeLines at the top of this file. A bare
+    -- relative path resolves against the runner's cwd, so this scan worked
+    -- only for as long as the runner happened to be started from the repo
+    -- root; from any other directory io.open returned nil and the case
+    -- died on the assert, reporting a missing file as a drift.
+    local relPath = "modules/Provider.lua"
+    local fh = assert(io.open(T.root .. "/" .. relPath, "r"))
     -- Normalised, because this scan is about the source, not about how the
     -- line ends. The pattern below anchors on "\nend\n"; against a correctly
     -- checked-out CRLF working tree that never matches, the body comes back

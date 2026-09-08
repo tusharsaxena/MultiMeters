@@ -138,6 +138,11 @@ lua tests/run.lua --list     # the inventory, printed; runs nothing, exits 0
 luacheck .                   # must be 0 warnings / 0 errors
 ```
 
+**Run these from the repository root.** The Lua cases do not care where you are — they root their
+file reads through `T.root`, which the runner derives from `arg[0]` — but the vendored EOL gate
+shells out to `git ls-files` in the *current* directory and refuses to report a pass it could not
+actually take. From anywhere else it reddens with "this gate cannot run".
+
 **There is no single-suite mode, and that is a design choice rather than a gap.** `Kit.run` asserts
 the declared suite list against `tests/test_*.lua` on disk **in both directions** before it loads a
 single case: a declared suite with no file is a hard error, and a suite file that is not declared is
@@ -152,6 +157,40 @@ lua tests/run.lua | grep FAIL            # just the failures
 A suite still being written is declared as `{ name = "test_foo", pending = "why" }` and **must** lose
 that field the moment its file lands. A skip is never a pass: the runner counts skips in their own
 column and prints each one with its reason.
+
+### Bisecting across the audit-remediation branch
+
+Seven commits on `feat/2026-09-07-audit-review-remediation` replay **red** from a clean clone. A
+bisect that lands on one of them will blame the wrong change. In branch order:
+
+| Commit | Item | On a clean clone |
+| --- | --- | --- |
+| `c61e25f` | M2-09 | 1495 passed, 1 failed |
+| `3d704ad` | M2-10 | 1499 passed, 1 failed |
+| `5883d17` | M2-11 | 1503 passed, 1 failed |
+| `360e39e` | M2-12 | 1503 passed, 1 failed |
+| `f932ee5` | M2-18 | 1506 passed, 1 failed |
+| `ee0d1fe` | M3-C3 | 1506 passed, 1 failed |
+| `ae2502a` | M3-02 | 1506 passed, 1 failed |
+
+It is the same single case every time — *The projection's field list and collectSource cannot drift
+apart*, in `tests/test_provider.lua`. The case scans `modules/Provider.lua` for `collectSource`'s
+body and anchored the closing bracket on `"\nend\n"`. This repo is pinned CRLF, so on a correct
+checkout every line ends `\r\n`, that anchor never matches, the body comes back `nil`, and the case
+reports a drift between the projection and `SOURCE_FIELDS` that is not there.
+
+**None of the seven introduced it.** `origin/master` at `02aff8c`, the commit this branch was cut
+from, fails the same case with the same message at 1495 passed / 1 failed. The condition is
+inherited, and it is invisible on a working tree that has been mis-normalised to LF — which is why
+every figure published before the line-ending sweep was measured green.
+
+`8eef4b8` (M4-10) closes it, by stripping CRLF before the match: 1507 passed, 0 failed. Every commit
+from there to the tip is green. So if a bisect stops on one of the seven and the case you are
+chasing is this one, `git bisect skip`. If it is not, filter the noise out with
+`lua tests/run.lua | grep FAIL` and read what is left.
+
+**The history is deliberately not being rewritten.** Rewriting seven commits mid-branch to repair a
+defect they inherited would cost more than the note you are reading.
 
 ### The inventory
 
