@@ -1630,6 +1630,10 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: the export modal refuses to open with no dropdown widget
 - Degraded: the addon still enables end to end with no library
 
+### test_eol.lua (1)
+
+- eol: every tracked file carries the terminator .gitattributes declares for it
+
 ## Totals
 
 | Suite | Cases |
@@ -1673,4 +1677,5 @@ badge and any count quoted in the docs must agree with it.
 | test_columnblocks.lua | 17 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 27 |
-| **Total** | **1507** |
+| test_eol.lua | 1 |
+| **Total** | **1508** |

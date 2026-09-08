@@ -1773,6 +1773,45 @@ indication anything was wrong, and a recording running for the rest of the sessi
 **Record for the report:** group size and composition, whether the hunter was the local player or a
 party member, the full buffer, and the Deaths count you actually saw in the window beside it.
 
+### 29. The pooled tab strip, and the perf strings, after the v1.27.0 re-vendor
+
+**Smoke, session 3. NOT YET RUN.** Two things arrived with `M4-01`'s LibKa0s v1.27.0 payload that
+only a client can settle, and nothing here may be reported as passing until someone has looked at it.
+
+`TabStrip` (`libs/LibKa0s/OptionsWidgets.lua`) no longer builds a button and a content panel per
+click: it acquires both from per-`ctx` `LibKa0s-Pool-1.0` pools and re-dresses them, re-setting
+`OnClick` on every dress. Its only headless proof counts `CreateFrame` calls on a second selection
+pass, and the case that would pin band geometry as invariant under selection cannot be written yet —
+the shared mock answers `GetHeight` with 0 for every frame and that flips at kit 16, not here. **So a
+stale label, a mis-anchored button or a band that changes height on a re-dressed tab is invisible to
+every automated check in this repo.** This addon has the widest strip surface in the collection —
+fourteen page files decorate one descriptor — so it is the likeliest place a reuse defect shows.
+
+**Steps — the strip.**
+- `/mm config`. Walk every page that draws a strip, and on each cycle every tab three times, ending
+  back on the first. **Columns** matters most: it is the one page that drives `H.TabStrip` directly
+  rather than through `H.RenderTabbedSchema`, because it is a block editor and not a schema group,
+  so it is the strip least like the other thirteen.
+- Watch three things on each pass: the **label** is that tab's own, the **selected** tab is the one
+  you pressed, and the strip's **band height** does not move as you go through it.
+
+**Steps — the strings.** `LibKa0s-Perf-1.0` minor 8 respells five player-facing strings: two
+`CANCELLED` and three `unlabelled` become `CANCELED` and `unlabeled`. No single capture shows all
+five, so run two.
+- `/mm perf start mylabel`, then `finish` — the started line and the report header both name the
+  label.
+- `/mm perf start` with no label, then `cancel`.
+
+**Pass.**
+- Every tab labelled and selected correctly on all three passes, on every page, and no band that
+  grows or shrinks. A label carried over from the previously-dressed tab, a highlight on the wrong
+  button, a body drawn under the wrong tab, or a strip whose height moves between passes is the pool
+  handing back a frame it did not finish dressing.
+- The unlabelled start line, its report header and the cancel line read **`unlabeled`** and
+  **`perf run CANCELED`**. A double-L in either is a copy of the string that did not come from the
+  vendored payload.
+- No Lua errors at any point.
+
 ---
 
 ## What to report
