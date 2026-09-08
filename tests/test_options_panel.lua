@@ -41,10 +41,12 @@ local PAGES = {
     "tooltip", "visibility", "columns", "profiles",
 }
 
--- The canvas frame name each page builds under. Used to reach a page's ctx while
--- `ctx.pageKey` is unset (see the `carries its page key` case below, which is the
--- failing test that pins the underlying defect); every other case in this suite
--- is about something else and should not be blocked behind it.
+-- The canvas frame name each page builds under. It dates from the years
+-- `ctx.pageKey` was unset (see the `carries its page key` case below), when
+-- reaching a page's ctx by key was not possible and no other case in this suite
+-- should have been blocked behind that. The key resolves now; this stays as the
+-- independent handle, so the cases below do not all rest on the one thing that
+-- case exists to check.
 local PANEL_NAME = {
     windows    = "MultiMetersWindowsPanel",
     frame      = "MultiMetersFramePanel",
@@ -174,19 +176,22 @@ test("Options: every page's subcategory is registered eagerly, before any panel 
     assertEqual(subs, #PAGES)
 end)
 
--- SUSPECTED DEFECT, pinned rather than papered over.
+-- A DEFECT THIS CASE OUTLIVED, kept because the shape that caused it can come back.
 --
--- Every settings/<page>.lua calls `H.CreatePanel(name, title, { panelKey = PAGE,
--- ... })`, while libs/LibKa0s/Options.lua:301 reads `opts.pageKey`. The key is
--- therefore dropped on the floor for all thirteen pages: `ctx.pageKey` is nil
--- everywhere, `Helpers.__panelFor(key)` — the library's published per-page handle,
--- which settings/OptionsSetup.lua's own degradation stub also publishes — resolves
--- nothing, and a renderer that raises is reported as page "?" instead of by name
--- (Options.lua:482). Nothing raises, which is exactly why it survived: the pages
--- draw correctly, because RenderSchema and RestoreDefaults are handed the page key
--- as an argument rather than reading it off the ctx.
+-- Every settings/<page>.lua used to call `H.CreatePanel(name, title,
+-- { panelKey = PAGE, ... })` while the library read `opts.pageKey` — one word
+-- apart, and no spelling of it raises. The key was dropped on the floor for every
+-- one of the nine pages: `ctx.pageKey` was nil throughout, `Helpers.__panelFor(key)` —
+-- the library's published per-page handle, which settings/OptionsSetup.lua's own
+-- degradation stub also publishes — resolved nothing, and a renderer that raised
+-- was reported as page "?" instead of by name. Nothing raised, which is exactly
+-- why it survived: the pages drew correctly, because RenderSchema and
+-- RestoreDefaults are handed the page key as an argument rather than reading it
+-- off the ctx.
 --
--- The fix is one word per page file. This case goes green when it lands.
+-- Every page file now spells it `pageKey` and this case is green. It stays because
+-- the failure mode is a silent one -- a misspelt optional key is indistinguishable
+-- from an absent one -- and this is the only thing in the repo that would notice.
 test("Options: a page's ctx carries its page key", function()
     for _, key in ipairs(PAGES) do
         local ctx = panelFor(T, key)
