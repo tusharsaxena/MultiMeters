@@ -684,22 +684,24 @@ issue needs a picture, and expect it to empty itself again.
 | `settings-panel.md` | The nine pages, per-option behavior, and the write seam |
 | `data-flow.md` | `C_DamageMeter` → pixel, and the secret-value rules that shape every hop |
 | `common-tasks.md` | Recipes for the changes made most often here |
+| `compat-layer.md` | Every client API this addon shims: the `C_DamageMeter` and `C_DeathRecap` surfaces, the recap-discovery probe, the secret-safe number formatters, the icon-existence checks and the three player-context rules |
 | `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact |
 | `revendor/` | Frozen — one dated bundle per LibKa0s re-vendor: the payload delta and what was adopted, declined or filed from it |
 
 ### Tier 2 conditional docs — evaluated at v0.1.0
 
-Each trigger was measured against the source, not assumed. **None of the six ships today**, and the
+Each trigger was measured against the source, not assumed. **Five of the six do not ship**, and the
 measurements that decided that are recorded here so a later audit can re-run them rather than
-re-argue them — one of them, `compat-layer.md`, is now flagged as having crossed its own line. This
-is an evaluation record, not a fourth register table — every doc below that *does* exist is
-registered above.
+re-argue them. The sixth, `compat-layer.md`, crossed its own line and has been written; it is
+registered under [Topic detail](#topic-detail) and its row below is kept as the measurement that
+moved it. This is an evaluation record, not a fourth register table — every doc below that *does*
+exist is registered above.
 
 | Doc | Status | Trigger, as measured |
 |---|---|---|
 | `slash-dispatch.md` | Not applicable | **16 verbs in `NS.COMMANDS`.** Ten are the standard's reserved set, implemented entirely by LibKa0s-Slash-1.0 and documented by the standard. This addon's own surface is 6 verbs and one 4-entry sub-verb tree (`window`: list/new/delete/copy); `debug` takes 4 words, `perf` delegates its whole sub-surface to the library, and `export` takes one optional window name. The [Slash commands](#slash-commands) section carries all of it in a screen. |
 | `message-bus.md` | Not applicable | **14 distinct messages**, all declared in one catalog (`core/Constants.lua` `MSG`) with the owning sender named beside each. Every payload is a flat table of one to two plain fields; none carries a handle, a curve object or a per-unit filter needing prose. The [Message bus](#message-bus) section carries sender, consumers and payload for all fourteen in one table. |
-| `compat-layer.md` | **Re-measure — the trigger now fires** | **`core/Compat.lua` is 761 lines and 28 shims** (8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap`), each still a guarded namespace check around one passthrough, with no feature decisions and no state, and nothing there inspects a meter value. But the comparison point — KickCD's 490-line Compat, which ships the doc — has been passed by half again. It was 389 lines and 18 shims when this row was last measured. Raise the doc, or re-argue the trigger, through `/wow-addon:standards-audit`; it is not this register's call to make. |
+| `compat-layer.md` | Present | **`core/Compat.lua` is 761 lines and 28 shims** (8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap`), each a guarded namespace check around one passthrough, with no feature decisions, no state, and nothing there inspecting a meter value. The row read *re-measure — the trigger now fires* from the day this addon's Compat passed KickCD's, which ships the doc: 389 lines and 18 shims when the row was last written, 761 and 28 now. `documentation-§3` has since given the trigger a number — **three or more** addon-specific shims, counted over this file alone — which settles it at any reading. Written; registered under [Topic detail](#topic-detail). |
 | `midnight-quirks.md` (secret values) | Not applicable | The 12.0 secret-value model is this addon's **defining** constraint, not a quirk beside its main subject — so it is carried by [Taint notes](#taint-notes) (the operation lists, R1/R3, the `Combat`-not-`ChallengeMode` fact) and by [data-flow.md](data-flow.md), which is Tier 1 and mandatory here regardless. A third copy would be the one that drifts. |
 | `profiles.md` | Not applicable | `settings/Profiles.lua` is 126 lines hosting **AceDBOptions-3.0's own tree** unchanged. The addon adds no profile semantics beyond the `PROFILE_CHANGED` fan-out already tabulated above and the reset-all veto already stated under [Settings schema](#settings-schema); the persisted shape is [schema.md](schema.md)'s. |
 | `debug.md` | Not applicable | The console is `LibKa0s-DebugLog-1.0`'s window. `/mm debug` toggles it and takes `on` / `off`. This addon's own surface is `/mm debug diag`, `/mm debug recap` and `/mm debug identity` — `core/Diagnostics.lua`, ~1570 lines of print statements whose header explains itself, with no state and no options for a doc to describe. It has grown — the death-recap probe for issue #1 is the newest section, the first with a verb of its own, and the first to search the client two ways because one was measured to be unreliable — so this is the Tier 2 trigger nearest to firing; re-measure it when a section gains state or an option. |

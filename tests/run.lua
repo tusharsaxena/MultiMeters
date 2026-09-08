@@ -208,6 +208,7 @@ local SUITES = {
     -- is an assertion about a string. layout-§1's cap binds test files and this
     -- rule does not.
     "test_texture_paths",
+    "test_docmap",
     "test_constants",
     "test_secrets",
     "test_compat",
