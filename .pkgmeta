@@ -11,6 +11,21 @@ ignore:
   - tests
   - _dev
   - "*.bak"
+  # Agent tooling, and both untracked — .gitignore names .claude's only file at
+  # :9, and `git ls-files` returns nothing for either directory — so no packager
+  # clone has ever carried them and neither line changes a downloaded byte. They
+  # are listed because packaging.md:28 MUSTs every root dot-entry present in the
+  # repo be named or justified, tracked or not: the check is about an enumeration
+  # going stale, not about a package growing.
+  - .claude        # untracked; listed under packaging.md:28
+  - .superpowers   # untracked; listed under packaging.md:28
+  # Tracked, and the only entries added here that change a download. CLAUDE.md
+  # and DEPENDENCIES.md are developer documentation; README.md and LICENSE stay,
+  # because players do read those. There is no media/screenshots line: this addon
+  # is not published yet and has never had that directory, and a list padded with
+  # entries for what is not here goes stale in the other direction.
+  - CLAUDE.md
+  - DEPENDENCIES.md
   # Only the .tga logo is loadable at runtime; WoW cannot read .png or .jpg at all. The master .png
   # and the .jpg render exist for the project page and for regenerating the .tga, so shipping them
   # would add megabytes to every download for files the client physically cannot use.
