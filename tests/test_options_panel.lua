@@ -300,23 +300,23 @@ test("Options: the Columns page's Defaults button restores the SHIPPED column li
     -- button wired to it would have looked live and done nothing at all.
     -- red under: defaultsOnClick left pointing at H.RestoreDefaults.
     local inst = T.load()
-    local NS = inst.NS
+    local NSi = inst.NS
     local ctx = showPage(inst, "columns")
 
     assertTrue(ctx.panel.wantsDefaultsButton, "the Columns page must offer a Defaults button")
     assertTrue(ctx.panel.defaultsOnClick ~= nil, "and wire a handler to it")
 
     -- Move away from the shipped list in both ways the page can: order and which are ticked.
-    local shipped = NS.DefaultWindow(NS.Database.GetWindows()[1].id).columns
+    local shipped = NSi.DefaultWindow(NSi.Database.GetWindows()[1].id).columns
     local scrambled = {}
     for i = #shipped, 1, -1 do
         scrambled[#scrambled + 1] = { stat = shipped[i].stat, enabled = i % 2 == 0 }
     end
-    assertTrue(NS.SetByPath("window.columns", scrambled))
+    assertTrue(NSi.SetByPath("window.columns", scrambled))
 
     ctx.panel.defaultsOnClick()
 
-    local after = NS.Database.GetWindows()[1].columns
+    local after = NSi.Database.GetWindows()[1].columns
     assertEqual(#after, #shipped)
     for i, col in ipairs(shipped) do
         assertEqual(after[i].stat, col.stat, "column " .. i .. " is not the shipped statistic")
@@ -331,17 +331,17 @@ function()
     -- tab-wide, so a click on the block-editor tab must still put those rows back even though they
     -- are not the tab on screen. red under: defaultsOnClick pointed only at restoreShippedColumns.
     local inst = T.load()
-    local NS = inst.NS
+    local NSi = inst.NS
     local ctx = showPage(inst, "columns")
 
     assertTrue(ctx.panel.defaultsOnClick ~= nil, "the Columns page must wire a Defaults handler")
 
-    assertTrue(NS.SetByPath("window.columnHeader.font", "Skurri"))
-    assertTrue(NS.SetByPath("window.columnHeader.outline", "THICKOUTLINE"))
+    assertTrue(NSi.SetByPath("window.columnHeader.font", "Skurri"))
+    assertTrue(NSi.SetByPath("window.columnHeader.outline", "THICKOUTLINE"))
 
     ctx.panel.defaultsOnClick()
 
-    local w = NS.Database.GetWindows()[1]
+    local w = NSi.Database.GetWindows()[1]
     assertEqual(w.columnHeader.font, "Friz Quadrata TT",
         "the header font must be back to shipped after the page-wide Defaults click")
     assertEqual(w.columnHeader.outline, "OUTLINE",

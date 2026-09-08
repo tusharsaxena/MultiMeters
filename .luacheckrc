@@ -1,9 +1,13 @@
 std = "lua51"
 max_line_length = false
 codes = true
--- libs/ is vendored third-party code; tests/_kit/ is a vendored harness; the docs/audits and
+-- libs/ is vendored third-party code, upstreamed from the LibKa0s repo and linted there, not here.
+-- tests/_kit/ is the same fact one level down: it is a byte copy of the library's testkit/, linted
+-- in LibKa0s as source, and linting the copy too would report every finding twice while letting the
+-- copy drift green as the original went red -- the one state the vendor-sync gate exists to make
+-- impossible. Everything else under tests/ is ours and is linted (lint-§1). The docs/audits and
 -- docs/reviews bundles are frozen snapshots and must never be "fixed" by a lint pass.
-exclude_files = { "libs/", "tests/", "docs/audits/", "docs/reviews/", "_dev/" }
+exclude_files = { "libs/", "tests/_kit/", "docs/audits/", "docs/reviews/", "_dev/" }
 ignore = {
   "212/self",       -- unused argument self
   "212/event",      -- unused argument event
@@ -64,4 +68,22 @@ globals = {
                        -- outside the AceDB tree so "copy profile" does not clone it and
                        -- "reset profile" does not wipe it
   "StaticPopupDialogs", -- addon registers named popups by adding fields to this table
+}
+
+-- The test tree is linted, and these are the three globals it WRITES. Every suite READS the
+-- harness table as `_G.MULTIMETERS_TEST`, and a field read off the already-declared `_G` needs no
+-- entry at all; what needs one is tests/run.lua:287 writing it, plus the two SavedVariables tables
+-- a case clears to assert on the absent-saved-variable path. Hence `globals` and not
+-- `read_globals`. Hence also the `_G.` qualification -- spelled bare, all six writes are still
+-- reported as W122 "setting read-only field of global '_G'", which is checked both ways.
+--
+-- Declared HERE rather than at the top level on purpose, and the difference is not cosmetic. A name
+-- granted at the top level is granted to core/, modules/ and settings/ as much as to a suite, and
+-- no shipped file may ever reach for the test harness. With this stanza in place the same write
+-- planted in core/State.lua still reports, which is the scoping the stanza is here to buy.
+files["tests/"] = {
+  globals = {
+    "_G.MULTIMETERS_TEST",
+    "_G.MultiMetersDB", "_G.MultiMetersPerfDB",
+  },
 }

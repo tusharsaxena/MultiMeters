@@ -155,8 +155,8 @@
 -- Manifest     mocks.__toc (Version / Title / Notes)
 -- Timers       mocks.__timers · mocks.__fireTimers() (base) · mocks.__flushTimers()
 
-local root = ... or "."
-local kitMockBase = dofile(root .. "/tests/_kit/mock_base.lua")
+local repoRoot = ... or "."
+local kitMockBase = dofile(repoRoot .. "/tests/_kit/mock_base.lua")
 
 -- ===========================================================================
 -- The secret simulator
@@ -2130,7 +2130,11 @@ local function build()
             addon.__modules     = {}
             addon.__moduleOrder = {}
 
-            addon.NewModule = function(host, name, ...)
+            -- The mixin list every caller passes (`"AceEvent-3.0"`) is accepted and
+            -- discarded: embedAceEvent below is unconditional, so the fake gives every
+            -- module the bus whether or not it asked. Lua drops the surplus arguments
+            -- without a vararg in the signature; naming one here only claims a use.
+            addon.NewModule = function(host, name)
                 local m = { moduleName = name, __addon = host }
                 embedAceEvent(m)
                 m.ScheduleTimer = host.ScheduleTimer

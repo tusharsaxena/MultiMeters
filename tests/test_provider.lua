@@ -20,7 +20,6 @@ local assertFalse = T.assertFalse
 local assertNil   = T.assertNil
 
 local CURRENT = 1   -- Enum.DamageMeterSessionType.Current, as the mock reports it
-local ALPHA_GUID = "Player-1-0000000A"
 
 --- A loaded instance with one session installed for every stat, plus the
 --- restriction flipped on when asked for.
@@ -1056,13 +1055,9 @@ end)
 --
 -- The Current session carries the real figure for the same deaths, and the
 -- recap ids are identical across the two in the same order (measured over three
--- live runs). So the offsets are looked up there, keyed on the id.
-
-local function deathsSession(inst, sessionType, rows)
-    inst.mocks.setSession(sessionType, inst.mocks.Enum.DamageMeterType.Deaths, {
-        combatSources = rows, maxAmount = 0, totalAmount = 0,
-    })
-end
+-- live runs). That was the reasoning behind attempt two. The block below
+-- supersedes it: measured on a live client, the Current session held no deaths
+-- to join to at all, so nothing reads the field now (core/Diagnostics.lua:677).
 
 -- ---------------------------------------------------------------------------
 -- Segment offsets — the anchor the client does not supply

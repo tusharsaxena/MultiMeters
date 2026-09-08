@@ -99,7 +99,7 @@ local function spellLines(inst)
     return out
 end
 
-local function row(opts)
+local function makeRow(opts)
     opts = opts or {}
     return {
         guid          = opts.guid or ALPHA,
@@ -130,7 +130,7 @@ end
 
 test("CellTooltip opens on the hovered cell and heads with the player and the stat", function()
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local tt = inst.mocks.GameTooltip
     assertTrue(tt:GetOwner() == anchor, "GameTooltip is re-owned on every hover")
@@ -141,7 +141,7 @@ end)
 test("CellTooltip honors the anchor setting and falls back to the default", function()
     local inst, cfg, anchor = bench()
     cfg.tooltip.anchor = "BOTTOMRIGHT"
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     assertEqual(inst.mocks.GameTooltip.__anchor, "ANCHOR_BOTTOMRIGHT")
 
     -- TOP, because it is the shipped default: an anchor this build does not
@@ -149,7 +149,7 @@ test("CellTooltip honors the anchor setting and falls back to the default", func
     -- carrying "CURSOR" -- lands where a new window does rather than somewhere
     -- nothing else uses.
     cfg.tooltip.anchor = "SOMETHINGWRONG"
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     assertEqual(inst.mocks.GameTooltip.__anchor, "ANCHOR_TOP",
         "a typo'd token must not silently become a broken anchor")
 
@@ -160,7 +160,7 @@ end)
 
 test("CellTooltip sorts biggest-first when comparison is legal", function()
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     -- The fixture ascends; a sorted tooltip descends.
     local ids = listedSpellIDs(inst.mocks)
@@ -172,7 +172,7 @@ end)
 
 test("CellTooltip REFUSES the sort while comparison is illegal", function()
     local inst, cfg, anchor = bench{ restricted = true }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     -- Not a degradation: the API already returns a meaningful sequence, and the
     -- alternative is a Lua error on every hover for the whole of a pull.
@@ -196,7 +196,7 @@ test("CellTooltip refuses the sort when an amount is MISSING, not merely secret"
     } }
 
     local ok = pcall(function()
-        inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     end)
     assertTrue(ok, "a missing amount must refuse the sort, not raise inside it")
 
@@ -215,7 +215,7 @@ test("CellTooltip caps the list at maxSpells and says how many were left out", f
         }, maxAmount = 500, totalAmount = 1500 },
         configure = function(cfg) cfg.tooltip.maxSpells = 2 end,
     }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     assertEqual(#listedSpellIDs(inst.mocks), 2)
 
@@ -232,7 +232,7 @@ end)
 
 test("CellTooltip renders secret amounts through the formatter, untouched", function()
     local inst, cfg, anchor = bench{ restricted = true }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local amounts = {}
     for _, carrier in ipairs(spellLines(inst)) do
@@ -253,7 +253,7 @@ test("CellTooltip says 'no data' rather than showing an empty frame", function()
 
     -- No source detail installed at all: the provider refuses and the tooltip
     -- has to say something.
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     local found = false
     for _, line in ipairs(inst.mocks.GameTooltip.__lines) do
         if line.text == inst.NS.L["No data yet"] then found = true end
@@ -263,7 +263,7 @@ end)
 
 test("showSpells = false keeps the header and drops the breakdown", function()
     local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.showSpells = false end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     assertEqual(#listedSpellIDs(inst.mocks), 0)
 end)
 
@@ -271,14 +271,14 @@ test("hideInCombat refuses the hover outright", function()
     local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.hideInCombat = true end }
     inst.mocks.setInCombat(true)
 
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     assertEqual(#inst.mocks.GameTooltip.__lines, 0, "nothing is added at all")
 
     -- The test is UnitAffectingCombat, not InCombatLockdown: what the setting
     -- means is "while I am fighting, keep this out of my way", which is a
     -- statement about the player rather than about secure writes.
     inst.mocks.setInCombat(false)
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     assertTrue(#inst.mocks.GameTooltip.__lines > 0)
 end)
 
@@ -289,7 +289,7 @@ test("An unresolvable spell is shown by ID rather than dropped", function()
     }
     inst.mocks.C_Spell.GetSpellInfo = function() return nil end
 
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local found = false
     for _, line in ipairs(inst.mocks.GameTooltip.__lines) do
@@ -310,7 +310,7 @@ test("The avoidable column tags nothing per spell — no Deadly, no Overkill", f
         },
         maxAmount = 100, totalAmount = 100,
     } }
-    inst.NS.Tooltip:CellTooltip(row(), "AvoidableDamageTaken", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "AvoidableDamageTaken", anchor, cfg)
 
     local text = ""
     for _, line in ipairs(inst.mocks.GameTooltip.__lines) do
@@ -349,7 +349,7 @@ test("Those flags are never truth-tested anywhere — a secret boolean would rai
     -- case is what keeps a reader that comes back from reading them the raising
     -- way — the spells still carry them, so a direct truth test would fail here.
     local ok = pcall(function()
-        inst.NS.Tooltip:CellTooltip(row(), "AvoidableDamageTaken", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow(), "AvoidableDamageTaken", anchor, cfg)
     end)
     assertTrue(ok)
 
@@ -369,7 +369,7 @@ end)
 
 test("The Deaths cell advertises the click that opens the recap", function()
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ deathRecapID = 4242 }, "Deaths", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ deathRecapID = 4242 }, "Deaths", anchor, cfg)
 
     local found = false
     for _, line in ipairs(inst.mocks.GameTooltip.__lines) do
@@ -380,7 +380,7 @@ end)
 
 test("A death with no recap id advertises nothing", function()
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row(), "Deaths", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "Deaths", anchor, cfg)
     for _, line in ipairs(inst.mocks.GameTooltip.__lines) do
         assertFalse(line.text == inst.NS.L["Click for details"])
     end
@@ -394,7 +394,7 @@ test("NameTooltip lists EVERY tracked stat, dimming the ones not on screen", fun
     local inst, cfg, anchor = bench()
     cfg.columns = { { stat = "DamageDone", width = 90 } }
 
-    inst.NS.Tooltip:NameTooltip(row(), anchor, cfg)
+    inst.NS.Tooltip:NameTooltip(makeRow(), anchor, cfg)
 
     local labels = {}
     for _, line in ipairs(inst.mocks.GameTooltip.__lines) do
@@ -434,7 +434,7 @@ test("NameTooltip colors each stat by the catalog palette, whatever colorMode sa
     cfg.bars.colorMode = "class"
     cfg.columns = { { stat = "DamageDone", width = 90 }, { stat = "HealingDone", width = 90 } }
 
-    inst.NS.Tooltip:NameTooltip(row(), anchor, cfg)
+    inst.NS.Tooltip:NameTooltip(makeRow(), anchor, cfg)
 
     local Const = inst.NS.Constants
     local lines = {}
@@ -460,7 +460,7 @@ test("NameTooltip colors the AMOUNT the same as its label, on both sides of the 
     local inst, cfg, anchor = bench()
     cfg.columns = { { stat = "DamageDone", width = 90 } }
 
-    inst.NS.Tooltip:NameTooltip(row(), anchor, cfg)
+    inst.NS.Tooltip:NameTooltip(makeRow(), anchor, cfg)
 
     local Const = inst.NS.Constants
     local lines = {}
@@ -484,7 +484,7 @@ end)
 
 test("NameTooltip works while restricted, adding nothing up", function()
     local inst, cfg, anchor = bench{ restricted = true }
-    local ok = pcall(function() inst.NS.Tooltip:NameTooltip(row(), anchor, cfg) end)
+    local ok = pcall(function() inst.NS.Tooltip:NameTooltip(makeRow(), anchor, cfg) end)
     assertTrue(ok)
     assertTrue(#inst.mocks.GameTooltip.__lines > 1)
 end)
@@ -492,7 +492,7 @@ end)
 test("showAllStatsOnName = false stops after the name", function()
     local inst, cfg, anchor = bench{
         configure = function(c) c.tooltip.showAllStatsOnName = false end }
-    inst.NS.Tooltip:NameTooltip(row(), anchor, cfg)
+    inst.NS.Tooltip:NameTooltip(makeRow(), anchor, cfg)
     assertEqual(#inst.mocks.GameTooltip.__lines, 1)
 end)
 
@@ -502,7 +502,7 @@ test("NameTooltip says 'no data' when the meter has nothing for the player", fun
     local anchor = inst.mocks.__stubFrame("Frame")
     inst.mocks.GameTooltip:ClearLines()
 
-    inst.NS.Tooltip:NameTooltip(row(), anchor, cfg)
+    inst.NS.Tooltip:NameTooltip(makeRow(), anchor, cfg)
     local found = false
     for _, line in ipairs(inst.mocks.GameTooltip.__lines) do
         if line.text == inst.NS.L["No data yet"] then found = true end
@@ -513,13 +513,13 @@ end)
 test("A tooltip resolves its window from row.windowId when it was not handed one", function()
     local inst, cfg, anchor = bench()
     -- The row-pool call sites hold a window ID on the frame, not the table.
-    inst.NS.Tooltip:CellTooltip(row{ windowId = cfg.id }, "DamageDone", anchor)
+    inst.NS.Tooltip:CellTooltip(makeRow{ windowId = cfg.id }, "DamageDone", anchor)
     assertTrue(#inst.mocks.GameTooltip.__lines > 0)
 end)
 
 test("Tooltip:Hide is unconditional", function()
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     inst.NS.Tooltip:Hide()
     -- A hide the addon did not need to do is invisible; a tooltip left pinned
     -- under the cursor is the single most reported meter bug there is.
@@ -579,7 +579,7 @@ test("A spell line carries a real class-colored BAR, not a run of characters", f
     -- StatusBar parented to the tooltip and anchored to the line.
     -- red under: concatenating characters into the right-hand string.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
     local bars = tooltipBars(inst)
     assertTrue(#bars > 0, "no bar was drawn")
@@ -601,11 +601,11 @@ test("Bars are released between hovers, never stacked", function()
     -- bar would otherwise sit behind a line it no longer describes.
     -- red under: dropping the releaseBars call at the top of CellTooltip.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
     local first = #tooltipBars(inst)
 
     inst.mocks.GameTooltip:ClearLines()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
     assertEqual(#tooltipBars(inst), first, "the second hover doubled the bars")
 end)
 
@@ -626,7 +626,7 @@ test("The bar is DRAWN mid-pull, because the widget does the division", function
     inst.mocks.setSecretValues(true)
 
     local ok, err = pcall(function()
-        inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
     end)
     assertTrue(ok, "the tooltip compared or divided a secret: " .. tostring(err))
 
@@ -642,7 +642,7 @@ test("A bar spans the FULL line, so its length is comparable down the column", f
     -- start and end where every other bar does — the FILL is what differs.
     -- red under: restoring the LEFT-to-RIGHT / RIGHT-to-LEFT anchoring.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
     local carrier = spellLines(inst)[1]
     assertTrue(carrier ~= nil, "no spell line was drawn")
@@ -664,7 +664,7 @@ test("A bar clears the icon rather than running underneath it", function()
     -- begins, so the icon reads as its own column the way it does in the grid.
     -- red under: a zero or negative LEFT offset.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
     local carrier = spellLines(inst)[1]
     assertTrue(carrier ~= nil, "no spell line was drawn")
@@ -689,21 +689,21 @@ test("The player's name is class-coloured on every tooltip that names one", func
 
     -- The cell tooltip's header is a DOUBLE line -- name on the left, statistic
     -- on the right -- so its colours are the pair recorded for each side.
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     local first = inst.mocks.GameTooltip.__lines[1]
     assertEqual(first.leftColor[1], want.r, "the cell tooltip's name is not class-coloured")
     assertEqual(first.leftColor[3], want.b)
     assertEqual(first.rightColor[1], 1, "the statistic beside it lost its gold")
 
     -- The name tooltip's is a single line.
-    inst.NS.Tooltip:NameTooltip(row(), anchor, cfg)
+    inst.NS.Tooltip:NameTooltip(makeRow(), anchor, cfg)
     first = inst.mocks.GameTooltip.__lines[1]
     assertEqual(first.r, want.r, "the name tooltip's name is not class-coloured")
 end)
 
 test("A row with no class keeps a white name rather than an invented colour", function()
     local inst, cfg, anchor = bench()
-    local r = row()
+    local r = makeRow()
     r.classFilename = nil
     inst.NS.Tooltip:CellTooltip(r, "DamageDone", anchor, cfg)
     assertEqual(inst.mocks.GameTooltip.__lines[1].leftColor[1], 1)
@@ -716,7 +716,7 @@ test("The scale reaches the tooltip BEFORE it is placed, and is put back after",
     -- text anybody hovers, with nothing on screen to connect it to this addon.
     -- red under: dropping the restore, or scaling after SetOwner.
     local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.scale = 1.4 end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     assertEqual(inst.mocks.GameTooltip.__scale, 1.4)
 
     inst.NS.Tooltip:Hide()
@@ -726,7 +726,7 @@ end)
 test("A nonsense scale is bounded rather than handed to the client", function()
     for _, bad in ipairs({ 0, -3, 99, "big" }) do
         local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.scale = bad end }
-        inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
         local got = inst.mocks.GameTooltip.__scale
         assertTrue(got >= 0.5 and got <= 2,
             "scale " .. tostring(bad) .. " reached the client as " .. tostring(got))
@@ -747,7 +747,7 @@ test("The bar's fill and its backdrop each take their own colour and opacity", f
         c.tooltip.barBgColor     = { r = 0, g = 0, b = 1, a = 1 }
         c.tooltip.barBgAlpha     = 0.25
     end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local b = tooltipBars(inst)[1]
     assertTrue(b ~= nil, "no bar was drawn")
@@ -773,7 +773,7 @@ test("Per-statistic mode is the HOVERED column's colour, not the sort column's",
     assertTrue(want ~= nil and sorted ~= nil, "the palette has no pair to tell apart")
     assertTrue(want[1] ~= sorted[1], "the two colours are identical; the case proves nothing")
 
-    inst.NS.Tooltip:CellTooltip(row(), "HealingDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "HealingDone", anchor, cfg)
     local b = tooltipBars(inst)[1]
     assertTrue(b ~= nil, "no bar was drawn")
     assertEqual(b.__barColor[1], want[1], "a Healing breakdown took the sort column's colour")
@@ -787,7 +787,7 @@ test("The text mode follows the hovered column too", function()
         c.data.sortColumn   = "DamageDone"
     end }
     local want = inst.NS.Constants.STAT_COLORS.HealingDone
-    inst.NS.Tooltip:CellTooltip(row(), "HealingDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "HealingDone", anchor, cfg)
 
     local b = tooltipBars(inst)[1]
     local carrier = b.__parent
@@ -800,7 +800,7 @@ test("Class mode paints the bar with the hovered player's class", function()
         c.tooltip.barColorMode = "class"
     end }
     local want = inst.mocks.RAID_CLASS_COLORS.MAGE
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local b = tooltipBars(inst)[1]
     assertEqual(b.__barColor[1], want.r)
@@ -817,7 +817,7 @@ test("The bar border is drawn on the BAR, where it can be seen", function()
         c.tooltip.barBorderSize  = 4
     end }
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local b = tooltipBars(inst)[1]
     assertTrue(b ~= nil, "no bar was drawn")
@@ -841,7 +841,7 @@ test("The bar border answers a colour mode, and its class is the HOVERED player'
     end }
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
     local want = inst.mocks.RAID_CLASS_COLORS.MAGE
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local b = tooltipBars(inst)[1]
     local edge = b.__backdropBorderColor
@@ -860,7 +860,7 @@ test("The bar border's shipped mode is Custom, so it still reads the swatch", fu
         c.tooltip.barBorderColor = { r = 1, g = 0, b = 0, a = 1 }
     end }
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     assertEqual(tooltipBars(inst)[1].__backdropBorderColor[1], 1)
 end)
@@ -879,7 +879,7 @@ test("A bar sits UNDER the tooltip's text, not over it", function()
     -- red under: leaving the fill on the StatusBar's default layer, or putting it
     -- back on BORDER where the outline lives.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
     local b = tooltipBars(inst)[1]
     assertTrue(b ~= nil, "no bar was drawn")
@@ -905,7 +905,7 @@ test("Bars come down when GameTooltip closes, whoever closed it", function()
     -- OnHide.
     -- red under: dropping the HookScript("OnHide", releaseBars) install.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
     assertTrue(#tooltipBars(inst) > 0, "no bar was drawn")
 
     -- Somebody ELSE hides the tooltip. Nothing routes this through our module.
@@ -934,7 +934,7 @@ test("A spell line carries its SHARE of the player's total beside the amount", f
     -- source's own total for this column, not the column max.
     -- red under: dropping the sourceTotal argument, or passing maxAmount instead.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
     -- The fixture totals 600, and its largest spell is 300 — exactly half.
     assertTrue(shareText(inst):find("50.0%%") ~= nil,
@@ -956,7 +956,7 @@ test("The percent slot GOES QUIET mid-pull rather than approximating", function(
     inst.mocks.setSecretValues(true)
 
     local ok = pcall(function()
-        inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
     end)
     assertTrue(ok, "the tooltip divided a secret to get a percentage")
 
@@ -978,7 +978,7 @@ test("The amount and the share sit in FIXED right-aligned slots", function()
     -- proportional, so padding with spaces cannot substitute.
     -- red under: putting either number back in the tooltip's own right column.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
     local carriers = spellLines(inst)
     assertEqual(#carriers, 3, "the breakdown did not draw its three lines")
@@ -1012,7 +1012,7 @@ test("Both number slots are white by default, not two kinds of number", function
     -- figures, and colouring them differently made the line read as two.
     -- red under: reinstating either hardcoded colour.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
     local carrier = spellLines(inst)[1]
     for _, slot in ipairs({ "share", "amount" }) do
@@ -1031,7 +1031,7 @@ test("The tooltip text colour is configurable, and reaches every slot", function
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.textColor = { r = 1, g = 0, b = 0, a = 1 }
     end }
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
     local carrier = spellLines(inst)[1]
     for _, slot in ipairs({ "amount", "share", "label" }) do
@@ -1051,7 +1051,7 @@ test("The AMOUNT rides on the carrier, not on the bar", function()
     local inst, cfg, anchor = bench{ restricted = true }
     inst.mocks.setSecretValues(true)
 
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
     local carriers = spellLines(inst)
     assertEqual(#carriers, 3, "the spell lines went down with the restriction")
@@ -1073,7 +1073,7 @@ test("The tooltip is widened for the slots, and put back afterwards", function()
     -- inexplicably wide: the same class of bug as a bar left Shown.
     -- red under: dropping either the applyMinimumWidth call or the reset.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
     assertTrue(inst.mocks.GameTooltip:GetMinimumWidth() > 0,
         "the tooltip was never widened for the number slots")
@@ -1108,7 +1108,7 @@ test("Every anchor the schema offers resolves to a real GameTooltip token", func
 
     for value, token in pairs(expected) do
         local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.anchor = value end }
-        inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
         assertEqual(inst.mocks.GameTooltip.__anchor, token,
             "anchor " .. value .. " did not reach the client")
     end
@@ -1134,7 +1134,7 @@ test("Each anchor puts the tooltip in the box of a 3x3 around the cell", functio
 
     for value, want in pairs(EXPECTED) do
         local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.anchor = value end }
-        inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
         local tip, relTo, rel = inst.mocks.GameTooltip:GetPoint(1)
         assertTrue(tip ~= nil, value .. ": the tooltip was never placed")
@@ -1172,7 +1172,7 @@ test("The anchor dropdown offers nothing the token table cannot resolve", functi
 
     for value in pairs(anchorRow.values) do
         local inst, cfg, frame = bench{ configure = function(c) c.tooltip.anchor = value end }
-        inst.NS.Tooltip:CellTooltip(row(), "DamageDone", frame, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", frame, cfg)
         local token = inst.mocks.GameTooltip.__anchor
         if value == "CURSOR" then
             assertEqual(token, "ANCHOR_CURSOR")
@@ -1201,7 +1201,7 @@ test("The x/y offset reaches SetOwner rather than a SetPoint of our own", functi
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.offsetX, c.tooltip.offsetY = 25, -40
     end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     assertEqual(inst.mocks.GameTooltip.__ownerX, 25, "the horizontal offset never arrived")
     assertEqual(inst.mocks.GameTooltip.__ownerY, -40, "the vertical offset never arrived")
@@ -1214,7 +1214,7 @@ test("A junk offset off an old profile is clamped, never handed to the client", 
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.offsetX, c.tooltip.offsetY = "left a bit", 99999
     end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     assertEqual(inst.mocks.GameTooltip.__ownerX, 0, "a non-number offset was not neutralized")
     assertEqual(inst.mocks.GameTooltip.__ownerY, 400, "an out-of-range offset was not clamped")
@@ -1229,7 +1229,7 @@ test("Bar spacing is applied to the tooltip, and taken back off when it hides", 
     -- a value left on it silently respaces the next addon's item tooltip.
     -- red under: dropping either the SetCustomLineSpacing call or its reset.
     local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.barSpacing = 5 end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     assertEqual(inst.mocks.GameTooltip:GetCustomLineSpacing(), 5,
         "the configured spacing never reached the tooltip")
@@ -1254,7 +1254,7 @@ test("The configured font reaches both number slots and the spell name", functio
         c.tooltip.fontSize    = 17
         c.tooltip.fontOutline = "THICKOUTLINE"
     end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local lines = spellLines(inst)
     assertTrue(#lines > 0, "no spell lines were drawn")
@@ -1277,7 +1277,7 @@ test("NONE is an absent outline flag, not the literal string", function()
     -- difference is invisible until a font renders wrong.
     -- red under: passing config.fontOutline through unconditionally.
     local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.fontOutline = "NONE" end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local lines = spellLines(inst)
     local _, _, flags = lines[1].amount:GetFont()
@@ -1291,7 +1291,7 @@ test("Every tooltip line we restyled is put back when the tooltip hides", functi
     -- next reload — the same class of bug as a bar left Shown, and less visible.
     -- red under: dropping restoreFonts from releaseLines.
     local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.fontSize = 19 end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local left = inst.mocks["GameTooltipTextLeft4"]
     assertTrue(select(2, left:GetFont()) == 19, "the line never took our font to begin with")
@@ -1323,7 +1323,7 @@ test("The tooltip's own bar texture is used, not the grid's", function()
     media:Register("statusbar", "GridTexture", [[Interface\Grid]])
     media:Register("statusbar", "TipTexture",  [[Interface\Tip]])
 
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local lines = spellLines(inst)
     assertTrue(#lines > 0, "no spell lines were drawn")
@@ -1344,7 +1344,7 @@ test("Tooltip text takes the HOVERED player's class color when asked", function(
     -- The mock ships every class the same colour, so one is given its own.
     inst.mocks.RAID_CLASS_COLORS.MAGE = { r = 0.41, g = 0.8, b = 0.94 }
 
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchorFrame, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
 
     local lines = spellLines(inst)
     assertTrue(#lines > 0, "no spell lines were drawn")
@@ -1361,7 +1361,7 @@ test("With the class colour off, the tooltip keeps its configured text colour", 
     end }
     inst.mocks.RAID_CLASS_COLORS.MAGE = { r = 0.41, g = 0.8, b = 0.94 }
 
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchorFrame, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
     local lines = spellLines(inst)
     assertEqual(lines[1].amount.__textColor[1], 0.2)
 end)
@@ -1374,7 +1374,7 @@ test("Tooltip shadow reaches the line, and survives the post-Show re-font", func
     local inst, cfg, anchorFrame = bench{ configure = function(c)
         c.tooltip.fontShadow = true
     end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchorFrame, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
 
     local lines = spellLines(inst)
     assertTrue(#lines > 0, "no spell lines were drawn")
@@ -1391,7 +1391,7 @@ test("The tooltip puts a SHARED line's shadow back when it lets go", function()
     local inst, cfg, anchorFrame = bench{ configure = function(c)
         c.tooltip.fontShadow = true
     end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchorFrame, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
 
     -- The shared line widgets are reachable exactly the way an addon reaches
     -- them in the client: by global name. Collected BEFORE the hide, and the
@@ -1423,7 +1423,7 @@ test("A bar border is applied when asked and cleared off the POOLED line when no
         c.tooltip.barBorderStyle = "None"
         c.tooltip.barBorderSize  = 1
     end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local lines = spellLines(inst)
     assertTrue(#lines > 0, "no spell lines were drawn")
@@ -1438,7 +1438,7 @@ test("Border size zero drops the border FILE with it", function()
         c.tooltip.barBorderStyle = "Blizzard Tooltip"
         c.tooltip.barBorderSize  = 0
     end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local lines = spellLines(inst)
     assertEqual(lines[1].__backdrop, nil, "a zero-thickness border still carried a file")
@@ -1458,7 +1458,7 @@ test("maxSpells 0 lists every spell the breakdown collected", function()
         detail = { combatSpells = spells, maxAmount = 18000, totalAmount = 171000 },
         configure = function(c) c.tooltip.maxSpells = 0 end,
     }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     assertEqual(#spellLines(inst), 18, "a 0 cap did not list every spell")
 end)
@@ -1475,7 +1475,7 @@ test("maxSpells 0 is bounded by the collector, and says so", function()
         detail = { combatSpells = spells, maxAmount = 80000, totalAmount = 1 },
         configure = function(c) c.tooltip.maxSpells = 0 end,
     }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     assertEqual(#spellLines(inst), 64, "the collector's own ceiling was not respected")
 
@@ -1498,7 +1498,7 @@ test("A negative or non-numeric cap still falls back to the shipped default", fu
             detail = detail,
             configure = function(c) c.tooltip.maxSpells = junk end,
         }
-        inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
         assertEqual(#spellLines(inst), 10,
             "a junk cap (" .. tostring(junk) .. ") did not fall back to 10")
     end
@@ -1539,7 +1539,7 @@ test("The font survives a UI skin that re-fonts every line on show", function()
         end
     end)
 
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     assertTrue(restyled > 0, "the simulated skin never ran, so this proves nothing")
     local left = mocks["GameTooltipTextLeft4"]
@@ -1555,7 +1555,7 @@ test("The post-layout pass still restores every line it touched", function()
     -- restore bookkeeping would be the original leak with an extra step.
     -- red under: reapplyFonts writing to lines it never recorded.
     local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.fontSize = 19 end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local left = inst.mocks["GameTooltipTextLeft4"]
     assertEqual(select(2, left:GetFont()), 19, "the line never took our font")
@@ -1594,7 +1594,7 @@ test("A target's name is drawn on our own carrier, not on the tooltip's line", f
     mocks.setSession(CURRENT, ENEMY_STAT,
         { combatSources = sources, maxAmount = 1, totalAmount = 1 })
 
-    inst.NS.Tooltip:CellTooltip(row{ name = "Alpha" }, "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow{ name = "Alpha" }, "DamageDone", anchor, cfg)
 
     local labels = {}
     for _, carrier in ipairs(spellLines(inst)) do
@@ -1623,7 +1623,7 @@ test("The gap above a section is half the text size, not a whole blank line", fu
     -- spacer takes the same face at half the size.
     -- red under: a bare AddLine(" ") before the section header.
     local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.fontSize = 20 end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     -- Line 2 is the gap: line 1 is the "<player> / <stat>" header, line 3 is
     -- "Spell breakdown", and the spell lines follow.
@@ -1655,7 +1655,7 @@ test("The half-size gap survives the post-layout pass", function()
         end
     end)
 
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     assertEqual(select(2, mocks["GameTooltipTextLeft2"]:GetFont()), 10,
         "the gap was restored to full size by the re-apply")
 end)
@@ -1665,7 +1665,7 @@ test("The gap is restored with every other line it was applied alongside", funct
     -- it would land on whatever the next addon puts there.
     -- red under: applying the gap's font outside the restore bookkeeping.
     local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.fontSize = 20 end }
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     local gap = inst.mocks["GameTooltipTextLeft2"]
     assertEqual(select(2, gap:GetFont()), 10, "the gap never took the half size")
@@ -1689,7 +1689,7 @@ test("The tooltip is widened without measuring anything inside GameTooltip", fun
     -- reintroducing any measurement raises here rather than only in game.
     -- red under: any GetStringWidth call on a widget inside GameTooltip.
     local inst, cfg, anchor = bench()
-    inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
     assertTrue(inst.mocks.GameTooltip:GetMinimumWidth() > 0,
         "the tooltip was not widened for the number slots at all")
@@ -1702,7 +1702,7 @@ test("The width follows the font size, because it is computed", function()
     -- the large one.
     local function widthAt(size)
         local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.fontSize = size end }
-        inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
         return inst.mocks.GameTooltip:GetMinimumWidth()
     end
 
@@ -1745,7 +1745,7 @@ test("The name's room is a FIXED span, not the length of the names on screen", f
             detail = { combatSpells = spells, maxAmount = 655000, totalAmount = 655000 },
             configure = function(c) c.tooltip.fontSize = SIZE end,
         }
-        inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
         return inst.mocks.GameTooltip:GetMinimumWidth()
     end
 
@@ -1774,7 +1774,7 @@ test("The share slot fits a full 100.0%, at any configured font size", function(
     -- red under: a fixed share slot, at the default size or at a large one.
     for _, size in ipairs({ 8, 10, 16, 24 }) do
         local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.fontSize = size end }
-        inst.NS.Tooltip:CellTooltip(row(), "DamageDone", anchor, cfg)
+        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
         local carriers = spellLines(inst)
         assertTrue(#carriers > 0, "the breakdown drew no lines to measure")

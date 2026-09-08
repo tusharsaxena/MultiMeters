@@ -339,7 +339,7 @@ test("The title-bar divider can be switched off, and does not move the title row
     -- line leaves the title, the session line and the control strip exactly where
     -- they were. A layout that measured the divider would shift all three.
     -- red under: gating the title row on the divider, or hiding it by height 0.
-    local inst, window, cfg = scene()
+    local _, window, cfg = scene()
 
     window:ApplyConfig()
     local rowTop = window:TitleRowTop(cfg.header.height)
@@ -929,7 +929,7 @@ test("The header says the grid was built the restricted way", function()
     -- they are the engine's own live ranking. What the player is owed is why a
     -- CELL can be empty: mid-pull the other columns are matched to those rows by
     -- class and spec, because `sourceGUID` is secret and cannot be joined on.
-    local inst, window = scene{ restricted = true, sortMode = "value" }
+    local _, window = scene{ restricted = true, sortMode = "value" }
     window:ApplyConfig()
     window:Refresh()
 
@@ -942,7 +942,7 @@ test("The header names AMBIGUITY when two rows cannot be told apart", function()
     -- them, so their secondary cells are left empty rather than filled with a
     -- number that might be the other one's. That is a visible absence and it
     -- needs a reason on the line.
-    local inst, window, cfg = scene{
+    local _, window, cfg = scene{
         restricted = true,
         sources = { src(ALPHA, 100, { class = "MAGE" }), src(BETA, 50, { class = "MAGE" }) },
     }
