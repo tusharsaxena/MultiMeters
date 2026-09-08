@@ -1187,7 +1187,12 @@ test("The projection's field list and collectSource cannot drift apart", functio
     -- would just quietly under-report.
     local path = "modules/Provider.lua"
     local fh = assert(io.open(path, "r"))
-    local text = fh:read("*a")
+    -- Normalised, because this scan is about the source, not about how the
+    -- line ends. The pattern below anchors on "\nend\n"; against a correctly
+    -- checked-out CRLF working tree that never matches, the body comes back
+    -- nil, and the case fails claiming a drift that is not there. The EOL
+    -- gate is what has an opinion about line endings; this case does not.
+    local text = fh:read("*a"):gsub("\r\n", "\n")
     fh:close()
 
     -- The WHOLE function, not the literal alone: `sourceCreatureID` is read into
