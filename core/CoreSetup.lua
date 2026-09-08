@@ -1,4 +1,4 @@
-local addonName, NS = ...   -- luacheck: ignore addonName
+local addonName, NS = ...
 NS.Util = NS.Util or {}
 local Util = NS.Util
 

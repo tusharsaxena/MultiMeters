@@ -80,7 +80,7 @@
 -- cache under "Roster" — the same sub-table core/MultiMeters.lua wipes — so
 -- there is one invalidation seam rather than two that can fall out of step.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Roster = NS:NewModule("Roster", "AceEvent-3.0")
 NS.Roster = Roster

@@ -42,7 +42,7 @@
 -- when it was wired -- a closure over the index made the visible glyph toggle a
 -- different statistic than the one clicked.
 
-local addonName, NS = ...   -- luacheck: ignore 211/addonName
+local _, NS = ...
 
 local L = NS.L
 local H = NS.Helpers or {}

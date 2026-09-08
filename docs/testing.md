@@ -288,6 +288,37 @@ also added the banner above the pair that pushed it to 72-73, shipping a pointer
 short of the thing it argues about. None of the four cases before it could see that: they never
 look at a number. This one does, and it is scoped to the single citation that leads somewhere.
 
+
+### The suppression gate
+
+`tests/test_lintconfig.lua` is the fourth register, and it guards the thing the other three rest on:
+that `luacheck .` reaching 0/0 is a statement about the code rather than about `.luacheckrc`.
+
+It exists because this repo spent the whole 2026-09-07 remediation with
+`ignore = { "212/self", "212/event", "211/addonName" }` at the top of that file. That list looks
+careful — every entry names a variable, not just a code — and it was still the anti-pattern
+`lint-§1` describes. A top-level `211/addonName` does not mean "the bootstrap header may go unread";
+it means no file in the addon may ever report an unused `addonName`, and thirty-two of them were
+unread. `M4c-06` removed the three lines, watched eighty-four warnings appear, fixed the thirty-two
+at source, and moved the fifty-two receivers that remained into per-file `files[...]` stanzas that
+each say which calling convention forces the argument. `212/event` turned out to name a warning this
+repository does not produce at all.
+
+Four cases, and each is the same rule from a different side:
+
+| Case | What it refuses |
+| --- | --- |
+| no top-level ignore | `ignore = { ... }` at the top of `.luacheckrc`, however narrowly its entries are spelled |
+| no class switched off | `unused_args = false` and eight relatives — a blanket ignore spelled as a switch |
+| every stanza is narrow | a `files[...]` ignore whose key is a directory and whose entry names no variable |
+| no bare inline directive | `-- luacheck: ignore` with no code after it, anywhere in tracked Lua |
+
+It reads `.luacheckrc` **as Lua**, under a sandbox that auto-creates tables the way luacheck's own
+config loader does, so it inspects the table luacheck obeys rather than text a different spelling
+would slip past. And like `test_docmap` and the vendored EOL gate, it **fails rather than skips**
+when it cannot look: no config, an unreadable one, a chunk that will not compile, no `io.popen`, no
+git. A gate that goes quiet when it is blind reports success, which is worse than not existing.
+
 ## Verifying the vendored copies
 
 ```sh

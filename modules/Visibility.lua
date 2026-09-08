@@ -55,7 +55,7 @@
 -- reliably fire PLAYER_REGEN_ENABLED and the flag would latch true until a
 -- reload.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Visibility = NS:NewModule("Visibility", "AceEvent-3.0")
 

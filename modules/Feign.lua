@@ -46,7 +46,7 @@
 -- The spell id itself lives in core/MultiMeters.lua beside the handler that
 -- compares it, not here: this module never sees the cast, only its conclusion.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Feign = NS:NewModule("Feign", "AceEvent-3.0")
 NS.Feign = Feign

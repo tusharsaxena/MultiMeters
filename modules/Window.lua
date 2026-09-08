@@ -49,7 +49,7 @@
 -- message on the shared addon object would silently clobber each other and only
 -- the last one would ever refresh (anti-pattern #32).
 
-local addonName, NS = ...
+local _, NS = ...
 
 -- Perf bracket upvalue (performance-§2): resolved ONCE at load, never through an
 -- NS lookup on the hot path.

@@ -122,7 +122,7 @@
 -- the exception and is a PLAIN number or nil: computing it is a division, so it
 -- exists only when the operands were accessible, which is only out of combat.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Aggregator = NS:NewModule("Aggregator", "AceEvent-3.0")
 NS.Aggregator = Aggregator

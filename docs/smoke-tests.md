@@ -40,6 +40,13 @@ in-client.
   addon restriction.
 - **Pass** lines describe what success looks like. If a step says "should X" and X does not happen,
   the smoke test failed.
+- **What needs no smoke run at all.** A change confined to `.luacheckrc`, to a headless-only gate
+  under `tests/`, or to docs does not reach the client, and `luacheck .` at 0/0 plus
+  `lua tests/run.lua` green is its whole verification. `M4c-06` is the case this bullet was written
+  for: it removed the blanket lint suppression, renamed the unread `addonName` in thirty-three
+  bootstrap headers to `_` — a local nothing reads, in files whose behaviour is otherwise byte for
+  byte what it was — and added `tests/test_lintconfig.lua`. Recorded here rather than left to be
+  re-derived the next time the same shape lands.
 
 ## Suite
 

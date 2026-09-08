@@ -21,7 +21,7 @@
 -- TOC POSITION: after core/Constants.lua (the test toggle publishes a bus
 -- message named there) and before everything that reads NS.State.
 
-local addonName, NS = ...
+local _, NS = ...
 
 -- `debug` is the session-only debug-logging flag (debug-logging-§5). It defaults
 -- OFF, is NEVER persisted, and resets on every /reload and fresh login. The ONLY

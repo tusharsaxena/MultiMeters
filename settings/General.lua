@@ -42,7 +42,7 @@
 -- does not draw it. A page renders the schema and its own NON-setting furniture
 -- (the reset-everything button below), and nothing else.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = NS.L
 

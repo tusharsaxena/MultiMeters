@@ -65,7 +65,7 @@
 -- module, and modules/Row.lua and modules/Tooltip.lua both format on their
 -- first render.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Compat  = NS.Compat
 local Secrets = NS.Secrets

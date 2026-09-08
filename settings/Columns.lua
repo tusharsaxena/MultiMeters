@@ -51,7 +51,7 @@
 -- would hand the seam a table it already holds, and any change detection it
 -- does would correctly conclude that nothing happened.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L     = NS.L
 local Const = NS.Constants

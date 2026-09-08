@@ -70,7 +70,7 @@
 -- aggregator's join and the window's render pass — carry the brackets instead,
 -- which is also where a reader wants to see the number.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Secrets = {}
 NS.Secrets = Secrets

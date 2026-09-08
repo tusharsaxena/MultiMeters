@@ -23,7 +23,7 @@
 -- library, which owns *when* a page draws: first show, and again after a refresh
 -- marked it dirty while it was hidden.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = NS.L
 

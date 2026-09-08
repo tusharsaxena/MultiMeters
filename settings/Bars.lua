@@ -36,7 +36,7 @@
 -- A "color by rank" or "color above threshold" mode is not a missing feature
 -- here; it is a thing this data source cannot express while a pull is running.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = NS.L
 

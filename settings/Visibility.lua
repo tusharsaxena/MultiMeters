@@ -35,7 +35,7 @@
 -- rule existed would have every window hidden by a setting its owner never
 -- touched. See ShouldShow in modules/Visibility.lua.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = NS.L
 

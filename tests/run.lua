@@ -211,6 +211,10 @@ local SUITES = {
     "test_texture_paths",
     "test_docmap",
     "test_doc_structure",
+    -- The suppression gate, beside the two doc registers because it is the same bargain a
+    -- third time: it reads `.luacheckrc` as Lua and refuses the blanket `ignore` `M4c-06`
+    -- removed, so a 0/0 lint stays a statement about the code.
+    "test_lintconfig",
     "test_constants",
     "test_secrets",
     "test_compat",

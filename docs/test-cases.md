@@ -53,6 +53,13 @@ badge and any count quoted in the docs must agree with it.
 - the player-facing history has the two homes documentation-§1 allows, and no third
 - README.md's top-level sections are the ones documentation-§1 names, in its order
 
+### test_lintconfig.lua (4)
+
+- lintconfig: .luacheckrc sets no top-level ignore
+- lintconfig: .luacheckrc switches no warning class off wholesale
+- lintconfig: every files[...] ignore is narrowed to a file or a name
+- lintconfig: no source file carries a bare inline luacheck ignore
+
 ### test_constants.lua (23)
 
 - Constants: NS.Const and NS.Constants are the same table
@@ -1688,6 +1695,7 @@ badge and any count quoted in the docs must agree with it.
 | test_texture_paths.lua | 5 |
 | test_docmap.lua | 1 |
 | test_doc_structure.lua | 5 |
+| test_lintconfig.lua | 4 |
 | test_constants.lua | 23 |
 | test_secrets.lua | 38 |
 | test_compat.lua | 33 |
@@ -1728,4 +1736,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1530** |
+| **Total** | **1534** |

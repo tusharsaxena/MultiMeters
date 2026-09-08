@@ -80,7 +80,7 @@
 -- invalidate a breakdown completely. The wipe is in place, so the upvalue below
 -- keeps pointing at the live table (see core/State.lua's WipeCache).
 
-local addonName, NS = ...
+local _, NS = ...
 
 local DrillDown = NS:NewModule("DrillDown", "AceEvent-3.0")
 NS.DrillDown = DrillDown

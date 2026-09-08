@@ -50,7 +50,7 @@
 -- foot of Build supplies exactly that. The page used to buy the same freshness
 -- by re-Opening on EVERY show, and it paid for it with the refusal above.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = NS.L
 

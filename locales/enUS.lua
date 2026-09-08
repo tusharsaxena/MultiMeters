@@ -35,7 +35,7 @@
 -- locales/ loads FIRST in the TOC, ahead of core/, so this file bootstraps the
 -- namespace itself.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L = setmetatable({}, {
     __index = function(_, k) return k end,

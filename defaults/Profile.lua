@@ -30,7 +30,7 @@
 -- The debug flag is NOT here. It is session-only, in core/State.lua, and is
 -- never persisted (debug-logging-§5).
 
-local addonName, NS = ...
+local _, NS = ...
 
 -- File-local recursive deep-copy. Deliberately independent of NS.Util — this
 -- file must stay self-contained rather than depend on a load order that puts a

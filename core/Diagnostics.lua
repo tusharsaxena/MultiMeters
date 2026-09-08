@@ -36,7 +36,7 @@
 -- TOC POSITION: last in the core block. It reaches modules at CALL time and owns
 -- no state, so nothing depends on where it loads.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Diagnostics = {}
 NS.Diagnostics = Diagnostics

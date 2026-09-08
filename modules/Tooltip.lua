@@ -47,7 +47,7 @@
 -- repositioning that keeps a tooltip on screen. GameTooltip is cleared and
 -- re-owned on every hover, so nothing we add outlives the hover.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local Tooltip = NS:NewModule("Tooltip", "AceEvent-3.0")
 NS.Tooltip = Tooltip

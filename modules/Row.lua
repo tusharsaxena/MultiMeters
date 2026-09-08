@@ -52,7 +52,7 @@
 -- loads this file before either of them, and a load-time upvalue would freeze a
 -- nil in and silently kill every tooltip in the addon.
 
-local addonName, NS = ...
+local _, NS = ...
 
 -- Perf bracket upvalue (performance-§2): resolved ONCE at load, never through an
 -- NS lookup on the hot path. core/PerfSetup.lua loads before modules/, so this
