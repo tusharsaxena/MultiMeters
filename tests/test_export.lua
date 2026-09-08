@@ -1623,7 +1623,12 @@ end)
 -- there is no other seam from which to assert what the window is showing.
 
 test("Export: the copy window comes from LibKa0s-Widgets-1.0", function()
-    local fh = assert(io.open((T.root or ".") .. "/modules/Export.lua", "r"))
+    -- The modal half moved to modules/Export_Modal.lua when modules/Export.lua was
+    -- peeled for layout-§1 (issue #32), and the copy window went with it — it is
+    -- frame work, and the seam the file's own ":50" banner draws puts every frame
+    -- on that side. This case still measures the same property in the same way;
+    -- only the file it reads moved.
+    local fh = assert(io.open((T.root or ".") .. "/modules/Export_Modal.lua", "r"))
     local source = fh:read("*a")
     fh:close()
 

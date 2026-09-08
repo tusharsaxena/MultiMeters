@@ -162,6 +162,10 @@ files["modules/Roster.lua"]     = { ignore = { "212/self" } }
 files["modules/DrillDown.lua"]      = { ignore = { "212/self" } }
 files["modules/HeaderControls.lua"] = { ignore = { "212/self" } }
 files["modules/Tooltip.lua"]        = { ignore = { "212/self" } }
+-- `Tooltip:CellTooltip/NameTooltip/SpellTooltip` moved to the sibling when
+-- modules/Tooltip.lua was peeled for layout-§1 (issue #28); `Tooltip:Hide` stayed.
+-- Same three methods, same colon call sites, same reason -- just a second file now.
+files["modules/Tooltip_Builders.lua"] = { ignore = { "212/self" } }
 files["modules/Visibility.lua"]     = { ignore = { "212/self" } }
 
 -- `WindowProto:IsTest` is a window PROTOTYPE method: it is reached as `window:IsTest()` through the

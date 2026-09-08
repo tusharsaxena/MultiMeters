@@ -517,44 +517,47 @@ ratified row in the register above carrying a re-check trigger. What it does not
 nothing anywhere remarks on — "the count sitting in a bundle manifest that no document reads". This
 table is the remark, and it is why an audit **MUST NOT** re-file `layout-§1` against any file in it.
 
-Fifteen files, measured 2026-09-08 with
+Eight files, all of them suites, measured 2026-09-09 with
 
 ```
 git ls-files '*.lua' | grep -v '^libs/' | grep -v '^tests/_kit/' | xargs wc -l | sort -rn
 ```
 
-| File | Lines (2026-09-08) | Disposition |
+| File | Lines (2026-09-09) | Disposition |
 |---|---|---|
-| `settings/Schema.lua` | 3080 | Issue [#27](https://github.com/tusharsaxena/MultiMeters/issues/27) — the schema array out of the path machinery |
-| `tests/test_window.lua` | 2737 | Register row above — peels with `modules/Window.lua` ([#29](https://github.com/tusharsaxena/MultiMeters/issues/29)) |
-| `tests/test_tooltip.lua` | 2708 | Register row above — peels with `modules/Tooltip.lua` ([#28](https://github.com/tusharsaxena/MultiMeters/issues/28)) |
-| `modules/Tooltip.lua` | 2652 | Issue [#28](https://github.com/tusharsaxena/MultiMeters/issues/28) — the four tooltip builders out from under the secret-safe primitives |
-| `modules/Window.lua` | 2644 | Issue [#29](https://github.com/tusharsaxena/MultiMeters/issues/29) — header art, sorting and the segment selector out of the refresh chain |
-| `tests/wow_mock.lua` | 2266 | Issue [#34](https://github.com/tusharsaxena/MultiMeters/issues/34) — the secret simulator and the frame model out to siblings |
-| `modules/Aggregator.lua` | 2083 | Issue [#30](https://github.com/tusharsaxena/MultiMeters/issues/30) — identity mode and the correlation rectangle out of the build pipeline |
-| `core/Diagnostics.lua` | 1824 | Issue [#31](https://github.com/tusharsaxena/MultiMeters/issues/31) — one file per long-lived probe |
-| `modules/Export.lua` | 1743 | Issue [#32](https://github.com/tusharsaxena/MultiMeters/issues/32) — the pure serializer from the modal, the split its own `:50` banner already names |
-| `modules/Row.lua` | 1702 | Issue [#33](https://github.com/tusharsaxena/MultiMeters/issues/33) — the name cell out to its own file |
-| `tests/test_row.lua` | 1606 | Register row above — peels with `modules/Row.lua` ([#33](https://github.com/tusharsaxena/MultiMeters/issues/33)) |
-| `tests/test_aggregator.lua` | 1605 | Register row above — peels with `modules/Aggregator.lua` ([#30](https://github.com/tusharsaxena/MultiMeters/issues/30)) |
-| `tests/test_schema.lua` | 1573 | Register row above — peels with `settings/Schema.lua` ([#27](https://github.com/tusharsaxena/MultiMeters/issues/27)) |
-| `tests/test_diagnostics.lua` | 1557 | Register row above — peels with `core/Diagnostics.lua` ([#31](https://github.com/tusharsaxena/MultiMeters/issues/31)) |
-| `tests/test_export.lua` | 1509 | Register row above — peels with `modules/Export.lua` ([#32](https://github.com/tusharsaxena/MultiMeters/issues/32)) |
+| `tests/test_window.lua` | 3159 | Issue [#29](https://github.com/tusharsaxena/MultiMeters/issues/29) — peels behind `modules/Window.lua`, along the seam that file took |
+| `tests/test_tooltip.lua` | 3054 | Issue [#28](https://github.com/tusharsaxena/MultiMeters/issues/28) — peels behind `modules/Tooltip.lua` |
+| `tests/wow_mock.lua` | 2270 | Issue [#34](https://github.com/tusharsaxena/MultiMeters/issues/34) — the secret simulator and the frame model out to siblings |
+| `tests/test_row.lua` | 1960 | Issue [#33](https://github.com/tusharsaxena/MultiMeters/issues/33) — peels behind `modules/Row.lua` |
+| `tests/test_export.lua` | 1887 | Issue [#32](https://github.com/tusharsaxena/MultiMeters/issues/32) — peels behind `modules/Export.lua` |
+| `tests/test_aggregator.lua` | 1840 | Issue [#30](https://github.com/tusharsaxena/MultiMeters/issues/30) — peels behind `modules/Aggregator.lua` |
+| `tests/test_diagnostics.lua` | 1838 | Issue [#31](https://github.com/tusharsaxena/MultiMeters/issues/31) — peels behind `core/Diagnostics.lua` |
+| `tests/test_schema.lua` | 1573 | Issue [#27](https://github.com/tusharsaxena/MultiMeters/issues/27) — peels behind `settings/Schema.lua` |
 
 **The line counts are dated because they drift, and nothing asserts them.** What
 `tests/test_layout_cap.lua` asserts is the *membership* of this table, in both directions: a file that
 crosses 1500 and is not listed here turns the suite red, and so does a row for a file that has fallen
 back under the cap or been deleted. A figure in this column is a measurement, not a claim about today.
 
-**Nothing here is peeled this cycle.** The 2026-09-07 remediation plan rules out splitting any file
-(`03_SPEC.md` § C22 non-goals): the seven source files are the largest mechanical churn available in
-this repository, they have no player-visible payoff, and they collide head-on with the feign-death and
-identity work landing in `modules/` and `core/` at the same time. The deliverable was the disposition,
-and the disposition is this table.
+**The seven source files are peeled, and that is why they are gone from this table rather than
+re-dated.** The 2026-09-07 cycle ruled a split out (`03_SPEC.md` § C22 non-goals) and left the
+disposition as its deliverable; that cycle is closed, and the 2026-09-09 remediation took every seam
+those dispositions named. `settings/Schema.lua` became `Schema_Compose` / `Schema` / `Schema_Paths`,
+`modules/Tooltip.lua` shed its builders and its line drawing, `modules/Window.lua` its header band and
+its placement, `modules/Aggregator.lua` identity mode and the preview, `core/Diagnostics.lua` one file
+per long-lived probe, `modules/Export.lua` the modal, and `modules/Row.lua` the name cell. Each row
+left this table the moment its file fell under the cap, which is the second direction the suite
+asserts.
 
-**The 1000–1500 band is on notice, not in breach**: `tests/test_provider.lua` (1359) and
-`tests/test_database.lua` (1004) are the only two files in it. They are named here so a later reader
-can tell that the band was looked at rather than missed; neither needs a disposition until it crosses.
+**The suites are what remains, and they peel behind the modules they mirror.** A test file's seam is
+not its own to choose: it follows the module's, so that a reader who opens `modules/Tooltip_Builders.lua`
+knows which suite covers it. That is why each row above still names the module's issue rather than one
+of its own.
+
+**The 1000–1500 band is on notice, not in breach**: `tests/test_provider.lua` (1359),
+`settings/Schema.lua` (1350), `settings/Schema_Compose.lua` (1285) and `tests/test_database.lua` (1121)
+are in it. The two Schema files entered it by peel rather than by growth, which is the band working as
+intended — a file that lands at 1350 has 150 lines of headroom and a reader should know it.
 
 ### Hard-coded texture paths
 
@@ -597,7 +600,7 @@ makes the subtraction from 19 checkable by a reader who runs the looser form.
 | File | Path | Disposition |
 |---|---|---|
 | `core/Constants.lua` | `Interface\AddOns\MultiMeters\media\logos\multimeters.logo.tga` | The addon's **own shipped art**, which no icon catalog is meant to replace (`layout-§3`). The reasoning above the line is about the extension, not the hard-coding: `.tga` is the only form the client loads, and the `.png` master beside it is packaging. |
-| `modules/Export.lua` | `Interface\Buttons\WHITE8x8` | The flat 1px fill `standalone-windows-§1` **mandates** for the shared window edge — a client primitive, not a mark, so outside what the catalog answers for. `LibKa0s/Core.lua:91,94` reaches for the same file for the same reason. Two sites, one path. |
+| `modules/Export_Modal.lua` | `Interface\Buttons\WHITE8x8` | The flat 1px fill `standalone-windows-§1` **mandates** for the shared window edge — a client primitive, not a mark, so outside what the catalog answers for. `LibKa0s/Core.lua:91,94` reaches for the same file for the same reason. Two sites, one path. |
 | `modules/Minimap.lua` | `Interface\Icons\achievement_challengemode_gold` | **Pinned to the TOC.** `MultiMeters.toc:6`'s `## IconTexture` names this exact path, so the launcher and the AddOns-list entry are the same addon on sight; a catalog mark here would make them two. `library-stack-§8` sends a mark the catalog lacks **upstream** rather than into an addon, and there is nothing to send: the set is white-in-alpha by rule and this is the client's own colour art. |
 | `modules/Row.lua` | `Interface\TargetingFrame\UI-Classes-Circles` | The client's **class atlas**, cropped by coordinate. The catalog carries no class art and `library-stack-§8` sends a missing mark upstream rather than into an addon — but twelve class circles are Blizzard's own data, not a Ka0s glyph, and they change when the game's classes do. |
 | `modules/Row.lua` | `Interface\TargetingFrame\UI-StatusBar` | Last-resort bar fill after an LSM fetch answers nothing. The catalog **does** ship bar textures (`library-stack-§8`), and they reach LSM through `core/MediaSetup.lua`'s `RegisterLSM` — so the only load that reaches this line is one where the payload is absent and `NS.MediaTexture` answers nil too. A fallback that needs the thing that is missing is not a fallback. |

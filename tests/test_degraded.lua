@@ -44,7 +44,7 @@ local SEAMS = {
     { major = "LibKa0s-DebugLog-1.0", file = "core/DebugLogSetup.lua" },
     { major = "LibKa0s-Slash-1.0",    file = "settings/Slash.lua" },
     { major = "LibKa0s-Options-1.0",  file = "settings/OptionsSetup.lua" },
-    { major = "LibKa0s-Widgets-1.0",  file = "modules/Export.lua" },
+    { major = "LibKa0s-Widgets-1.0",  file = "modules/Export_Modal.lua" },
 }
 
 --- The whole addon loaded with libs/LibKa0s NOT in the load list. The lifecycle
