@@ -56,6 +56,22 @@ Retail only · English only.
 - **A minimap button** and LDB launcher (left-click toggles the windows, right-click opens settings).
 - **A perf harness** (`/mm perf`) and an on-screen debug console (`/mm debug`), both LibKa0s's.
 
+**The catalog is one table, and there are two lookups over it.**
+
+Eight statistics are catalogued in `core/Constants.lua`; six ship enabled on a new window (Damage,
+Healing, Interrupts, Dispels, Avoidable Damage, Deaths). Adding a ninth is one row in that catalog —
+the column editor, the defaults, the aggregator's read loop, the sort-column dropdown and the tooltip
+header all read the same table.
+
+`EnemyDamageTaken` is **read but not catalogued**. The meter offers it and `modules/Targets.lua`
+walks it to build "which enemies this player hit", but it is not a column: every catalog row answers
+a question about a group member, and that one answers a question about an enemy, so offering it as a
+column asked a single grid row to be both a player and a mob. `Constants.STAT_BY_KEY` is therefore
+"may this be a column" and `Constants.READABLE_STAT_BY_KEY` — the catalog plus
+`Constants.OFF_CATALOG_STATS` — is "may this be read", which is the lookup `modules/Provider.lua`
+alone uses. It returns as its own window type, whose rows are enemies
+([issue #2](https://github.com/tusharsaxena/MultiMeters/issues/2)).
+
 ## Deferred: scoring
 
 A weighted score across damage, healing, kicks and dispels — "who actually carried this key" — is the
@@ -147,9 +163,17 @@ These have been considered and explicitly declined.
   [issue #4](https://github.com/tusharsaxena/MultiMeters/issues/4)'s to make; a player who wants the
   Ka0s look can already pick it out of the dropdown.
 
-## Known caveats, not scope decisions
+## Known limitations
 
-Two behaviors look like missing features and are documented limitations of the data source.
+Everything this addon knows it cannot do, in one list. `docs/ARCHITECTURE.md` →
+`## Known limitations` names the themes and links here; the entries live here because the list is
+the longest thing the hub was carrying and a hub is an index.
+
+### Caveats of the data source, not scope decisions
+
+Two behaviors look like missing features and are limitations of what `C_DamageMeter` hands over.
+
+
 
 **Pet attribution is best-effort.** The API exposes `sourceGUID` and `classification` but no explicit
 owner link, so `modules/Roster.lua` matches pets to owners by asking `UnitGUID` for each member's pet
@@ -168,6 +192,196 @@ computes it once per cell when the operands are accessible and answers `nil` whe
 which is most of a pull — and `nil` means "cannot be known right now", never "zero percent". A column
 configured to show percentages simply renders no text while restricted. This is why the text slots
 default to total and rate.
+
+### The rest
+
+
+- **`specIconID` does not arrive in a raid, so the identity key is class alone and a raid grid is 98%
+  blank mid-pull.** With `sourceGUID` secret, every column but the sort one is joined by
+  `classFilename .. specIconID .. isLocalPlayer` — except that in a 19-player raid `specIconID` is
+  **absent** from every raw source row but the local player's, in combat *and* immediately after. It
+  is not secret and not nil-under-restriction; it is not sent. **In a dungeon it arrives normally**
+  and the key works as designed, which is how this survived to a raid. `identityKey` folds a missing
+  icon to `0`, so every non-local key reads `CLASS_0_false` and two players of one **class** collide
+  whatever their specs are. What separates the two cases is not established — see
+  [#24](https://github.com/tusharsaxena/MultiMeters/issues/24).
+
+  Measured with `/mm debug identity` in a 19-player raid, 2026-09-01: **8 distinct keys across 19
+  rows, 18 of those rows wearing a collided key, 3 of 133 correlated cells filled (2%)**. `unmatched`
+  was **0 in every column**, so the correlation is not failing to match — there is almost nothing
+  left to tell two players apart with. The blanking itself is correct and does not change; a
+  mislabeled number is a lie the player cannot see.
+
+  The same capture killed the second direction: engine source order is **value-ranked per column and
+  re-ranks between passes**, so a duplicate pair's seats differ between columns and between two
+  captures of one pull. Positional pairing has nothing stable to rest on. The only plain field on the
+  row outside the key is `classification`, whose usefulness is unmeasured.
+
+  `specIconID`'s absence has a **second, visible consequence**, filed separately as
+  [#24](https://github.com/tusharsaxena/MultiMeters/issues/24): `modules/Row.lua`'s spec-icon branch
+  fires for the local player's row and no other, so every other row draws the class icon. The
+  fallback hides the cause. Blizzard's own meter shows the same thing on the same pull, so the
+  ceiling here may be the client's rather than ours.
+
+  Tracked as [#22](https://github.com/tusharsaxena/MultiMeters/issues/22). Nothing is fixed yet.
+  What shipped is the instrumentation, one ordering bug it exposed (a key proved ambiguous by a late
+  column used to keep cells an early column had already written), and the absent-field report that
+  found the cause — see [testing.md](testing.md#capturing-an-identity-correlation-run).
+- **The feign-death filter cannot run mid-pull, and that is structural.** `C_DamageMeter` hands a
+  Feign Death a valid `deathRecapID`, so the Deaths column counts a hunter's feign as a death.
+  `modules/Feign.lua` records the GUID off the cast and `modules/Aggregator.lua` drops that source —
+  but the join is a plain GUID against `sourceGUID`, and `sourceGUID` is secret for the whole of a
+  pull. That is the entire reason the aggregator has a second, GUID-free identity build. There is no
+  plain key on the other side of the join while the restriction is up, so **a feign is counted as a
+  death mid-pull and the count corrects itself the moment combat ends.** Do not "fix" this by keying
+  on something secret; there is nothing to key on.
+- **The feign-death filter is reported to work for the local player and not for party members, and
+  the cause is not yet measured** ([#25](https://github.com/tusharsaxena/MultiMeters/issues/25)).
+  Two candidates fit the symptom equally well from the count alone, and they need opposite fixes:
+  either `UNIT_SPELLCAST_SUCCEEDED(5384)` never arrives for a party unit token, so
+  `modules/Feign.lua` is never told about the feign at all; or it does arrive and `Feign.Prune`
+  evicts the entry before the Deaths walk judges the row, because a feign is presented to *other*
+  clients as a death and the `hp <= 0` exit currently wins outright over `UnitIsFeignDeath`. Your own
+  feign never collides with that — `UnitHealth("player")` stays at its real figure — which is exactly
+  the asymmetry reported. **Nothing offline can tell the two apart:** `tests/wow_mock.lua` answers
+  full health for any unrecorded token and every case in `tests/test_feign.lua` sets health on
+  `"player"`. `/mm debug feign on` records all three boundaries a feign crosses — the cast, each
+  prune verdict with the raw readings behind it, and the per-row `ShouldDropDeath` answer — and
+  `/mm debug feign` prints them. The per-row answer is recorded **only for a GUID a cast line
+  named**: it fires once per death in the column on every refresh, so admitting all of them filled
+  the 120-entry ring with judgements on players who never feigned and evicted the one cast line the
+  report exists to show. The refusals are counted and the total is printed, because a large refusal
+  count beside an empty log is itself the finding — the refresh ran and never met the GUID.
+  Fix on that measurement, not on either hypothesis.
+- **A past death cannot be dated against the run it happened in, so the addon does not try.**
+  Measured on a live client: the **Current** session held *zero* deaths, the **Overall** session held
+  eighteen and reported `deathTimeSeconds = -1` for every one, and the session's own duration is
+  *combat* time rather than wall time — 32 minutes of it spanning a run whose deaths were three hours
+  back. A "time into the fight" timestamp style was built on three separate derivations of that
+  figure and removed — see [#18](https://github.com/tusharsaxena/MultiMeters/issues/18), which
+  carries the captures. `/mm debug recap`'s **dating** section is what proved each one could not
+  work, and is kept for whoever tries again. Deaths are dated by wall clock or by "how long ago".
+- **The death list is a snapshot taken on entry.** While a window is drilled into a player's deaths,
+  `modules/Window.lua` renders `DrillDown:BuildRows` *instead of* running an aggregate pass, so there
+  is no current row to re-read the deaths off. A player who dies again while somebody is looking at
+  their list will not appear in it until the list is left and re-entered. Re-deriving it would cost a
+  second aggregate pass per frame to keep fresh a list nobody is watching change.
+- English (`enUS`) only. The locale plumbing and the metatable fallback exist; no second locale ships.
+- Retail / Midnight only — a single `## Interface` line. `C_DamageMeter` does not exist on Classic.
+- **Pet attribution is best-effort, but an unattributable ally is no longer lost.** Guardians,
+  totems, temporary summons and any pet whose owner was never within unit-API range cannot be tied
+  to an owner — the roster REMEMBERS every attribution it once made, so leaving the group does not
+  lose one, but a guardian the unit API never saw was never attributable in the first place. Such a
+  source now gets **its own row, under its own name**, rather than vanishing off the grid. That is
+  not the mislabeling the drop rule guards against: the rule is about putting one player's numbers
+  under another player's *name*, and this row claims no owner at all. The gate that keeps it safe is
+  `sourceDisplayType`, and it never reads "not Enemy" as "one of ours" — read that loose way, a
+  source whose display type is absent becomes a row and the whole trash pack lands on the grid.
+- **A delve companion is admitted, because the client files one under `None`.** The gate above was
+  `Ally` and nothing else until a live delve showed Valeera Sanguinar doing 24.98M of a run's 61.31M
+  and never reaching the grid, while the header total counted her — a session total is the client's
+  own sum and never consults the row gate. `display=0` is `None`: neither `Ally` nor `Enemy`. So a
+  `None` source is now admitted **only when its `classFilename` is a class `RAID_CLASS_COLORS`
+  recognizes**. That table is the oracle rather than a list of our own because `modules/Row.lua`
+  already looks a row up in it to color the bar and pick the class icon — what this refuses could
+  only ever have drawn as an uncolored, iconless row. A mob would have to report `None` *and* carry
+  a genuine class filename to slip through, and `/mm debug diag` prints the enemy column's display
+  types so that a `None` there is reported rather than inferred from a wrong row.
+- **`data.mergePets` is off by default, and has no effect during a pull.** A pet gets its own row,
+  which needs no arithmetic and is exact in both states. Merging is addition and needs the owner
+  link, so it runs only where GUIDs are plain — out of combat.
+- **The roster is sticky for the life of the meter's data.** Someone who left the group mid-run stays
+  on the grid until the meter is reset. That is deliberate: the alternative — what shipped in
+  v0.1.0 — was the window emptying itself the moment you left a dungeon, for a session that still
+  held everyone's numbers.
+- **Two players of the same class AND specialization cannot be told apart mid-pull.** `sourceGUID`
+  is `SecretWhenInCombat`, so while the restriction is active the grid is built by identity
+  correlation (`classFilename` + `specIconID` + `isLocalPlayer`) rather than by the GUID join, over
+  the union of every column. Rows are correct — the sort column's are the engine's own ranking, and
+  anyone it never mentioned is parked after them — but where two rows share an identity key, their
+  **secondary columns are left empty** rather than filled from a source that might be the other
+  player's, and an ambiguous key gets no row invented for it at all. The header says `restricted — some rows cannot be told apart`, and the
+  full grid returns on the first refresh after combat.
+- **Pets are separate rows for the whole of a pull, whatever `data.mergePets` says.** Folding needs
+  the owner link, the owner link needs a GUID, and there is none while restricted.
+- **Mid-pull the grid can be re-ranked and reversed, but not sorted.** Picking a different stat
+  column and flipping the direction both reach the grid during a pull — neither compares anything,
+  the first because identity mode builds its rows out of the chosen column's own `combatSources` and
+  the second because reversing is a permutation. Ordering by **name** is still refused with a
+  message: it compares a `ConditionalSecret` and has no engine ranking behind it. The sort arrow
+  follows `applied` rather than the request, so it never marks a column the rows are not in.
+- **The provider-order assumption is measured, not proven.** The engine's ranking is what identity
+  mode calls "the order", and nothing in Blizzard's documentation says `combatSources` arrives
+  ranked. `/mm debug diag`'s **provider order** section checks it out of combat, where comparison is
+  legal, and refuses inside a pull rather than reporting an all-clear it did not earn.
+- **Percentage text slots render empty in combat.** By design; the slots default to total and rate.
+- **Exporting is unavailable for the whole of a pull.** Both halves — the CSV and the chat dump —
+  refuse while the Combat restriction is active, and say so in a sentence rather than producing a
+  file of `<secret>`. The reason is `tostring`, which is not a permitted operation on a secret; the
+  full argument is in [midnight-quirks.md](midnight-quirks.md#why-an-export-refuses-rather-than-degrades).
+- **An export is capped at 40 rows**, inherited from `Constants.MAX_ROWS` by way of
+  `Aggregator.ApplyRowLimit`. A 40-player raid exports whole; a larger group is truncated at the
+  aggregator's own ceiling. Stated rather than worked around: raising it means raising the cap every
+  window draws against, which is a display decision and not an export one.
+- **An export carries the segment's ranking, not the invoking window's view.** It names every stat in
+  the catalog, not the window's enabled columns, and it ignores the window's row cap and sort — what
+  is on screen is a display choice, and "export this" means the data behind it. Only the *segment* is
+  inherited, because "export this" said while looking at last pull means last pull.
+- **The export copy window is the third copy-paste window in the collection**, after
+  `LibKa0s/DebugLog.lua`'s and `LootHistory/modules/Export.lua`'s. It is a deliberate local copy
+  rather than an oversight — the three want to evolve apart — but the shape is stable enough to
+  harvest, and the destination is `lib.MakeCopyWindow(name, title)` in LibKa0s Core. Recorded here
+  rather than in the deviations register below, because that register is for departures from a
+  numbered rule of the standard and this is a library-harvest candidate: no rule is being departed
+  from. Filed as a limitation so the issue sweep picks it up as a follow-up.
+- **The tooltip's Targets section is absent for the whole of a pull, not degraded.** It is the one
+  place in the addon where restriction costs *information* rather than decoration, and it is
+  deliberate, and there are now **two independent reasons**, either of which is sufficient:
+
+  1. *The enemy cannot be identified.* Both identifiers the API accepts are secret in a pull —
+     `sourceGUID` is `SecretWhenInCombat`, and `sourceCreatureID` turns out to be too. Passing a
+     secret `sourceCreatureID` does not merely fail to resolve, it **raises**
+     (`bad argument #4 … Secret values are only allowed during untainted execution`), and because
+     `Targets.ForPlayer` runs on the tooltip's render path that raise took *every cell tooltip* down
+     for the whole pull, not just this section. `modules/Targets.lua` now gates both identifiers
+     through `NS.Secrets.IsSafeKey` and abandons the build when neither survives — calling with both
+     nil does not fail, it answers for a **different source**, whose numbers would be summed in as
+     though they were this enemy's.
+  2. *The sum is illegal.* One enemy's damage from one player does not exist in the API; it is a
+     **sum** over that enemy's matching spells, and a sum of secrets raises. Summing only the
+     readable rows would show a number that is wrong, plausible and invisibly low, so the build is
+     refused entire on the first unreadable amount.
+
+  It is also off by default and Damage-column only, because it costs one provider call per enemy on
+  the first hover of a session. See [data-flow.md §9](data-flow.md).
+- **`provider` sort mode rests on an unverified assumption** — that `combatSources` arrives sorted by
+  the requested statistic. Isolated in `modules/Provider.lua`; `value` and `roster` do not depend on
+  it.
+- **Scoring is deferred**, and cannot be computed in combat at all. See
+  [Deferred: scoring](#deferred-scoring) above.
+- **No in-window column drag editor** — settings-panel only, and structurally so (rule R3).
+- **Scrolling is the mouse wheel only — there is no scrollbar.** A window draws `layout.maxRows`
+  rows chosen out of a longer list, so scrolling moves an integer offset rather than a scroll child;
+  there is no widget to size and nothing measured. The cost is that a player cannot see there are
+  rows above or below without trying the wheel.
+- Debug logging is session-only (`NS.State.debug`) and resets on every `/reload`.
+- **A refresh pass logs on change, not on every pass.** The `[Aggregator]` and `[Render]` summary
+  lines go through `NS.DebugSteady`, which emits a change immediately and otherwise re-announces an
+  unchanged run at most every 10 seconds as `… (xN)`. It is what keeps a 1500-line buffer holding
+  hours rather than two minutes. Ratified as a deviation from debug-logging §8 — see
+  [ARCHITECTURE.md](ARCHITECTURE.md#documented-deviations). Note the console's **Clear** button does not reset the comparison (the library offers the
+  host no hook), so a freshly cleared console can sit silent until the next change or heartbeat.
+- No automated in-client tests: headless suites plus manual in-game smoke tests.
+- Not published — `X-Curse-Project-ID` and `X-Wago-ID` are deliberately absent from the TOC.
+
+**The tooltip is the one thing this addon positions itself.** Everything else is laid out from config
+and never anchored to a frame that has held a meter value (rule R3) — but the eight tooltip anchors
+name boxes of a 3×3 around the hovered cell, and Blizzard's `SetOwner` tokens cannot express the four
+diagonals at all. So `modules/Tooltip.lua` calls `SetOwner` with the closest token first and then lays
+a `SetPoint` over it. That `SetPoint` anchors GameTooltip to a cell with secret geometry, which is
+the one call in the addon that could raise inside Blizzard's own code while tainted by us. It is
+`pcall`'d, and a failure leaves the token's placement standing: the tooltip opens in roughly the
+right place rather than not at all.
 
 ## The unverified assumption
 

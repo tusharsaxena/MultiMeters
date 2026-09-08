@@ -209,6 +209,7 @@ local SUITES = {
     -- rule does not.
     "test_texture_paths",
     "test_docmap",
+    "test_doc_structure",
     "test_constants",
     "test_secrets",
     "test_compat",

@@ -341,3 +341,49 @@ windows.
 - Everything else — each `Window` instance, `modules/Format.lua`, and the export modal in
   `modules/Export.lua` once it has been built — owns a private target from `NS.NewBusTarget()`.
 - Nothing registers on the shared addon object.
+
+## LibKa0s seams
+
+Which majors this addon consumes, which file reaches each, and what each degrades to when
+`libs/LibKa0s/` is absent. The per-file table above carries each seam's own members; this is the
+roll-call, and it used to sit in `docs/ARCHITECTURE.md` → `## Overview`.
+
+Chrome comes from LibKa0s-Core-1.0's shared `SKIN` / `ApplySkin`, never a private lookalike, so the
+meter window, the debug console and the perf step panel wear the same Ka0s edge as every sibling
+addon. Nine LibKa0s majors are consumed — Core, Media, Perf, DebugLog, Env, Pool, Slash, Options and
+Widgets. Eight are reached through a seam file of their own (`core/CoreSetup.lua`,
+`core/MediaSetup.lua`, `core/PerfSetup.lua`, `core/DebugLogSetup.lua`, `core/EnvSetup.lua`,
+`core/PoolSetup.lua`, `settings/Slash.lua`, `settings/OptionsSetup.lua`); Widgets has no seam file and
+is resolved at each of its two call sites — `modules/Export.lua`, whose modal builds the addon's only
+dropdowns, and `settings/ColumnBlocks.lua`, whose block list is the library's `ReorderList` — because
+both widgets are built lazily on first use rather than wired at load. Every one of the nine degrades
+rather than erroring when `libs/LibKa0s` is absent. Three of them pass the addon's own **folder name** to the library, and all three now say so
+explicitly: `core/CoreSetup.lua`'s `MakeCloseButton` wrapper, and the descriptors in
+`core/DebugLogSetup.lua` and `core/PerfSetup.lua`. The perf one used to reach the right answer only
+through `name` — `PerfPanel.lua` minor 4 reads `addonName or name`, so it was right by luck and one
+rename away from wrong — and it now states `addonName` beside `name`, the same shape the console's
+descriptor has. This is why that file passes **no** `decorate` hook:
+the one it used to carry drew a close button with the name dropped, so the panel wore a
+multiplication sign beside a console wearing the mark. The name matters because a texture path is
+absolute from `Interface\AddOns\`
+and a vendored library cannot know which folder it was copied into — that is what lets the library's
+own windows wear the same close, copy and clear marks the meter window's header draws. Five explain the
+absence through the one shared cause clause `NS.LIBKA0S_MISSING`; **Media is deliberately silent**,
+because what it degrades is chrome. The icons this window draws and its monospace face ship inside the
+LibKa0s payload (`LibKa0s-Media-1.0`), so a missing library takes the art with it — the header walks
+down its own atlas-then-ASCII ladder, the numbers fall back to the client font, and neither wants a
+line of chat about it.
+
+## Game-event edges are load-bearing
+
+Which events reach which handler, and what each becomes on the bus, is tabulated in
+`docs/ARCHITECTURE.md` → [Event subscriptions](ARCHITECTURE.md#event-subscriptions). What that
+table does not say is why an edge cannot simply be dropped:
+
+**These edges are load-bearing, not an optimisation.** There is no fallback poll: `onUpdate` in
+`modules/Window.lua` refreshes *data* and never re-asks `NS.ShouldShow`, so the show ladder is
+re-run only from a bus message a window subscribes to (`ROSTER_CHANGED`, `ZONE_CHANGED`,
+`ENTERING_WORLD`, `COMBAT_CHANGED`, `PLAYER_STATE_CHANGED`, `TEST_MODE_CHANGED`, `CONFIG_CHANGED`).
+A visibility input with no edge on the bus is a rule that never fires — which is exactly what
+happened to `hideInVehicle`, shipped in 0.1.0 with no vehicle event registered, and to the first cut
+of the player-state rules, which reached `Visibility` but not the window.

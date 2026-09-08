@@ -41,6 +41,14 @@ badge and any count quoted in the docs must agree with it.
 
 - doc map: every Tier 2 row agrees with what docs/ holds
 
+### test_doc_structure.lua (5)
+
+- docs/ARCHITECTURE.md carries the ten sections documentation-§3 names
+- every mandated hub section that has a topic doc has spilled into it
+- every anchor pointing into docs/ARCHITECTURE.md resolves to a heading
+- the player-facing history has the two homes documentation-§1 allows, and no third
+- README.md's top-level sections are the ones documentation-§1 names, in its order
+
 ### test_constants.lua (23)
 
 - Constants: NS.Const and NS.Constants are the same table
@@ -1674,6 +1682,7 @@ badge and any count quoted in the docs must agree with it.
 | test_complexity_register.lua | 4 |
 | test_texture_paths.lua | 5 |
 | test_docmap.lua | 1 |
+| test_doc_structure.lua | 5 |
 | test_constants.lua | 23 |
 | test_secrets.lua | 38 |
 | test_compat.lua | 33 |
@@ -1714,4 +1723,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1524** |
+| **Total** | **1529** |
