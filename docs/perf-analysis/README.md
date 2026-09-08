@@ -141,12 +141,12 @@ calls `Perf.Note(key, ms)` with **two** arguments and no `parentKey`:
 | Bucket | Call sites |
 |---|---|
 | `meterEvent` | `core/MultiMeters.lua:384`, `:394`, `:402` |
-| `refresh` | `modules/Window.lua:1850`, `:1860`, `:1883`, `:1890` |
+| `refresh` | `modules/Window.lua:1856`, `:1866`, `:1889`, `:1896` |
 | `providerRead` | `modules/Provider.lua:349` |
-| `aggregate` | `modules/Aggregator.lua:1694`, `modules/DrillDown.lua:668`, `:700` |
-| `render` | `modules/Window.lua:1993` |
-| `renderRow` | `modules/Row.lua:1620` |
-| `tooltip` | `modules/Tooltip.lua:2393`, `:2527`, `:2545`, `:2606`, `:2620`, `:2634` |
+| `aggregate` | `modules/Aggregator.lua:1735`, `modules/DrillDown.lua:668`, `:700` |
+| `render` | `modules/Window.lua:1999` |
+| `renderRow` | `modules/Row.lua:1633` |
+| `tooltip` | `modules/Tooltip.lua:2400`, `:2534`, `:2552`, `:2613`, `:2627`, `:2641` |
 | `targets` | `modules/Targets.lua:394`, `:402`, `:416` |
 
 So `observedWithin` is **never populated** in a Ka0s Multi Meters record, and every report prints
@@ -160,6 +160,17 @@ not observation. An `ANALYSIS.md` **must say so** rather than presenting the dec
 measured containment, and must not subtract a declared child from its declared parent as though the
 overlap were confirmed. Closing that gap — threading `parentKey` through the call sites — is a
 legitimate action for a capture's `ANALYSIS.md` to raise.
+
+The first capture did not close that gap. In [`20260909-014604/`](20260909-014604/ANALYSIS.md) every
+nested row printed the *declared, not observed* form, so the tree is still unverified in both
+directions, and nothing in that capture promotes *unverified* to *wrong* — least of all a sum of
+nested buckets, which is the operation this section forbids. What that capture did establish, by
+reading the source rather than by arithmetic, is that **`providerRead` cannot be described by a
+single `within` at all**: `Provider.GetColumn` is reached from inside `aggregate` on the refresh path
+(`modules/Aggregator.lua:1027`, `:1463`), from inside `targets` on the tooltip path
+(`modules/Targets.lua:275`), and with no bracket above it from `core/Diagnostics.lua`. Read the
+`providerRead` row as a bucket with more than one real parent until `parentKey` is threaded and a
+record can say which one it ran in.
 
 One bucket is genuinely **not** nested and should not be read as though it were: `meterEvent`
 brackets the bus fan-out at event rate, while `refresh` brackets the coalesced pass on the window's
@@ -202,16 +213,16 @@ is never cloned by "copy profile", wiped by "reset profile", or swapped out by a
 
 One row per bundle, newest last.
 
-**No capture has been taken yet.** This store is empty, and that is the correct state for a
-freshly scaffolded addon: nobody has played it in a live client, and an in-game capture cannot be
-produced by a script or reconstructed from the headless harness. The first bundle lands the first
-time somebody runs `/mm perf` through a real A/B and commits the paste.
-
-**A fabricated first capture would be worse than an absent one** — it would make the reasoning in
+**A fabricated capture would be worse than an absent one** — it would make the reasoning in
 `core/PerfSetup.lua` look measured when it is not, and every later capture would be compared against
 a baseline that never happened. Add a row here only when a real `<YYYYMMDD-HHMMSS>/` directory sits
 beside this file.
 
 | Bundle | Addon version | Label | What it measured |
 |---|---|---|---|
-| _(none yet)_ | — | — | — |
+| [`20260909-014604`](20260909-014604/ANALYSIS.md) | 0.1.0 | `2026-09-09 01:41` | Solo, one window, 8 columns, 5 rows; 68.3 s active / 74.2 s suspended in Silvermoon City. Baseline: 5.409 ms/s accounted, `refresh` 4.511 ms/s. Frame-time delta +0.5003 ms/frame — at the floor, **unresolved**. `tooltip` and `targets` never fired. |
+
+**Comparability warning.** The one capture on record is **solo**, and this addon's cost scales with
+group size × open windows × columns per window. It is a baseline for a solo, eight-column, one-window
+fixture and for nothing else. There is no group capture, and no capture that exercises the tooltip
+path — which `core/PerfSetup.lua` names as the expensive one.
