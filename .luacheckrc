@@ -5,11 +5,11 @@ codes = true
 -- tests/_kit/ is the same fact one level down: it is a byte copy of the library's testkit/, linted
 -- in LibKa0s as source, and linting the copy too would report every finding twice while letting the
 -- copy drift green as the original went red -- the one state the vendor-sync gate exists to make
--- impossible. Everything else under tests/ is ours and is linted (lint-§1). The docs/audits and
+-- impossible. Everything else under tests/ is ours and is linted (lint.md). The docs/audits and
 -- docs/reviews bundles are frozen snapshots and must never be "fixed" by a lint pass.
 exclude_files = { "libs/", "tests/_kit/", "docs/audits/", "docs/reviews/", "_dev/" }
 
--- NO TOP-LEVEL `ignore`, and none is coming back (lint-§1, `M4-11`). This file carried
+-- NO TOP-LEVEL `ignore`, and none is coming back (lint.md, `M4-11`). This file carried
 -- `ignore = { "212/self", "212/event", "211/addonName" }` until `M4c-06`. Every entry named
 -- something that exists in this tree, but a top-level ignore reaches all 93 files, so it silenced
 -- those codes in every file that has no business producing them too -- and one of the three was
@@ -107,7 +107,7 @@ files["tests/"] = {
 }
 
 -- ---------------------------------------------------------------------------
--- The narrowed 212s (lint-§1, `M4c-06`)
+-- The narrowed 212s (lint.md, `M4c-06`)
 -- ---------------------------------------------------------------------------
 --
 -- Every stanza below names ONE file, and every entry inside it names the code AND the variable, in

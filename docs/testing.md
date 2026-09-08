@@ -297,7 +297,7 @@ that `luacheck .` reaching 0/0 is a statement about the code rather than about `
 It exists because this repo spent the whole 2026-09-07 remediation with
 `ignore = { "212/self", "212/event", "211/addonName" }` at the top of that file. That list looks
 careful — every entry names a variable, not just a code — and it was still the anti-pattern
-`lint-§1` describes. A top-level `211/addonName` does not mean "the bootstrap header may go unread";
+`lint.md` describes. A top-level `211/addonName` does not mean "the bootstrap header may go unread";
 it means no file in the addon may ever report an unused `addonName`, and thirty-two of them were
 unread. `M4c-06` removed the three lines, watched eighty-four warnings appear, fixed the thirty-two
 at source, and moved the fifty-two receivers that remained into per-file `files[...]` stanzas that
