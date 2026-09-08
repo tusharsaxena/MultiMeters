@@ -29,6 +29,10 @@ badge and any count quoted in the docs must agree with it.
 - complexityregister: no function is entered twice
 - complexityregister: every disposition can be followed
 
+### test_deviation_register.lua (1)
+
+- every deviation id the register cites is assigned by a bundle in docs/audits/
+
 ### test_texture_paths.lua (5)
 
 - texturepaths: every hard-coded path in authored source is named in the ARCHITECTURE.md census
@@ -1680,6 +1684,7 @@ badge and any count quoted in the docs must agree with it.
 | test_loadorder.lua | 7 |
 | test_layout_cap.lua | 3 |
 | test_complexity_register.lua | 4 |
+| test_deviation_register.lua | 1 |
 | test_texture_paths.lua | 5 |
 | test_docmap.lua | 1 |
 | test_doc_structure.lua | 5 |
@@ -1723,4 +1728,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1529** |
+| **Total** | **1530** |

@@ -200,6 +200,7 @@ local SUITES = {
     -- ran lizard would be the commit-time complexity gate performance-§10 forbids.
     "test_layout_cap",
     "test_complexity_register",
+    "test_deviation_register",
     -- The third register, and the same bargain a third time: it reads the
     -- "Hard-coded texture paths" table out of docs/ARCHITECTURE.md and checks
     -- membership both ways. It differs from the two above in ONE thing, and the
