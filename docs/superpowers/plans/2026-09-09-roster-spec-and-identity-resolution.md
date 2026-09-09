@@ -1,3 +1,26 @@
+> # SUPERSEDED — 2026-09-09, before Task 1 completed. Do not execute.
+>
+> This plan argues from issue #24: that the client does not send `specIconID` on a raid source row,
+> so the identity key collapses to class alone. **A live capture taken the same day disproved it.**
+> Mid-pull, restriction active, 18-member raid: `specIconID` reads `plain 10/10` with six distinct
+> values, and the collided keys carry real icon ids. #24 is closed as not reproducing.
+>
+> That removes the premise under every task here. Tasks 1-2 build a roster fallback for a field that
+> is arriving; Tasks 3-5 recover a name that already renders and a spec icon that is already there.
+> Task 1 was halted mid-RED and reverted; nothing from this plan was committed.
+>
+> **What became of the work instead:** the capture also killed the two remaining directions for
+> issue #22 — the key cannot be widened (no plain field mid-pull both varies and sits outside it) and
+> rows cannot be paired by seat (a column returns a *subset* of a collided key's players). What
+> shipped is the third direction, the on-screen count: `restricted — 10 of 18 share a class and
+> spec`. See issue #22's comments of 2026-09-09 for the measurements, and `docs/data-flow.md` for
+> what identity mode actually does now.
+>
+> **It is kept, not deleted.** `docs/superpowers/` is a frozen store; a plan abandoned on evidence is
+> planning history exactly as an executed one is, and the Scoot comparison in its Background section
+> is the reason the roster-fallback direction was considered at all. Nothing below this note has been
+> revised.
+
 # Roster spec + identity resolution — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

@@ -448,7 +448,11 @@ local function rowOnEnter(frame)
     -- cells above it consumed the motion, and from the outside "no tooltip" and
     -- "a tooltip that bailed" look identical. See the propagation note in
     -- newCell.
-    if State.debug and Debug then
+    -- BEHIND THE TOOLTIP CHANNEL, like the two builder lines. This one fires on
+    -- MOUSE MOTION rather than on a tooltip being built, so it is the loudest of
+    -- the three: resting the cursor on a row emits it as fast as the mouse
+    -- reports, and a capped buffer loses everything else. `/mm debug tooltip`.
+    if State.debug and State.debugTooltip and Debug then
         Debug("Tooltip", "row spell=%s", tostring(entry.spellID))
     end
     if T and T.SpellTooltip then T:SpellTooltip(entry, frame, row.window.config) end
