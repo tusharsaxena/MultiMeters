@@ -142,77 +142,27 @@ fills back in the moment the fight ends.
 
 ## FAQ
 
-**Do I need Details or Skada?**
-No. This is not a plugin for another meter and does not read one. It only needs Blizzard's meter
-turned on.
-
-**Does it replace my damage meter?**
-It can. Add the Damage and Healing columns and you have the usual numbers alongside the ones other
-meters make you switch windows to see. Many people run it beside their existing meter instead.
-
-**Why is a cell empty mid-fight, and why is the header gray?**
-Midnight hides the identifier the game normally gives addons for each row, for the whole of a fight.
-The rows themselves are the game's own ranking and keep updating; the other columns are matched to
-them by class and specialization. Two players with the same class *and* spec cannot be told apart,
-so those cells are left blank rather than showing a number that might be the other player's. The
-header says so **and how many** — `restricted — 10 of 18 share a class and spec` — so the number in
-the header matches the blank rows you can count. Everything fills back in the moment the fight ends.
-
-How much of the grid this costs depends entirely on your group. In a dungeon it is usually nothing.
-In a raid, duplicate specs are normal rather than exceptional — a measured 18-player pull had four
-class-and-spec pairs covering 10 of its 18 rows, and those 10 rows carried no secondary figures
-until the pull ended. There is no way around it from an addon: the game refuses to look a row up by
-the sealed identifier it handed you, and no other field it sends mid-fight tells two players of one
-spec apart. Blank is the honest answer, and it is the one this addon gives.
-
-**Can I look back at an earlier fight?**
-Yes. Click the segment control in the window's header — the three horizontal lines — and pick the
-fight out of the list — it shows each
-one's name and how long it ran, with Current and Overall at the bottom. The window stays on that fight
-until you pick another, and remembers your choice across a reload. If the game discards the fight, the
-window falls back to Current on its own.
-
-**Can I have one window for damage and another for utility?**
-Yes. Make a second window on the Windows page and give it a different column set. Every setting is
-per window.
-
-**Does it work in raids and PvP?**
-Yes. Visibility is per window, so you can have a window that only appears in dungeons and another
-that only appears in arenas.
+| Question | Answer |
+|----------|--------|
+| Do I need Details or Skada? | No. This is not a plugin for another meter and does not read one. It only needs Blizzard's meter turned on. |
+| Does it replace my damage meter? | It can. Add the Damage and Healing columns and you have the usual numbers alongside the ones other meters make you switch windows to see. Many people run it beside their existing meter instead. |
+| Why is a cell empty mid-fight, and why is the header gray? | Midnight hides the identifier the game normally gives addons for each row, for the whole of a fight. The rows themselves are the game's own ranking and keep updating; the other columns are matched to them by class and specialization. Two players with the same class *and* spec cannot be told apart, so those cells are left blank rather than showing a number that might be the other player's. The header says so **and how many** — `restricted — 10 of 18 share a class and spec` — so the number in the header matches the blank rows you can count. Everything fills back in the moment the fight ends. |
+| How much of the grid does that cost? | It depends entirely on your group. In a dungeon it is usually nothing. In a raid, duplicate specs are normal rather than exceptional — a measured 18-player pull had four class-and-spec pairs covering 10 of its 18 rows, and those 10 rows carried no secondary figures until the pull ended. There is no way around it from an addon: the game refuses to look a row up by the sealed identifier it handed you, and no other field it sends mid-fight tells two players of one spec apart. Blank is the honest answer, and it is the one this addon gives. |
+| Can I look back at an earlier fight? | Yes. Click the segment control in the window's header — the three horizontal lines — and pick the fight out of the list; it shows each one's name and how long it ran, with Current and Overall at the bottom. The window stays on that fight until you pick another, and remembers your choice across a reload. If the game discards the fight, the window falls back to Current on its own. |
+| Can I have one window for damage and another for utility? | Yes. Make a second window on the Windows page and give it a different column set. Every setting is per window. |
+| Does it work in raids and PvP? | Yes. Visibility is per window, so you can have a window that only appears in dungeons and another that only appears in arenas. |
 
 ## Troubleshooting
 
-**The window says the damage meter is unavailable.**
-Blizzard's meter is switched off or unavailable in your current situation. The window shows the
-reason the game gave. Turn the built-in meter on and the rows appear.
-
-**The window is empty and says it is waiting for combat data.**
-Normal between pulls — nothing has happened yet in the session you are showing. Pick Overall, or a
-past fight, from the window header's segment dropdown to see something other than the current pull.
-There is no settings page for it: the header already has the control.
-
-**The window only shows placeholder rows.**
-Test mode is on. Turn it off on the General page, or with `/mm test`. Unlocking a window has nothing
-to do with it — it used to switch preview on as a side effect, which made unchecking Test mode look
-broken, and the lock governs dragging and nothing else now.
-
-**I cannot open the settings while fighting.**
-That is deliberate. Blizzard protects the settings machinery during combat, so the panel refuses to
-open rather than risk breaking your action bars. It opens the moment you leave combat.
-
-**A pet has its own row, and I wanted it folded into its owner.**
-That is the shipped default: a pet is its own row, which is exact in and out of combat. Turn on
-**Merge pets into their owner** on the General page to fold it in — but note the trade, which is why
-it is not the default: merging is addition, and the game will not let addons add two combat numbers
-together mid-fight, so a merged pet's damage goes missing until the pull ends.
-
-**I cannot find the window.**
-`/mm reset-positions` brings every window back to the middle of the screen.
-
-**Something looks wrong and you want to report it.**
-`/mm debug on`, reproduce it, then `/mm debug` to open the console and copy the log into your issue.
-If the problem is with a tooltip, add `/mm debug tooltip` — it is off by default because a tooltip is
-rebuilt on every mouse-over and its lines would otherwise push everything else out of the console.
+| Symptom | Fix |
+|---------|-----|
+| The window says the damage meter is unavailable | Blizzard's meter is switched off or unavailable in your current situation. The window shows the reason the game gave. Turn the built-in meter on and the rows appear. |
+| The window is empty and says it is waiting for combat data | Normal between pulls — nothing has happened yet in the session you are showing. Pick Overall, or a past fight, from the window header's segment dropdown to see something other than the current pull. There is no settings page for it: the header already has the control. |
+| The window only shows placeholder rows | Test mode is on. Turn it off on the General page, or with `/mm test`. Unlocking a window has nothing to do with it — it used to switch preview on as a side effect, which made unchecking Test mode look broken, and the lock governs dragging and nothing else now. |
+| I cannot open the settings while fighting | That is deliberate. Blizzard protects the settings machinery during combat, so the panel refuses to open rather than risk breaking your action bars. It opens the moment you leave combat. |
+| A pet has its own row, and I wanted it folded into its owner | That is the shipped default: a pet is its own row, which is exact in and out of combat. Turn on **Merge pets into their owner** on the General page to fold it in — but note the trade, which is why it is not the default: merging is addition, and the game will not let addons add two combat numbers together mid-fight, so a merged pet's damage goes missing until the pull ends. |
+| I cannot find the window | `/mm reset-positions` brings every window back to the middle of the screen. |
+| Something looks wrong and you want to report it | `/mm debug on`, reproduce it, then `/mm debug` to open the console and copy the log into your issue. If the problem is with a tooltip, add `/mm debug tooltip` — it is off by default because a tooltip is rebuilt on every mouse-over and its lines would otherwise push everything else out of the console. |
 
 ## Issues and feature requests
 
