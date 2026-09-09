@@ -4,7 +4,7 @@
 ![Version](https://img.shields.io/badge/Version-0.1.0-blue)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-1739%2F1739_passing-green)
+![Tests](https://img.shields.io/badge/Tests-1744%2F1744_passing-green)
 
 Every other meter shows you one number at a time. Multi Meters shows the whole group in one grid —
 who kicked, who dispelled, who stood in the fire, and who died — all in a single window, one row per
@@ -155,7 +155,8 @@ Midnight hides the identifier the game normally gives addons for each row, for t
 The rows themselves are the game's own ranking and keep updating; the other columns are matched to
 them by class and specialization. Two players with the same class *and* spec cannot be told apart,
 so those cells are left blank rather than showing a number that might be the other player's. The
-header says so, and everything fills back in the moment the fight ends.
+header says so **and how many** — `restricted — 10 of 18 share a class and spec` — so the number in
+the header matches the blank rows you can count. Everything fills back in the moment the fight ends.
 
 How much of the grid this costs depends entirely on your group. In a dungeon it is usually nothing.
 In a raid, duplicate specs are normal rather than exceptional — a measured 18-player pull had four

@@ -71,27 +71,39 @@ local UNRANKED      = Seam.UNRANKED
 -- That last rule is the whole reason this is honest. An empty cell is a visible
 -- absence; a mislabeled number is a lie the player cannot see.
 --
--- THE KEY IS NOT ACTUALLY CLASS PLUS SPEC. It is class plus "is it me", and
--- that is a defect rather than a design.
+-- WHAT THE KEY COSTS AT RAID SIZE, and why that is not a defect in the key.
 --
--- `specIconID` is ABSENT from a raid source row — not secret, not
--- nil-under-restriction, simply not sent — for every player but the local one.
--- `identityKey` folds a missing icon to `0`, so every non-local key reads
--- `CLASS_0_false` and two players of one CLASS collide however different their
--- specs are. In a DUNGEON the field arrives and the key works as designed, which
--- is why this survived to a raid. Measured in a 19-player raid on 2026-09-01:
--- 8 distinct keys across 19 rows, 18 of those rows wearing a collided key, and
--- 3 of 133 correlated cells filled — 2%. Exactly one key stood for one row,
--- which is the local player and the only source that carried a spec. `unmatched`
--- was 0 in every column, so the correlation is not failing to match; there is
--- simply almost nothing left to tell two players apart with. Issue #24 tracks
--- the absence itself; #22 tracks what it does to this key.
+-- This header used to say the key was really class plus "is it me", because
+-- `specIconID` was believed absent from a raid source row for every player but
+-- the local one. That was issue #24, and it is CLOSED AS NOT REPRODUCING.
+-- Measured 2026-09-09 on an 18-member raid, mid-pull, restriction active:
+-- `specIconID` reads `plain 10/10` with six distinct values, and the collided
+-- keys carry real icon ids (`MAGE_135846_false`, not `MAGE_0_false`). The key
+-- has all three parts it was designed to have.
 --
--- The refusal above is still right. What was wrong is the assumption that the
--- key had three parts. Issue #22 carries the capture; `/mm debug identity` is
--- the measurement, and it now reports an ABSENT field as a defect for exactly
--- this reason — the first capture listed ten healthy-looking plain fields and
--- the fact that mattered was the eleventh, which was not on the list.
+-- What a raid has is DUPLICATE CLASS-AND-SPEC PAIRS -- two hunters, three mages,
+-- three paladins and two priests in that one pull -- which is precisely the case
+-- the refusal above exists for. The cost is real and permanent: 23 of 126
+-- correlated cells filled, 10 of 18 rows wearing a collided key, and `unmatched`
+-- ZERO in every column across three captures of the pull. The correlation is not
+-- failing to match. There is nothing left to tell those players apart with.
+--
+-- ALL THREE WAYS OUT WERE MEASURED DEAD ON THE SAME DAY, which is why this code
+-- is not going to get cleverer and the honest thing to do was to say so on
+-- screen instead:
+--
+--   * WIDEN THE KEY. The mid-pull field audit answers "No usable candidates":
+--     every field that varies per player is secret, and every plain field is
+--     already in the key or carries one value for the whole group.
+--   * PAIR BY POSITION. A column returns a SUBSET of a collided key's players --
+--     a key covering three rows was named by Absorbs with a single seat -- so
+--     there is no N-to-N pairing to make, whatever the ordering's stability.
+--   * LET THE CLIENT DO THE JOIN. Handing a source's own secret `sourceGUID`
+--     back to the meter answers `raised`: the client refuses the argument.
+--
+-- So `pass.ambiguousRows` is published beside `pass.ambiguous`, and
+-- modules/Window_Header.lua puts the count on the header line. Issue #22 is now
+-- that line and nothing else.
 --
 -- The local player is the one row that keeps a real GUID: `isLocalPlayer` is
 -- plain and `UnitGUID("player")` never was secret, so their row is keyed on the
@@ -567,6 +579,31 @@ local function identityStats(pass, collisions)
     return stats
 end
 
+--- How many ROWS wear a collided key — the figure the header shows (issue #22).
+---
+--- ROWS, NOT KEYS, and the difference is the whole point. Two mages of one spec
+--- beside a lone priest is one collided KEY and two blanked ROWS, and a header
+--- that said "1" would be describing the addon's bookkeeping rather than what the
+--- player is looking at. This is the same distinction the correlation rectangle
+--- had to be rewritten for, arrived at from the other direction.
+---
+--- NOT THE RECTANGLE'S FIGURE, deliberately, even though it is the same number.
+--- `identityStats` exists only while the debug flag is on and costs a walk of
+--- every row against every column; the header needs this on every pass, for every
+--- player, with no flag. One walk of the final row list is what that costs.
+---
+--- Every count here is over OUR OWN plain integers and a set keyed on plain
+--- strings, so it is legal mid-pull where arithmetic on a meter value would not
+--- be.
+local function countAmbiguousRows(rows, collisions)
+    local n = 0
+    for i = 1, #rows do
+        local key = rows[i].identityKey
+        if key ~= nil and collisions[key] then n = n + 1 end
+    end
+    return n
+end
+
 --- Build every row from the sort column's source list, then fill the rest of the
 --- grid by identity correlation.
 local function buildByIdentity(pass)
@@ -593,6 +630,7 @@ local function buildByIdentity(pass)
 
     if sortCount then rescaleCounted(pass, sortKey) end
     pass.ambiguous = next(collisions) ~= nil
+    pass.ambiguousRows = countAmbiguousRows(pass.rows, collisions)
 
     -- ONE line per pass, and only while the flag is on. Every figure on it is
     -- now a whole-pass one: `keys` is a cardinality, `rows` next to `collided`
