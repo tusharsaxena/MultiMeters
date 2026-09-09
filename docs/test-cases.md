@@ -325,13 +325,16 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: the header section covers every control, by walking them
 - Diagnostics: a window with no controls says so rather than printing nothing
 
-### test_diagnostics_identity.lua (17)
+### test_diagnostics_identity.lua (20)
 
 - Diagnostics: the identity report is published and reachable
 - Diagnostics: `/mm debug identity` reaches it without the debug log
 - Diagnostics: the identity report prints the last pass's rectangle
 - Diagnostics: the identity report prints the rows-per-key histogram
 - Diagnostics: the identity report prints the seats of every collided key
+- Diagnostics: the identity report asks whether a SECRET GUID resolves
+- Diagnostics: the lookup section draws the verdict rather than leaving counts
+- Diagnostics: out of combat the lookup section refuses to draw a verdict
 - Diagnostics: the identity report audits what the CLIENT annotates secret
 - Diagnostics: an un-audited field is named as a CANDIDATE for the key
 - Diagnostics: with NO field outside the key, the audit closes the direction
@@ -582,7 +585,7 @@ badge and any count quoted in the docs must agree with it.
 - Format.DeathTime routes both countdown strings through the locale
 - Format.DeathTime refuses a secret timestamp in either style
 
-### test_provider.lua (72)
+### test_provider.lua (77)
 
 - Provider: core/Compat.lua is the only file that names C_DamageMeter
 - Provider: modules/Provider.lua is the only caller of the meter shims
@@ -617,6 +620,11 @@ badge and any count quoted in the docs must agree with it.
 - Provider: a suspended capture answers no segment questions
 - Provider: reading a segment never inspects a value
 - Provider.ProbeSourceByGuid names what the API did with a GUID it was handed
+- Provider.ProbeSourceLookup splits the verdict by whether the GUID was secret
+- Provider.ProbeSourceLookup names the local player's row as the control
+- Provider.ProbeSourceLookup answers an empty tally rather than raising
+- Provider.ProbeSourceLookup withholds a SECRET creature id from the client
+- Provider.ProbeSourceLookup skips a source that carries no GUID
 - Provider: an NPC source with no GUID is KEPT, on its creature ID
 - Provider: a source with NEITHER identifier is still dropped
 - Provider: with no recap namespace the probe finds nothing, and says so
@@ -1937,7 +1945,7 @@ badge and any count quoted in the docs must agree with it.
 | test_database.lua | 68 |
 | test_diagnostics.lua | 21 |
 | test_diagnostics_deathrecap.lua | 30 |
-| test_diagnostics_identity.lua | 17 |
+| test_diagnostics_identity.lua | 20 |
 | test_diagnostics_feign.lua | 19 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
@@ -1948,7 +1956,7 @@ badge and any count quoted in the docs must agree with it.
 | test_lifecycle.lua | 29 |
 | test_vendor_sync.lua | 2 |
 | test_format.lua | 39 |
-| test_provider.lua | 72 |
+| test_provider.lua | 77 |
 | test_roster.lua | 39 |
 | test_feign.lua | 27 |
 | test_aggregator.lua | 61 |
@@ -1982,4 +1990,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1728** |
+| **Total** | **1736** |
