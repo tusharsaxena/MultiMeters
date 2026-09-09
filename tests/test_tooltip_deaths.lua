@@ -1173,7 +1173,7 @@ end)
 
 test("Tooltip: a recap whose events are not an array says so and draws nothing", function()
     -- The first of drawDeathEvents' four refusals. The client is allowed to hand
-    -- back something that is not an array and modules/Compat.lua passes it
+    -- back something that is not an array and core/Compat.lua passes it
     -- through untouched on purpose, so the type test here is the only thing
     -- between it and an iteration.
     -- red under: hoisting the type test into a collect helper that is called
