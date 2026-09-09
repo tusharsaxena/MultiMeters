@@ -623,6 +623,31 @@ end
 -- Death timestamps (issue #1)
 -- ---------------------------------------------------------------------------
 
+--- The countdown half of Format.DeathTime -- "how long ago", in seconds or
+--- minutes.
+---
+--- ONLY THE COUNTDOWN CAN FAIL HERE. `when` has already been cleared by the
+--- caller; what this adds is `now`, a SECOND and independently refusable input.
+--- A refused comparison answers nil so the caller can fall back to the wall
+--- clock: a refused `now` is not a refused timestamp, and carrying the nil all
+--- the way out would draw an em dash over a stamp we are holding.
+---
+--- @param when any       the death's absolute timestamp, already accessible
+--- @param now number|nil the current epoch time; defaults to `time()`
+--- @return string|nil    the countdown, or nil when it cannot be computed
+local function countdown(when, now)
+    now = now or (_G.time and _G.time()) or nil
+    if now == nil or not Secrets.CanCompare2(now, when) then return nil end
+    local seconds = now - when
+    if seconds < 0 then seconds = 0 end
+    -- Under a minute reads in seconds. "0 min ago" for a death that happened
+    -- while you were reading the tooltip is worse than saying nothing.
+    if seconds < 60 then
+        return string.format(L["%ds ago"] or "%ds ago", seconds)
+    end
+    return string.format(L["%dm ago"] or "%dm ago", math.floor(seconds / 60))
+end
+
 --- How a death is labelled, in one of three styles.
 ---
 --- TWO STYLES BECAUSE THERE ARE TWO QUESTIONS: "when in the evening" wants a
@@ -648,18 +673,9 @@ function Format.DeathTime(when, style, now)
 
     local clock = date("%H:%M:%S", when)
 
-    if style == "ago" then
-        now = now or (_G.time and _G.time()) or nil
-        if now == nil or not Secrets.CanCompare2(now, when) then return clock end
-        local seconds = now - when
-        if seconds < 0 then seconds = 0 end
-        -- Under a minute reads in seconds. "0 min ago" for a death that happened
-        -- while you were reading the tooltip is worse than saying nothing.
-        if seconds < 60 then
-            return string.format(L["%ds ago"] or "%ds ago", seconds)
-        end
-        return string.format(L["%dm ago"] or "%dm ago", math.floor(seconds / 60))
-    end
+    -- The countdown is the only arm that can come back empty-handed, and its
+    -- answer to that is the clock -- see countdown() above for why.
+    if style == "ago" then return countdown(when, now) or clock end
 
     return clock
 end

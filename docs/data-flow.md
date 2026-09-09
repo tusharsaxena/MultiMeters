@@ -193,10 +193,11 @@ ships on the same source row as `totalAmount`, so one `DamageDone` read fills bo
 Damage column.
 
 `Provider.GetSourceDetail` is the exception to the flattening: it hands back Blizzard's own guarded
-`sessionSource` table, because its only two callers (`modules/Tooltip.lua`, `modules/DrillDown.lua`)
-each walk `combatSpells` through `SafeIterate` to honor their own display cap and neither wants the
-list whole. What it *does* do is refuse — `nil` means "meter off, unknown stat, suspended, no such
-source, or a session this context may not access", and a caller holding a table may index it.
+`sessionSource` table, because its only two callers (`modules/Tooltip_Builders.lua`,
+`modules/DrillDown.lua`) each walk `combatSpells` through `SafeIterate` to honor their own display
+cap and neither wants the list whole. What it *does* do is refuse — `nil` means "meter off, unknown
+stat, suspended, no such source, or a session this context may not access", and a caller holding a
+table may index it.
 
 ### The unverified assumption, isolated on purpose
 
@@ -325,6 +326,12 @@ does not launder a secret: it survives it. So names are compared only behind `Ca
 otherwise the deterministic `providerIndex` escape is used.
 
 ### Identity mode — the grid while the GUID is secret
+
+This build lives in `modules/Aggregator_Identity.lua` rather than in `modules/Aggregator.lua`. It was
+peeled out when that file went past the 1500-line cap, and the seam is the one described here: the
+GUID join above is one algorithm whose steps have to be read in order, and the correlation below
+answers a question that algorithm never asks. `Aggregator.Build` and the sort ladder stayed behind;
+everything from the identity key to the correlation rectangle went across unchanged.
 
 The table above describes the **unrestricted** build. Under the Combat restriction none of it runs,
 because `sourceGUID` is secret: there is no key to join the columns on, nothing to sort, and nothing
@@ -490,7 +497,8 @@ is not a missing feature — it is a thing this data source cannot express while
 `StatusBar:SetValue(secret)` marks that frame `HasSecretValues`, which makes its **anchoring and
 position data secret too**, and that propagates to anything anchored to it. So:
 
-- There is not one `GetWidth` / `GetHeight` / `GetLeft` / `GetPoint` call in `modules/Row.lua`.
+- There is not one `GetWidth` / `GetHeight` / `GetLeft` / `GetPoint` call in `modules/Row.lua`,
+  nor in `modules/Row_NameCell.lua`, which carries the leading cell's icons and name text.
 - `WindowProto:BuildLayout()` computes every coordinate the window will use from **config only** —
   padding, row height, spacing, each column's `x` and `width`, and `maxRows` from the frame height.
   Recomputed on a settings change, never on a refresh.
@@ -502,14 +510,16 @@ position data secret too**, and that propagates to anything anchored to it. So:
   matters — secretness travels from a frame to whatever is anchored *to* it, and these are leaves.
 
 **The anchor frame.** Dragging and resizing genuinely need "where did the user just put this" (a
-`GetPoint`) and "how big did they make it" (a `GetWidth`). `modules/Window.lua` keeps those two
-questions on `inst.anchor`: a bare, empty, invisible `Frame` parented to `UIParent` with no children,
-no textures and no cells. The visible window is anchored `TOPLEFT` and `BOTTOMRIGHT` to it, so it
-inherits position and size. Secretness travels downstream, and the anchor is upstream of everything —
-so drag and resize act on the anchor, the two getters read the anchor, and the visible window is
-never asked a question about itself. `SaveSize` goes further still and takes the size from the
-arguments `OnSizeChanged` was *handed* rather than from a getter, keeping the rule identical on both
-axes even though the anchor would in fact be safe to ask.
+`GetPoint`) and "how big did they make it" (a `GetWidth`). `modules/Window.lua` builds `inst.anchor`
+and `modules/Window_Placement.lua` — which holds `SavePosition`, `SaveSize`, `ApplyPosition`,
+`ApplyResizeBounds` and `ApplyLock` — is where the two questions are asked. The anchor is a bare,
+empty, invisible `Frame` parented to `UIParent` with no children, no textures and no cells. The
+visible window is anchored `TOPLEFT` and `BOTTOMRIGHT` to it, so it inherits position and size.
+Secretness travels downstream, and the anchor is upstream of everything — so drag and resize act on
+the anchor, the two getters read the anchor, and the visible window is never asked a question about
+itself. `SaveSize` goes further still and takes the size from the arguments `OnSizeChanged` was
+*handed* rather than from a getter, keeping the rule identical on both axes even though the anchor
+would in fact be safe to ask.
 
 This is also why **column management is settings-panel only** and there is no in-window drag editor.
 A drag editor is built out of exactly the read this addon may never perform on a live cell. Confining
@@ -531,9 +541,10 @@ aggregator.
 
 ## 8. The two side paths
 
-**Tooltips** (`modules/Tooltip.lua`) look like the safest place in a meter and are the most dangerous,
-because a tooltip is where the instinct is to say "just show the top five spells" and "put the total
-at the bottom". A top-N is a *comparison* and a total is *arithmetic*. So: spells are collected
+**Tooltips** (`modules/Tooltip.lua`, with the pooled line in `modules/Tooltip_Lines.lua` and the four
+builders in `modules/Tooltip_Builders.lua`) look like the safest place in a meter and are the most
+dangerous, because a tooltip is where the instinct is to say "just show the top five spells" and
+"put the total at the bottom". A top-N is a *comparison* and a total is *arithmetic*. So: spells are collected
 through `SafeIterate` (up to 64, deliberately more than any sane `maxSpells`, because sorting only
 the first ten the API happened to return would produce a "top 5" that is nothing of the sort), sorted
 **only** when a pre-pass proves every amount comparable, and the "and N more" line uses
@@ -638,9 +649,9 @@ source's `name` is bare, and a spell's `combatSpellDetails.unitName` is realm-qu
 from another realm. Compared as they arrive, same-realm players matched and cross-realm players
 silently did not — which reads in game as "targets work on every other row" and is really "targets
 work for everyone on your own realm". Splitting at the first hyphen is exact rather than heuristic
-here, because both sides are *player* names and a player name cannot contain one; `modules/Row.lua`
-gates the same strip on the GUID precisely because an NPC like "Crenna Earth-Daughter" keeps hers.
-The accepted cost is that two players sharing a name on different realms merge into one row.
+here, because both sides are *player* names and a player name cannot contain one;
+`modules/Row_NameCell.lua` gates the same strip on the GUID precisely because an NPC like "Crenna
+Earth-Daughter" keeps hers. The accepted cost is that two players sharing a name on different realms merge into one row.
 
 An unreadable *caster name* is different and is skipped rather than fatal — a spell nobody can be
 attributed to belongs to nobody rather than to everybody, so dropping it costs one spell's

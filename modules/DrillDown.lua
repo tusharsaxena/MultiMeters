@@ -379,6 +379,51 @@ end
 -- Click routing
 -- ---------------------------------------------------------------------------
 
+--- Is this click the second click on the cell that is already drilled into?
+---
+--- TWO KEYS, NOT ONE. The GUID on its own is not enough: a same-stat click on a
+--- DIFFERENT player's row has to move the view rather than close it, and a
+--- same-player click on a different stat has to as well. Both halves match or
+--- this is a fresh entry.
+--- @param current table|nil  the window's current view, from DrillDown.GetState
+--- @param row table
+--- @param statKey string
+--- @return boolean
+local function isRepeatClick(current, row, statKey)
+    if not current then return false end
+    return current.guid == row.guid and current.statKey == statKey
+end
+
+--- DEATHS IS A LADDER, and the order is the whole of it.
+---
+--- The deaths view first, where the client can read a recap and the row knows
+--- which deaths to list. Blizzard's own frame second, so a client without
+--- C_DeathRecap keeps exactly the behaviour it has today rather than losing the
+--- one thing that worked. Neither rung firing returns nil, and the caller takes
+--- the ladder's last rung itself.
+---
+--- The ladder is only ever climbed AFTER the exit toggle has been answered: a
+--- second click on a drilled Deaths cell leaves, and must not hand an id to
+--- Blizzard's frame on the way out.
+--- @param self table  the DrillDown module, for Enter
+--- @param window table
+--- @param row table
+--- @param statKey string  the clicked cell's stat, threaded through to Enter
+--- @return string|nil  "enter", "none" or "recap", or nil when neither rung fires
+local function climbDeathsLadder(self, window, row, statKey)
+    local deaths = canReadRecaps() and copyRecapIDs(row.deaths) or nil
+    if deaths ~= nil then
+        return self:Enter(window, row, statKey, "deaths") and "enter" or "none"
+    end
+    if openDeathRecap(row.deathRecapID) then
+        if State.debug and Debug then
+            Debug("DrillDown", "recap id=%s", tostring(row.deathRecapID))
+        end
+        return "recap"
+    end
+    return nil
+end
+
 --- What a click on a cell does. modules/Row.lua wires every cell's OnClick here
 --- so the decision lives in one place rather than in the row builder.
 ---
@@ -397,33 +442,20 @@ function DrillDown:OnCellClick(window, row, statKey)
 
     -- A second click inside a drill-down returns to the grid. Two ways out (this
     -- and the back button) rather than one, because a player who clicked in
-    -- expects the same click to take them out.
-    local current = DrillDown.GetState(window)
-    if current and current.guid == row.guid and current.statKey == statKey then
+    -- expects the same click to take them out. This is answered BEFORE the
+    -- deaths ladder below, never after.
+    if isRepeatClick(DrillDown.GetState(window), row, statKey) then
         return self:Exit(window) and "exit" or "none"
     end
 
-    -- DEATHS IS A LADDER, and the order is the whole of it.
-    --
-    -- The deaths view first, where the client can read a recap and the row knows
-    -- which deaths to list. Blizzard's own frame second, so a client without
-    -- C_DeathRecap keeps exactly the behaviour it has today rather than losing
-    -- the one thing that worked. The ordinary spell breakdown last, so the cell
-    -- is never dead — even though a Deaths source has no spell list and that
-    -- breakdown is the "No data yet" this feature exists to replace.
     if statKey == "Deaths" then
-        local deaths = canReadRecaps() and copyRecapIDs(row.deaths) or nil
-        if deaths ~= nil then
-            return self:Enter(window, row, statKey, "deaths") and "enter" or "none"
-        end
-        if openDeathRecap(row.deathRecapID) then
-            if State.debug and Debug then
-                Debug("DrillDown", "recap id=%s", tostring(row.deathRecapID))
-            end
-            return "recap"
-        end
+        local action = climbDeathsLadder(self, window, row, statKey)
+        if action ~= nil then return action end
     end
 
+    -- The ordinary spell breakdown is the deaths ladder's last rung, so the cell
+    -- is never dead — even though a Deaths source has no spell list and that
+    -- breakdown is the "No data yet" this feature exists to replace.
     return self:Enter(window, row, statKey) and "enter" or "none"
 end
 

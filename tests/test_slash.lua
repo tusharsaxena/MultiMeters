@@ -448,6 +448,212 @@ test("Slash: `debug feign of` names the rejected argument and leaves the trace a
 end)
 
 -- ---------------------------------------------------------------------------
+-- `/mm debug`: the read verbs, the feign recording, and the console toggle
+-- ---------------------------------------------------------------------------
+--
+-- doDebug is a ladder over one word, and its arms are NOT interchangeable.
+-- `diag`, `recap` and `identity` sit ABOVE the `NS.DebugLog` guard on purpose —
+-- they are what a player is asked to type when something looks wrong, and a
+-- console they have to open first is one more step between a bug and its report.
+-- The comment in settings/Slash.lua says so three times, once per verb, which is
+-- how much the ordering is worth. The cases below pin each arm to its own
+-- outcome, so a ladder rewritten as a lookup cannot cross-wire two verbs, drop
+-- one below the guard, or turn the final toggle into a refusal.
+
+--- Replace the three report entry points with counters and hand back the tally.
+---
+--- Spied rather than run: each real report prints dozens of lines into the
+--- console sink, and what is being pinned here is WHICH report a verb reaches,
+--- not what that report says.
+local function spyReports(inst)
+    local calls = { diag = 0, recap = 0, identity = 0 }
+    local D = inst.NS.Diagnostics
+    D.Report           = function() calls.diag     = calls.diag     + 1 end
+    D.ReportDeathRecap = function() calls.recap    = calls.recap    + 1 end
+    D.ReportIdentity   = function() calls.identity = calls.identity + 1 end
+    return calls
+end
+
+test("Slash: `diag`, `recap` and `identity` each reach their OWN report and no other", function()
+    -- Three verbs, three entry points, and the three reports are different
+    -- lengths for a reason: `recap` is the issue #1 probe on its own and
+    -- `identity` the issue #22 capture, both extracted precisely so a player
+    -- mid-pull is not handed the forty lines of atlas and font output `diag`
+    -- carries. A lookup table that maps two of them to the same member would
+    -- undo that and still print something plausible.
+    local inst = T.load()
+    local calls = spyReports(inst)
+
+    say(inst, "debug diag")
+    assertEqual(calls.diag, 1, "`diag` runs the full report")
+    assertEqual(calls.recap + calls.identity, 0, "and reaches nothing else")
+
+    say(inst, "debug recap")
+    assertEqual(calls.recap, 1, "`recap` runs the death-recap probe alone")
+    assertEqual(calls.diag + calls.identity, 1, "the full report must not run a second time")
+
+    say(inst, "debug identity")
+    assertEqual(calls.identity, 1, "`identity` runs the mid-pull correlation capture alone")
+    assertEqual(calls.diag + calls.recap, 2, "and neither of the other two again")
+end)
+
+test("Slash: the three read verbs run with no debug console seam at all", function()
+    -- THE ORDERING THE COMMENTS CALL LOAD-BEARING, asserted rather than trusted.
+    -- All three sit above `if not NS.DebugLog then return end`; move any of them
+    -- below it and the verb a player was asked to type answers with silence on
+    -- exactly the broken install where the answer matters most.
+    -- red under: folding the read verbs into the console-toggle ladder.
+    local inst = T.load()
+    local calls = spyReports(inst)
+
+    local realLog = inst.NS.DebugLog
+    inst.NS.DebugLog = nil
+    local ok, err = pcall(function()
+        say(inst, "debug diag")
+        say(inst, "debug recap")
+        say(inst, "debug identity")
+    end)
+    inst.NS.DebugLog = realLog
+
+    assertTrue(ok, "a read verb must not raise when the console seam is absent: " .. tostring(err))
+    assertEqual(calls.diag, 1, "`diag` ran without the console")
+    assertEqual(calls.recap, 1, "`recap` ran without the console")
+    assertEqual(calls.identity, 1, "`identity` ran without the console")
+end)
+
+test("Slash: a read verb moves neither the console window nor the logging flag", function()
+    -- The other half of the same ordering: the read verbs `return`, so none of
+    -- them may fall through to the toggle at the bottom of the ladder. A `diag`
+    -- that also opened or closed the console would be a report the player has to
+    -- undo a window change to read.
+    local inst = T.load()
+    spyReports(inst)
+    local D = inst.NS.DebugLog
+    local shownBefore = D:IsShown()
+
+    say(inst, "debug diag")
+    say(inst, "debug recap")
+    say(inst, "debug identity")
+
+    assertEqual(D:IsShown(), shownBefore, "a report is a read, not a window toggle")
+    assertTrue(not inst.NS.State.debug, "and it must not switch session logging on")
+end)
+
+test("Slash: the debug sub-verb is matched case-insensitively", function()
+    -- The word is lowercased before the ladder sees it, so a player typing what
+    -- they were sent in a chat message gets the report rather than the toggle.
+    local inst = T.load()
+    local calls = spyReports(inst)
+    say(inst, "debug DIAG")
+    assertEqual(calls.diag, 1, "`DIAG` is `diag`")
+    say(inst, "debug Identity")
+    assertEqual(calls.identity, 1, "`Identity` is `identity`")
+end)
+
+test("Slash: `debug feign on` arms the recording and says exactly what to do next", function()
+    -- The line is the contract. It is the ONLY place the player is told that the
+    -- recording is now running and which command prints it afterwards, so a
+    -- reworded or dropped line strands somebody with an armed trace they never
+    -- read. The separator is a byte escape for the reason every non-ASCII string
+    -- in this addon is.
+    local inst = T.load()
+    inst.NS.Diagnostics.ArmFeignTrace(false)
+    local text = joined(say(inst, "debug feign on"))
+    assertTrue(text:find(
+        "feign trace ON \226\128\148 run the dungeon, then `/mm debug feign`.", 1, true) ~= nil,
+        "the armed line must survive verbatim: " .. text)
+    assertTrue(inst.NS.Diagnostics.IsFeignTraceArmed(), "`on` actually arms the recording")
+end)
+
+test("Slash: `debug feign off` stops the recording and says so", function()
+    local inst = T.load()
+    inst.NS.Diagnostics.ArmFeignTrace(true)
+    local text = joined(say(inst, "debug feign off"))
+    assertTrue(text:find("feign trace off.", 1, true) ~= nil,
+        "the off line must survive verbatim: " .. text)
+    assertFalse(inst.NS.Diagnostics.IsFeignTraceArmed(), "`off` actually stops the recording")
+end)
+
+test("Slash: the feign argument is case-folded, and a word after it is ignored", function()
+    -- The whole remainder is lowercased and only the SECOND word is read. Both
+    -- halves are lenient on purpose, and both are one refactor away from turning
+    -- into the unknown-argument refusal next door — which would reject `feign ON`
+    -- and `feign off now` as typos when neither is one.
+    local inst = T.load()
+    say(inst, "debug feign ON")
+    assertTrue(inst.NS.Diagnostics.IsFeignTraceArmed(), "`ON` is `on`")
+    say(inst, "debug feign OFF now")
+    assertFalse(inst.NS.Diagnostics.IsFeignTraceArmed(),
+        "only the second word is read; a trailing word is not a refusal")
+end)
+
+test("Slash: a refused feign argument does not fall through to the console toggle", function()
+    -- The refusal `return`s, and has to: without it the rejected word would also
+    -- land on the ladder's final arm and move the console window, so one typo
+    -- would cost two surprises. The companion case above pins the message and the
+    -- untouched trace; this one pins the window.
+    local inst = T.load()
+    local D = inst.NS.DebugLog
+    local shownBefore = D:IsShown()
+    say(inst, "debug feign of")
+    assertEqual(D:IsShown(), shownBefore, "a refusal is not a request to move the console")
+end)
+
+test("Slash: a word the ladder does not know toggles the console, as a bare `debug` does", function()
+    -- The final arm is a TOGGLE, not a refusal, and that asymmetry with `feign`
+    -- is deliberate: `feign` takes an argument and can therefore be typed wrong,
+    -- while the console verb never validated one. A lookup table that answered
+    -- everything it could not find with "unknown" would change what
+    -- `/mm debug please` has always done.
+    local inst = T.load()
+    local D = inst.NS.DebugLog
+    local shownBefore = D:IsShown()
+    say(inst, "debug wibble")
+    assertTrue(D:IsShown() ~= shownBefore, "an unrecognised word toggles the window")
+    assertTrue(not inst.NS.State.debug, "and does not touch the logging flag")
+end)
+
+test("Slash: with core/Diagnostics.lua absent the debug verbs go quiet, not through", function()
+    -- Every one of the four guards on the module and returns either way. On a
+    -- half-installed addon a `diag` must not fall through to the console toggle
+    -- and move a window the player never asked about — the failure would look
+    -- like the command working.
+    local inst = T.load()
+    local realD = inst.NS.Diagnostics
+    inst.NS.Diagnostics = nil
+    local D = inst.NS.DebugLog
+    local shownBefore = D:IsShown()
+
+    local ok, err = pcall(function()
+        for _, tail in ipairs({ "diag", "recap", "identity", "feign", "feign on" }) do
+            say(inst, "debug " .. tail)
+        end
+    end)
+    inst.NS.Diagnostics = realD
+
+    assertTrue(ok, "a missing diagnostics module must not take the command down: " .. tostring(err))
+    assertEqual(D:IsShown(), shownBefore, "none of the four may reach the console toggle")
+end)
+
+test("Slash: a Diagnostics too old to arm a trace reports off rather than promising one", function()
+    -- `local on = D.ArmFeignTrace and D.ArmFeignTrace(...) or false` — the printed
+    -- line follows what arming ACTUALLY returned, never what was asked for. A
+    -- module that cannot record says off, so nobody runs a dungeon for a trace
+    -- that was never armed.
+    local inst = T.load()
+    local D = inst.NS.Diagnostics
+    local real = D.ArmFeignTrace
+    D.ArmFeignTrace = nil
+    local text = joined(say(inst, "debug feign on"))
+    D.ArmFeignTrace = real
+
+    assertTrue(text:find("feign trace off.", 1, true) ~= nil,
+        "an unarmable trace must still answer: " .. text)
+    assertTrue(text:find("feign trace ON", 1, true) == nil,
+        "and must not print the armed line: " .. text)
+end)
+
+-- ---------------------------------------------------------------------------
 -- Registration
 -- ---------------------------------------------------------------------------
 

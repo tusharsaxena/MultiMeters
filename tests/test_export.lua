@@ -2,10 +2,11 @@
 -- somebody can carry out of the game.
 --
 -- Only the PURE half is reachable from here, and that is the whole reason the
--- module is split where it is: everything above its "Export modal" divider is a
--- function of its arguments, so the cases below hand it a result table and read
--- a string back. The modal, the copy window and the three dropdowns are
--- smoke-tested (docs/smoke-tests.md), as LootHistory's are.
+-- module is split where it is: everything modules/Export.lua kept is a function
+-- of its arguments, so the cases below hand it a result table and read a string
+-- back. The modal, the copy window and the three dropdowns went to
+-- modules/Export_Modal.lua when the module was peeled, and their cases went with
+-- them to tests/test_export_modal.lua.
 --
 -- Two things are worth stating before the first case, because they are what the
 -- file is really guarding:
@@ -158,14 +159,6 @@ end)
 -- ---------------------------------------------------------------------------
 -- Availability — the one gate the whole file hangs off
 -- ---------------------------------------------------------------------------
-
-test("Export.Open refuses to open at all while restricted", function()
-    -- A modal with two dead buttons explains nothing; the sentence in chat is the
-    -- useful half of that interaction.
-    local inst = restricted()
-    assertNil(inst.NS.Export.Open({}))
-    assertNil(inst.NS.Export:Open({}), "and through the colon form the header uses")
-end)
 
 test("Export.Available says yes out of combat, with nothing to explain", function()
     local ok, reason = T.load().NS.Export.Available()
@@ -353,85 +346,6 @@ test("Export.Columns follows catalog order and states each fact twice", function
     end
     assertEqual(#columns, #expected)
     for i, header in ipairs(expected) do assertEqual(columns[i].header, header) end
-end)
-
--- ---------------------------------------------------------------------------
--- ResolveMetric — which column the chat dump ranks by
--- ---------------------------------------------------------------------------
---
--- `export.metric` used to ship as "", which was a CHOICE ("match the window")
--- rather than an absent value, resolved fresh against the invoking window at
--- every use. That choice is gone: the label was unreadable, and a control whose
--- value is "whatever something else says" cannot show you what it will do.
---
--- What replaced it is SEEDING — Export.Open writes the invoking window's sort
--- column into the profile — so the useful half survives and is visible in the
--- selector. These cases pin the narrowed contract: ResolveMetric always answers
--- a key the catalog holds, and "" is now just an unrecognized stored value.
-
---- Store one export preference the way the modal does.
----
---- @param inst table   a loaded instance
---- @param value any    what to store under export.metric
-local function storeMetric(inst, value)
-    local profile = inst.NS.db and inst.NS.db.profile
-    profile.export = profile.export or {}
-    profile.export.metric = value
-end
-
-test("Export.ResolveMetric answers the pinned stat", function()
-    local inst = T.load()
-    storeMetric(inst, "Deaths")
-    assertEqual(inst.NS.Export.ResolveMetric({ data = { sortColumn = "HealingDone" } }), "Deaths")
-end)
-
-test("Export.ResolveMetric ships pinned to a real stat, never to the empty string", function()
-    -- red under: the old FOLLOW_WINDOW default surviving the removal. A profile
-    -- default of "" would now be an unrecognized value on every fresh install.
-    local inst = T.load()
-    local shipped = inst.NS.defaults.profile.export.metric
-    assertTrue(Const.STAT_BY_KEY[shipped] ~= nil,
-        "the shipped default is a key the catalog answers for, not a sentinel")
-    assertEqual(shipped, Const.STATS[1].key)
-end)
-
-test("Export.ResolveMetric treats the old empty-string choice as unset", function()
-    -- A profile written by the build that shipped FOLLOW_WINDOW. It degrades to
-    -- the window's column and then to the first catalog stat, with no migration
-    -- step — which is the whole reason no migration step was written.
-    local inst = T.load()
-    storeMetric(inst, "")
-    assertEqual(inst.NS.Export.ResolveMetric({ data = { sortColumn = "HealingDone" } }),
-        "HealingDone")
-    assertEqual(inst.NS.Export.ResolveMetric({ data = {} }), Const.STATS[1].key)
-end)
-
-test("Export.ResolveMetric treats a stat this build does not offer as unset", function()
-    local inst = T.load()
-    storeMetric(inst, "AbsorbsFromTheFuture")
-    assertEqual(inst.NS.Export.ResolveMetric({ data = { sortColumn = "Dispels" } }), "Dispels")
-end)
-
-test("Export.ResolveMetric falls back to the first catalog stat", function()
-    local inst = T.load()
-    storeMetric(inst, nil)
-    assertEqual(inst.NS.Export.ResolveMetric({ data = {} }), Const.STATS[1].key)
-    assertEqual(inst.NS.Export.ResolveMetric({}), Const.STATS[1].key)
-    assertEqual(inst.NS.Export.ResolveMetric(nil), Const.STATS[1].key)
-end)
-
-test("Export.ResolveMetric is callable through the colon form", function()
-    local inst = T.load()
-    storeMetric(inst, "Deaths")
-    assertEqual(inst.NS.Export:ResolveMetric(), "Deaths")
-end)
-
-test("The Metric selector offers exactly the catalog, with no sentinel entry", function()
-    -- red under: "Match the window" surviving as a menu entry after the stored
-    -- choice behind it was removed, which would write a value nothing resolves.
-    local inst = T.load()
-    assertNil(rawget(inst.NS.L, "Match the window"),
-        "the string is gone from the locale, not just from the menu")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -811,6 +725,145 @@ test("Export.ChatLines refuses to the empty array while restricted", function()
     local lines = restricted().NS.Export.ChatLines(chatFixture(), "DamageDone", 5, "Ulgrax")
     assertEqual(type(lines), "table")
     assertEqual(#lines, 0, "not even the header line: an empty dump is the refusal")
+end)
+
+test("Export.ChatLines refuses anything that is not a result table", function()
+    -- Export.Build answers nil on a load with no aggregator, and onPrintToChat's
+    -- "nothing to export" branch is the only thing between that nil and here. The
+    -- guard is the second one, and it must stay: `result.durationSeconds` on a nil
+    -- is a raise inside a click handler.
+    local ChatLines = T.NS.Export.ChatLines
+    assertEqual(#ChatLines(nil, "DamageDone", 5, "Ulgrax"), 0)
+    assertEqual(#ChatLines("DamageDone", "DamageDone", 5, "Ulgrax"), 0)
+    assertEqual(#ChatLines(7, "DamageDone", 5, "Ulgrax"), 0)
+    assertEqual(type(ChatLines(nil)), "table", "an empty array, never nil")
+end)
+
+test("Export.ChatLines joins an empty segment name rather than asking whether it is empty", function()
+    -- THE HOUSE RULE THIS PINS. `..` is on docs/data-flow.md's permitted list and
+    -- `== ""` is a comparison, which is not — so the session is admitted on
+    -- `type() == "string"` alone and an empty one lands in the header as an empty
+    -- one. Window never answers "", so nobody sees this; the case exists so a
+    -- refactor that "tidies" the test into `session ~= ""` goes red.
+    -- red under: any comparison against the session string.
+    local lines = T.NS.Export.ChatLines(chatFixture(), "DamageDone", 1, "")
+    assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage" .. EM_DASH .. " (2:14)")
+end)
+
+test("Export.ChatLines omits a segment name that is not a string", function()
+    -- The other arm of the same `type()` test, and the one that keeps a stray
+    -- number or table out of a `..` that would then read a handle.
+    local lines = T.NS.Export.ChatLines(chatFixture(), "DamageDone", 1, 42)
+    assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage (2:14)")
+end)
+
+test("Export.ChatLines takes the duration from the result and never from the formatter", function()
+    -- DECIDED FROM THE PLAIN INPUT. `result.durationSeconds` is a number the
+    -- aggregator put there; F.Duration's answer is a string a formatter built,
+    -- and asking whether THAT is empty is a comparison on a value the meter may
+    -- be hiding. modules/Window.lua's DurationText makes the same distinction.
+    -- red under: `if F.Duration(seconds) ~= "" then`.
+    local result = built({ row("Kaosz", { DamageDone = cell(100) }) }, nil)
+    local lines = T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
+    assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage" .. EM_DASH .. "Ulgrax",
+        "no duration at all when the result carries none")
+end)
+
+test("Export.ChatLines asks the formatter for the amount, the rate and the share by name", function()
+    -- A STAND-IN FORMATTER, so the assertion is about which member is asked for
+    -- and in what order rather than about how NS.Format happens to round today.
+    -- The parenthetical is rate then share, joined with ", " — the order a reader
+    -- of a chat dump learns once and then relies on.
+    local inst = T.load()
+    inst.NS.Format = {
+        Number  = function(v) return "N:" .. tostring(v) end,
+        Rate    = function(v) return "R:" .. tostring(v) end,
+        Percent = function(v) return "P:" .. tostring(v) end,
+    }
+    inst.NS.NumberFormat = inst.NS.Format
+
+    local result = built({
+        row("Kaosz", { DamageDone = cell(100, { rate = 5, percent = 3 }) }),
+    }, 134)
+    local lines = inst.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
+
+    -- A formatter with no Duration takes the duration out of the header, which is
+    -- the second arm of the `seconds ~= nil and F.Duration` guard: the member is
+    -- optional, and a degraded one must cost a line its parenthetical rather than
+    -- raising inside a click.
+    assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage" .. EM_DASH .. "Ulgrax")
+    assertEqual(lines[2], "1. Kaosz N:100 (R:5, P:3)")
+
+    -- Each formatter member is independently optional, and losing one must lose
+    -- only its own half of the parenthetical.
+    inst.NS.Format.Rate = nil
+    assertEqual(inst.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2],
+        "1. Kaosz N:100 (P:3)")
+    inst.NS.Format.Percent = nil
+    assertEqual(inst.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2],
+        "1. Kaosz N:100")
+end)
+
+test("Export.ChatLines carries the rate alone when the aggregator computed no share", function()
+    -- The first arm of the `extra` bookkeeping without the second. `hasExtra` is a
+    -- BOOLEAN rather than `extra ~= ""` — reading a formatter's string back to ask
+    -- whether it is empty is a comparison on a value that may be secret — so this
+    -- is what proves the boolean tracks the first arm on its own.
+    -- red under: `if extra ~= "" then line = line .. ...`.
+    local result = built({
+        row("Kaosz", { DamageDone = cell(100000, { rate = 5000 }) }),
+    }, 60)
+    local lines = T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
+    assertEqual(lines[2], "1. Kaosz 100.0K (5.0K)", "no comma, and nothing after it")
+end)
+
+test("Export.ChatLines drops a share the aggregator did not answer as a number", function()
+    -- `percent` is the aggregator's ONE derived number and reaches a cell as a
+    -- plain Lua number or as nil. Anything else is a shape this module did not
+    -- produce and will not print — the `type(cell.percent) == "number"` test is
+    -- what keeps a string or a handle out of the `..` behind it.
+    local result = built({
+        row("Kaosz", { DamageDone = cell(100000, { rate = 5000, percent = "31.2" }) }),
+    }, 60)
+    local lines = T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
+    assertEqual(lines[2], "1. Kaosz 100.0K (5.0K)")
+end)
+
+test("Export.ChatLines prints a zero share rather than reading it as absent", function()
+    -- nil is "cannot be known right now"; zero is an answer, and a player who
+    -- contributed nothing to a fight is entitled to read that they did.
+    -- red under: `if cell.percent and ...`, which is the same bug for `false` too.
+    local result = built({ row("Kaosz", { DamageDone = cell(100, { percent = 0 }) }) }, 60)
+    assertEqual(T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2],
+        "1. Kaosz 100 (0.0%)")
+end)
+
+test("Export.ChatLines names a row that has no cell for the metric anyway", function()
+    -- A ranked list of nine stats built from a window showing one can hand a row
+    -- that never scored on this metric. It is still a row, and the formatter's
+    -- answer for nil is what fills the amount — dropping the row instead would
+    -- renumber every rank under it.
+    local result = built({ row("Kaosz", { Deaths = cell(2) }) }, 60)
+    assertEqual(T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2], "1. Kaosz ")
+end)
+
+test("Export.ChatLines reads the rows off result.rows when it is not the result itself", function()
+    -- Aggregator.Build points `rows` back at the result, and every fixture above
+    -- reproduces that identity. This is the other shape the `result.rows or result`
+    -- fallback covers: a caller that assembled a result by hand.
+    local result = { rows = { row("Solo", { DamageDone = cell(1000) }) }, durationSeconds = 60 }
+    local lines = T.NS.Export.ChatLines(result, "DamageDone", 5, "Ulgrax")
+    assertEqual(#lines, 2)
+    assertEqual(lines[2], "1. Solo 1.0K")
+end)
+
+test("Export.ChatLines answers a header and nothing under it for a result with no rows", function()
+    -- Not the empty array: an empty array is the REFUSAL, and onPrintToChat tells
+    -- the two apart by asking Export.Build first. A header alone is "the segment
+    -- exists and nobody is in it".
+    local lines = T.NS.Export.ChatLines(built({}, 60), "DamageDone", 5, "Ulgrax")
+    assertEqual(#lines, 1)
+    assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage" .. EM_DASH .. "Ulgrax (1:00)")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -1219,291 +1272,4 @@ test("Export.Build answers nil when there is no aggregator to ask", function()
     NS.Aggregator, NS.GetModule = savedTable, savedGetModule
     assertTrue(ok, "a missing aggregator must not raise")
     assertNil(result)
-end)
-
-test("The modal's whisper row is a row, not an overlap", function()
-    -- red under: the InputBoxTemplate layout, where the box sat at -126 and the
-    -- warning line at -154 with a 20px box between them and a fixed modal height
-    -- that accounted for neither. The numbers are read off the module rather than
-    -- restated, so this fails if a later edit moves one and not the others.
-    local inst = T.load()
-    local geom = inst.NS.Export.__geometry
-    assertTrue(type(geom) == "table", "the modal's geometry is inspectable")
-
-    assertTrue(geom.whisperTop + geom.rowHeight <= geom.warningTop,
-        "the whisper row clears the warning line rather than drawing over it")
-    assertEqual(geom.heightWithWhisper - geom.height, geom.rowHeight + geom.rowGap,
-        "and the modal grows by exactly one row when it appears")
-end)
-
--- ---------------------------------------------------------------------------
--- The shared dropdown menu must not outlive the modal that opened it
--- ---------------------------------------------------------------------------
---
--- LibKa0s-Widgets-1.0's popup is a process-wide singleton parented to UIParent at
--- FULLSCREEN_DIALOG (docs/api/Widgets/version-4-docs.md, "Behavior a host must
--- know", in the LibKa0s repo) — not to this modal, so the modal's own Hide() does
--- not reach it. This modal is in UISpecialFrames, so Escape hides it without going
--- through onExportCsv/onPrintToChat or any other click handler this file controls;
--- an open Metric/Channel/Lines menu would be left orphaned above the game with the
--- modal that owned it already gone. modules/Export.lua's EnsureFrame wires
--- modal:SetScript("OnHide", function() W.CloseMenu() end) to close it.
---
--- The shared menu is a file-local inside Widgets.lua with no getter, so the only
--- way to observe it is the way LibKa0s's own test_widgets.lua does: capture the
--- first frame CreateFrame makes once a dropdown's OnClick lazily builds it.
-test("Hiding the export modal closes an open dropdown menu (LibKa0s-Widgets-1.0)", function()
-    local inst = T.load()
-    local modal = inst.NS.Export.Open({})
-    assertTrue(type(modal) == "table", "the modal opened")
-
-    -- The REAL metric list, painted into real rows. It used to be emptied first,
-    -- on the grounds that LibKa0s-Widgets-1.0's paintMenuRow writes every row's
-    -- glyph FontString unconditionally while no export dropdown names a
-    -- glyphFont, and that this harness's mock enforces the client's
-    -- "FontString:SetText(): Font not set" rule (tests/wow_mock.lua). That
-    -- stopped being true at Widgets minor 3: the row's glyph FontString is now
-    -- built from GameFontHighlightSmall, so it has a font before its first
-    -- SetText and the mock's template branch lets it through. Emptying the list
-    -- now buys nothing and costs the row build — see the real-row case at the
-    -- foot of this file for why that matters.
-    local made, savedCreateFrame = {}, inst.mocks.CreateFrame
-    inst.mocks.CreateFrame = function(...)
-        local f = savedCreateFrame(...)
-        made[#made + 1] = f
-        return f
-    end
-    modal.metricDD:__fire("OnClick")
-    inst.mocks.CreateFrame = savedCreateFrame
-
-    local menu = made[1]
-    assertTrue(type(menu) == "table", "the dropdown's click lazily built the shared menu")
-    assertTrue(menu:IsShown(), "opening the Metric dropdown showed the shared menu")
-
-    -- The mock's Hide() does not auto-invoke OnHide the way the real client does
-    -- (see LibKa0s's test_widgets.lua, "CloseMenu hides the click-catcher too") —
-    -- Escape hiding a UISpecialFrames frame does fire OnHide in the real client,
-    -- so firing it here is what stands in for Escape.
-    modal:__fire("OnHide")
-    assertEqual(menu:IsShown(), false,
-        "OnHide closed the shared menu instead of leaving it orphaned")
-end)
-
-test("Hiding the export modal with no menu ever opened is a safe no-op", function()
-    local inst = T.load()
-    local modal = inst.NS.Export.Open({})
-    assertTrue(type(modal) == "table", "the modal opened")
-
-    local ok = pcall(function() modal:__fire("OnHide") end)
-    assertTrue(ok, "closing the modal before any dropdown was clicked must not raise")
-end)
-
--- ---------------------------------------------------------------------------
--- A real row build, and a real click on a real row
--- ---------------------------------------------------------------------------
---
--- THE HOLE THIS FILLS. Every other case in this file drives the collapsed
--- button — the half modules/Export.lua wrote. None of them reached the half it
--- did not: the pooled row buttons LibKa0s-Widgets-1.0 builds on the first click
--- (`makeMenuRow`, Widgets.lua). That is the exact shape of hole that let
--- v1.11.0 and v1.11.1 ship a first-click crash (`FontString:SetText(): Font not
--- set`, on a row's glyph FontString) past 553 green library cases: every one of
--- them seeded a stand-in row and none reached the constructor. A case that
--- empties the option list first proves only that the click handler runs; the
--- rows it would have built are what the crash was in.
---
--- NO OPTION THIS ADDON SETS CARRIES A GLYPH. metricOptions, channelOptions and
--- linesOptions each build `{ value =, label = }` and nothing else, so the modal
--- passes no `opts.glyphFont` — which is CORRECT rather than an oversight, and
--- must stay that way: glyphFont is a precondition for a row carrying `glyph`
--- (version-4-docs.md, "Behavior a host must know"), not decoration to add
--- because the field exists. This case is what proves a glyphless row survives
--- being built and painted with no face named.
---
--- HOW THE FRAMES ARE OBSERVED. The shared menu is a file-local in Widgets.lua
--- with no getter, so this does what LibKa0s's own test_widgets.lua does: it
--- watches CreateFrame. What it records is the ARGUMENTS of each call — the
--- frame type, the name and the parent, as they were passed — never anything
--- read back off the frame afterwards, which for a pooled row the contract
--- forbids a host to do (version-4-docs.md, "Rows are pooled across dropdowns").
---
--- It deliberately does NOT count frames or index them by position. Rows are
--- pooled across every dropdown in the process and across addons, so "the menu,
--- the catcher, then one Button per option" is only true of the very first
--- dropdown ever opened in a given Lua state; a second selector opened in the
--- same state, or a library that pre-warms the pool, builds fewer. So the watch
--- is installed before the modal is even built and the row buttons are picked
--- out by what they ARE — a Button parented to the popup — which holds however
--- many of them already existed. Their creation order is the order Populate
--- hands them to options, and that is the one ordering fact this leans on.
-test("Clicking a Metric row builds a real menu row and stores that metric", function()
-    local inst = T.load()
-    local NS = inst.NS
-
-    local stats = NS.Constants.STATS
-    assertTrue(#stats > 1, "the catalog offers more than one metric to pick between")
-
-    -- A metric that is NOT the one already resolved, so the assertion below
-    -- cannot pass on a click that did nothing.
-    local before = NS.Export.ResolveMetric()
-    local target
-    for _, stat in ipairs(stats) do
-        if stat.key ~= before then target = stat break end
-    end
-    assertTrue(target ~= nil, "the catalog offers a metric other than the current one")
-
-    local calls, savedCreateFrame = {}, inst.mocks.CreateFrame
-    inst.mocks.CreateFrame = function(ftype, name, parent, ...)
-        local f = savedCreateFrame(ftype, name, parent, ...)
-        calls[#calls + 1] = { frame = f, ftype = ftype, name = name, parent = parent }
-        return f
-    end
-
-    local modal = NS.Export.Open({})
-    assertTrue(type(modal) == "table", "the modal opened")
-
-    local ok, err = pcall(function() modal.metricDD:__fire("OnClick") end)
-    inst.mocks.CreateFrame = savedCreateFrame
-    assertTrue(ok, "the first click built the menu and its rows without raising: " .. tostring(err))
-
-    -- The shared popup is the one UNNAMED Frame parented straight to UIParent:
-    -- the modal is named (MODAL_NAME) and everything else this modal builds
-    -- hangs off the modal, not off UIParent.
-    local menu
-    for _, call in ipairs(calls) do
-        if call.ftype == "Frame" and call.name == nil and call.parent == inst.mocks.UIParent then
-            menu = call.frame
-            break
-        end
-    end
-    assertTrue(menu ~= nil, "the first click lazily built the shared popup menu")
-    assertTrue(menu:IsShown(), "opening the Metric dropdown showed the shared menu")
-
-    -- Every pooled row Button that exists in this Lua state, in build order.
-    local rows = {}
-    for _, call in ipairs(calls) do
-        if call.ftype == "Button" and call.parent == menu then rows[#rows + 1] = call.frame end
-    end
-    assertTrue(#rows >= #stats,
-        ("the first click built one real menu row per metric, not an empty menu (%d rows for %d metrics)")
-            :format(#rows, #stats))
-
-    -- Row i is the i-th option, in the order SetOptions was given them.
-    local index
-    for i, stat in ipairs(stats) do
-        if stat.key == target.key then index = i break end
-    end
-    rows[index]:__fire("OnClick")
-
-    assertEqual(NS.GetSetting("export.metric"), target.key,
-        "clicking the row stored that metric")
-    assertEqual(menu:IsShown(), false, "and a single-select pick closed the menu behind it")
-    assertTrue(tostring(modal.metricDD.text:GetText()):find(target.label, 1, true) ~= nil,
-        "and the collapsed button repainted to the metric that was picked")
-end)
-
--- ---------------------------------------------------------------------------
--- A second selector, in the same Lua state, on the same pooled rows
--- ---------------------------------------------------------------------------
---
--- The case above opens exactly one dropdown. This one opens Channel AFTER
--- Metric, which is the state every real session is in from the second click
--- onwards and the one the case above cannot reach: the popup already exists,
--- its row buttons already exist, and Populate repaints the pooled rows rather
--- than building new ones (version-4-docs.md, "Rows are pooled across
--- dropdowns"). Nothing this addon owns may carry over between the two — the
--- rows belong to the library and are shared with every other addon in the
--- process, so the only thing this asserts is what the contract promises: the
--- second dropdown's own onSelect fires with the second dropdown's own value.
-test("Opening Channel after Metric repaints the pooled rows and stores a channel", function()
-    local inst = T.load()
-    local NS = inst.NS
-
-    local calls, savedCreateFrame = {}, inst.mocks.CreateFrame
-    inst.mocks.CreateFrame = function(ftype, name, parent, ...)
-        local f = savedCreateFrame(ftype, name, parent, ...)
-        calls[#calls + 1] = { frame = f, ftype = ftype, name = name, parent = parent }
-        return f
-    end
-
-    local modal = NS.Export.Open({})
-    assertTrue(type(modal) == "table", "the modal opened")
-
-    modal.metricDD:__fire("OnClick")
-    local ok, err = pcall(function() modal.channelDD:__fire("OnClick") end)
-    inst.mocks.CreateFrame = savedCreateFrame
-    assertTrue(ok, "opening a second selector over the first did not raise: " .. tostring(err))
-
-    local menu
-    for _, call in ipairs(calls) do
-        if call.ftype == "Frame" and call.name == nil and call.parent == inst.mocks.UIParent then
-            menu = call.frame
-            break
-        end
-    end
-    assertTrue(menu ~= nil and menu:IsShown(), "the one shared popup is open on the second selector")
-
-    local rows = {}
-    for _, call in ipairs(calls) do
-        if call.ftype == "Button" and call.parent == menu then rows[#rows + 1] = call.frame end
-    end
-
-    -- Whatever the Channel list is, its rows are the pooled ones the Metric
-    -- menu just used; the row at position i is its i-th option.
-    -- channelOptions() is file-local; it walks this catalog in this order, so
-    -- the catalog is the row order without a seam cut into the module for it.
-    local channels = NS.Constants.EXPORT_CHANNELS
-    assertTrue(type(channels) == "table" and #channels > 1,
-        "the catalog offers more than one channel to pick between")
-    assertTrue(#rows >= #channels, "the pooled rows cover the Channel list")
-
-    local before = NS.GetSetting("export.channel")
-    local index, target
-    for i, opt in ipairs(channels) do
-        if opt.key ~= before then index, target = i, opt.key break end
-    end
-    assertTrue(target ~= nil, "the modal offers a channel other than the current one")
-
-    rows[index]:__fire("OnClick")
-    assertEqual(NS.GetSetting("export.channel"), target,
-        "clicking a pooled row under the Channel dropdown stored a CHANNEL, not a metric")
-end)
-
--- ---------------------------------------------------------------------------
--- The copy window
--- ---------------------------------------------------------------------------
---
--- This addon's copy frame described itself as "the third in the collection". It
--- was the fourth — BankLedger had one too, and nobody was looking. It is now
--- none of them: the frame belongs to LibKa0s-Widgets-1.0 and this file passes a
--- descriptor.
---
--- The handle and the show call are published as `Export.__copyWindow` and
--- `Export.__showCopy` because an EditBox is WRITE-ONLY through the frame API as
--- this addon uses it — nothing else in the module ever reads the text back — so
--- there is no other seam from which to assert what the window is showing.
-
-test("Export: the copy window comes from LibKa0s-Widgets-1.0", function()
-    local fh = assert(io.open((T.root or ".") .. "/modules/Export.lua", "r"))
-    local source = fh:read("*a")
-    fh:close()
-
-    local _, builders = source:gsub('CreateFrame%("EditBox"', "")
-    assertEqual(builders, 1,
-        "only the whisper box builds an EditBox here now; the copy window's belongs to the library")
-    assertTrue(source:find("CopyWindow", 1, true) ~= nil, "the descriptor call is present")
-end)
-
-test("Export: showing the copy window puts the text in it", function()
-    local text = "Metric,Value\r\nDPS,1234\r\n"
-    T.NS.Export.__showCopy(text)
-    assertEqual(T.NS.Export.__copyWindow:GetText(), text)
-end)
-
-test("Export: the copy window is built once and reused", function()
-    T.NS.Export.__showCopy("first")
-    local f = T.NS.Export.__copyWindow:GetFrame()
-    T.NS.Export.__showCopy("second")
-    assertTrue(T.NS.Export.__copyWindow:GetFrame() == f,
-        "a rebuild per open leaks a frame per open — frames are never destroyed in WoW")
 end)

@@ -14,9 +14,13 @@ a second copy of the shims `LibKa0s` supplies; those are the library's to docume
 
 In a follower dungeon `UnitGUID("party3pet")` answers a secret string, and keying on one raises
 `attempted to perform indexed assignment on a table that cannot be indexed with secret keys` on every
-refresh tick. `modules/Roster.lua` — the addon's only reader of the unit API — therefore vets every
-GUID through `NS.Secrets.IsSafeKey` before using it as a key, and vets the argument of `Get`,
-`IsGroupMember` and `OwnerOf` the same way. An unreadable pet falls into the existing
+refresh tick. `modules/Roster.lua` — which reaches `UnitGUID` for the whole group and is the only
+file that keys a map on what comes back — therefore vets every GUID through `NS.Secrets.IsSafeKey`
+before using it as a key, and vets the argument of `Get`, `IsGroupMember` and `OwnerOf` the same way.
+It is not the only unit-token GUID in the addon and the gate is not only its: `core/MultiMeters.lua`'s
+`UNIT_SPELLCAST_SUCCEEDED` handler reads `UnitGUID(unit)` and hands it to `modules/Feign.lua`, whose
+`Note` asks `IsSafeKey` the same question for the same reason, and logs the refusal rather than
+dropping the cast in silence. An unreadable pet falls into the existing
 "unattributable" case: no map entry, `OwnerOf` nil — and it then gets a row **of its own**, under its
 own name, rather than being dropped (see [scope.md](scope.md#known-limitations)).
 
@@ -45,20 +49,27 @@ the display loses a bar or a percentage; there is no equivalent escape for a ser
 serializer's whole job is to look at the characters of a value. A serializer that is subtly wrong
 mid-pull is worse than one that says no.
 
-So `modules/Export.lua` says no, at four points rather than one, because the restriction can activate
-between any two of them: `Export.Available()` answers false, `/mm export` prints the sentence and
-opens nothing, the modal refuses to open, and `Export.CSV` / `Export.ChatLines` refuse again at their
-own first line for a caller that reached them anyway. Underneath all four, and independent of them,
-every field passes `Secrets.CanAccess` on its way into a cell and yields `""` when it fails — so a
-race between the check and the walk can produce a blank cell, and can never raise.
+So the export path says no at four points rather than one, because the restriction can activate
+between any two of them — and since the layout-§1 peel those four sit in **three files** rather than
+one, which is worth knowing before going looking for them. `Export.Available()` is the single gate,
+in `modules/Export.lua`, and answers false; `/mm export` asks it in `settings/Slash.lua`'s `doExport`
+and prints the sentence rather than opening anything; `Export.Open` in `modules/Export_Modal.lua`
+refuses to open the modal at all; and `Export.CSV` / `Export.ChatLines`, back in
+`modules/Export.lua`, refuse again at their own first line for a caller that reached them anyway.
+The modal asks three more times after it is open — once in its refresh, and once inside each of the
+two action-button handlers — because a dialog opened out of combat can be clicked ten seconds into a
+pull, and a greyed-out button is a hint rather than a guarantee. Underneath all of them, and
+independent of them, every field passes `Secrets.CanAccess` on its way into a cell and yields `""`
+when it fails — so a race between the check and the walk can produce a blank cell, and can never
+raise.
 
-The other half of that file's discipline is what it does **not** do. An export wants every stat for
-every player, which is exactly the loop `modules/Provider.lua` already writes — so writing it again
-would put a second caller on `C_DamageMeter` and break R1. Instead `Export.SessionConfig` builds a
-synthetic window config naming every catalogued stat, pointed at the invoking window's segment, and
-hands it to `Aggregator.Build`. The aggregator neither knows nor cares that no frame will draw the
-result, and the ranking a chat dump needs happens there, under the aggregator's own guards, rather
-than in a sort of the exporter's own.
+The other half of `modules/Export.lua`'s discipline is what it does **not** do. An export wants
+every stat for every player, which is exactly the loop `modules/Provider.lua` already writes — so
+writing it again would put a second caller on `C_DamageMeter` and break R1. Instead
+`Export.SessionConfig` builds a synthetic window config naming every catalogued stat, pointed at the
+invoking window's segment, and hands it to `Aggregator.Build`. The aggregator neither knows nor
+cares that no frame will draw the result, and the ranking a chat dump needs happens there, under the
+aggregator's own guards, rather than in a sort of the exporter's own.
 
 ## The restriction keys off `Combat`
 

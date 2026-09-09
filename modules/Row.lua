@@ -62,11 +62,6 @@ local Perf = NS.Perf
 
 local Const = NS.Constants
 
--- Used for exactly one question: may this GUID be looked at. A source GUID off
--- the meter is never secret, but a row can also carry one the roster read off
--- the unit API, and those can be (modules/Roster.lua's header).
-local Secrets = NS.Secrets
-
 -- The debug pass. Row.lua is a render path, so both are load-time upvalues and
 -- every call site stays behind `if State.debug`.
 local State = NS.State
@@ -602,6 +597,134 @@ end
 -- list and cannot disagree about how many edges a rectangle has.
 local BORDER_SIDES = { "top", "bottom", "left", "right" }
 
+-- Where each side pins itself, and which axis carries the thickness. Both anchor
+-- points name the SAME corner on the cell's own bar, so a side spans exactly one
+-- edge; the axis it does NOT span is the one the thickness goes on -- a side
+-- given a size on both axes is a rectangle, not an edge. Built once at file
+-- scope, because this is walked per cell per layout pass.
+local BORDER_ANCHOR = {
+    top    = { "TOPLEFT",    "TOPRIGHT",    "SetHeight" },
+    bottom = { "BOTTOMLEFT", "BOTTOMRIGHT", "SetHeight" },
+    left   = { "TOPLEFT",    "BOTTOMLEFT",  "SetWidth"  },
+    right  = { "TOPRIGHT",   "BOTTOMRIGHT", "SetWidth"  },
+}
+
+--- The outline's colour for one cell, per the window's `bars.borderColorMode`.
+---
+--- TWO MODES, `class` and `custom`, and `class` is THIS ROW'S PLAYER -- an outline
+--- around a cell belongs to the player whose cell it is, exactly as the fill it
+--- surrounds does (barColor above). It is deliberately not the local player's:
+--- the window's own edge is a different swatch on a different page and answers
+--- that question its own way (modules/Window.lua's ApplyBorder).
+---
+--- The skin's edge is still the FALLBACK for a profile that never picked a colour,
+--- and the CONFIGURED ALPHA survives the mode, so a class-coloured outline is as
+--- opaque as the swatch beside it says.
+---
+--- @param bars table|nil   the window's `bars` config group
+--- @param entry table|nil  the aggregated row, when there is one
+--- @return number r, number g, number b, number a
+local function cellBorderColor(bars, entry)
+    local skin = NS.SKIN or {}
+    local sr, sg, sb, sa = RGBA(skin.border, 0, 0, 0, 1)
+    local r, g, b, a = RGBA(bars and bars.borderColor, sr, sg, sb, sa)
+    if (bars and bars.borderColorMode) == "class" then
+        local cr, cg, cb = ClassRGB(entry and entry.classFilename)
+        if cr then r, g, b = cr, cg, cb end
+    end
+    return r, g, b, a
+end
+
+--- The player's border thickness, clamped, for BOTH paths -- the flat textures'
+--- axis size and the backdrop's edgeSize are the same dial.
+---
+--- Clamped rather than trusted: this comes from a slider with a floor, and a
+--- zero here is four invisible textures pretending to be a border. The type
+--- check is not decoration either -- a string thickness out of a hand-edited
+--- profile reaching the `<` raises in Lua 5.1.
+---
+--- @param bars table|nil  the window's `bars` config group
+--- @return number  a thickness of at least 1
+local function borderThickness(bars)
+    local size = (bars and bars.borderThickness) or 1
+    if type(size) ~= "number" or size < 1 then size = 1 end
+    return size
+end
+
+--- Hide all four flat edge textures, keeping them. The pool's premise is that
+--- widget creation happens once, so nothing here destroys anything: the
+--- `cell.border` table and each texture keep their identity across the toggle.
+---
+--- @param edges table|nil  the cell's four-texture border table, when it exists
+local function hideFlatBorder(edges)
+    if not edges then return end
+    for _, side in ipairs(BORDER_SIDES) do edges[side]:Hide() end
+end
+
+--- Create the cell's four edge textures, once.
+---
+--- @param cell table  the Cell
+--- @return table  the four-texture border table
+local function newBorderEdges(cell)
+    local edges = {}
+    for _, side in ipairs(BORDER_SIDES) do
+        -- SUBLEVEL 7, the top of the OVERLAY layer. A border drawn at the
+        -- default sublevel shares it with the two FontStrings and with
+        -- whatever the fill texture's own layer resolves to, and "shares"
+        -- means the draw order is not defined -- which is how an outline
+        -- ends up UNDER the bar it is supposed to be outlining.
+        edges[side] = cell.frame:CreateTexture(nil, "OVERLAY", nil, 7)
+    end
+    return edges
+end
+
+--- The ART path: an LSM edge file drawn as the bar's own backdrop, because an
+--- edgeFile is a nine-slice and four solid rectangles cannot draw one.
+---
+--- It takes the four flat textures down on the way through -- the two paths are
+--- mutually exclusive and both have to be cleared (see ApplyBorder).
+---
+--- @param cell table       the Cell
+--- @param bars table|nil   the window's `bars` config group
+--- @param edge string      the resolved edge file
+local function applyArtBorder(cell, bars, edge)
+    cell.frame:SetBackdrop({ edgeFile = edge, edgeSize = borderThickness(bars) })
+    if cell.frame.SetBackdropBorderColor then
+        cell.frame:SetBackdropBorderColor(cellBorderColor(bars, cell.entry))
+    end
+    hideFlatBorder(cell.border)
+end
+
+--- The FLAT path: colour, clamp and place the four edge textures, one per side.
+---
+--- THE PLAYER'S COLOUR AND THE PLAYER'S THICKNESS. Both used to be constants:
+--- one pixel, in the library skin's own edge colour, which no setting could
+--- reach -- so "Bar border" was a switch with no dial and no swatch beside it.
+--- The skin's edge is still the FALLBACK, so a window that never touches
+--- either keeps exactly the border it had.
+---
+--- ClearAllPoints precedes the two SetPoints on EVERY pass: a second layout pass
+--- re-places a side rather than stacking a second pair of anchors on it.
+---
+--- @param cell table       the Cell
+--- @param bars table|nil   the window's `bars` config group
+--- @param edges table      the cell's four-texture border table
+local function applyFlatBorder(cell, bars, edges)
+    local bar = cell.frame
+    local r, g, b, a = cellBorderColor(bars, cell.entry)
+    local size = borderThickness(bars)
+
+    for _, side in ipairs(BORDER_SIDES) do
+        local tex, anchor = edges[side], BORDER_ANCHOR[side]
+        tex:ClearAllPoints()
+        tex:SetColorTexture(r, g, b, a)
+        tex:SetPoint(anchor[1], bar, anchor[1], 0, 0)
+        tex:SetPoint(anchor[2], bar, anchor[2], 0, 0)
+        tex[anchor[3]](tex, size)
+        tex:Show()
+    end
+end
+
 --- Draw (or hide) the thin outline `bars.border` asks for.
 ---
 --- Four 1px textures rather than a BackdropTemplate child frame. A frame
@@ -630,32 +753,6 @@ local BORDER_SIDES = { "top", "bottom", "left", "right" }
 --- Nothing here reads anything back either way. It is still the one place this
 --- addon decorates a frame that carries meter values, which is why it is opt-in
 --- and why docs/smoke-tests.md asks for it to be checked mid-pull.
---- The outline's colour for one cell, per the window's `bars.borderColorMode`.
----
---- TWO MODES, `class` and `custom`, and `class` is THIS ROW'S PLAYER -- an outline
---- around a cell belongs to the player whose cell it is, exactly as the fill it
---- surrounds does (barColor above). It is deliberately not the local player's:
---- the window's own edge is a different swatch on a different page and answers
---- that question its own way (modules/Window.lua's ApplyBorder).
----
---- The skin's edge is still the FALLBACK for a profile that never picked a colour,
---- and the CONFIGURED ALPHA survives the mode, so a class-coloured outline is as
---- opaque as the swatch beside it says.
----
---- @param bars table|nil   the window's `bars` config group
---- @param entry table|nil  the aggregated row, when there is one
---- @return number r, number g, number b, number a
-local function cellBorderColor(bars, entry)
-    local skin = NS.SKIN or {}
-    local sr, sg, sb, sa = RGBA(skin.border, 0, 0, 0, 1)
-    local r, g, b, a = RGBA(bars and bars.borderColor, sr, sg, sb, sa)
-    if (bars and bars.borderColorMode) == "class" then
-        local cr, cg, cb = ClassRGB(entry and entry.classFilename)
-        if cr then r, g, b = cr, cg, cb end
-    end
-    return r, g, b, a
-end
-
 function Cell:ApplyBorder(bars)
     local wanted = (bars and bars.border) and true or false
     local edge = wanted and borderEdge(bars and bars.borderStyle) or nil
@@ -666,76 +763,28 @@ function Cell:ApplyBorder(bars)
     -- whichever they left behind, drawn on top of the one they chose.
     if self.frame.SetBackdrop then
         if edge then
-            local size = (bars and bars.borderThickness) or 1
-            if type(size) ~= "number" or size < 1 then size = 1 end
-            self.frame:SetBackdrop({ edgeFile = edge, edgeSize = size })
-            if self.frame.SetBackdropBorderColor then
-                self.frame:SetBackdropBorderColor(cellBorderColor(bars, self.entry))
-            end
-            if edges then
-                for _, side in ipairs(BORDER_SIDES) do edges[side]:Hide() end
-            end
+            applyArtBorder(self, bars, edge)
             return
         end
         self.frame:SetBackdrop(nil)
     end
 
+    -- ABOVE the lazy create, and it has to stay there: the shipped default is
+    -- border = false, and hoisting the create costs four textures per cell per
+    -- row for an outline nobody asked for.
     if not (wanted or edges) then return end
 
     if not edges then
-        edges = {}
-        for _, side in ipairs(BORDER_SIDES) do
-            -- SUBLEVEL 7, the top of the OVERLAY layer. A border drawn at the
-            -- default sublevel shares it with the two FontStrings and with
-            -- whatever the fill texture's own layer resolves to, and "shares"
-            -- means the draw order is not defined -- which is how an outline
-            -- ends up UNDER the bar it is supposed to be outlining.
-            edges[side] = self.frame:CreateTexture(nil, "OVERLAY", nil, 7)
-        end
+        edges = newBorderEdges(self)
         self.border = edges
     end
 
     if not wanted then
-        for _, side in ipairs(BORDER_SIDES) do edges[side]:Hide() end
+        hideFlatBorder(edges)
         return
     end
 
-    local bar = self.frame
-
-    -- THE PLAYER'S COLOUR AND THE PLAYER'S THICKNESS. Both used to be constants:
-    -- one pixel, in the library skin's own edge colour, which no setting could
-    -- reach -- so "Bar border" was a switch with no dial and no swatch beside it.
-    -- The skin's edge is still the FALLBACK, so a window that never touches
-    -- either keeps exactly the border it had.
-    local r, g, b, a = cellBorderColor(bars, self.entry)
-    local size = (bars and bars.borderThickness) or 1
-    -- Clamped rather than trusted: this comes from a slider with a floor, and a
-    -- zero here is four invisible textures pretending to be a border.
-    if type(size) ~= "number" or size < 1 then size = 1 end
-
-    for _, side in ipairs(BORDER_SIDES) do
-        local tex = edges[side]
-        tex:ClearAllPoints()
-        tex:SetColorTexture(r, g, b, a)
-        if side == "top" then
-            tex:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-            tex:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
-            tex:SetHeight(size)
-        elseif side == "bottom" then
-            tex:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
-            tex:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
-            tex:SetHeight(size)
-        elseif side == "left" then
-            tex:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-            tex:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
-            tex:SetWidth(size)
-        else
-            tex:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
-            tex:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
-            tex:SetWidth(size)
-        end
-        tex:Show()
-    end
+    applyFlatBorder(self, bars, edges)
 end
 
 --- Skin the StatusBar itself: fill texture, fill direction, and the backdrop
@@ -1128,350 +1177,28 @@ function Cell:Clear()
     self.right:SetText("")
 end
 
--- ---------------------------------------------------------------------------
--- The name cell
--- ---------------------------------------------------------------------------
---
--- Same widget as any other cell — it is a StatusBar so the leading column can
--- carry a class-colored bar too — plus the icons. `classFilename` is NeverSecret,
--- so this column renders in full even when every number to its right is opaque.
---
--- `specIconID` was believed to be available alongside it on every row. In a
--- dungeon it is. In a 19-player raid it was ABSENT from every source row but the
--- local player's — so the spec branch below fires for exactly one row and every
--- other row draws the CLASS icon. That degradation is silent by construction:
--- the fallback was written for a source that had no spec, and it cannot tell
--- "this source has no spec" from "this client did not send one". Issue #24
--- carries the capture and the screenshots.
-
--- The gap between the name column's icon and the name beside it, in pixels. It
--- was a literal 1 folded into the icon's own stride, which reads as the two
--- touching at any icon size a player would actually pick. Named here because
--- modules/Window.lua's name-column width has to reserve exactly this much
--- (BuildLayout's nameColumnWidth) -- the same number in two files is how a name
--- ends up clipped by the width the icon was promised.
-local ICON_TEXT_GAP = 4
-NS.ICON_TEXT_GAP = ICON_TEXT_GAP
-
-local function newIcon(cell)
-
-    local tex = cell.frame:CreateTexture(nil, "ARTWORK")
-    tex:Hide()
-    return tex
-end
-
---- Lay the class / spec / role icons out along the name cell and return the
---- text inset they consume, so the name string starts clear of them.
----
---- @param layout table
---- @return number  the horizontal inset for the name text
-function Cell:ApplyIcons(layout)
-    local icons = self.window.config.icons or {}
-    local size = icons.size or 14
-    -- ONE SLOT. There were three, one per icon kind, and a player who turned
-    -- them all on got three textures competing with the name for a column that
-    -- has to hold a name. The slot picks its own icon per row — see drawUnitIcon.
-    local slots = icons.showIcon and { "unit" } or {}
-
-    self.iconOrder = slots
-    -- SetPlayer draws into whatever texture it finds and would otherwise SHOW an
-    -- icon this pass has just hidden -- the name text moved left with the
-    -- setting and the picture came straight back on the next refresh. The
-    -- textures are kept (pooling), so the answer is a flag rather than a nil.
-    self.iconsShown = #slots > 0
-    self.icons = self.icons or {}
-
-    local onRight = (icons.position == "RIGHT")
-    local offset = 2
-    -- The gap between the icon and the name. It was 1px, which reads as the two
-    -- touching at any icon size a player would actually pick.
-    local gap = ICON_TEXT_GAP
-    for i, kind in ipairs(slots) do
-        local tex = self.icons[kind] or newIcon(self)
-        self.icons[kind] = tex
-        tex:ClearAllPoints()
-        tex:SetSize(size, size)
-        local y = (layout.rowHeight - size) * -0.5
-        if onRight then
-            tex:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -(offset + (i - 1) * (size + gap)), y)
-        else
-            tex:SetPoint("TOPLEFT", self.frame, "TOPLEFT", offset + (i - 1) * (size + gap), y)
-        end
-    end
-
-    -- Hide any icon the config just turned off. Kept rather than destroyed: the
-    -- pool's whole point is that widget creation happens once.
-    for kind, tex in pairs(self.icons) do
-        local wanted = false
-        for _, k in ipairs(slots) do if k == kind then wanted = true end end
-        if not wanted then tex:Hide() end
-    end
-
-    -- FIXED SPACE FOR THE ICONS, WHETHER OR NOT A GIVEN ROW HAS THEM.
-    --
-    -- Computed from the CONFIGURED slots rather than from what this row managed
-    -- to draw, so a follower NPC with no spec icon leaves a gap where the icon
-    -- would be instead of sliding its name left. A column whose text starts at a
-    -- different x on every row is not a column.
-    local consumed = #slots > 0 and (offset + #slots * (size + gap)) or 2
-
-    -- AN EXPLICIT WIDTH, NOT A SECOND ANCHOR. Two-point anchoring gives the
-    -- FontString a width too, but it also lets it grow to whatever the frame
-    -- becomes mid-resize; a fixed width is the same number every pass and is what
-    -- the truncation cap is measured against.
-    local column = layout.nameColumn or {}
-    local width = (column.width or 0) - consumed - 2
-    if width < 1 then width = 1 end
-
-    self.left:ClearAllPoints()
-    if onRight then
-        self.left:SetPoint("LEFT", self.frame, "LEFT", 2, 0)
-    else
-        self.left:SetPoint("LEFT", self.frame, "LEFT", consumed, 0)
-    end
-    self.left:SetWidth(width)
-    self.left:SetHeight(layout.rowHeight)
-
-    -- ONE LINE, NEVER WRAPPED. A wrapped name is drawn OUTSIDE its own row — the
-    -- second line lands on top of the row below it — which is what made the grid
-    -- look shuffled whenever somebody had a long name. The cap in nameText is
-    -- what shortens it; this is what guarantees the widget cannot undo that
-    -- decision by reflowing.
-    if self.left.SetWordWrap then self.left:SetWordWrap(false) end
-    if self.left.SetMaxLines then self.left:SetMaxLines(1) end
-
-    return consumed
-end
-
--- The crop applied to a square icon FILE, so the art fills its slot without the
--- transparent border most icon textures carry. Written as the two edges rather
--- than as an inset and a subtraction: these four numbers go straight to
--- SetTexCoord and are compared literally by the render tests.
-local ICON_TRIM_MIN, ICON_TRIM_MAX = 0.07, 0.93
-
 -- Width of the "this row is you" edge. See the note where it is built.
 local SELF_EDGE_WIDTH = 3
 
--- The default cap, restated nowhere else: settings/Schema.lua's row carries the
--- same number as its `default`, and this is the fallback for a window whose
--- config predates the setting.
-local DEFAULT_MAX_NAME = 20
-
---- Render `entry.name` for the FontString: realm stripped, length capped.
----
---- `entry.name` is ConditionalSecret, so it goes through the same concat probe a
---- number would: on a client that hides it mid-pull the row still draws, with
---- the class icon carrying the identity instead. `== nil` is the one test
---- allowed on it; everything past that asks the core seam whether the value may
---- be turned into a string at all.
----
---- BOTH TRANSFORMS ARE GATED ON THAT PROBE, and that is the whole subtlety here.
---- `string.match` and `string.sub` are INSPECTIONS — they read the characters of
---- the value — and performing one on a secret is exactly what rule R1 forbids.
---- So a plain name is stripped and capped, and a secret name is handed to the
---- widget untouched and uncapped. The uncapped case is not a hole: a name we may
---- not read is one the client is already refusing to show in full.
----
---- WHAT IT MUST NOT DO IS RENDER THE SENTINEL. The opaque branch used to answer
---- NS.SafeToString(name), which is `"<secret>"` — so every row but the local
---- player's said `<secret>` where a name should be, for the whole of a pull. That
---- is the debug renderer's answer, and it is the right one for a LOG LINE, where
---- the alternative is a raise inside string.format.
----
---- A widget is not a log line. `FontString:SetText` ACCEPTS a secret and the
---- client draws the real characters — that is the whole point of the value being
---- opaque to us rather than hidden from the player, and it is the same permission
---- modules/Format.lua relies on to put "12.4M" on a bar it may not divide. So the
---- handle goes to the widget untouched, and the return type of this function is
---- "a string, or something SetText will take" (modules/Format.lua's phrase). Its
---- ONE caller passes it straight to SetText and does nothing else with it; a
---- future caller that wants to compare or concatenate the result has to reach for
---- NS.IsConcatSafe itself.
----
---- Truncate to `cap` CHARACTERS, counting UTF-8 rather than bytes. NO ELLIPSIS:
---- the name column is narrow and a cap that spends its last character saying "I
---- ran out of characters" is a character it could have spent on the name.
----
---- `s:sub(1, cap)` is wrong here and wrong in a way that only shows up on the
---- names most likely to need truncating: "Helyâ" is six bytes and five
---- characters, and a byte slice can land in the middle of the â and emit half a
---- code point, which renders as a replacement box. So the walk skips
---- continuation bytes (0x80-0xBF), which are never the start of a character.
----
---- Pure Lua rather than strlenutf8 / string.utf8sub: those are client globals
---- that the headless harness does not have, and the whole function is six lines.
----
---- @param s string   a PLAIN string — never call this on a secret
---- @param cap number
---- @return string
-local function utf8Truncate(s, cap)
-    local chars, i, n = 0, 1, #s
-    while i <= n do
-        local b = s:byte(i)
-        -- A continuation byte belongs to the character before it and is not
-        -- counted; anything else starts a new one.
-        if b < 0x80 or b > 0xBF then
-            chars = chars + 1
-            if chars > cap then return s:sub(1, i - 1) end
-        end
-        i = i + 1
-    end
-    return s
-end
-
---- @param name any        a name string, an opaque handle, or nil
---- @param text table|nil  the window's `text` config group
---- @param stripRealm boolean  true only for a real player's row (see below)
---- @return any  a string, or something SetText will take — see above
-local function nameText(name, text, stripRealm)
-    if name == nil then return "" end
-
-    if not (NS.IsConcatSafe and NS.IsConcatSafe(name)) then
-        -- Opaque. No match, no sub, no length — hand it over AS-IS, which is
-        -- what the widget wants and what draws the player's actual name.
-        return name
-    end
-
-    local out = tostring(name)
-
-    -- REALM STRIP. A cross-realm name arrives as "Player-Realm"; the realm is
-    -- never what a player is scanning a meter for and it is most of the column.
-    --
-    -- GATED ON THE ROW BEING AN ACTUAL PLAYER, and that gate is load-bearing
-    -- rather than defensive. A hyphen is only a realm separator in a PLAYER's
-    -- name; everywhere else in this grid it is part of the name. The first build
-    -- of this stripped on the hyphen unconditionally and rendered the
-    -- follower-dungeon NPC "Crenna Earth-Daughter" as "Crenna Earth", which
-    -- reads as a truncation bug rather than as a feature.
-    --
-    -- The test is the GUID, not the name: `Player-` prefixes a character's GUID
-    -- and nothing else's. Guessing from the string — "does the part before the
-    -- hyphen contain a space" — would be a heuristic about naming conventions we
-    -- do not control, when the row is already carrying the answer.
-    if stripRealm then
-        local bare = out:match("^([^-]+)")
-        if bare then out = bare end
-    end
-
-    -- LENGTH CAP. 0 means "no cap" — an explicit off switch rather than a
-    -- sentinel nobody can guess.
-    local cap = (text and text.maxNameLength) or DEFAULT_MAX_NAME
-    if type(cap) == "number" and cap > 0 then
-        out = utf8Truncate(out, cap)
-    end
-
-    return out
-end
-
---- Draw the leading icon slot: the player's class, or — in a drill-down — the
---- spell's own icon.
----
---- A drill-down row is a SPELL, not a player, so the class slot carries the
---- spell's icon, which is the only identity it has. The bar stays the
---- drilled-into player's class color, so the trip into a breakdown and back
---- reads as one continuous view.
---- Draw the row's single icon: the spell's in a breakdown, otherwise the unit's.
----
---- THE LADDER, and each rung is there for a reason rather than as a preference:
----
----   1. A BREAKDOWN ROW IS A SPELL. Its `icon` is the spell's own file id and it
----      has no class, no spec and no role — this rung has nothing to do with
----      units and is first because the row is not one.
----   2. SPEC IF THERE IS ONE. "Which unit is this row" is the question the icon
----      answers, and a spec answers it better than a class: it separates the
----      three druids in a raid, which a class icon cannot.
----   3. CLASS OTHERWISE. A spec is not always known — an NPC, a pet, a player
----      the unit API has not resolved — and a class icon is still an answer.
----   4. NEVER A ROLE. Three roles across a whole raid identifies nobody, and it
----      was the icon most likely to be showing when the name got squeezed.
----
---- `classFilename` and `specIconID` are both NeverSecret, so every branch here
---- keeps working mid-pull when the numbers beside it are opaque.
-local function drawUnitIcon(tex, entry)
-    if entry.isDrillDown then
-        if entry.icon then
-            tex:SetTexture(entry.icon)
-            tex:SetTexCoord(ICON_TRIM_MIN, ICON_TRIM_MAX, ICON_TRIM_MIN, ICON_TRIM_MAX)
-            tex:Show()
-        else
-            tex:Hide()
-        end
-        return
-    end
-
-    if entry.specIconID then
-        tex:SetTexture(entry.specIconID)
-        tex:SetTexCoord(ICON_TRIM_MIN, ICON_TRIM_MAX, ICON_TRIM_MIN, ICON_TRIM_MAX)
-        tex:Show()
-        return
-    end
-
-    local coords = _G.CLASS_ICON_TCOORDS
-    local c = coords and entry.classFilename and coords[entry.classFilename]
-    if c then
-        tex:SetTexture(CLASS_TEXTURE)
-        tex:SetTexCoord(c[1], c[2], c[3], c[4])
-        tex:Show()
-    else
-        tex:Hide()
-    end
-end
-
---- Draw the name column for one player: icons, and a class-colored name.
----
---- NO BAR. The name column used to draw one scaled to the sort column, which
---- duplicated what the sort column's own cell already shows an arm's length to
---- the right and cost this frame its readable geometry to do it.
----
---- @param entry table   the aggregated row
---- @param _sortKey string  the window's sort column; see the note below on why
----   the name cell no longer reads it
-function Cell:SetPlayer(entry, _sortKey)
-    self.entry = entry
-
-    -- THE NAME CELL IS NEVER HANDED A VALUE. Not "handed one and told not to
-    -- draw it" — never handed one.
-    --
-    -- SetValue(secret) marks a frame HasSecretValues, which makes its anchoring
-    -- and position data secret too and propagates that to everything anchored to
-    -- it (rule R3). The name cell used to take the sort column's figure purely to
-    -- scale a bar behind the name; dropping that bar therefore also takes this
-    -- frame out of the secret set entirely, which is a taint win on top of the
-    -- visual one. `sortKey` is now unused here and kept in the signature because
-    -- modules/Row.lua's caller passes it positionally and a future re-read of the
-    -- sort column would land here.
-    --
-    -- The bar is flattened rather than hidden: the widget still exists (it is the
-    -- cell's frame and everything else anchors to it), it just draws nothing.
-    self.frame:SetMinMaxValues(0, 1)
-    self.frame:SetValue(0)
-    self.frame:SetStatusBarColor(0, 0, 0, 0)
-
-    self:ApplyNameColor(entry)
-
-    -- THE CLASS TINT RUNS ACROSS THIS CELL TOO. It is painted by Cell:SetValue
-    -- for every stat column, and the name column was the one cell that never got
-    -- it — so the tint began at the Damage column and the player column sat
-    -- conspicuously undressed beside it. The background is the cell's own
-    -- texture, not the bar, so this stays true of a cell whose bar is flattened
-    -- to nothing (which this one always is).
-    local br, bgc, bb, ba = cellBackground((self.window.config.bars or {}), entry, self.key)
-    self.bg:SetColorTexture(br, bgc, bb, ba)
-
-    -- A `Player-…` GUID is the only thing whose name can carry a realm. A pet, a
-    -- follower-dungeon NPC, an enemy and a drill-down spell all keep every
-    -- hyphen they came with.
-    local isCharacter = entry.guid ~= nil and not entry.isDrillDown
-        and Secrets.IsSafeKey(entry.guid)
-        and tostring(entry.guid):match("^Player%-") ~= nil
-
-    self.left:SetText(nameText(entry.name, self.window.config.text, isCharacter))
-    self.right:SetText("")
-
-    local icons = self.icons
-    if not (icons and self.iconsShown) then return end
-    if icons.unit then drawUnitIcon(icons.unit, entry) end
-end
+-- ---------------------------------------------------------------------------
+-- What modules/Row_NameCell.lua reaches back for
+-- ---------------------------------------------------------------------------
+--
+-- The name cell was peeled out to modules/Row_NameCell.lua (layout-§1). It adds
+-- its two methods to the SAME Cell prototype the generic cell above uses -- it
+-- is the same widget wearing a different job -- and it draws the class atlas and
+-- the per-row background tint the same way this file does. Those three were
+-- file-locals; they are published here rather than restated over there, because
+-- a second copy of the atlas path or of the background rule is exactly the drift
+-- a peel is supposed to avoid.
+--
+-- The sibling resolves all three at FILE SCOPE, which is what makes its TOC line
+-- load-bearing: it has to sit after this one.
+NS.RowInternals = {
+    Cell           = Cell,
+    cellBackground = cellBackground,
+    CLASS_TEXTURE  = CLASS_TEXTURE,
+}
 
 -- ---------------------------------------------------------------------------
 -- The row

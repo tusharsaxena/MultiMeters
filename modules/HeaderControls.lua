@@ -319,24 +319,35 @@ local function write(window, key, value)
     set("window.frame." .. key, value)
 end
 
-local function onClick(frame)
-    local window = frame.mmWindow
-    local control = frame.mmControl
-    if not (window and control) then return end
-    local frameCfg = window.config.frame or {}
-
-    if control == "close" then
+--- What each header control does, keyed by the control name the button carries.
+---
+--- One row per control, built ONCE at file load: a click is a lookup, not a walk
+--- down a seven-way chain. An unknown control name is a silent no-op, but ONLY
+--- because onClick checks the row before calling it -- a missing row is nil, and
+--- calling it would raise. Every seam an arm needs is resolved inside the arm, at
+--- call time, because settings/ and modules/ load in that order.
+local ACTIONS = {
+    close = function(window)
+        -- WITH the reason: Window:Hide clears forcedShow only for "closed" and
+        -- "toggled", and a bare Hide() leaves an explicit show standing, so the
+        -- window comes back on the next settings edit.
         window:Hide("closed")
-    elseif control == "minimise" then
+    end,
+
+    minimise = function(window, frameCfg)
         -- THROUGH THE WRITE SEAM, never by poking the config table. NS.SetByPath
         -- is what publishes CONFIG_CHANGED, and it is what the settings panel's
         -- own checkbox writes through -- so a button that wrote directly would
         -- leave the panel showing the opposite of what the window is doing until
         -- something else happened to refresh it.
         write(window, "minimised", not (frameCfg.minimised and true or false))
-    elseif control == "lock" then
+    end,
+
+    lock = function(window, frameCfg)
         write(window, "locked", not (frameCfg.locked and true or false))
-    elseif control == "settings" then
+    end,
+
+    settings = function(window)
         -- Point the panel at the window whose gear was clicked, so the pages
         -- that open are about THIS window rather than whichever one the picker
         -- was last left on. OpenOptionsPanel takes no arguments; the active id
@@ -345,9 +356,13 @@ local function onClick(frame)
             NS.State.SetActiveWindow(window.id)
         end
         if NS.OpenOptionsPanel then NS.OpenOptionsPanel() end
-    elseif control == "segment" then
+    end,
+
+    segment = function(window)
         if window.OpenSegmentMenu then window:OpenSegmentMenu() end
-    elseif control == "reset" then
+    end,
+
+    reset = function()
         -- THE DIALOG ALREADY EXISTS, in settings/General.lua, and it carries the
         -- warning that actually matters: this reset reaches OUTSIDE the addon
         -- and wipes what Blizzard's own meter is showing, not just ours. A
@@ -363,12 +378,34 @@ local function onClick(frame)
             local show = _G.StaticPopup_Show
             if show then show("MULTIMETERS_RESET_METER_DATA") end
         end
-    elseif control == "export" then
+    end,
+
+    export = function(window)
         -- The WINDOW, not its config: Export.Open reads the instance to centre
         -- its modal on the window it was opened from.
         local E = NS.Export
         if E and E.Open then E:Open(window) end
-    end
+    end,
+}
+
+--- Dispatch one header-control click.
+---
+--- The two guards run BEFORE anything else: a button with no window or no
+--- control name does nothing at all, and reading window.config.frame ahead of
+--- them would raise on the very frame the guard exists to tolerate.
+local function onClick(frame)
+    local window = frame.mmWindow
+    local control = frame.mmControl
+    if not (window and control) then return end
+    -- BEFORE the lookup, and unconditionally, because the if/elseif chain this
+    -- table replaced read window.config.frame for EVERY name it was handed --
+    -- an unrecognised one included. Behind the lookup instead, a window with no
+    -- config would raise only for the names that have a row.
+    local frameCfg = window.config.frame or {}
+
+    local action = ACTIONS[control]
+    if not action then return end
+    action(window, frameCfg)
 end
 
 -- ---------------------------------------------------------------------------

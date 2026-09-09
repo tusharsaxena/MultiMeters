@@ -38,8 +38,11 @@ Retail only · English only.
 - **Copy settings from**, with a group filter — copying one window's columns onto another while
   leaving its position and visibility rules alone is the actual request behind the feature.
 - **Current vs Overall sessions**, per window, plus the historical session list the client keeps.
-- **Three sort modes** — value, provider order, roster order — with the freeze described in
-  [data-flow.md](data-flow.md#5-the-three-sort-modes-and-the-freeze).
+- **Three sort modes** — value, provider order, roster order — with the fallback ladder described
+  in [data-flow.md](data-flow.md#5-the-three-sort-modes-and-identity-mode). The sort freeze that
+  section used to carry is retired: it was keyed on `sourceGUID`, which is secret exactly when a
+  freeze would have been wanted, so a mid-pull row never had a key to hold steady. The engine's own
+  ranking under identity mode replaces it.
 - **Tooltips**: a per-cell spell breakdown, and an all-statistics summary on a player's name that
   deliberately includes the columns the window is *not* showing.
 - **Cell drill-down** into a player's per-spell breakdown, rendered through the same row path as the
@@ -218,10 +221,11 @@ default to total and rate.
   row outside the key is `classification`, whose usefulness is unmeasured.
 
   `specIconID`'s absence has a **second, visible consequence**, filed separately as
-  [#24](https://github.com/tusharsaxena/MultiMeters/issues/24): `modules/Row.lua`'s spec-icon branch
-  fires for the local player's row and no other, so every other row draws the class icon. The
-  fallback hides the cause. Blizzard's own meter shows the same thing on the same pull, so the
-  ceiling here may be the client's rather than ours.
+  [#24](https://github.com/tusharsaxena/MultiMeters/issues/24): `modules/Row_NameCell.lua`'s
+  spec-icon branch fires for the local player's row and no other, so every other row draws the class
+  icon. The fallback hides the cause, and that file's header is where the argument is written out.
+  Blizzard's own meter shows the same thing on the same pull, so the ceiling here may be the
+  client's rather than ours.
 
   Tracked as [#22](https://github.com/tusharsaxena/MultiMeters/issues/22). Nothing is fixed yet.
   What shipped is the instrumentation, one ordering bug it exposed (a key proved ambiguous by a late
@@ -231,10 +235,11 @@ default to total and rate.
   Feign Death a valid `deathRecapID`, so the Deaths column counts a hunter's feign as a death.
   `modules/Feign.lua` records the GUID off the cast and `modules/Aggregator.lua` drops that source —
   but the join is a plain GUID against `sourceGUID`, and `sourceGUID` is secret for the whole of a
-  pull. That is the entire reason the aggregator has a second, GUID-free identity build. There is no
-  plain key on the other side of the join while the restriction is up, so **a feign is counted as a
-  death mid-pull and the count corrects itself the moment combat ends.** Do not "fix" this by keying
-  on something secret; there is nothing to key on.
+  pull. That is the entire reason the aggregator has a second, GUID-free identity build, which lives
+  in `modules/Aggregator_Identity.lua` rather than beside the drop in `modules/Aggregator.lua`.
+  There is no plain key on the other side of the join while the restriction is up, so **a feign is
+  counted as a death mid-pull and the count corrects itself the moment combat ends.** Do not "fix"
+  this by keying on something secret; there is nothing to key on.
 - **The feign-death filter is reported to work for the local player and not for party members, and
   the cause is not yet measured** ([#25](https://github.com/tusharsaxena/MultiMeters/issues/25)).
   Two candidates fit the symptom equally well from the count alone, and they need opposite fixes:
@@ -282,11 +287,13 @@ default to total and rate.
   and never reaching the grid, while the header total counted her — a session total is the client's
   own sum and never consults the row gate. `display=0` is `None`: neither `Ally` nor `Enemy`. So a
   `None` source is now admitted **only when its `classFilename` is a class `RAID_CLASS_COLORS`
-  recognizes**. That table is the oracle rather than a list of our own because `modules/Row.lua`
-  already looks a row up in it to color the bar and pick the class icon — what this refuses could
-  only ever have drawn as an uncolored, iconless row. A mob would have to report `None` *and* carry
-  a genuine class filename to slip through, and `/mm debug diag` prints the enemy column's display
-  types so that a `None` there is reported rather than inferred from a wrong row.
+  recognizes**. That table is the oracle rather than a list of our own because the class filename is
+  already what the grid draws a row from, in two files: `modules/Row.lua`'s `barColor` takes the
+  bar's colour out of `RAID_CLASS_COLORS` itself (through `NS.ClassRGB`), and
+  `modules/Row_NameCell.lua` keys the class icon on the same filename in `CLASS_ICON_TCOORDS`. What
+  this refuses could only ever have drawn as an uncolored, iconless row. A mob would have to report
+  `None` *and* carry a genuine class filename to slip through, and `/mm debug diag` prints the enemy
+  column's display types so that a `None` there is reported rather than inferred from a wrong row.
 - **`data.mergePets` is off by default, and has no effect during a pull.** A pet gets its own row,
   which needs no arithmetic and is exact in both states. Merging is addition and needs the owner
   link, so it runs only where GUIDs are plain — out of combat.

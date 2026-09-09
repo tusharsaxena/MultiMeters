@@ -60,8 +60,12 @@ dependent major unregistered, the host's setup file falls back to its degradatio
 suite happily measures the stub — green, and testing nothing. Five seams in this addon degrade that
 way (`core/CoreSetup.lua`, `core/PerfSetup.lua`, `core/DebugLogSetup.lua`, `settings/Slash.lua`,
 `settings/OptionsSetup.lua`), so `tests/run.lua` also asserts by name that
-`Core.lua`, `DebugLog.lua`, `Slash.lua`, `Options.lua`, `OptionsWidgets.lua`, `OptionsScroll.lua`,
-`Perf.lua` and `PerfPanel.lua` are all present. A re-vendor that drops one fails there, with a name.
+`Core.lua`, `DebugLog.lua`, `Slash.lua`, `Options.lua`, `OptionsWidgets.lua`, `OptionsCompose.lua`,
+`OptionsScroll.lua`, `Perf.lua` and `PerfPanel.lua` are all present. A re-vendor that drops one
+fails there, with a name. `OptionsCompose.lua` is on that list for a reason the runner argues in
+place rather than leaving to the reader: `settings/Schema.lua` **composes** the master controls tab
+and every font, border and bar group out of it, so a re-vendor that dropped it would take fifty-odd
+schema rows with it rather than merely losing a widget.
 
 The degraded path is exercised by a **real load**, never by hand-stubbing the member under test:
 
@@ -95,19 +99,119 @@ unbound `_G.X` would read nil and every secret-value case would quietly measure 
 fallback* instead of the API. `tests/run.lua` closes that by publishing the kit-built environment
 back as `mocks._G`, per instance.
 
+### The suites the 2026-09-09 peel added
+
+Seven source files and eight suites sat over `layout-§1`'s 1500-line cap on 2026-09-09. Peeling them
+produced thirteen new modules, thirteen new suites, and — from `tests/wow_mock.lua`, the eighth
+breaching test file — the two mock halves the next section describes.
+
+**A suite's seam is not its own to choose; it follows the module's.** That is what keeps the
+inventory navigable at this size: a reader who opens `modules/Window_Placement.lua` knows before
+looking that its cases are in `tests/test_window_placement.lua`, and a reader who opens a suite
+learns which module it speaks for from its first line. The rule is bent in exactly one place below,
+and it is bent for the reason the peel happened at all.
+
+`core/Diagnostics.lua` split three ways, and that split is about **lifecycle** rather than size. A
+probe written for one issue is meant to be deleted with that issue, and that only works if its cases
+go out with it — so `tests/test_diagnostics_deathrecap.lua` (issue #1),
+`tests/test_diagnostics_identity.lua` (issue #22) and `tests/test_diagnostics_feign.lua` (issue #25)
+each sit beside the probe module they cover, and `tests/test_diagnostics.lua` keeps the frame, the
+entry point and the short probes. All four protect the same property, which is the one the report
+exists for: it must run to completion on a hostile client, print rather than raise, and never itself
+be the reason a player cannot describe what they are seeing.
+
+`tests/test_aggregator.lua` kept the build pipeline, the GUID join, the group filter and pet folding.
+`tests/test_aggregator_identity.lua` covers the **second** build — the grid drawn while `sourceGUID`
+is secret, where there is no key to join on and rows are correlated by class plus spec plus "is it
+me" instead. Nearly every case in it is about a **refusal**: an ambiguous key fills no cell, a
+collision a later column proves blanks the cells an earlier one already wrote, a sum nobody may
+compute goes quiet rather than reading zero. Correlation can be wrong in a way a join cannot, so the
+refusals are the behavior worth pinning. `tests/test_aggregator_preview.lua` covers the grid with
+nobody in the group, and the one thing it exists to hold is that test mode substitutes the **data**,
+at `modules/Provider.lua`, and never the render path: a separate preview result table built by a
+separate function is what shipped once, and the two modes then diverged at every seam nobody thought
+to duplicate — the tooltip found no source, the drill-down opened on nothing, and every fix had to be
+applied twice.
+
+`modules/Window.lua` split into the band across the top and the geometry underneath.
+`tests/test_window_header.lua` is the title strip, the column header buttons and the sort hand-off,
+the segment picker and the minimise collapse that takes the body away and leaves the strip behind;
+its sort-arrow cases exist once per rung of the three-rung ladder, so an arrow assertion that fails
+on one rung may be perfectly correct on another and the first thing to read in a failure is which
+rung the case forced. `tests/test_window_placement.lua` is where a window sits, how big it is, and
+whether it is drawn at all. Its save cases **poison** `GetPoint`, `GetWidth` and `GetHeight` on the
+value-carrying frame and then drive a save through them, so a rule-R3 read that crept back in is a
+stack trace rather than something a reviewer has to notice.
+
+`tests/test_row_namecell.lua` covers the one cell in the row that never holds a figure. Because it
+holds no meter value it stays **out** of the secret set, its geometry stays readable through a
+restricted pull, and that is why its icon and truncation cases can assert on widths at all; the value
+cell and the shared colour, media and mouse parts stay in `tests/test_row.lua`.
+
+`modules/Tooltip.lua` is the bent seam — two modules, three suites. `tests/test_tooltip_lines.lua`
+covers one pooled line as a widget, including the minimum width, which is **computed** from character
+spans rather than measured off a string because measuring a secret raises.
+`tests/test_tooltip_builders.lua` covers the per-spell breakdown, the Deaths cell, and the name
+tooltip that summarizes every tracked statistic for one player including the columns the window is
+not showing. The death-event half was then split out again into `tests/test_tooltip_deaths.lua`,
+because it is the largest single block on that side — enough on its own to put one file back over the
+cap — and because it has the clearest lifecycle of anything here: it exists for issue #1 and goes out
+with it.
+
+`tests/test_export_modal.lua` is the half of the export that needs a frame: the modal, its three
+selectors, the copy window and the Print to Chat click. What it guards is that the refusal is
+re-checked **at the click** — a modal can sit open across the edge into a pull, so `Export.Open`
+declining while the Combat restriction is active is not enough on its own. Everything that is a pure
+function of its arguments stays in `tests/test_export.lua`, which is why that suite needs no frame at
+all.
+
+`tests/test_schema_paths.lua` covers the path machinery and the single seam every write goes through,
+so the case that matters there is not "a path reads a value" but "the **same** path reads a
+**different** window's value once the active window moves". `settings/Schema_Compose.lua` is the one
+new module with no suite of its own, and deliberately: it holds the vocabularies, validators and
+composers that build the row array, and `tests/test_schema.lua` asserts them where it asserts the
+array they produce.
+
 ## What the mock models, and what it admits it cannot
 
-`tests/wow_mock.lua` layers this addon's half over the shared base in `tests/_kit/mock_base.lua`,
-overwriting per key. Its own header lists what it inherits and what it replaces, and why: the frame
-model (the base returns the frame itself from every widget factory, which makes "which region got
-the text" unanswerable — and this addon's entire output is text and bar values written onto per-cell
-FontStrings and StatusBars), the Ace module lifecycle, the message bus, and `C_AddOns`.
+**The mock is three files now, not one.** `tests/wow_mock.lua` layers this addon's half over the
+shared base in `tests/_kit/mock_base.lua`, overwriting per key. Its own header lists what it inherits
+and what it replaces, and why: the frame model (the base returns the frame itself from every widget
+factory, which makes "which region got the text" unanswerable — and this addon's entire output is
+text and bar values written onto per-cell FontStrings and StatusBars), the Ace module lifecycle, the
+message bus, and `C_AddOns`. On 2026-09-09 that file went over the 1500-line cap itself (issue #34)
+and the two largest things it carried moved out along the seams its own header had already drawn: the
+**secret simulator** to `tests/mock_secrets.lua`, and the **frame model** — with `GameTooltip` — to
+`tests/mock_frame.lua`. What stayed is the builder, the meter and group fixtures, the Ace lifecycle,
+the message bus, `C_AddOns` and the control surface, which still lists everything in one block
+including the two halves that no longer live there.
 
-**The secret simulator is the most valuable thing in that file.** `mocks.secret(v)` returns a table
+**Neither half is a suite, and neither may be declared as one.** `tests/wow_mock.lua` `dofile`s them
+and nothing else does; they appear in no `SUITES` entry, and the non-obvious part is what would
+happen if one did. `Kit.assertSuiteInventory` enumerates the suite directory with one pattern —
+`^test_(.+)%.lua$` — so a mock named in the list is a name it can never find on disk, and the gate
+reddens with "declared in the suites list … but is not on disk" for a file that is plainly sitting
+there. Renaming the mock to `test_…` to quiet that would be the worse outcome rather than the fix:
+declaring a file is what makes its cases run, a mock declares no cases, and the list would then carry
+an entry that runs nothing while reading exactly like one that runs something. The mocks' own headers
+say this at the top, because the mistake is a one-line one.
+
+**They are loaded once, at file scope, not per build — and a second load would break quietly.**
+`tests/mock_secrets.lua` keeps its `plainOf` and `secretTables` registries file-local and weak-keyed,
+so every `build()` shares them and a secret minted under one instance is still recognized as one
+under the next. Two copies of that chunk would mean two registries, after which `mocks.reveal` hands
+back the wrapper instead of the value the moment a fixture crosses between them. For the same reason
+the frame model is **handed** the simulator rather than loading its own — `local Frame =
+loadfile(root .. "/tests/mock_frame.lua")(Secrets)` — so that `SetText`, `SetValue` and
+`GetStringWidth` agree with `mocks.isSimulatedSecret` about what they were given, recognition being
+registry identity and nothing else.
+
+**The secret simulator is the most valuable thing in the harness.** `mocks.secret(v)` returns a table
 whose metatable raises a tagged `MOCK_SECRET_VIOLATION` from every operation tainted code may not
 perform on a secret — arithmetic, comparison, `..`, indexing, field assignment. Without it a suite
 that "proves" the never-inspect rule proves nothing, because a plain number satisfies every
-assertion a secret would have failed.
+assertion a secret would have failed. It lives in `tests/mock_secrets.lua` and is re-exported through
+`mocks`, so nothing a suite writes changed when it moved.
 
 It is equally valuable for being honest about its holes, which the file states rather than papers
 over. In Lua 5.1 there is no metamethod for truth-testing, so `if secret then` passes here and
@@ -123,7 +227,7 @@ harness cannot enforce is a rule that has to be checked in a real client.
 One deliberate over-strictness: `__concat` **is** trapped, which is stricter than the live client
 (where `..` on a secret yields a secret string). Every call site here that concatenates a possibly
 secret value already guards it — `pcall` in `modules/Format.lua`, `NS.IsConcatSafe` in
-`modules/Row.lua` — so a trap there turns "somebody removed the guard" into a failing test.
+`modules/Row_NameCell.lua` — so a trap there turns "somebody removed the guard" into a failing test.
 
 The control surface is listed in one block at the top of `tests/wow_mock.lua`: the secret helpers,
 the meter fixtures (`setSession`, `buildSession`, `setSourceDetail`, `setMeterAvailable`,
@@ -213,6 +317,17 @@ under *Files over the 1500-line cap* in [ARCHITECTURE.md](ARCHITECTURE.md). It r
 directions, so a file that crosses the cap unremarked and a row left behind for a file that has
 stopped breaching are each a red.
 
+**Since 2026-09-09 there is no census to read, and that is the passing state.** The last of fifteen
+breaches was peeled that day and the table came out of the hub with them, because `layout-§1`'s
+terminal state for a repository with nothing over the cap is nothing over the cap *and* no census —
+a heading standing over an empty table is the graveyard the rule warns about rather than evidence of
+anything. The gate was amended in the same change to tell the two absences apart: the census reader
+now reports whether it found the heading instead of failing on the spot, so a breach with no census
+to name it is red (and the message says the heading has to come back with the row), while a row that
+outlives its breach is red the other way. Before that it failed in **both** directions at once —
+which is the shape a gate takes when it was written for a repository that had never reached the state
+it was driving toward, and neither this suite nor the register gate below had ever been run in one.
+
 `layout-§1` binds **every authored file the repository tracks**, `tests/` included; vendored code
 (`libs/`, `tests/_kit/`) is the only carve-out that reaches this repo. A red is cleared by giving
 the file one of the three terminal states the rule allows — peel it, open an issue naming the seam a
@@ -225,29 +340,42 @@ to a large file does not redden this gate. Membership is the invariant, not the 
 
 ### The complexity register gate
 
-`tests/test_complexity_register.lua` is the same bargain one section over. It reads the table under
-*Complexity register* in [ARCHITECTURE.md](ARCHITECTURE.md) and checks that the register still says
-something a reader can act on: that the folder tally stated in its prose matches the rows beneath it,
-that every Location names a file that exists, that no function is entered twice, and that every
-disposition can be followed — a peel naming an issue number, or an accept carrying the re-check
+`tests/test_complexity_register.lua` is the same bargain one section over, and it reached the same
+terminal state on the same day: on 2026-09-09 the last of this addon's twenty-three warned functions
+came under CCN 15, and the register went out with them. The suite now **holds vacuously over an empty
+table** — with no rows there is no folder tally owed, so the tally reader answers nil and each case
+returns rather than demanding a sentence about a table with nothing in it — and every check below
+comes back the moment a row does. It reads the table under *Complexity register* in
+[ARCHITECTURE.md](ARCHITECTURE.md) and checks that the register still says something a reader can act
+on: that the folder tally stated in its prose matches the rows beneath it, that every Location names
+a file that exists, that no function is entered twice, and that every disposition can be followed — a peel naming an issue number, or an accept carrying the re-check
 trigger that stops it being a permanent opt-out.
 
 **It does not run `lizard`, deliberately.** `performance-§10` says a commit MUST NOT be gated on
 complexity, and a suite that shelled out to the tool would be exactly that gate wearing a test's
 clothes. It follows that this gate cannot see a *new* warned function — only the runner can, at a
 recorded run — and it does not try to: the CCN figures and line ranges in the register are dated
-measurements, like the line counts in the cap census, and pinning them would redden the suite on
-every ordinary edit to a warned function.
+measurements, exactly as the line counts in the cap census were, and pinning them would redden the
+suite on every ordinary edit to a warned function.
 
-Why the register lives in ARCHITECTURE.md rather than in `docs/automated-tests/RESULTS.md`, which is
-where `automated-tests-§4` puts the watch list: the runner carries a disposition forward only when
+Where the measurement lives now that the register does not: `docs/complexity.md`, the path
+`performance-§10` fixes for the report — one file, overwritten in place and never dated, so that the
+git history of the single path is the trend line — plus each run's
+`docs/automated-tests/<stamp>/complexity.txt`. The report is where a *new* warned function shows up;
+the register was only ever where a warned function's **disposition** lived.
+
+Why that register lived in ARCHITECTURE.md rather than in `docs/automated-tests/RESULTS.md`, which is
+where `automated-tests-§4` puts the watch list — the argument is kept because it is what a future
+register would be rebuilt on: the runner carries a disposition forward only when
 its key — function name plus file, tie-broken by CCN — is unique on both sides. Three of this
 addon's rows are `]` in `core/Database.lua`, which is `lizard`'s spelling of `migrations[n] =
 function`, so none of the three is unique on name plus file. The CCN breaks that tie for exactly one
 of them: `migrations[4]` is 17 and carries its ruling forward like any other row. `migrations[1]`
-and `migrations[12]` are both 16, so **those two** — and only those two — are unique on neither key,
-and their generated cells read blank on every run that regenerates them. The register is where
-their disposition exists at all, and the runner's Disposition column is transcribed from it.
+and `migrations[12]` are both 16, so **those two** — and only those two — were unique on neither key,
+and their generated cells read blank on every run that regenerates them. The register was where
+their disposition existed at all, and the runner's Disposition column was transcribed from it. Those three functions still sit
+in `core/Database.lua` and would key the same way, so a row that comes back for one of them belongs
+in the hub for the same reason it did the first time.
 
 ### The texture-path census gate
 
@@ -258,8 +386,8 @@ directions: a new path nobody argued for is a red, and so is a row for a path th
 
 `library-stack-§8` makes LibKa0s-Media's catalog the addon's vocabulary for marks, so a red is
 cleared one of two ways — use `NS.Icon`, or add the row saying why the catalog cannot answer at that
-site. Twelve rows say why today; exactly one of them defers to the deviation register rather than
-arguing in place, and two further cases hold that pointer honest — a fourth asserting the
+site. Twelve rows say why today; two of them — the pair in `settings/ColumnBlocks.lua` — defer to a single
+deviation-register row rather than arguing in place, and two further cases hold that pointer honest — a fourth asserting the
 register row is still there, so *"register row above"* cannot quietly become a phrase, and a
 fifth asserting the row's `settings/ColumnBlocks.lua:72-73` citation still names the lines the
 two declarations are on.
@@ -336,10 +464,14 @@ claims?"*. The two questions give the same answer only while the library has tag
 than the tag this addon has taken.
 
 Between a library release and the re-vendor that carries it they disagree, and that disagreement is
-the normal state rather than a defect. It is the state as this is written: `../LibKa0s` sits on
-**v1.27.0**, [`CLAUDE.md`](../CLAUDE.md) names **v1.26.0**, and the commands above report **306**
-differing lines for the library and **947** for the test kit. Re-vendoring to quiet them would be
-the actual mistake — it would pull an untested library release for the sake of a clean diff.
+the normal state rather than a defect. Re-vendoring to quiet it would be the actual mistake — it
+would pull an untested library release for the sake of a clean diff. That was the state when this
+section was written, at `../LibKa0s` **v1.27.0** against a [`CLAUDE.md`](../CLAUDE.md) naming
+**v1.26.0**, with hundreds of differing lines on each payload and nothing wrong.
+
+Measured 2026-09-09 the two agree: `CLAUDE.md` names **v1.29.0**, the sibling checkout sits on
+**v1.29.0**, and all four commands above report nothing — content *and* bytes, for both payloads.
+That is the other normal state, and it is worth knowing it reads identically to never having looked.
 
 **The authoritative comparison is against the tag `CLAUDE.md` names**, and that one must be empty at
 every commit:
@@ -464,8 +596,9 @@ feigning one. That is the baseline: "party2 reads `hp=0`" is only evidence if th
 The recording is armed rather than always on because `judge` fires once per death source on every
 Deaths refresh. Disarmed it costs one nil test.
 
-Offline, `tests/test_diagnostics.lua` proves the recording runs, captures all three boundaries and
-survives a client missing the unit APIs. It cannot supply the readings — `tests/wow_mock.lua`
+Offline, `tests/test_diagnostics_feign.lua` proves the recording runs, captures all three boundaries
+and survives a client missing the unit APIs — it moved there with `core/Diagnostics_Feign.lua`, so
+the cases can be deleted with the issue. It cannot supply the readings — `tests/wow_mock.lua`
 answers full health for any unrecorded token, which is why the party path never showed the bug.
 
 ## Capturing an identity-correlation run
@@ -499,7 +632,7 @@ the whole group is no more a join key than no field at all — the probe says `n
 than flagging it. It reads `-` for a secret field, because counting distinctness is a comparison and
 rule R1 forbids one on a secret; **capture again after the pull** to get counts for those.
 
-`ABSENCE_COST` in `core/Diagnostics.lua` says what each missing key field costs, and not every one
+`ABSENCE_COST` in `core/Diagnostics_Identity.lua` says what each missing key field costs, and not every one
 costs the same: a missing `specIconID` folds to `0` and collapses the key to class alone, while a
 missing `isLocalPlayer` folds to `false`, which is the correct answer for every row but one.
 

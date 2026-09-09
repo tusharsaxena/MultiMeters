@@ -219,6 +219,88 @@ function Feign.Clear()
     anyFeigned = false
 end
 
+--- Drop the entry for a member who has left the group, and say so.
+---
+--- THE EXIT THAT USED TO LEAVE NO LINE. The other two eviction paths each end in
+--- a trace; this one dropped the entry and moved on, so a recording that showed a
+--- cast and then silence could not say whether the death was judged before the
+--- entry went or the entry went first — which is the fork issue #25 turns on. It
+--- reports the state the entry HELD, and `<not in group>` where a unit token would
+--- be, because that absence is the verdict.
+---
+--- The invariant: `prior` is read BEFORE the eviction, and the entry always goes —
+--- with no token there is nothing left to read health from, so an entry kept here
+--- could never be cleared again.
+---
+--- @param guid any  a key already known to be safe (it came out of `feigned`)
+--- @param recording boolean  the prune's hoisted `armed()` read
+local function evictAbsent(guid, recording)
+    local prior = feigned[guid]
+    feigned[guid] = nil
+    if recording then
+        trace("prune", {
+            order = { "unit", "guid", "hp", "feigning", "state", "evicted" },
+            unit = "<not in group>", guid = guid, hp = nil, feigning = nil,
+            state = prior, evicted = true,
+        })
+    end
+end
+
+--- Judge one member who is still in the group, and say whether the entry survived.
+---
+--- Carries the two orderings the set depends on: nil-ness and `CanCompare` are
+--- settled before any comparison, and `prior` is read before the eviction.
+---
+--- @param guid any  a key already known to be safe (it came out of `feigned`)
+--- @param unit string  the token this GUID is currently in the group under
+--- @param recording boolean  the prune's hoisted `armed()` read
+--- @return boolean  true where the entry is still standing after this pass
+local function judgeMember(guid, unit, recording)
+    local hp = unitHealth(unit)
+    -- Nil-ness first, then the comparison, and only when the figure can
+    -- legally be compared. A health figure from the unit API is not a
+    -- meter value, but nothing says the client cannot make one secret.
+    local alive = hp ~= nil and Secrets.CanCompare(hp) and hp > 0
+    local dead  = hp ~= nil and Secrets.CanCompare(hp) and hp <= 0
+    local nowFeigning = unitFeigning(unit)
+
+    -- Seeing the feign is what makes the "stood back up" exit usable —
+    -- see the state comment above.
+    if nowFeigning == true then feigned[guid] = "down" end
+
+    -- READ BEFORE THE EVICTION, and that is the whole point of the local.
+    -- The trace below used to report `feigned[guid]`, which the eviction
+    -- three lines down had already nilled — so every evicted row read
+    -- `<evicted>` and the two states collapsed into one. They are the race
+    -- this set exists to close: "noted" means the cast arrived and the
+    -- client never confirmed the feign, "down" means it did. An entry
+    -- going at 0 HP from "noted" and one going at 0 HP from "down" are
+    -- different findings, and the report could not tell them apart.
+    local prior = feigned[guid]
+    local seenDown = (prior == "down")
+
+    local evicted = dead or (seenDown and alive and nowFeigning == false)
+    if evicted then
+        feigned[guid] = nil
+    end
+
+    -- THE LINE ISSUE #25 TURNS ON. `dead` wins outright here, ahead of
+    -- `nowFeigning`, and for the local player that never collides: your
+    -- own feign leaves `UnitHealth("player")` at its real figure. What
+    -- another client is shown is the open question, and this records the
+    -- raw readings beside the verdict so it stops being one.
+    if recording then
+        trace("prune", {
+            order = { "unit", "guid", "hp", "feigning", "state", "evicted" },
+            unit = unit, guid = guid, hp = hp, feigning = nowFeigning,
+            state = prior,
+            evicted = evicted and true or false,
+        })
+    end
+
+    return not evicted
+end
+
 --- Drop entries that are no longer true.
 ---
 --- THREE WAYS OUT OF THE SET.
@@ -271,66 +353,9 @@ function Feign.Prune()
     for guid in pairs(feigned) do
         local unit = present[guid]
         if unit == nil then
-            -- THE EXIT THAT USED TO LEAVE NO LINE. The other two eviction paths
-            -- each end in the trace below; this one dropped the entry and moved
-            -- on, so a recording that showed a cast and then silence could not
-            -- say whether the death was judged before the entry went or the entry
-            -- went first — which is the fork issue #25 turns on. It reports the
-            -- state the entry HELD, and `<not in group>` where a unit token would
-            -- be, because that absence is the verdict.
-            local prior = feigned[guid]
-            feigned[guid] = nil
-            if recording then
-                trace("prune", {
-                    order = { "unit", "guid", "hp", "feigning", "state", "evicted" },
-                    unit = "<not in group>", guid = guid, hp = nil, feigning = nil,
-                    state = prior, evicted = true,
-                })
-            end
-        else
-            local hp = unitHealth(unit)
-            -- Nil-ness first, then the comparison, and only when the figure can
-            -- legally be compared. A health figure from the unit API is not a
-            -- meter value, but nothing says the client cannot make one secret.
-            local alive = hp ~= nil and Secrets.CanCompare(hp) and hp > 0
-            local dead  = hp ~= nil and Secrets.CanCompare(hp) and hp <= 0
-            local nowFeigning = unitFeigning(unit)
-
-            -- Seeing the feign is what makes the "stood back up" exit usable —
-            -- see the state comment above.
-            if nowFeigning == true then feigned[guid] = "down" end
-
-            -- READ BEFORE THE EVICTION, and that is the whole point of the local.
-            -- The trace below used to report `feigned[guid]`, which the eviction
-            -- three lines down had already nilled — so every evicted row read
-            -- `<evicted>` and the two states collapsed into one. They are the race
-            -- this set exists to close: "noted" means the cast arrived and the
-            -- client never confirmed the feign, "down" means it did. An entry
-            -- going at 0 HP from "noted" and one going at 0 HP from "down" are
-            -- different findings, and the report could not tell them apart.
-            local prior = feigned[guid]
-            local seenDown = (prior == "down")
-
-            local evicted = dead or (seenDown and alive and nowFeigning == false)
-            if evicted then
-                feigned[guid] = nil
-            else
-                remaining = true
-            end
-
-            -- THE LINE ISSUE #25 TURNS ON. `dead` wins outright here, ahead of
-            -- `nowFeigning`, and for the local player that never collides: your
-            -- own feign leaves `UnitHealth("player")` at its real figure. What
-            -- another client is shown is the open question, and this records the
-            -- raw readings beside the verdict so it stops being one.
-            if recording then
-                trace("prune", {
-                    order = { "unit", "guid", "hp", "feigning", "state", "evicted" },
-                    unit = unit, guid = guid, hp = hp, feigning = nowFeigning,
-                    state = prior,
-                    evicted = evicted and true or false,
-                })
-            end
+            evictAbsent(guid, recording)
+        elseif judgeMember(guid, unit, recording) then
+            remaining = true
         end
     end
     anyFeigned = remaining

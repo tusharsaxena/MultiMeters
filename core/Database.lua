@@ -251,6 +251,41 @@ local function allProfiles(db)
     return type(db.profile) == "table" and { db.profile } or {}
 end
 
+--- Stamp Const.COLUMN_WIDTH onto every column entry of one window.
+---
+--- A non-table entry in a hand-edited `columns` array is stepped over rather
+--- than replaced, and nothing but `col.width` is written: the rest of a column
+--- is the player's.
+local function v2SetUniformColumnWidths(columns)
+    local Const = NS.Constants
+    for _, col in ipairs(columns) do
+        if type(col) == "table" then col.width = Const.COLUMN_WIDTH end
+    end
+end
+
+--- Widen one window's frame to the width its own grid now needs.
+---
+--- WIDENED, NEVER NARROWED: a player who had already dragged their window wider
+--- than the grid needs keeps that. The `type(width) ~= "number"` arm is not
+--- redundant with the `<` -- a frame carrying no numeric width at all has
+--- nothing to compare, and must still be given one.
+---
+--- `columnCount` is the RAW array length of that window's columns, junk entries
+--- included, and the padding counted on both edges is the window's OWN. Both
+--- are per window: hoisting either out of the caller's loop sizes every frame
+--- for whichever window happened to be first.
+local function v2WidenFrameForGrid(frame, columnCount, defaultPad)
+    if type(frame) ~= "table" then return end
+    local Const = NS.Constants
+    local pad = frame.padding or defaultPad
+    local needed = Const.NAME_COLUMN_WIDTH
+        + columnCount * (Const.COLUMN_WIDTH + Const.COLUMN_GAP)
+        + pad * 2
+    if type(frame.width) ~= "number" or frame.width < needed then
+        frame.width = needed
+    end
+end
+
 --- v1 -> v2: ONE UNIFORM COLUMN WIDTH.
 ---
 --- Widths are written into a window when it is CREATED (defaults/Profile.lua),
@@ -268,27 +303,14 @@ end
 --- the old 480 default gets a frame that actually holds the new grid instead of
 --- clipping its rightmost column.
 migrations[1] = function(db)
-    local Const = NS.Constants
     local template = NS.WINDOW_TEMPLATE or {}
     local defaultPad = ((template.frame or {}).padding) or 6
 
     for _, profile in ipairs(allProfiles(db)) do
         for _, w in ipairs(type(profile.windows) == "table" and profile.windows or {}) do
             local columns = type(w.columns) == "table" and w.columns or {}
-            for _, col in ipairs(columns) do
-                if type(col) == "table" then col.width = Const.COLUMN_WIDTH end
-            end
-
-            local frame = w.frame
-            if type(frame) == "table" then
-                local pad = frame.padding or defaultPad
-                local needed = Const.NAME_COLUMN_WIDTH
-                    + #columns * (Const.COLUMN_WIDTH + Const.COLUMN_GAP)
-                    + pad * 2
-                if type(frame.width) ~= "number" or frame.width < needed then
-                    frame.width = needed
-                end
-            end
+            v2SetUniformColumnWidths(columns)
+            v2WidenFrameForGrid(w.frame, #columns, defaultPad)
         end
     end
 
@@ -351,6 +373,55 @@ migrations[3] = function(db)
     db.global.schemaVersion = 4
 end
 
+-- The two keys v5 moves off the window and onto the profile. Built once here at
+-- file scope, and shared by the lift and the prune below so the two halves
+-- cannot name different keys.
+local V5_LIFTED_KEYS = { "mergePets", "throttle" }
+
+--- The data block v5 lifts FROM: window ONE's, or nil.
+---
+--- `windows[1]` only — not "the first window with an opinion". A first window
+--- with no usable `data` lifts nothing even when a later window carries values,
+--- because "the first window is the one at the top of their own picker" is the
+--- whole rule; a scan for an opinion would hand it to whichever window shouted
+--- loudest instead.
+local function v5FirstWindowData(windows)
+    local first = windows[1]
+    if type(first) ~= "table" or type(first.data) ~= "table" then return nil end
+    return first.data
+end
+
+--- Move whichever of the lifted keys that window actually carried onto the
+--- profile, each key on its own.
+---
+--- `~= nil`, NEVER truthiness: a stored `mergePets = false` and a stored
+--- `throttle = 0` are choices a player made, and truthiness would discard both.
+--- The profile's own data table is reused when it has one and CREATED when it
+--- does not, so a profile that never had the address still gets the value.
+local function v5LiftWindowData(profile, data)
+    local lifted
+    for _, key in ipairs(V5_LIFTED_KEYS) do
+        if data[key] ~= nil then
+            lifted = lifted or (type(profile.data) == "table" and profile.data or {})
+            lifted[key] = data[key]
+        end
+    end
+    if lifted then profile.data = lifted end
+end
+
+--- Remove the lifted keys from EVERY window of one profile.
+---
+--- AceDB merges defaults in and never prunes what the defaults stopped naming,
+--- so leaving them would put a stale `throttle` in every saved window forever,
+--- next to the live one, with nothing to say which the addon honors.
+local function v5PruneWindowData(windows)
+    for _, w in ipairs(windows) do
+        if type(w) == "table" and type(w.data) == "table" then
+            for _, key in ipairs(V5_LIFTED_KEYS) do w.data[key] = nil end
+        end
+    end
+end
+
 --- v4 -> v5: `mergePets` AND `throttle` BECOME ADDON-WIDE.
 ---
 --- Neither was ever a property of a window. `mergePets` says what a pet's damage
@@ -372,8 +443,6 @@ end
 migrations[4] = function(db)
     for _, profile in ipairs(allProfiles(db)) do
         local windows = type(profile.windows) == "table" and profile.windows or {}
-        local first = windows[1]
-        local data = type(first) == "table" and type(first.data) == "table" and first.data or nil
 
         -- THE WINDOW'S VALUE WINS OUTRIGHT, and the `== nil` rule that governs
         -- EnsureWindowShape deliberately does not apply here. AceDB's defaults
@@ -383,18 +452,12 @@ migrations[4] = function(db)
         -- this step the profile-level key did not exist and nothing read it, so
         -- there is no player intent to preserve at that address and every
         -- intent to preserve at the window's.
-        if data and (data.mergePets ~= nil or data.throttle ~= nil) then
-            local lifted = type(profile.data) == "table" and profile.data or {}
-            if data.mergePets ~= nil then lifted.mergePets = data.mergePets end
-            if data.throttle  ~= nil then lifted.throttle  = data.throttle  end
-            profile.data = lifted
-        end
+        local data = v5FirstWindowData(windows)
+        if data then v5LiftWindowData(profile, data) end
 
-        for _, w in ipairs(windows) do
-            if type(w) == "table" and type(w.data) == "table" then
-                w.data.mergePets, w.data.throttle = nil, nil
-            end
-        end
+        -- The prune sits OUTSIDE the lift: it runs whether or not window one
+        -- had anything to give.
+        v5PruneWindowData(windows)
     end
 
     db.global.schemaVersion = 5
@@ -634,6 +697,48 @@ migrations[11] = function(db)
     db.global.schemaVersion = 12
 end
 
+-- v13's two control-colour pairs: the stored boolean, and the mode key it
+-- becomes. File scope, built once — never rebuilt per window.
+local V13_CONTROL_COLOR_KEYS = {
+    { flag = "controlClassColor",      mode = "controlColorMode"      },
+    { flag = "controlHoverClassColor", mode = "controlHoverColorMode" },
+}
+
+--- Move the title-bar toggle off the frame and onto the header block.
+---
+--- An ABSENT `frame.titleBar` is left absent, because absent means "never
+--- changed from the default" — writing one here would freeze today's default
+--- into every stored profile and the default could never move again.
+---
+--- The header block is MUTATED IN PLACE, never replaced: the fonts, colours and
+--- heights already stored on it must survive. A present `titleBar` OVERWRITES
+--- whatever `header.show` held, since it is the value the player last set.
+local function v13MoveTitleBarToHeader(w, frame)
+    if frame.titleBar == nil then return end
+    if type(w.header) ~= "table" then w.header = {} end
+    w.header.show = frame.titleBar
+    frame.titleBar = nil
+end
+
+--- Turn the two control class-colour booleans into mode strings: `true` ->
+--- "class", `false` -> "custom", which is what `false` already meant. Mapping
+--- it to nil instead would leave the row reading the schema default, the same
+--- value today but not necessarily tomorrow.
+---
+--- Each pair is read and written on its own, and there is deliberately NO
+--- `== nil` guard on the mode being written: an existing
+--- `controlColorMode` / `controlHoverColorMode` is OVERWRITTEN here. That is
+--- what makes this step different from migrations[6], and why the two must not
+--- be folded into one shared boolean-to-mode helper.
+local function v13LiftControlColorModes(frame)
+    for _, pair in ipairs(V13_CONTROL_COLOR_KEYS) do
+        if frame[pair.flag] ~= nil then
+            frame[pair.mode] = frame[pair.flag] and "class" or "custom"
+            frame[pair.flag] = nil
+        end
+    end
+end
+
 --- v12 -> v13: THE TITLE-BAR TOGGLE MOVES ONTO THE HEADER, AND THE HEADER CONTROLS' TWO
 --- CLASS-COLOUR FLAGS BECOME MODES.
 ---
@@ -660,22 +765,9 @@ migrations[12] = function(db)
     for _, profile in ipairs(allProfiles(db)) do
         for _, w in ipairs(type(profile.windows) == "table" and profile.windows or {}) do
             local frame = type(w) == "table" and w.frame
-            if type(frame) == "table" and frame.titleBar ~= nil then
-                if type(w.header) ~= "table" then w.header = {} end
-                w.header.show = frame.titleBar
-                frame.titleBar = nil
-            end
-
             if type(frame) == "table" then
-                if frame.controlClassColor ~= nil then
-                    frame.controlColorMode = frame.controlClassColor and "class" or "custom"
-                    frame.controlClassColor = nil
-                end
-                if frame.controlHoverClassColor ~= nil then
-                    frame.controlHoverColorMode =
-                        frame.controlHoverClassColor and "class" or "custom"
-                    frame.controlHoverClassColor = nil
-                end
+                v13MoveTitleBarToHeader(w, frame)
+                v13LiftControlColorModes(frame)
             end
         end
     end

@@ -1,13 +1,16 @@
 -- tests/test_aggregator.lua — modules/Aggregator.lua: the GUID join, the group
 -- filter, and pet folding.
 --
--- Ordering lives in tests/test_aggregator_sort.lua. What is tested here is the
--- pass that produces the rows in the first place, and in particular the one
--- behavior that is deliberately DIFFERENT in and out of combat: adding a pet's
--- number to its owner's is arithmetic, arithmetic on a secret raises, and there
--- is no native escape hatch for a sum the way there is for formatting. So the
--- restricted case drops the pet's contribution and says so, and both halves of
--- that are asserted rather than assumed.
+-- Ordering lives in tests/test_aggregator_sort.lua. The second build — the grid
+-- correlated by class and spec while the GUID is secret — lives in
+-- tests/test_aggregator_identity.lua, and the preview grid in
+-- tests/test_aggregator_preview.lua, each behind the module it mirrors. What is
+-- tested here is the pass that produces the rows in the first place, and in
+-- particular the one behavior that is deliberately DIFFERENT in and out of
+-- combat: adding a pet's number to its owner's is arithmetic, arithmetic on a
+-- secret raises, and there is no native escape hatch for a sum the way there is
+-- for formatting. So the restricted case drops the pet's contribution and says
+-- so, and both halves of that are asserted rather than assumed.
 
 local T = _G.MULTIMETERS_TEST
 
@@ -313,177 +316,6 @@ test("Aggregator sums an attributed pet into its owner out of combat", function(
     assertEqual(result[1].values.DamageDone.rate, 14, "the rate folds with the total")
 end)
 
-test("A healer with no damage is on the mid-pull grid, from the healing column", function()
-    -- THE MISSING ROWS. The identity build took its row list from the SORT
-    -- column alone, so a healer who did no damage and a player whose only
-    -- contribution was one interrupt were absent for the whole of a pull and
-    -- reappeared the instant it ended — rows flickering into existence rather
-    -- than a rule. The GUID join has always taken the union of every column.
-    -- red under: building rows from the sort column only.
-    local inst = loaded()
-    inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { class = "WARRIOR" }) },
-        { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(BETA, 500, { class = "PRIEST" }) },
-        { statKey = "HealingDone", maxAmount = 500 })
-
-    local result = inst.NS.Aggregator.Build(
-        makeWindow{ columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" })
-
-    assertEqual(#result, 2, "the healer is on the grid")
-    -- Ranked first, unranked after: the damage row holds its place and the
-    -- healer is parked past it rather than interleaved.
-    assertEqual(inst.mocks.reveal(result[1].values.DamageDone.total), 100)
-    assertEqual(inst.mocks.reveal(result[2].values.HealingDone.total), 500)
-    assertNil(result[2].values.DamageDone, "and has no damage cell, because they did none")
-end)
-
-test("An ambiguous key gets no invented row, because no column could ever fill it", function()
-    -- Two priests: the healing column cannot say which of them a figure belongs
-    -- to, so it fills neither — and inventing a row for the pair would put an
-    -- always-empty line on the grid.
-    local inst = loaded()
-    inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { class = "WARRIOR" }) },
-        { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(BETA, 500, { class = "PRIEST" }), src(GAMMA, 300, { class = "PRIEST" }) },
-        { statKey = "HealingDone", maxAmount = 500 })
-
-    local result = inst.NS.Aggregator.Build(
-        makeWindow{ columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" })
-
-    assertEqual(#result, 1, "only the row the sort column actually ranked")
-    assertTrue(result.ambiguous, "and the header is told the grid is short an answer")
-end)
-
-test("A collision the LAST column reveals still blanks the FIRST column's cells", function()
-    -- ORDER MUST NOT DECIDE HONESTY. `collisions` is one table filled as each
-    -- column is read, so a key proved ambiguous by the third column was already
-    -- written into cells by the second — and those cells stay, carrying one
-    -- priest's number under a row that might be the other priest. That is the
-    -- exact mislabel every other refusal in this file exists to prevent, reached
-    -- by nothing but the order the window happens to list its columns in.
-    --
-    -- The sort column names neither priest, so its pre-pass cannot catch them.
-    -- red under: detecting collisions column-by-column as the fill walks them.
-    local inst = loaded()
-    inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }) },
-        { statKey = "DamageDone", maxAmount = 100 })
-    -- ONE priest here: this column cannot tell there is a second.
-    install(inst, { src(BETA, 7, { class = "PRIEST", specIconID = 5 }) },
-        { statKey = "Interrupts", maxAmount = 7 })
-    -- ...and here they both are.
-    install(inst, {
-        src(BETA,  3, { class = "PRIEST", specIconID = 5 }),
-        src(GAMMA, 2, { class = "PRIEST", specIconID = 5 }),
-    }, { statKey = "Dispels", maxAmount = 3 })
-
-    local result = inst.NS.Aggregator.Build(makeWindow{
-        columns = { "DamageDone", "Interrupts", "Dispels" }, sortColumn = "DamageDone" })
-
-    assertTrue(result.ambiguous, "the fixture is only meaningful if the key collided")
-    for _, row in ipairs(result) do
-        if row.identityKey == "PRIEST_5_false" then
-            assertNil(row.values.Interrupts,
-                "an early column's cell survived a collision a later column proved")
-        end
-    end
-    assertEqual(#result, 1, "an always-empty row was invented for a collided key")
-end)
-
-test("A sort column the window does not LIST still builds mid-pull", function()
-    -- `sortColumn` is kept whenever it names a real stat, and nothing requires
-    -- it to be one of the window's own columns — a stored config can point at a
-    -- stat whose column was later removed. The identity build reads its keys out
-    -- of a per-column sweep, and the sweep walks the window's columns: a sort
-    -- column outside that list has no swept keys, and indexing them raised.
-    -- red under: sweeping pass.keys alone.
-    local inst = loaded()
-    inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }) },
-        { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(ALPHA, 4, { class = "WARRIOR", specIconID = 9 }) },
-        { statKey = "Interrupts", maxAmount = 4 })
-
-    local result = inst.NS.Aggregator.Build(makeWindow{
-        columns = { "DamageDone" }, sortColumn = "Interrupts" })
-    assertEqual(#result, 1, "the grid came out empty for a sort column off the list")
-end)
-
-test("A correlated cell carries the RATE, or a rate column renders no text", function()
-    -- THE EMPTY HEALING COLUMN. The shipped text layout is `leftSlot = "smart"`,
-    -- which on a RATE stat — Damage, Healing — is `amountPerSecond` rather than
-    -- the total. Correlation carried only the total, so mid-pull every rate
-    -- column but the sort one drew its bar from the total and its text from a nil
-    -- rate: a bar with no number beside it.
-    --
-    -- Avoidable and Interrupts hid the bug, because neither is a rate stat and
-    -- smart renders their absolute figure instead. Only the rate columns were
-    -- blank, which is exactly what was reported.
-    -- red under: `row.values[statKey] = { total = value, maxAmount = ... }`.
-    local inst = loaded()
-    inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { rate = 10 }) },
-        { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(ALPHA, 500, { rate = 50 }) },
-        { statKey = "HealingDone", maxAmount = 500 })
-
-    local result = inst.NS.Aggregator.Build(
-        makeWindow{ columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" })
-
-    assertEqual(#result, 1)
-    local healing = result[1].values.HealingDone
-    assertEqual(inst.mocks.reveal(healing.total), 500)
-    assertEqual(inst.mocks.reveal(healing.rate), 50,
-        "a rate stat's text slot reads amountPerSecond — without it the cell is silent")
-end)
-
-test("A correlated Deaths column keeps the recap id the death view opens on", function()
-    -- `deathRecapID` is NeverSecret and rides on the source row. The GUID join
-    -- promotes it onto the row so neither the tooltip nor the drill-down has to
-    -- know which column it arrived on; correlation dropped it, so mid-pull a
-    -- death had no recap to open.
-    local inst = loaded()
-    inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { rate = 10 }) },
-        { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(ALPHA, 0, { recapID = 4242 }) },
-        { statKey = "Deaths", maxAmount = 0 })
-
-    local result = inst.NS.Aggregator.Build(
-        makeWindow{ columns = { "DamageDone", "Deaths" }, sortColumn = "DamageDone" })
-
-    assertEqual(result[1].values.Deaths.total, 1, "one source row, one death")
-    assertEqual(result[1].deathRecapID, 4242)
-end)
-
-test("A pet is a ROW OF ITS OWN while restricted, not a dropped contribution", function()
-    -- WHAT THE PET FOLD USED TO DO HERE, and why it stopped. Merging is
-    -- addition; addition on two secrets raises; so mid-pull the fold refused and
-    -- the pet's numbers were simply dropped, leaving the owner's total quietly
-    -- low for the whole fight.
-    --
-    -- The fold cannot run mid-pull at all now — it needs the owner link, which
-    -- needs a GUID, which is secret. So the pet arrives as what Blizzard's own
-    -- list says it is: a source, on a row, with its own name and numbers. That is
-    -- MORE information than the old behavior, not less, and nothing is summed.
-    -- red under: attempting the fold in identity mode.
-    local inst = withPet()
-    inst.mocks.setRestricted(true)
-    install(inst, {
-        src(ALPHA, 100, { rate = 10, class = "WARLOCK" }),
-        src(PET, 40, { rate = 4, name = "Ghoul", class = "PET" }),
-    }, { maxAmount = 100, totalAmount = 140 })
-
-    mergePets(inst)
-    local result = inst.NS.Aggregator.Build(makeWindow{})
-    assertEqual(#result, 2, "the pet's damage is shown rather than discarded")
-    assertEqual(inst.mocks.reveal(result[1].values.DamageDone.total), 100,
-        "and the owner's own number is untouched — nothing was added to it")
-    assertEqual(inst.mocks.reveal(result[2].values.DamageDone.total), 40)
-end)
-
 test("Aggregator adopts a pet's numbers into a column the owner has no cell in", function()
     local inst = withPet()
     -- The pet did damage its owner did not. Taking the pet's numbers wholesale
@@ -539,222 +371,6 @@ test("A row seen only outside the sort column is parked past every ranked row", 
 end)
 
 -- ---------------------------------------------------------------------------
--- Identity correlation: the diagnostics (issue #22)
--- ---------------------------------------------------------------------------
---
--- The shipped `identity` debug line could not answer the question it was written
--- for. It reported how many KEYS collided, not how many ROWS those keys covered,
--- so the ceiling a raid capture should be read against could not be computed;
--- it summed each column's key count into one figure, so `keys` was neither a
--- cardinality nor comparable to `rows`; and `filled/possible` accumulated
--- against a row list that was still GROWING, so `possible` was not rows x
--- columns and the arithmetic done on a live capture was wrong.
---
--- What replaces it is a rectangle: every row against every CORRELATED column,
--- each cell landing in exactly one of four buckets, and every miss therefore
--- attributable. Built only while the debug flag is on, because it is 30 rows
--- times 6 columns four times a second and nothing on the render path reads it.
-
---- A restricted instance with `n` distinct-class damage rows plus whatever else
---- the case installs.
-local function debugging(inst)
-    inst.NS.State.debug = true
-    return inst
-end
-
-test("Identity stats count collided ROWS, not just collided keys", function()
-    -- THE MEASUREMENT THE ISSUE ASKED FOR. Six collided keys over eighteen rows
-    -- says nothing about the ceiling until you know how many rows those six keys
-    -- cover, and the shipped line reported only the six.
-    -- red under: reporting the size of the collisions set alone.
-    local inst = debugging(loaded())
-    inst.mocks.setRestricted(true)
-    install(inst, {
-        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
-        src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
-        src(GAMMA,  30, { class = "PRIEST",  specIconID = 5 }),
-    }, { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(ALPHA, 4, { class = "WARRIOR", specIconID = 9 }) },
-        { statKey = "Interrupts", maxAmount = 4 })
-
-    local result = inst.NS.Aggregator.Build(makeWindow{
-        columns = { "DamageDone", "Interrupts" }, sortColumn = "DamageDone" })
-    local stats = result.identityStats
-
-    assertEqual(stats.collidedKeys, 1, "one class+spec pair is shared")
-    assertEqual(stats.collidedRows, 2, "and TWO rows wear it — the ceiling turns on this")
-    assertEqual(stats.rows, 3)
-    assertEqual(stats.keys, 2, "DISTINCT keys, not a per-column count summed")
-end)
-
-test("Identity stats attribute every miss to one of three causes", function()
-    -- `filled/possible` alone cannot separate the blank that is CORRECT (a
-    -- healer did no damage) from the blank that is the fault the line exists to
-    -- surface (the key is in the column and still did not match). One number
-    -- covering both is why a live capture could not be acted on.
-    -- red under: counting only filled and possible.
-    local inst = debugging(loaded())
-    inst.mocks.setRestricted(true)
-    install(inst, {
-        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
-        src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
-        src(GAMMA,  30, { class = "ROGUE",   specIconID = 3 }),
-    }, { statKey = "DamageDone", maxAmount = 100 })
-    -- The priest heals; nobody else appears in the column at all.
-    install(inst, { src(BETA, 500, { class = "PRIEST", specIconID = 5 }) },
-        { statKey = "HealingDone", maxAmount = 500 })
-
-    local result = inst.NS.Aggregator.Build(makeWindow{
-        columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" })
-    local col = result.identityStats.columns.HealingDone
-
-    assertEqual(col.rows, 3, "the rectangle is every row, not the rows so far")
-    assertEqual(col.filled, 1)
-    assertEqual(col.absent, 2, "the warrior and the rogue did no healing, honestly")
-    assertEqual(col.collided, 0)
-    assertEqual(col.unmatched, 0,
-        "a key present in the column that still produced no cell is the FAULT bucket")
-end)
-
-test("A collided key lands in the collided bucket, not the absent one", function()
-    -- The two are opposite diagnoses: absent means the correlation worked and
-    -- the player did nothing, collided means the correlation refused. Reporting
-    -- either as the other sends the next change in the wrong direction.
-    -- red under: classifying a miss by whether byKey holds the key alone.
-    local inst = debugging(loaded())
-    inst.mocks.setRestricted(true)
-    install(inst, {
-        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
-        src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
-        src(GAMMA,  30, { class = "PRIEST",  specIconID = 5 }),
-    }, { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, {
-        src(BETA,  500, { class = "PRIEST", specIconID = 5 }),
-        src(GAMMA, 400, { class = "PRIEST", specIconID = 5 }),
-    }, { statKey = "HealingDone", maxAmount = 500 })
-
-    local result = inst.NS.Aggregator.Build(makeWindow{
-        columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" })
-    local col = result.identityStats.columns.HealingDone
-
-    assertEqual(col.collided, 2, "both priest rows were refused, and for that reason")
-    assertEqual(col.filled, 0, "the only healing in the column belonged to the pair")
-    assertEqual(col.absent, 1, "and the warrior is absent, which is a different fact")
-end)
-
-test("The sort column is named, and is not part of the correlated rectangle", function()
-    -- Nothing is correlated onto the sort column: every row on the grid came
-    -- FROM it. Counting it as filled would inflate the one ratio the capture is
-    -- read for.
-    local inst = debugging(loaded())
-    inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }) },
-        { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(ALPHA, 4, { class = "WARRIOR", specIconID = 9 }) },
-        { statKey = "Interrupts", maxAmount = 4 })
-
-    local stats = inst.NS.Aggregator.Build(makeWindow{
-        columns = { "DamageDone", "Interrupts" }, sortColumn = "DamageDone" }).identityStats
-
-    assertEqual(stats.sortColumn, "DamageDone")
-    assertNil(stats.columns.DamageDone, "the sort column is not correlated onto anything")
-    assertEqual(stats.possible, 1, "one row times one correlated column")
-    assertEqual(stats.filled, 1)
-end)
-
-test("Identity stats carry the rows-per-key histogram", function()
-    -- THE MEASUREMENT THAT BOUNDS THE FIX. Widening the key is worth doing in
-    -- proportion to how many rows currently share one, and nothing in the
-    -- shipped line said. `{ [1] = 1, [2] = 1 }` reads as "one key worn alone,
-    -- one key worn by a pair".
-    -- red under: reporting a collision count without the shape of it.
-    local inst = debugging(loaded())
-    inst.mocks.setRestricted(true)
-    install(inst, {
-        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
-        src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
-        src(GAMMA,  30, { class = "PRIEST",  specIconID = 5 }),
-    }, { statKey = "DamageDone", maxAmount = 100 })
-
-    local stats = inst.NS.Aggregator.Build(makeWindow{
-        columns = { "DamageDone" }, sortColumn = "DamageDone" }).identityStats
-
-    assertEqual(stats.multiplicity[1], 1, "the warrior's key stands for one row")
-    assertEqual(stats.multiplicity[2], 1, "the priests' key stands for two")
-    assertNil(stats.multiplicity[3])
-end)
-
-test("A collided key records where its sources sat in every column", function()
-    -- THE ORDERING PROBE. Pairing two same-spec players by their POSITION is the
-    -- only direction left if the key cannot be widened, and it may only be taken
-    -- if the engine's order is stable across columns. That is a question about a
-    -- live client, so what ships is the capture, not the conclusion — and it is
-    -- captured only for the keys where it would be used.
-    -- red under: recording no positions at all.
-    local inst = debugging(loaded())
-    inst.mocks.setRestricted(true)
-    install(inst, {
-        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
-        src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
-        src(GAMMA,  30, { class = "PRIEST",  specIconID = 5 }),
-    }, { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, {
-        src(GAMMA, 400, { class = "PRIEST", specIconID = 5 }),
-        src(BETA,  500, { class = "PRIEST", specIconID = 5 }),
-    }, { statKey = "HealingDone", maxAmount = 500 })
-
-    local stats = inst.NS.Aggregator.Build(makeWindow{
-        columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" }).identityStats
-    local seats = stats.positions["PRIEST_5_false"]
-
-    assertTrue(seats ~= nil, "the collided key recorded no seats")
-    assertEqual(table.concat(seats.DamageDone, ","), "2,3")
-    assertEqual(table.concat(seats.HealingDone, ","), "1,2")
-    assertNil(stats.positions["WARRIOR_9_false"], "an unambiguous key needs no probe")
-end)
-
-test("The identity stats are not built at all with the debug flag off", function()
-    -- It is a rectangle of rows times columns walked four times a second, and
-    -- nothing on the render path reads it. A diagnostic that costs the player
-    -- frames is a diagnostic that gets turned off and then is not there when it
-    -- is wanted.
-    -- red under: computing the stats unconditionally.
-    local inst = loaded()
-    inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }) },
-        { statKey = "DamageDone", maxAmount = 100 })
-
-    assertNil(inst.NS.Aggregator.Build(makeWindow{ columns = { "DamageDone" } }).identityStats)
-end)
-
-test("The GUID build reports no identity stats, because it correlated nothing", function()
-    -- Out of combat the join is exact. A rectangle of misses would read as a
-    -- fault where there is none.
-    local inst = debugging(loaded())
-    install(inst, { src(ALPHA, 100) }, { statKey = "DamageDone", maxAmount = 100 })
-
-    assertNil(inst.NS.Aggregator.Build(makeWindow{ columns = { "DamageDone" } }).identityStats)
-end)
-
-test("Aggregator keeps the last identity pass for the report to print", function()
-    -- `/mm debug identity` is typed AFTER the pull it is about, and it has no
-    -- window handle. The stats therefore outlive the pass that produced them.
-    -- red under: publishing the stats on the result alone.
-    local inst = debugging(loaded())
-    inst.mocks.setRestricted(true)
-    install(inst, {
-        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
-        src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
-        src(GAMMA,  30, { class = "PRIEST",  specIconID = 5 }),
-    }, { statKey = "DamageDone", maxAmount = 100 })
-    inst.NS.Aggregator.Build(makeWindow{ columns = { "DamageDone" } })
-
-    local kept = inst.NS.Aggregator.LastIdentityStats()
-    assertEqual(kept.collidedRows, 2)
-    assertEqual(kept.rows, 3)
-end)
-
--- ---------------------------------------------------------------------------
 -- Percent — the one number this file computes
 -- ---------------------------------------------------------------------------
 
@@ -767,20 +383,6 @@ test("Aggregator computes percent out of combat", function()
     local result = inst.NS.Aggregator.Build(makeWindow{})
     assertEqual(result[1].values.DamageDone.percent, 75)
     assertEqual(result[2].values.DamageDone.percent, 25)
-end)
-
-test("Aggregator answers nil percent while restricted — never zero", function()
-    local inst = loaded()
-    install(inst, { src(ALPHA, 75), src(BETA, 25) },
-        { maxAmount = 75, totalAmount = 100 })
-    inst.mocks.setRestricted(true)
-
-    mergePets(inst)
-    local result = inst.NS.Aggregator.Build(makeWindow{})
-    -- A division on an inaccessible operand raises, so the slot goes quiet. nil
-    -- means "cannot be known right now" and callers must not read it as 0%.
-    assertNil(result[1].values.DamageDone.percent)
-    assertNil(result[2].values.DamageDone.percent)
 end)
 
 -- ---------------------------------------------------------------------------
@@ -835,63 +437,8 @@ test("Aggregator applies the cap before dividing, not after", function()
 end)
 
 -- ---------------------------------------------------------------------------
--- Preview
+-- The cache seam
 -- ---------------------------------------------------------------------------
-
-test("Test mode substitutes the DATA, and the render path stays one path", function()
-    -- It used to hand the renderer a whole separate result table built by a
-    -- separate function, and the two modes then diverged at every seam nobody
-    -- thought to duplicate: the tooltip found no source and said "No data yet",
-    -- the drill-down opened on nothing, and every fix had to be applied twice.
-    -- Substituting modules/Provider.lua's output instead means everything
-    -- downstream is the live code reading invented numbers.
-    -- red under: a `if testMode then BuildTestRows()` branch in the renderer.
-    local inst = loaded()
-    inst.NS.State.SetTestMode(true)
-
-    local result = inst.NS.Aggregator.Build(makeWindow{ columns = { "DamageDone" } })
-    assertTrue(#result > 1, "test mode must produce a full grid through Build")
-    assertTrue(result[1].values.DamageDone ~= nil, "shaped exactly like live rows")
-    assertTrue(result[1].name ~= nil)
-end)
-
-test("A test row's tooltip finds a breakdown, because it goes to the provider", function()
-    -- The seam that was broken for a release. The tooltip asks the provider; the
-    -- provider is what test mode replaces; so the tooltip needs no idea which
-    -- mode it is in.
-    local inst = loaded()
-    inst.NS.State.SetTestMode(true)
-
-    local result = inst.NS.Aggregator.Build(makeWindow{ columns = { "DamageDone" } })
-    local detail = inst.NS.Provider.GetSourceDetail(CURRENT, "DamageDone", result[1].guid)
-    assertTrue(type(detail) == "table", "a test row must have a spell breakdown")
-    assertTrue(#detail.combatSpells > 0)
-end)
-
-test("Test mode reaches no meter API at all", function()
-    -- The substitution is at the provider, so nothing behind it is ever asked.
-    local inst = loaded()
-    inst.NS.State.SetTestMode(true)
-    inst.mocks.resetMeterCalls()
-
-    inst.NS.Aggregator.Build(makeWindow{ columns = { "DamageDone", "Deaths" } })
-    for name, count in pairs(inst.mocks.__meter.calls) do
-        assertEqual(count, 0, "test mode called " .. name)
-    end
-end)
-
-test("Test data is deterministic — a jittering grid cannot be laid out against", function()
-    local inst = loaded()
-    inst.NS.State.SetTestMode(true)
-    local window = makeWindow{ columns = { "DamageDone" } }
-
-    local first  = inst.NS.Aggregator.Build(window)
-    local second = inst.NS.Aggregator.Build(window)
-    assertEqual(#first, #second)
-    for i = 1, #first do
-        assertEqual(first[i].values.DamageDone.total, second[i].values.DamageDone.total)
-    end
-end)
 
 test("A meter reset drops this module's cache", function()
     -- It held the frozen sort orders, which are retired. The seam stays: it is
@@ -931,19 +478,6 @@ test("A pet gets its OWN row by default, with its own name", function()
     assertEqual(byGuid[PET].name, "Bheemyn", "the pet reads as the pet, not as a second owner row")
     assertEqual(byGuid[PET].isPet, true)
     assertEqual(byGuid[PET].ownerGuid, ALPHA, "and still knows whose it is")
-end)
-
-test("A pet's own row survives the restriction, where a merged one would not", function()
-    local inst = withPet()
-    inst.mocks.setRestricted(true)
-    install(inst, {
-        src(ALPHA, inst.mocks.secret(100)),
-        src(PET, inst.mocks.secret(40), { name = "Bheemyn" }),
-    }, { maxAmount = inst.mocks.secret(100) })
-
-    -- No sum is attempted, so there is nothing for the restriction to forbid.
-    local result = inst.NS.Aggregator.Build(makeWindow())
-    assertEqual(#result, 2, "mid-pull, both rows are present and both are exact")
 end)
 
 test("Leaving the group does NOT empty the window", function()
@@ -1136,20 +670,6 @@ test("The NEWEST death wins the recap id", function()
 
     local row = inst.NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } })[1]
     assertEqual(row.deathRecapID, 23)
-end)
-
-test("Counting a death is legal mid-pull, where summing two secrets is not", function()
-    -- The counter is ours, not the meter's, so incrementing it is not arithmetic
-    -- on a secret. The simulator raises on the illegal form, so reaching the
-    -- assertion is the proof.
-    local inst = loaded()
-    inst.mocks.setRestricted(true)
-    inst.mocks.setSecretValues(true)
-    install(inst, { src(ALPHA, 0, { recapID = 2 }), src(ALPHA, 0, { recapID = 1 }) },
-        { statKey = "Deaths" })
-
-    local ok, err = pcall(inst.NS.Aggregator.Build, makeWindow{ columns = { "Deaths" } })
-    assertTrue(ok, "counting inspected a meter value: " .. tostring(err))
 end)
 
 -- ---------------------------------------------------------------------------
@@ -1382,72 +902,6 @@ test("The count and the deaths array can never disagree", function()
     end
 end)
 
-test("A correlated Deaths column keeps every death too", function()
-    -- Mid-pull there is no GUID, so the identity build tallies deaths through a
-    -- parallel map instead. It is a SECOND capture point, and a change made to
-    -- one build and not the other is invisible until somebody drills in during
-    -- a pull.
-    -- red under: accumulating the array only in setCell.
-    local inst = loaded()
-    install(inst, { src(ALPHA, 500, { class = "PALADIN", specIconID = 1 }) },
-        { statKey = "DamageDone", maxAmount = 500 })
-    install(inst, {
-        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 29 }),
-        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 27 }),
-    }, { statKey = "Deaths", maxAmount = 0 })
-    inst.mocks.setRestricted(true)
-
-    local rows = inst.NS.Aggregator.Build(
-        makeWindow{ columns = { "DamageDone", "Deaths" }, sortColumn = "DamageDone" })
-    assertEqual(rows[1].values.Deaths.total, 2)
-    assertEqual(#rows[1].deaths, 2, "the identity build dropped a death")
-    assertEqual(rows[1].deaths[1], 29, "newest first here too")
-end)
-
-test("A collided identity key gets no deaths array, as it gets no cell", function()
-    -- Two players of one class and spec cannot be told apart mid-pull, and this
-    -- file's whole warrant for correlating is that it REFUSES rather than
-    -- guesses. A death list attached outside that refusal would put one
-    -- player's deaths under the other player's name.
-    -- red under: assigning row.deaths outside the collision guard.
-    local inst = loaded()
-    install(inst, {
-        src(ALPHA, 500, { class = "PALADIN", specIconID = 1 }),
-        src(BETA,  400, { class = "PALADIN", specIconID = 1 }),
-    }, { statKey = "DamageDone", maxAmount = 500 })
-    install(inst, {
-        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 29 }),
-    }, { statKey = "Deaths", maxAmount = 0 })
-    inst.mocks.setRestricted(true)
-
-    local rows = inst.NS.Aggregator.Build(
-        makeWindow{ columns = { "DamageDone", "Deaths" }, sortColumn = "DamageDone" })
-    for _, row in ipairs(rows) do
-        assertNil(row.values.Deaths, "the fixture is only meaningful if the key collided")
-        assertNil(row.deaths, "a collided row was given somebody's death list")
-    end
-end)
-
-test("Test mode produces a player with several deaths to drill into", function()
-    -- The preview is how the drill-down is looked at without dying repeatedly in
-    -- a dungeon. One death per member exercises the list at length 1 only, which
-    -- is the length at which every ordering bug hides.
-    -- red under: TestColumn emitting one Deaths source per member.
-    local inst = T.load()
-    inst.NS.State.testMode = true
-    local rows = inst.NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } })
-
-    local most = 0
-    for _, row in ipairs(rows) do
-        local n = row.deaths and #row.deaths or 0
-        if n > most then most = n end
-        if row.deaths then
-            assertEqual(n, row.values.Deaths.total, "preview count and list disagree")
-        end
-    end
-    assertTrue(most > 1, "no preview player has more than one death")
-end)
-
 test("A death the client gave no recap id still occupies a slot in the list", function()
     -- FOUND BY REVIEW, and it is the invariant this whole feature rests on.
     -- `deaths[#deaths + 1] = src.deathRecapID` is a NO-OP when the id is nil, so
@@ -1468,25 +922,6 @@ test("A death the client gave no recap id still occupies a slot in the list", fu
     assertEqual(row.deaths[1], 29)
     assertEqual(row.deaths[2], false, "an unopenable death is false, not missing")
     assertEqual(row.deaths[3], 27)
-end)
-
-test("The identity build keeps that slot too", function()
-    -- Two builds, one shape. The GUID build being fixed and the identity build
-    -- not would make the lists differ in and out of combat.
-    local inst = loaded()
-    install(inst, { src(ALPHA, 500, { class = "PALADIN", specIconID = 1 }) },
-        { statKey = "DamageDone", maxAmount = 500 })
-    install(inst, {
-        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 29 }),
-        src(ALPHA, 0, { class = "PALADIN", specIconID = 1 }),
-    }, { statKey = "Deaths", maxAmount = 0 })
-    inst.mocks.setRestricted(true)
-
-    local rows = inst.NS.Aggregator.Build(
-        makeWindow{ columns = { "DamageDone", "Deaths" }, sortColumn = "DamageDone" })
-    assertEqual(rows[1].values.Deaths.total, 2)
-    assertEqual(#rows[1].deaths, 2)
-    assertEqual(rows[1].deaths[2], false)
 end)
 
 -- ---------------------------------------------------------------------------
@@ -1584,22 +1019,237 @@ test("The feign filter touches no column but Deaths", function()
         "a feigning player stopped appearing on the damage column")
 end)
 
-test("The feign filter cannot run mid-pull, and does not pretend to", function()
-    -- STRUCTURAL, not a defect. It joins a plain GUID against sourceGUID, and
-    -- sourceGUID is secret for the whole of a pull — which is the entire reason
-    -- there is a second, GUID-free build. Pinned as behaviour so nobody "fixes"
-    -- it by keying on something secret.
+-- ---------------------------------------------------------------------------
+-- The column walk itself — the arms nothing else reaches (issue #35)
+-- ---------------------------------------------------------------------------
+--
+-- scanColumn is the highest-complexity function in the addon and issue #35 names
+-- the seam a later wave will cut along: the per-source walk out into one helper,
+-- the counted-column tail out into another. Everything below pins an arm of that
+-- walk that no other case in this file reaches, so that the split is provably a
+-- move rather than a rewrite. The three clauses issue #35 lists under "what must
+-- not change" — the CanCompare2 gate on the fold, the feign drop happening
+-- BEFORE rowForSource, and the judge tracer resolved once per column — each have
+-- a case here or above.
+
+test("A pet's DEATH lands on the row the merge put it on", function()
+    -- THE THIRD PLACEMENT ARM, and the only case that reaches it: a source that
+    -- is NOT its row's own (a pet, merged into its owner) in a column that
+    -- COUNTS. Pets do not die, so this exists for a client that grows a
+    -- pet-shaped source on a counted stat — and the answer is to tally it like
+    -- any other count rather than to invent a fold for it.
+    -- red under: folding the counted pet (foldPet sums totalAmount, which is 0
+    -- on every death row, so the count would silently stay 1).
+    local inst = withPet()
+    install(inst, {
+        src(ALPHA, 0, { recapID = 5 }),
+        src(PET,   0, { recapID = 6, name = "Ghoul" }),
+    }, { statKey = "Deaths", maxAmount = 0 })
+
+    mergePets(inst)
+    local rows = inst.NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } })
+    assertEqual(#rows, 1, "merging is on, so there is no separate pet row")
+    assertEqual(rows[1].guid, ALPHA)
+    assertEqual(rows[1].values.Deaths.total, 2, "both rows were counted, not summed")
+    assertEqual(#rows[1].deaths, 2, "and the drill-down lists both, as it must")
+end)
+
+test("A fold the gate refuses is COUNTED, and adds nothing on the way past", function()
+    -- THE REFUSAL ARM. foldPet answers false rather than approximating, and the
+    -- caller's only job is to tally the refusal — `unfolded` on the pass, which
+    -- reaches a player through the one debug line per pass and nowhere else.
+    -- Nothing in this file asserted that counter, so a refactor could drop the
+    -- increment (or, worse, retry the sum) with every test still green.
+    -- red under: incrementing nothing, or letting the fold through.
+    local inst = withPet()
+    local NS = inst.NS
+    NS.State.debug = true
+    -- A pet whose total is not a number at all: the fold's type gate refuses it
+    -- for the same reason the CanCompare2 gate refuses a secret one — there is
+    -- no honest sum to be had, and half a sum is worse than none.
+    install(inst, {
+        src(ALPHA, 100, { rate = 10 }),
+        src(PET,   nil, { name = "Ghoul" }),
+    }, { maxAmount = 100, totalAmount = 100 })
+
+    mergePets(inst)
+    local rows = NS.Aggregator.Build(makeWindow{})
+    assertEqual(#rows, 1, "merging is on: the pet has no row of its own")
+    assertEqual(rows[1].values.DamageDone.total, 100,
+        "the owner's own figure survived the refusal untouched")
+
+    local line = NS.DebugLog:FindLine("unfolded=")
+    assertTrue(line ~= nil and line:find("unfolded=1", 1, true) ~= nil,
+        "a refused fold that reports nothing is a number quietly missing: "
+        .. tostring(line))
+end)
+
+test("A feigned death is a SKIP, never a drop", function()
+    -- The two counters mean different things and a reader acts on them
+    -- differently: `dropped` is "the join refused this source" and prints a
+    -- `dropped guid=` line naming a cause. A feign is neither — the source was
+    -- understood perfectly and deliberately not counted. Folding the feign skip
+    -- into dropSource would inflate the counter and print a refusal reason for a
+    -- source that was never refused.
+    -- red under: routing the feign through the drop path.
     local inst = loaded()
-    install(inst, { src(ALPHA, 500, { class = "PALADIN", specIconID = 1 }) },
-        { statKey = "DamageDone", maxAmount = 500 })
-    install(inst, { src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 29 }) },
-        { statKey = "Deaths", maxAmount = 0 })
-    inst.NS.Feign.Note(ALPHA)
-    inst.mocks.setRestricted(true)
+    local NS = inst.NS
+    NS.State.debug = true
+    install(inst, { src(ALPHA, 0, { recapID = 29 }) }, { statKey = "Deaths", maxAmount = 0 })
+    NS.Feign.Note(ALPHA)
+
+    assertEqual(#NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } }), 0)
+
+    local line = NS.DebugLog:FindLine("unfolded=")
+    assertTrue(line ~= nil and line:find("dropped=0", 1, true) ~= nil,
+        "the feign was counted as a refusal: " .. tostring(line))
+    assertNil(NS.DebugLog:FindLine("dropped guid="),
+        "and it named a cause for a source nothing refused")
+end)
+
+test("A counted column publishes NO column total, so its percent stays empty", function()
+    -- THE TAIL'S LAST LINE, and the least obvious thing in it. The session's
+    -- `totalAmount` for Deaths is not the number this column shows — the counts
+    -- are ours — so the pass DELETES the published total rather than leaving a
+    -- figure nothing on the grid adds up to. Everything downstream reads the
+    -- absence correctly: no columnTotal on the cell, no percent, and no
+    -- sortTotal in the window header when Deaths is what the window sorts by.
+    -- red under: keeping columnTotals[statKey], which puts a header total and a
+    -- percent column of nonsense in front of the player.
+    local inst = loaded()
+    install(inst, {
+        src(ALPHA, 0, { recapID = 1 }),
+        src(BETA,  0, { recapID = 2 }),
+    }, { statKey = "Deaths", maxAmount = 0, totalAmount = 7 })
 
     local rows = inst.NS.Aggregator.Build(
-        makeWindow{ columns = { "DamageDone", "Deaths" }, sortColumn = "DamageDone" })
-    assertEqual(rows[1].values.Deaths.total, 1,
-        "if this ever reads 0, the restricted build found a plain key and the "
-        .. "limitation can be lifted from docs/ARCHITECTURE.md")
+        makeWindow{ columns = { "Deaths" }, sortColumn = "Deaths" })
+    assertNil(rows.columnTotals.Deaths, "the session's own total was republished")
+    assertNil(rows.sortTotal, "and reached the window header through the sort column")
+    assertNil(rows[1].values.Deaths.columnTotal)
+    assertNil(rows[1].values.Deaths.percent, "a percent of a total nobody can see")
+end)
+
+test("A counted column ignores the session's maxAmount, however loud", function()
+    -- The counted branch never lets `column.maxAmount` near a cell — not on the
+    -- way in, and not through the backfill that gives every other column's cells
+    -- their max. Deaths reports 0 today, which is the case the tail was written
+    -- for; this pins the OTHER direction, where the client reports a figure that
+    -- is simply not a count of anything. The scale must still come from the
+    -- counters this file produced.
+    -- red under: dropping the `not isCount` guard on either the local or the
+    -- backfill, which a split of the walk makes very easy to do.
+    local inst = loaded()
+    install(inst, {
+        src(ALPHA, 0, { recapID = 1 }),
+        src(ALPHA, 0, { recapID = 2 }),
+        src(BETA,  0, { recapID = 3 }),
+    }, { statKey = "Deaths", maxAmount = 999, totalAmount = 0 })
+
+    local rows = inst.NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } })
+    assertEqual(#rows, 2)
+    for _, row in ipairs(rows) do
+        assertEqual(row.values.Deaths.maxAmount, 2,
+            "999 reached a bar that counts to two")
+    end
+end)
+
+test("The Deaths pass prunes the feign set itself, and no other column does", function()
+    -- BOTH HALVES OF ONE GATE, asserted against the set rather than against the
+    -- grid: the prune is called from the counted column's walk and from nowhere
+    -- else on the refresh path, so a hunter who stands back up is noticed by the
+    -- next Deaths pass without any caller having to remember to ask — and a
+    -- damage-only window, which never reaches the Feign module at all, leaves
+    -- the set exactly as it found it.
+    -- red under: hoisting the prune to the top of Build (where a damage-only
+    -- window would run it too) or dropping it (where a stale feign eats every
+    -- later death for the rest of the session).
+    local inst = loaded()
+    local NS = inst.NS
+    NS.Feign.Note(ALPHA)
+    -- The client has to have SEEN the feign before "not feigning any more" means
+    -- anything — the same precondition modules/Feign.lua's prune states — and a
+    -- Deaths pass is what does the seeing.
+    inst.mocks.setUnitFeignDeath("player", true)
+    inst.mocks.setUnitHealth("player", 500)
+    install(inst, { src(BETA, 0, { recapID = 1 }) }, { statKey = "Deaths", maxAmount = 0 })
+    NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } })
+    assertTrue(NS.Feign.IsFeigned(ALPHA), "a live feign was evicted while it was still true")
+
+    -- They stand back up. A DAMAGE refresh must not be what notices.
+    inst.mocks.setUnitFeignDeath("player", false)
+    install(inst, { src(BETA, 100) }, { statKey = "DamageDone", maxAmount = 100 })
+    NS.Aggregator.Build(makeWindow{ columns = { "DamageDone" } })
+    assertTrue(NS.Feign.IsFeigned(ALPHA),
+        "a damage pass pruned a set it has no business touching")
+
+    -- The Deaths pass is, and the death it judges afterwards is a real one.
+    install(inst, { src(ALPHA, 0, { recapID = 42 }) }, { statKey = "Deaths", maxAmount = 0 })
+    assertEqual(#NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } }), 1,
+        "nothing pruned the stale feign, and it ate a real death")
+    assertEqual(NS.Feign.IsFeigned(ALPHA), false, "and the entry is gone, not merely bypassed")
+end)
+
+test("The judge verdict is recorded per death source, after the prune", function()
+    -- THE ISSUE #25 RECORDING, asserted where it is PRODUCED. tests/
+    -- test_diagnostics.lua feeds `judge` rows to the ring by hand, which proves
+    -- what the ring does with them and nothing at all about whether the Deaths
+    -- walk ever emits one — the same gap that let the feign filter ship
+    -- uncalled once already.
+    --
+    -- The ORDER is the finding, and it is why this asserts a sequence rather
+    -- than a set: `prune` says where the entry stood, and every `judge` after it
+    -- was decided against the set the prune left. A judge line ahead of the
+    -- prune would be a verdict from the previous pass's set, and the report
+    -- would read as evidence for the wrong fork.
+    -- red under: pruning per source, or resolving the tracer inside the walk and
+    -- letting a mid-walk arming change what the pass records.
+    local inst = loaded()
+    local D = inst.NS.Diagnostics
+    D.ArmFeignTrace(true)
+    local seen = {}
+    D.TraceFeign = function(kind, fields) seen[#seen + 1] = { kind = kind, fields = fields } end
+
+    inst.NS.Feign.Note(ALPHA)
+    install(inst, {
+        src(ALPHA, 0, { recapID = 9 }),
+        src(BETA,  0, { recapID = 8 }),
+    }, { statKey = "Deaths", maxAmount = 0 })
+    inst.NS.Aggregator.Build(makeWindow{ columns = { "Deaths" } })
+
+    local kinds, judged = {}, {}
+    for _, rec in ipairs(seen) do
+        kinds[#kinds + 1] = rec.kind
+        if rec.kind == "judge" then judged[#judged + 1] = rec.fields end
+    end
+    assertEqual(table.concat(kinds, ","), "cast,prune,judge,judge",
+        "the pass records one prune, then one judgement per death source")
+
+    assertEqual(judged[1].guid, ALPHA)
+    assertEqual(judged[1].recap, 9)
+    assertEqual(judged[1].dropped, true, "the feigner's death is recorded as dropped")
+    assertEqual(judged[2].guid, BETA)
+    assertEqual(judged[2].dropped, false,
+        "and a real death is recorded as FALSE, never as nil — the report reads it")
+    assertEqual(table.concat(judged[1].order, ","), "guid,recap,dropped",
+        "the field order is the report's column order")
+end)
+
+test("A column that is not counted records no judgement at all", function()
+    -- The tracer is resolved from the Feign module, and that module is only
+    -- reached for a counted column — so a damage refresh costs no judgement, no
+    -- fields table and no ring slot, armed or not. That is the whole point of
+    -- resolving it once per column instead of once per source.
+    -- red under: resolving the tracer for every column and testing `isCount`
+    -- inside the walk, which puts a table per source back on the hot path.
+    local inst = loaded()
+    local D = inst.NS.Diagnostics
+    D.ArmFeignTrace(true)
+    local judgements = 0
+    D.TraceFeign = function(kind) if kind == "judge" then judgements = judgements + 1 end end
+
+    install(inst, { src(ALPHA, 100), src(BETA, 50) },
+        { statKey = "DamageDone", maxAmount = 100 })
+    inst.NS.Aggregator.Build(makeWindow{ columns = { "DamageDone" } })
+    assertEqual(judgements, 0, "a damage refresh recorded a feign judgement")
 end)

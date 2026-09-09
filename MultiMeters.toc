@@ -57,6 +57,12 @@ core\Database.lua
 # `/mm debug diag`. Last in the block: it reads modules at CALL time and owns no
 # state, so nothing depends on where it loads.
 core\Diagnostics.lua
+# The long-lived probes peeled out of core\Diagnostics.lua (layout-§1). LOAD-BEARING:
+# each resolves NS.Diagnostics and that file's print helpers at FILE SCOPE, so all three
+# must load AFTER it. Deleting one with its issue is a TOC line and a file, nothing else.
+core\Diagnostics_DeathRecap.lua
+core\Diagnostics_Identity.lua
+core\Diagnostics_Feign.lua
 
 # Defaults (the only place a profile default is hardcoded — savedvariables-§2)
 defaults\Profile.lua
@@ -67,19 +73,53 @@ modules\Provider.lua
 modules\Roster.lua
 modules\Feign.lua
 modules\Aggregator.lua
+# The identity build and the preview data, peeled out of Aggregator under layout-§1 (issue #30).
+# LOAD-BEARING POSITION for both: each resolves the module table, and Aggregator_Identity.lua the
+# helper seam Aggregator.lua publishes, at FILE SCOPE. Either loading first would resolve nil.
+modules\Aggregator_Identity.lua
+modules\Aggregator_Preview.lua
 modules\WindowManager.lua
 modules\Window.lua
+# The two files modules\Window.lua was peeled into for layout-§1 (issue #29): the header band,
+# and the window's placement and presence. LOAD-BEARING POSITIONS, both of them: each resolves
+# NS.WindowProto -- and Window_Header.lua also NS.WindowFontPath, NS.SurfaceColor and
+# NS.WindowModule -- at FILE SCOPE, so both MUST follow modules\Window.lua, which publishes them.
+# Ahead of the controls strip, which reads the NS.HeaderStyle Window_Header.lua publishes
+# -- at CALL time, so that part is order by intent rather than a load-time requirement.
+modules\Window_Header.lua
+modules\Window_Placement.lua
 modules\HeaderControls.lua
 modules\Row.lua
+# The name cell, peeled out of Row.lua (layout-§1). LOAD-BEARING POSITION: it resolves the
+# Cell prototype and two of Row.lua's file-locals at FILE SCOPE, so it must follow it.
+modules\Row_NameCell.lua
 modules\Targets.lua
 modules\Tooltip.lua
+# The pooled line and its draw, peeled off modules\Tooltip.lua (layout-§1). LOAD-BEARING POSITION: it
+# resolves that file's published file-locals (NS.TooltipInternals) at FILE SCOPE, so it must follow it.
+modules\Tooltip_Lines.lua
+# The death events and the four tooltip builders, the rest of the same peel. LOAD-BEARING
+# POSITION: it resolves publications from BOTH files at FILE SCOPE, so it must follow both.
+modules\Tooltip_Builders.lua
 modules\DrillDown.lua
 modules\Export.lua
+# The export modal, peeled off modules\Export.lua for layout-§1. LOAD-BEARING POSITION:
+# it resolves that file's three published file-locals at FILE SCOPE, so it must load after it.
+modules\Export_Modal.lua
 modules\Visibility.lua
 modules\Minimap.lua
 
 # Settings (last — depend on everything else being initialized)
+# The vocabularies, validators and composed blocks that the schema array is declared
+# out of, peeled off settings\Schema.lua for layout-§1. LOAD-BEARING POSITION: the
+# array resolves every member of NS.SchemaCompose at FILE SCOPE, so this precedes it.
+settings\Schema_Compose.lua
 settings\Schema.lua
+# The path machinery and the read/write seams, peeled off the same file for layout-§1.
+# LOAD-BEARING POSITION: it builds its path index from NS.Schema at FILE SCOPE, so it
+# must load after the array -- and still ahead of settings\Slash.lua and
+# settings\OptionsSetup.lua, which point their seams at it.
+settings\Schema_Paths.lua
 settings\Slash.lua
 settings\OptionsSetup.lua
 # General FIRST, above Windows. It is the only page that is not about one

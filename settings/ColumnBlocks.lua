@@ -219,26 +219,26 @@ function NS.CancelReorder(ctx)
     end
 end
 
---- Render `spec.items` as blocks into `ctx`'s scroll.
+--- How many of `items` are shown. The rule goes under this many blocks.
 ---
---- @param ctx table   an options page context (H.CreatePanel's return)
---- @param spec table  { items, onToggle, onMove }
---- @return table blocks  the block frames, in order
-function NS.ReorderableBlocks(ctx, spec)
-    local scroll = H.EnsureScroll and H.EnsureScroll(ctx)
-    local AceGUI = NS.AceGUI
-    if not (scroll and AceGUI and type(spec) == "table") then return {} end
-
-    local items = spec.items or {}
-    local count = #items
-
+--- A COUNT, NOT A SCAN. Stopping at the first disabled item agrees with this on
+--- every normalized list and diverges on an unsorted one -- and the ordering is
+--- normalizeColumns' guarantee rather than something arranged here, so the count
+--- is the contract.
+local function countEnabled(items)
     local boundary = 0
     for _, item in ipairs(items) do
         if item.enabled then boundary = boundary + 1 end
     end
+    return boundary
+end
 
+--- The library's drag controller for this render, or nil without the library.
+local function newReorderList(spec, boundary)
     local W = widgets()
-    local list = W and W.ReorderList({
+    if not W then return nil end
+
+    return W.ReorderList({
         stride     = NS.BLOCK_STRIDE,
         -- The one list in the collection with two groups. A shown column may not
         -- be dragged among the hidden ones: the tick is what moves a block
@@ -255,6 +255,88 @@ function NS.ReorderableBlocks(ctx, spec)
         debug      = (NS.State and NS.State.debug and NS.Debug)
             and function(fmt, ...) NS.Debug("Blocks", fmt, ...) end or nil,
     })
+end
+
+--- One slot in the scroll, holding one live block pointed at `item`.
+local function drawBlock(AceGUI, scroll, i, item, spec)
+    -- One AceGUI SimpleGroup per block, holding one raw frame. The group is
+    -- what the ScrollFrame lays out; the frame inside it is what this file
+    -- draws. Going through AceGUI for the LAYOUT and no further is what keeps
+    -- the blocks flowing with the rest of the page without asking AceGUI for
+    -- a widget it does not have.
+    local slot = AceGUI:Create("SimpleGroup")
+    slot:SetLayout(nil)
+    slot:SetFullWidth(true)
+    slot:SetHeight(NS.BLOCK_STRIDE)
+    scroll:AddChild(slot)
+
+    local block = acquireBlock(slot.frame or slot.content)
+    applyBlock(block, i, item, spec)
+    return block
+end
+
+--- Hand one block to the library as a row, and record its handle on the block.
+---
+--- The ghost's furniture comes off the same item the block was applied from --
+--- `block.mmGlyphTexture` is the value applyBlock just set, not a re-derivation,
+--- so the copy under the cursor says what the row says.
+local function registerRow(list, block, item)
+    -- A HIDDEN COLUMN IS NOT DRAGGABLE. The order of the hidden group is real -- it is
+    -- where a column lands when you tick it back on -- but nothing reads it, so dragging
+    -- one was a gesture that appeared to do something and did nothing. It is still
+    -- REGISTERED, because the row still counts for indices and still anchors the line: a
+    -- shown column dragged down must stop at the rule, and the rule is the first hidden
+    -- row's top edge.
+    block.mmHandle = list:AddRow(block, {
+        draggable      = item.enabled and true or false,
+        -- A disabled block is DIMMER but still a block: it cannot be
+        -- dragged, and it is what you click to bring the column back. The
+        -- muted fill and edge are the library's `ROW_BOX.*_DIM` pair, so
+        -- every list in the collection dims the same way.
+        dimmed         = not item.enabled,
+        ghostText      = item.label,
+        ghostIcon      = block.mmGlyphTexture,
+        ghostTextColor = item.enabled and { 1, 0.82, 0 } or { 0.5, 0.5, 0.5 },
+        height         = NS.BLOCK_HEIGHT,
+    })
+end
+
+--- The rule under the last enabled block, when there is a divide to mark.
+---
+--- Drawn from INSIDE the walk, immediately after block `boundary`'s slot: appended
+--- after the loop it would sit under the last block rather than the last enabled
+--- one. Nothing above it is disabled and nothing below it is enabled, which is a
+--- property normalizeColumns guarantees rather than one this file arranges -- and a
+--- list with nothing disabled has no boundary to mark, so it gets no rule.
+local function addBoundaryRule(AceGUI, scroll, i, boundary, count)
+    if i ~= boundary or boundary >= count then return end
+
+    local rule = AceGUI:Create("Heading")
+    rule:SetText("")
+    rule:SetFullWidth(true)
+    rule:SetHeight(12)
+    scroll:AddChild(rule)
+end
+
+--- Render `spec.items` as blocks into `ctx`'s scroll.
+---
+--- @param ctx table   an options page context (H.CreatePanel's return)
+--- @param spec table  { items, onToggle, onMove }
+--- @return table blocks  the block frames, in order
+function NS.ReorderableBlocks(ctx, spec)
+    local scroll = H.EnsureScroll and H.EnsureScroll(ctx)
+    local AceGUI = NS.AceGUI
+    -- ABOVE THE ctx WRITES BELOW, AND IT STAYS THERE. A refusal that had already
+    -- overwritten ctx.mmBlocks would strand the previous render's blocks on AceGUI
+    -- SimpleGroups the page is free to hand out again, with nothing left holding a
+    -- reference to release them -- the ghost label, arriving through the bad-input door.
+    if not (scroll and AceGUI and type(spec) == "table") then return {} end
+
+    local items = spec.items or {}
+    local count = #items
+    local boundary = countEnabled(items)
+
+    local list = newReorderList(spec, boundary)
     ctx.mmReorder = list
 
     -- Parked on the ctx so the NEXT render can hand them back. Held here rather
@@ -263,59 +345,19 @@ function NS.ReorderableBlocks(ctx, spec)
     ctx.mmBlocks = live
 
     for i, item in ipairs(items) do
-        -- One AceGUI SimpleGroup per block, holding one raw frame. The group is
-        -- what the ScrollFrame lays out; the frame inside it is what this file
-        -- draws. Going through AceGUI for the LAYOUT and no further is what keeps
-        -- the blocks flowing with the rest of the page without asking AceGUI for
-        -- a widget it does not have.
-        local slot = AceGUI:Create("SimpleGroup")
-        slot:SetLayout(nil)
-        slot:SetFullWidth(true)
-        slot:SetHeight(NS.BLOCK_STRIDE)
-        scroll:AddChild(slot)
-
-        local block = acquireBlock(slot.frame or slot.content)
-        applyBlock(block, i, item, spec)
+        local block = drawBlock(AceGUI, scroll, i, item, spec)
         blocks[i] = block
         live[i] = block
 
-        if list then
-            -- A HIDDEN COLUMN IS NOT DRAGGABLE. The order of the hidden group is real -- it is
-            -- where a column lands when you tick it back on -- but nothing reads it, so dragging
-            -- one was a gesture that appeared to do something and did nothing. It is still
-            -- REGISTERED, because the row still counts for indices and still anchors the line: a
-            -- shown column dragged down must stop at the rule, and the rule is the first hidden
-            -- row's top edge.
-            block.mmHandle = list:AddRow(block, {
-                draggable      = item.enabled and true or false,
-                -- A disabled block is DIMMER but still a block: it cannot be
-                -- dragged, and it is what you click to bring the column back. The
-                -- muted fill and edge are the library's `ROW_BOX.*_DIM` pair, so
-                -- every list in the collection dims the same way.
-                dimmed         = not item.enabled,
-                ghostText      = item.label,
-                ghostIcon      = block.mmGlyphTexture,
-                ghostTextColor = item.enabled and { 1, 0.82, 0 } or { 0.5, 0.5, 0.5 },
-                height         = NS.BLOCK_HEIGHT,
-            })
-        end
+        if list then registerRow(list, block, item) end
 
-        -- The rule, drawn under the LAST enabled block so it marks where the
-        -- shown columns stop. Nothing above it is disabled and nothing below it
-        -- is enabled, which is a property normalizeColumns guarantees rather than
-        -- one this file arranges -- and a list with nothing disabled has no
-        -- boundary to mark, so it gets no rule.
-        if i == boundary and boundary < count then
-            local rule = AceGUI:Create("Heading")
-            rule:SetText("")
-            rule:SetFullWidth(true)
-            rule:SetHeight(12)
-            scroll:AddChild(rule)
-        end
+        addBoundaryRule(AceGUI, scroll, i, boundary, count)
     end
 
     -- The insertion line lives on the scroll's content, which is what every block
-    -- shares as an ancestor.
+    -- shares as an ancestor. Unconditional while there is a list, empty item list
+    -- included: the ctx must end every render owning a live controller, because
+    -- that is what the next repaint calls Cancel on.
     if list then list:Finish(scroll.content or scroll.frame) end
 
     return blocks

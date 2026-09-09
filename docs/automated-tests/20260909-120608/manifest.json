@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "addon": "MultiMeters",
+  "addonVersion": "0.1.0",
+  "run": "20260909-120608",
+  "startedAt": "2026-09-09T12:06:08+05:30",
+  "durationMs": 19645,
+  "label": "CCN/LOC remediation: 23 warnings to zero, 15 over-cap files to zero",
+  "release": null,
+  "git": { "sha": "cc89785e669582e3cae26c37946e72b989a2f4c9", "branch": "feat/2026-09-09-ccn-loc-remediation", "dirty": true },
+  "host": { "lua": "Lua 5.1.5  Copyright (C) 1994-2012 Lua.org, PUC-Rio", "luacheck": "Luacheck: 1.2.0", "lizard": "1.24.0", "timingSource": "date +%s%3N" },
+  "suites": {
+    "lint": { "status": "pass", "durationMs": 3682, "warnings": 0, "errors": 0, "files": 122, "gating": true, "gates": { "commit": true, "release": true } },
+    "tests": { "status": "pass", "durationMs": 10451, "passed": 1728, "failed": 0, "skipped": 0, "total": 1728, "gating": true, "gates": { "commit": true, "release": true } },
+    "perf": { "status": "pass", "durationMs": 2013, "scenarios": 15, "gating": false, "gates": { "commit": false, "release": true } },
+    "complexity": { "status": "pass", "durationMs": 2756, "warnings": 0, "maxCcn": 15, "nloc": 36689, "functions": 3752, "avgCcn": 2.4, "avgNloc": 8.1, "avgToken": 62.8, "warnFunRatio": 0.00, "warnNlocRatio": 0.00, "bandFiles": 19, "overCapFiles": 0, "gating": false, "gates": { "commit": false, "release": true } }
+  },
+  "verdict": "green"
+}

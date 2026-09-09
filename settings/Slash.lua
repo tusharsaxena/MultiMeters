@@ -427,6 +427,63 @@ end
 -- The two harness verbs
 -- ---------------------------------------------------------------------
 
+--- The three READ verbs, one entry each, reaching the report that verb names.
+--- Built once at file scope: this is a slash path, but a table rebuilt per call
+--- is an allocation the branches it replaced never made (performance-§11).
+---
+--- Each entry spells its call out as a LITERAL field access, exactly as the three
+--- branches this table replaced did, rather than indexing NS.Diagnostics by a
+--- stored method name. A Diagnostics that loaded but is missing the member — a
+--- stale or half-loaded core/Diagnostics.lua — must still fail the way it always
+--- did, naming the method it could not call; `D[name]()` would raise on `'?'`
+--- instead and cost the reader the one word that identifies the gap.
+---
+--- The mapping is the whole contract: one verb reaches one report and never
+--- another, so a typo here cross-wires two commands while still printing
+--- something plausible.
+local DEBUG_REPORTS = {
+    diag     = function(D) return D.Report() end,
+    recap    = function(D) return D.ReportDeathRecap() end,
+    identity = function(D) return D.ReportIdentity() end,
+}
+
+--- `feign` is the issue #25 recording, and it is the only debug verb here that
+--- takes an argument, because it is the only one that is not a read. The other
+--- three ask the client a question at the moment they are typed; a feign is over
+--- before a player finishes typing, so this one has to be armed before the run
+--- and printed after it.
+---
+--- It lives out of line because it is the only branch with a nested ladder over
+--- an argument, and it carries two invariants: the parse is LENIENT (the whole
+--- remainder is lowercased and only the second word is read), and the printed
+--- line follows what ARMING RETURNED rather than what was asked for, so nobody
+--- runs a dungeon for a trace that was never armed.
+local function doDebugFeign(rest)
+    local D = NS.Diagnostics
+    if not D then return end
+    local arg = tostring(rest or ""):lower():match("^%s*%S+%s+(%S+)")
+    if arg == nil then
+        if D.ReportFeign then D.ReportFeign() end
+    elseif arg == "on" or arg == "off" then
+        local on = D.ArmFeignTrace and D.ArmFeignTrace(arg == "on") or false
+        local line = on
+            and "feign trace ON — run the dungeon, then `/mm debug feign`."
+            or  "feign trace off."
+        if NS.Print then NS.Print(line) end
+    else
+        -- NAMED AND REFUSED, following the dispatcher's own unknown-verb
+        -- pattern above. Anything that was not `on`, `off` or nothing at all
+        -- used to fall through to the report — so `/mm debug feign of`, typed
+        -- by somebody who meant `off`, printed an empty recording and left the
+        -- trace armed for the rest of the session with no line saying so. A
+        -- typo in a diagnostic verb must cost the typo and nothing else.
+        if NS.Print then
+            NS.Print("unknown feign argument '" .. arg ..
+                "' — `/mm debug feign on|off`, or `/mm debug feign` to print the recording.")
+        end
+    end
+end
+
 --- `/mm debug` toggles the WINDOW only; `/mm debug on|off` sets the session-only
 --- logging flag through the DebugLog seam. They are separate on purpose: logging
 --- runs with the console closed, so a bug can be reproduced first and the log
@@ -434,63 +491,26 @@ end
 function doDebug(rest)
     local word = tostring(rest or ""):lower():match("^%s*(%S*)") or ""
 
-    -- `diag` runs WITHOUT the debug log, deliberately. It is what a player is
-    -- asked to run when something looks wrong, and requiring them to enable a
-    -- console first is one more step between a bug and its report.
-    if word == "diag" then
-        if NS.Diagnostics then NS.Diagnostics.Report() end
-        return
-    end
-
+    -- The three read verbs run WITHOUT the debug log, deliberately, which is why
+    -- this lookup sits ABOVE the `NS.DebugLog` guard below. They are what a
+    -- player is asked to run when something looks wrong, and requiring them to
+    -- enable a console first is one more step between a bug and its report.
+    --
     -- `recap` is the issue #1 probe on its own — the same report the full `diag`
-    -- carries, without the forty lines of atlas and font output around it. It
-    -- sits on this branch and not below for the same reason `diag` does: it is
-    -- what a player is asked to run, and a console they have to open first is a
-    -- step between us and the answer.
-    if word == "recap" then
-        if NS.Diagnostics then NS.Diagnostics.ReportDeathRecap() end
+    -- carries, without the forty lines of atlas and font output around it.
+    --
+    -- `identity` is the issue #22 capture, and it is typed mid-pull, by a player
+    -- who was asked to type it, so a console they must open first is a step
+    -- between us and the measurement. The report itself says what it needs — the
+    -- flag on, and a pull running — rather than going quiet when it has neither.
+    local report = DEBUG_REPORTS[word]
+    if report then
+        if NS.Diagnostics then report(NS.Diagnostics) end
         return
     end
 
-    -- `identity` is the issue #22 capture, and it sits on this branch for the
-    -- third time for the same reason: it is typed mid-pull, by a player who was
-    -- asked to type it, and a console they must open first is a step between us
-    -- and the measurement. The report itself says what it needs — the flag on,
-    -- and a pull running — rather than going quiet when it has neither.
-    if word == "identity" then
-        if NS.Diagnostics then NS.Diagnostics.ReportIdentity() end
-        return
-    end
-
-    -- `feign` is the issue #25 recording, and it is the only debug verb here
-    -- that takes an argument, because it is the only one that is not a read.
-    -- The other three ask the client a question at the moment they are typed; a
-    -- feign is over before a player finishes typing, so this one has to be armed
-    -- before the run and printed after it.
     if word == "feign" then
-        local D = NS.Diagnostics
-        if not D then return end
-        local arg = tostring(rest or ""):lower():match("^%s*%S+%s+(%S+)")
-        if arg == nil then
-            if D.ReportFeign then D.ReportFeign() end
-        elseif arg == "on" or arg == "off" then
-            local on = D.ArmFeignTrace and D.ArmFeignTrace(arg == "on") or false
-            local line = on
-                and "feign trace ON — run the dungeon, then `/mm debug feign`."
-                or  "feign trace off."
-            if NS.Print then NS.Print(line) end
-        else
-            -- NAMED AND REFUSED, following the dispatcher's own unknown-verb
-            -- pattern above. Anything that was not `on`, `off` or nothing at all
-            -- used to fall through to the report — so `/mm debug feign of`, typed
-            -- by somebody who meant `off`, printed an empty recording and left the
-            -- trace armed for the rest of the session with no line saying so. A
-            -- typo in a diagnostic verb must cost the typo and nothing else.
-            if NS.Print then
-                NS.Print("unknown feign argument '" .. arg ..
-                    "' — `/mm debug feign on|off`, or `/mm debug feign` to print the recording.")
-            end
-        end
+        doDebugFeign(rest)
         return
     end
 
@@ -500,6 +520,9 @@ function doDebug(rest)
     elseif word == "off" then
         NS.DebugLog:SetEnabled(false)
     else
+        -- A word the ladder does not know toggles the window, exactly as a bare
+        -- `debug` does. The console verb never validated an argument; only
+        -- `feign` refuses one, because only `feign` reads one.
         NS.DebugLog:Toggle()
     end
 end

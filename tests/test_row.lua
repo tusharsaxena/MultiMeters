@@ -687,6 +687,216 @@ test("A window that sets neither keeps the border it always had", function()
     end
 end)
 
+test("The border setting off builds no texture at all", function()
+    -- THE REFUSAL PATH, and it is a memory question rather than a cosmetic one:
+    -- `not (wanted or edges)` is what stops a grid of forty rows times six
+    -- columns from creating two hundred and forty textures nobody asked for.
+    -- The shipped default is off, so this is the path almost every window takes.
+    -- red under: hoisting the lazy create above the guard "so the table always
+    -- exists".
+    local _, _, row = bench()
+    local cell = row.cells.DamageDone
+
+    assertNil(cell.border, "an untouched window paid for four textures per cell")
+    assertNil(cell.frame.__backdrop, "and for a backdrop it never asked for")
+end)
+
+test("Turning the border off hides all four sides and keeps the textures", function()
+    -- The OTHER arm of the same guard: once the textures exist the function must
+    -- reach them to put them down, and it must put down ALL FOUR -- a hide loop
+    -- that stopped at the first side leaves an L on screen after the player
+    -- switched the setting off. Kept rather than destroyed, because the pool's
+    -- whole premise is that widget creation happens once.
+    -- red under: hiding only `top`, or nil-ing `self.border` on the way out.
+    local _, window, row, cfg = bench(function(c) c.bars.border = true end)
+    local cell = row.cells.DamageDone
+    local edges = cell.border
+    local top = edges.top
+
+    cfg.bars.border = false
+    row:ApplyLayout(window.layout)
+
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do
+        assertEqual(cell.border[side]:IsShown(), false, side .. " survived the setting")
+    end
+    assertTrue(cell.border == edges, "the table was rebuilt rather than re-used")
+    assertTrue(cell.border.top == top, "and so was the texture the pool promised to keep")
+end)
+
+test("Each of the four sides is anchored to its own two corners", function()
+    -- THE PER-SIDE CHAIN, pinned corner by corner. Each side spans one edge of
+    -- the cell with TWO anchors and takes its thickness on the ONE axis that is
+    -- not spanned -- top and bottom get a height, left and right a width. Swap a
+    -- pair (BOTTOMLEFT for TOPLEFT on `left`, say) and the outline still draws,
+    -- still colours, still measures the same in every existing case, and is
+    -- simply in the wrong place; swap the axis and a side vanishes at width 0.
+    -- Nothing else in this suite looks at where a border texture is.
+    -- red under: any transcription slip in a data table of anchor pairs.
+    local _, _, row = bench(function(c)
+        c.bars.border          = true
+        c.bars.borderThickness = 3
+    end)
+    local cell = row.cells.DamageDone
+    local bar = cell.frame
+    local edges = cell.border
+
+    local expected = {
+        top    = { "TOPLEFT",    "TOPRIGHT"    },
+        bottom = { "BOTTOMLEFT", "BOTTOMRIGHT" },
+        left   = { "TOPLEFT",    "BOTTOMLEFT"  },
+        right  = { "TOPRIGHT",   "BOTTOMRIGHT" },
+    }
+    for side, corners in pairs(expected) do
+        local tex = edges[side]
+        assertEqual(tex:GetNumPoints(), 2, side .. " does not span its edge")
+        for i = 1, 2 do
+            local point, relativeTo, relativePoint, x, y = tex:GetPoint(i)
+            assertEqual(point, corners[i], side .. " anchor " .. i)
+            assertTrue(relativeTo == bar, side .. " is not anchored to its own cell")
+            assertEqual(relativePoint, corners[i], side .. " relative point " .. i)
+            assertEqual(x, 0, side .. " is inset horizontally")
+            assertEqual(y, 0, side .. " is inset vertically")
+        end
+        assertEqual(tex:IsShown(), true, side .. " was drawn but never shown")
+    end
+
+    -- The thickness goes on the axis the side does NOT span. A texture left at
+    -- the default 0 on the other axis is how a border loses a side.
+    assertEqual(edges.top:GetHeight(), 3)
+    assertEqual(edges.bottom:GetHeight(), 3)
+    assertEqual(edges.left:GetWidth(), 3)
+    assertEqual(edges.right:GetWidth(), 3)
+    assertEqual(edges.top:GetWidth(), 0, "top took a width as well as a height")
+    assertEqual(edges.left:GetHeight(), 0, "left took a height as well as a width")
+
+    -- Exactly four, named exactly these. A rectangle has four edges and the
+    -- create loop, the hide loop and the tint loop all walk the one list.
+    local count = 0
+    for _ in pairs(edges) do count = count + 1 end
+    assertEqual(count, 4, "the side list grew or shrank")
+end)
+
+test("A second layout pass re-places the border rather than stacking anchors", function()
+    -- ClearAllPoints before the two SetPoints. A layout pass runs on every
+    -- settings change and on every frame of a drag-resize; anchors that
+    -- accumulate are anchors the client resolves against each other, and the
+    -- first pair wins forever after.
+    -- red under: dropping the ClearAllPoints when the chain becomes a loop.
+    local _, window, row = bench(function(c) c.bars.border = true end)
+    local edges = row.cells.DamageDone.border
+
+    row:ApplyLayout(window.layout)
+    row:ApplyLayout(window.layout)
+
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do
+        assertEqual(edges[side]:GetNumPoints(), 2, side .. " accumulated anchors")
+    end
+end)
+
+test("A thickness under one pixel is clamped to one, on both paths", function()
+    -- FOUR INVISIBLE TEXTURES PRETENDING TO BE A BORDER. The slider has a floor
+    -- but a profile written by an older build -- or by hand -- does not, and
+    -- SetHeight(0) is a side that is simply not there while the setting reads
+    -- "on". The art path clamps for the same reason: edgeSize 0 draws nothing.
+    -- red under: trusting the config value on either path.
+    local inst, window, row = bench(function(c)
+        c.bars.border          = true
+        c.bars.borderThickness = 0
+    end)
+    local cell = row.cells.DamageDone
+    assertEqual(cell.border.top:GetHeight(), 1, "a zero thickness drew nothing at all")
+    assertEqual(cell.border.left:GetWidth(), 1)
+
+    -- Not a number at all -- the same clamp, because `size < 1` on a string
+    -- raises in Lua 5.1 and a border must never be the thing that breaks a row.
+    window.config.bars.borderThickness = "3"
+    row:ApplyLayout(window.layout)
+    assertEqual(cell.border.top:GetHeight(), 1, "a string thickness was trusted")
+
+    inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
+    window.config.bars.borderStyle     = "Ka0s Edge"
+    window.config.bars.borderThickness = 0
+    row:ApplyLayout(window.layout)
+    assertEqual(cell.frame.__backdrop.edgeSize, 1, "the art path skipped the clamp")
+end)
+
+test("The art path takes the edge FILE and the swatch's colour", function()
+    -- The nine-slice reaches the backdrop as `edgeFile`, and the colour beside it
+    -- reaches SetBackdropBorderColor -- the art path's answer to the flat path's
+    -- SetColorTexture. Both are cellBorderColor's, so the two paths cannot end up
+    -- reading different swatches for the same setting.
+    -- red under: an art path that draws the library's edge tint over the
+    -- player's, which is what "no colour call at all" looks like on screen.
+    local inst, window, row = bench(function(c)
+        c.bars.border      = true
+        c.bars.borderColor = { r = 1, g = 0, b = 0, a = 0.5 }
+    end)
+    inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
+    window.config.bars.borderStyle = "Ka0s Edge"
+    row:ApplyLayout(window.layout)
+
+    local frame = row.cells.DamageDone.frame
+    assertEqual(frame.__backdrop.edgeFile, "Interface\\Test\\Edge",
+        "the style the player picked did not reach the backdrop")
+    local c = frame.__backdropBorderColor
+    assertEqual(c[1], 1, "the art border ignored the swatch")
+    assertEqual(c[2], 0)
+    assertEqual(c[4], 0.5, "the swatch's alpha did not survive the art path")
+end)
+
+test("The art path answers the colour mode too, and it is the ROW'S class", function()
+    -- The same reading the flat outline takes, and it has to be the same reading:
+    -- a player who switches from the flat border to an LSM edge is changing how
+    -- the outline is DRAWN, not who it is about.
+    -- red under: an art path that only ever reads the custom swatch.
+    local inst, window, row = bench(function(c)
+        c.bars.border          = true
+        c.bars.borderColor     = { r = 1, g = 0, b = 0, a = 0.4 }
+        c.bars.borderColorMode = "class"
+    end)
+    inst.mocks.RAID_CLASS_COLORS.PRIEST = { r = 0.11, g = 0.22, b = 0.33 }
+    inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
+    window.config.bars.borderStyle = "Ka0s Edge"
+
+    -- The entry first: ApplyBorder runs on a LAYOUT, and the class it paints is
+    -- the one the cell is currently drawing.
+    row:Update(entry({ DamageDone = { total = 100, maxAmount = 100 } },
+        { classFilename = "PRIEST" }), 1)
+    row:ApplyLayout(window.layout)
+
+    local c = row.cells.DamageDone.frame.__backdropBorderColor
+    assertEqual(c[1], 0.11, "the art outline did not take the row's class")
+    assertEqual(c[2], 0.22)
+    assertEqual(c[3], 0.33)
+    assertEqual(c[4], 0.4)
+end)
+
+test("Switching from the flat outline to art takes ALL FOUR sides down", function()
+    -- The mutual exclusion, in the direction that actually leaks. The suite's
+    -- other case reaches art from a cell that never built the flat textures and
+    -- can only check them if they happen to exist; this one builds them first, on
+    -- purpose, which is what a player who had "None" selected has. Four solid
+    -- rectangles left under a nine-slice are a double border at every corner.
+    -- red under: hiding only `top`, or returning before the hide loop.
+    local inst, window, row = bench(function(c)
+        c.bars.border      = true
+        c.bars.borderStyle = "None"
+    end)
+    local cell = row.cells.DamageDone
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do
+        assertEqual(cell.border[side]:IsShown(), true, side .. " was not drawn to begin with")
+    end
+
+    inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
+    window.config.bars.borderStyle = "Ka0s Edge"
+    row:ApplyLayout(window.layout)
+
+    assertTrue(cell.frame.__backdrop ~= nil, "the art never arrived")
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do
+        assertEqual(cell.border[side]:IsShown(), false, side .. " was left under the art")
+    end
+end)
+
 test("Per-statistic cell text is the colour of the column the cell is in", function()
     -- PER STATISTIC IS PER COLUMN in a cell: the number takes the colour of the
     -- column it sits in, which is the same palette the bar behind it uses in
@@ -810,366 +1020,6 @@ test("Bar opacity and text opacity are independent, in both directions", functio
     assertEqual(cell.left:GetAlpha(), 0.6)
     assertEqual(cell.right:GetAlpha(), 0.6)
     assertEqual(cell.frame:GetAlpha(), 1)
-end)
-
--- ---------------------------------------------------------------------------
--- The name cell
--- ---------------------------------------------------------------------------
-
-test("The name cell is never handed a meter value at all", function()
-    local inst, _, row = bench()
-    inst.mocks.setRestricted(true)
-    row:Update(entry{
-        DamageDone = { total = inst.mocks.secret(60), maxAmount = inst.mocks.secret(100) },
-        Interrupts = { total = 9,  maxAmount = 9 },
-    }, 1)
-
-    -- The name column used to draw a bar scaled to the sort column, which meant
-    -- handing this frame a secret purely to size a rectangle. Dropping the bar
-    -- takes the frame OUT of the secret set: its geometry stays readable, which
-    -- is the taint half of the change and the half a screenshot cannot show.
-    -- red under: restoring the SetValue(total) call in Cell:SetPlayer.
-    local bar = row.nameCell.frame
-    assertEqual(bar:GetValue(), 0, "the name cell holds no figure")
-    assertEqual(bar:HasSecretValues(), false,
-        "and is therefore not marked secret, unlike every stat cell beside it")
-
-    -- The stat cell in the same row DID take one, which is what makes the
-    -- assertion above a real distinction rather than an artifact of the fixture.
-    assertEqual(row.cells.DamageDone.frame:HasSecretValues(), true)
-end)
-
-test("The name cell colors the NAME by class, now that no bar carries it", function()
-    local inst, _, row = bench()
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { name = "Alpha", classFilename = "MAGE" }), 1)
-
-    local r, g, b = row.nameCell.left:GetTextColor()
-    local c = inst.mocks.RAID_CLASS_COLORS.MAGE
-    assertEqual(r, c.r)
-    assertEqual(g, c.g)
-    assertEqual(b, c.b)
-end)
-
-test("An unknown class reads as white, not as a tenth palette entry", function()
-    local _, _, row = bench()
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { name = "Whatsit", classFilename = "NOTACLASS" }), 1)
-
-    local r, g, b = row.nameCell.left:GetTextColor()
-    assertEqual(r, 1); assertEqual(g, 1); assertEqual(b, 1)
-end)
-
-test("The name cell renders a plain name and survives a secret one", function()
-    local inst, _, row = bench()
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } }, { name = "Alpha" }), 1)
-    assertEqual(row.nameCell.left:GetText(), "Alpha")
-
-    -- ConditionalSecret: mid-pull the handle goes to the widget UNTOUCHED, and
-    -- the client draws the real characters. SetText accepts a secret — the same
-    -- permission modules/Format.lua relies on to put "12.4M" on a bar it may not
-    -- divide — so the player sees the name, not a placeholder.
-    --
-    -- THE BUG THIS PINS: the opaque branch used to answer NS.SafeToString(name),
-    -- so every row but the local player's read `<secret>` for the whole of a
-    -- pull. That is the right answer for a LOG LINE, where the alternative is a
-    -- raise inside string.format, and the wrong one for a widget.
-    -- red under: returning the sentinel from nameText's opaque branch.
-    inst.mocks.setRestricted(true)
-    local handle = inst.mocks.secret("Alpha")
-    row:Update(entry({ DamageDone = { total = inst.mocks.secret(1),
-                                      maxAmount = inst.mocks.secret(1) } },
-        { name = handle }), 1)
-
-    local drawn = row.nameCell.left:GetText()
-    assertTrue(drawn == handle, "the widget must get the handle itself, untouched")
-    assertFalse(drawn == "<secret>", "the sentinel is a log renderer, never a name")
-    assertEqual(inst.mocks.reveal(drawn), "Alpha", "and it is the right handle")
-end)
-
--- ── realm strip and truncation ──────────────────────────────────────────────
-
-test("A cross-realm PLAYER name loses its realm", function()
-    local _, _, row = bench()
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { guid = "Player-1-0000000A", name = "Stabby-Aerie Peak" }), 1)
-    assertEqual(row.nameCell.left:GetText(), "Stabby",
-        "the realm is most of the column and never what anyone is scanning for")
-end)
-
-test("An NPC keeps the hyphen in its name", function()
-    -- "Crenna Earth-Daughter" is a follower-dungeon companion, and the first
-    -- build of the realm strip rendered her as "Crenna Earth". A hyphen is only
-    -- a realm separator in a PLAYER's name; the row's GUID is what says which
-    -- this is, and guessing from the string would be a heuristic about naming
-    -- conventions we do not control.
-    -- red under: stripping on the hyphen unconditionally.
-    --
-    -- The cap is raised for this case so it asserts ONE thing. At the shipped
-    -- default of 20 this exact name is 21 characters and truncates, which is the
-    -- cap working correctly and would mask whether the strip fired.
-    local _, _, row = bench(function(c) c.text.maxNameLength = 0 end)
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { guid = "Creature-0-3766-2813-30763-209065-000078A00B",
-          name = "Crenna Earth-Daughter" }), 1)
-    assertEqual(row.nameCell.left:GetText(), "Crenna Earth-Daughter")
-end)
-
-test("A pet keeps its hyphen too", function()
-    local _, _, row = bench()
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { guid = "Pet-0-1234-5-6-7-8", name = "Gore-Tusk" }), 1)
-    assertEqual(row.nameCell.left:GetText(), "Gore-Tusk")
-end)
-
-test("The name never wraps, and gets a fixed width to be truncated against", function()
-    -- A WRAPPED NAME IS DRAWN OUTSIDE ITS OWN ROW: the second line lands on the
-    -- row below and the whole grid reads as shuffled. Two-point anchoring also
-    -- let the string grow to whatever the frame became mid-resize, so the width
-    -- the cap was measured against moved while the mouse did.
-    -- red under: anchoring LEFT and RIGHT instead of setting a width.
-    local _, window, row = bench()
-    local cell = row.nameCell
-
-    assertEqual(cell.left.__wordWrap, false, "a name must never reflow onto a second line")
-    assertTrue(cell.left:GetWidth() > 0, "the name text needs a width of its own")
-    assertTrue(cell.left:GetWidth() < window.layout.nameColumn.width,
-        "and it must leave room for the icons beside it")
-end)
-
-test("The icon inset is the SAME for a row with no icons to draw", function()
-    -- A follower NPC has no spec icon. The space is reserved from the CONFIGURED
-    -- slots rather than from what the row managed to draw, so its name still
-    -- starts where every other name starts — a column whose text begins at a
-    -- different x per row is not a column.
-    local _, _, row = bench(function(c)
-        c.icons = c.icons or {}
-        c.icons.showClass, c.icons.showSpec, c.icons.showRole = true, true, true
-    end)
-
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { name = "Withspec", classFilename = "MAGE", specIconID = 135846 }), 1)
-    local withIcons = row.nameCell.left:GetWidth()
-
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { name = "Nospec" }), 2)
-    assertEqual(row.nameCell.left:GetWidth(), withIcons,
-        "the inset is the column's, not the row's")
-end)
-
-test("A layout pass keeps the class color instead of flashing white", function()
-    -- THE RESIZE FLICKER. Cell:ApplyTextStyle repaints every slot in the
-    -- window's text color, and it runs on every layout pass — which during a
-    -- drag-resize is every frame. The class color was only restored by the next
-    -- Cell:SetPlayer, up to a throttle interval later, so names flashed white for
-    -- as long as the mouse was moving.
-    -- red under: ApplyTextStyle ending at SetShadowOffset.
-    local _, window, row = bench()
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { name = "Priesty", classFilename = "PRIEST" }), 1)
-
-    local before = { row.nameCell.left:GetTextColor() }
-
-    -- What a resize does, repeatedly, with no refresh in between.
-    row:ApplyLayout(window.layout)
-
-    local after = { row.nameCell.left:GetTextColor() }
-    for i = 1, 3 do
-        assertEqual(after[i], before[i],
-            "the name lost its class color on a layout pass (component " .. i .. ")")
-    end
-    assertFalse(after[1] == 1 and after[2] == 1 and after[3] == 1,
-        "the fixture must use a class whose color is not white")
-end)
-
-test("A name past the cap is truncated with NO ellipsis", function()
-    -- The column is narrow and the cap is small, so a glyph spent saying "there
-    -- was more" is a glyph not spent on the name. The cut is the whole signal.
-    -- red under: appending U+2026 to the truncated string.
-    local _, window, row = bench(function(c) c.text.maxNameLength = 8 end)
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { name = "Meredy Huntswell" }), 1)
-    assertEqual(row.nameCell.left:GetText(), "Meredy H")
-    assertEqual(window.config.text.maxNameLength, 8)
-end)
-
-test("Truncation counts CHARACTERS, never bytes", function()
-    -- "Helyâ" is 6 bytes and 5 characters. A byte slice at 5 lands inside the â
-    -- and emits half a code point, which renders as a replacement box — and the
-    -- names most likely to need truncating are exactly the accented ones.
-    -- red under: `out:sub(1, cap)`.
-    local _, _, row = bench(function(c) c.text.maxNameLength = 5 end)
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { name = "Hely\195\162nder" }), 1)
-    assertEqual(row.nameCell.left:GetText(), "Hely\195\162")
-end)
-
-test("A cap of 0 means no cap", function()
-    local _, _, row = bench(function(c) c.text.maxNameLength = 0 end)
-    local long = "Averyveryverylongnpcnamethatkeepsgoing"
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } }, { name = long }), 1)
-    assertEqual(row.nameCell.left:GetText(), long)
-end)
-
-test("Neither the realm strip nor the cap is applied to a SECRET name", function()
-    -- string.match and string.sub READ the characters of a value, and performing
-    -- either on a secret is exactly what rule R1 forbids. A name we may not read
-    -- goes to the widget untouched.
-    -- red under: stripping before the IsConcatSafe probe.
-    local inst, _, row = bench(function(c) c.text.maxNameLength = 4 end)
-    inst.mocks.setRestricted(true)
-    local ok = pcall(row.Update, row, entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { name = inst.mocks.secret("Stabby-Aerie Peak") }), 1)
-    assertTrue(ok, "inspecting a secret name raised")
-end)
-
-test("A drill-down row keeps a hyphen, which is part of a spell name", function()
-    -- The realm strip is anchored to the first hyphen. On a spell that is not a
-    -- separator, and stripping there would silently shorten it to its first word.
-    -- No cap, because this name is longer than the shipped one and the case is
-    -- about the hyphen rather than about the truncation three cases above.
-    local _, _, row = bench(function(c) c.text.maxNameLength = 0 end)
-    local spell = { guid = "s1", name = "Fire-and-Brimstone", isDrillDown = true,
-                    classFilename = "WARLOCK", role = "NONE",
-                    values = { DamageDone = { total = 1, maxAmount = 1 } } }
-    spell.cells = spell.values
-    row:Update(spell, 1)
-    assertEqual(row.nameCell.left:GetText(), "Fire-and-Brimstone")
-end)
-
-test("A nil name renders empty rather than the string 'nil'", function()
-    local _, _, row = bench()
-    -- Built by hand rather than through `entry()`, which defaults the name: the
-    -- case is about a row that genuinely has none.
-    local blank = { guid = "g", classFilename = "MAGE", role = "NONE",
-                    values = { DamageDone = { total = 1, maxAmount = 1 } } }
-    blank.cells = blank.values
-    row:Update(blank, 1)
-    assertEqual(row.nameCell.left:GetText(), "")
-end)
-
-test("The single icon slot prefers the SPEC where there is one", function()
-    -- Spec over class because "which unit is this row" is the question the icon
-    -- answers, and a spec separates the three druids in a raid where a class
-    -- icon cannot.
-    -- red under: drawing the class icon whenever classFilename is present.
-    local _, window, row = bench()
-    row:ApplyLayout(window.layout)
-
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { classFilename = "MAGE", specIconID = 135771, role = "TANK" }), 1)
-
-    local icons = row.nameCell.icons
-    assertEqual(icons.unit:IsShown(), true, "the one slot drew nothing")
-    assertEqual(icons.unit:GetTexture(), 135771, "specIconID is a file ID and NeverSecret")
-end)
-
-test("The slot falls back to the CLASS where no spec is known", function()
-    -- An NPC, a pet, a player the unit API has not resolved. A class icon is
-    -- still an answer where a spec is not available.
-    -- red under: hiding the icon when specIconID is nil.
-    local inst, window, row = bench()
-    row:ApplyLayout(window.layout)
-
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { classFilename = "MAGE", specIconID = nil, role = "TANK" }), 1)
-
-    local icons = row.nameCell.icons
-    assertEqual(icons.unit:IsShown(), true, "a row with a class but no spec drew nothing")
-    local c = inst.mocks.CLASS_ICON_TCOORDS.MAGE
-    assertEqual(select(1, icons.unit:GetTexCoord()), c[1], "the fallback is not the class icon")
-end)
-
-test("A ROLE icon is never drawn, whatever the row carries", function()
-    -- Three roles across a whole raid identifies nobody, and it was the icon
-    -- most likely to be on screen when the name column ran out of room.
-    -- red under: any surviving role branch.
-    local _, window, row = bench()
-    row:ApplyLayout(window.layout)
-
-    -- Built directly rather than through `entry`, which defaults a class in —
-    -- and a row WITH a class would legitimately draw the class icon, so the
-    -- fixture has to have neither for the assertion to mean anything.
-    row:Update({ guid = "Creature-0-1", name = "Some Add", role = "TANK",
-                 maxAmount = 1, values = { DamageDone = { total = 1, maxAmount = 1 } },
-                 cells = { DamageDone = { total = 1, maxAmount = 1 } } }, 1)
-
-    local icons = row.nameCell.icons
-    assertEqual(icons.role, nil, "a role slot still exists")
-    assertEqual(icons.unit:IsShown(), false,
-        "a row with only a role drew an icon, so the role ladder survived")
-end)
-
-test("A breakdown row draws the SPELL's icon, not a unit's", function()
-    -- The rung that is first because the row is not a unit at all: it has no
-    -- class, no spec and no role, and its `icon` is the spell's own file id.
-    -- This branch lived inside the old class drawer and would have been deleted
-    -- with it.
-    -- red under: dropping the isDrillDown branch from drawUnitIcon.
-    local _, window, row = bench()
-    row:ApplyLayout(window.layout)
-
-    row:Update({ guid = "spell:101", name = "Fireball", isDrillDown = true,
-                 icon = 135808, classFilename = "MAGE", specIconID = 135771,
-                 maxAmount = 1, values = { DamageDone = { total = 1 } } }, 1)
-
-    assertEqual(row.nameCell.icons.unit:GetTexture(), 135808,
-        "a breakdown row drew a unit icon instead of its spell's")
-end)
-
-test("Turning the icon off hides it rather than destroying it", function()
-    -- The pool's whole premise is that widget creation happens once.
-    -- red under: rebuilding the icon set on a config change.
-    local _, window, row, cfg = bench()
-    row:ApplyLayout(window.layout)
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { classFilename = "MAGE", specIconID = 135771 }), 1)
-    assertEqual(row.nameCell.icons.unit:IsShown(), true)
-
-    cfg.icons.showIcon = false
-    row:ApplyLayout(window.layout)
-    assertEqual(row.nameCell.icons.unit:IsShown(), false,
-        "an icon turned off is hidden, not destroyed")
-end)
-
-test("An icon turned off STAYS off across the next refresh", function()
-    -- THE BUG: the name text moved left with the setting and the picture came
-    -- straight back on the next row drawn. ApplyIcons hid the texture; SetPlayer
-    -- then drew into whatever texture it found and showed it again, because the
-    -- pool keeps the widget and the config was never re-consulted.
-    -- red under: SetPlayer drawing without asking whether the slot is wanted.
-    local _, window, row, cfg = bench()
-    cfg.icons.showIcon = false
-    row:ApplyLayout(window.layout)
-
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { classFilename = "MAGE", specIconID = 135771 }), 1)
-    assertEqual(row.nameCell.icons.unit:IsShown(), false,
-        "the icon came back on the first row drawn after it was turned off")
-
-    -- And turning it back on brings it back, on the next row and not a reload
-    -- later.
-    cfg.icons.showIcon = true
-    row:ApplyLayout(window.layout)
-    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { classFilename = "MAGE", specIconID = 135771 }), 1)
-    assertEqual(row.nameCell.icons.unit:IsShown(), true)
-end)
-
-test("The name starts clear of the icon, with a gap you can see", function()
-    -- The stride was the icon size plus ONE pixel, which reads as the two
-    -- touching at any icon size a player would actually pick.
-    -- red under: folding the gap back to 1.
-    local inst, window, row, cfg = bench(function(c) c.icons.showIcon = true end)
-    row:ApplyLayout(window.layout)
-
-    local gap = inst.NS.ICON_TEXT_GAP
-    assertTrue(gap >= 3, "a gap under three pixels is not a gap")
-
-    local left = row.nameCell.left
-    local _, _, _, xOfs = left:GetPoint(1)
-    assertEqual(xOfs, 2 + (cfg.icons.size or 14) + gap,
-        "the name does not start clear of the icon plus its gap")
 end)
 
 -- ---------------------------------------------------------------------------

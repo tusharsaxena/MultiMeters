@@ -217,8 +217,8 @@ misclick must not be able to put someone's numbers in front of a raid.
 `Constants.STATS` and `Constants.EXPORT_CHANNELS` — so the panel, the CLI's `values` constraint and
 the modal's own menu all offer exactly the keys that exist, and a stat or a channel removed from a
 catalog cannot linger as an option that resolves to nothing. Localization happens at the use site in
-`settings/Schema.lua` rather than in the catalog, because `core/Constants.lua` may load before
-`locales/enUS.lua`.
+`settings/Schema_Compose.lua`, which holds both vocabularies, rather than in the catalog, because
+`core/Constants.lua` may load before `locales/enUS.lua`.
 
 `whisperTo` carries no non-empty check, unlike the window-name row it otherwise copies: `""` is both
 its shipped default and a legal value, because it is what every channel but Whisper means. Its
@@ -287,8 +287,8 @@ each fan-out is a list of **paths** rather than a group list and a suffix assume
 
 `window.colorMode` sets six others rather than being read by anything: `bars.colorMode`,
 `bars.bgColorMode`, `columnHeader.colorMode`, `columnHeader.bgColorMode`, `tooltip.barColorMode`
-and `tooltip.barBgColorMode` — `COLOR_MODE_PATHS` in `settings/Schema.lua`. Sixteen surface modes
-exist in the window altogether; the broadcast reaches these six because they are the **fills**, and
+and `tooltip.barBgColorMode` — `COLOR_MODE_PATHS` in `settings/Schema_Compose.lua`. Sixteen surface
+modes exist in the window altogether; the broadcast reaches these six because they are the **fills**, and
 one control for all of them is right when a player wants them to agree, which is the usual case.
 
 **The two text surfaces are deliberately left out** — `text.colorMode`, the numbers in the grid, and
@@ -386,8 +386,8 @@ geometry, the backdrop and the LSM border, layered over the skin in that order.
 **`frame.position` is not a schema row and cannot be one.** It is four values behind one concept,
 which the flat path model has no vocabulary for, and it is written by a drag rather than typed. It
 is also the one piece of window state that must never be *read back* off the live frame (rule R3).
-`modules/Window.lua` keeps an empty, invisible `anchor` frame that never receives a value and reads
-`GetPoint` off **that**; the visible window is anchored to it. Because positions have no row,
+`modules/Window.lua` keeps an empty, invisible `anchor` frame that never receives a value, and
+`modules/Window_Placement.lua`'s `SavePosition` reads `GetPoint` off **that**; the visible window is anchored to it. Because positions have no row,
 `NS.ApplyDefault` never reaches them. A global reset reaches them anyway, because "Reset all
 settings" is a **profile reset** and a position lives in the profile. (`NS.ResetPositions` used to
 exist for exactly this and was removed with its last caller; `/mm reset-positions` is the targeted
@@ -619,8 +619,8 @@ chrome, and the pointer turns exactly one of them the gold the rest of the heade
 pickers rather than a "match the header text" switch — one of the two states being unconfigurable was
 the complaint that produced them. (The tint had never run at all before: `HeaderControls.Style` read
 `NS.HeaderStyle`, which nothing published, so it fell through to a white fallback every time.
-`modules/Window.lua` publishes it now, and the controls take the header's **font** from it while
-carrying their own colours.)
+`modules/Window_Header.lua` publishes it now, and the controls take the header's **font** from it
+while carrying their own colours.)
 
 `controlSize = 16` is the *slot* each control occupies — its click target and the strip's layout
 pitch. The art is drawn centred inside that slot at 72% of it, so a 64px icon lands at 11px in a 16px
@@ -764,7 +764,7 @@ scanning the list.
 Both halves go quiet on their own terms and neither absence is a failure — an environmental death
 sets `hideCaster`, a melee swing has no spell name (and is named "Melee", as Blizzard's own recap
 does), and a restricted pull can hand either back **secret**. Everything leaves
-`modules/Tooltip.lua`'s `killingBlowOf` through `plainWord`, so what cannot be read plainly is simply
+`modules/Tooltip_Lines.lua`'s `killingBlowOf` through `plainWord`, so what cannot be read plainly is simply
 not drawn: the label is built with `..` and every piece of it is a plain string by construction.
 
 `anchor` takes eight values — the four edges and the four corners — and each names **a box of a 3×3
@@ -899,7 +899,7 @@ read fills both halves of the column.
 
 **None of these four is a schema row, and that is the point.** Every one of them is written by a
 control on the window itself — the header's segment dropdown writes `sessionType`, and one click on
-a column header writes all three sort fields (`modules/Window.lua`'s `SortByColumn`) — so a settings
+a column header writes all three sort fields (`modules/Window_Header.lua`'s `SortByColumn`) — so a settings
 page for them restated a control the player already has three inches from where they are looking.
 They were **deleted** rather than hidden, so there is no `/mm set` for them either: the click path
 writes the fields directly rather than through `NS.SetByPath`, and a CLI that could also write them
@@ -926,7 +926,8 @@ are live in both states while `sortMode` is not.
 **`sessionID` has no schema row and no default**, and both absences are deliberate. It is set by the
 header's segment dropdown rather than by the settings panel, and its "unset" state is `nil` —
 "no segment pinned, follow `sessionType`" — which a defaults tree cannot express. It is persisted:
-`modules/Window.lua` writes it into `window.data` and AceDB stores it from there.
+`modules/Window_Header.lua`'s `SetSegment` writes it into `window.data` and AceDB stores it from
+there.
 
 When it *is* set it **overrides `sessionType`**, and every read path honors it — the aggregator's
 column reads, the header's duration, the tooltip's spell breakdown and the drill-down's. A pinned id
@@ -937,8 +938,11 @@ the next refresh, because a stale id does not error, it silently reads an empty 
 
 ## The window-relative path model
 
-This is the part of the schema a reader will not guess, and it is the only thing about
-`settings/Schema.lua` that is not standard-issue.
+This is the part of the schema a reader will not guess, and it is the only thing about the schema
+that is not standard-issue. The machinery below lives in `settings/Schema_Paths.lua` — path
+resolution, the index, the read seam, the write seam and the columns carve-out were peeled out of
+`settings/Schema.lua` under the 1500-line cap, along the seam that nothing in them names a single
+setting. The array of rows kept the name `settings/Schema.lua`.
 
 ### The problem
 
@@ -949,9 +953,9 @@ out absolutely, a window row's path would have to be:
 windows.<id>.frame.width
 ```
 
-Dynamic, unknowable when `settings/Schema.lua` loads, and impossible to express in the **flat path
-model** that the CLI (`LibKa0s-Slash-1.0`) and the panel (`LibKa0s-Options-1.0`) both read. A flat
-path addresses a fixed named leaf; `<id>` is neither fixed nor named.
+Dynamic, unknowable when `settings/Schema_Paths.lua` loads, and impossible to express in the **flat
+path model** that the CLI (`LibKa0s-Slash-1.0`) and the panel (`LibKa0s-Options-1.0`) both read. A
+flat path addresses a fixed named leaf; `<id>` is neither fixed nor named.
 
 ### The resolution
 
@@ -966,7 +970,7 @@ A window row's path is **relative to a window** and is spelled with a `window.` 
 paths (`enabled`, `minimap.hide`) and resolve against `db.profile`.
 
 ```lua
--- settings/Schema.lua
+-- settings/Schema_Paths.lua
 local function resolveRoot(parts)
     if parts[1] == "window" then
         local w, id = activeWindow()      -- picker's selection, else windows[1]
@@ -1078,7 +1082,8 @@ composers emit each from one declaration (`anti-patterns #73`). What that change
 is nothing at all — a composer returns an array of **ordinary rows**, so `rowsForPage`,
 `ApplyDefault`, `RestoreDefaults`, the CLI and the reset sweep all keep working untouched.
 
-What the calls in `settings/Schema.lua` add around them is three things:
+The calls live in `settings/Schema_Compose.lua`, which is what the array in `settings/Schema.lua`
+is declared out of. What they add around the composers is three things:
 
 - **`keys` and `defaults`** on every call, so the composed rows land on this addon's existing paths
   at this addon's shipped values. **The composer must not change what is stored.**
@@ -1113,15 +1118,18 @@ real answer and `row.get() or nil` would turn every "off" into "no such setting"
 ### `onChange` — the exception, not the rule
 
 The default refresh for every row is the `CONFIG_CHANGED` message `NS.SetByPath` sends, and
-`settings/Schema.lua` is its **one sender**. Windows subscribe and re-read their upvalues; the panel
-re-reads its scalars. `onChange` exists only where the message genuinely cannot express the effect:
+`settings/Schema_Paths.lua` is its **one sender**. Windows subscribe and re-read their upvalues; the
+panel re-reads its scalars. `onChange` exists only where the message genuinely cannot express the effect:
 
 - every `window.visibility.*` row and `enabled` → `refreshVisibility()`, because the effect is a
   window appearing or disappearing (the show ladder's decision), not a window redrawing;
 - `minimap.hide` → `refreshMinimap()`, because LibDBIcon holds a Blizzard-side object outside our
   config tree and has to be told to look again.
 
-Both resolve their target through `NS` at call time, because both load after `settings/Schema.lua`.
+Both live in `settings/Schema_Compose.lua` alongside the vocabularies and the composers, and both
+resolve their target at **call** time rather than at file scope — `refreshVisibility` reads
+`NS.Visibility`, `refreshMinimap` reads LibDBIcon's own registry — so neither depends on what had
+finished loading when the schema file ran.
 
 ---
 
@@ -1186,8 +1194,8 @@ is not gapless, and one with **nothing enabled** — a window of nothing but nam
 addon, and there is no way to guess which column was meant to survive.
 
 It is published as `NS.NormalizeColumns` so `core/Database.lua`'s `migrations[11]` shares the one
-definition. That is a **deferred** read: `settings/Schema.lua` loads eighteen TOC entries later, but
-the ladder runs on Init, which is the same pattern `migrations[1]` already uses for
+definition. That is a **deferred** read: `settings/Schema_Paths.lua` loads thirty-one TOC entries
+later, but the ladder runs on Init, which is the same pattern `migrations[1]` already uses for
 `NS.WINDOW_TEMPLATE`.
 
 Rebuilding rather than accepting the caller's table does two jobs at once: the stored array can never

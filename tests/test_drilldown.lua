@@ -714,3 +714,116 @@ test("A death row wears the death icon", function()
     inst.NS.DrillDown:OnCellClick(cfg, deadRow{ 29 }, "Deaths")
     assertEqual(inst.NS.DrillDown:BuildRows(cfg)[1].icon, 237275)
 end)
+
+-- ---------------------------------------------------------------------------
+-- Click routing: the branch arms, one at a time
+-- ---------------------------------------------------------------------------
+--
+-- OnCellClick is one guard, one toggle and a three-rung ladder, and the cases
+-- above walk the happy path of each. What follows pins the arms a rewrite can
+-- take out without a single existing case going red: the toggle's SECOND key,
+-- the two refusals that come out of Enter rather than out of the guard, the
+-- rung the ladder falls all the way through to, and the ordering between the
+-- toggle and the ladder.
+
+test("The exit toggle keys on the GUID too, not the stat alone", function()
+    -- Two players, one column. Clicking Beta's Damage cell while drilled into
+    -- Alpha's must move the view, not close it.
+    -- red under: a toggle that compares statKey and forgets guid, which would
+    -- make every other player's cell in the drilled column a dead close button.
+    local inst, cfg = bench()
+    inst.NS.DrillDown:OnCellClick(cfg, playerRow(), "DamageDone")
+
+    local beta = playerRow{ guid = "Player-1-0000000B", name = "Beta" }
+    assertEqual(inst.NS.DrillDown:OnCellClick(cfg, beta, "DamageDone"), "enter")
+    assertEqual(inst.NS.DrillDown.IsActive(cfg), true)
+    assertEqual(inst.NS.DrillDown.GetState(cfg).guid, "Player-1-0000000B")
+end)
+
+test("A row that is not a table is refused whatever it is", function()
+    -- The guard is a type test, not a nil test. modules/Row.lua wires every
+    -- cell's OnClick here, and a caller that hands over the cell's own text
+    -- must be turned away rather than indexed.
+    local inst, cfg = bench()
+    assertEqual(inst.NS.DrillDown:OnCellClick(cfg, "Alpha", "DamageDone"), "none")
+    assertEqual(inst.NS.DrillDown:OnCellClick(cfg, 7, "DamageDone"), "none")
+    assertEqual(inst.NS.DrillDown.IsActive(cfg), false)
+end)
+
+test("A row with no guid is refused, and the window stays on the grid", function()
+    -- This refusal comes out of Enter, not out of OnCellClick's own guard: the
+    -- row IS a table, it simply has no identity to pin a view to. The "none"
+    -- has to survive a refactor that moves the guard around.
+    local inst, cfg = bench()
+    local row = playerRow()
+    row.guid = nil
+
+    assertEqual(inst.NS.DrillDown:OnCellClick(cfg, row, "DamageDone"), "none")
+    assertEqual(inst.NS.DrillDown.IsActive(cfg), false)
+end)
+
+test("A stat key outside the catalog is refused", function()
+    -- A stored column built against a build that offered more stats than this
+    -- one resolves to nothing in STAT_BY_KEY. It must not open a view keyed on
+    -- a statistic nothing downstream can render.
+    local inst, cfg = bench()
+    assertEqual(inst.NS.DrillDown:OnCellClick(cfg, playerRow(), "EnemyDamageTaken"), "none")
+    assertEqual(inst.NS.DrillDown:OnCellClick(cfg, playerRow(), "NotAStat"), "none")
+    assertEqual(inst.NS.DrillDown.IsActive(cfg), false)
+end)
+
+test("The Deaths ladder falls all the way to the ordinary breakdown", function()
+    -- The bottom rung, reached with the recap API present and willing: an empty
+    -- deaths array yields no ids, and with no deathRecapID either there is
+    -- nothing for Blizzard's frame to open. The cell is still never dead.
+    -- red under: a ladder that returns "none" once the first two rungs miss.
+    local inst, cfg = bench()
+    withRecaps(inst)
+    local row = playerRow()
+    row.deaths = {}
+
+    assertEqual(inst.NS.DrillDown:OnCellClick(cfg, row, "Deaths"), "enter")
+    assertEqual(inst.NS.DrillDown.GetState(cfg).kind, "spells")
+    assertNil(inst.mocks.__lastRecapID, "there was no id to hand off")
+end)
+
+test("A client with no C_DeathRecap and no id still reaches the breakdown", function()
+    -- Both upper rungs miss for different reasons — the client cannot read a
+    -- recap, and the row carries no id to open — and the click still lands
+    -- somewhere rather than doing nothing at all.
+    local inst, cfg = bench()
+    inst.mocks.setDeathRecap(nil)
+    local row = playerRow()
+    row.deaths = { 29, 28 }
+
+    assertEqual(inst.NS.DrillDown:OnCellClick(cfg, row, "Deaths"), "enter")
+    assertEqual(inst.NS.DrillDown.GetState(cfg).kind, "spells")
+end)
+
+test("The exit toggle is answered BEFORE the Deaths ladder is climbed", function()
+    -- Order, not outcome: a second click on the drilled Deaths cell must close
+    -- the view and NOT also hand the row's id to Blizzard's frame on the way
+    -- out. A refactor that hoists the ladder above the toggle leaves the player
+    -- staring at a recap window they asked to close.
+    local inst, cfg = bench()
+    withRecaps(inst)
+    local row = deadRow{ 29, 28 }
+    inst.NS.DrillDown:OnCellClick(cfg, row, "Deaths")
+
+    assertEqual(inst.NS.DrillDown:OnCellClick(cfg, row, "Deaths"), "exit")
+    assertNil(inst.mocks.__lastRecapID, "closing the view opened a recap frame")
+end)
+
+test("Switching out of a deaths view replaces the state, it does not merge into it", function()
+    -- The view table is rebuilt whole at every Enter. A refactor that updates
+    -- fields in place would leave the deaths snapshot hanging off a spell view,
+    -- and BuildRows picks its branch off `kind` alone.
+    local inst, cfg = bench()
+    withRecaps(inst)
+    inst.NS.DrillDown:OnCellClick(cfg, deadRow{ 29, 28 }, "Deaths")
+    assertEqual(inst.NS.DrillDown:OnCellClick(cfg, playerRow(), "DamageDone"), "enter")
+
+    local view = inst.NS.DrillDown.GetState(cfg)
+    assertEqual(view.kind, "spells")
+    assertNil(view.deaths, "a stale death snapshot survived the switch")
+end)

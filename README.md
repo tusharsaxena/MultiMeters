@@ -4,7 +4,7 @@
 ![Version](https://img.shields.io/badge/Version-0.1.0-blue)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-1534%2F1534_passing-green)
+![Tests](https://img.shields.io/badge/Tests-1728%2F1728_passing-green)
 
 Every other meter shows you one number at a time. Multi Meters shows the whole group in one grid —
 who kicked, who dispelled, who stood in the fire, and who died — all in a single window, one row per
@@ -94,7 +94,7 @@ are currently looking at, not all of them.
 `/mm config`, or the Options → AddOns list. Nine pages, and within a page the settings are grouped
 into **tabs** — click one to switch, and it never asks you to leave combat to do it; only opening or
 switching between pages in the list on the left does that (see [I cannot open the settings while
-fighting](#troubleshooting) above). Windows, and the six pages indented under it, each open with a
+fighting](#troubleshooting) below). Windows, and the six pages indented under it, each open with a
 **banner** naming which window they are editing, and that one dropdown is the only window picker in
 the whole panel.
 
