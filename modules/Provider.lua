@@ -498,7 +498,8 @@ local function tallyLookup(result, src, sessionType, sessionID, enumValue)
     local word = lookupVerdict(ok, source)
 
     local tally
-    if Secrets.IsSecret(guid) then
+    local isSecret = Secrets.IsSecret(guid)
+    if isSecret then
         result.secret = result.secret + 1
         tally = result.secretTally
     else
@@ -511,7 +512,20 @@ local function tallyLookup(result, src, sessionType, sessionID, enumValue)
     -- Truth-tested rather than trusted: `isLocalPlayer` is annotated NeverSecret,
     -- and a probe is the wrong place to assume an annotation -- that assumption
     -- is what issue #24 turned out to be.
-    if src.isLocalPlayer == true then result.localWord = word end
+    --
+    -- `localSecret` TRAVELS WITH THE WORD, and the first capture is why. This
+    -- probe was written believing the local player's row keeps a plain
+    -- `sourceGUID` through a pull, so it called that row the CONTROL. It does
+    -- not. What stays plain mid-pull is `UnitGUID("player")` -- the ROSTER's
+    -- GUID, which modules/Aggregator_Identity.lua keys their row on -- and the
+    -- METER's `sourceGUID` is SecretWhenInCombat on every row without exception,
+    -- theirs included. A live capture printed `secret 6 / plain 0` and a control
+    -- line in the same breath, which is a contradiction the report had no way to
+    -- notice. Carrying the flag lets it notice.
+    if src.isLocalPlayer == true then
+        result.localWord = word
+        result.localSecret = isSecret
+    end
 end
 
 --- DIAGNOSTIC ONLY: ask the client to resolve each source from ITS OWN GUID.

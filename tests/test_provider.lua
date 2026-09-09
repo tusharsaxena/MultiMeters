@@ -656,6 +656,31 @@ test("Provider.ProbeSourceLookup names the local player's row as the control", f
     assertTrue(r.sampled > 1, "the control alone is not a measurement")
 end)
 
+test("Provider.ProbeSourceLookup says whether the LOCAL row's GUID was secret too", function()
+    -- THE CORRECTION A LIVE CAPTURE FORCED. This probe was written believing the
+    -- local player's row keeps a plain `sourceGUID` through a pull, and the
+    -- report called that row the control on the strength of it. A capture printed
+    -- `secret 6 / plain 0` and a control line together, which cannot both be
+    -- true: what stays plain mid-pull is `UnitGUID("player")`, and the METER's
+    -- `sourceGUID` is secret on every row, the local player's included.
+    -- red under: reporting a control that was not one.
+    local inst = mixedGuidSession(T.load())
+    assertFalse(inst.NS.Provider.ProbeSourceLookup(CURRENT, "DamageDone").localSecret,
+        "a plain local GUID IS the control")
+
+    local restricted = T.load()
+    restricted.mocks.setSession(CURRENT, "*", {
+        combatSources = {
+            { sourceGUID = restricted.mocks.secret("Player-1-0000000A"),
+              classFilename = "WARRIOR", isLocalPlayer = true, totalAmount = 100 },
+        },
+        maxAmount = 100, totalAmount = 100,
+    })
+    local r = restricted.NS.Provider.ProbeSourceLookup(CURRENT, "DamageDone")
+    assertEqual(r.localWord, "nil", "the local row was still probed")
+    assertTrue(r.localSecret, "and its GUID was secret, so it is NOT a control")
+end)
+
 test("Provider.ProbeSourceLookup answers an empty tally rather than raising", function()
     -- It is reached from a slash command typed mid-pull, so every way of having
     -- nothing to say has to be a shape the report can print.

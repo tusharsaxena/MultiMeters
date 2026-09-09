@@ -585,7 +585,7 @@ badge and any count quoted in the docs must agree with it.
 - Format.DeathTime routes both countdown strings through the locale
 - Format.DeathTime refuses a secret timestamp in either style
 
-### test_provider.lua (77)
+### test_provider.lua (78)
 
 - Provider: core/Compat.lua is the only file that names C_DamageMeter
 - Provider: modules/Provider.lua is the only caller of the meter shims
@@ -622,6 +622,7 @@ badge and any count quoted in the docs must agree with it.
 - Provider.ProbeSourceByGuid names what the API did with a GUID it was handed
 - Provider.ProbeSourceLookup splits the verdict by whether the GUID was secret
 - Provider.ProbeSourceLookup names the local player's row as the control
+- Provider.ProbeSourceLookup says whether the LOCAL row's GUID was secret too
 - Provider.ProbeSourceLookup answers an empty tally rather than raising
 - Provider.ProbeSourceLookup withholds a SECRET creature id from the client
 - Provider.ProbeSourceLookup skips a source that carries no GUID
@@ -1956,7 +1957,7 @@ badge and any count quoted in the docs must agree with it.
 | test_lifecycle.lua | 29 |
 | test_vendor_sync.lua | 2 |
 | test_format.lua | 39 |
-| test_provider.lua | 77 |
+| test_provider.lua | 78 |
 | test_roster.lua | 39 |
 | test_feign.lua | 27 |
 | test_aggregator.lua | 61 |
@@ -1990,4 +1991,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1736** |
+| **Total** | **1737** |

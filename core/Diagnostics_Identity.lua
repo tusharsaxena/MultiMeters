@@ -191,9 +191,21 @@ local function reportLookup(stats)
     out("  secret GUID -> " .. tallyText(r.secretTally))
     out("  plain  GUID -> " .. tallyText(r.plainTally))
     if r.localWord ~= nil then
-        out(string.format("  the local player's row answered '%s'. Their GUID stays "
-            .. "plain even", r.localWord))
-        out("  mid-pull, so that is the CONTROL saying the call works -- never the answer.")
+        -- A CONTROL ONLY WHEN IT ACTUALLY WAS ONE. The first capture printed
+        -- `secret 6 / plain 0` and called the local player's row a plain control
+        -- in the same breath: the METER's `sourceGUID` is secret on every row
+        -- mid-pull, theirs included. What stays plain is `UnitGUID("player")`,
+        -- which is a different value this probe never touches.
+        if r.localSecret then
+            out(string.format("  the local player's row answered '%s', and its GUID was "
+                .. "SECRET too --", r.localWord))
+            out("  the meter hides it on every row mid-pull. There is no plain control")
+            out("  inside a pull; the plain row above, if any, is a pet or an NPC.")
+        else
+            out(string.format("  the local player's row answered '%s' on a PLAIN GUID:",
+                r.localWord))
+            out("  the CONTROL saying the call works -- never the answer.")
+        end
     end
     reportLookupVerdict(r)
 end
