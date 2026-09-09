@@ -82,8 +82,8 @@ the same on a name gives you everything tracked for the player. Click either to 
 Deaths cell for the recap, which is usually the more interesting trip. Want a second window? `/mm
 window new`, then copy the settings over from the first rather than building them twice.
 
-The rest is configuration. It is on the addon's page under Settings → AddOns in game, and `/mm` (or
-`/multimeters`) prints the full command list.
+Everything else is configuration, and it lives in two places: the addon's own page under Settings →
+AddOns in game, and `/mm` (or `/multimeters`), which prints the full command list.
 
 ## How it works
 
