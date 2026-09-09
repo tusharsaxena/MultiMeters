@@ -6,7 +6,7 @@
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
 ![Tests](https://img.shields.io/badge/Tests-1745%2F1745_passing-green)
 
-Most Damage meter addons show you one statistic at a time. This addon all the stats in a grid — who kicked, who dispelled, who stood in the fire, who died. One row per player, one column per statistic.
+Most Damage meter addons show you one statistic at a time. This addon shows all of them in one grid — who kicked, who dispelled, who stood in the fire, who died. One row per player, one column per statistic.
 
 The numbers are Blizzard's. Multi Meters asks the built-in meter for them and arranges them; it never touches the combat log, so it adds no additional computation to what the game is already doing.
 
@@ -23,7 +23,7 @@ None yet. Nobody has photographed it in a live run. Next version.
 
 ## Usage
 
-On the first run after installing, a window turns up. It unlocked, so drag it by the title bar and pull the bottom-right
+On the first run after installing, a window turns up. It arrives unlocked, so drag it by the title bar and pull the bottom-right
 corner to size it. Placing a meter between pulls is a pain because there is nothing in it to look
 at, so `/mm test` fills every window with obvious placeholder rows and prints TEST in the header
 while you work. Same command turns it off, `/mm lock` freezes everything once you are happy, and
@@ -50,7 +50,7 @@ AddOns in game, and `/mm` (or `/multimeters`), which prints the full command lis
 
 ## How it works
 
-Blizzard's meter already tracks all of the stats and exposes it via an in-game API. Multi Meters asks it for the figures and lays them out as a grid, so what you read here is what the built-in meter would have told you. Nothing chews through the combat log a second time.
+Blizzard's meter already tracks all of these and exposes them through an in-game API. Multi Meters asks it for the figures and lays them out as a grid, so what you read here is what the built-in meter would have told you. Nothing chews through the combat log a second time.
 
 The one odd behaviour falls out of that. Midnight hands addons combat numbers as secret values — an addon can draw bars for a number without being able to read it — and the tag identifying which row a number belongs to is sealed with it. So the grid is built two ways. Out of combat, by identity. In combat, rows come from the game's own live ranking of the sort column, and everything else is matched onto them by class and spec. Two players sharing both cannot be separated, so their cells stay empty. The header says as much in gray.
 
