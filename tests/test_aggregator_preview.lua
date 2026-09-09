@@ -144,3 +144,56 @@ test("Test mode produces a player with several deaths to drill into", function()
     end
     assertTrue(most > 1, "no preview player has more than one death")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The preview BREAKDOWN, and the figure it was missing
+-- ---------------------------------------------------------------------------
+--
+-- Test mode drew a drill-down with bars and no numbers on them, while the same
+-- view against the live meter drew both. The bar comes off `total`; the TEXT, on
+-- a rate stat, comes off the RATE -- `leftSlot` ships as `smart`, and
+-- modules/Row.lua's `smart` answers the per-second figure on a stat that has one
+-- and the total on every other, with no fallback in either direction. So a
+-- preview spell carrying only `totalAmount` renders a bar and an empty cell.
+--
+-- This is the same defect modules/Aggregator_Identity.lua's header already
+-- records for the correlated columns ("a cell carrying only the total draws its
+-- bar and renders no text at all"), arriving a second time through the preview
+-- fixture. `Aggregator.TestColumn` had always set `amountPerSecond` on a preview
+-- SOURCE; `Aggregator.TestSourceDetail` never set it on a preview SPELL.
+
+test("Preview: a breakdown spell carries a RATE, not just a total", function()
+    -- red under: the fixture that shipped -- bars, no numbers, in test mode only.
+    local inst = T.load()
+    local detail = inst.NS.Aggregator.TestSourceDetail("Player-9999-TEST0001", "DamageDone")
+
+    assertTrue(detail ~= nil, "the preview breakdown must exist")
+    assertTrue(#detail.combatSpells > 0, "and carry spells")
+    for i = 1, #detail.combatSpells do
+        local spell = detail.combatSpells[i]
+        assertTrue(spell.totalAmount ~= nil, "spell " .. i .. " has no total")
+        assertTrue(spell.amountPerSecond ~= nil,
+            "spell " .. i .. " has no amountPerSecond, so its cell renders no text")
+    end
+end)
+
+test("Preview: the breakdown's rate uses the same clock as the preview grid", function()
+    -- `TestColumn` divides a source's total by a notional 300-second fight. A
+    -- spell breakdown that used a different divisor would sum to a rate that
+    -- disagreed with the row it drilled into -- invented data, but not
+    -- self-contradicting data.
+    local inst = T.load()
+    local detail = inst.NS.Aggregator.TestSourceDetail("Player-9999-TEST0001", "DamageDone")
+    local first = detail.combatSpells[1]
+    assertEqual(first.amountPerSecond, math.floor(first.totalAmount / 300))
+end)
+
+test("Preview: a COUNTING stat's breakdown carries a rate too, and Row hides it", function()
+    -- The fixture does not get to decide which stats have rates. `isRate` is a
+    -- property of the STAT (core/Constants.lua) and modules/Row.lua refuses a
+    -- per-second figure on a counting stat whatever the cell holds -- so the
+    -- fixture stays uniform and the render path stays the one thing that decides.
+    local inst = T.load()
+    local detail = inst.NS.Aggregator.TestSourceDetail("Player-9999-TEST0001", "Interrupts")
+    assertTrue(detail.combatSpells[1].amountPerSecond ~= nil)
+end)

@@ -283,6 +283,26 @@ function Aggregator.TestSourceDetail(a, b, c)
             name        = spell.name,
             spellIcon   = spell.icon,
             totalAmount = amount,
+            -- THE RATE IS NOT OPTIONAL, and its absence is what a live capture
+            -- caught: the preview breakdown drew bars with no numbers on them
+            -- while the same view against the meter drew both. The bar comes off
+            -- the total; the TEXT, on a rate stat, comes off the rate --
+            -- `leftSlot` ships as `smart`, and modules/Row.lua's `smart` answers
+            -- the per-second figure on a stat that has one, with no fallback to
+            -- the total. A spell carrying only `totalAmount` renders an empty
+            -- cell. This is the identical defect
+            -- modules/Aggregator_Identity.lua's header records for the
+            -- correlated columns, reaching the screen a second time through the
+            -- fixture instead of through the join.
+            --
+            -- SET ON EVERY STAT, counting ones included, and divided by the same
+            -- notional 300-second fight `TestColumn` uses for a preview SOURCE
+            -- so a breakdown cannot disagree with the row it opened from.
+            -- Whether a per-second figure is ever DRAWN is `isRate`'s business
+            -- (core/Constants.lua) and modules/Row.lua refuses one on a counting
+            -- stat whatever the cell holds -- which is exactly why the fixture
+            -- does not try to decide it here.
+            amountPerSecond = math.floor(amount / 300),
             isAvoidable = (statKey == "AvoidableDamageTaken") and (i % 2 == 1) or nil,
             isDeadly    = (statKey == "AvoidableDamageTaken") and (i == 1) or nil,
         }

@@ -50,7 +50,7 @@ badge and any count quoted in the docs must agree with it.
 - docs/ARCHITECTURE.md carries the ten sections documentation-§3 names
 - every mandated hub section that has a topic doc has spilled into it
 - every anchor pointing into docs/ARCHITECTURE.md resolves to a heading
-- the player-facing history has the two homes documentation-§1 allows, and no third
+- the player-facing history has the ONE home documentation-§1 allows, and no second
 - README.md's top-level sections are the ones documentation-§1 names, in its order
 
 ### test_lintconfig.lua (4)
@@ -831,13 +831,16 @@ badge and any count quoted in the docs must agree with it.
 - Identity: an unambiguous pass publishes a count of ZERO, never nil
 - A GUID pass publishes a count of zero too, because nothing was correlated
 
-### test_aggregator_preview.lua (5)
+### test_aggregator_preview.lua (8)
 
 - Test mode substitutes the DATA, and the render path stays one path
 - A test row's tooltip finds a breakdown, because it goes to the provider
 - Test mode reaches no meter API at all
 - Test data is deterministic — a jittering grid cannot be laid out against
 - Test mode produces a player with several deaths to drill into
+- Preview: a breakdown spell carries a RATE, not just a total
+- Preview: the breakdown's rate uses the same clock as the preview grid
+- Preview: a COUNTING stat's breakdown carries a rate too, and Row hides it
 
 ### test_aggregator_sort.lua (20)
 
@@ -1970,7 +1973,7 @@ badge and any count quoted in the docs must agree with it.
 | test_feign.lua | 27 |
 | test_aggregator.lua | 61 |
 | test_aggregator_identity.lua | 26 |
-| test_aggregator_preview.lua | 5 |
+| test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 59 |
 | test_window_header.lua | 72 |
@@ -1999,4 +2002,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1745** |
+| **Total** | **1748** |

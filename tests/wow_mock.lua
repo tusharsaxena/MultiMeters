@@ -474,6 +474,15 @@ local function build()
                 spellID        = 100 + i,
                 name           = "Mock Spell " .. i,
                 totalAmount    = amount,
+                -- THE CLIENT SENDS A RATE ON A SPELL, and this builder did not.
+                -- On a rate stat the figure modules/Row.lua actually PRINTS is
+                -- the rate (`leftSlot` ships as `smart`, which has no fallback to
+                -- the total), so a spell fixture carrying only `totalAmount`
+                -- models a client that draws bars with no numbers on them. The
+                -- preview builder had the same hole and it reached a player's
+                -- screen; this one had never been asserted against rendered text,
+                -- which is the only reason it did not.
+                amountPerSecond = math.floor(amount / 300),
                 isAvoidable    = opts.avoidable and (i % 2 == 0) or false,
                 isDeadly       = opts.deadly and (i == 1) or false,
                 overkillAmount = opts.overkill and math.floor(amount / 10) or nil,
