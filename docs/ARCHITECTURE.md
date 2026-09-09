@@ -411,6 +411,7 @@ issue needs a picture, and expect it to empty itself again.
 | `settings-panel.md` | The nine pages, per-option behavior, and the write seam |
 | `data-flow.md` | `C_DamageMeter` → pixel, and the secret-value rules that shape every hop |
 | `common-tasks.md` | Recipes for the changes made most often here |
+| `complexity.md` | The `lizard` report `performance-§10` fixes to this path — one file, overwritten in place, so the git history of it is the trend line. Carries the watch list and the 1000–1500 LOC band |
 | `compat-layer.md` | Every client API this addon shims: the `C_DamageMeter` and `C_DeathRecap` surfaces, the recap-discovery probe, the secret-safe number formatters, the icon-existence checks and the three player-context rules |
 | `midnight-quirks.md` | The 12.0 client behaviors this addon works around, and the secret-value detail behind `## Taint notes` |
 | `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact |
@@ -434,7 +435,7 @@ exist is registered above.
 | `compat-layer.md` | Present | **`core/Compat.lua` is 761 lines and 28 shims** (8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap`), each a guarded namespace check around one passthrough, with no feature decisions, no state, and nothing there inspecting a meter value. The row read *re-measure — the trigger now fires* from the day this addon's Compat passed KickCD's, which ships the doc: 389 lines and 18 shims when the row was last written, 761 and 28 now. `documentation-§3` has since given the trigger a number — **three or more** addon-specific shims, counted over this file alone — which settles it at any reading. Written; registered under [Topic detail](#topic-detail). |
 | `midnight-quirks.md` | **Present** | **At least one client-version workaround of the addon's own** — the trigger as §3 states it, and this addon carries four: the probed `PLAYER_IS_GLIDING_CHANGED`, `ADDON_RESTRICTION_STATE_CHANGED` registered against a namespace a client may not have, the settle pass over client state that lags its own event, and the secret-value model itself. It was read as Not applicable on the argument that a third copy of the secret-value rules would be the one that drifts — which was an argument against DUPLICATING them, not against the doc. The detail was MOVED here rather than copied: [Taint notes](#taint-notes) keeps the constraint, the operation lists and R1–R3, and nothing is stated twice. |
 | `profiles.md` | Not applicable | `settings/Profiles.lua` is 126 lines hosting **AceDBOptions-3.0's own tree** unchanged. The addon adds no profile semantics beyond the `PROFILE_CHANGED` fan-out already tabulated above and the reset-all veto already stated under [Settings schema](#settings-schema); the persisted shape is [schema.md](schema.md)'s. |
-| `debug.md` | Not applicable | The console is `LibKa0s-DebugLog-1.0`'s window. `/mm debug` toggles it and takes `on` / `off`. This addon's own surface is `/mm debug diag`, `/mm debug recap` and `/mm debug identity` — `core/Diagnostics.lua`, ~1570 lines of print statements whose header explains itself, with no state and no options for a doc to describe. It has grown — the death-recap probe for issue #1 is the newest section, the first with a verb of its own, and the first to search the client two ways because one was measured to be unreliable — so this is the Tier 2 trigger nearest to firing; re-measure it when a section gains state or an option. |
+| `debug.md` | Not applicable | The console is `LibKa0s-DebugLog-1.0`'s window. `/mm debug` toggles it and takes `on` / `off`. This addon's own surface is `/mm debug diag`, `/mm debug recap` and `/mm debug identity` — `core/Diagnostics.lua` and the three probe siblings it was peeled into on 2026-09-09 for `layout-§1` (`Diagnostics_DeathRecap.lua`, `Diagnostics_Identity.lua`, `Diagnostics_Feign.lua`) — print statements whose headers explain themselves, with no state and no options for a doc to describe. The peel gave each long-lived probe the lifecycle it wanted: written for an issue, deletable with it. It has grown — the death-recap probe for issue #1 is the newest section, the first with a verb of its own, and the first to search the client two ways because one was measured to be unreliable — so this is the Tier 2 trigger nearest to firing; re-measure it when a section gains state or an option. |
 
 ## Documented deviations
 
@@ -594,125 +595,39 @@ row above" stays a reference rather than becoming a phrase.
 
 ## Complexity register
 
-`performance-§10` makes the complexity report a **report** — it says in as many words that a commit
-MUST NOT be gated on it — and then asks the one thing that turns a page of numbers into a decision
-record: every function `lizard` warns on carries a **one-line disposition**. `automated-tests-§3`
-gates the **tag** on the same figure, zero functions above CCN 15, evaluated by
-`/wow-addon:bump-version` from a release run's `manifest.json`. This addon has **23** functions above
-15, which is why it has never cut a tag, and why the blanket answer — "accept them all, they are all
-`and`/`or` defaulting" — is the failure anti-pattern **#53** describes: a list where everything is
-accepted is an inventory, and an inventory cannot tell you when something alarming arrives.
+None. On 2026-09-09 the last of this addon's twenty-three warned functions came under CCN 15, and the
+table that used to stand here went with them.
 
-**Measured 2026-09-08 at `8ff9335`**, with the invocation `performance-§10` fixes and which this
-table may never vary from:
+**What that table was for, and why it is not simply archived.** `performance-§10` makes the
+complexity report a *report* — it says in as many words that a commit MUST NOT be gated on it — and
+then asks the one thing that turns a page of numbers into a decision record: every function `lizard`
+warns on carries a one-line disposition. This addon had twenty-three, which is the number anti-pattern
+**#53** describes as the failure mode: a list where everything is accepted is an inventory, and an
+inventory cannot tell you when something alarming arrives. The register answered that with eleven
+peels and twelve accepts, each accept carrying the re-check trigger that would end it.
 
-```
-lizard -l lua -x './libs/*' -x './tests/_kit/*' .
-```
+**All twenty-three came down, accepts included, and the reason is worth keeping.** An accept is a
+compliant *watch-list* state and it is not a release gate. `automated-tests-§3` refuses a tag while any
+function sits above CCN 15 — which is why this addon had never cut one — so a ratified accept would
+have kept its function off the watch list and the addon off the version list at the same time. The
+twelve were re-read rather than re-argued, and each turned out to be one of `performance-§11`'s
+permitted shapes away from the line: a data table plus one loop for the `and`/`or` defaulting, a
+module-level dispatch table for an `elseif` chain, a named helper for a block that already had a name.
 
-Twenty-three warnings, all in shipped source — `core/` **5**, `modules/` **16**, `settings/` **2**.
-(The remediation plan's row for this work says 15 and 3. It is wrong in both cells, the total is
-right, and it was already wrong when it was written — measured at `02aff8c`, before the cycle
-opened, the same split reads 5 / 16 / 2. `settings/Schema.lua` has no warned function in it and
-never had one.)
-
-**Read `lizard`'s Function column before you go looking for the function.** Its Lua parser names
-nine of these twenty-three entries in ways that will not lead a reader to the code, in three
-different ways:
-
-- **A method is reported under its receiver.** `Cell@659-739` is `Cell:ApplyBorder`,
-  `Cell@1168-1244` is `Cell:ApplyIcons`, `WindowProto@312-413` is `WindowProto:BuildLayout`,
-  `Tooltip@2342-2404` is `Tooltip:CellTooltip`, `DrillDown@395-428` is `DrillDown:OnCellClick`.
-- **A `t[k] = function` assignment is reported as `]`.** All three `core/Database.lua` entries are
-  migration steps: `migrations[1]`, `migrations[4]`, `migrations[12]`.
-- **`(anonymous)@1968-2039` is not anonymous and does not start at 1968.** The parser opens the entry
-  at the `function(_, event)` handed to `Secrets.SafeIterate` and closes it at the `end` of the
-  enclosing function, so callback and host are reported as one row under the callback's name and with
-  the callback's parameter count. The function is `drawDeathEvents@1957-2039`, and it appears nowhere
-  else in the output.
-
-**Two of these rows cannot carry a disposition forward, and that is why this table is the home of
-record rather than `RESULTS.md`.** The kit's runner keys the watch list on function name plus file,
-falling back to CCN to break a tie, and leaves the cell blank when neither key is unique
-(`tests/_kit/run-automated-tests.sh:537-556`). Its comment names this addon, but for the tie the CCN
-*does* break — `Cell` twice in `modules/Row.lua`, at 30 and 19 — so read past it to the last line,
-"a tie the CCN cannot break either leaves the cell blank", which is the one that binds here. Three
-rows are `]` in `core/Database.lua`, none of them unique on name plus file. `migrations[4]` is CCN 17
-and the tie-break carries it forward. `migrations[1]` and `migrations[12]` are both CCN 16 — those
-two are indistinguishable on both keys and will read blank on every run that regenerates them,
-forever. Their disposition exists here or nowhere.
-
-**Two of these functions have already spent a trigger this repository wrote for them, in its own
-hand.**
-`docs/automated-tests/RESULTS.md`'s v0.1.0 watch list carries an *At the ceiling* table of four
+**Two of them had already spent a trigger this repository wrote in its own hand.**
+`docs/automated-tests/RESULTS.md`'s v0.1.0 watch list carried an *At the ceiling* table of four
 functions at exactly CCN 15, written so "whoever next edits one knows there is **zero** headroom
-left". Two of the four are on this table now: `Cell:ApplyBorder` at **30** and
-`WindowProto:BuildLayout` at **24**. The other two, `normalizeColumns` and `Cell:Update`, are still
-under the line. A trigger that fires and is not acted on is the thing this register is for, so both
-are peels rather than accepts, and neither is arguable.
+left". By 2026-09-08 `Cell:ApplyBorder` read 30 and `WindowProto:BuildLayout` read 24. A trigger that
+fires and is not acted on is the thing a register exists to catch, and it took a year and this cycle
+to catch it — which is the argument for the register, not against it.
 
-Rows are in `lizard`'s own order, which is the order the runner emits them in. **Location carries the
-line range**, because it is the only thing that separates the three `]` rows; the runner's own
-Location cell is the file alone.
-
-| Function | CCN | Location | Disposition |
-|---|---|---|---|
-| `migrations[1]` (`]`) | 16 | `core/Database.lua:270-296` | **Accepted.** A shipped migration step is frozen the day it lands; the count is `type(x) == "table"` guards down profiles → windows → columns, and the one decision in it is the frame-widening `if`. Re-check: any step gains a branch that is not a type guard, or passes 40 NLOC. |
-| `migrations[4]` (`]`) | 17 | `core/Database.lua:372-401` | **Accepted.** Same shape and the same freeze: the lift of `mergePets` / `throttle` to profile level, guarded twice per key because "already set" cannot be told from "just merged in". Re-check: as above. |
-| `migrations[12]` (`]`) | 16 | `core/Database.lua:659-684` | **Accepted.** Same again: `titleBar` moves to `header.show` and two class-colour booleans become modes, each behind a `~= nil` and a prune. Re-check: as above. |
-| `reportDeathDating` | 25 | `core/Diagnostics.lua:648-689` | **Accepted.** Developer-only print code behind `/mm debug diag`; the count is `x and y or "nil"` inside two `string.format` argument lists, and the function's whole value is that it prints inputs rather than a conclusion. Re-check: the Tier 2 trigger already recorded for `debug.md` above — a probe section gains state or an option. |
-| `reportFeignRoster` | 17 | `core/Diagnostics.lua:1738-1761` | **Accepted.** Same class: three guarded unit reads per group member in one formatted line, printed for the whole group so a non-feigning baseline sits beside the feigning row. Re-check: as above. |
-| `scanColumn` | 34 | `modules/Aggregator.lua:1462-1565` | **Peel** — [#35](https://github.com/tusharsaxena/MultiMeters/issues/35). The per-source loop body, and the counted-column max pass under it. `M2-09` already took 36 → 34 by hoisting `judgeTracer` out, so the seam is proven rather than proposed. |
-| `DrillDown:OnCellClick` | 18 | `modules/DrillDown.lua:395-428` | **Accepted.** 20 NLOC; the count is three `f() and "x" or "none"` returns plus the Deaths ladder, and the ladder's **order** is the only thing the function records. Re-check: a second `statKey` grows a ladder of its own — two ladders are a table. |
-| `Export.ChatLines` | 27 | `modules/Export.lua:535-600` | **Peel** — [#36](https://github.com/tusharsaxena/MultiMeters/issues/36). The header build and the ranked line are two functions sharing a name; the `hasExtra` bookkeeping belongs entirely to the second. |
-| `onPrintToChat` | 16 | `modules/Export.lua:1432-1497` | **Accepted.** Four refusals, each with a recorded reason and each asked at the click because the answer changes between opening the modal and pressing the button, then a linear send. One point over. Re-check: a fifth refusal, or CCN 20. |
-| `Feign.Prune` | 25 | `modules/Feign.lua:247-337` | **Peel** — [#37](https://github.com/tusharsaxena/MultiMeters/issues/37). The `unit == nil` fork: the member who left the group and the member whose health is read are two verdicts, and the function's own comments already treat them as separate findings. |
-| `Format.DeathTime` | 19 | `modules/Format.lua:646-665` | **Accepted.** 15 NLOC at CCN 19 is `performance-§10`'s own documented artefact in its purest form: every `or` fallback scores as a decision and not one of them branches. Re-check: a third style beyond `clock` and `ago`. |
-| `onClick` | 24 | `modules/HeaderControls.lua:322-372` | **Peel** — [#38](https://github.com/tusharsaxena/MultiMeters/issues/38). A seven-way `elseif` on the control name, sharing no state across arms; a module-level dispatch table is the shape `performance-§11` permits, built once rather than per click (#52). |
-| `build` | 20 | `modules/Roster.lua:249-366` | **Accepted.** One unit walk with three outputs, and the header says why it is not three walks; the count is `unitExists` / `IsSafeKey` guards plus the nested pet read. Re-check: a fourth output joins the walk, or the pet lookup grows a second kind — then the per-unit body peels to `addMember`. |
-| `Cell:ApplyBorder` | 30 | `modules/Row.lua:659-739` | **Peel** — [#39](https://github.com/tusharsaxena/MultiMeters/issues/39). Its own comment names the seam — the art path and the flat path are mutually exclusive — and the per-side anchor chain under it is a data table. **Its ceiling row's trigger has fired**: 15 → 30. |
-| `Cell:ApplyIcons` | 19 | `modules/Row.lua:1168-1244` | **Accepted.** The slot array is `{ "unit" }` or `{}` today, so the loop is degenerate and what remains is defaulting and the left/right mirror. Re-check: a second slot returns — [#8](https://github.com/tusharsaxena/MultiMeters/issues/8) would do it — at which point the loop is real and the peel is worth taking. |
-| `eventColumns` | 19 | `modules/Tooltip.lua:1866-1919` | **Accepted.** A name-resolution ladder over one recap event where each arm is a documented client behaviour: a melee swing carries no spell at all, a heal names none, an unnamed spell shows its id rather than being dropped. Re-check: a fourth event kind. |
-| `drawDeathEvents` (`(anonymous)`) | 26 | `modules/Tooltip.lua:1957-2039` | **Peel** — [#40](https://github.com/tusharsaxena/MultiMeters/issues/40). Collect, measure, draw are already three phases in sequence; the measuring pass carries all of the `namesReadable` bookkeeping and none of the drawing. See the parser note above before opening the file. |
-| `Tooltip:CellTooltip` | 20 | `modules/Tooltip.lua:2342-2404` | **Accepted.** Linear composition — release, open, header, style, one Deaths/spell branch, five appends, then `Show` and the two fixups that must follow it. The count is defaulting; there is no tangle here to peel. Re-check: a third path joins the Deaths/spell branch. |
-| `Visibility.ShouldShow` | 23 | `modules/Visibility.lua:239-276` | **Peel** — [#41](https://github.com/tusharsaxena/MultiMeters/issues/41). Eight copies of one line in 21 NLOC; a module-level `{ flag, probe, reason }` table and one loop is `performance-§11`'s permitted shape, and it makes the veto **order** — which the comment says is the point — data rather than line position. |
-| `WindowProto:BuildLayout` | 24 | `modules/Window.lua:312-413` | **Peel** — [#42](https://github.com/tusharsaxena/MultiMeters/issues/42). The middle third: the visible-column filter, the equal share and the placement loop. Rule R3 is the constraint on the peel — config in, numbers out, no frame read back. **Its ceiling row's trigger has fired**: 15 → 24. |
-| `place` | 18 | `modules/Window.lua:1283-1415` | **Peel** — [#43](https://github.com/tusharsaxena/MultiMeters/issues/43). 133 lines and 5 parameters, and create-once-then-dress is the split `LIBKA0S-R-01` already cut in the library's `TabStrip`. Being a closure over the enclosing method is the work, and the reason it is worth more than CCN 18 suggests. |
-| `NS.ReorderableBlocks` | 28 | `settings/ColumnBlocks.lua:227-322` | **Peel** — [#44](https://github.com/tusharsaxena/MultiMeters/issues/44). The loop body is doing three jobs — draw the block, register the row, draw the boundary rule — and everything outside it is one refusal and a descriptor. |
-| `doDebug` | 25 | `settings/Slash.lua:434-505` | **Peel** — [#45](https://github.com/tusharsaxena/MultiMeters/issues/45). The only verb that takes an argument is the only nested ladder; the other three name a `Diagnostics` method and collapse to a table. **The only warned function that got worse this cycle** — 23 → 25 under `M2-11`, for a good reason, which is exactly the move a watch list exists to catch. |
-
-**Eleven peels, twelve accepts, and no split lands here.** The 2026-09-07 remediation plan rules one
-out (`03_SPEC.md` § C22 non-goals) and `M4-26`'s deliverable was the disposition — so that
-`automated-tests-§4`'s "every watch-list entry carries a disposition" has something to resolve
-against instead of 23 blank cells. Every peel names a seam the code argues for itself; not one of
-them is an extraction performed to move a number, which `performance-§11` and anti-pattern **#52**
-both forbid, and each issue states what the peel must not change.
-
-**The shelf life starts at the next release run.** `automated-tests-§4` and anti-pattern **#53** give
-an accepted entry three consecutive release runs, after which it is fixed or converted into a
-tracked deviation with an ID. This repository's last release run is
-[`20260809-195454`](automated-tests/20260809-195454/), the v0.1.0 run, and its watch list predates
-every entry here — so none of the twelve accepts has spent a run yet, and the clock starts at the
-first release run after this register is written.
-
-**What `tests/test_complexity_register.lua` asserts, and what it does not.** It reads this table and
-checks that the count stated above matches the rows, that every Location names a file that exists,
-that no two rows name the same function at the same location, and that every disposition is
-followable — an issue number, or an accept with the re-check trigger that stops it being a permanent
-opt-out. It never runs `lizard`, and that is deliberate: `performance-§10` says a commit **MUST NOT**
-be gated on complexity, and a suite that shelled out to `lizard` would be exactly that gate wearing a
-test's clothes. The CCN figures here are dated measurements, like the line counts in the census
-above, and the same rule applies — membership and disposition are the invariants, the numbers are
-prose. What re-measures them is the runner: `M5-01` ran it, and
-[`20260908-181355`](automated-tests/20260908-181355/) is the recorded reading this table was last
-reconciled against — the same 23 functions in the same order at the same 23 CCN values.
-
-**A Location range goes stale the moment anything above it moves, and nothing here goes red when it
-does.** That is the cost of the paragraph above, and it is why the commit is named: `8ff9335` is
-where these ranges resolve, and at any later commit they are a starting point rather than an
-address. Re-derive them with the one invocation at the top of this section — it takes seconds — and
-correct the column in the same change rather than leaving a register that names its own measurement
-commit and is wrong about it.
+`tests/test_complexity_register.lua` still guards the shape, and reads this absence deliberately: it
+holds vacuously over an empty table, and every one of its checks — that the stated tally matches the
+rows, that each Location names a file that exists, that no function is entered twice, that every
+disposition is followable — comes back the moment a row does. `lizard` is never run from the suite,
+because `performance-§10` forbids gating a commit on complexity and a test that shelled out to it
+would be that gate wearing a test's clothes. The measurement lives in `docs/complexity.md` and in each
+run's `docs/automated-tests/<stamp>/complexity.txt`.
 
 ## Load order
 

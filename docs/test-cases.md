@@ -197,7 +197,7 @@ badge and any count quoted in the docs must agree with it.
 - Locale: the locale file registers no second table over NS.L
 - Locale: enUS is the only locale shipped, and it is unconditional
 
-### test_database.lua (56)
+### test_database.lua (68)
 
 - Database: InitDB publishes the live instance under both names
 - Database: the profile is the SHARED Default, not a per-character one
@@ -255,8 +255,20 @@ badge and any count quoted in the docs must agree with it.
 - Database: v12 -> v13 moves the title-bar toggle onto the header
 - Database: v12 -> v13 leaves a window that never stored the toggle alone
 - Database: v12 -> v13 turns the control class-colour flags into modes
+- Database v2: the widening uses the window's OWN padding, not the template's
+- Database v2: a frame with no numeric width is given one, and every window gets its own
+- Database v5: a stored false and a stored 0 are lifted, not read as unset
+- Database v5: only the key the window actually carried is lifted
+- Database v5: only the FIRST window is consulted, even when it carries neither key
+- Database v5: a first window whose data block is not a table lifts nothing
+- Database v5: EVERY profile lifts from its OWN first window
+- Database: v12 -> v13 keeps the rest of an existing header block
+- Database: v12 -> v13 overwrites a control colour mode that was already there
+- Database: v12 -> v13 maps each control flag on its own
+- Database: v12 -> v13 leaves a window with no frame block at all alone
+- Database: v12 -> v13 walks every saved profile, not just the active one
 
-### test_diagnostics.lua (75)
+### test_diagnostics.lua (21)
 
 - Diagnostics: the report is published and reachable
 - Diagnostics: `/mm debug diag` reaches it without the debug log
@@ -279,6 +291,9 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: the provider-order probe reports a RANKED column as ranked
 - Diagnostics: the probe NAMES the position where the order breaks
 - Diagnostics: the probe REFUSES mid-pull rather than reporting a false all-clear
+
+### test_diagnostics_deathrecap.lua (30)
+
 - Diagnostics: `/mm debug recap` reaches the probe without the debug log
 - Diagnostics: the probe lists EVERY death, not just the newest per player
 - Diagnostics: it probes a NON-LOCAL id and an OLDER id, not only the newest
@@ -299,8 +314,19 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: a slot with no death is not counted as a slot that refused
 - Diagnostics: a slot that WAS probed and refused still raises the warning
 - Diagnostics: the recap probe reports why a death is dated the way it is
+- Diagnostics: the dating header prints the format the window is ACTUALLY set to
+- Diagnostics: the formatter is resolved as Numbers first, and asked for both styles by name
+- Diagnostics: with NS.Numbers gone the dating falls through to NS.Format
+- Diagnostics: with no formatter at all it says so and dates nothing
+- Diagnostics: the dating stops at four deaths
+- Diagnostics: a secret id costs the row its dating, and still spends one of the four
+- Diagnostics: a death the client holds no recap for still gets its row
+- Diagnostics: the death is dated off the NEWEST event, which is events[1]
 - Diagnostics: the header section covers every control, by walking them
 - Diagnostics: a window with no controls says so rather than printing nothing
+
+### test_diagnostics_identity.lua (17)
+
 - Diagnostics: the identity report is published and reachable
 - Diagnostics: `/mm debug identity` reaches it without the debug log
 - Diagnostics: the identity report prints the last pass's rectangle
@@ -318,6 +344,9 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: a candidate that DOES vary is called out as worth trying
 - Diagnostics: the audit says how many rows it sampled
 - Diagnostics: a missing isLocalPlayer is NOT called a degraded key
+
+### test_diagnostics_feign.lua (19)
+
 - Diagnostics: the feign report is published and reachable
 - Diagnostics: the feign trace records nothing until it is armed
 - Diagnostics: an armed trace records the cast and the unit token it arrived under
@@ -329,6 +358,10 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: the feign report prints the group beside the trace
 - Diagnostics: the feign report survives a client with none of the unit APIs
 - Diagnostics: a secret GUID costs one field and not the line
+- Diagnostics: every roster row carries all six fields, in one fixed order
+- Diagnostics: with no group the roster says so instead of printing a bare header
+- Diagnostics: a unit read that REFUSES is named, and the row survives it
+- Diagnostics: the roster is printed BELOW the entries, on the armed path too
 - Diagnostics: a judge row for a GUID no cast line named is counted, not recorded
 - Diagnostics: a judge row for a GUID a cast line named is recorded
 - Diagnostics: a cast line survives a full ring of judge rows
@@ -507,7 +540,7 @@ badge and any count quoted in the docs must agree with it.
 - libs/LibKa0s is the LibKa0s release CLAUDE.md says this addon bundles
 - tests/_kit is the test kit that shipped with that release
 
-### test_format.lua (32)
+### test_format.lua (39)
 
 - Format: NS.Format is a callable table carrying both contracts
 - Format.Number goes through the native ABBREVIATING formatter
@@ -541,6 +574,13 @@ badge and any count quoted in the docs must agree with it.
 - Format.DeathTime counts backwards from now
 - Format.DeathTime answers nil when there is no timestamp at all
 - Format.DeathTime never inspects a secret
+- Format.DeathTime: the seconds/minutes boundary and the exact strings
+- Format.DeathTime clamps a death in the future to zero
+- Format.DeathTime treats any unknown style as the clock
+- Format.DeathTime falls back to the clock when 'now' cannot be had
+- Format.DeathTime defaults 'now' to the client clock
+- Format.DeathTime routes both countdown strings through the locale
+- Format.DeathTime refuses a secret timestamp in either style
 
 ### test_provider.lua (72)
 
@@ -617,7 +657,7 @@ badge and any count quoted in the docs must agree with it.
 - Distinct PLAIN values are counted, so a constant field reads as one
 - A SECRET value is never compared or keyed on to count distinctness
 
-### test_roster.lua (22)
+### test_roster.lua (39)
 
 - Roster.GetGroup is player-first, then party order
 - Roster.GetGroup carries name, class and role off the unit API
@@ -641,8 +681,25 @@ badge and any count quoted in the docs must agree with it.
 - A partial build is NOT cached, so the next read retries
 - A complete build IS cached
 - Solo is complete, not partial
+- Every member the build learns is remembered in db.global, as a plain copy
+- A pet link is remembered too, and a secret one never reaches SavedVariables
+- Refresh forgets the group but not the people; Forget forgets both
+- The live entry is preferred over the remembered one, never the other way round
+- A member whose own GUID is unreadable is left out, pet and all
+- The raid duplicate is skipped WHOLE, its pet unit included
+- An empty unit API yields an empty group rather than a raise
+- A partial build is still STORED, so the lookups have something to answer from
+- Roster.LocalGUID reads the player's GUID off the built map
+- The player's role falls back to their specialization; another unit's cannot
+- An assigned role beats the specialization fallback
+- Test mode replaces the pet map and writes nothing to SavedVariables
+- The test-mode map is cached whole, never marked partial
+- Test mode with no preview group falls back to the real unit walk
+- A completed build logs one line, with the counters the loop kept
+- The build line says whether this was a raid
+- A short build says so, and does not also claim it built the group
 
-### test_feign.lua (15)
+### test_feign.lua (27)
 
 - Feign: the module is published and reachable
 - Feign: a Feign Death cast marks that player
@@ -659,8 +716,20 @@ badge and any count quoted in the docs must agree with it.
 - Feign: a client with no UnitIsFeignDeath keeps the old behaviour
 - Feign: a reset forgets the fake deaths too
 - Feign: ShouldDropDeath answers no for anything it cannot key on
+- Feign: a confirmed 0 HP evicts even while the client still reads feigning
+- Feign: an entry the client never confirmed is not evicted by a false reading
+- Feign: a health figure that cannot be compared leaves the entry standing
+- Feign: an evicted entry is traced with the state it HELD
+- Feign: a surviving entry is traced with evicted=false and its raw readings
+- Feign: leaving the group is traced as <not in group>
+- Feign: the armed flag is read once per prune, not once per member
+- Feign: a disarmed prune hands the recording nothing at all
+- Feign: an absent Diagnostics file is not an error
+- Feign: a group entry with no token or a secret guid counts as absent
+- Feign: with no Roster at all every entry is evicted
+- Feign: the set stops being walked once the last entry goes
 
-### test_aggregator.lua (81)
+### test_aggregator.lua (61)
 
 - Aggregator joins columns on the GUID, which is the only legal key
 - Aggregator's result table IS the row array, and cells aliases values
@@ -676,39 +745,17 @@ badge and any count quoted in the docs must agree with it.
 - Aggregator drops a source that is not a group member
 - Aggregator drops an unattributable pet rather than showing a phantom row
 - Aggregator sums an attributed pet into its owner out of combat
-- A healer with no damage is on the mid-pull grid, from the healing column
-- An ambiguous key gets no invented row, because no column could ever fill it
-- A collision the LAST column reveals still blanks the FIRST column's cells
-- A sort column the window does not LIST still builds mid-pull
-- A correlated cell carries the RATE, or a rate column renders no text
-- A correlated Deaths column keeps the recap id the death view opens on
-- A pet is a ROW OF ITS OWN while restricted, not a dropped contribution
 - Aggregator adopts a pet's numbers into a column the owner has no cell in
 - A pet's position never moves its owner in the provider order
 - A row seen only outside the sort column is parked past every ranked row
-- Identity stats count collided ROWS, not just collided keys
-- Identity stats attribute every miss to one of three causes
-- A collided key lands in the collided bucket, not the absent one
-- The sort column is named, and is not part of the correlated rectangle
-- Identity stats carry the rows-per-key histogram
-- A collided key records where its sources sat in every column
-- The identity stats are not built at all with the debug flag off
-- The GUID build reports no identity stats, because it correlated nothing
-- Aggregator keeps the last identity pass for the report to print
 - Aggregator computes percent out of combat
-- Aggregator answers nil percent while restricted — never zero
 - ApplyRowLimit truncates to maxRows
 - ApplyRowLimit treats 0 and an over-large cap as the hard ceiling
 - alwaysShowSelf spends the last visible slot on the player
 - alwaysShowSelf does nothing when the player is already visible
 - Aggregator applies the cap before dividing, not after
-- Test mode substitutes the DATA, and the render path stays one path
-- A test row's tooltip finds a breakdown, because it goes to the provider
-- Test mode reaches no meter API at all
-- Test data is deterministic — a jittering grid cannot be laid out against
 - A meter reset drops this module's cache
 - A pet gets its OWN row by default, with its own name
-- A pet's own row survives the restriction, where a merged one would not
 - Leaving the group does NOT empty the window
 - A meter reset is what forgets them
 - A pet stays attributed after its owner's group is gone
@@ -720,7 +767,6 @@ badge and any count quoted in the docs must agree with it.
 - The Deaths column counts a GUID's rows rather than reading totalAmount
 - A counted column scales its bars to the highest count, never to 0
 - The NEWEST death wins the recap id
-- Counting a death is legal mid-pull, where summing two secrets is not
 - An ALLY nobody owns gets its own row, under its own name
 - The owner is still not credited for an unowned ally's damage
 - An ENEMY nobody owns is still refused
@@ -732,17 +778,54 @@ badge and any count quoted in the docs must agree with it.
 - row.deathRecapID still names the NEWEST death
 - A row with no deaths carries no deaths array at all
 - The count and the deaths array can never disagree
-- A correlated Deaths column keeps every death too
-- A collided identity key gets no deaths array, as it gets no cell
-- Test mode produces a player with several deaths to drill into
 - A death the client gave no recap id still occupies a slot in the list
-- The identity build keeps that slot too
 - A feigned player's death is not counted
 - A feigned player's death is not LISTED either
 - A real death after a feign is counted, and the feigns stay hidden
 - A death after the hunter stands back up is counted
 - The feign filter touches no column but Deaths
+- A pet's DEATH lands on the row the merge put it on
+- A fold the gate refuses is COUNTED, and adds nothing on the way past
+- A feigned death is a SKIP, never a drop
+- A counted column publishes NO column total, so its percent stays empty
+- A counted column ignores the session's maxAmount, however loud
+- The Deaths pass prunes the feign set itself, and no other column does
+- The judge verdict is recorded per death source, after the prune
+- A column that is not counted records no judgement at all
+
+### test_aggregator_identity.lua (23)
+
+- A healer with no damage is on the mid-pull grid, from the healing column
+- An ambiguous key gets no invented row, because no column could ever fill it
+- A collision the LAST column reveals still blanks the FIRST column's cells
+- A sort column the window does not LIST still builds mid-pull
+- A correlated cell carries the RATE, or a rate column renders no text
+- A correlated Deaths column keeps the recap id the death view opens on
+- A pet is a ROW OF ITS OWN while restricted, not a dropped contribution
+- A pet's own row survives the restriction, where a merged one would not
+- Aggregator answers nil percent while restricted — never zero
+- Counting a death is legal mid-pull, where summing two secrets is not
+- A correlated Deaths column keeps every death too
+- A collided identity key gets no deaths array, as it gets no cell
+- The identity build keeps that slot too
 - The feign filter cannot run mid-pull, and does not pretend to
+- Identity stats count collided ROWS, not just collided keys
+- Identity stats attribute every miss to one of three causes
+- A collided key lands in the collided bucket, not the absent one
+- The sort column is named, and is not part of the correlated rectangle
+- Identity stats carry the rows-per-key histogram
+- A collided key records where its sources sat in every column
+- The identity stats are not built at all with the debug flag off
+- The GUID build reports no identity stats, because it correlated nothing
+- Aggregator keeps the last identity pass for the report to print
+
+### test_aggregator_preview.lua (5)
+
+- Test mode substitutes the DATA, and the render path stays one path
+- A test row's tooltip finds a breakdown, because it goes to the provider
+- Test mode reaches no meter API at all
+- Test data is deterministic — a jittering grid cannot be laid out against
+- Test mode produces a player with several deaths to drill into
 
 ### test_aggregator_sort.lua (20)
 
@@ -767,24 +850,12 @@ badge and any count quoted in the docs must agree with it.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honours the direction OUT of combat too
 
-### test_window.lua (141)
+### test_window.lua (59)
 
 - Window builds a bare anchor plus the visible frame, and names both
-- Closing HIDES the window; it never deletes it
-- The header carries a lock and a gear, and the padlock shows the state
-- The padlock toggles THIS window only
-- Dragging moves the ANCHOR, never the frame that holds the cells
-- A locked window refuses the drag entirely
-- SavePosition reads GetPoint off the anchor and off nothing else
-- SaveSize uses the size OnSizeChanged was handed, never a getter
 - BuildLayout computes every coordinate from config alone
 - The name column's formula is calibrated to the shipped width at a 20 cap
 - A stat column never shrinks below the legible floor
-- The window refuses to be dragged smaller than the grid needs
-- The title-bar divider can be switched off, and does not move the title row
-- The divider's thickness is a setting
-- The divider's SKIN mode writes no colour at all, so a re-skin still reaches it
-- The divider takes a custom colour and a class colour, keeping the configured alpha
 - BuildLayout drops a column whose stat this build does not offer
 - BuildLayout draws only the ENABLED columns, in stored order
 - A layout column carries no show-bar decision
@@ -804,10 +875,51 @@ badge and any count quoted in the docs must agree with it.
 - An unavailable meter renders the prompt INSTEAD of rows
 - The notice omits a reason it cannot safely render
 - An empty session says so rather than leaving a blank grid
-- ShouldShow STEP 0 is NS.Perf.suspended, above even the master enable
-- ShouldShow's ladder reads master enable, then test mode, then context
-- RefreshVisibility shows, hides, and marks dirty exactly once on the way in
-- An explicit Show draws on the next tick too, not a throttle later
+- A drilled-in window draws the breakdown, decided by the ROWS not the title
+- Suspend takes the OnUpdate away and Resume puts it back
+- Destroy takes the window off screen and off the bus
+- Each window owns a PRIVATE bus target, so two windows cannot clobber each other
+- Scrolling moves the window into the list, it does not shorten it
+- The offset survives a refresh, or scrolling is impossible
+- The offset cannot run past the end of the list
+- A list that shrinks under a stationary offset re-clamps on the next draw
+- Scrolling up stops at the top
+- A list that fits entirely cannot be scrolled
+- The body takes the wheel, or the handler is never called in game
+- The wheel scrolls up on a positive delta
+- Entering or leaving a breakdown puts the view back at the top
+- A drill-down draws its rows from the top of the body, with none hanging out
+- Right-clicking empty space below the rows leaves a breakdown
+- The body claims the mouse only while a breakdown is open
+- Scale scales the WINDOW, not just what is inside it
+- Border style None draws NO edge, whatever the library's own is
+- A border style that CANNOT be fetched still falls back to the library edge
+- With no border, the SKIN's inner highlight goes too
+- pool: a layout change re-applies to FREE rows, not just active ones
+- Master scale MULTIPLIES the window's own rather than replacing it
+- Master alpha MULTIPLIES the window's own opacity
+- Master scale and alpha are CLAMPED to the sliders that write them
+- The window's fill and its edge each answer a colour mode
+- pool: every row built lands in `all`, including the batch surplus
+- The stored per-column width is what a NEW column is born at, never the drawn one
+- The name column is excluded from the share, and is not sized by the frame
+- The name column is placed first, at x 0, and carries its bar unconditionally
+- A window with every column disabled still lays out
+- Hiding the title bar takes its height out of the layout, not out of the header strip
+- bodyWidth is the frame minus its padding, whatever the grid inside it costs
+- growUp is a boolean off growthDirection, and nothing else
+- A window too short for even one row still asks the pool for one
+- A maxRows cap LARGER than the frame holds does not win
+- BuildLayout survives a config with the sub-tables missing, on the shipped numbers
+
+### test_window_header.lua (70)
+
+- The header carries a lock and a gear, and the padlock shows the state
+- The padlock toggles THIS window only
+- The title-bar divider can be switched off, and does not move the title row
+- The divider's thickness is a setting
+- The divider's SKIN mode writes no colour at all, so a re-skin still reaches it
+- The divider takes a custom colour and a class colour, keeping the configured alpha
 - The header folds its parts with `..`, and survives a secret piece
 - The header line says which fight, and stays out of the way otherwise
 - Show segment off leaves the header line blank again
@@ -817,10 +929,6 @@ badge and any count quoted in the docs must agree with it.
 - The header line reads 'Test' while placeholder data is on screen
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
-- A drilled-in window draws the breakdown, decided by the ROWS not the title
-- Suspend takes the OnUpdate away and Resume puts it back
-- Destroy takes the window off screen and off the bus
-- Each window owns a PRIVATE bus target, so two windows cannot clobber each other
 - Segment menu: stored segments first, then a divider, then Current/Overall
 - Segment menu: an entry is labelled with its name AND its duration
 - Segment menu: picking a segment pins it and marks the window dirty
@@ -847,37 +955,9 @@ badge and any count quoted in the docs must agree with it.
 - Mid-pull the arrow sits on the column the rows are ACTUALLY ordered by
 - The sort arrow moves to the Player header in name mode
 - Test mode is marked in RED in the title, and clears when it is off
-- Leaving test mode does not close the window
-- A player-state edge re-runs the show ladder on the window itself
-- A combat edge re-runs the show ladder on the window itself
-- The show ladder is re-run ONLY from a message, never from the refresh tick
-- Entering a vehicle hides the window on its own edge
-- A vehicle event about somebody else is not republished
-- A state that lags its own event is caught by the settle pass
-- The settle pass is scheduled once, however many edges land together
-- A glide event's boolean payload is not mistaken for a unit token
-- A filtered-out unit event schedules nothing
 - Building a window sets no text on a fontless FontString
 - Header art falls back to ASCII on a client with none of the atlases
 - Header art prefers an atlas where the client has one
-- Changing a setting does not close a window the player asked for
-- The master switch closes a window the player asked for
-- A perf suspend closes a window the player asked for
-- A CONTEXT rule still cannot close a window the player asked for
-- A zone change is what makes an explicit show stale
-- Closing cancels the request, so it does not reappear
-- Scrolling moves the window into the list, it does not shorten it
-- The offset survives a refresh, or scrolling is impossible
-- The offset cannot run past the end of the list
-- A list that shrinks under a stationary offset re-clamps on the next draw
-- Scrolling up stops at the top
-- A list that fits entirely cannot be scrolled
-- The body takes the wheel, or the handler is never called in game
-- The wheel scrolls up on a positive delta
-- Entering or leaving a breakdown puts the view back at the top
-- A drill-down draws its rows from the top of the body, with none hanging out
-- Right-clicking empty space below the rows leaves a breakdown
-- The body claims the mouse only while a breakdown is open
 - Column headers take their own font, not the cells'
 - Column headers have their own colour and background
 - Per-statistic mode leaves the Player header white, not the sort column's colour
@@ -895,23 +975,50 @@ badge and any count quoted in the docs must agree with it.
 - The header colour survives a sort change, having nothing to do with it
 - The window NAME takes the header's colour
 - Column header class color is the local player's too
-- Scale scales the WINDOW, not just what is inside it
-- Border style None draws NO edge, whatever the library's own is
-- A border style that CANNOT be fetched still falls back to the library edge
-- With no border, the SKIN's inner highlight goes too
+- A profile written before minimise existed is not collapsed
+- Header buttons are created ONCE per index and re-pointed, never rebuilt
+- A column that goes away HIDES its header; it does not destroy it
+- Every header sits exactly over the column it labels, from the same layout
+- The Player header is a Button like every other, not a label with a gap beside it
+- The strip background and the per-column ones are mutually exclusive, both ways
+- The sort arrow follows the LABEL, rather than sitting at a fixed offset
+- The atlas rung flips ONE texture with SetTexCoord, and only for ascending
+- With no art and no atlas the arrow is an ASCII character, and a legible one
+
+### test_window_placement.lua (30)
+
+- Closing HIDES the window; it never deletes it
+- Dragging moves the ANCHOR, never the frame that holds the cells
+- A locked window refuses the drag entirely
+- SavePosition reads GetPoint off the anchor and off nothing else
+- SaveSize uses the size OnSizeChanged was handed, never a getter
+- The window refuses to be dragged smaller than the grid needs
+- ShouldShow STEP 0 is NS.Perf.suspended, above even the master enable
+- ShouldShow's ladder reads master enable, then test mode, then context
+- RefreshVisibility shows, hides, and marks dirty exactly once on the way in
+- An explicit Show draws on the next tick too, not a throttle later
+- Leaving test mode does not close the window
+- A player-state edge re-runs the show ladder on the window itself
+- A combat edge re-runs the show ladder on the window itself
+- The show ladder is re-run ONLY from a message, never from the refresh tick
+- Entering a vehicle hides the window on its own edge
+- A vehicle event about somebody else is not republished
+- A state that lags its own event is caught by the settle pass
+- The settle pass is scheduled once, however many edges land together
+- A glide event's boolean payload is not mistaken for a unit token
+- A filtered-out unit event schedules nothing
+- Changing a setting does not close a window the player asked for
+- The master switch closes a window the player asked for
+- A perf suspend closes a window the player asked for
+- A CONTEXT rule still cannot close a window the player asked for
+- A zone change is what makes an explicit show stale
+- Closing cancels the request, so it does not reappear
 - The resize grip is built unconditionally and follows the LOCK
 - `resizeGrip` is gone from the code, not just from the panel
 - Unlocking does not resurrect the grip on a collapsed window
-- A profile written before minimise existed is not collapsed
-- pool: a layout change re-applies to FREE rows, not just active ones
-- Master scale MULTIPLIES the window's own rather than replacing it
-- Master alpha MULTIPLIES the window's own opacity
-- Master scale and alpha are CLAMPED to the sliders that write them
 - Either lock pins the window, and the master lock erases neither
-- The window's fill and its edge each answer a colour mode
-- pool: every row built lands in `all`, including the batch surplus
 
-### test_headercontrols.lua (51)
+### test_headercontrols.lua (65)
 
 - HeaderControls: every control this addon builds is attached
 - HeaderControls: a control turned off is not placed at all
@@ -964,8 +1071,22 @@ badge and any count quoted in the docs must agree with it.
 - HeaderControls: the segment button opens the same menu the session line does
 - HeaderControls: the export button hands Export the WINDOW
 - HeaderControls: the gear opens the panel
+- HeaderControls: a click with no window, or no control, does nothing
+- HeaderControls: a control name the chain does not know is a silent no-op
+- HeaderControls: the two toggles name the EXACT settings paths
+- HeaderControls: a toggle inverts what is STORED, as a boolean
+- HeaderControls: a toggle points the seam at this window BEFORE it writes
+- HeaderControls: with no settings seam a toggle changes nothing and raises nothing
+- HeaderControls: the gear sets the active window BEFORE it opens the panel
+- HeaderControls: the gear still points the panel when there is no panel
+- HeaderControls: reset PREFERS the centred dialog over the bare popup
+- HeaderControls: with settings/ absent the reset falls back to the bare popup
+- HeaderControls: reset with no popup API at all raises nothing
+- HeaderControls: segment and export are opened ON the window, or not at all
+- HeaderControls: close hides the window AS a deliberate close
+- HeaderControls: only the two toggles write to the settings seam
 
-### test_row.lua (91)
+### test_row.lua (76)
 
 - Row.OffsetFor is a pure function of the index and the row config
 - Cell:ApplyLayout places every cell from the layout table
@@ -1002,6 +1123,14 @@ badge and any count quoted in the docs must agree with it.
 - Border style None keeps the cheap flat outline and puts no backdrop on a cell
 - Border style art moves to a backdrop and takes the flat outline down
 - A window that sets neither keeps the border it always had
+- The border setting off builds no texture at all
+- Turning the border off hides all four sides and keeps the textures
+- Each of the four sides is anchored to its own two corners
+- A second layout pass re-places the border rather than stacking anchors
+- A thickness under one pixel is clamped to one, on both paths
+- The art path takes the edge FILE and the swatch's colour
+- The art path answers the colour mode too, and it is the ROW'S class
+- Switching from the flat outline to art takes ALL FOUR sides down
 - Per-statistic cell text is the colour of the column the cell is in
 - The statistic palette is a SETTING, and every surface reads it through one seam
 - A statistic the profile has never coloured keeps the shipped palette
@@ -1009,29 +1138,6 @@ badge and any count quoted in the docs must agree with it.
 - Text opacity and the colour's own alpha multiply, rather than one winning
 - Bar opacity fades the FILL, and nothing else in the cell
 - Bar opacity and text opacity are independent, in both directions
-- The name cell is never handed a meter value at all
-- The name cell colors the NAME by class, now that no bar carries it
-- An unknown class reads as white, not as a tenth palette entry
-- The name cell renders a plain name and survives a secret one
-- A cross-realm PLAYER name loses its realm
-- An NPC keeps the hyphen in its name
-- A pet keeps its hyphen too
-- The name never wraps, and gets a fixed width to be truncated against
-- The icon inset is the SAME for a row with no icons to draw
-- A layout pass keeps the class color instead of flashing white
-- A name past the cap is truncated with NO ellipsis
-- Truncation counts CHARACTERS, never bytes
-- A cap of 0 means no cap
-- Neither the realm strip nor the cap is applied to a SECRET name
-- A drill-down row keeps a hyphen, which is part of a spell name
-- A nil name renders empty rather than the string 'nil'
-- The single icon slot prefers the SPEC where there is one
-- The slot falls back to the CLASS where no spec is known
-- A ROLE icon is never drawn, whatever the row carries
-- A breakdown row draws the SPELL's icon, not a unit's
-- Turning the icon off hides it rather than destroying it
-- An icon turned off STAYS off across the next refresh
-- The name starts clear of the icon, with a gap you can see
 - highlightSelf honors both spellings of 'this row is you'
 - The class tint is painted on the CELLS, not on the row
 - A row with no class falls back to the alternating stripe
@@ -1058,6 +1164,39 @@ badge and any count quoted in the docs must agree with it.
 - Row: displayText wins over BOTH slots
 - Row: a cell with no displayText is completely unaffected
 - Row: a death row's bar draws FULL without comparing anything
+
+### test_row_namecell.lua (30)
+
+- The name cell is never handed a meter value at all
+- The name cell colors the NAME by class, now that no bar carries it
+- An unknown class reads as white, not as a tenth palette entry
+- The name cell renders a plain name and survives a secret one
+- A cross-realm PLAYER name loses its realm
+- An NPC keeps the hyphen in its name
+- A pet keeps its hyphen too
+- The name never wraps, and gets a fixed width to be truncated against
+- The icon inset is the SAME for a row with no icons to draw
+- A layout pass keeps the class color instead of flashing white
+- A name past the cap is truncated with NO ellipsis
+- Truncation counts CHARACTERS, never bytes
+- A cap of 0 means no cap
+- Neither the realm strip nor the cap is applied to a SECRET name
+- A drill-down row keeps a hyphen, which is part of a spell name
+- A nil name renders empty rather than the string 'nil'
+- The single icon slot prefers the SPEC where there is one
+- The slot falls back to the CLASS where no spec is known
+- A ROLE icon is never drawn, whatever the row carries
+- A breakdown row draws the SPELL's icon, not a unit's
+- Turning the icon off hides it rather than destroying it
+- An icon turned off STAYS off across the next refresh
+- The name starts clear of the icon, with a gap you can see
+- Icons on the RIGHT anchor to the right edge and give the name the left one
+- The icon takes its configured size and is centred in the row
+- ApplyIcons returns the inset it consumed, and never zero
+- The slot list and the drawn flag are what SetPlayer reads
+- A narrow name column still leaves the string a width of at least one
+- A window config with no icons group at all draws a name and does not raise
+- Re-laying the icons out does not stack anchors on the texture or the name
 
 ### test_targets.lua (24)
 
@@ -1086,32 +1225,31 @@ badge and any count quoted in the docs must agree with it.
 - Targets: the invalidating messages are actually subscribed
 - Targets: two sessions do not share a map
 
-### test_tooltip.lua (124)
+### test_tooltip.lua (20)
 
-- CellTooltip opens on the hovered cell and heads with the player and the stat
-- CellTooltip honors the anchor setting and falls back to the default
-- CellTooltip sorts biggest-first when comparison is legal
-- CellTooltip REFUSES the sort while comparison is illegal
-- CellTooltip refuses the sort when an amount is MISSING, not merely secret
-- CellTooltip caps the list at maxSpells and says how many were left out
-- CellTooltip renders secret amounts through the formatter, untouched
-- CellTooltip says 'no data' rather than showing an empty frame
-- showSpells = false keeps the header and drops the breakdown
-- hideInCombat refuses the hover outright
-- An unresolvable spell is shown by ID rather than dropped
-- The avoidable column tags nothing per spell — no Deadly, no Overkill
-- Those flags are never truth-tested anywhere — a secret boolean would raise
-- The Deaths cell advertises the click that opens the recap
-- A death with no recap id advertises nothing
-- NameTooltip lists EVERY tracked stat, dimming the ones not on screen
-- NameTooltip colors each stat by the catalog palette, whatever colorMode says
-- NameTooltip colors the AMOUNT the same as its label, on both sides of the line
-- NameTooltip works while restricted, adding nothing up
-- showAllStatsOnName = false stops after the name
-- NameTooltip says 'no data' when the meter has nothing for the player
-- A tooltip resolves its window from row.windowId when it was not handed one
-- Tooltip:Hide is unconditional
 - modules/Tooltip.lua never applies `#` to a meter array
+- Every anchor the schema offers resolves to a real GameTooltip token
+- Each anchor puts the tooltip in the box of a 3x3 around the cell
+- There is no "At cursor" anchor, and TOP is what shipped instead
+- The anchor dropdown offers nothing the token table cannot resolve
+- The x/y offset reaches SetOwner rather than a SetPoint of our own
+- A junk offset off an old profile is clamped, never handed to the client
+- Bar spacing is applied to the tooltip, and taken back off when it hides
+- The configured font reaches both number slots and the spell name
+- NONE is an absent outline flag, not the literal string
+- Every tooltip line we restyled is put back when the tooltip hides
+- maxSpells 0 lists every spell the breakdown collected
+- maxSpells 0 is bounded by the collector, and says so
+- A negative or non-numeric cap still falls back to the shipped default
+- The font survives a UI skin that re-fonts every line on show
+- The post-layout pass still restores every line it touched
+- A target's name is drawn on our own carrier, not on the tooltip's line
+- The gap above a section is half the text size, not a whole blank line
+- The half-size gap survives the post-layout pass
+- The gap is restored with every other line it was applied alongside
+
+### test_tooltip_lines.lua (37)
+
 - A spell line carries a real class-colored BAR, not a run of characters
 - Bars are released between hovers, never stacked
 - The bar is DRAWN mid-pull, because the widget does the division
@@ -1137,16 +1275,6 @@ badge and any count quoted in the docs must agree with it.
 - The tooltip text colour is configurable, and reaches every slot
 - The AMOUNT rides on the carrier, not on the bar
 - The tooltip is widened for the slots, and put back afterwards
-- Every anchor the schema offers resolves to a real GameTooltip token
-- Each anchor puts the tooltip in the box of a 3x3 around the cell
-- There is no "At cursor" anchor, and TOP is what shipped instead
-- The anchor dropdown offers nothing the token table cannot resolve
-- The x/y offset reaches SetOwner rather than a SetPoint of our own
-- A junk offset off an old profile is clamped, never handed to the client
-- Bar spacing is applied to the tooltip, and taken back off when it hides
-- The configured font reaches both number slots and the spell name
-- NONE is an absent outline flag, not the literal string
-- Every tooltip line we restyled is put back when the tooltip hides
 - The tooltip's own bar texture is used, not the grid's
 - Tooltip text takes the HOVERED player's class color when asked
 - With the class colour off, the tooltip keeps its configured text colour
@@ -1154,20 +1282,40 @@ badge and any count quoted in the docs must agree with it.
 - The tooltip puts a SHARED line's shadow back when it lets go
 - A bar border is applied when asked and cleared off the POOLED line when not
 - Border size zero drops the border FILE with it
-- maxSpells 0 lists every spell the breakdown collected
-- maxSpells 0 is bounded by the collector, and says so
-- A negative or non-numeric cap still falls back to the shipped default
-- The font survives a UI skin that re-fonts every line on show
-- The post-layout pass still restores every line it touched
-- A target's name is drawn on our own carrier, not on the tooltip's line
-- The gap above a section is half the text size, not a whole blank line
-- The half-size gap survives the post-layout pass
-- The gap is restored with every other line it was applied alongside
 - The tooltip is widened without measuring anything inside GameTooltip
 - The width follows the font size, because it is computed
 - A name that cannot be read does not change the width, because none is read
 - The name's room is a FIXED span, not the length of the names on screen
 - The share slot fits a full 100.0%, at any configured font size
+
+### test_tooltip_builders.lua (23)
+
+- CellTooltip opens on the hovered cell and heads with the player and the stat
+- CellTooltip honors the anchor setting and falls back to the default
+- CellTooltip sorts biggest-first when comparison is legal
+- CellTooltip REFUSES the sort while comparison is illegal
+- CellTooltip refuses the sort when an amount is MISSING, not merely secret
+- CellTooltip caps the list at maxSpells and says how many were left out
+- CellTooltip renders secret amounts through the formatter, untouched
+- CellTooltip says 'no data' rather than showing an empty frame
+- showSpells = false keeps the header and drops the breakdown
+- hideInCombat refuses the hover outright
+- An unresolvable spell is shown by ID rather than dropped
+- The avoidable column tags nothing per spell — no Deadly, no Overkill
+- Those flags are never truth-tested anywhere — a secret boolean would raise
+- The Deaths cell advertises the click that opens the recap
+- A death with no recap id advertises nothing
+- NameTooltip lists EVERY tracked stat, dimming the ones not on screen
+- NameTooltip colors each stat by the catalog palette, whatever colorMode says
+- NameTooltip colors the AMOUNT the same as its label, on both sides of the line
+- NameTooltip works while restricted, adding nothing up
+- showAllStatsOnName = false stops after the name
+- NameTooltip says 'no data' when the meter has nothing for the player
+- A tooltip resolves its window from row.windowId when it was not handed one
+- Tooltip:Hide is unconditional
+
+### test_tooltip_deaths.lua (57)
+
 - Tooltip: hovering a death row lists its events, OLDEST first
 - Tooltip: a death row never reaches the client's spell tooltip
 - Tooltip: each event line shows the time before death and the attacker
@@ -1212,8 +1360,21 @@ badge and any count quoted in the docs must agree with it.
 - Tooltip: the name columns shrink to the names actually in this recap
 - Tooltip: a name column never grows past its character cap
 - Tooltip: a SECRET name falls back to the fixed reservation
+- Tooltip: an event with no id and no name reads as #? under the question mark
+- Tooltip: a DIRECT heal with no spell id reads as Heal too
+- Tooltip: an event AFTER the moment of death keeps the sign OFF
+- Tooltip: a refused offset empties the time slot and reserves the column
+- Tooltip: a recap whose events are not an array says so and draws nothing
+- Tooltip: an EMPTY event array is a refusal, not an empty list
+- Tooltip: a SECRET event array is refused whole, never indexed
+- Tooltip: an entry that is not a table is skipped, and the rest still draw
+- Tooltip: the collect stops at 64 events, keeping the NEWEST of them
+- Tooltip: ONE unreadable caption abandons the whole measurement
+- modules/Tooltip.lua never applies `#` to a recap's event array
+- Tooltip: a stat key the catalog does not know heads with the key itself
+- Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block
 
-### test_drilldown.lua (50)
+### test_drilldown.lua (58)
 
 - DrillDown.IsActive is a PLAIN BOOLEAN, in both directions
 - Enter captures PLAIN identity fields, never a reference to the row
@@ -1265,11 +1426,18 @@ badge and any count quoted in the docs must agree with it.
 - A death with no recap id is still a row, and is not clickable
 - Every death row has a distinct pool identity, id or no id
 - A death row wears the death icon
+- The exit toggle keys on the GUID too, not the stat alone
+- A row that is not a table is refused whatever it is
+- A row with no guid is refused, and the window stays on the grid
+- A stat key outside the catalog is refused
+- The Deaths ladder falls all the way to the ordinary breakdown
+- A client with no C_DeathRecap and no id still reaches the breakdown
+- The exit toggle is answered BEFORE the Deaths ladder is climbed
+- Switching out of a deaths view replaces the state, it does not merge into it
 
-### test_export.lua (91)
+### test_export.lua (86)
 
 - Export is a plain table on NS, not an AceAddon module
-- Export.Open refuses to open at all while restricted
 - Export.Available says yes out of combat, with nothing to explain
 - Export.Available refuses while the Combat restriction is active
 - Export.Available resolves Secrets at CALL time, not at load
@@ -1285,13 +1453,6 @@ badge and any count quoted in the docs must agree with it.
 - Export.Columns carries _ps for exactly the rate stats and no others
 - Export.Columns carries a total and a _pct for every stat in the catalog
 - Export.Columns follows catalog order and states each fact twice
-- Export.ResolveMetric answers the pinned stat
-- Export.ResolveMetric ships pinned to a real stat, never to the empty string
-- Export.ResolveMetric treats the old empty-string choice as unset
-- Export.ResolveMetric treats a stat this build does not offer as unset
-- Export.ResolveMetric falls back to the first catalog stat
-- Export.ResolveMetric is callable through the colon form
-- The Metric selector offers exactly the catalog, with no sentinel entry
 - Export.SessionConfig names every catalog stat, enabled
 - Export.SessionConfig caps at the aggregator's own ceiling
 - Export.SessionConfig inherits the invoking window's segment
@@ -1323,6 +1484,17 @@ badge and any count quoted in the docs must agree with it.
 - Export.ChatLines falls back to the first catalog stat for an unknown key
 - Export.ChatLines answers nothing rather than raising with no formatter
 - Export.ChatLines refuses to the empty array while restricted
+- Export.ChatLines refuses anything that is not a result table
+- Export.ChatLines joins an empty segment name rather than asking whether it is empty
+- Export.ChatLines omits a segment name that is not a string
+- Export.ChatLines takes the duration from the result and never from the formatter
+- Export.ChatLines asks the formatter for the amount, the rate and the share by name
+- Export.ChatLines carries the rate alone when the aggregator computed no share
+- Export.ChatLines drops a share the aggregator did not answer as a number
+- Export.ChatLines prints a zero share rather than reading it as absent
+- Export.ChatLines names a row that has no cell for the metric anyway
+- Export.ChatLines reads the rows off result.rows when it is not the result itself
+- Export.ChatLines answers a header and nothing under it for a result with no rows
 - Export.ResolveChannel answers nothing for SELF, which is the default
 - Export.ResolveChannel folds the RETIRED "AUTO" key to self only
 - The channel catalog no longer offers AUTO
@@ -1351,6 +1523,17 @@ badge and any count quoted in the docs must agree with it.
 - Export.SessionLabel names what a bare config can name on its own
 - Export.Build goes through the aggregator and nowhere near the meter API
 - Export.Build answers nil when there is no aggregator to ask
+
+### test_export_modal.lua (26)
+
+- Export.Open refuses to open at all while restricted
+- Export.ResolveMetric answers the pinned stat
+- Export.ResolveMetric ships pinned to a real stat, never to the empty string
+- Export.ResolveMetric treats the old empty-string choice as unset
+- Export.ResolveMetric treats a stat this build does not offer as unset
+- Export.ResolveMetric falls back to the first catalog stat
+- Export.ResolveMetric is callable through the colon form
+- The Metric selector offers exactly the catalog, with no sentinel entry
 - The modal's whisper row is a row, not an overlap
 - Hiding the export modal closes an open dropdown menu (LibKa0s-Widgets-1.0)
 - Hiding the export modal with no menu ever opened is a safe no-op
@@ -1359,8 +1542,18 @@ badge and any count quoted in the docs must agree with it.
 - Export: the copy window comes from LibKa0s-Widgets-1.0
 - Export: showing the copy window puts the text in it
 - Export: the copy window is built once and reused
+- Print to Chat re-checks the restriction at the click, not at the open
+- Print to Chat names a blank whisper recipient before it builds anything
+- Print to Chat asks the game for the target at the click
+- Print to Chat whispers the player currently targeted
+- Print to Chat says so rather than swallowing a click with nothing to export
+- Print to Chat builds with the chosen metric as the SORT COLUMN
+- Print to Chat leaves the lines themselves as the confirmation on SELF
+- Print to Chat confirms a send that left the client, without counting the header
+- Print to Chat warns BEFORE a Say dump the server may truncate
+- Print to Chat does not warn where the stagger is available or the dump is short
 
-### test_visibility.lua (33)
+### test_visibility.lua (41)
 
 - GetContext translates Blizzard's instance token to the setting's name
 - A delve reads as `delve`, not as the scenario it reports itself to be
@@ -1395,6 +1588,14 @@ badge and any count quoted in the docs must agree with it.
 - The combat rules use UnitAffectingCombat, never an InCombatLockdown proxy
 - Visibility listens on the bus and registers no game event
 - A profile change forgets the old answers and re-evaluates
+- With every state live at once, the vetoes answer in one fixed order
+- Every veto is decided before the combat pair, not after it
+- Each context switched off hides with its own name, and only its own
+- A context key is show-shaped; a veto key is hide-shaped
+- Both gates read truthiness, not `== true`
+- Anything that is not a table is `no window`, whatever it is
+- A visibility field that is not a table reads as `no rules`, not as hide
+- The master enable, test mode and perf suspend are NOT read here
 
 ### test_windowmanager.lua (34)
 
@@ -1453,38 +1654,8 @@ badge and any count quoted in the docs must agree with it.
 - The profile ships the one key LibDBIcon reads, and nothing else
 - modules/Minimap.lua passes the silent flag to every LibStub call
 
-### test_schema.lua (63)
+### test_schema.lua (33)
 
-- Schema: a window path resolves against the session's ACTIVE window
-- Schema: a global path is unaffected by which window is active
-- Schema: an unset active window falls back to the FIRST window, never to nil
-- Schema: a stale active-window id falls back to the first window
-- Schema: the inverted row stores the negation of what it displays
-- SetByPath: refuses a value the row's validate() rejects, and stores nothing
-- SetByPath: refuses a path that is not a row
-- SetByPath: fires the row's onChange exactly once, with the value and window id
-- SetByPath: onChange runs AFTER the write, never before
-- SetByPath: logs the change exactly ONCE
-- SetByPath: announces CONFIG_CHANGED once, tagged with the row's page and window
-- SetByPath: re-syncs open panels IN PLACE, never structurally
-- SetByPath: a table value is COPIED in, never stored by reference
-- ApplyDefault: restores through the same seam, deep-copying a table default
-- ApplyDefault: round-trips the inverted row back to its SHIPPED stored value
-- SetByPath: window.columns repairs any array into the WHOLE catalog
-- SetByPath: window.columns DROPS a statistic this build does not have
-- SetByPath: window.columns keeps a repeated statistic's FIRST appearance only
-- SetByPath: window.columns stores the enabled ones ahead of the disabled ones
-- SetByPath: window.columns REBUILDS the array rather than adopting the caller's
-- SetByPath: window.columns takes the same log, message and refresh a scalar takes
-- SetByPath: window.columns is readable through the generic resolver
-- SetByPath: window.columns REFUSES a non-table value, with a message
-- SetByPath: window.columns REFUSES an empty array, with a message
-- SetByPath: window.columns REFUSES a gap or a string key, with a message
-- SetByPath: window.columns REFUSES an entry that is not a table, with a message
-- SetByPath: window.columns REFUSES an array with nothing enabled, with a message
-- SetByPath: window.columns REFUSES an array whose every statistic this build dropped, with a message
-- SetByPath: a path INTO the column array is refused by name
-- Schema: NS.NormalizeColumns is published for the migration ladder
 - Schema: a `hidden` row is writable and listable but draws no control
 - Schema: the export choices are hidden from the panel but NOT from the seam
 - The meta colour mode sets every bar and header in the window at once
@@ -1519,6 +1690,39 @@ badge and any count quoted in the docs must agree with it.
 - RestoreAllDefaults leaves the profile LIST alone
 - A profile reset rebuilds through the ONE message, not by direct calls
 
+### test_schema_paths.lua (30)
+
+- Schema: a window path resolves against the session's ACTIVE window
+- Schema: a global path is unaffected by which window is active
+- Schema: an unset active window falls back to the FIRST window, never to nil
+- Schema: a stale active-window id falls back to the first window
+- Schema: the inverted row stores the negation of what it displays
+- SetByPath: refuses a value the row's validate() rejects, and stores nothing
+- SetByPath: refuses a path that is not a row
+- SetByPath: fires the row's onChange exactly once, with the value and window id
+- SetByPath: onChange runs AFTER the write, never before
+- SetByPath: logs the change exactly ONCE
+- SetByPath: announces CONFIG_CHANGED once, tagged with the row's page and window
+- SetByPath: re-syncs open panels IN PLACE, never structurally
+- SetByPath: a table value is COPIED in, never stored by reference
+- ApplyDefault: restores through the same seam, deep-copying a table default
+- ApplyDefault: round-trips the inverted row back to its SHIPPED stored value
+- SetByPath: window.columns repairs any array into the WHOLE catalog
+- SetByPath: window.columns DROPS a statistic this build does not have
+- SetByPath: window.columns keeps a repeated statistic's FIRST appearance only
+- SetByPath: window.columns stores the enabled ones ahead of the disabled ones
+- SetByPath: window.columns REBUILDS the array rather than adopting the caller's
+- SetByPath: window.columns takes the same log, message and refresh a scalar takes
+- SetByPath: window.columns is readable through the generic resolver
+- SetByPath: window.columns REFUSES a non-table value, with a message
+- SetByPath: window.columns REFUSES an empty array, with a message
+- SetByPath: window.columns REFUSES a gap or a string key, with a message
+- SetByPath: window.columns REFUSES an entry that is not a table, with a message
+- SetByPath: window.columns REFUSES an array with nothing enabled, with a message
+- SetByPath: window.columns REFUSES an array whose every statistic this build dropped, with a message
+- SetByPath: a path INTO the column array is refused by name
+- Schema: NS.NormalizeColumns is published for the migration ladder
+
 ### test_schema_defaults.lua (10)
 
 - Schema defaults: the two trees the validator compares are both present
@@ -1532,7 +1736,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (36)
+### test_slash.lua (47)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1565,6 +1769,17 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `debug on` / `debug off` set the logging flag; a bare `debug` moves the window
 - Slash: `debug feign` with no argument prints the recording
 - Slash: `debug feign of` names the rejected argument and leaves the trace alone
+- Slash: `diag`, `recap` and `identity` each reach their OWN report and no other
+- Slash: the three read verbs run with no debug console seam at all
+- Slash: a read verb moves neither the console window nor the logging flag
+- Slash: the debug sub-verb is matched case-insensitively
+- Slash: `debug feign on` arms the recording and says exactly what to do next
+- Slash: `debug feign off` stops the recording and says so
+- Slash: the feign argument is case-folded, and a word after it is ignored
+- Slash: a refused feign argument does not fall through to the console toggle
+- Slash: a word the ladder does not know toggles the console, as a bare `debug` does
+- Slash: with core/Diagnostics.lua absent the debug verbs go quiet, not through
+- Slash: a Diagnostics too old to arm a trace reports off rather than promising one
 - Slash: registration goes through AceConsole, on both tokens
 - Slash: both registered tokens reach the SAME dispatcher
 - Slash: no raw SLASH_* global is claimed anywhere
@@ -1612,7 +1827,7 @@ badge and any count quoted in the docs must agree with it.
 - Panel: every window sub-page banners the active window, and Windows has no second picker
 - Panel: choosing a window in the banner retargets every page and keeps the tab
 
-### test_columnblocks.lua (17)
+### test_columnblocks.lua (35)
 
 - Blocks: one block per item, each carrying its index and its label
 - Blocks: the glyph says enabled or disabled, and clicking it toggles
@@ -1631,6 +1846,24 @@ badge and any count quoted in the docs must agree with it.
 - Blocks: the library's box is behind every row, muted for a hidden column
 - Blocks: the handle's gutter is the library's, never restated here
 - Blocks: the rule is drawn once, under the last enabled block
+- Blocks: a spec that is not a table is refused, and refused without touching the page
+- Blocks: with AceGUI absent the page refuses rather than half-drawing
+- Blocks: an empty item list still builds and finishes a controller
+- Blocks: the boundary is a COUNT of enabled items, never a scan for the first disabled
+- Blocks: the rule is an empty AceGUI Heading, sitting after the boundary block
+- Blocks: no rule is drawn when there is no divide to mark, at either end
+- Blocks: the label is gold when the column is shown and grey when it is not
+- Blocks: the carried copy says the same thing the row does
+- Blocks: every hidden row is registered, so the indices the library moves are the real ones
+- Blocks: the geometry handed to the library is the published pair, not a private copy
+- Blocks: the handle offers the localized drag tooltip, and the catalogued icon
+- Blocks: the glyph sits clear of the library's handle gutter
+- Blocks: a reused block comes back at full alpha
+- Blocks: an item with no label draws an empty string, not a nil
+- Blocks: CancelReorder survives a page that never rendered a list
+- Blocks: cancelling twice releases the blocks once
+- Blocks: the release is announced on the debug log, with the count
+- Blocks: the returned list and the list parked on the ctx are two tables, same contents
 
 ### test_columns.lua (11)
 
@@ -1701,8 +1934,11 @@ badge and any count quoted in the docs must agree with it.
 | test_compat.lua | 33 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
-| test_database.lua | 56 |
-| test_diagnostics.lua | 75 |
+| test_database.lua | 68 |
+| test_diagnostics.lua | 21 |
+| test_diagnostics_deathrecap.lua | 30 |
+| test_diagnostics_identity.lua | 17 |
+| test_diagnostics_feign.lua | 19 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
 | test_perfsetup.lua | 20 |
@@ -1711,29 +1947,39 @@ badge and any count quoted in the docs must agree with it.
 | test_envsetup.lua | 11 |
 | test_lifecycle.lua | 29 |
 | test_vendor_sync.lua | 2 |
-| test_format.lua | 32 |
+| test_format.lua | 39 |
 | test_provider.lua | 72 |
-| test_roster.lua | 22 |
-| test_feign.lua | 15 |
-| test_aggregator.lua | 81 |
+| test_roster.lua | 39 |
+| test_feign.lua | 27 |
+| test_aggregator.lua | 61 |
+| test_aggregator_identity.lua | 23 |
+| test_aggregator_preview.lua | 5 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 141 |
-| test_headercontrols.lua | 51 |
-| test_row.lua | 91 |
+| test_window.lua | 59 |
+| test_window_header.lua | 70 |
+| test_window_placement.lua | 30 |
+| test_headercontrols.lua | 65 |
+| test_row.lua | 76 |
+| test_row_namecell.lua | 30 |
 | test_targets.lua | 24 |
-| test_tooltip.lua | 124 |
-| test_drilldown.lua | 50 |
-| test_export.lua | 91 |
-| test_visibility.lua | 33 |
+| test_tooltip.lua | 20 |
+| test_tooltip_lines.lua | 37 |
+| test_tooltip_builders.lua | 23 |
+| test_tooltip_deaths.lua | 57 |
+| test_drilldown.lua | 58 |
+| test_export.lua | 86 |
+| test_export_modal.lua | 26 |
+| test_visibility.lua | 41 |
 | test_windowmanager.lua | 34 |
 | test_minimap.lua | 17 |
-| test_schema.lua | 63 |
+| test_schema.lua | 33 |
+| test_schema_paths.lua | 30 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 36 |
+| test_slash.lua | 47 |
 | test_options_panel.lua | 38 |
-| test_columnblocks.lua | 17 |
+| test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1534** |
+| **Total** | **1728** |
