@@ -509,43 +509,27 @@ Three things read like deviations and are not, recorded here so the same questio
 
 ### Files over the 1500-line cap
 
-`layout-§1` caps every **authored** `.lua` this repository tracks at 1500 lines — `tests/` included,
-with vendored code (`libs/`, `tests/_kit/`) the only carve-out that reaches anything here; nothing in
-this repo is generated non-shipping data, so the second carve-out has no instance. It gives a file
-over the cap three terminal states: peeled, an open issue naming the seam a peel would follow, or a
-ratified row in the register above carrying a re-check trigger. What it does not allow is a breach
-nothing anywhere remarks on — "the count sitting in a bundle manifest that no document reads". This
-table is the remark, and it is why an audit **MUST NOT** re-file `layout-§1` against any file in it.
+None. On 2026-09-09 the last of fifteen breaches was peeled, and the census table that used to stand
+here is gone with them — `layout-§1`'s terminal state for a repository with nothing over the cap is
+nothing over the cap *and* no census, because a heading standing over an empty table is the graveyard
+the rule warns about rather than evidence of anything.
 
-One file, measured 2026-09-09 with
+`tests/test_layout_cap.lua` is what keeps that honest, and it reads the absence deliberately: a file
+that crosses 1500 lines again turns the suite red naming the heading that has to come back with it,
+and a table that outlives its last breach turns it red the other way. The gate was amended on
+2026-09-09 to tell those two states apart; before that it failed in both directions at once, which is
+the shape a gate takes when it was written for a repository that had never reached the state it was
+driving toward.
 
-```
-git ls-files '*.lua' | grep -v '^libs/' | grep -v '^tests/_kit/' | xargs wc -l | sort -rn
-```
-
-| File | Lines (2026-09-09) | Disposition |
-|---|---|---|
-| `tests/test_tooltip.lua` | 3054 | Issue [#28](https://github.com/tusharsaxena/MultiMeters/issues/28) — peels behind `modules/Tooltip.lua`, three ways, along the seam that file took |
-
-**The line counts are dated because they drift, and nothing asserts them.** What
-`tests/test_layout_cap.lua` asserts is the *membership* of this table, in both directions: a file that
-crosses 1500 and is not listed here turns the suite red, and so does a row for a file that has fallen
-back under the cap or been deleted. A figure in this column is a measurement, not a claim about today.
-
-**Everything else is peeled, which is why this table is one row rather than fifteen.** The seven
-source files went first, each along the seam its own issue had already named, and the suites followed
-the modules they mirror — `tests/test_window.lua` 3159 → 1240 behind `Window_Header` and
-`Window_Placement`, `tests/wow_mock.lua` 2270 → 1466 with the secret simulator and the frame model out
-to `mock_secrets.lua` and `mock_frame.lua`, `tests/test_diagnostics.lua` 1838 → 432 with one suite per
-probe. A test file's seam is not its own to choose: it follows the module's, so a reader who opens
-`modules/Tooltip_Builders.lua` knows which suite covers it.
-
-**The 1000–1500 band is on notice, not in breach.** It is now the busiest it has been, because a peel
-lands a file wherever the seam puts it and several landed high: `tests/test_window_header.lua` (1421),
-`tests/wow_mock.lua` (1466), `tests/test_row.lua` (1456), `settings/Schema.lua` (1350),
-`tests/test_provider.lua` (1359), `settings/Schema_Compose.lua` (1285), `tests/test_export.lua` (1275),
-`tests/test_aggregator.lua` (1255), `tests/test_window.lua` (1240) and `tests/test_database.lua` (1121).
-A file at 1456 has 44 lines of headroom, and the band exists so that whoever next edits one knows it.
+What was peeled, and along which seam, is in the git history of that day — each of the seven source
+files took the seam its own issue had already named, and the eight suites followed the modules they
+mirror. What remains worth knowing is the **1000–1500 band**, which is busier than it has ever been
+because a peel lands a file wherever its seam falls: `tests/test_window_header.lua` (1421),
+`tests/wow_mock.lua` (1466), `tests/test_row.lua` (1456), `tests/test_tooltip_deaths.lua` (1403),
+`settings/Schema.lua` (1350), `tests/test_provider.lua` (1359), `settings/Schema_Compose.lua` (1285),
+`tests/test_export.lua` (1275), `tests/test_aggregator.lua` (1255), `tests/test_window.lua` (1240) and
+`tests/test_database.lua` (1121). A file at 1466 has 34 lines of headroom, and the band exists so that
+whoever next edits one knows it before they start rather than after the gate says so.
 
 ### Hard-coded texture paths
 

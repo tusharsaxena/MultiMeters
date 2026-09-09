@@ -120,11 +120,14 @@ local function censusRows()
         end
     end
 
-    if not found then
-        fail("docs/ARCHITECTURE.md carries no '" .. CENSUS_HEADING .. "' section; " ..
-             "the cap census is where every breach is remarked on and it must not be removed")
-    end
-    return rows
+    -- The ABSENCE of the section is not a failure by itself, and this is the one
+    -- place that judgement lives. layout-§1's terminal state for a repository with
+    -- no breach left is no breach AND no census — a table standing with no rows in
+    -- it is the graveyard the section's own prose warns about. So absence is
+    -- reported to the callers, which each decide what it means: a breach with no
+    -- census to name it is red, and a census with no breach under it is red, but
+    -- neither red is this function's to raise.
+    return rows, found
 end
 
 -- ---------------------------------------------------------------------------
@@ -132,8 +135,9 @@ end
 -- ---------------------------------------------------------------------------
 
 test("layoutcap: every authored file over 1500 lines is named in the ARCHITECTURE.md census", function()
+    local rows, found = censusRows()
     local listed = {}
-    for _, row in ipairs(censusRows()) do listed[row.path] = true end
+    for _, row in ipairs(rows) do listed[row.path] = true end
 
     local unremarked = {}
     for _, path in ipairs(trackedAuthoredLua()) do
@@ -149,13 +153,15 @@ test("layoutcap: every authored file over 1500 lines is named in the ARCHITECTUR
         fail("over layout-§1's " .. CAP .. "-line cap and remarked on nowhere: " ..
              table.concat(unremarked, ", ") ..
              " — peel it, open an issue naming the seam it would peel on, or ratify a register " ..
-             "row with a re-check trigger; then add the row to docs/ARCHITECTURE.md's census")
+             "row with a re-check trigger; then add the row to docs/ARCHITECTURE.md's census" ..
+             (found and "" or " under a '" .. CENSUS_HEADING .. "' heading, which the file " ..
+              "does not currently carry — it was removed when the last breach was peeled"))
     end
 end)
 
 test("layoutcap: no census row outlives the breach it records", function()
     local spent = {}
-    for _, row in ipairs(censusRows()) do
+    for _, row in ipairs((censusRows())) do
         local n = countLines(row.path)
         if n == nil then
             spent[#spent + 1] = row.path .. " (no such file)"
@@ -174,9 +180,28 @@ end)
 
 test("layoutcap: every census row carries a disposition that can be followed", function()
     local rows = censusRows()
+
+    -- NO ROWS IS A RESULT when nothing breaches, and on 2026-09-09 that is what this
+    -- repository became: the last of fifteen files over the cap was peeled, the table
+    -- came out, and the section above it stayed as prose saying so. Holding the old
+    -- "a table with no rows is a graveyard" rule against THAT would be asking the hub
+    -- to carry a row for a breach that does not exist.
+    --
+    -- The graveyard the rule was written against is a row that outlives its breach,
+    -- and the case above this one is what catches it — in the other direction, by
+    -- measuring the file rather than by counting the table. So the honest test here
+    -- is: rows are only owed when something is over the cap.
     if #rows == 0 then
-        fail("the census table under '" .. CENSUS_HEADING .. "' has no rows; if the repository " ..
-             "really has no breach left, delete the section rather than leaving an empty table")
+        local breaching = {}
+        for _, path in ipairs(trackedAuthoredLua()) do
+            local n = countLines(path)
+            if n and n > CAP then breaching[#breaching + 1] = path end
+        end
+        if #breaching > 0 then
+            fail("nothing is listed under '" .. CENSUS_HEADING .. "' and yet " ..
+                 table.concat(breaching, ", ") .. " sits over the cap")
+        end
+        return
     end
 
     local unfollowable = {}
