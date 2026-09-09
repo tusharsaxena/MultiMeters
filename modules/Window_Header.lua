@@ -1083,10 +1083,22 @@ function WindowProto:RestrictedNotice(preview)
     if preview then return nil end
     local aggregate = self.aggregate
     if not (aggregate and aggregate.identityMode) then return nil end
-    if aggregate.ambiguous then
-        return NS.GRAY .. L["restricted \226\128\148 some rows cannot be told apart"] .. "|r"
+    if not aggregate.ambiguous then return NS.GRAY .. L["restricted"] .. "|r" end
+
+    -- THE COUNT, WHERE THERE IS ONE. Both figures are OUR OWN plain integers --
+    -- a tally of rows the aggregator kept, never a meter value -- so formatting
+    -- them mid-pull is legal where formatting a total would need NS.Format.
+    --
+    -- Guarded on both being positive rather than on non-nil: an aggregate from a
+    -- build that predates the count answers nil, and "0 of 0 rows" is a worse
+    -- sentence than the one it would replace.
+    local ambiguous, total = aggregate.ambiguousRows, #(aggregate.rows or aggregate)
+    if type(ambiguous) == "number" and ambiguous > 0 and total > 0 then
+        return NS.GRAY .. string.format(
+            L["restricted \226\128\148 %d of %d share a class and spec"],
+            ambiguous, total) .. "|r"
     end
-    return NS.GRAY .. L["restricted"] .. "|r"
+    return NS.GRAY .. L["restricted \226\128\148 some rows cannot be told apart"] .. "|r"
 end
 
 --- The header's right-hand line: which session, how long it has run, and the

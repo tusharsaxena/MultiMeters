@@ -287,6 +287,56 @@ test("The segment name sits LAST, nearest the picker that changes it", function(
     assertTrue(notice < label, "the segment name must be the rightmost piece, got: " .. line)
 end)
 
+test("The restricted notice COUNTS the rows it could not tell apart — #22", function()
+    -- ISSUE #22'S REMAINING HALF. Widening the identity key and pairing rows by
+    -- position were both measured dead on a live client (see the issue), so the
+    -- blanks are permanent and the only thing left to fix is that the player has
+    -- no way to learn WHY most of a raid grid is empty. "some rows cannot be told
+    -- apart" said it was happening; it never said how much, and at raid size the
+    -- answer was most of the grid.
+    -- red under: a notice that names no number.
+    local _, window = scene{
+        restricted = true,
+        sortMode   = "value",
+        sources    = {
+            src(ALPHA, 100, { class = "MAGE" }),
+            src(BETA,   50, { class = "MAGE" }),
+            src("Player-1-0000000C", 25, { class = "PRIEST" }),
+        },
+    }
+    window:ApplyConfig()
+    window:Refresh()
+
+    local line = window.sessionText:GetText() or ""
+    assertTrue(line:find("restricted", 1, true) ~= nil, "got: " .. line)
+    assertTrue(line:find("2 of 3", 1, true) ~= nil,
+        "the notice must name how many rows are affected, got: " .. line)
+    assertTrue(line:find("class", 1, true) ~= nil,
+        "and why they are, got: " .. line)
+end)
+
+test("The restricted notice stays a bare word when NOTHING collided", function()
+    -- A count of zero is not a thing to say. A dungeon where every player has a
+    -- distinct class and spec loses no cells at all, and a notice that talked
+    -- about rows it could not tell apart would be describing a problem the player
+    -- does not have.
+    local _, window = scene{
+        restricted = true,
+        sortMode   = "value",
+        sources    = {
+            src(ALPHA, 100, { class = "MAGE" }),
+            src(BETA,   50, { class = "PRIEST" }),
+        },
+    }
+    window:ApplyConfig()
+    window:Refresh()
+
+    local line = window.sessionText:GetText() or ""
+    assertTrue(line:find("restricted", 1, true) ~= nil, "got: " .. line)
+    assertNil(line:find(" of ", 1, true),
+        "an unambiguous grid must not carry a count, got: " .. line)
+end)
+
 test("The header says the grid was built the restricted way", function()
     -- REPLACES THE FROZEN-SORT NOTICE. The rows have not stopped reordering —
     -- they are the engine's own live ranking. What the player is owed is why a
@@ -305,6 +355,11 @@ test("The header names AMBIGUITY when two rows cannot be told apart", function()
     -- them, so their secondary cells are left empty rather than filled with a
     -- number that might be the other one's. That is a visible absence and it
     -- needs a reason on the line.
+    --
+    -- THIS CASE USED TO ASSERT "told apart" and now asserts the count. The
+    -- wording changed with issue #22: the old line said the ambiguity was
+    -- happening and never how much of the grid it cost, which at raid size was
+    -- most of it. The assertion follows the information, not the phrasing.
     local _, window, cfg = scene{
         restricted = true,
         sources = { src(ALPHA, 100, { class = "MAGE" }), src(BETA, 50, { class = "MAGE" }) },
@@ -313,8 +368,9 @@ test("The header names AMBIGUITY when two rows cannot be told apart", function()
     window:ApplyConfig()
     window:Refresh()
 
-    assertTrue(window.sessionText:GetText():find("told apart", 1, true) ~= nil,
-        "got: " .. tostring(window.sessionText:GetText()))
+    local line = window.sessionText:GetText() or ""
+    assertTrue(line:find("2 of 2", 1, true) ~= nil, "got: " .. line)
+    assertTrue(line:find("share a class and spec", 1, true) ~= nil, "got: " .. line)
 end)
 
 test("The header line reads 'Test' while placeholder data is on screen", function()

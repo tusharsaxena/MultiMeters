@@ -28,6 +28,15 @@ local _, NS = ...
 -- write path is NS.DebugLog:SetEnabled — modules READ NS.State.debug (through
 -- the NS.Debug sink) and never mutate it.
 --
+-- `debugTooltip` is a CHANNEL flag under it, and it exists because one channel
+-- can drown the log it shares. A tooltip is rebuilt on every mouse-over and
+-- every refresh while the cursor rests on a row, so its two lines arrive faster
+-- than a player can move the mouse -- and the buffer is capped, so a minute of
+-- hovering evicts the Aggregator and Render lines somebody was actually
+-- reading. It defaults OFF, is session-only exactly as `debug` is, and gates
+-- nothing but the log: the tooltips themselves are unaffected. `/mm debug
+-- tooltip` is the only writer.
+--
 -- `restricted` mirrors the Combat addon restriction so a per-frame render pass
 -- can branch on a plain boolean instead of calling into C_RestrictedActions
 -- forty times a second. core/MultiMeters.lua is its only writer, off
@@ -56,6 +65,7 @@ local _, NS = ...
 -- window's id outlive the window.
 local State = {
     debug          = false,
+    debugTooltip   = false,
     restricted     = false,
     testMode       = false,
     activeWindowId = nil,

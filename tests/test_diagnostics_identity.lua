@@ -115,6 +115,59 @@ test("Diagnostics: the identity report prints the seats of every collided key", 
     assertTrue(text:find("seats", 1, true) ~= nil, "the seat listing is missing")
 end)
 
+-- ---------------------------------------------------------------------------
+-- The lookup verdict — the one question that decides both #22 and #24
+-- ---------------------------------------------------------------------------
+--
+-- If the client will resolve a source from a handle this context may not read,
+-- the per-source join Lua is forbidden can be done BY THE CLIENT and identity
+-- correlation goes away entirely. Nothing asked that where it could be answered
+-- until this section existed: modules/Provider.lua's ProbeSourceByGuid is
+-- reached only from the GUID build path, which is the path that does not run
+-- once the restriction is on.
+
+test("Diagnostics: the identity report asks whether a SECRET GUID resolves", function()
+    -- red under: the section going missing, which is how the question stayed
+    -- unanswered for as long as it did.
+    local inst = pulled(T.load{ enable = true })
+    local text = identityReport(inst)
+
+    assertTrue(text:find("SECRET GUID", 1, true) ~= nil, "the lookup section is missing")
+    assertTrue(text:find("secret GUID %->") ~= nil, "the secret tally is missing")
+    assertTrue(text:find("plain  GUID %->") ~= nil, "the plain control is missing")
+end)
+
+test("Diagnostics: the lookup section draws the verdict rather than leaving counts", function()
+    -- A tally nobody can read is a measurement that does not travel. The verdict
+    -- line is what gets pasted into the issue.
+    local inst = pulled(T.load{ enable = true })
+    local text = identityReport(inst)
+    assertTrue(text:find("NO", 1, true) ~= nil,
+        "a fixture whose secret handles match nothing must read as NO")
+end)
+
+test("Diagnostics: out of combat the lookup section refuses to draw a verdict", function()
+    -- EVERY GUID IS PLAIN OUT OF COMBAT, so a capture taken after the pull would
+    -- report the control and nothing else. Saying so is the difference between a
+    -- measurement and a misreading.
+    -- red under: printing YES because the plain rows resolved.
+    local inst = T.load{ enable = true }
+    inst.NS.State.debug = true
+    -- Installed on BOTH session types on purpose. With no identity pass measured
+    -- the report has no rectangle to follow and aims its probes at the stored
+    -- window, which ships pointed at Overall.
+    for _, sessionType in ipairs({ 1, inst.NS.Constants.SESSION_TYPE.Overall }) do
+        inst.mocks.setSession(sessionType, "*", inst.mocks.buildSession{ count = 3 })
+        inst.mocks.setSourceDetail(sessionType, "*", "*", {
+            combatSpells = {}, maxAmount = 10, totalAmount = 100,
+        })
+    end
+
+    local text = identityReport(inst)
+    assertTrue(text:find("no secret GUID was seen", 1, true) ~= nil,
+        "an all-plain capture must say it proves nothing")
+end)
+
 test("Diagnostics: the identity report audits what the CLIENT annotates secret", function()
     -- THE MEASUREMENT THAT DECIDES WHETHER THE KEY CAN BE WIDENED AT ALL. The
     -- three fields the key is built from may simply be every plain field there

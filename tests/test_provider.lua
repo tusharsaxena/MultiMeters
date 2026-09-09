@@ -594,6 +594,147 @@ test("Provider.ProbeSourceByGuid names what the API did with a GUID it was hande
     assertEqual(inst.NS.Provider.ProbeSourceByGuid(CURRENT, "NoSuchStat", guid), "no stat")
 end)
 
+-- ---------------------------------------------------------------------------
+-- ProbeSourceLookup — the same question, asked where it can be answered
+-- ---------------------------------------------------------------------------
+--
+-- ProbeSourceByGuid above has posed the question since the day it was written
+-- and has never answered it: its only caller sits on the GUID build path, which
+-- is the path that does not run once the restriction is on. These cases cover
+-- the walk that replaces it.
+--
+-- WHAT THEY DO NOT CLAIM. Nothing here asserts what a real client does with a
+-- secret handle — that is the measurement the probe was built to go and take.
+-- The fixture models the pessimistic reading (a secret GUID matches nothing) so
+-- that the SPLIT is exercised; a client that resolves one would change the
+-- verdict, not these cases.
+
+--- A session with one plain-GUID local row and two secret-GUID rows.
+local function mixedGuidSession(inst)
+    local plainGuid = "Player-1-0000000A"
+    inst.mocks.setSession(CURRENT, "*", {
+        combatSources = {
+            { sourceGUID = plainGuid, classFilename = "WARRIOR",
+              isLocalPlayer = true, totalAmount = 100 },
+            { sourceGUID = inst.mocks.secret("Player-1-0000000B"),
+              classFilename = "PRIEST", isLocalPlayer = false, totalAmount = 50 },
+            { sourceGUID = inst.mocks.secret("Player-1-0000000C"),
+              classFilename = "PRIEST", isLocalPlayer = false, totalAmount = 30 },
+        },
+        maxAmount = 100, totalAmount = 180,
+    })
+    -- Keyed on the PLAIN guid and on nothing else: no "*" fallback, so a handle
+    -- the fixture cannot key on matches nothing, exactly as a client that
+    -- refuses the join would answer.
+    inst.mocks.setSourceDetail(CURRENT, "*", plainGuid, {
+        combatSpells = {}, maxAmount = 10, totalAmount = 100,
+    })
+    return inst
+end
+
+test("Provider.ProbeSourceLookup splits the verdict by whether the GUID was secret", function()
+    -- THE WHOLE POINT OF THE SPLIT. The local player's sourceGUID stays plain
+    -- through a pull, so their row resolves whatever the client does with a
+    -- secret handle — and one verdict for the session would report THAT and be
+    -- wrong in the only way that matters.
+    -- red under: a single tally, or the local row counted as the answer.
+    local inst = mixedGuidSession(T.load())
+    local r = inst.NS.Provider.ProbeSourceLookup(CURRENT, "DamageDone")
+
+    assertEqual(r.sampled, 3)
+    assertEqual(r.plain, 1, "the plain-GUID row is the control")
+    assertEqual(r.secret, 2, "both secret-GUID rows must be probed")
+    assertEqual(r.plainTally["resolved"], 1)
+    assertEqual(r.secretTally["nil"], 2, "a handle that matches nothing reads `nil`")
+    assertNil(r.secretTally["resolved"], "nothing may claim a secret handle resolved")
+end)
+
+test("Provider.ProbeSourceLookup names the local player's row as the control", function()
+    local inst = mixedGuidSession(T.load())
+    local r = inst.NS.Provider.ProbeSourceLookup(CURRENT, "DamageDone")
+    assertEqual(r.localWord, "resolved")
+    assertTrue(r.sampled > 1, "the control alone is not a measurement")
+end)
+
+test("Provider.ProbeSourceLookup says whether the LOCAL row's GUID was secret too", function()
+    -- THE CORRECTION A LIVE CAPTURE FORCED. This probe was written believing the
+    -- local player's row keeps a plain `sourceGUID` through a pull, and the
+    -- report called that row the control on the strength of it. A capture printed
+    -- `secret 6 / plain 0` and a control line together, which cannot both be
+    -- true: what stays plain mid-pull is `UnitGUID("player")`, and the METER's
+    -- `sourceGUID` is secret on every row, the local player's included.
+    -- red under: reporting a control that was not one.
+    local inst = mixedGuidSession(T.load())
+    assertFalse(inst.NS.Provider.ProbeSourceLookup(CURRENT, "DamageDone").localSecret,
+        "a plain local GUID IS the control")
+
+    local restricted = T.load()
+    restricted.mocks.setSession(CURRENT, "*", {
+        combatSources = {
+            { sourceGUID = restricted.mocks.secret("Player-1-0000000A"),
+              classFilename = "WARRIOR", isLocalPlayer = true, totalAmount = 100 },
+        },
+        maxAmount = 100, totalAmount = 100,
+    })
+    local r = restricted.NS.Provider.ProbeSourceLookup(CURRENT, "DamageDone")
+    assertEqual(r.localWord, "nil", "the local row was still probed")
+    assertTrue(r.localSecret, "and its GUID was secret, so it is NOT a control")
+end)
+
+test("Provider.ProbeSourceLookup answers an empty tally rather than raising", function()
+    -- It is reached from a slash command typed mid-pull, so every way of having
+    -- nothing to say has to be a shape the report can print.
+    local inst = mixedGuidSession(T.load())
+    local P = inst.NS.Provider
+
+    assertEqual(P.ProbeSourceLookup(CURRENT, "NoSuchStat").sampled, 0)
+    assertEqual(P:ProbeSourceLookup(CURRENT, "DamageDone").sampled, 3,
+        "and the colon shape agrees")
+
+    P:Suspend()
+    assertEqual(P.ProbeSourceLookup(CURRENT, "DamageDone").sampled, 0,
+        "a suspended capture reads nothing")
+end)
+
+test("Provider.ProbeSourceLookup withholds a SECRET creature id from the client", function()
+    -- The client refuses a secret argument #4 by RAISING, so forwarding one
+    -- answers "raised" for a reason that has nothing to do with the GUID — the
+    -- precise misreading this probe exists to prevent. tests/wow_mock.lua models
+    -- the raise, so a regression here fails offline.
+    -- red under: passing src.sourceCreatureID through unfiltered.
+    local inst = T.load()
+    inst.mocks.setSession(CURRENT, "*", {
+        combatSources = {
+            { sourceGUID = "Player-1-0000000A", sourceCreatureID = inst.mocks.secret(4321),
+              classFilename = "WARRIOR", isLocalPlayer = true, totalAmount = 100 },
+        },
+        maxAmount = 100, totalAmount = 100,
+    })
+    inst.mocks.setSourceDetail(CURRENT, "*", "Player-1-0000000A", {
+        combatSpells = {}, maxAmount = 10, totalAmount = 100,
+    })
+
+    local r = inst.NS.Provider.ProbeSourceLookup(CURRENT, "DamageDone")
+    assertEqual(r.plainTally["resolved"], 1, "the secret creature id was forwarded and raised")
+    assertNil(r.plainTally["raised"])
+end)
+
+test("Provider.ProbeSourceLookup skips a source that carries no GUID", function()
+    -- An NPC row has a creature id and no GUID. There is no GUID question to ask
+    -- about it, and counting it would dilute the ratio the capture is read for.
+    local inst = T.load()
+    inst.mocks.setSession(CURRENT, "*", {
+        combatSources = {
+            { sourceCreatureID = 4321, classFilename = nil, totalAmount = 100 },
+            { sourceGUID = "Player-1-0000000A", classFilename = "WARRIOR",
+              isLocalPlayer = true, totalAmount = 50 },
+        },
+        maxAmount = 100, totalAmount = 150,
+    })
+    local r = inst.NS.Provider.ProbeSourceLookup(CURRENT, "DamageDone")
+    assertEqual(r.sampled, 1, "the NPC row must not be probed")
+end)
+
 test("Provider: an NPC source with no GUID is KEPT, on its creature ID", function()
     -- THE BUG THAT EMPTIED THE ENEMY COLUMN. An NPC carries a sourceCreatureID
     -- and no player GUID, so a `sourceGUID == nil` guard dropped every enemy —

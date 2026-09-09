@@ -419,6 +419,67 @@ test("Slash: `debug on` / `debug off` set the logging flag; a bare `debug` moves
     assertFalse(inst.NS.State.debug, "and must not touch the logging flag")
 end)
 
+test("Slash: `debug tooltip` toggles the tooltip channel and says which way", function()
+    -- THE CHANNEL THAT DROWNS THE LOG. A tooltip is rebuilt on every mouse-over
+    -- and on every refresh the cursor sits through, so its lines arrive faster
+    -- than the mouse moves and a capped buffer loses the pass somebody was
+    -- reading. Off by default, and the reply names the state it landed in --
+    -- there is no argument to get wrong, so the print is what makes it certain.
+    local inst = T.load{ enable = true }
+    assertFalse(inst.NS.State.debugTooltip, "it must start OFF")
+
+    local text = joined(sayAndLog(inst, "debug tooltip"))
+    assertTrue(inst.NS.State.debugTooltip, "the first call turns it on")
+    assertTrue(text:lower():find("on", 1, true) ~= nil, "and says so")
+
+    say(inst, "debug tooltip")
+    assertFalse(inst.NS.State.debugTooltip, "the second turns it off again")
+end)
+
+test("Slash: EVERY tooltip-channel line is behind the flag, not just some", function()
+    -- THE BUG THIS CASE EXISTS FOR. The first cut of `/mm debug tooltip` gated
+    -- the two lines in modules/Tooltip_Builders.lua and missed a third in
+    -- modules/Row.lua -- which fires on MOUSE MOTION rather than on a tooltip
+    -- being built, and is therefore the loudest of the three. Half a fix reads
+    -- exactly like a whole one from the console.
+    --
+    -- Asserted over the SOURCE rather than by driving three widgets, because the
+    -- property is "no call site was missed" and a behavioural test can only ever
+    -- cover the call sites somebody remembered to drive.
+    local missed = {}
+    for _, rel in ipairs({ "modules/Row.lua", "modules/Tooltip_Builders.lua" }) do
+        local fh = assert(io.open(T.root .. "/" .. rel, "r"))
+        local prev = ""
+        local n = 0
+        for line in fh:lines() do
+            n = n + 1
+            if line:find('Debug("Tooltip"', 1, true) and not line:find("^%s*%-%-") then
+                if not prev:find("State.debugTooltip", 1, true) then
+                    missed[#missed + 1] = rel .. ":" .. n
+                end
+            end
+            prev = line
+        end
+        fh:close()
+    end
+    assertEqual(#missed, 0,
+        "tooltip lines not behind State.debugTooltip: " .. table.concat(missed, ", "))
+end)
+
+test("Slash: `debug tooltip` touches neither the logging flag nor the console", function()
+    -- Three switches, three jobs. red under: folding the channel into `debug on`,
+    -- which is exactly the coupling that made it unreadable in the first place.
+    local inst = T.load{ enable = true }
+    local D = inst.NS.DebugLog
+    local shownBefore = D and D:IsShown()
+
+    say(inst, "debug tooltip")
+    assertFalse(inst.NS.State.debug, "the session logging flag is not its business")
+    if D then
+        assertEqual(D:IsShown(), shownBefore, "and the window did not move")
+    end
+end)
+
 test("Slash: `debug feign` with no argument prints the recording", function()
     -- The bare verb is the READ, and it has to stay the read: a player is asked to
     -- arm the trace before a dungeon and type this after it. The rejection added

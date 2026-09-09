@@ -46,13 +46,19 @@ local CLASS_TEXTURE  = Internals.CLASS_TEXTURE
 -- carry a class-colored bar too — plus the icons. `classFilename` is NeverSecret,
 -- so this column renders in full even when every number to its right is opaque.
 --
--- `specIconID` was believed to be available alongside it on every row. In a
--- dungeon it is. In a 19-player raid it was ABSENT from every source row but the
--- local player's — so the spec branch below fires for exactly one row and every
--- other row draws the CLASS icon. That degradation is silent by construction:
--- the fallback was written for a source that had no spec, and it cannot tell
--- "this source has no spec" from "this client did not send one". Issue #24
--- carries the capture and the screenshots.
+-- `specIconID` arrives beside it on every row, in a dungeon AND in a raid. That
+-- was in doubt: issue #24 recorded a 19-player raid where it was absent from
+-- every source row but the local player's, so the spec branch below fired once
+-- and every other row drew the CLASS icon. It does not reproduce -- measured
+-- 2026-09-09 on an 18-member raid mid-pull, `specIconID` reads `plain 10/10`
+-- with six distinct values -- and #24 is closed. `/mm debug identity`'s field
+-- audit is the one-command check if it ever goes missing again.
+--
+-- THE FALLBACK BELOW STAYS, and not only for a source that genuinely has no
+-- spec (an NPC, a pet, an unresolved unit). It is silent by construction -- it
+-- cannot tell "this source has no spec" from "this client did not send one" --
+-- which is exactly what let #24 go unnoticed for as long as it did. The audit
+-- is what tells those apart now; the icon rung is not the place to try.
 
 -- The gap between the name column's icon and the name beside it, in pixels. It
 -- was a literal 1 folded into the icon's own stride, which reads as the two

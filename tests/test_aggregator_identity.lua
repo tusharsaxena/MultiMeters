@@ -652,3 +652,67 @@ test("Aggregator keeps the last identity pass for the report to print", function
     assertEqual(kept.collidedRows, 2)
     assertEqual(kept.rows, 3)
 end)
+
+-- ---------------------------------------------------------------------------
+-- The ambiguous-row count the header shows — issue #22
+-- ---------------------------------------------------------------------------
+--
+-- The correlation rectangle answers this too, but only while the debug flag is
+-- on: it is a diagnostic and costs a walk of every row against every column. The
+-- header needs the same number on every pass, for every player, with no flag --
+-- so the count is taken off the final row list once and published on the result.
+
+test("Identity: the pass publishes how many ROWS wear a collided key", function()
+    -- ROWS, NOT KEYS. Two priests of one spec beside a lone warrior is one
+    -- collided KEY and two blanked ROWS, and a header saying "1" would be
+    -- describing the addon's bookkeeping rather than the grid in front of the
+    -- player. red under: publishing the key count.
+    local inst = loaded()
+    inst.mocks.setRestricted(true)
+    install(inst, {
+        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
+        src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
+        src(GAMMA,  25, { class = "PRIEST",  specIconID = 5 }),
+    }, { maxAmount = 100 })
+
+    local result = inst.NS.Aggregator.Build(
+        makeWindow{ columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" })
+
+    assertTrue(result.ambiguous, "the pair must be found ambiguous")
+    assertEqual(#result, 3, "all three rows are on the grid")
+    assertEqual(result.ambiguousRows, 2, "two ROWS wear the collided key, not one key")
+end)
+
+test("Identity: an unambiguous pass publishes a count of ZERO, never nil", function()
+    -- nil reads as "not measured" everywhere else in this module, and the header
+    -- would then have to tell that apart from "measured, and nothing collided".
+    local inst = loaded()
+    inst.mocks.setRestricted(true)
+    install(inst, {
+        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
+        src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
+    }, { maxAmount = 100 })
+
+    local result = inst.NS.Aggregator.Build(
+        makeWindow{ columns = { "DamageDone" }, sortColumn = "DamageDone" })
+
+    assertEqual(result.ambiguous, false)
+    assertEqual(result.ambiguousRows, 0)
+end)
+
+test("A GUID pass publishes a count of zero too, because nothing was correlated", function()
+    -- Out of combat the join is exact and the concept does not apply. The field
+    -- still has to be a number: modules/Window_Header.lua reads it on every pass
+    -- and only draws the notice at all in identity mode.
+    local inst = loaded()
+    install(inst, {
+        src(ALPHA, 100, { class = "PRIEST", specIconID = 5 }),
+        src(BETA,   50, { class = "PRIEST", specIconID = 5 }),
+    }, { maxAmount = 100 })
+
+    local result = inst.NS.Aggregator.Build(
+        makeWindow{ columns = { "DamageDone" }, sortColumn = "DamageDone" })
+
+    assertEqual(result.ambiguous, false, "a GUID pass is never ambiguous")
+    assertEqual(result.ambiguousRows, 0)
+end)

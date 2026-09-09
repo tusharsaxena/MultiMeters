@@ -105,23 +105,109 @@ local NOT_A_KEY = {
 --- projects a source onto a fixed field list and an audit reading that could
 --- only ever report the fields this addon already copies. Confirming our own
 --- opinion back to ourselves is the failure this whole file exists to prevent.
+--- Which session and column a probe must be aimed at, for this rectangle.
+---
+--- Shared by both probes below so that the field audit and the lookup verdict
+--- describe THE SAME source rows. Two probes resolving their own target
+--- independently is how a report ends up printing an audit of one session beside
+--- a verdict about another and reading as though both were one moment.
+local function probeTarget(stats)
+    if stats then
+        return stats.sessionType, stats.sortColumn, stats.sessionID
+    end
+    local windows = NS.Database and NS.Database.GetWindows and NS.Database.GetWindows()
+    local data = windows and windows[1] and windows[1].data or {}
+    return data.sessionType, nil, data.sessionID
+end
+
 local function sourceFields(stats)
     local P = NS.Provider
     if not (P and P.ProbeSourceFields) then return {} end
 
-    local sessionType, sessionID, statKey
-    if stats then
-        sessionType, sessionID, statKey = stats.sessionType, stats.sessionID, stats.sortColumn
-    else
-        local windows = NS.Database and NS.Database.GetWindows and NS.Database.GetWindows()
-        local data = windows and windows[1] and windows[1].data or {}
-        sessionType, sessionID = data.sessionType, data.sessionID
-    end
+    local sessionType, statKey, sessionID = probeTarget(stats)
 
     local ok, fields = pcall(function()
         return P:ProbeSourceFields(sessionType or 1, statKey or "DamageDone", sessionID)
     end)
     return (ok and type(fields) == "table") and fields or {}
+end
+
+--- One tally as `word xN, word xN`, in a fixed order so two captures compare.
+local function tallyText(tally)
+    local words = {}
+    for word in pairs(tally) do words[#words + 1] = word end
+    table.sort(words)
+    local parts = {}
+    for _, word in ipairs(words) do
+        parts[#parts + 1] = string.format("%s x%d", word, tally[word])
+    end
+    return parts[1] and table.concat(parts, ", ") or "nothing probed"
+end
+
+--- What the split tally MEANS, which is the only line anybody will read twice.
+local function reportLookupVerdict(r)
+    local resolved = r.secretTally["resolved"]
+    if r.secret == 0 then
+        out("  |cffffd100no secret GUID was seen|r, so this says nothing yet:")
+        out("  out of combat every GUID is plain. Capture again MID-PULL.")
+    elseif resolved and resolved > 0 then
+        out("  |cff00ff00YES|r -- the client resolves a handle this context may not")
+        out("  read. The per-source join Lua is forbidden can be done BY THE")
+        out("  CLIENT, and identity correlation with it goes. Issues #22 and #24.")
+    else
+        out("  |cffff2020NO|r -- identity correlation is the only join available")
+        out("  mid-pull, so #22 turns on widening the key or on pairing by seat.")
+    end
+end
+
+--- Will the CLIENT resolve a source from a GUID we may not read? -- #22, #24
+---
+--- THE ONE QUESTION THAT DECIDES BOTH ISSUES, and until this section existed
+--- nothing asked it where it could be answered: modules/Provider.lua's
+--- `ProbeSourceByGuid` is reached only from the GUID build path, which is the
+--- path that does not run when the restriction is on.
+---
+--- Printed ABOVE the field audit deliberately. If the answer is yes, widening
+--- the identity key stops mattering and the audit below is a curiosity rather
+--- than a plan.
+local function reportLookup(stats)
+    local P = NS.Provider
+    if not (P and P.ProbeSourceLookup) then return end
+
+    local sessionType, statKey, sessionID = probeTarget(stats)
+    local ok, r = pcall(function()
+        return P:ProbeSourceLookup(sessionType or 1, statKey or "DamageDone", sessionID)
+    end)
+    if not (ok and type(r) == "table") then return end
+
+    out("|cff00ff00-- will the client resolve a source from a SECRET GUID? --|r")
+    if r.sampled == 0 then
+        out("  no source row to probe -- run this mid-pull, with a session running")
+        return
+    end
+
+    out(string.format("  %d %s probed: %d carried a secret GUID, %d a plain one",
+        r.sampled, r.sampled == 1 and "row" or "rows", r.secret, r.plain))
+    out("  secret GUID -> " .. tallyText(r.secretTally))
+    out("  plain  GUID -> " .. tallyText(r.plainTally))
+    if r.localWord ~= nil then
+        -- A CONTROL ONLY WHEN IT ACTUALLY WAS ONE. The first capture printed
+        -- `secret 6 / plain 0` and called the local player's row a plain control
+        -- in the same breath: the METER's `sourceGUID` is secret on every row
+        -- mid-pull, theirs included. What stays plain is `UnitGUID("player")`,
+        -- which is a different value this probe never touches.
+        if r.localSecret then
+            out(string.format("  the local player's row answered '%s', and its GUID was "
+                .. "SECRET too --", r.localWord))
+            out("  the meter hides it on every row mid-pull. There is no plain control")
+            out("  inside a pull; the plain row above, if any, is a pet or an NPC.")
+        else
+            out(string.format("  the local player's row answered '%s' on a PLAIN GUID:",
+                r.localWord))
+            out("  the CONTROL saying the call works -- never the answer.")
+        end
+    end
+    reportLookupVerdict(r)
 end
 
 --- One field's verdict: the state word, and the note that says what to do.
@@ -339,6 +425,7 @@ local function reportIdentity()
         reportSeats(stats)
     end
 
+    reportLookup(stats)
     reportSourceFields(sourceFields(stats))
 end
 

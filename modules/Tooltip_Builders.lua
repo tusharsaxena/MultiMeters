@@ -786,7 +786,10 @@ function Tooltip:CellTooltip(row, statKey, anchorFrame, window)
     applyPlacement()
 
     if t0 then Perf.Note("tooltip", debugprofilestop() - t0) end
-    if State.debug and Debug then
+    -- BEHIND ITS OWN CHANNEL. A tooltip is rebuilt on every mouse-over and on
+    -- every refresh the cursor sits through, so this line alone can fill a
+    -- capped buffer and evict the pass somebody was reading. `/mm debug tooltip`.
+    if State.debug and State.debugTooltip and Debug then
         Debug("Tooltip", "cell %s spells=%d", statKey, shown)
     end
 end
@@ -938,7 +941,7 @@ function Tooltip:NameTooltip(row, anchorFrame, window)
     applyPlacement()
 
     if t0 then Perf.Note("tooltip", debugprofilestop() - t0) end
-    if State.debug and Debug then
+    if State.debug and State.debugTooltip and Debug then
         Debug("Tooltip", "name stats=%d", rendered)
     end
 end

@@ -77,7 +77,7 @@ NS.COMMANDS = {
     { "set",      "Write one setting: /mm set <path> <value>", function(a) cli:CliSet(a) end },
     { "reset",    "Reset one setting: /mm reset <path>",   function(a) cli:CliReset(a) end },
     { "resetall", "Reset every setting to its default",    function() cli:CliResetAll() end },
-    { "debug",    "Console; 'on'/'off' set logging, 'diag' a diagnostic report, 'recap' the death-recap probe, 'identity' the mid-pull correlation capture, 'feign on|off' the feign recording",
+    { "debug",    "Console; 'on'/'off' set logging, 'tooltip' toggles the noisy tooltip channel, 'diag' a diagnostic report, 'recap' the death-recap probe, 'identity' the mid-pull correlation capture, 'feign on|off' the feign recording",
                                                                      function(a) doDebug(a) end },
     { "perf",     "Performance capture; try /mm perf help", function(a) doPerf(a) end },
     { "version",  "Print the addon version",   function() cli:CliVersion() end },
@@ -511,6 +511,30 @@ function doDebug(rest)
 
     if word == "feign" then
         doDebugFeign(rest)
+        return
+    end
+
+    -- `tooltip` is a CHANNEL switch, not a report and not the console. It sits
+    -- above the DebugLog guard with the read verbs because it is a flag on
+    -- NS.State, which exists whether or not the console seam loaded -- and a
+    -- player who types it on a degraded client should get the same answer as
+    -- anybody else rather than silence.
+    --
+    -- A PURE TOGGLE, and it always prints the state it landed in. `feign` reads
+    -- an argument because it is armed before a run and read after one; this is
+    -- flipped and observed in the same second, so an argument would be a word to
+    -- remember for no benefit. Printing the result is what makes it unambiguous
+    -- without one.
+    if word == "tooltip" then
+        local S = NS.State
+        if S then
+            S.debugTooltip = not S.debugTooltip
+            if NS.Print then
+                NS.Print(S.debugTooltip
+                    and "tooltip logging ON — mouse over a row and read the console."
+                    or  "tooltip logging off.")
+            end
+        end
         return
     end
 

@@ -39,6 +39,8 @@ test("State: every flag starts at its shipped default on a fresh load", function
     -- the point of the flags living here rather than in the profile.
     local S = T.load{}.NS.State
     assertEqual(S.debug, false, "debug defaults OFF and is never persisted")
+    assertEqual(S.debugTooltip, false,
+        "the tooltip channel defaults OFF -- it is the one that floods the buffer")
     assertEqual(S.restricted, false)
     assertEqual(S.testMode, false)
     assertNil(S.activeWindowId)
@@ -49,7 +51,7 @@ test("State: no state flag leaks into the profile defaults tree", function()
     -- would end up in SavedVariables and survive a login.
     local inst = T.load{}
     local profile = inst.NS.defaults.profile
-    for _, key in ipairs({ "debug", "restricted", "testMode", "activeWindowId" }) do
+    for _, key in ipairs({ "debug", "debugTooltip", "restricted", "testMode", "activeWindowId" }) do
         assertNil(profile[key], "profile defaults must not carry the session flag " .. key)
     end
 end)
@@ -62,7 +64,7 @@ test("State: the SavedVariables globals never carry a state flag after a full lo
     inst.NS.State.SetTestMode(true)
     local saved = _G.MultiMetersDB
     assertTrue(saved ~= nil, "the database must actually have been built")
-    for _, key in ipairs({ "debug", "testMode", "restricted", "activeWindowId" }) do
+    for _, key in ipairs({ "debug", "debugTooltip", "testMode", "restricted", "activeWindowId" }) do
         assertNil((saved.profiles and saved.profiles.Default or {})[key],
             key .. " reached SavedVariables")
     end

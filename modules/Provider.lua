@@ -414,6 +414,22 @@ function Provider.GetSourceDetail(a, b, c, d, e, f)
     return source
 end
 
+--- The verdict word for one lookup attempt, shared by both probes below.
+---
+--- FOUR OUTCOMES RATHER THAN A BOOLEAN, because the interesting failures are
+--- different from one another: "raised" says the argument was refused outright,
+--- "nil" says it was accepted and matched nothing, "sealed" says a table came
+--- back that this context may not read, and "no total" says a readable table
+--- arrived carrying nothing. Each points at a different design.
+---
+--- @return string
+local function lookupVerdict(ok, source)
+    if not ok then return "raised" end
+    if type(source) ~= "table" then return "nil" end
+    if not Secrets.CanAccessTable(source) then return "sealed" end
+    return (source.totalAmount ~= nil) and "resolved" or "no total"
+end
+
 --- DIAGNOSTIC ONLY: can the API resolve a source from a SECRET sourceGUID?
 ---
 --- THE QUESTION THE WHOLE MID-PULL GRID TURNS ON. `sourceGUID` is annotated
@@ -441,12 +457,128 @@ function Provider.ProbeSourceByGuid(sessionType, statKey, guid)
     local stat = STAT_BY_KEY[statKey]
     if not stat then return "no stat" end
 
-    local ok, source = pcall(Compat.GetCombatSessionSourceFromType,
-        sessionType, stat.enumValue, guid)
-    if not ok then return "raised" end
-    if type(source) ~= "table" then return "nil" end
-    if not Secrets.CanAccessTable(source) then return "sealed" end
-    return (source.totalAmount ~= nil) and "resolved" or "no total"
+    return lookupVerdict(pcall(Compat.GetCombatSessionSourceFromType,
+        sessionType, stat.enumValue, guid))
+end
+
+-- How many source rows ProbeSourceLookup tries.
+--
+-- Small deliberately. Each row costs one extra call into the meter, the answer
+-- is the same for every row of a kind, and this runs from a slash command typed
+-- at the height of a pull. Six covers the local player's row plus a spread of
+-- others whatever the sort order put on top.
+local LOOKUP_SAMPLE_ROWS = 6
+
+--- One row's lookup, folded into the running tally.
+---
+--- `sourceCreatureID` IS WITHHELD WHILE IT IS SECRET. The client refuses a
+--- secret argument #4 by RAISING -- `bad argument #4 ... Secret values are only
+--- allowed during untainted execution`, modelled in tests/wow_mock.lua. Passing
+--- one would answer "raised" for a reason that has nothing to do with the GUID,
+--- which is exactly the misreading this probe exists to prevent. Only rows that
+--- carry a GUID are probed, so nothing here needs the creature id to match.
+local function tallyLookup(result, src, sessionType, sessionID, enumValue)
+    local guid = src.sourceGUID
+    -- Nil-ness only, which is the one boolean-shaped question the contract
+    -- permits on a possibly-secret value. An NPC row carries a creature id and
+    -- no GUID, and there is no GUID question to ask about it.
+    if guid == nil then return end
+
+    local creatureID = src.sourceCreatureID
+    if Secrets.IsSecret(creatureID) then creatureID = nil end
+
+    local ok, source
+    if sessionID == nil then
+        ok, source = pcall(Compat.GetCombatSessionSourceFromType,
+            sessionType, enumValue, guid, creatureID)
+    else
+        ok, source = pcall(Compat.GetCombatSessionSourceFromID,
+            sessionID, enumValue, guid, creatureID)
+    end
+    local word = lookupVerdict(ok, source)
+
+    local tally
+    local isSecret = Secrets.IsSecret(guid)
+    if isSecret then
+        result.secret = result.secret + 1
+        tally = result.secretTally
+    else
+        result.plain = result.plain + 1
+        tally = result.plainTally
+    end
+    tally[word] = (tally[word] or 0) + 1
+
+    result.sampled = result.sampled + 1
+    -- Truth-tested rather than trusted: `isLocalPlayer` is annotated NeverSecret,
+    -- and a probe is the wrong place to assume an annotation -- that assumption
+    -- is what issue #24 turned out to be.
+    --
+    -- `localSecret` TRAVELS WITH THE WORD, and the first capture is why. This
+    -- probe was written believing the local player's row keeps a plain
+    -- `sourceGUID` through a pull, so it called that row the CONTROL. It does
+    -- not. What stays plain mid-pull is `UnitGUID("player")` -- the ROSTER's
+    -- GUID, which modules/Aggregator_Identity.lua keys their row on -- and the
+    -- METER's `sourceGUID` is SecretWhenInCombat on every row without exception,
+    -- theirs included. A live capture printed `secret 6 / plain 0` and a control
+    -- line in the same breath, which is a contradiction the report had no way to
+    -- notice. Carrying the flag lets it notice.
+    if src.isLocalPlayer == true then
+        result.localWord = word
+        result.localSecret = isSecret
+    end
+end
+
+--- DIAGNOSTIC ONLY: ask the client to resolve each source from ITS OWN GUID.
+---
+--- THE QUESTION THE WHOLE MID-PULL GRID TURNS ON, asked somewhere it can
+--- actually be answered. `Provider.ProbeSourceByGuid` above has posed it since
+--- the day it was written and has never once answered it, because its only
+--- caller is modules/Aggregator.lua's `logDrop` -- which sits on the GUID build
+--- path. When the restriction is active `buildByIdentity` runs instead and drops
+--- enemies inline without going through `dropSource`, so the probe cannot fire
+--- in the single condition it exists to measure. This one walks the session
+--- itself and therefore reports wherever the report is typed.
+---
+--- WHAT A SINGLE VERDICT WOULD HIDE, and why the tally is split in two. The
+--- local player's `sourceGUID` is plain even mid-pull, so their row resolves
+--- whatever the client does with a handle we may not read -- and a probe
+--- answering one word for the whole session would answer THAT word and be wrong
+--- in the one way that matters. `secretTally` is the answer; `plainTally` is the
+--- control that says the call itself works.
+---
+--- NO VALUE TRAVELS OUT. The result is counts and verdict words: a verdict is
+--- derived from a table's readability and from `totalAmount ~= nil`, which is
+--- nil-ness and not inspection (rule R1).
+---
+--- Callable as `Provider.ProbeSourceLookup(...)` or `Provider:ProbeSourceLookup(...)`.
+---
+--- @param sessionType number
+--- @param statKey string
+--- @param sessionID number|nil
+--- @return table  { sampled, secret, plain, secretTally, plainTally, localWord }
+function Provider.ProbeSourceLookup(a, b, c, d)
+    local sessionType, statKey, sessionID = args(a, b, c, d)
+    local result = { sampled = 0, secret = 0, plain = 0,
+                     secretTally = {}, plainTally = {} }
+    if suspended then return result end
+
+    local stat = STAT_BY_KEY[statKey]
+    if not stat then return result end
+    if not Provider.IsAvailable() then return result end
+
+    local session = sessionFor(sessionType, sessionID, stat.enumValue)
+    if type(session) ~= "table" or not Secrets.CanAccessTable(session) then
+        return result
+    end
+
+    Secrets.SafeIterate(session.combatSources, function(_, src)
+        if Secrets.CanAccessTable(src) then
+            tallyLookup(result, src, sessionType, sessionID, stat.enumValue)
+        end
+        return result.sampled < LOOKUP_SAMPLE_ROWS
+    end)
+
+    return result
 end
 
 -- Every field `collectSource` reads off a raw source row, by the name the CLIENT

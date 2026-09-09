@@ -518,6 +518,10 @@ local function newPass(window)
         identityMode = Secrets.IsRestricted(),
         -- Set by the identity build when two sources shared one identity key.
         ambiguous    = false,
+        -- ...and how many ROWS that cost, which is what the header says out loud.
+        -- Zero on a GUID pass and on an identity pass that collided nothing;
+        -- never nil, so a reader never has to tell "not measured" from "none".
+        ambiguousRows = 0,
         -- Correlation tallies for the one debug line the identity build emits.
         -- `filled` against `possible` is the figure that matters: a grid whose
         -- secondary columns are blank is either colliding (collisions > 0) or
@@ -1179,6 +1183,11 @@ local function assembleResult(kept, pass)
     kept.applied         = pass.applied
     kept.identityMode    = pass.identityMode
     kept.ambiguous       = pass.ambiguous
+    -- How many rows `ambiguous` actually cost. modules/Window_Header.lua puts it
+    -- on screen: issue #22 measured both alternatives to the blanking rule dead,
+    -- so the blanks are permanent and saying how many there are is the whole of
+    -- what is left to do about them.
+    kept.ambiguousRows   = pass.ambiguousRows or 0
     -- Present only on an identity pass with the debug flag on — see the
     -- rectangle's header. nil is the normal answer and means "not measured",
     -- never "nothing was wrong".

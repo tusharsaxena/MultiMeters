@@ -357,20 +357,30 @@ Identity mode is built out of the fields Blizzard annotates `NeverSecret`:
   a pull and reappeared the instant it ended. An **ambiguous** key gets no invented row: no column
   could ever fill it, and an always-empty line is noise.
 - A key appearing **twice in any column** — two players of one class *and* one spec — is ambiguous,
-  and every secondary cell for it is left **empty**. `kept.ambiguous` says so and the header line
-  reports it. An empty cell is a visible absence; a mislabeled number is a lie the player cannot see.
+  and every secondary cell for it is left **empty**. `kept.ambiguous` says so, `kept.ambiguousRows`
+  says how many rows it cost, and the header line reports both —
+  `restricted — 10 of 18 share a class and spec`. An empty cell is a visible absence; a mislabeled number is a lie the player cannot see.
   Every column is swept for duplicates **before any cell is written**; the sweep used to run column
   by column as the fill walked them, which let a key the third column proved ambiguous keep cells the
   second had already filled.
-- **In a raid the key is really class + "is it me", and that is issue #22.** `specIconID` is
-  **absent** from every raw raid source row but the local player's — not secret, not
-  nil-under-restriction; it is not sent. In a *dungeon* it arrives and the key works as designed,
-  which is how this survived to a raid ([#24](https://github.com/tusharsaxena/MultiMeters/issues/24)).
-  A missing icon folds to `0`, so every non-local key reads `CLASS_0_false` and two players of one
-  *class* collide whatever their specs are. Measured in a 19-player raid: 8 keys
-  across 19 rows, 18 rows collided, **3 of 133 correlated cells filled**, and `unmatched` zero in
-  every column — the correlation is not failing to match, it has nothing to match on. The refusal
-  above is still right; the assumption that the key had three parts is what was wrong.
+- **At raid size the key runs out of discrimination, and that is issue #22.** Not because a field is
+  missing — that reading was [#24](https://github.com/tusharsaxena/MultiMeters/issues/24), and it is
+  **closed as not reproducing**: measured 2026-09-09 on an 18-member raid mid-pull, `specIconID`
+  reads `plain 10/10` with six distinct values, and the collided keys carry real icon ids
+  (`MAGE_135846_false`). The key has all three parts it was designed to have. What a raid has is
+  *duplicate class-and-spec pairs* — two hunters, three mages, three paladins, two priests in that
+  one pull — which is exactly the case the refusal exists for and is not a defect in the key.
+  The cost is the point: **23 of 126 correlated cells filled**, 10 of 18 rows collided, and
+  `unmatched` **zero in every column across three captures** — the correlation is not failing to
+  match; there is nothing left to tell those players apart with.
+- **Both ways out were measured dead on 2026-09-09, so the blanks are permanent.** *Widening the
+  key*: the mid-pull field audit reports "No usable candidates" — every field that varies per player
+  is secret, every plain field is already in the key or has one value group-wide. *Pairing by
+  position*: a column returns a **subset** of a collided key's players (a key covering three rows was
+  named by `Absorbs` with one seat), so there is no N-to-N pairing to attempt, and the ordinals drift
+  between captures besides. *Delegating the join to the client*: passing a source's own secret
+  `sourceGUID` back to `C_DamageMeter` answers `raised` — the client refuses the argument outright.
+  What is left is saying so on screen, which is what the header count does.
 - `/mm debug on` prints one `identity` line per pass — `rows= keys= collided=/ filled=/` — where
   `keys` is a distinct count and `collided` is `keys/rows`, because the ceiling turns on how many
   ROWS the collided keys cover rather than on how many keys there are. **`/mm debug identity`** prints
