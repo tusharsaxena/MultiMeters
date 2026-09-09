@@ -6,12 +6,11 @@
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
 ![Tests](https://img.shields.io/badge/Tests-1745%2F1745_passing-green)
 
-Every other meter shows you one number at a time. Multi Meters shows the whole group in one grid —
-who kicked, who dispelled, who stood in the fire, and who died — all in a single window, one row per
-player and one column per statistic.
+Most meters show you one number at a time. This one puts the whole group in a grid — who kicked, who
+dispelled, who stood in the fire, who died. A row per player, a column per statistic.
 
-It reads everything from Blizzard's own damage meter. It does not watch the combat log, so it costs
-you nothing that the game is not already spending.
+The numbers are Blizzard's. Multi Meters asks the built-in meter for them and arranges them; it never
+touches the combat log, so it adds nothing to what the game is already doing.
 
 ```
 Player      | Damage       | Healing     | Int | Disp | Avoid Dmg | Deaths
@@ -20,149 +19,108 @@ Thundertusk |  8.1M  123K  | 6.2M   94K  |  1  |  0   |    180K   |   0
 Ashvane     |  6.7M  102K  | 0.2M    3K  |  4  |  2   |     22K   |   0
 ```
 
-Every column is the same width, the player's name is in their class color, and the per-second figure
-sits beside the total with no `/s` cluttering it — the column header already says what it is.
+Every column is the same width. Names carry class colour. The per-second figure sits next to the
+total with no `/s` on it, because the header above already said what the column is.
 
-That is the **paired** layout, one setting away: out of the box each cell carries a single figure —
-the per-second one on Damage and Healing, the absolute one on every column that has no rate. Set
-**Right text** to **Absolute value** on Bars → Text content for the two-figure grid above.
+That two-figure grid is one setting away from the default, which shows a single number per cell: the
+rate on Damage and Healing, the plain total everywhere that has no rate. Set **Right text** to
+**Absolute value** on Bars → Text content.
 
-> **While you are in a fight, the grid is partial — and it completes itself the moment the fight
-> ends.** Midnight seals the identifier that says which row a number belongs to, so mid-fight the
-> other columns are matched to rows by class and specialization instead. Players who share both
-> cannot be told apart, and their secondary cells are left **blank rather than filled with a number
-> that might be the other player's**. In a raid with several duplicate specs that can be most of the
-> grid: a measured 18-player pull left 10 rows blank for the whole pull. The sort column is always
-> live and always right, nothing shown is ever wrong, and every blank fills in the instant you drop
-> out of combat. The window header says so in gray while it is happening.
+> **Worth knowing before you install it: in a fight the grid is partial.** Midnight seals the tag
+> that says which row a number belongs to, so mid-fight the addon matches columns onto rows by class
+> and spec instead. Two players who share both are indistinguishable, and their cells are left empty.
+>
+> Empty is the point. The alternative is putting a number in that cell that might belong to the other
+> player, and you would have no way of telling. A gap you can see beats a lie you cannot. How much
+> you lose depends on the group: one measured 18-player pull left 10 of its rows blank until it
+> ended, where a dungeon would usually lose none. The sort column stays live and correct throughout,
+> the header prints the count in gray, and the whole grid fills in the moment combat drops.
 
 ## What's new in 0.1.0
 
 The first release.
 
-- **One window, every statistic.** Damage, Healing, Interrupts, Dispels, Avoidable Damage and Deaths
-  as columns of a single grid, each cell with its own bar and text. Each cell has a left and a right
-  text slot, and each takes the same six values — None, the two smart values, Absolute value, Per
-  second value, Percent — so "the rate alone", "the total and the rate", "a bar with no text at all"
-  and "share of the column" are all one dropdown away.
-- **Current or overall.** Switch between the pull you are in and the whole run.
-- **As many windows as you want.** Each one configured separately, with "copy settings from" so you
-  do not have to set up the second one by hand.
-- **Deep configuration** — frame, header, rows, bars, text, icons, tooltips, visibility and
-  columns, all per window; the handful of settings that cannot sensibly differ between windows sit on
-  the General page instead.
-- **Hover for the detail.** A cell tells you which spells made up that number; a name tells you
-  everything tracked for that player. A Damage cell can also list **which enemies that player hit**.
-  Click a cell to drill into it, or a Deaths cell to open the death recap.
-- **The tooltip is yours too.** Its own bar texture, spacing and border, its own font, eight anchor
-  positions with an x/y nudge, and a spell cap you can set to zero for "show me all of them".
-- **Take the numbers with you.** The export button in the title bar hands you the whole fight as CSV
-  to paste into a spreadsheet, or prints a ranked top-N to chat — to yourself by default, so a
-  misclick cannot reach your raid.
-- **Where you want it, when you want it.** Every window ships visible everywhere and hiding
-  nowhere — then, per window, turn off the contexts you do not want it in (dungeon, raid, arena,
-  battleground, delve, scenario, open world) and turn on the rules that should hide it (solo,
-  vehicle, mounted, skyriding, flight path, housing, pet battle, dead, in or out of combat).
+- Damage, Healing, Interrupts, Dispels, Avoidable Damage and Deaths, as columns of one grid. Every
+  cell has a bar and two text slots, and each slot takes the same six values, so "just the rate",
+  "the total and the rate", "a bar with no text" and "share of the column" are one dropdown apart.
+- Current pull or the whole run, switched from the window header.
+- As many windows as you want, each configured on its own. Copy-settings-from means the second one
+  is not a re-run of the first by hand.
+- Hover a cell for the spells behind the number, or a name for everything tracked on that player. A
+  Damage cell will also list which enemies they hit. Click to drill in; click a Deaths cell for the
+  recap.
+- Export from the title bar: the fight as CSV for a spreadsheet, or a ranked top-N to chat. To
+  yourself by default, so a misclick cannot reach the raid.
+- Per-window visibility, with seven contexts to appear in and ten rules that hide it — solo,
+  mounted, dead, in or out of combat, and the rest.
 
 ## Screenshots
 
-None yet — this is the first release and the addon has not been photographed in a live run. They land
-with the next version.
+None yet. Nobody has photographed it in a live run. Next version.
 
 ## Usage
 
-Type `/mm` for the command list. `/multimeters` does the same thing if you prefer.
+Install it and a window turns up, unlocked, so drag it by the title bar and pull the bottom-right
+corner to size it. Placing a meter between pulls is a pain because there is nothing in it to look
+at, so `/mm test` fills every window with obvious placeholder rows and prints TEST in the header
+while you work. Same command turns it off, `/mm lock` freezes everything once you are happy, and
+`/mm reset-positions` rescues anything you have dragged off the edge of the screen.
 
-### Slash commands
+`/mm toggle` hides and shows windows by name or all at once, and the × in the title bar closes
+whichever one you clicked. You will get more out of the visibility settings, though: tell a window
+which contexts it belongs in — dungeons and raids and nothing else, say — and which situations it
+should get out of the way for, and you can stop thinking about it. Ten hide rules ship, covering the
+usual suspects. Solo, mounted, dead, on a flight path.
 
-| Command | What it does |
-|---|---|
-| `/mm` | Show the command list |
-| `/mm config` | Open the settings panel |
-| `/mm lock` | Lock or unlock every window for dragging |
-| `/mm test` | Toggle placeholder rows, for positioning without being in a fight |
-| `/mm toggle` | Show or hide a window by name, or all of them |
-| `/mm window` | Window management — list, new, delete, copy |
-| `/mm reset-positions` | Move every window back to the center of the screen |
-| `/mm export` | Export a window's segment to CSV or to chat — `/mm export [window]` |
-| `/mm list` | List every setting and its current value |
-| `/mm get PATH` | Print one setting |
-| `/mm set PATH VALUE` | Change one setting |
-| `/mm reset PATH` | Reset one setting to its default |
-| `/mm resetall` | Reset every setting to defaults |
-| `/mm version` | Print the addon version |
-| `/mm debug` | Open the debug console (`on` / `off` control logging, `tooltip` toggles the very noisy tooltip channel — off by default, `diag` prints a diagnostic report, `recap` the death-recap probe, `identity` the mid-pull correlation capture, `feign on`/`feign off`/`feign` the feign-death recording) |
-| `/mm perf` | Measure performance — run `/mm perf` for the workflow |
+Seven controls can sit in the title bar — close, minimise, lock, settings, segment, reset, export —
+and you pick which ones each window draws. The segment control is the three horizontal lines, and it
+is the one people miss. Open it for every fight the game still holds, by name and length, Current and
+Overall at the bottom; your pick sticks until you change it, reloads included.
 
-Settings that belong to a window are written as `window.something`, and they apply to whichever
-window is selected in the settings panel. So `/mm set window.frame.width 420` widens the window you
-are currently looking at, not all of them.
+Then there is the detail underneath the grid. Hovering a cell shows the spells behind that number;
+the same on a name gives you everything tracked for the player. Click either to drill in, or click a
+Deaths cell for the recap, which is usually the more interesting trip. Want a second window? `/mm
+window new`, then copy the settings over from the first rather than building them twice.
 
-### Settings panel
-
-`/mm config`, or the Options → AddOns list. Nine pages, and within a page the settings are grouped
-into **tabs** — click one to switch, and it never asks you to leave combat to do it; only opening or
-switching between pages in the list on the left does that (see [I cannot open the settings while
-fighting](#troubleshooting) below). Windows, and the six pages indented under it, each open with a
-**banner** naming which window they are editing, and that one dropdown is the only window picker in
-the whole panel.
-
-The six pages between Windows and Profiles are **indented under it**, because they all configure
-*whichever window the banner is pointed at* — the same reason Windows itself draws the banner, though
-Windows is not indented under itself and sits flush with General and Profiles in the tree. Those two,
-General and Profiles, are the only pages that configure the addon rather than a window, and draw no
-banner at all.
-
-| Page | What you set there |
-|---|---|
-| General | Two tabs. **Master controls** is the set every Ka0s addon opens on — the addon master switch, general visibility, master scale and opacity, lock every frame, the debug console — followed by this addon's own handful: the minimap button, whether pets are merged into their owner, how often the display refreshes, and Test mode. It closes with two resets: all settings, and the selected window's position. **Statistic colors** sets the colour of each statistic, worn by every surface that colours by column |
-| Windows | Pick the window you are configuring; create, rename, delete, duplicate, copy settings from another |
-| `  - `Frame | Lock, keep-on-screen and the four "all surfaces" shortcuts; size, scale, opacity, strata and padding; the window's own background and border; and the rows — height, count, spacing, growth direction and which of them are highlighted |
-| `  - `Header | The title bar's own text (font, alignment, background) and the header controls — which of the seven buttons the title strip draws, in what color and at what size |
-| `  - `Bars | Everything drawn inside a cell: the bar's texture, colour mode, opacity and fill direction; the tint behind it and the alternating row stripe; its border, thickness and colour; the two text slots, number format, max name length, font, size, outline, shadow and colour; and the row icon, its size and which side of the name it sits on |
-| `  - `Tooltip | What appears on hover, where it anchors and by how much, how many spells to list (0 for all), its own bar texture, spacing, border and font, whether to list the enemies a player hit, and whether a death line names who and what killed you |
-| `  - `Visibility | Show everywhere, hide nowhere by default. Seven contexts — dungeon, raid, arena, battleground, delve, scenario, open world. Ten opt-in hide rules — solo, vehicle, mounted, skyriding, flight path, player housing, pet battle, dead, in combat, out of combat |
-| `  - `Columns | One block per statistic — tick the ones you want, drag them by the handle into the order they appear — plus the column-header strip's own font and background, which label the columns this page builds |
-| Profiles | Share a setup between characters |
+The rest is configuration. It is on the addon's page under Settings → AddOns in game, and `/mm` (or
+`/multimeters`) prints the full command list.
 
 ## How it works
 
-Blizzard's built-in damage meter already tracks all of this. Multi Meters asks it for the numbers
-and arranges them as a grid — so the figures you see are the same ones Blizzard's own meter would
-show, and there is no second copy of the combat log being parsed in the background.
+Blizzard's meter already tracks all of this. Multi Meters asks it for the figures and lays them out
+as a grid, so what you read here is what the built-in meter would have told you. Nothing chews
+through the combat log a second time.
 
-That also explains the one behavior that might surprise you. In Midnight, the game hands addons
-combat numbers in a sealed form — an addon can display them but cannot read them — and it seals the
-identifier that says which row a number belongs to along with them. So **while you are actually
-fighting, the grid is built a different way**: the rows are the game's own ranking of the sort column,
-which keeps updating live, and the other columns are matched to those rows by class and
-specialization. Two players who share both cannot be told apart, so their other cells stay blank
-rather than showing a number that might be the other player's; the header says so in gray. Everything
-fills back in the moment the fight ends.
+The one odd behaviour falls out of that. Midnight hands addons combat numbers sealed — an addon can
+draw a number without being able to read it — and the tag identifying which row a number belongs to
+is sealed with it. So the grid is built two ways. Out of combat, by identity. In combat, rows come
+from the game's own live ranking of the sort column, and everything else is matched onto them by
+class and spec. Two players sharing both cannot be separated, their cells stay empty, and the header
+says as much in gray.
 
 ## FAQ
 
 | Question | Answer |
 |----------|--------|
-| Do I need Details or Skada? | No. This is not a plugin for another meter and does not read one. It only needs Blizzard's meter turned on. |
-| Does it replace my damage meter? | It can. Add the Damage and Healing columns and you have the usual numbers alongside the ones other meters make you switch windows to see. Many people run it beside their existing meter instead. |
-| Why is a cell empty mid-fight, and why is the header gray? | Midnight hides the identifier the game normally gives addons for each row, for the whole of a fight. The rows themselves are the game's own ranking and keep updating; the other columns are matched to them by class and specialization. Two players with the same class *and* spec cannot be told apart, so those cells are left blank rather than showing a number that might be the other player's. The header says so **and how many** — `restricted — 10 of 18 share a class and spec` — so the number in the header matches the blank rows you can count. Everything fills back in the moment the fight ends. |
-| How much of the grid does that cost? | It depends entirely on your group. In a dungeon it is usually nothing. In a raid, duplicate specs are normal rather than exceptional — a measured 18-player pull had four class-and-spec pairs covering 10 of its 18 rows, and those 10 rows carried no secondary figures until the pull ended. There is no way around it from an addon: the game refuses to look a row up by the sealed identifier it handed you, and no other field it sends mid-fight tells two players of one spec apart. Blank is the honest answer, and it is the one this addon gives. |
-| Can I look back at an earlier fight? | Yes. Click the segment control in the window's header — the three horizontal lines — and pick the fight out of the list; it shows each one's name and how long it ran, with Current and Overall at the bottom. The window stays on that fight until you pick another, and remembers your choice across a reload. If the game discards the fight, the window falls back to Current on its own. |
-| Can I have one window for damage and another for utility? | Yes. Make a second window on the Windows page and give it a different column set. Every setting is per window. |
-| Does it work in raids and PvP? | Yes. Visibility is per window, so you can have a window that only appears in dungeons and another that only appears in arenas. |
+| Do I need Details or Skada? | No. It is not a plugin for another meter and does not read one. Blizzard's meter has to be switched on; that is the whole dependency. |
+| Does it replace my damage meter? | It can. Add the Damage and Healing columns and the usual numbers sit next to the ones you would otherwise change windows to see. Plenty of people run both anyway. |
+| Why is a cell empty mid-fight, and why is the header gray? | Midnight hides the tag the game normally gives addons for each row, for the length of the fight. Rows are still the live ranking; the other columns get matched onto them by class and spec, and anyone sharing both with someone else cannot be told apart. Those cells are left empty. The header keeps a running count of it, in the form `restricted — 10 of 18 share a class and spec`, so the figure matches the blank rows you can see. |
+| Can nothing be done about that? | Not from an addon, no. We tried three ways and measured all three dead: the game refuses to look a row up by the sealed tag it just handed you, no other field it sends mid-fight separates two players of one spec, and the columns disagree about which of a duplicate pair they are even reporting on. Blank is what is left, and it is honest. |
+| Can I look back at an earlier fight? | Yes. The three horizontal lines in the header list every fight the game still holds, by name and length, Current and Overall at the bottom. Your pick sticks across reloads. If the game drops that fight, the window quietly falls back to Current. |
+| Can I have one window for damage and another for utility? | Yes. Make a second one on the Windows page and give it different columns. Almost every setting is per window. |
+| Does it work in raids and PvP? | Yes. Visibility is per window, so you can have one that only appears in dungeons and another that only appears in arenas. |
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---------|-----|
-| The window says the damage meter is unavailable | Blizzard's meter is switched off or unavailable in your current situation. The window shows the reason the game gave. Turn the built-in meter on and the rows appear. |
-| The window is empty and says it is waiting for combat data | Normal between pulls — nothing has happened yet in the session you are showing. Pick Overall, or a past fight, from the window header's segment dropdown to see something other than the current pull. There is no settings page for it: the header already has the control. |
-| The window only shows placeholder rows | Test mode is on. Turn it off on the General page, or with `/mm test`. Unlocking a window has nothing to do with it — it used to switch preview on as a side effect, which made unchecking Test mode look broken, and the lock governs dragging and nothing else now. |
-| I cannot open the settings while fighting | That is deliberate. Blizzard protects the settings machinery during combat, so the panel refuses to open rather than risk breaking your action bars. It opens the moment you leave combat. |
-| A pet has its own row, and I wanted it folded into its owner | That is the shipped default: a pet is its own row, which is exact in and out of combat. Turn on **Merge pets into their owner** on the General page to fold it in — but note the trade, which is why it is not the default: merging is addition, and the game will not let addons add two combat numbers together mid-fight, so a merged pet's damage goes missing until the pull ends. |
-| I cannot find the window | `/mm reset-positions` brings every window back to the middle of the screen. |
-| Something looks wrong and you want to report it | `/mm debug on`, reproduce it, then `/mm debug` to open the console and copy the log into your issue. If the problem is with a tooltip, add `/mm debug tooltip` — it is off by default because a tooltip is rebuilt on every mouse-over and its lines would otherwise push everything else out of the console. |
+| The window says the damage meter is unavailable | Blizzard's meter is off, or unavailable where you are standing. The window prints whatever reason the game gave. Switch the built-in meter on. |
+| The window is empty and says it is waiting for combat data | Nothing has happened yet in the session you are looking at, which is normal between pulls. Pick Overall or an older fight from the segment control. No setting for this; the header already has the control. |
+| The window only shows placeholder rows | Test mode is on. `/mm test`, or the General page. Unlocking has nothing to do with it — that used to switch preview on as a side effect, which made unticking Test mode look broken. The lock governs dragging now, nothing else. |
+| I cannot open the settings while fighting | On purpose. Blizzard protects the settings machinery in combat and the panel would rather refuse than risk your action bars. It opens the second you drop out. |
+| A pet has its own row and I wanted it folded into its owner | Separate rows is the default because it is exact in and out of combat. **Merge pets into their owner** on the General page folds them in, with one catch that is exactly why it is not the default: merging is addition, and the game will not let an addon add two combat numbers together mid-fight. A merged pet's damage goes missing until the pull ends. |
+| I cannot find the window | `/mm reset-positions`. |
+| Something looks wrong and you want to report it | `/mm debug on`, reproduce it, `/mm debug` to open the console, then copy the log into the issue. Add `/mm debug tooltip` if a tooltip is involved — that channel is off by default because a tooltip redraws on every mouse-over and its lines bury everything else in the buffer within seconds. |
 
 ## Issues and feature requests
 
