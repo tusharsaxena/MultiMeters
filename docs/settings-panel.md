@@ -106,9 +106,10 @@ block from one declaration; a hand-written copy beside them is **anti-pattern #7
 Four things about how this addon calls them are worth knowing before editing a block:
 
 - **Nothing stored moved.** Each call passes `keys` and `defaults`, so the composed rows land on this
-  addon's existing paths at this addon's shipped values. `dress()` in `settings/Schema.lua` then puts
-  back what the composers have no override for — the slider bounds, the `%d px` suffix, the
-  validator, the stored value set behind a dropdown, and this addon's own sentence in each tooltip.
+  addon's existing paths at this addon's shipped values. `dress()` in `settings/Schema_Compose.lua`
+  then puts back what the composers have no override for — the slider bounds, the `%d px` suffix,
+  the validator, the stored value set behind a dropdown, and this addon's own sentence in each
+  tooltip.
   A `fontFlags` row that arrived carrying the library's flag vocabulary would refuse this addon's
   stored `"NONE"`; a `borderSize` slider that stopped at 16 would put a stored 24 out of reach.
 - **The boolean companion is swapped for a dropdown.** The composers emit a `Use class color`
@@ -119,8 +120,10 @@ Four things about how this addon calls them are worth knowing before editing a b
   `withMode()` splices the mode into the slot it vacated, immediately right of the swatch.
 - **The composers are reached off a table of this file's own**, not off `NS.Helpers`.
   `lib.__AttachCompose` is what `lib:New` calls, and `settings/OptionsSetup.lua` does not build an
-  instance until after `settings/Schema.lua` has run. Two instance members are forwarded onto that
-  table at **call** time and they are the whole of what the composers reach for: `LSMValues`, read
+  instance until after all three schema files have run. The composers and the blocks they emit live
+  in `settings/Schema_Compose.lua`, which is what the array in `settings/Schema.lua` is declared out
+  of. Two instance members are forwarded onto that table at **call** time and they are the whole of
+  what the composers reach for: `LSMValues`, read
   while a media dropdown opens, and `InlineButtonPair`, called by the one composer product that is
   not a pure function — `MasterControls`' `afterGroup` hook, which draws the tab's closing button
   pair and therefore has to touch a widget. With no library at all there are no composers and the
@@ -129,14 +132,14 @@ Four things about how this addon calls them are worth knowing before editing a b
   a schema CLI.
 - **Two `LSM30_*` pickers survive outside a composer call, and they are not a group.**
   `grep -rn 'LSM30_Font\|LSM30_Border\|LSM30_Statusbar' settings/` returns two DECLARATIONS —
-  `settings/Schema.lua:1565` (`window.barTexture`) and `:1573` (`window.font`) — and neither is
-  composer-able. The other hits are prose: three lines of the comment above
+  `settings/Schema.lua:270` (`window.barTexture`) and `:278` (`window.font`) — and neither is
+  composer-able. The other hits are prose: two lines of the comment above
   `settings/OptionsSetup.lua`'s `lib.__PatchLSM30Border()` call, which names `LSM30_Border` because
   that is the widget it argues about. No `dialogControl` there, and nothing for this bullet to
   account for. They are two of the
   four **broadcast meta rows** on Frame → General, under the *All surfaces* heading: each one *writes*
   a value into every surface that has a setting of that kind and is then read by nothing, which is
-  what the note above them at `settings/Schema.lua:1512-1522` says at length. `options-ui-§16` fixes
+  what the note above them at `settings/Schema.lua:224-237` says at length. `options-ui-§16` fixes
   the shape of a **group** — a contiguous font block, a border block, a bar block, each over one
   surface, each with a colour row and a companion. A single write-only setter over six surfaces has
   none of that shape: there is no size, no colour, no flags and no second surface to be contiguous
@@ -211,7 +214,8 @@ column for it or not, so there is no window to read a colour off in the first pl
 
 Every surface that wears a statistic colour reads it through **one seam**, `NS.StatColor(statKey)`
 in `core/Namespace.lua` — the grid's bars and cell text (`modules/Row.lua`), the column-header strip
-(`modules/Window.lua`) and both tooltip paths (`modules/Tooltip.lua`). `Constants.STAT_COLORS` stays
+(`modules/Window.lua`) and both tooltip paths (`modules/Tooltip_Lines.lua` for a bar's fill,
+`modules/Tooltip_Builders.lua` for the all-statistics list). `Constants.STAT_COLORS` stays
 the shipped palette and the **fallback**: it answers for a key nothing has stored, for a stat added to
 the catalog after a profile was written, and for a degraded install with no database to read.
 
@@ -318,7 +322,7 @@ Two groups make the point, and both are deliberate:
 - **The Data page is gone.** Session, sort mode, sort column and sort ascending were all reachable
   from the window itself long before they were rows: the header's segment picker writes
   `sessionType`, and one click on a column header writes all three sort fields
-  (`modules/Window.lua`'s `SortByColumn`). They were **deleted**, not hidden, so `/mm set
+  (`modules/Window_Header.lua`'s `SortByColumn`). They were **deleted**, not hidden, so `/mm set
   window.data.sortColumn` is gone too — the click path writes those fields directly rather than
   through `NS.SetByPath`, so a CLI that could also write them was a second seam onto state the
   window owns. Merge pets and Refresh interval moved to General and became addon-wide; the page's
@@ -486,7 +490,8 @@ pointer's job.
 `activeWindowId` can outlive the window it names: deleted from this page, deleted by
 `/mm window delete`, or dropped by a profile switch that brought a different registry. Every reader
 falls back to the first window in the registry rather than resolving against nothing —
-`settings/Schema.lua`'s `activeWindow()`, `settings/Windows.lua`'s and `settings/Columns.lua`'s.
+`settings/Schema_Paths.lua`'s `activeWindow()`, `settings/Windows.lua`'s and
+`settings/Columns.lua`'s.
 `M:Delete` **clears** the pointer rather than reassigning it, so there is one rule for where the
 selection lands instead of two.
 
@@ -540,8 +545,9 @@ Confining column management to the settings panel removes the hazard rather than
 it. Layout is computed from config on the way **out** (`WindowProto:BuildLayout`, which consults not
 one widget) and never read back on the way **in** — design rule R3. There is no code path where a
 cell's geometry is a question anyone asks. The one place the addon *does* call `GetPoint` is
-`modules/Window.lua`'s `inst.anchor`: an empty, invisible, childless frame that the visible window is
-anchored **to**, upstream of everything, and which can therefore never receive a value.
+`modules/Window_Placement.lua`'s `SavePosition`, on the `inst.anchor` `modules/Window.lua` builds:
+an empty, invisible, childless frame that the visible window is anchored **to**, upstream of
+everything, and which can therefore never receive a value.
 
 The out-of-combat rule is the same constraint at the other end. Adding or removing a column rebuilds
 the window's cells, and doing that while those cells are holding secret values is the operation the
@@ -600,7 +606,7 @@ so none of them can be a schema row. The two on the General page are drawn by th
 | **Reset meter data** | *the window header, not a page* | — | Confirms, then `NS.Provider.Reset()`. Irreversible and reaches **outside** this addon: `C_DamageMeter.ResetAllCombatSessions` wipes the data Blizzard's own meter is showing too. Routed through the provider and never straight at the Compat shim — the provider is the only permitted caller of the meter shims, and it also forgets the memoized availability answer and announces `METER_RESET`. |
 | **Reset all settings** | General | Master controls | Confirms, then `Helpers.RestoreAllDefaults()` — the same implementation the header Defaults button and `/mm resetall` use, so the three cannot drift. `afterRestoreAll` hands the profile to `db:ResetProfile()`, which makes this the **equivalent of a new profile**: every setting back to shipped, extra windows **deleted**, names reset, one fresh window left. Other profiles untouched. See *Reset all settings vs Reset Profile* below. |
 | **Test mode** | General | General | A `sessionOnly` schema row over `NS.State.testMode`, carrying its own `get`/`set`. Fills every window with placeholder rows so columns can be laid out without being in combat. Session-only: persisting it would mean logging in to a screen full of fake numbers. Also reachable as `/mm test`. **Not** implied by unlocking a window any more — `WindowManager:SetLocked` used to also switch it on, which made `/mm lock off` silently turn placeholder data on and made unchecking Test mode a no-op while any window was unlocked; locking is now about movement and nothing else, and a player who wants a grid to aim at asks for one with `/mm test`. |
-| **Debug console** | General | Master controls | The console **window's** visibility, not the logging flag. Logging runs with the console closed so a bug can be reproduced first and the log read afterwards; the flag itself is `/mm debug on\|off`'s and is never written to SavedVariables (`debug-logging-§5`). The row is emitted by `H.MasterControls` under the path `state.debugConsole`, and this repo dresses the rest back on — the label in the composer call's `labels` table (`settings/Schema.lua:871`), and the description and both accessors in the `dress()` block at `settings/Schema.lua:922-930`, where `get` asks `NS.DebugLog:IsShown` and `set` calls `Show`/`Hide`. `LibKa0s-DebugLog-1.0`'s own `D:ConsoleCheckbox()` is no longer what draws it: nothing under `settings/` calls it, and the only `ConsoleCheckbox` left in this repo is the degraded stub's at `core/DebugLogSetup.lua:295`, kept so a library-less load still answers the member. |
+| **Debug console** | General | Master controls | The console **window's** visibility, not the logging flag. Logging runs with the console closed so a bug can be reproduced first and the log read afterwards; the flag itself is `/mm debug on\|off`'s and is never written to SavedVariables (`debug-logging-§5`). The row is emitted by `H.MasterControls` under the path `state.debugConsole`, and this repo dresses the rest back on — the label in the composer call's `labels` table (`settings/Schema_Compose.lua:649`), and the description and both accessors in the `dress()` block at `settings/Schema_Compose.lua:700-709`, where `get` asks `NS.DebugLog:IsShown` and `set` calls `Show`/`Hide`. `LibKa0s-DebugLog-1.0`'s own `D:ConsoleCheckbox()` is no longer what draws it: nothing under `settings/` calls it, and the only `ConsoleCheckbox` left in this repo is the degraded stub's at `core/DebugLogSetup.lua:295`, kept so a library-less load still answers the member. |
 
 Both General toggles are `sessionOnly` schema rows (`state.testMode`, `state.debugConsole`) so that
 `/mm list` and `/mm get` can reach them — a toggle that exists only in the panel is a toggle the CLI

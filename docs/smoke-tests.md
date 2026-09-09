@@ -80,7 +80,7 @@ in-client.
 | 26 | **Export** | [**The export modal, the CSV and the chat dump**](#26-the-export-modal-the-csv-and-the-chat-dump) |
 | 27 | **Identity** | [**The identity-correlation capture (issue #22)**](#27-the-identity-correlation-capture-issue-22) |
 | 28 | **Feign trace** | [**The feign-trace verbs and what the recording says (issue #25)**](#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25) |
-| 29 | **Shared registry** | [**The Border dropdown when five Ka0s addons share one registry**](#29-the-border-dropdown-when-five-kas-addons-share-one-registry) |
+| 29 | **Shared registry** | [**The Border dropdown when five Ka0s addons share one registry**](#29-the-border-dropdown-when-five-ka0s-addons-share-one-registry) |
 
 ---
 
@@ -283,10 +283,10 @@ second edge to catch.
   **Why this step exists and what it is really watching.** Those nine rows come out of
   `LibKa0s-Options-1.0`'s schema composers, and v1.26.0 changed *when* a composer asks this addon for
   its media list: it used to ask as a dropdown opened, and now it asks once, as the row is declared.
-  So the member `settings/Schema.lua` hands the composer has to be the deferred reader itself rather
+  So the member `settings/Schema_Compose.lua` hands the composer has to be the deferred reader itself rather
   than a caller of it. Get that wrong and nothing breaks loudly — no Lua error, no chat warning, no
   red case in `lua tests/run.lua`; the row simply carries a media list built before any media addon
-  registered anything. `settings/Schema.lua` re-dresses all nine rows with its own deferred reader
+  registered anything. `settings/Schema_Compose.lua` re-dresses all nine rows with its own deferred reader
   afterwards, so today that would be caught before it reached a dropdown, but the two are independent
   and this is the only place the pair can be seen agreeing. **A dropdown that opens and looks
   plausible is not a pass here** — the pass is a name in it that could only have come from the media
@@ -1384,7 +1384,7 @@ its export glyph.
 - **Open a selector (Metric, Channel or Lines), then press Esc instead of picking a row.** The modal
   closes AND the dropped menu closes with it — it must not stay floating over the game. The shared
   `LibKa0s-Widgets-1.0` popup is a process-wide singleton parented to `UIParent`, not to this modal,
-  so `modules/Export.lua`'s `EnsureFrame` hooks the modal's `OnHide` to call `W.CloseMenu()` for
+  so `modules/Export_Modal.lua`'s `EnsureFrame` hooks the modal's `OnHide` to call `W.CloseMenu()` for
   exactly this path; a menu left behind here means that hook regressed.
 - **The copy window that opens from Export to CSV** carries the same close icon in its own title bar,
   and its text is the bundled monospace face — a CSV is columns of digits and only lines up in one.
@@ -1406,7 +1406,7 @@ its export glyph.
   native game menu does. Two menus at once would mean two popups exist, which no amount of exercising
   the three selectors *one at a time* (the line above) can show.
 - **No row in any of these three menus carries a leading glyph**, and none should. `makeSelector` in
-  `modules/Export.lua` passes no `opts.glyphFont`, which is correct rather than an omission to
+  `modules/Export_Modal.lua` passes no `opts.glyphFont`, which is correct rather than an omission to
   repair: the face is a precondition for an option that sets `glyph`, and none of this modal's
   options does. A row here showing a box or a stray character in front of its label means one grew a
   `glyph` without the mono face growing with it.
@@ -1416,14 +1416,21 @@ its export glyph.
 - **Picking anything repaints the modal immediately** — the button's label changes to what you picked
   before the menu has finished closing.
 - **On a fresh profile the Metric follows the window it was opened from.** `defaults/Profile.lua`
-  ships `export.metric = ""`, which is the choice *Match the window* rather than an absent value, and
-  `Export.ResolveMetric` answers it against the invoking window at every use. Sort a window by
-  **Healing**, export from it, and the Metric button must read **Healing**; sort another by
-  **Interrupts**, export from that one, and the same modal must now read **Interrupts**.
-- **Pinning beats the window, and is reversible.** Pick **Deaths** from the Metric menu, then export
-  from a window sorted by Healing: it must stay on Deaths, and survive a `/reload`. Re-pick **Match
-  the window** (the first entry, above the divider) and the following behavior must come back. A
-  Metric that will not go back to following is the sentinel being written over.
+  ships `export.metric` as `Const.STATS[1].key` — the first entry of the catalog, a real stat rather
+  than a sentinel — and `Export.Open` reseeds it from the invoking window's sort column on the way
+  in, so the shipped value is only ever seen on a profile whose export modal has never been opened.
+  Sort a window by **Healing**, export from it, and the Metric button must read **Healing**; sort
+  another by **Interrupts**, export from that one, and the same modal must now read **Interrupts**.
+- **A pick holds while the modal is open, and the next open takes the window's answer back.** Pick
+  **Deaths** from the Metric menu: the button reads Deaths and the chat dump ranks by Deaths. Close
+  the modal and re-open it from a window sorted by Healing, and it must read **Healing** again —
+  every open reseeds, which is also why `export.metric` has no row in the settings panel; a
+  preference every open overwrites is a preference in name only. There is no *Match the window*
+  entry to go back to, and the reseed is what replaced it: the stored value used to be `""`, meaning
+  exactly that, and resolving it fresh at every use put a label naming a **rule** on a button whose
+  job is to name a **stat**. `Export.ResolveMetric` still reads that `""` — and any key the catalog
+  has since dropped — as unset and lands on the window's own column, so a profile written before the
+  change opens on the right stat with no migration step behind it.
 
 #### The whisper name box
 
@@ -1524,7 +1531,7 @@ and export afterwards, so the grid holds an NPC ally whose name has both a space
 - It is **unquoted**, and that is correct: `Export.CsvField` quotes only on a comma, a double quote,
   a CR or an LF, and a hyphen and a space are none of those. A name split across two cells, or one
   that arrives as `Crenna` alone, means either the quoting rule or the realm strip has reached the
-  serializer — the realm strip belongs to `modules/Row.lua`'s *display* path and must never run here.
+  serializer — the realm strip belongs to `modules/Row_NameCell.lua`'s *display* path and must never run here.
 - **Group with someone from another realm** and export: their `name` field keeps `-Realm`. The CSV is
   data interchange, so the realm-qualified form is the right answer even though the grid strips it.
 - If any name in your group contains a comma or a quote (an NPC ally can), that field **is** wrapped

@@ -11,7 +11,7 @@ exclude_files = { "libs/", "tests/_kit/", "docs/audits/", "docs/reviews/", "_dev
 
 -- NO TOP-LEVEL `ignore`, and none is coming back (lint.md, `M4-11`). This file carried
 -- `ignore = { "212/self", "212/event", "211/addonName" }` until `M4c-06`. Every entry named
--- something that exists in this tree, but a top-level ignore reaches all 93 files, so it silenced
+-- something that exists in this tree, but a top-level ignore reaches all 122 files, so it silenced
 -- those codes in every file that has no business producing them too -- and one of the three was
 -- silencing thirty-two live defects rather than a convention.
 --
@@ -22,12 +22,20 @@ exclude_files = { "libs/", "tests/_kit/", "docs/audits/", "docs/reviews/", "_dev
 -- opened `local addonName, NS = ...` over a folder name they never read and now open
 -- `local _, NS = ...`, which is what core/PoolSetup.lua already spelled and what ConsumableMaster
 -- does. Exactly TEN files do read it -- CoreSetup, DebugLogSetup, EnvSetup, MediaSetup,
--- MultiMeters, Namespace, PerfSetup, modules/Export, modules/Minimap and settings/Schema -- each
--- handing it to a vendored library or a registry that cannot infer which folder it was copied
--- into, and those keep the name. A thirty-third file, settings/ColumnBlocks.lua, was hiding the
--- same defect behind an inline `-- luacheck: ignore 211/addonName` rather than behind the blanket;
--- it is fixed the same way. core/CoreSetup.lua carried a `-- luacheck: ignore addonName` over a
--- header that DOES read the name, so the directive was silencing nothing and is gone.
+-- MultiMeters, Namespace, PerfSetup, modules/Export_Modal, modules/Minimap and
+-- settings/Schema_Compose -- each handing it to a vendored library or a registry that cannot
+-- infer which folder it was copied into, and those keep the name. Two of those ten answer to a
+-- different name than they did at `M4c-06`, and the count still reading TEN is a coincidence
+-- rather than a sign that nothing moved: the layout-§1 peels (issue #28) split
+-- modules/Export.lua and settings/Schema.lua, and in both cases the vararg went with the half
+-- that was carved out. modules/Export.lua, settings/Schema.lua and the second Schema sibling,
+-- settings/Schema_Paths.lua, all three now open `local _, NS = ...`; modules/Export_Modal.lua
+-- and settings/Schema_Compose.lua are the readers. A list left as it stood would have named two
+-- files that no longer read the name and missed the two that do. A thirty-third file,
+-- settings/ColumnBlocks.lua, was hiding the same defect behind an inline
+-- `-- luacheck: ignore 211/addonName` rather than behind the blanket; it is fixed the same way.
+-- core/CoreSetup.lua carried a `-- luacheck: ignore addonName` over a header that DOES read the
+-- name, so the directive was silencing nothing and is gone.
 --
 -- The fifty-two that remain are below, as per-file `files[...]` stanzas in luacheck's
 -- `<code>/<variable>` form. tests/test_lintconfig.lua is what keeps the blanket from re-entering.
@@ -35,8 +43,14 @@ read_globals = {
   -- core Lua/WoW globals
   "_G", "LibStub", "CreateFrame", "GetTime", "GetTimePreciseSec",
   "UIParent", "GameTooltip", "GameTooltip_SetDefaultAnchor",
-  -- Where the pointer is, in SCALED coordinates. settings/ColumnBlocks.lua's drag
-  -- reads it per OnUpdate frame and divides by UIParent:GetEffectiveScale().
+  -- Where the pointer is, in SCALED coordinates, for a caller that divides by
+  -- UIParent:GetEffectiveScale(). That caller is no longer in this tree. The column-reorder
+  -- drag settings/ColumnBlocks.lua used to run per OnUpdate is now the library's drag
+  -- controller (ColumnBlocks.lua:236), and the per-frame cursor read went with it into
+  -- libs/LibKa0s/Widgets.lua -- which exclude_files keeps out of this lint. No linted file
+  -- names either global today, so both entries are declarations nothing needs; dropping them
+  -- is a change to what luacheck enforces and not a correction to a comment, so they stay
+  -- until that is decided on its own terms.
   "GetCursorPosition", "IsMouseButtonDown",
   "GameFontNormal", "GameFontHighlight", "GameFontDisable", "STANDARD_TEXT_FONT",
   "hooksecurefunc", "securecallfunction", "PlaySound",
@@ -90,7 +104,7 @@ globals = {
 
 -- The test tree is linted, and these are the three globals it WRITES. Every suite READS the
 -- harness table as `_G.MULTIMETERS_TEST`, and a field read off the already-declared `_G` needs no
--- entry at all; what needs one is tests/run.lua:287 writing it, plus the two SavedVariables tables
+-- entry at all; what needs one is tests/run.lua:315 writing it, plus the two SavedVariables tables
 -- a case clears to assert on the absent-saved-variable path. Hence `globals` and not
 -- `read_globals`. Hence also the `_G.` qualification -- spelled bare, all six writes are still
 -- reported as W122 "setting read-only field of global '_G'", which is checked both ways.
@@ -113,7 +127,7 @@ files["tests/"] = {
 -- Every stanza below names ONE file, and every entry inside it names the code AND the variable, in
 -- luacheck's `<code>/<variable>` form. That is the whole difference from the blanket this replaced:
 -- a newly-unused argument under any OTHER name -- `window`, `key`, `event`, `statKey` -- still
--- reports in these files, and `212/self` still reports in the other seventy-nine.
+-- reports in these files, and `212/self` still reports in the other hundred and seven.
 --
 -- Measured, not assumed, and the measurement has to be chosen carefully because the old top-level
 -- list was already spelled `212/self` rather than a bare `212`. A dead trailing parameter named
@@ -143,10 +157,11 @@ files["core/Database.lua"] = { ignore = { "212/self" } }
 files["core/MultiMeters.lua"] = { ignore = { "212/self" } }
 
 -- Four more AceEvent message handlers registered by name, each named after the invalidation it
--- answers: `Aggregator:OnMeterReset` (:2075), `Feign:OnForget` and `Feign:OnRosterChanged` (:348),
--- `Provider:OnMeterInvalidated` (:887), `Roster:OnRosterChanged` (:540). None has a colon call site
--- anywhere in the addon, because the library is the only caller -- which is exactly why the
--- receiver cannot be dropped from the signature.
+-- answers: `Aggregator:OnMeterReset` (registered at :1323), `Feign:OnForget` (:373) and
+-- `Feign:OnRosterChanged` (:375), `Provider:OnMeterInvalidated` (:887),
+-- `Roster:OnRosterChanged` (:583). None has a colon call site anywhere in the addon, because the
+-- library is the only caller -- which is exactly why the receiver cannot be dropped from the
+-- signature.
 files["modules/Aggregator.lua"] = { ignore = { "212/self" } }
 files["modules/Feign.lua"]      = { ignore = { "212/self" } }
 files["modules/Provider.lua"]   = { ignore = { "212/self" } }

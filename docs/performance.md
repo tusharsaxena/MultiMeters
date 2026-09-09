@@ -46,7 +46,7 @@ measuring.
 the saved-variable ring and the clickable step panel are **the library's** — not hand-rolled here.
 
 [`core/PerfSetup.lua`](../core/PerfSetup.lua) supplies only the part that this addon alone can know:
-which paths are worth measuring, and what "inert" means here. It sits **seventh in the core block**,
+which paths are worth measuring, and what "inert" means here. It sits **tenth in the core block**,
 after `core/CoreSetup.lua` and before `core/DebugLogSetup.lua`. That position is load-bearing in two
 directions:
 
@@ -74,12 +74,12 @@ overlap, and **a parent must never be summed with its children**.
 | Bucket | Inside | What it brackets | Call sites |
 |---|---|---|---|
 | `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:384`, `:394`, `:402` |
-| `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1850`, `:1860`, `:1883`, `:1890` (every exit) |
+| `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1104`, `:1114`, `:1137`, `:1144` (every exit) |
 | `providerRead` | `refresh` | one `C_DamageMeter` column read | `modules/Provider.lua:349` |
-| `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1694`, `modules/DrillDown.lua:668`, `:700` |
-| `render` | `refresh` | the window's draw | `modules/Window.lua:1993` |
-| `renderRow` | `render` | one row's cells | `modules/Row.lua:1620` |
-| `tooltip` | — | one tooltip build | `modules/Tooltip.lua:2393`, `:2527`, `:2545`, `:2606`, `:2620`, `:2634` |
+| `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1239`, `modules/DrillDown.lua:700`, `:732` |
+| `render` | `refresh` | the window's draw | `modules/Window.lua:1247` |
+| `renderRow` | `render` | one row's cells | `modules/Row.lua:1360` |
+| `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:922`, `:940`, `:1001`, `:1015`, `:1029` |
 | `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:394`, `:402`, `:416` |
 
 The three buckets under `refresh` exist to answer "which third of the pass is it" — reading the
@@ -221,7 +221,7 @@ and every column backed by a real session.
 | `applyConfig` | a settings change re-applying config and re-laying every row | recorded only |
 | `probeOverheadOff` / `probeOverheadOn` | the same refresh with brackets dormant, then armed | the zero-overhead assertions below |
 | `suspended` | a refresh with the provider suspended | **zero** meter API calls — suspend stops the reads at the source |
-| `feignTraceAbsent` / `feignTraceOff` | a **Deaths-only** refresh with `core/Diagnostics.lua`'s `TraceFeign` removed, then present and disarmed | the disarmed trace is **never called** and allocates **nothing** measurable against the absent arm |
+| `feignTraceAbsent` / `feignTraceOff` | a **Deaths-only** refresh with `core/Diagnostics_Feign.lua`'s `TraceFeign` removed, then present and disarmed | the disarmed trace is **never called** and allocates **nothing** measurable against the absent arm |
 
 **A restricted pass costs about 36% more than an unrestricted one** — 412373.3 bytes against
 303415.8 for the same 20×7 window, both re-measured 2026-09-08 over three runs. A large part of that
@@ -253,7 +253,8 @@ not on the refresh path.
 It is measured as a **difference**, not an absolute. One refresh's absolute figure is dominated by the
 harness (see the caveat below) and would drown two small tables per source. The baseline arm removes
 `TraceFeign` from the namespace — the addon's own documented degradation path, since both readers
-resolve `NS.Diagnostics` at call time precisely so the file may be absent — so the delta between the
+resolve `NS.Diagnostics` at call time precisely so `core/Diagnostics_Feign.lua`, which is where the
+ring, the armed flag and the trace itself now live, may be absent — so the delta between the
 arms is the trace and nothing else. Deaths alone, because `scanColumn` takes the feign path on
 `stat.isCount` and Deaths is the one counted stat a shipped window carries.
 
@@ -344,9 +345,9 @@ the arms (two arms at the same frame time, or at a round one like 8.33 ms).
   [`automated-tests/`](automated-tests/). They are reproducible from the repo, so they need no
   standing store.
 - **An interpretation without its record is an assertion.** If a decision is taken off a capture, the
-  capture gets committed and the decision cites its bundle. No decision in `core/PerfSetup.lua`
-  currently quotes a figure, because no in-game capture has been taken yet — the bucket list there is
-  reasoned from the addon's structure, and it says so.
+  capture gets committed and the decision cites its bundle. The first in-game capture is
+  `docs/perf-analysis/20260909-014604/`; no decision in `core/PerfSetup.lua` quotes a figure out of
+  it yet, so the bucket list there is still reasoned from the addon's structure, and it says so.
 
 ## 4. Complexity
 

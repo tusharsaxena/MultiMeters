@@ -34,7 +34,7 @@ such rather than listed as a requirement.
 | `luacheck` | any recent | `luacheck .`, the other half of the green gate | `.luacheckrc` at the repo root |
 | `lizard` | any recent | the `complexity` suite of `tests/_kit/run-automated-tests.sh` | `tests/_kit/run-automated-tests.sh` invokes `lizard` |
 | `git` | any recent | vendoring, `diff -r` against the LibKa0s repo, and the runner's own provenance stamp | library-stack-§7; `tests/_kit/run-automated-tests.sh` calls `git describe` / `git rev-parse` / `git status --porcelain` |
-| `bash` | **4.x or later** | `tests/_kit/run-automated-tests.sh` — the whole automated-test bundle | its shebang is `#!/usr/bin/env bash`, and line 141 declares an associative array (`declare -A ST DUR NOTE`), which `dash`/POSIX `sh` has no syntax for |
+| `bash` | **4.x or later** | `tests/_kit/run-automated-tests.sh` — the whole automated-test bundle | its shebang is `#!/usr/bin/env bash`, and line 168 declares an associative array (`declare -A ST DUR NOTE`), which `dash`/POSIX `sh` has no syntax for |
 
 **Lua 5.1 is a requirement, not a preference.** The harness sandboxes each source file with
 `setfenv`, which was removed in 5.2 — "5.2 will probably work" is false and costs an hour to

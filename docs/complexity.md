@@ -9,8 +9,8 @@
 
 ## Watch list
 
-**None.** `lizard` warns on no function in this addon, and no authored file sits in `layout-§1`'s
-1000–1500 on-notice band without being named below. An empty watch list is a **result**, not a
+**None.** `lizard` warns on no function in this addon. Every authored file in `layout-§1`'s 1000–1500
+on-notice band is named below, and none is in breach. An empty watch list is a **result**, not a
 dropped heading.
 
 This is the first report at this path. It is also the first run in this repository's history to warn
@@ -26,23 +26,45 @@ Nothing crossed. Everything that had crossed came back.
 
 ### The 1000–1500 LOC band
 
-Eleven files, every one of them put there by the 2026-09-09 peels rather than by growth — a peel
-lands a file wherever its seam falls, and several fell high. None is in breach; they are listed so
-that whoever next edits one knows the headroom before they start.
+Nineteen files, and **six of them are source**. That is the half worth reading twice: the band is
+here to warn whoever next opens a file, and a module at 1442 lines is a more useful warning than a
+suite at 1466.
+
+Most of these were put here by the 2026-09-09 peels, but not all — `tests/wow_mock.lua`,
+`tests/test_provider.lua`, `tests/test_database.lua`, `tests/test_row.lua`, `tests/test_aggregator.lua`,
+`tests/test_export.lua` and `tests/test_window.lua` were in the band before the peel as well, and
+several of them are still in it *after* being peeled. A peel lands a file wherever its seam falls, and
+a seam chosen for what a reader can hold does not aim at a line count.
+
+None is in breach. They are listed so that headroom is known before an edit rather than after the
+gate says so.
 
 | File | Lines | Headroom |
 |---|---|---|
 | `tests/wow_mock.lua` | 1466 | 34 |
 | `tests/test_row.lua` | 1456 | 44 |
+| `modules/Row.lua` | 1442 | 58 |
 | `tests/test_window_header.lua` | 1421 | 79 |
-| `tests/test_tooltip_deaths.lua` | 1403 | 97 |
+| `modules/Window.lua` | 1418 | 82 |
+| `tests/test_tooltip_deaths.lua` | 1391 | 109 |
 | `tests/test_provider.lua` | 1359 | 141 |
 | `settings/Schema.lua` | 1350 | 150 |
-| `settings/Schema_Compose.lua` | 1285 | 215 |
+| `modules/Aggregator.lua` | 1331 | 169 |
+| `settings/Schema_Compose.lua` | 1288 | 212 |
 | `tests/test_export.lua` | 1275 | 225 |
+| `tests/test_database.lua` | 1263 | 237 |
 | `tests/test_aggregator.lua` | 1255 | 245 |
 | `tests/test_window.lua` | 1240 | 260 |
-| `tests/test_database.lua` | 1121 | 379 |
+| `modules/Window_Header.lua` | 1184 | 316 |
+| `modules/Tooltip.lua` | 1167 | 333 |
+| `tests/test_headercontrols.lua` | 1159 | 341 |
+| `tests/test_schema.lua` | 1098 | 402 |
+| `modules/Tooltip_Builders.lua` | 1030 | 470 |
+
+The four tightest — `tests/wow_mock.lua` (34), `tests/test_row.lua` (44), `modules/Row.lua` (58) and
+`tests/test_window_header.lua` (79) — are the ones where the next ordinary feature lands a file over
+the cap. `modules/Row.lua` is the one to watch: it is source, it is on the refresh path, and every
+identity, spec-icon and pet-fold change has historically landed in it or in the name cell beside it.
 
 ### Reading the number, before acting on one
 

@@ -36,7 +36,10 @@ local Const = NS.Constants
 -- ---------------------------------------------------------------------------
 --
 -- The DEFAULT refresh for every row is the CONFIG_CHANGED message that SetByPath
--- sends, and this file is its ONE sender (architecture-§4). Windows subscribe and
+-- sends, and there is exactly ONE sender of it (architecture-§4) --
+-- settings/Schema_Paths.lua, which took SetByPath when this file was peeled off
+-- settings/Schema.lua for layout-§1. The sentence used to say "this file", and it
+-- was true of the file all three were carved out of. Windows subscribe and
 -- re-read their upvalues; the panel re-reads its scalars. A direct call from here
 -- into modules/ would be the cross-module reach the standard forbids, and it would
 -- also be a second refresh path for anything that already subscribes.

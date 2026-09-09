@@ -28,10 +28,15 @@ without one of its members.
 | Icon art | `FirstTexture`, `FirstAtlas` | `nil` |
 | Player context | `IsInDelve`, `IsSkyriding`, `IsInHousing` | `false` |
 
-Callers, by weight: `modules/Provider.lua` (the meter), `modules/DrillDown.lua` and
-`modules/Tooltip.lua` (recap and spell), `modules/Visibility.lua` (player context),
-`modules/HeaderControls.lua` and `modules/Window.lua` (icon art and menus), `modules/Format.lua`
-(the formatters).
+Callers, by weight: `modules/Provider.lua` (the meter, the four `C_DeathRecap` readers and the
+recap-discovery probe), `modules/DrillDown.lua` and `modules/Tooltip_Lines.lua`
+(`Compat.GetSpellInfo`) with `modules/Tooltip_Builders.lua` (`Compat.GetSpellTexture`),
+`modules/Visibility.lua` (player context), `modules/HeaderControls.lua` (`FirstTexture` and
+`FirstAtlas`) and `modules/Window_Header.lua` (`FirstAtlas`, and the only caller `OpenContextMenu`
+has), `modules/Format.lua` (the formatters). `modules/Tooltip.lua` and `modules/Window.lua`
+themselves name nothing in this file any more: the CCN peel took the spell shims across to the
+tooltip's builder and line files, and the header art and the menu across to
+`modules/Window_Header.lua`.
 
 ## The rule this file exists to keep
 
@@ -99,9 +104,9 @@ about the build and wrong about the function.
 ## The recap-discovery probe
 
 `RecapMembers`, `RecapAPIs` and `CallRecap` are not shims over a known API. They are a **search** for
-one, and they live here rather than in `core/Diagnostics.lua` because a reader could plausibly sit on
-the meter namespace itself and this file is the only one permitted to name it. Half a search in a
-file that may not host it is not a search.
+one, and they live here rather than in `core/Diagnostics_DeathRecap.lua` — the report that consumes
+them — because a reader could plausibly sit on the meter namespace itself and this file is the only
+one permitted to name it. Half a search in a file that may not host it is not a search.
 
 They exist because guessing failed twice. Round one walked a live 12.x client with nine deaths in the
 session and came back with one function — a corpse coordinate. Round two added a direct-index search

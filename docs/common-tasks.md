@@ -32,9 +32,11 @@ and there is no way to unwind a partially sorted array.
 **R3 — layout is computed from config, never read back off a frame.** A frame handed a secret via
 `SetValue` is marked `HasSecretValues`, which makes its own position and size data secret and
 propagates that to everything anchored to it. There is not one `GetWidth` / `GetHeight` /
-`GetLeft` / `GetPoint` call anywhere in `modules/Row.lua`. The single exception in the addon is
-`modules/Window.lua`'s `inst.anchor`: an empty, invisible, childless frame the visible window is
-anchored *to*, upstream of everything, which can therefore never receive a value.
+`GetLeft` / `GetPoint` call anywhere in `modules/Row.lua` or in `modules/Row_NameCell.lua`, the
+sibling that draws the leading cell. The single exception in the addon is
+`modules/Window.lua`'s `inst.anchor`, which `modules/Window_Placement.lua` reads: an empty,
+invisible, childless frame the visible window is anchored *to*, upstream of everything, which can
+therefore never receive a value.
 
 **Nothing divides a meter number.** Abbreviating is arithmetic. `C_StringUtil.CreateNumericRuleFormatter()`
 does it natively and accepts secrets; `modules/Format.lua` owns the instances and is the only file
@@ -113,7 +115,7 @@ it *and* the order it lands in a new window if it ships enabled.
 | `Constants.STAT_BY_KEY` | built from the array |
 | `Constants.DEFAULT_STAT_KEYS` | derived from `defaultEnabled`; chooses which of `NS.DefaultWindow`'s columns ship **ticked** — every catalog statistic gets an entry either way |
 | The Columns page | `settings/Columns.lua` draws one block per entry of the window's array, which normalizeColumns keeps equal to `Const.STATS` |
-| The name tooltip's all-statistics list | `modules/Tooltip.lua` walks `Const.STATS` |
+| The name tooltip's all-statistics list | `modules/Tooltip_Builders.lua` walks `Const.STATS` |
 | The aggregator's per-stat read | `columnKeys(window)` filters the window's columns through `STAT_BY_KEY` |
 
 **4. Optionally add a color** to `Constants.STAT_COLORS` in `core/Constants.lua`. Doing so has two
@@ -170,8 +172,10 @@ in the profile. **The settings panel draws none of them**: `export.metric` has n
 see them and no tab ever does. The modal writes all four back through `NS.SetByPath`, which is what
 keeps them one preference rather than two.
 
-**In code**, the entry points are all on `NS.Export` (`modules/Export.lua`), a plain table on `NS`
-like `NS.Slash` rather than an AceAddon module:
+**In code**, the entry points are all on `NS.Export`, a plain table on `NS` like `NS.Slash` rather
+than an AceAddon module. The feature is two files: the serializers and the send path in
+`modules/Export.lua`, and the modal — every frame this feature draws — in `modules/Export_Modal.lua`,
+which hangs `Export.Open` and `Export.ResolveMetric` on the same table:
 
 ```lua
 local result = NS.Export.Build(win, "HealingDone")        -- an Aggregator.Build result
@@ -184,7 +188,7 @@ NS.Export:Open(win)                                       -- the modal
 Every one of them takes **either a Window instance or a bare config table** — the glyph has only the
 instance, the slash verb has only the config, and each unwraps with `(win and win.config) or win`.
 
-**Four things about that file are load-bearing.**
+**Four things about the pair are load-bearing.**
 
 - **It has no data path of its own.** `Export.SessionConfig` builds a *synthetic* window config —
   every catalog stat enabled, the invoking window's segment, `rows.maxRows = Const.MAX_ROWS` — and
@@ -202,9 +206,12 @@ instance, the slash verb has only the config, and each unwraps with `(win and wi
   own guards. To rank by a different stat, pass that stat as `Export.Build`'s `sortColumn` — which is
   exactly what Print to Chat does, so "top 5 healing" is the top five healers rather than the top
   five damage dealers with their healing beside them.
-- **Everything above the `Export modal` divider is pure and unit-tested** (`tests/test_export.lua`);
-  everything below it is UI, built lazily on the first `Open` and guarded on `CreateFrame` so the file
-  loads in a harness with no client at all. Keep new serialization above the line.
+- **The split between the two files IS the pure/UI line, and the peel that made it a file boundary
+  did not move it.** `modules/Export.lua` is pure and unit-tested (`tests/test_export.lua`);
+  `modules/Export_Modal.lua` is UI, built lazily on the first `Open` and guarded on `CreateFrame` so
+  it loads in a harness with no client at all (`tests/test_export_modal.lua`). Keep new serialization
+  in `modules/Export.lua`. Its TOC position is load-bearing: the modal resolves three of that file's
+  published file-locals at file scope, so it must load after it.
 
 **Gotchas.**
 - **The 40-row ceiling** is `Constants.MAX_ROWS`, inherited from `Aggregator.ApplyRowLimit`. A raid of
@@ -212,9 +219,11 @@ instance, the slash verb has only the config, and each unwraps with `(win and wi
 - **`SELF` is the default channel and must stay so.** The trigger is a glyph in a title bar, and a
   misclick that reaches a raid is a wipe-night apology where a misclick that prints to your own frame
   is three lines nobody else sees.
-- The copy window is a **deliberate local copy** of the ones in `LibKa0s/DebugLog.lua` and
-  LootHistory. It is the third in the collection and a harvest candidate for `lib.MakeCopyWindow`, not
-  something to unify from inside this addon.
+- The copy window is **LibKa0s-Widgets-1.0's**, and what stays in `modules/Export_Modal.lua` is the
+  descriptor — global name, size, face, title, skin and anchor. It used to be a deliberate local copy
+  that called itself the third in the collection and was really the fourth, because no register was
+  tracking them; four skins to keep in step is how a collection stops reading as one author's work.
+  Do not re-localize it.
 - The header glyph is **not** wired to the restriction, on purpose: an icon that greys and ungreys
   four times a second through a pull is worse than a modal that opens and says why.
 
@@ -281,9 +290,9 @@ somebody exports during a pull.
 - **A nil field is `""`, never `"nil"`.** `CsvField` answers the empty string for nil and for an
   inaccessible value alike, and an absent cell is the common case rather than an error — most players
   have no row in Dispels, Interrupts or Deaths.
-- **Do not strip the realm.** `modules/Row.lua` gates its realm strip on the GUID for display; a CSV
-  is interchange and `Name-Realm` is the more useful answer. It needs no quoting either — `CsvField`
-  quotes only on `[,"\r\n]`, so `Crenna Earth-Daughter` travels unquoted and intact.
+- **Do not strip the realm.** `modules/Row_NameCell.lua` gates its realm strip on the GUID for
+  display; a CSV is interchange and `Name-Realm` is the more useful answer. It needs no quoting
+  either — `CsvField` quotes only on `[,"\r\n]`, so `Crenna Earth-Daughter` travels unquoted and intact.
 - **Add the case to `tests/test_export.lua`.** The pure half of that file is reachable from the
   headless harness, so a new column is one assertion on the header line and one on a row, and the
   suite already asserts the `_ps`/`_pct` invariants that a careless `add` breaks.
@@ -548,7 +557,7 @@ fires.
 |---|---|
 | `METER_UPDATED` `METER_SESSION` `METER_RESET` `ROSTER_CHANGED` `ZONE_CHANGED` `ENTERING_WORLD` `RESTRICTION_CHANGED` `COMBAT_CHANGED` `PLAYER_STATE_CHANGED` | `core/MultiMeters.lua` (the addon's only game-event listener) |
 | `PROFILE_CHANGED` | `core/Database.lua` |
-| `CONFIG_CHANGED` | `settings/Schema.lua` (`NS.SetByPath`'s tail) |
+| `CONFIG_CHANGED` | `settings/Schema_Paths.lua` (`NS.SetByPath`'s tail) |
 | `WINDOWS_CHANGED` | `modules/WindowManager.lua` |
 | `TEST_MODE_CHANGED` | `core/State.lua` |
 | `DRILLDOWN_CHANGED` | `modules/DrillDown.lua` |
