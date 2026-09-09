@@ -4,7 +4,7 @@
 ![Version](https://img.shields.io/badge/Version-0.1.0-blue)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-1728%2F1728_passing-green)
+![Tests](https://img.shields.io/badge/Tests-1739%2F1739_passing-green)
 
 Every other meter shows you one number at a time. Multi Meters shows the whole group in one grid —
 who kicked, who dispelled, who stood in the fire, and who died — all in a single window, one row per
@@ -26,6 +26,15 @@ sits beside the total with no `/s` cluttering it — the column header already s
 That is the **paired** layout, one setting away: out of the box each cell carries a single figure —
 the per-second one on Damage and Healing, the absolute one on every column that has no rate. Set
 **Right text** to **Absolute value** on Bars → Text content for the two-figure grid above.
+
+> **While you are in a fight, the grid is partial — and it completes itself the moment the fight
+> ends.** Midnight seals the identifier that says which row a number belongs to, so mid-fight the
+> other columns are matched to rows by class and specialization instead. Players who share both
+> cannot be told apart, and their secondary cells are left **blank rather than filled with a number
+> that might be the other player's**. In a raid with several duplicate specs that can be most of the
+> grid: a measured 18-player pull left 10 rows blank for the whole pull. The sort column is always
+> live and always right, nothing shown is ever wrong, and every blank fills in the instant you drop
+> out of combat. The window header says so in gray while it is happening.
 
 ## What's new in 0.1.0
 
@@ -82,7 +91,7 @@ Type `/mm` for the command list. `/multimeters` does the same thing if you prefe
 | `/mm reset PATH` | Reset one setting to its default |
 | `/mm resetall` | Reset every setting to defaults |
 | `/mm version` | Print the addon version |
-| `/mm debug` | Open the debug console (`on` / `off` control logging, `diag` prints a diagnostic report, `recap` the death-recap probe, `identity` the mid-pull correlation capture, `feign on`/`feign off`/`feign` the feign-death recording) |
+| `/mm debug` | Open the debug console (`on` / `off` control logging, `tooltip` toggles the very noisy tooltip channel — off by default, `diag` prints a diagnostic report, `recap` the death-recap probe, `identity` the mid-pull correlation capture, `feign on`/`feign off`/`feign` the feign-death recording) |
 | `/mm perf` | Measure performance — run `/mm perf` for the workflow |
 
 Settings that belong to a window are written as `window.something`, and they apply to whichever
@@ -148,6 +157,13 @@ them by class and specialization. Two players with the same class *and* spec can
 so those cells are left blank rather than showing a number that might be the other player's. The
 header says so, and everything fills back in the moment the fight ends.
 
+How much of the grid this costs depends entirely on your group. In a dungeon it is usually nothing.
+In a raid, duplicate specs are normal rather than exceptional — a measured 18-player pull had four
+class-and-spec pairs covering 10 of its 18 rows, and those 10 rows carried no secondary figures
+until the pull ended. There is no way around it from an addon: the game refuses to look a row up by
+the sealed identifier it handed you, and no other field it sends mid-fight tells two players of one
+spec apart. Blank is the honest answer, and it is the one this addon gives.
+
 **Can I look back at an earlier fight?**
 Yes. Click the segment control in the window's header — the three horizontal lines — and pick the
 fight out of the list — it shows each
@@ -194,6 +210,8 @@ together mid-fight, so a merged pet's damage goes missing until the pull ends.
 
 **Something looks wrong and you want to report it.**
 `/mm debug on`, reproduce it, then `/mm debug` to open the console and copy the log into your issue.
+If the problem is with a tooltip, add `/mm debug tooltip` — it is off by default because a tooltip is
+rebuilt on every mouse-over and its lines would otherwise push everything else out of the console.
 
 ## Issues and feature requests
 

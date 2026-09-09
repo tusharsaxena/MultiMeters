@@ -419,6 +419,37 @@ test("Slash: `debug on` / `debug off` set the logging flag; a bare `debug` moves
     assertFalse(inst.NS.State.debug, "and must not touch the logging flag")
 end)
 
+test("Slash: `debug tooltip` toggles the tooltip channel and says which way", function()
+    -- THE CHANNEL THAT DROWNS THE LOG. A tooltip is rebuilt on every mouse-over
+    -- and on every refresh the cursor sits through, so its lines arrive faster
+    -- than the mouse moves and a capped buffer loses the pass somebody was
+    -- reading. Off by default, and the reply names the state it landed in --
+    -- there is no argument to get wrong, so the print is what makes it certain.
+    local inst = T.load{ enable = true }
+    assertFalse(inst.NS.State.debugTooltip, "it must start OFF")
+
+    local text = joined(sayAndLog(inst, "debug tooltip"))
+    assertTrue(inst.NS.State.debugTooltip, "the first call turns it on")
+    assertTrue(text:lower():find("on", 1, true) ~= nil, "and says so")
+
+    say(inst, "debug tooltip")
+    assertFalse(inst.NS.State.debugTooltip, "the second turns it off again")
+end)
+
+test("Slash: `debug tooltip` touches neither the logging flag nor the console", function()
+    -- Three switches, three jobs. red under: folding the channel into `debug on`,
+    -- which is exactly the coupling that made it unreadable in the first place.
+    local inst = T.load{ enable = true }
+    local D = inst.NS.DebugLog
+    local shownBefore = D and D:IsShown()
+
+    say(inst, "debug tooltip")
+    assertFalse(inst.NS.State.debug, "the session logging flag is not its business")
+    if D then
+        assertEqual(D:IsShown(), shownBefore, "and the window did not move")
+    end
+end)
+
 test("Slash: `debug feign` with no argument prints the recording", function()
     -- The bare verb is the READ, and it has to stay the read: a player is asked to
     -- arm the trace before a dungeon and type this after it. The rejection added

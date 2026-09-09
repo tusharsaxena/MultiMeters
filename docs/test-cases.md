@@ -1745,7 +1745,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (47)
+### test_slash.lua (49)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1776,6 +1776,8 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `toggle` reaches the registry and reports its refusal
 - Slash: `reset-positions` moves every window and says how many
 - Slash: `debug on` / `debug off` set the logging flag; a bare `debug` moves the window
+- Slash: `debug tooltip` toggles the tooltip channel and says which way
+- Slash: `debug tooltip` touches neither the logging flag nor the console
 - Slash: `debug feign` with no argument prints the recording
 - Slash: `debug feign of` names the rejected argument and leaves the trace alone
 - Slash: `diag`, `recap` and `identity` each reach their OWN report and no other
@@ -1984,11 +1986,11 @@ badge and any count quoted in the docs must agree with it.
 | test_schema.lua | 33 |
 | test_schema_paths.lua | 30 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 47 |
+| test_slash.lua | 49 |
 | test_options_panel.lua | 38 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1737** |
+| **Total** | **1739** |
