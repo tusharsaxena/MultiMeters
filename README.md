@@ -1,7 +1,7 @@
 # Ka0s Multi Meters
 
-![WoW](https://img.shields.io/badge/WoW-Midnight_12.0.7-purple)
-![Version](https://img.shields.io/badge/Version-0.1.0-blue)
+![WoW](https://img.shields.io/badge/WoW-Midnight_12.1.0-purple)
+![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
 ![Tests](https://img.shields.io/badge/Tests-1748%2F1748_passing-green)
@@ -98,6 +98,7 @@ Please raise them on GitHub:
 
 | Version | Date | Highlights |
 |---|---|---|
+| 1.0.0 | 2026-09-10 | First published release — Multi Meters is now on CurseForge<br>Fixed test mode drawing breakdown bars with no numbers on them<br>Roster rows now carry spec identity<br>Updated for game patch 12.1.0 |
 | 0.1.0 | 2026-08-09 | First release. Multi-column single-frame group meter sourced from Blizzard's damage meter: Damage, Healing, Interrupts, Dispels, Avoidable Damage and Deaths; current/overall sessions; multiple independently configured windows with copy-settings-from; tooltips, cell drill-down and death recap; per-window visibility. |
 
 ## Credits

@@ -2,7 +2,7 @@
 ## Title: Ka0s Multi Meters
 ## Notes: One grid, one row per group member, one column per stat — read from Blizzard's built-in damage meter.
 ## Author: add1kted2ka0s
-## Version: 0.1.0
+## Version: 1.0.0
 ## IconTexture: Interface\Icons\achievement_challengemode_gold
 ## SavedVariables: MultiMetersDB, MultiMetersPerfDB
 ## OptionalDeps: Ace3, LibStub, CallbackHandler-1.0, LibSharedMedia-3.0, LibDataBroker-1.1, LibDBIcon-1.0
@@ -10,8 +10,7 @@
 ## Category-enUS: Combat
 ## X-License: MIT
 ## X-Standard: https://github.com/tusharsaxena/WowAddonStandards
-# X-Curse-Project-ID / X-Wago-ID are deliberately absent: the addon is not published yet, and a
-# placeholder ID here would make the packager upload to somebody else's project.
+## X-Curse-Project-ID: 1690082
 
 # Libraries (must load first)
 libs\LibStub\LibStub.lua

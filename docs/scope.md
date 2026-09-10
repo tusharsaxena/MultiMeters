@@ -379,7 +379,7 @@ default to total and rate.
   [ARCHITECTURE.md](ARCHITECTURE.md#documented-deviations). Note the console's **Clear** button does not reset the comparison (the library offers the
   host no hook), so a freshly cleared console can sit silent until the next change or heartbeat.
 - No automated in-client tests: headless suites plus manual in-game smoke tests.
-- Not published — `X-Curse-Project-ID` and `X-Wago-ID` are deliberately absent from the TOC.
+- Published on CurseForge (`X-Curse-Project-ID: 1690082`). `X-Wago-ID` remains absent.
 
 **The tooltip is the one thing this addon positions itself.** Everything else is laid out from config
 and never anchored to a frame that has held a meter value (rule R3) — but the eight tooltip anchors

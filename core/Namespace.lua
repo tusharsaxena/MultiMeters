@@ -142,7 +142,7 @@ NS.name = addonName
 -- older client without C_AddOns, or the headless test harness where there is no
 -- manifest at all). The manifest is the better source because it cannot drift
 -- from the packaged build (slash-commands-§3) — a hand-edited constant can.
-local FALLBACK_VERSION = "0.1.0"
+local FALLBACK_VERSION = "1.0.0"
 
 --- Resolved once at load: the packaged version if the client can tell us, the
 --- literal above otherwise. Read by `/mm version`, the perf descriptor's record
