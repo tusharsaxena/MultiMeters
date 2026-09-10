@@ -106,3 +106,4 @@ Please raise them on GitHub:
 The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL
 Open Font License 1.1, and the header controls draw [Open Iconic](https://github.com/iconic/open-iconic)
 (MIT). Both ship inside the bundled LibKa0s payload, with their license text beside them.
+
