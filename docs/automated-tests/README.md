@@ -11,7 +11,7 @@ section; this file is the local how-to. How to *verify the addon* is
 tests/_kit/run-automated-tests.sh                                          # all four, writes a bundle
 tests/_kit/run-automated-tests.sh --suite complexity                       # a subset
 tests/_kit/run-automated-tests.sh --suite lint --suite tests --no-bundle   # the green gate; writes nothing
-tests/_kit/run-automated-tests.sh --release 0.1.0                          # mark the bundle a release record
+tests/_kit/run-automated-tests.sh --release 1.0.0                          # mark the bundle a release record
 ```
 
 Run it from the repo root.

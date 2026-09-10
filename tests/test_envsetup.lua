@@ -23,10 +23,11 @@ local assertNil   = T.assertNil
 -- Stand a DIFFERENT version in the mock's manifest for the duration of `fn`, recording what the
 -- reader was asked about.
 --
--- A literal is needed here rather than the fixture because tests/wow_mock.lua stamps
--- `__toc.Version = "0.1.0"` and core/Namespace.lua's FALLBACK_VERSION is ALSO "0.1.0". Asserting
--- the fixture would pass just as green with the TOC unread, which is the one thing these cases
--- exist to rule out.
+-- A literal is needed here rather than the fixture. tests/wow_mock.lua stamps
+-- `__toc.Version = "0.1.0"`; core/Namespace.lua's FALLBACK_VERSION was "0.1.0" too until the 1.0.0
+-- release moved it, and the two coinciding is what made asserting the fixture worthless — it would
+-- have passed just as green with the TOC unread. They differ today, but the literal stays: the case
+-- must not depend on two unrelated constants happening to disagree.
 local function withTOC(version, fn)
     local askedName, askedField
     local saved = mocks.C_AddOns
@@ -160,8 +161,9 @@ test("EnvSetup: the version was resolved at load, not deferred", function()
     -- say so.
     --
     -- A fresh instance with a manifest that does NOT match the constant is the only way to ask
-    -- this: the shared instance's fixture version is "0.1.0" and FALLBACK_VERSION is "0.1.0" too,
-    -- so asserting against it would be just as green with the seam loading last, or missing.
+    -- this: the shared instance's fixture version is "0.1.0" while FALLBACK_VERSION is "1.0.0"
+    -- since the release. A mismatched manifest is asked for explicitly rather than relying on that
+    -- gap, which is two unrelated constants and could close again on any bump.
     local inst = T.load{ mutate = function(m) m.__toc.Version = "9.9.9" end }
     assertEqual(inst.NS.version, "9.9.9")
     assertTrue(inst.NS.version ~= inst.NS.FALLBACK_VERSION,

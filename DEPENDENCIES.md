@@ -9,7 +9,7 @@ such rather than listed as a requirement.
 
 ## Runtime (in-game) — what a player needs
 
-- **World of Warcraft (Retail), patch 12.0 or later.** Single `## Interface: 120007` line in
+- **World of Warcraft (Retail), patch 12.0 or later.** Single `## Interface: 120100` line in
   `MultiMeters.toc` — Retail only.
 
   The version floor is a real requirement, not the usual boilerplate: this addon reads
@@ -80,10 +80,11 @@ regenerating them is that repo's job and that repo's toolchain -- see
 [LibKa0s' own DEPENDENCIES.md](https://github.com/tusharsaxena/LibKa0s/blob/master/DEPENDENCIES.md).
 Nothing here reads a PNG or writes a TGA any more.
 
-Two assets are still in this repo and neither needs a tool: `media/logos/multimeters.logo.tga` (with
-the .png and .jpg masters beside it, both excluded from the package by `.pkgmeta`), which
-`Constants.LOGO` points the settings landing page at, and `media/textures/Default.tga`, which is
-committed and unused (issue #4).
+Two directories of assets are still in this repo and neither needs a tool.
+`media/logos/multimeters.logo.tga` is what `Constants.LOGO` points the settings landing page at,
+with the .png and .jpg masters beside it, both excluded from the package by `.pkgmeta`.
+`media/screenshots/` holds the five captures the CurseForge project page carries — the README
+embeds those from CurseForge's own CDN rather than from this repo.
 
 ## Am I set up correctly?
 

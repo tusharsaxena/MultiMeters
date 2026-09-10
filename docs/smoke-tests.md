@@ -404,8 +404,8 @@ second edge to catch.
 - **The closed Border style dropdown is flush with the controls beside it**, with no ~42px empty gap
   on its left, and opening it still draws a per-row border preview on hover. A gap means
   `lib.__PatchLSM30Border()` did not take effect. **This checks it with Multi Meters alone, which is
-  exactly the check that would have stayed green all the way through the defect §29 exists for** —
-  run §29 too whenever this one matters.
+  exactly the check that would have stayed green all the way through the defect §30 exists for** —
+  run §30 too whenever this one matters.
 - Six pages carry a **Defaults** button in the header (Frame, Header, Bars, Tooltip, Visibility,
   Columns); **Windows and Profiles do not.** Columns' button resets its block editor to the shipped
   catalog, ticked and ordered — it is **not** absent the way it used to be.
@@ -1834,7 +1834,7 @@ five, so run two.
 
 ---
 
-## 29. The Border dropdown when five Ka0s addons share one registry
+### 30. The Border dropdown when five Ka0s addons share one registry
 
 **Smoke, session 5. NOT YET RUN — no client was available when this step was written.**
 Run after this addon's `core/LSMPatch.lua` was deleted and `settings/OptionsSetup.lua`'s live wiring
@@ -1873,7 +1873,7 @@ at any point.
 
 ---
 
-### 30. The perf panel's close control
+### 31. The perf panel's close control
 
 **Smoke, session 3. NOT YET RUN — no client was available when this step was written.**
 

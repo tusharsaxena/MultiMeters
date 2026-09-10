@@ -176,9 +176,7 @@ function NS:OnEnable()
     -- survivable where losing the whole block is not: PLAYER_CAN_GLIDE_CHANGED
     -- still fires when the mount itself changes, which is the edge the skyriding
     -- rule actually turns on.
-    if registerIfValid(self, "PLAYER_IS_GLIDING_CHANGED", "OnPlayerStateChanged") then
-        NS.hasGlidingEvent = true
-    end
+    registerIfValid(self, "PLAYER_IS_GLIDING_CHANGED", "OnPlayerStateChanged")
 
     -- Feign Death, and nothing else on this event. It is the busiest thing this
     -- addon listens to — every cast by every unit in a raid — and it is

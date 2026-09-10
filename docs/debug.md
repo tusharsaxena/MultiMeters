@@ -65,7 +65,7 @@ the suite rather than quietly restoring the flood.
 ## The channels
 
 `NS.Debug(channel, format, ...)` is the sink; the channel is the bracketed name at the head of the
-line. Fifteen exist. The three that dominate a live capture are `Aggregator` (one summary line per
+line. Eighteen exist. The three that dominate a live capture are `Aggregator` (one summary line per
 refresh pass), `Render` (one per window per pass) and `Roster` (one per rebuild).
 
 A pass whose summary line is **unchanged** from the previous pass is not logged; a change is never

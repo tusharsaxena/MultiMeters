@@ -21,11 +21,13 @@ ignore:
   - .superpowers   # untracked; listed under packaging.md:28
   # Tracked, and the only entries added here that change a download. CLAUDE.md
   # and DEPENDENCIES.md are developer documentation; README.md and LICENSE stay,
-  # because players do read those. There is no media/screenshots line: this addon
-  # is not published yet and has never had that directory, and a list padded with
-  # entries for what is not here goes stale in the other direction.
+  # because players do read those. media/screenshots is here as of the 1.0.0
+  # release: the directory arrived with the project-page art and the CurseForge
+  # CDN serves those five PNGs already, so shipping 564K of files the client
+  # cannot read to every player buys nothing.
   - CLAUDE.md
   - DEPENDENCIES.md
+  - media/screenshots
   # Only the .tga logo is loadable at runtime; WoW cannot read .png or .jpg at all. The master .png
   # and the .jpg render exist for the project page and for regenerating the .tga, so shipping them
   # would add megabytes to every download for files the client physically cannot use.
