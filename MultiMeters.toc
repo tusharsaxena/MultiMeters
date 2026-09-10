@@ -1,4 +1,4 @@
-## Interface: 120007
+## Interface: 120100
 ## Title: Ka0s Multi Meters
 ## Notes: One grid, one row per group member, one column per stat — read from Blizzard's built-in damage meter.
 ## Author: add1kted2ka0s
