@@ -10,20 +10,31 @@ Most Damage meter addons show you one statistic at a time. This addon shows all 
 
 The numbers are Blizzard's. Multi Meters asks the built-in meter for them and arranges them; it never touches the combat log, so it adds no additional computation to what the game is already doing.
 
-```
-Player      | Damage       | Healing     | Int | Disp | Avoid Dmg | Deaths
-Rukhmar     | 12.4M  188K  | 0.9M   14K  |  3  |  1   |    412K   |   1
-Thundertusk |  8.1M  123K  | 6.2M   94K  |  1  |  0   |    180K   |   0
-Ashvane     |  6.7M  102K  | 0.2M    3K  |  4  |  2   |     22K   |   0
-```
-
 ## Screenshots
 
-None yet. Nobody has photographed it in a live run. Next version.
+**_Main window_**
+
+![Main window](https://media.forgecdn.net/attachments/1937/48/multimeters-screenshot-01-png.png)
+
+**_Summary tooltip_**
+
+![Summary tooltip](https://media.forgecdn.net/attachments/1937/49/multimeters-screenshot-02-png.png)
+
+**_Spell breakdown tooltip (in the main window)_**
+
+![Spell breakdown tooltip (in the main window)](https://media.forgecdn.net/attachments/1937/50/multimeters-screenshot-03-png.png)
+
+**_Spell breakdown_**
+
+![Spell breakdown](https://media.forgecdn.net/attachments/1937/51/multimeters-screenshot-04-png.png)
+
+**_Death recap_**
+
+![Death recap](https://media.forgecdn.net/attachments/1937/52/multimeters-screenshot-05-png.png)
 
 ## Usage
 
-On the first run after installing, a window turns up. It arrives unlocked, so drag it by the title bar and pull the bottom-right
+On the first run after installing, a default window shows up unlocked, so drag it by the title bar and pull the bottom-right
 corner to size it. Placing a meter between pulls is a pain because there is nothing in it to look
 at, so `/mm test` fills every window with obvious placeholder rows and prints TEST in the header
 while you work. Same command turns it off, `/mm lock` freezes everything once you are happy, and
