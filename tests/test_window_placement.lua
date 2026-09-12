@@ -739,6 +739,30 @@ test("SaveSize writes through the seam ONCE, at resize-stop, for its own window 
     assertEqual(#seen, 1, "nothing pending, nothing written")
 end)
 
+test("SaveSize applies the config ONCE per resize-stop, and still applies when the seam refuses", function()
+    -- The seam's CONFIG_CHANGED already re-applies this window, so an explicit
+    -- ApplyConfig after a successful write is a second full re-apply of the
+    -- same config. Only a write that did not happen needs the explicit one.
+    -- red under: SaveSize calling ApplyConfig unconditionally after the write.
+    local inst, window = scene()
+    local NS = inst.NS
+    local applies = 0
+    local real = window.ApplyConfig
+    window.ApplyConfig = function(self, ...) applies = applies + 1; return real(self, ...) end
+
+    window.anchor:_run("OnSizeChanged", 640, 300)
+    window:SaveSize()
+    assertEqual(applies, 1, "one re-apply per resize-stop, from the seam's announcement")
+
+    local seam = NS.SetByPaths
+    NS.SetByPaths = function() return false, "refused" end
+    applies = 0
+    window.anchor:_run("OnSizeChanged", 660, 310)
+    window:SaveSize()
+    NS.SetByPaths = seam
+    assertEqual(applies, 1, "a refused write still re-applies, explicitly")
+end)
+
 test("A resize logs one [Set] line per dimension, not a row count", function()
     -- A resize is not a bulk copy or reset, so each row it writes is its own
     -- `[Set] <path> = <value>` line (debug-logging-§10, ruled 2026-09-12).

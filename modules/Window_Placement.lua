@@ -76,13 +76,15 @@ function WindowProto:SaveSize()
     local width  = math.floor(self.pendingWidth + 0.5)
     local height = math.floor(self.pendingHeight + 0.5)
     self.pendingWidth, self.pendingHeight = nil, nil
-    if NS.SetByPaths then
-        NS.SetByPaths({
-            { "window.frame.width",  width },
-            { "window.frame.height", height },
-        }, self.id)
-    end
-    self:ApplyConfig()
+    local wrote = NS.SetByPaths and NS.SetByPaths({
+        { "window.frame.width",  width },
+        { "window.frame.height", height },
+    }, self.id)
+    -- A write that landed was announced, and this window's CONFIG_CHANGED
+    -- handler has already re-applied it; a second ApplyConfig here would be a
+    -- second full re-apply of the same config. Only a write that did not happen
+    -- (no seam, or a refusal) leaves the frame to be put back explicitly.
+    if not wrote then self:ApplyConfig() end
     self:MarkDirty()
 end
 

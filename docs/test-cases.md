@@ -1016,7 +1016,7 @@ badge and any count quoted in the docs must agree with it.
 - The atlas rung flips ONE texture with SetTexCoord, and only for ascending
 - With no art and no atlas the arrow is an ASCII character, and a legible one
 
-### test_window_placement.lua (31)
+### test_window_placement.lua (33)
 
 - Closing HIDES the window; it never deletes it
 - Dragging moves the ANCHOR, never the frame that holds the cells
@@ -1049,6 +1049,7 @@ badge and any count quoted in the docs must agree with it.
 - Unlocking does not resurrect the grip on a collapsed window
 - Either lock pins the window, and the master lock erases neither
 - SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)
+- SaveSize applies the config ONCE per resize-stop, and still applies when the seam refuses
 - A resize logs one [Set] line per dimension, not a row count
 
 ### test_window_segment.lua (10)
@@ -2033,7 +2034,7 @@ badge and any count quoted in the docs must agree with it.
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 59 |
 | test_window_header.lua | 73 |
-| test_window_placement.lua | 32 |
+| test_window_placement.lua | 33 |
 | test_window_segment.lua | 10 |
 | test_headercontrols.lua | 65 |
 | test_row.lua | 77 |
@@ -2059,4 +2060,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1801** |
+| **Total** | **1802** |
