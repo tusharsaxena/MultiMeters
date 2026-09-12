@@ -118,6 +118,15 @@ still edits an ordered array whose length is the user's, a shape a path model ha
 `window.columns` is a documented carve-out, read like any node and accepted **whole-array** on write,
 validated and rebuilt entry by entry by the same seam.
 
+**The window registry has one writer** (`architecture-§5`), since no row can name a window's
+existence. Its storage keys are `db.profile.windows`, an array whose entries carry their `id` and
+unique `name`, and the id counter `db.profile.nextWindowId`. Its writer is
+`modules/WindowManager.lua` (`Create`, `Delete`, `Duplicate`, `Rename`'s uniqueness check), with
+`Database.NextWindowId` and `Database.EnsureWindowShape` as its helpers. Its load pass is
+`Database.SeedWindows`, run by `NS:RunMigrations` at initialization (`NS:OnInitialize`, `NS:InitDB`)
+and from AceDB's profile callbacks only. Rows inside a window stay `NS.SetByPath`'s, and some
+writers do not honor that yet ([schema.md](schema.md#the-window-registry-and-its-writer)).
+
 `NS.ValidateSchema()` proves every row's `default` equals `defaults/Profile.lua`'s. The two are
 restated independently rather than sharing a reference precisely so the check can prove something.
 

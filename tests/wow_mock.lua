@@ -1190,7 +1190,15 @@ local function build()
     -- ── LibStub extras ─────────────────────────────────────────────────────
     local libs = M.__libs
 
-    --- AceEvent-3.0, REPLACED rather than extended.
+    --- AceEvent-3.0: the MESSAGE half replaced, the EVENT half the kit's.
+    ---
+    --- Game events go through the kit's own Embed (kit revision 16, LibKa0s
+    --- v1.30.0): RegisterEvent / UnregisterEvent / UnregisterAllEvents recorded on
+    --- `obj.__events` by the same three functions the kit's NewAddon target
+    --- carries, validated as CallbackHandler validates. Called first, so the
+    --- message functions below overwrite the kit's message half and nothing else.
+    --- This file carried its own event half until then; it is gone because the
+    --- kit now provides the same contract.
     ---
     --- The base's fake models the (message, target) fan-out correctly — which is
     --- the property this addon most depends on, since every window subscribes to
@@ -1217,7 +1225,12 @@ local function build()
         end
     end
 
+    local baseAceEvent = libs["AceEvent-3.0"]
+
     local function embedAceEvent(obj)
+        -- Game events are the addon object's, and core/MultiMeters.lua is the only
+        -- registrant. The kit records them; see __fireEvent below.
+        baseAceEvent:Embed(obj)
         obj.RegisterMessage = function(self, message, method)
             busRegistry[message] = busRegistry[message] or {}
             busRegistry[message][self] = resolveCallback(self, method, message)
@@ -1237,14 +1250,6 @@ local function build()
             for target, cb in pairs(targets) do snapshot[#snapshot + 1] = { target, cb } end
             for _, entry in ipairs(snapshot) do entry[2](message, ...) end
         end
-        -- Game events are the addon object's, and core/MultiMeters.lua is the only
-        -- registrant. Recorded so a suite can fire one; see __fireEvent below.
-        obj.__events = obj.__events or {}
-        obj.RegisterEvent = function(self, event, handler)
-            self.__events[event] = handler or event
-        end
-        obj.UnregisterEvent = function(self, event) self.__events[event] = nil end
-        obj.UnregisterAllEvents = function(self) self.__events = {} end
         return obj
     end
     M.__embedAceEvent = embedAceEvent

@@ -165,12 +165,13 @@ declining while the Combat restriction is active is not enough on its own. Every
 function of its arguments stays in `tests/test_export.lua`, which is why that suite needs no frame at
 all.
 
-`tests/test_schema_paths.lua` covers the path machinery and the single seam every write goes through,
-so the case that matters there is not "a path reads a value" but "the **same** path reads a
-**different** window's value once the active window moves". `settings/Schema_Compose.lua` is the one
-new module with no suite of its own, and deliberately: it holds the vocabularies, validators and
-composers that build the row array, and `tests/test_schema.lua` asserts them where it asserts the
-array they produce.
+`tests/test_schema_paths.lua` covers the path machinery and `NS.SetByPath`, the one seam a schema-row
+write belongs to ([schema.md](schema.md#the-window-registry-and-its-writer) lists the writers that
+still bypass it), so the case that matters there is not "a path reads a value" but "the **same**
+path reads a **different** window's value once the active window moves".
+`settings/Schema_Compose.lua` is the one new module with no suite of its own, and deliberately: it
+holds the vocabularies, validators and composers that build the row array, and
+`tests/test_schema.lua` asserts them where it asserts the array they produce.
 
 ## What the mock models, and what it admits it cannot
 
@@ -469,8 +470,8 @@ would pull an untested library release for the sake of a clean diff. That was th
 section was written, at `../LibKa0s` **v1.27.0** against a [`CLAUDE.md`](../CLAUDE.md) naming
 **v1.26.0**, with hundreds of differing lines on each payload and nothing wrong.
 
-Measured 2026-09-09 the two agree: `CLAUDE.md` names **v1.29.0**, the sibling checkout sits on
-**v1.29.0**, and all four commands above report nothing — content *and* bytes, for both payloads.
+Measured 2026-09-12 the two agree: `CLAUDE.md` names **v1.30.0**, the sibling checkout sits on
+**v1.30.0**, and all four commands above report nothing — content *and* bytes, for both payloads.
 That is the other normal state, and it is worth knowing it reads identically to never having looked.
 
 **The authoritative comparison is against the tag `CLAUDE.md` names**, and that one must be empty at
