@@ -167,9 +167,12 @@ local function loadInstance(opts)
     -- Module OnEnable is the client's job and there is no client here. Opt-in,
     -- because most suites want the modules loaded but NOT subscribed — a bus
     -- subscription made during load is one more thing every unrelated case has to
-    -- reason about.
-    if opts.enable and NS.__enableAll then
-        NS:__enableAll()
+    -- reason about. The cascade is the kit's AceAddon (kit revision 17), run the
+    -- way the client's PLAYER_LOGIN runs it: the addon's OnEnable first, then
+    -- every module in creation order. `NS.name` is what NewAddon stamps, so a
+    -- load that never reached core/MultiMeters.lua has nothing to enable.
+    if opts.enable and NS.name then
+        mocks.LibStub("AceAddon-3.0"):EnableAddon(NS)
         if mocks.__flushTimers then mocks.__flushTimers() end
     end
 

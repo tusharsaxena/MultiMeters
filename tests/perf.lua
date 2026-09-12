@@ -140,7 +140,8 @@ mocks.setSessionDuration(SESSION, 212)
 NS:InitDB()
 NS:RunMigrations()
 NS.CreateOptionsPanel()
-NS:__enableAll()
+-- The enable cascade is the kit's AceAddon (kit revision 17), in the client's order.
+mocks.LibStub("AceAddon-3.0"):EnableAddon(NS)
 if mocks.__flushTimers then mocks.__flushTimers() end
 
 local window = NS.Database.GetWindows()[1]

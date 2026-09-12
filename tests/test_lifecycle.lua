@@ -87,13 +87,14 @@ end)
 
 test("Lifecycle: every module registers, and the enable cascade runs them all", function()
     -- Any OnEnable throwing — a nil method, a bad message name — propagates out
-    -- of __enableAll and fails here with the real error.
+    -- of the enable cascade and fails here with the real error.
     local inst = T.load{ enable = true }
     for _, name in ipairs(MODULES) do
         assertTrue(inst.NS:GetModule(name, true) ~= nil, name .. " did not register")
     end
-    assertEqual(#inst.NS.__moduleOrder, #MODULES,
-        "the module count moved: " .. table.concat(inst.NS.__moduleOrder, ", "))
+    local order = {}
+    for i, m in ipairs(inst.NS.orderedModules) do order[i] = m.moduleName end
+    assertEqual(#order, #MODULES, "the module count moved: " .. table.concat(order, ", "))
 end)
 
 test("Lifecycle: every module is also published under its flat NS name", function()
@@ -270,7 +271,7 @@ end)
 test("Lifecycle: PLAYER_ENTERING_WORLD is republished with its login/reload flags", function()
     local inst = T.load{ enable = true }
     local seen = watch(inst, MSG.ENTERING_WORLD)
-    assertTrue(inst.NS:__fireEvent("PLAYER_ENTERING_WORLD", true, false), "the event did not fire")
+    assertEqual(inst.mocks.__fireEvent("PLAYER_ENTERING_WORLD", true, false), 1, "the event did not fire")
     assertEqual(seen.n, 1)
     assertEqual(seen.last.isLogin, true)
     assertEqual(seen.last.isReload, false)
@@ -288,7 +289,7 @@ test("Lifecycle: the roster cache is dropped BEFORE ROSTER_CHANGED goes out", fu
     target:RegisterMessage(MSG.ROSTER_CHANGED, function()
         sawStale = inst.NS.State.Cache("Roster")["Player-1-1"]
     end)
-    inst.NS:__fireEvent("GROUP_ROSTER_UPDATE")
+    inst.mocks.__fireEvent("GROUP_ROSTER_UPDATE")
     assertNil(sawStale, "a subscriber was handed the stale roster cache")
 end)
 
@@ -304,7 +305,7 @@ test("Lifecycle: a meter reset wipes EVERY cache before publishing", function()
         seen.roster = inst.NS.State.Cache("Roster").a
         seen.format = inst.NS.State.Cache("Format").b
     end)
-    inst.NS:__fireEvent("DAMAGE_METER_RESET")
+    inst.mocks.__fireEvent("DAMAGE_METER_RESET")
     assertNil(seen.roster)
     assertNil(seen.format)
 end)
@@ -315,7 +316,7 @@ test("Lifecycle: the session event forwards its payload, which is never secret",
     local inst = T.load{ enable = true }
     inst.mocks.setRestricted(true)
     local seen = watch(inst, MSG.METER_SESSION)
-    inst.NS:__fireEvent("DAMAGE_METER_COMBAT_SESSION_UPDATED", 0, 4242)
+    inst.mocks.__fireEvent("DAMAGE_METER_COMBAT_SESSION_UPDATED", 0, 4242)
     assertEqual(seen.n, 1)
     assertEqual(seen.last.type, 0)
     assertEqual(seen.last.sessionID, 4242)
@@ -324,8 +325,8 @@ end)
 test("Lifecycle: the meter update event is a bare republication", function()
     local inst = T.load{ enable = true }
     local seen = watch(inst, MSG.METER_UPDATED)
-    inst.NS:__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
-    inst.NS:__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
+    inst.mocks.__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
+    inst.mocks.__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
     assertEqual(seen.n, 2, "every meter tick must reach the bus; the WINDOW owns the throttle")
 end)
 
@@ -337,9 +338,9 @@ test("Lifecycle: the three meter handlers carry the meterEvent bracket", functio
     local P = inst.NS.Perf
     P.on = true
     P.Reset()
-    inst.NS:__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
-    inst.NS:__fireEvent("DAMAGE_METER_COMBAT_SESSION_UPDATED", 0, 1)
-    inst.NS:__fireEvent("DAMAGE_METER_RESET")
+    inst.mocks.__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
+    inst.mocks.__fireEvent("DAMAGE_METER_COMBAT_SESSION_UPDATED", 0, 1)
+    inst.mocks.__fireEvent("DAMAGE_METER_RESET")
     P.on = false
     local bucket = P.__buckets().meterEvent
     assertTrue(bucket ~= nil, "the meterEvent bucket was never reached")
@@ -369,7 +370,7 @@ test("Lifecycle: the restriction event updates the mirror and forwards the RAW s
 
     inst.mocks.setRestricted(true)
     inst.mocks.setRestrictionState(STATE.Activating)
-    inst.NS:__fireEvent("ADDON_RESTRICTION_STATE_CHANGED", 0, STATE.Activating)
+    inst.mocks.__fireEvent("ADDON_RESTRICTION_STATE_CHANGED", 0, STATE.Activating)
     assertEqual(seen.n, 1)
     assertEqual(seen.last.type, 0)
     assertEqual(seen.last.state, STATE.Activating, "the raw state must survive the fan-out")
@@ -377,7 +378,7 @@ test("Lifecycle: the restriction event updates the mirror and forwards the RAW s
 
     inst.mocks.setRestricted(false)
     inst.mocks.setRestrictionState(nil)
-    inst.NS:__fireEvent("ADDON_RESTRICTION_STATE_CHANGED", 0, STATE.Inactive)
+    inst.mocks.__fireEvent("ADDON_RESTRICTION_STATE_CHANGED", 0, STATE.Inactive)
     assertFalse(inst.NS.State.restricted)
 end)
 
@@ -529,7 +530,7 @@ test("ShouldShow: a missing Visibility module fails OPEN", function()
     window.visibility.world = false
     assertFalse((inst.NS.ShouldShow(window)), "the fixture needs Visibility to be refusing first")
 
-    inst.NS.__modules.Visibility = nil
+    inst.NS.modules.Visibility = nil
     local ok, reason = inst.NS.ShouldShow(window)
     assertTrue(ok, "the ladder must fail open when the module is gone")
     assertEqual(reason, "shown")

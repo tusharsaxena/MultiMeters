@@ -623,7 +623,7 @@ test("Destroy takes the window off screen and off the bus", function()
     assertNil(window.frame:GetScript("OnUpdate"))
 
     local MSG = inst.NS.Constants.MSG
-    assertNil((inst.mocks.__busRegistry[MSG.METER_UPDATED] or {})[window.bus])
+    assertNil((inst.mocks.__msgRegistry[MSG.METER_UPDATED] or {})[window.bus])
 end)
 
 test("Each window owns a PRIVATE bus target, so two windows cannot clobber each other", function()

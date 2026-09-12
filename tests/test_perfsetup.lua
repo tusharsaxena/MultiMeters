@@ -464,7 +464,7 @@ test("PerfSetup: suspend takes the provider's bus subscriptions down", function(
     -- capture, and the subscription is where the work starts.
     local inst = enabled()
     local Provider = inst.NS.Provider
-    local registry = inst.mocks.__busRegistry
+    local registry = inst.mocks.__msgRegistry
     local msg = inst.NS.Constants.MSG.METER_RESET
     assertTrue(registry[msg] and registry[msg][Provider] ~= nil,
         "the provider must be subscribed before suspend, or this proves nothing")

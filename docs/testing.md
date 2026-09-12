@@ -183,13 +183,23 @@ holds the vocabularies, validators and composers that build the row array, and
 shared base in `tests/_kit/mock_base.lua`, overwriting per key. Its own header lists what it inherits
 and what it replaces, and why: the frame model (the base returns the frame itself from every widget
 factory, which makes "which region got the text" unanswerable — and this addon's entire output is
-text and bar values written onto per-cell FontStrings and StatusBars), the Ace module lifecycle, the
-message bus, and `C_AddOns`. On 2026-09-09 that file went over the 1500-line cap itself (issue #34)
-and the two largest things it carried moved out along the seams its own header had already drawn: the
-**secret simulator** to `tests/mock_secrets.lua`, and the **frame model** — with `GameTooltip` — to
-`tests/mock_frame.lua`. What stayed is the builder, the meter and group fixtures, the Ace lifecycle,
-the message bus, `C_AddOns` and the control surface, which still lists everything in one block
-including the two halves that no longer live there.
+text and bar values written onto per-cell FontStrings and StatusBars), and `C_AddOns`. On 2026-09-09
+that file went over the 1500-line cap itself (issue #34) and the two largest things it carried moved
+out along the seams its own header had already drawn: the **secret simulator** to
+`tests/mock_secrets.lua`, and the **frame model** — with `GameTooltip` — to `tests/mock_frame.lua`.
+What stayed is the builder, the meter and group fixtures, `C_AddOns`, the AceDB string-method
+callbacks and the control surface, which still lists everything in one block including the two halves
+that no longer live there.
+
+**AceEvent and AceAddon are the kit's, whole** (kit revision 17, LibKa0s v1.31.0). The file used to
+replace both: the message half, for `UnregisterAllMessages` and string-method dispatch, and AceAddon,
+for `NewModule` / `GetModule`. The kit now models both from the real CallbackHandler and AceAddon-3.0,
+so a suite reads the message registry as `mocks.__msgRegistry`, fires a game event with
+`mocks.__fireEvent(event, ...)` (which answers how many handlers ran), and finds the modules in
+AceAddon's own `NS.modules` / `NS.orderedModules`. `T.load{ enable = true }` runs the enable cascade
+through `AceAddon:EnableAddon(NS)`, in the client's order: the addon's `OnEnable` first, then every
+module in creation order. The local layer had enabled the modules first; nothing in the suite depended
+on that.
 
 **Neither half is a suite, and neither may be declared as one.** `tests/wow_mock.lua` `dofile`s them
 and nothing else does; they appear in no `SUITES` entry, and the non-obvious part is what would

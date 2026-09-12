@@ -575,7 +575,7 @@ test("Degraded: the addon still enables end to end with no library", function()
         assertTrue(inst.NS:GetModule(name, true) ~= nil, name .. " did not survive a degraded load")
     end
     -- And a full meter tick fans out without raising.
-    inst.NS:__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
-    inst.NS:__fireEvent("GROUP_ROSTER_UPDATE")
+    inst.mocks.__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
+    inst.mocks.__fireEvent("GROUP_ROSTER_UPDATE")
     inst.mocks.__flushTimers()
 end)

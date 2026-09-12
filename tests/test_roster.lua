@@ -300,7 +300,7 @@ test("Roster subscribes to the roster message; it never sends one", function()
     NS.Roster:OnEnable()
     for _, message in ipairs{ MSG.ROSTER_CHANGED, MSG.ENTERING_WORLD, MSG.PROFILE_CHANGED,
                               MSG.TEST_MODE_CHANGED } do
-        assertTrue((mocks.__busRegistry[message] or {})[NS.Roster] ~= nil,
+        assertTrue((mocks.__msgRegistry[message] or {})[NS.Roster] ~= nil,
             "Roster must listen on " .. message)
     end
 

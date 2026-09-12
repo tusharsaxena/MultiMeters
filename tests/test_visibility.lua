@@ -635,7 +635,7 @@ test("Visibility listens on the bus and registers no game event", function()
     for _, message in ipairs{ MSG.ZONE_CHANGED, MSG.ENTERING_WORLD,
                               MSG.ROSTER_CHANGED, MSG.PROFILE_CHANGED,
                               MSG.COMBAT_CHANGED, MSG.PLAYER_STATE_CHANGED } do
-        assertTrue((mocks.__busRegistry[message] or {})[NS.Visibility] ~= nil,
+        assertTrue((mocks.__msgRegistry[message] or {})[NS.Visibility] ~= nil,
             "Visibility must listen on " .. message)
     end
 
