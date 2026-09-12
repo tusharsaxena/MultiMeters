@@ -33,8 +33,8 @@ commits (`2b312db`, `30db4ed`, `e7e1962`).
   held when the clock does not move, and the no-name `NewAddon` path narrowed to a lone table. No test
   here reads a timer handle's cancel field or `repeating`/`looping`, and `NewAddon` is always called
   with a name. There was nothing to port.
-  Checked with `grep -rn '\.canceled\|\.cancelled\|repeating\|looping' tests/` (no hit outside
-  `tests/_kit/`).
+  Checked with `grep -rnE '\.canceled\b|\.cancelled\b|\.looping\b|\.repeating\b' tests/*.lua
+  tests/perf.lua`: no hit. Looser patterns find only prose, a drag handle and secret-value handles.
 
 ## Class B: host change required
 
