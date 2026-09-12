@@ -261,7 +261,9 @@ local function collectSource(_, src)
         deathRecapID      = src.deathRecapID,
         classification    = src.classification,
         sourceDisplayType = src.sourceDisplayType,
-        factionGroup      = src.factionGroup,
+        -- No faction group. It used to be copied here and nothing downstream
+        -- ever read it, and the field audit found the client does not send it
+        -- (issue #48). A column that wants it adds it back with its reader.
     }
 end
 
@@ -589,7 +591,7 @@ end
 Provider.SOURCE_FIELDS = {
     "sourceGUID", "sourceCreatureID", "name", "classFilename", "specIconID",
     "isLocalPlayer", "totalAmount", "amountPerSecond", "deathTimeSeconds",
-    "deathRecapID", "classification", "sourceDisplayType", "factionGroup",
+    "deathRecapID", "classification", "sourceDisplayType",
 }
 
 -- How many source rows the field probe describes.

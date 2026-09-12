@@ -408,3 +408,94 @@ test("Diagnostics: a missing isLocalPlayer is NOT called a degraded key", functi
     assertTrue(specLine:find("collapses", 1, true) ~= nil,
         "a missing specIconID DOES collapse the key, and the report must say so")
 end)
+
+-- ---------------------------------------------------------------------------
+-- An absence the session explains is not a finding (issue #48)
+-- ---------------------------------------------------------------------------
+--
+-- collectSource keeps a row when EITHER identifier is present: a player row
+-- carries `sourceGUID`, an NPC row `sourceCreatureID`. So on a session of
+-- players the creature id is absent on every row BY CONSTRUCTION, and on a
+-- session of NPCs the GUID is. Flagging either as "the addon READS this" sends
+-- the next reader chasing a non-problem.
+
+--- One field's row out of the audit table: the name, then its type, its state
+--- and its `present/sampled` count. Unanchored, because a console line carries
+--- the log's own prefix ahead of the report's text.
+local function fieldLine(text, name)
+    for line in text:gmatch("[^\n]+") do
+        if line:find("%s" .. name .. "%s+%S+%s+%S+%s+%d+/%d+") then return line end
+    end
+    return nil
+end
+
+test("The projection carries no factionGroup: the client does not send it and nothing reads it (#48)", function()
+    -- Copied off every source, in every column, on every refresh, and read back
+    -- by nothing; the field audit found the client never sends it. Asserted here
+    -- rather than in tests/test_provider.lua, which sits at layout-§1's cap.
+    -- red under: `factionGroup = src.factionGroup` left in collectSource.
+    local inst = T.load()
+    inst.mocks.setSession(1, "*", {
+        combatSources = { { sourceGUID = "Player-1-0000000A", classFilename = "MAGE",
+                            totalAmount = 100, factionGroup = "Alliance" } },
+        maxAmount = 100, totalAmount = 100,
+    })
+    local column = inst.NS.Provider.GetColumn(1, "DamageDone")
+    assertEqual(#column.sources, 1)
+    assertNil(column.sources[1].factionGroup, "a field nothing reads is not projected")
+    for _, name in ipairs(inst.NS.Provider.SOURCE_FIELDS) do
+        assertTrue(name ~= "factionGroup", "Provider.SOURCE_FIELDS still lists factionGroup")
+    end
+end)
+
+--- Run the identity report over a session of `sources`.
+local function reportOver(sources)
+    local inst = T.load{ enable = true }
+    inst.NS.State.debug = true
+    inst.mocks.setRestricted(true)
+    inst.mocks.setSession(1, "*", { combatSources = sources, maxAmount = 100, totalAmount = 100 })
+    inst.NS.Aggregator.Build({
+        id = 1, name = "Test", columns = { { stat = "DamageDone", width = 80 } }, rows = {},
+        data = { sessionType = 1, sortMode = "provider", sortColumn = "DamageDone" },
+    })
+    return identityReport(inst)
+end
+
+--- A player row carrying every field the projection reads except the creature id.
+local function playerRow(i)
+    return {
+        sourceGUID = ("Player-1-%08X"):format(i), name = "P" .. i, classFilename = "MAGE",
+        specIconID = 135000 + i, isLocalPlayer = (i == 1), totalAmount = 100 - i,
+        amountPerSecond = 1, deathTimeSeconds = 7, deathRecapID = 1000 + i,
+        classification = "normal", sourceDisplayType = 1,
+    }
+end
+
+test("Diagnostics: sourceCreatureID absent on an all-player session reads as EXPECTED (#48)", function()
+    -- red under: every absent field printed as "the addon READS this".
+    local text = reportOver({ playerRow(1), playerRow(2), playerRow(3) })
+    local line = fieldLine(text, "sourceCreatureID")
+    assertTrue(line ~= nil, "the audit no longer lists sourceCreatureID at all")
+    assertTrue(not line:find("READS this", 1, true),
+        "an absence every sampled row explains was reported as a defect: " .. line)
+    assertTrue(line:find("expected", 1, true) ~= nil, "and nothing said why it is absent: " .. line)
+    -- Nothing else is absent on these rows, so the tally that heads the defects
+    -- must not appear at all.
+    assertTrue(not text:find("field(s) absent", 1, true),
+        "an explained absence was counted with the defects")
+end)
+
+test("Diagnostics: sourceGUID absent on an all-NPC session reads as EXPECTED (#48)", function()
+    local text = reportOver({
+        { sourceCreatureID = 6001, name = "Spirit of Hunger", totalAmount = 100 },
+        { sourceCreatureID = 6002, name = "Thornclaw",        totalAmount = 50 },
+    })
+    local line = fieldLine(text, "sourceGUID")
+    assertTrue(line ~= nil, "the audit no longer lists sourceGUID at all")
+    assertTrue(not line:find("READS this", 1, true),
+        "a GUID an NPC session never carries was reported as a defect: " .. line)
+    -- The fields the NPC rows genuinely lack are still findings.
+    local spec = fieldLine(text, "specIconID")
+    assertTrue(spec ~= nil and spec:find("READS this", 1, true) ~= nil,
+        "an unexplained absence stopped being called out")
+end)

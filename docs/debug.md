@@ -89,7 +89,11 @@ peeled out of `core/Diagnostics.lua` on 2026-09-09 for `layout-§1`, one file ap
 `identity` is the one typed **mid-pull**, by a player who was asked to type it. It reports what it
 needs — the flag on, and a pull running — rather than going quiet when it has neither, and it says
 plainly when a capture proves nothing: an all-plain reading taken after the pull refuses to draw the
-secret-GUID verdict rather than reporting the control as the answer.
+secret-GUID verdict rather than reporting the control as the answer. Its field audit also knows which
+absences a session explains. A player row has no creature id and an NPC row has no GUID, so on an
+all-player column `sourceCreatureID` is missing from every row by construction, and on an all-NPC
+column `sourceGUID` is. Those print in lower case with the reason beside them and stay out of the
+defect tally (issue #48).
 
 ## Rules a line in here obeys
 

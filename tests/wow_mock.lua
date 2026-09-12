@@ -435,7 +435,6 @@ local function build()
             deathRecapID      = spec.deaths and (1000 + i) or nil,
             classification    = "normal",
             sourceDisplayType = M.Enum.DamageMeterSourceDisplayType.Ally,
-            factionGroup      = "Alliance",
         }
     end
 

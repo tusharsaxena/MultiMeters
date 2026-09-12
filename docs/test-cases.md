@@ -325,7 +325,7 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: the header section covers every control, by walking them
 - Diagnostics: a window with no controls says so rather than printing nothing
 
-### test_diagnostics_identity.lua (20)
+### test_diagnostics_identity.lua (23)
 
 - Diagnostics: the identity report is published and reachable
 - Diagnostics: `/mm debug identity` reaches it without the debug log
@@ -347,6 +347,9 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: a candidate that DOES vary is called out as worth trying
 - Diagnostics: the audit says how many rows it sampled
 - Diagnostics: a missing isLocalPlayer is NOT called a degraded key
+- The projection carries no factionGroup: the client does not send it and nothing reads it (#48)
+- Diagnostics: sourceCreatureID absent on an all-player session reads as EXPECTED (#48)
+- Diagnostics: sourceGUID absent on an all-NPC session reads as EXPECTED (#48)
 
 ### test_diagnostics_feign.lua (19)
 
@@ -1975,7 +1978,7 @@ badge and any count quoted in the docs must agree with it.
 | test_database.lua | 68 |
 | test_diagnostics.lua | 21 |
 | test_diagnostics_deathrecap.lua | 30 |
-| test_diagnostics_identity.lua | 20 |
+| test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
@@ -2020,4 +2023,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1766** |
+| **Total** | **1769** |

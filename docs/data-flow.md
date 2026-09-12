@@ -133,7 +133,7 @@ the aggregator can join on:
 { stat, maxAmount, totalAmount, durationSeconds, reason, failureReason,
   sources = { { guid, creatureID, name, classFilename, specIconID, isLocalPlayer,
                 totalAmount, amountPerSecond, deathTimeSeconds, deathRecapID,
-                classification, sourceDisplayType, factionGroup }, … } }
+                classification, sourceDisplayType }, … } }
 ```
 
 Two habits are visible in every function there and are the reason it cannot raise:
