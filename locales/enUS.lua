@@ -805,6 +805,12 @@ L["restricted"] = "restricted"
 -- see. Every other format key in this file is plain for the same reason.
 L["restricted \226\128\148 %d of %d share a class and spec"] =
     "restricted \226\128\148 %d of %d share a class and spec"
+-- The same count once the blanked rows reach a quarter of the grid (issue #22):
+-- the player is looking at mostly empty cells and is owed the effect in plain
+-- words, not only the cause. No longer than the line above at two digits, for
+-- the SESSION_LINE_WIDTH reason given there.
+L["restricted \226\128\148 %d of %d blank: duplicate specs"] =
+    "restricted \226\128\148 %d of %d blank: duplicate specs"
 -- The fallback for an ambiguous grid whose row count did not reach the header --
 -- an aggregate from a build older than the count. Kept rather than deleted so a
 -- reader is never told "0 of 0".

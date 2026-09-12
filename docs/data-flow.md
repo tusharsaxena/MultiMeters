@@ -381,9 +381,17 @@ Identity mode is built out of the fields Blizzard annotates `NeverSecret`:
   between captures besides. *Delegating the join to the client*: passing a source's own secret
   `sourceGUID` back to `C_DamageMeter` answers `raised` — the client refuses the argument outright.
   What is left is saying so on screen, which is what the header count does.
-- `/mm debug on` prints one `identity` line per pass — `rows= keys= collided=/ filled=/` — where
-  `keys` is a distinct count and `collided` is `keys/rows`, because the ceiling turns on how many
-  ROWS the collided keys cover rather than on how many keys there are. **`/mm debug identity`** prints
+- `/mm debug on` prints one `identity` line per pass —
+  `rows= keys= collidedKeys= collidedRows= filled=/ collided= unmatched= absent=` — where `keys` is a
+  distinct count and collided keys and collided rows are named apart, because the ceiling turns on
+  how many ROWS the collided keys cover rather than on how many keys there are. The last three are
+  the blank cells of the `filled/possible` rectangle split by cause, summed over every correlated
+  column: `collided` is the correlation refusing a shared class+spec key, `unmatched` is a key the
+  column named that still found no row (the fault), and `absent` is a player who did none of that
+  stat. So the standing line alone tells a collision-driven blank grid from a mismatch
+  ([#22](https://github.com/tusharsaxena/MultiMeters/issues/22)). The header's restricted notice
+  says the same thing in words: `N of M share a class and spec`, and once the collided rows reach a
+  quarter of the grid, `N of M blank: duplicate specs`. **`/mm debug identity`** prints
   the full capture: the correlation rectangle per column with every miss attributed
   (`filled` / `collided` / `absent` / `unmatched`), the rows-per-key histogram, where each collided
   key's sources sat in every column, and an audit of what the running client actually annotates plain

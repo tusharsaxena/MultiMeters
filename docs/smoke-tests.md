@@ -1732,6 +1732,13 @@ above it. 20+ is where it starts to be worth reading; 30 is what the issue was f
    mid-pull — which is how a candidate field gets settled either way. The `ABSENT` and `PARTIAL`
    lines hold in both states.
 5. `/mm debug` to open the console and copy the whole buffer.
+6. **While the pull is running, read the window's header line** and the standing `identity` line in
+   the buffer. The line must read `identity rows=N keys=N collidedKeys=N collidedRows=N filled=F/P
+   collided=N unmatched=N absent=N`, with `filled + collided + unmatched + absent == P`. The header
+   must say `restricted — N of M share a class and spec` while fewer than a quarter of the rows are
+   collided, and `restricted — N of M blank: duplicate specs` from a quarter up, with `N` equal to
+   the line's `collidedRows`. Check that the whole sentence fits the header without truncation at
+   two-digit counts; the line is a fixed 220 px wide.
 
 **What to read in it, and what each answer would mean:**
 

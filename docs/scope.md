@@ -227,10 +227,15 @@ default to total and rate.
   Blizzard's own meter shows the same thing on the same pull, so the ceiling here may be the
   client's rather than ours.
 
-  Tracked as [#22](https://github.com/tusharsaxena/MultiMeters/issues/22). Nothing is fixed yet.
-  What shipped is the instrumentation, one ordering bug it exposed (a key proved ambiguous by a late
-  column used to keep cells an early column had already written), and the absent-field report that
-  found the cause — see [testing.md](testing.md#capturing-an-identity-correlation-run).
+  Tracked as [#22](https://github.com/tusharsaxena/MultiMeters/issues/22). The blanking is correct
+  and stays. What shipped is the instrumentation, one ordering bug it exposed (a key proved ambiguous
+  by a late column used to keep cells an early column had already written), the absent-field report
+  that found the cause — see [testing.md](testing.md#capturing-an-identity-correlation-run) — and two
+  ways of saying it. The standing `identity` debug line names collided keys and collided rows apart
+  and splits the blank cells into `collided`, `unmatched` and `absent`, so a collision-driven blank
+  grid can be told from a mismatch without a capture. The header says it in words: `N of M share a
+  class and spec`, and once the collided rows reach a quarter of the grid, `N of M blank: duplicate
+  specs`.
 - **The feign-death filter cannot run mid-pull, and that is structural.** `C_DamageMeter` hands a
   Feign Death a valid `deathRecapID`, so the Deaths column counts a hunter's feign as a death.
   `modules/Feign.lua` records the GUID off the cast and `modules/Aggregator.lua` drops that source —

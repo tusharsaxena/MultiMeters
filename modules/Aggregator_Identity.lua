@@ -545,6 +545,13 @@ local function identityStats(pass, collisions)
         collidedRows = 0,
         filled       = 0,
         possible     = 0,
+        -- The rectangle's three blank buckets, summed over every correlated
+        -- column, so the standing line can tell the two causes apart without
+        -- `/mm debug identity` (issue #22): `collided` is the correlation
+        -- refusing, `unmatched` is a key in the column that still found no row.
+        collided     = 0,
+        unmatched    = 0,
+        absent       = 0,
         multiplicity = {},
         columns      = {},
         -- Fill order, so two captures of one pull print in one order and can be
@@ -572,8 +579,11 @@ local function identityStats(pass, collisions)
             local col = scoreColumn(pass, statKey, collisions)
             stats.columns[statKey] = col
             stats.order[#stats.order + 1] = statKey
-            stats.filled   = stats.filled + col.filled
-            stats.possible = stats.possible + col.rows
+            stats.filled    = stats.filled + col.filled
+            stats.possible  = stats.possible + col.rows
+            stats.collided  = stats.collided + col.collided
+            stats.unmatched = stats.unmatched + col.unmatched
+            stats.absent    = stats.absent + col.absent
         end
     end
 
@@ -635,17 +645,21 @@ local function buildByIdentity(pass)
     pass.ambiguousRows = countAmbiguousRows(pass.rows, collisions)
 
     -- ONE line per pass, and only while the flag is on. Every figure on it is
-    -- now a whole-pass one: `keys` is a cardinality, `rows` next to `collided`
-    -- gives the ceiling, and `filled/possible` is a real rectangle. The per
-    -- column split that says WHICH bucket the misses fell in is too much for a
-    -- standing log at four passes a second, so it waits on `/mm debug identity`.
+    -- a whole-pass one: `keys` is a cardinality, `collidedKeys` and
+    -- `collidedRows` are named apart (issue #22: `collided=K/R` read as a
+    -- fraction), and `filled/possible` is a real rectangle whose blanks are
+    -- split by cause -- `collided` is the correlation refusing, `unmatched` is
+    -- the fault, `absent` is honest. Which COLUMN each miss fell in is too much
+    -- for a standing log at four passes a second, so it waits on
+    -- `/mm debug identity`.
     if pass.corrSeen then
         local stats = identityStats(pass, collisions)
         pass.identityStats = stats
         NS.DebugSteady(pass.windowId, "Aggregator",
-            "identity rows=%d keys=%d collided=%d/%d filled=%d/%d",
+            "identity rows=%d keys=%d collidedKeys=%d collidedRows=%d"
+                .. " filled=%d/%d collided=%d unmatched=%d absent=%d",
             stats.rows, stats.keys, stats.collidedKeys, stats.collidedRows,
-            stats.filled, stats.possible)
+            stats.filled, stats.possible, stats.collided, stats.unmatched, stats.absent)
     end
 end
 

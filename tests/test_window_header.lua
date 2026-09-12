@@ -311,7 +311,7 @@ test("The restricted notice COUNTS the rows it could not tell apart — #22", fu
     assertTrue(line:find("restricted", 1, true) ~= nil, "got: " .. line)
     assertTrue(line:find("2 of 3", 1, true) ~= nil,
         "the notice must name how many rows are affected, got: " .. line)
-    assertTrue(line:find("class", 1, true) ~= nil,
+    assertTrue(line:find("duplicate spec", 1, true) ~= nil,
         "and why they are, got: " .. line)
 end)
 
@@ -370,7 +370,24 @@ test("The header names AMBIGUITY when two rows cannot be told apart", function()
 
     local line = window.sessionText:GetText() or ""
     assertTrue(line:find("2 of 2", 1, true) ~= nil, "got: " .. line)
-    assertTrue(line:find("share a class and spec", 1, true) ~= nil, "got: " .. line)
+    assertTrue(line:find("blank: duplicate specs", 1, true) ~= nil, "got: " .. line)
+end)
+
+test("Once a quarter of the rows are blanked, the notice says BLANK in plain words (#22)", function()
+    -- Below the share the grid mostly reads, and naming the cause is enough.
+    -- From a quarter up the player is looking at an empty grid and is owed the
+    -- effect as well as the cause. Both figures are plain integers the
+    -- aggregator counted, so the share is legal mid-pull.
+    -- red under: one sentence for every ambiguous grid, whatever it costs.
+    local _, window = scene()
+    local rows = {}
+    for i = 1, 9 do rows[i] = {} end
+    window.aggregate = { identityMode = true, ambiguous = true, ambiguousRows = 2, rows = rows }
+    local few = window:RestrictedNotice(false)
+    assertTrue(few:find("2 of 9 share a class and spec", 1, true) ~= nil, "got: " .. few)
+    window.aggregate.ambiguousRows = 3
+    local many = window:RestrictedNotice(false)
+    assertTrue(many:find("3 of 9 blank: duplicate specs", 1, true) ~= nil, "got: " .. many)
 end)
 
 test("The header line reads 'Test' while placeholder data is on screen", function()

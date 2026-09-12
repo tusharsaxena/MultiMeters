@@ -1099,11 +1099,21 @@ function WindowProto:RestrictedNotice(preview)
     -- Guarded on both being positive rather than on non-nil: an aggregate from a
     -- build that predates the count answers nil, and "0 of 0 rows" is a worse
     -- sentence than the one it would replace.
+    --
+    -- A QUARTER OF THE GRID is where naming the cause stops being enough (issue
+    -- #22). Every secondary cell on a collided row is blank, so the share of rows
+    -- is the share of the grid the blanks cost. Below a quarter the grid mostly
+    -- reads and the cause is the sentence; from a quarter up the player is
+    -- looking at an empty grid and the sentence says BLANK. Integer arithmetic on
+    -- two counts of our own, so it is legal mid-pull, and the string is no longer
+    -- than the one beside it (SESSION_LINE_WIDTH above).
     local ambiguous, total = aggregate.ambiguousRows, #(aggregate.rows or aggregate)
     if type(ambiguous) == "number" and ambiguous > 0 and total > 0 then
-        return NS.GRAY .. string.format(
-            L["restricted \226\128\148 %d of %d share a class and spec"],
-            ambiguous, total) .. "|r"
+        local QUARTER = 4
+        local fmt = (ambiguous * QUARTER >= total)
+            and L["restricted \226\128\148 %d of %d blank: duplicate specs"]
+            or  L["restricted \226\128\148 %d of %d share a class and spec"]
+        return NS.GRAY .. string.format(fmt, ambiguous, total) .. "|r"
     end
     return NS.GRAY .. L["restricted \226\128\148 some rows cannot be told apart"] .. "|r"
 end

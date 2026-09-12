@@ -810,7 +810,7 @@ badge and any count quoted in the docs must agree with it.
 - The judge verdict is recorded per death source, after the prune
 - A column that is not counted records no judgement at all
 
-### test_aggregator_identity.lua (26)
+### test_aggregator_identity.lua (27)
 
 - A healer with no damage is on the mid-pull grid, from the healing column
 - An ambiguous key gets no invented row, because no column could ever fill it
@@ -829,6 +829,7 @@ badge and any count quoted in the docs must agree with it.
 - Identity stats count collided ROWS, not just collided keys
 - Identity stats attribute every miss to one of three causes
 - A collided key lands in the collided bucket, not the absent one
+- The standing identity line names collided KEYS and ROWS, and every miss by cause (#22)
 - The sort column is named, and is not part of the correlated rectangle
 - Identity stats carry the rows-per-key histogram
 - A collided key records where its sources sat in every column
@@ -935,7 +936,7 @@ badge and any count quoted in the docs must agree with it.
 - A maxRows cap LARGER than the frame holds does not win
 - BuildLayout survives a config with the sub-tables missing, on the shipped numbers
 
-### test_window_header.lua (72)
+### test_window_header.lua (73)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -951,6 +952,7 @@ badge and any count quoted in the docs must agree with it.
 - The restricted notice stays a bare word when NOTHING collided
 - The header says the grid was built the restricted way
 - The header names AMBIGUITY when two rows cannot be told apart
+- Once a quarter of the rows are blanked, the notice says BLANK in plain words (#22)
 - The header line reads 'Test' while placeholder data is on screen
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
@@ -1999,11 +2001,11 @@ badge and any count quoted in the docs must agree with it.
 | test_roster.lua | 39 |
 | test_feign.lua | 27 |
 | test_aggregator.lua | 61 |
-| test_aggregator_identity.lua | 26 |
+| test_aggregator_identity.lua | 27 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 59 |
-| test_window_header.lua | 72 |
+| test_window_header.lua | 73 |
 | test_window_placement.lua | 31 |
 | test_headercontrols.lua | 65 |
 | test_row.lua | 76 |
@@ -2029,4 +2031,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1775** |
+| **Total** | **1777** |
