@@ -204,6 +204,10 @@ function Database.WindowName(n)
     return NS.L["Multi Meters #%d"]:format(n)
 end
 
+-- True only while Database:OnProfileReset rebuilds (see SeedWindows below). A
+-- file-local rather than a Database field: nothing outside this file may set it.
+local reseedQuietly = false
+
 --- Seed a brand-new profile with exactly one window, and normalize every window
 --- already there.
 ---
@@ -212,13 +216,17 @@ end
 --- in defaults/Profile.lua's tree because AceDB's defaults merge would fold a
 --- default window back into a profile the user had deleted their last window
 --- from — resurrecting it on every login, with no way to refuse it.
+---
+--- Traced, except while OnProfileReset rebuilds: that handler's own line already
+--- says the profile is back to its one shipped window (debug-logging-§10 logs a
+--- profile reset ONCE), so a second line here would restate it.
 function Database.SeedWindows()
     local windows = Database.GetWindows()
 
     if #windows == 0 then
         local id = Database.NextWindowId()
         windows[1] = NS.DefaultWindow(id, Database.WindowName(1))
-        if NS.State and NS.State.debug then
+        if NS.State and NS.State.debug and not reseedQuietly then
             NS.Debug("Init", "seeded default window id=%d", id)
         end
     end
@@ -828,20 +836,43 @@ end
 -- Profile callbacks
 -- ---------------------------------------------------------------------------
 
---- AceDB calls this as `obj:method(event, db, newProfileKey)` for
---- OnProfileChanged / OnProfileCopied. OnProfileReset passes nil for the third
---- argument, so the active key is substituted.
----
+--
+-- ONE HANDLER PER EVENT, because the one line each logs is worded by the event
+-- (debug-logging-§10, the owner's final ruling). AceDB replacing the whole
+-- profile -- a reset, a copy, a switch -- is wholesale replacement rather than a
+-- write through the seam, so no `[Set]` line per row comes from any of them, and
+-- each is logged ONCE, here:
+--
+--   reset   [Set] reset profile '<name>' to defaults
+--   copy    [Set] copied profile '<source>' -> '<name>'
+--   switch  [Profile] switched to '<name>'
+--
+-- A reset-all from the panel or `/mm resetall` reaches the reset line from
+-- inside the library's bulk bracket, which then adds nothing (NS.Bulk, in
+-- settings/Schema_Paths.lua). The three share one rebuild.
+--
+-- THE RESET LINE CARRIES NO ROW COUNT, deliberately. debug-logging-§10 allows
+-- one only where it is cheap to know, and it must be the rows the reset actually
+-- CHANGED -- never every row the profile stores, which is the same number on
+-- every reset and says nothing. Here it is not cheap and not even well defined:
+-- a reset deletes every extra window, so "rows changed" would have to count
+-- rows that no longer exist, and AceDBOptions' own Reset Profile button reaches
+-- this handler with no chance to look at the profile first. So there is no count
+-- to hand off, and none to go stale between two resets.
+
+--- The profile now active. AceDB passes no key with OnProfileReset, and the key
+--- it passes with OnProfileCopied is the SOURCE, so neither can be trusted for this.
+local function activeKey(db)
+    if db and db.GetCurrentProfile then return db:GetCurrentProfile() end
+    return (db and db.keys and db.keys.profile) or "Default"
+end
+
+local function debugOn() return NS.State and NS.State.debug end
+
 --- Everything downstream — every window, the settings panel, the aggregator's
 --- caches — rebuilds off the single PROFILE_CHANGED message rather than off a
 --- direct call from here (architecture-§4).
-function Database:OnProfileChanged(_, db, newProfileKey)
-    local key = newProfileKey or (db and db.keys and db.keys.profile) or "Default"
-
-    if NS.State and NS.State.debug then
-        NS.Debug("Profile", "switched to '%s'", tostring(key))
-    end
-
+local function rebuild(key)
     -- The newly-active profile may be a copy authored at an older schema
     -- version, or a reset back to an empty registry. Both need the full
     -- migrate-then-normalize pass before anything reads a window.
@@ -854,6 +885,33 @@ function Database:OnProfileChanged(_, db, newProfileKey)
     end
 
     fireProfileChanged(key)
+end
+
+--- AceDB calls each of these as `obj:method(event, db, key)`.
+function Database:OnProfileChanged(_, db, newProfileKey)
+    local key = newProfileKey or activeKey(db)
+    if debugOn() then NS.Debug("Profile", "switched to '%s'", tostring(key)) end
+    rebuild(key)
+end
+
+function Database:OnProfileReset(_, db)
+    local key = activeKey(db)
+    if debugOn() then NS.Debug("Set", "reset profile '%s' to defaults", tostring(key)) end
+    -- The line above already says the profile is back to its one shipped window,
+    -- so the seed's own [Init] trace would be a second line about the same act.
+    -- Released under pcall, so a raising rebuild cannot silence every later seed.
+    reseedQuietly = true
+    local ok, err = pcall(rebuild, key)
+    reseedQuietly = false
+    if not ok then error(err, 0) end
+end
+
+function Database:OnProfileCopied(_, db, sourceKey)
+    local key = activeKey(db)
+    if debugOn() then
+        NS.Debug("Set", "copied profile '%s' \226\134\146 '%s'", tostring(sourceKey), tostring(key))
+    end
+    rebuild(key)
 end
 
 -- ---------------------------------------------------------------------------
@@ -890,7 +948,8 @@ function NS:InitDB()
 
     -- AceDB calls these as `obj:method(event, db, key)` given the
     -- (self, "OnProfileChanged", "OnProfileChanged") registration form.
+    -- One handler per event: each logs its own line (see "Profile callbacks").
     db.RegisterCallback(Database, "OnProfileChanged", "OnProfileChanged")
-    db.RegisterCallback(Database, "OnProfileCopied",  "OnProfileChanged")
-    db.RegisterCallback(Database, "OnProfileReset",   "OnProfileChanged")
+    db.RegisterCallback(Database, "OnProfileCopied",  "OnProfileCopied")
+    db.RegisterCallback(Database, "OnProfileReset",   "OnProfileReset")
 end

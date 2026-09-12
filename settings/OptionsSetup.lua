@@ -189,9 +189,29 @@ local descriptor = {
     -- Positions come back for free -- they live in the profile -- so there is no
     -- ResetPositions call any more. A degraded install with no db has nothing to
     -- reset and says so by doing nothing, which is honest.
+    --
+    -- ANSWERS WHETHER IT RESET. The library ignores the answer and reports its own
+    -- `info.profileReset`; the degradation stub below has no library and reads it,
+    -- so a reset-all on an install with no db logs its row count instead of
+    -- staying silent for a handler that will never fire.
     resetProfile = function()
         local db = NS.db
-        if db and db.ResetProfile then db:ResetProfile() end
+        if not (db and db.ResetProfile) then return false end
+        db:ResetProfile()
+        return true
+    end,
+
+    -- THE BULK BRACKET (LibKa0s-Options-1.0 minor 16, debug-logging-§10). The
+    -- library calls it around RestoreDefaults (scope: the page key) and
+    -- RestoreAllDefaults (scope "all", spanning the session-row walk AND the
+    -- profile reset). The seam mutes its per-row `[Set]` line inside it and logs
+    -- one `[Set] reset <scope>: N rows` at the close, N the rows whose stored
+    -- value moved -- or nothing, when the act reset the profile, because
+    -- OnProfileReset logs that once. The SAME pair goes to settings/Slash.lua's
+    -- descriptor. Both halves are supplied: a mute with no close would stick.
+    bulkBegin = function(act, scope) if NS.Bulk then NS.Bulk.begin(act, scope) end end,
+    bulkEnd   = function(act, scope, count, err, info)
+        if NS.Bulk then NS.Bulk.finish(act, scope, count, err, info) end
     end,
 
     -- Backs the color picker's 50 ms drag throttle. A descriptor field rather
@@ -335,18 +355,25 @@ if not lib then
     -- fine, so the reset still works with no panel at all. It uses the same
     -- vetoedFromResetAll predicate the descriptor does, so a profiles row is safe
     -- on both paths rather than on the one somebody remembered.
+    --
+    -- BRACKETED THE WAY THE LIBRARY BRACKETS IT (Options minor 16): the session-row
+    -- walk and the profile reset share one bulk bracket, so the rows written first
+    -- are muted and the reset logs one line, OnProfileReset's. `resetProfile`
+    -- answers whether it reset, which is what tells the close to stay silent.
     Helpers.RestoreAllDefaults = function()
-        for _, row in ipairs(NS.Schema or {}) do
-            if not vetoedFromResetAll(row) and NS.ApplyDefault then
-                NS.ApplyDefault(row)
+        NS.Bulk.run("reset", "all", function()
+            for _, row in ipairs(NS.Schema or {}) do
+                if not vetoedFromResetAll(row) and NS.ApplyDefault then
+                    NS.ApplyDefault(row)
+                end
             end
-        end
-        -- Then the profile itself, which IS the reset. On the live path the library
-        -- calls this (LibKa0s-Options-1.0 minor 9's `resetProfile`); here there is no
-        -- library, so the stub makes the same call. It exists because the LIBRARY is
-        -- missing, not the db, and the user whose panel will not open is exactly the
-        -- user who needs "reset everything".
-        if descriptor.resetProfile then descriptor.resetProfile() end
+            -- Then the profile itself, which IS the reset. On the live path the library
+            -- calls this (LibKa0s-Options-1.0 minor 9's `resetProfile`); here there is no
+            -- library, so the stub makes the same call. It exists because the LIBRARY is
+            -- missing, not the db, and the user whose panel will not open is exactly the
+            -- user who needs "reset everything".
+            return descriptor.resetProfile and descriptor.resetProfile()
+        end)
     end
 
     NS.RegisterOptionsPage = function() end

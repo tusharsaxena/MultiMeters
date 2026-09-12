@@ -301,8 +301,9 @@ somebody exports during a pull.
 ## Add a new setting
 
 One row, one default, one locale entry. A schema row automatically gains `/mm get`, `/mm set`,
-`/mm list`, `/mm reset`, its page widget, the per-page **Defaults** button and the `/mm resetall`
-sweep — so **do not** write a parallel mutator for a field that already has a row.
+`/mm list`, `/mm reset`, its page widget, the per-page **Defaults** button and its place in the
+profile reset behind `/mm resetall`, so **do not** write a parallel mutator for a field that already
+has a row.
 
 **1. `settings/Schema.lua`** — add the row in the block for its page **and tab**: `group` is now the
 tab label, not just a section heading, so the row lands wherever an existing row already carries that

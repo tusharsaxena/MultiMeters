@@ -196,16 +196,89 @@ test("Database: the three profile callbacks are registered in the method-name fo
     -- instead would call it with the event as `self`, and `db` and the key would
     -- land one argument to the left — so `newProfileKey` would be the db table.
     -- All three events must be covered: a copy and a reset change the active
-    -- profile just as a swap does.
-    -- red under: dropping the OnProfileCopied or OnProfileReset registration.
+    -- profile just as a swap does. EACH HAS ITS OWN HANDLER, because
+    -- debug-logging-§10 words the one line by the event, and one shared handler
+    -- called a reset and a copy "switched to".
+    -- red under: dropping a registration, or folding two events onto one handler.
     local fh = assert(io.open((T.root or ".") .. "/core/Database.lua", "r"))
     local src = fh:read("*a")
     fh:close()
     for _, event in ipairs({ "OnProfileChanged", "OnProfileCopied", "OnProfileReset" }) do
         assertTrue(src:match('RegisterCallback%(Database,%s*"' .. event
-            .. '",%s*"OnProfileChanged"%)') ~= nil,
-            event .. " is not registered against Database:OnProfileChanged")
+            .. '",%s*"' .. event .. '"%)') ~= nil,
+            event .. " is not registered against Database:" .. event)
     end
+end)
+
+test("Database: each profile event is logged ONCE, in words chosen by the event", function()
+    -- debug-logging-§10, the owner's final ruling: AceDB replacing the whole
+    -- profile is wholesale replacement, logged once by the profile handler. A
+    -- reset and a copy are [Set] lines; a switch keeps the [Profile] line it
+    -- always had. The copy names its source, which AceDB passes as the key, and
+    -- the rebuild still names the profile now ACTIVE, not the source.
+    -- red under: the three events sharing OnProfileChanged.
+    local inst = T.load{}
+    local NSi = inst.NS
+    NSi.State.debug = true
+    local keys = {}
+    NSi.NewBusTarget():RegisterMessage(MSG.PROFILE_CHANGED, function(_, p)
+        keys[#keys + 1] = p and p.newProfileKey
+    end)
+
+    local lines, original = {}, NSi.Debug
+    NSi.Debug = function(tag, fmt, ...)
+        if tag ~= "Set" and tag ~= "Profile" then return end
+        local a = { ... }
+        for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
+        lines[#lines + 1] = "[" .. tag .. "] " .. tostring(fmt):format(a[1], a[2], a[3], a[4])
+    end
+    local ok, err = pcall(function()
+        resetProfile(inst)
+        swapProfile(inst, "Raid")
+        NSi.db:CopyProfile("Default")
+    end)
+    NSi.Debug = original
+    assertTrue(ok, tostring(err))
+
+    assertEqual(#lines, 3, table.concat(lines, " | "))
+    assertEqual(lines[1], "[Set] reset profile 'Default' to defaults")
+    assertEqual(lines[2], "[Profile] switched to 'Raid'")
+    assertEqual(lines[3], "[Set] copied profile 'Default' \226\134\146 'Raid'")
+    assertEqual(keys[3], "Raid", "the copy's rebuild must name the active profile, not the source")
+end)
+
+test("Database: the reset line carries NO row count -- never the rows the profile stores", function()
+    -- debug-logging-§10: a count on the reset line must be the rows the reset
+    -- actually CHANGED, or be left off. The profile's stored-row total is neither:
+    -- it is the same on every reset. Here "changed" is not cheap -- a reset deletes
+    -- every extra window -- so the line carries none, and with no count handed from
+    -- the reset path to this handler there is nothing to go stale between two
+    -- resets. So a reset of a moved profile and a reset of an untouched one read
+    -- the same.
+    -- red under: a `(N rows)` suffix of any kind, including the stored-row total.
+    local inst = T.load{}
+    local NSi = inst.NS
+    NSi.State.debug = true
+    assertTrue(NSi.WindowManager:Create("Second"))
+    NSi.Database.GetWindows()[1].frame.width = 401
+
+    local lines, original = {}, NSi.Debug
+    NSi.Debug = function(tag, fmt, ...)
+        if tag ~= "Set" then return end
+        local a = { ... }
+        for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
+        lines[#lines + 1] = tostring(fmt):format(a[1], a[2], a[3], a[4])
+    end
+    local ok, err = pcall(function()
+        resetProfile(inst)   -- a profile with a moved row and a second window
+        resetProfile(inst)   -- the same profile, already at its defaults
+    end)
+    NSi.Debug = original
+    assertTrue(ok, tostring(err))
+
+    assertEqual(#lines, 2, table.concat(lines, " | "))
+    assertEqual(lines[1], "reset profile 'Default' to defaults")
+    assertEqual(lines[2], lines[1], "an untouched profile's reset must read the same, not carry a count")
 end)
 
 test("Database: a stored columns array is left exactly as the user ordered it", function()

@@ -1242,13 +1242,19 @@ local function build()
             --- profile call is running, so this only has to cover what was
             --- withheld above -- and it runs AFTER that call, which is the same
             --- order CallbackHandler gives.
-            local function fireStrings(event)
+            ---
+            --- The key is the one real AceDB hands each event: the NEW profile for
+            --- a switch, the SOURCE for a copy (`CopyProfile(name)` fires
+            --- `OnProfileCopied, db, name`), and none at all for a reset. This used
+            --- to pass the current profile for all three, which named a copy's
+            --- target where the client names its source.
+            local function fireStrings(event, key)
                 for _, entry in ipairs(registered[event] or {}) do
                     local target, handler = entry.target, entry.handler
                     if type(handler) == "string" and type(target) == "table"
                         and type(target[handler]) == "function"
                     then
-                        target[handler](target, event, db, db.GetCurrentProfile())
+                        target[handler](target, event, db, key)
                     end
                 end
             end
@@ -1259,7 +1265,10 @@ local function build()
                 local base = db[name]
                 db[name] = function(...)
                     local result = base(...)
-                    fireStrings(event)
+                    local key
+                    if name == "SetProfile" then key = db.GetCurrentProfile()
+                    elseif name == "CopyProfile" then key = select(2, ...) end
+                    fireStrings(event, key)
                     return result
                 end
             end

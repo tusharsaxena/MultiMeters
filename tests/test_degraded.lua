@@ -246,9 +246,11 @@ end)
 test("Degraded: the schema verbs NAME the missing library rather than going quiet", function()
     -- What is lost is the schema CLI. Each of those verbs says so; a silent
     -- `/mm list` reads as a bug in the addon.
+    -- `resetall` is NOT one of them any more: it is Reset all settings
+    -- (options-ui-§12), and that act works with no library -- see below.
     -- red under: making the degraded CliList a no-op.
     local inst = degradedInstance()
-    for _, verb in ipairs({ "list", "get", "set", "reset", "resetall" }) do
+    for _, verb in ipairs({ "list", "get", "set", "reset" }) do
         local before = #inst.mocks.__chat
         inst.NS.Slash:OnSlash(verb)
         local said = table.concat(inst.mocks.__chat, "\n", before + 1)
@@ -380,6 +382,43 @@ function()
     for _, page in ipairs(applied) do
         assertFalse(page == "profiles", "the degraded reset touched a profiles row")
     end
+end)
+
+test("Degraded: `/mm resetall` still resets the profile, because it IS Reset all settings", function()
+    -- options-ui-§12: the verb and the General page's button are one act. It
+    -- used to reach the library's CliResetAll, which is absent here, so it named
+    -- the missing library and did nothing -- while the stub's RestoreAllDefaults,
+    -- kept real for exactly this user, sat unused one call away.
+    -- red under: the verb routed back to cli:CliResetAll.
+    local inst = degradedInstance()
+    inst.NS.Slash:OnSlash("window new Second")
+    assertEqual(#inst.NS.Database.GetWindows(), 2)
+
+    inst.NS.Slash:OnSlash("resetall")
+    assertEqual(#inst.NS.Database.GetWindows(), 1, "the degraded resetall did not reset the profile")
+end)
+
+test("Degraded: a reset-all logs ONE line in total, the profile handler's", function()
+    -- The stub brackets its own walk and the profile reset exactly as Options
+    -- minor 16 does, so a library-less install logs the same one line.
+    -- red under: the stub's loop left unbracketed, or its close ignoring the
+    -- profile reset (a second `[Set] reset all: N rows` line).
+    local inst = degradedInstance()
+    local NSi = inst.NS
+    NSi.State.debug = true
+
+    local lines, original = {}, NSi.Debug
+    NSi.Debug = function(tag, fmt, ...)
+        local a = { ... }
+        for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
+        lines[#lines + 1] = "[" .. tag .. "] " .. tostring(fmt):format(a[1], a[2], a[3], a[4])
+    end
+    local ok, err = pcall(NSi.Helpers.RestoreAllDefaults)
+    NSi.Debug = original
+    assertTrue(ok, tostring(err))
+
+    assertEqual(#lines, 1, "the degraded reset-all logged: " .. table.concat(lines, " | "))
+    assertEqual(lines[1], "[Set] reset profile 'Default' to defaults")
 end)
 
 -- ── the measurable one ──────────────────────────────────────────────────────

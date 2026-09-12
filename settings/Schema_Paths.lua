@@ -471,8 +471,114 @@ local function prepareWrite(path, value, windowId)
     return plan
 end
 
+-- ---------------------------------------------------------------------------
+-- The bulk bracket (debug-logging-§10)
+-- ---------------------------------------------------------------------------
+--
+-- A BULK COPY OR RESET IS ONE [Set] LINE. An act whose purpose is to rewrite a
+-- set of rows wholesale -- a page's Defaults button, a copy from one window onto
+-- another -- is logged as `[Set] <act> <scope>: N rows` and never as a line per
+-- row. Validation and each row's onChange still run per row; only the log
+-- collapses. Every other batch (a sort, a resize, a segment pick) logs per row,
+-- because a reader needs its values.
+--
+-- ONE MUTE FOR EVERY BULK ACT. The library's walks reach it through the
+-- descriptors' bulkBegin / bulkEnd (Options minor 16, Slash minor 8); the
+-- Columns page, the degraded reset-all and NS.SetByPaths' copy reach it through
+-- NS.Bulk.run. A DEPTH, not a flag: the Columns page brackets its array write
+-- around the library's page bracket, so brackets nest, and only the close that
+-- brings the depth back to 0 emits -- once, with what every level wrote.
+--
+-- N IS COUNTED HERE, NOT TAKEN FROM bulkEnd. The library's `count` is the rows
+-- its applyDefault returned, and a row already at its default is one of them;
+-- the rule is the rows the act actually WROTE. So while a bracket is open the
+-- seam reads each row's stored value before and after its write and counts the
+-- row -- once, however often it is written -- only when the value moved. The
+-- column array, which no applyDefault reaches, is counted the same way.
+--
+-- A PROFILE RESET IS NOT OURS TO LOG. When a level says the act included a
+-- whole-profile reset, core/Database.lua's OnProfileReset has already logged
+-- `[Set] reset profile '<name>' to defaults (N rows)`, and a line from here
+-- would be a second one. The close emits nothing; the mute is still released.
+local bulk = { depth = 0, label = nil, seen = {}, changed = 0, profileReset = false }
+
+local function bulkOpen(label)
+    if bulk.depth == 0 then
+        bulk.label, bulk.seen, bulk.changed, bulk.profileReset = label, {}, 0, false
+    end
+    bulk.depth = bulk.depth + 1
+end
+
+--- Close one level. Only the outermost close emits, and not after a profile reset.
+local function bulkClose(profileReset)
+    if bulk.depth == 0 then return end   -- an unpaired close must not go negative
+    bulk.depth = bulk.depth - 1
+    if profileReset then bulk.profileReset = true end
+    if bulk.depth > 0 or bulk.profileReset then return end
+    if NS.Debug then NS.Debug("Set", "%s: %d rows", bulk.label, bulk.changed) end
+end
+
+--- Run `fn` inside a bracket that always closes, then re-raise what it raised,
+--- unwrapped -- the library's own rule, so a raising row cannot leave the seam
+--- muted for the rest of the session. `fn` answers true when it reset the whole
+--- profile, which silences the close.
+local function runBulk(label, fn)
+    bulkOpen(label)
+    local ok, res = pcall(fn)
+    bulkClose(ok and res == true)
+    if not ok then error(res, 0) end
+end
+
+--- Equal all the way down. A color is `{ r, g, b, a }` and the column array is
+--- a list of `{ stat, enabled }`, so one level is not deep enough.
+local function sameValue(a, b)
+    if a == b then return true end
+    if type(a) ~= "table" or type(b) ~= "table" then return false end
+    for k, v in pairs(a) do
+        if not sameValue(v, b[k]) then return false end
+    end
+    for k in pairs(b) do
+        if a[k] == nil then return false end
+    end
+    return true
+end
+
+--- What a write replaces, read where the write lands. A session row is read
+--- through its own getter, and `false` and `nil` read alike there: the debug
+--- console's getter answers either one for "closed".
+local function storedOf(plan)
+    if plan.columns then return plan.root.columns end
+    if plan.row.sessionOnly then
+        return plan.row.get and plan.row.get() or nil
+    end
+    return readFrom(plan.root, plan.parts, plan.first)
+end
+
+--- Count one write toward the open bracket: once per row, and only if it moved.
+local function tally(plan, before)
+    local key = tostring(plan.windowId) .. "|" .. tostring(plan.path or COLUMNS_PREFIX)
+    if bulk.seen[key] or sameValue(before, storedOf(plan)) then return end
+    bulk.seen[key] = true
+    bulk.changed = bulk.changed + 1
+end
+
+-- The pair both library majors take as bulkBegin / bulkEnd.
+local function bulkBegin(act, scope) bulkOpen(tostring(act) .. " " .. tostring(scope)) end
+local function bulkEnd(_, _, _, _, info)
+    bulkClose(type(info) == "table" and info.profileReset == true)
+end
+
+-- A bracket of the host's own. Named the way the library names a page reset, so
+-- both read `[Set] reset <scope>: N rows`.
+local function bulkRun(act, scope, fn) runBulk(tostring(act) .. " " .. tostring(scope), fn) end
+
+-- Built from named locals rather than function literals in the constructor:
+-- lizard 1.24.0's Lua reader raises on anonymous functions in a table assigned
+-- to a dotted name, and a crashed complexity run measures nothing.
+NS.Bulk = { begin = bulkBegin, finish = bulkEnd, run = bulkRun }
+
 --- Put a prepared write into the tree.
-local function storeWrite(plan)
+local function putWrite(plan)
     if plan.columns then
         -- No copy() on the way in: normalizeColumns already returned a table
         -- built here, held by nobody else.
@@ -489,6 +595,15 @@ local function storeWrite(plan)
     -- from a row's default) would otherwise be shared with whoever else holds
     -- it, and editing one window's color would edit theirs.
     writeInto(plan.root, plan.parts, plan.first, copy(toStored(row, plan.value)))
+end
+
+--- Put a prepared write into the tree, and count it when a bulk act is open.
+--- Outside a bracket nothing is read back, so a lone write costs what it did.
+local function storeWrite(plan)
+    if bulk.depth == 0 then return putWrite(plan) end
+    local before = storedOf(plan)
+    putWrite(plan)
+    tally(plan, before)
 end
 
 --- Fire a stored write's `onChange`, told which window moved.
@@ -515,7 +630,8 @@ end
 --- as a reader can tell. The format is DEFERRED into NS.Debug rather than built
 --- here, so a disabled log costs nothing.
 local function logWrite(plan)
-    if not NS.Debug then return end
+    -- Muted inside a bulk bracket: the act logs its one line when it closes.
+    if bulk.depth > 0 or not NS.Debug then return end
     if plan.columns then
         NS.Debug("Set", "%s = %d shown", COLUMNS_PREFIX, shownCount(plan.columns))
     else
@@ -573,10 +689,12 @@ end
 --- it writes as its own `[Set] <path> = <value>` line: a sort, a resize or a
 --- segment pick is two or three settings, and a reader needs their values, not
 --- a count. A BULK copy or reset is the one exception, and `summary` is how the
---- caller says it is one: that act logs ONE debug-logging-§8 flow line naming
---- itself, its source and target, and how many rows it wrote, and no `[Set]`
---- line per row -- seventy of those for one click would evict the rest of the
---- log.
+--- caller says it is one: the batch runs inside a bulk bracket, which mutes
+--- the per-row line and logs ONE `[Set] <summary>: N rows` when it closes --
+--- `[Set] copy from 'A' to 'B': 42 rows` -- with N the rows whose stored value
+--- moved (see "The bulk bracket" above). The tag is [Set], never a tag of its
+--- own (standard v2.44.0). Seventy per-row lines for one click would evict the
+--- rest of the log.
 ---
 --- ALL OR NOTHING. One refused entry stores no entry at all, and the refusal
 --- names its path.
@@ -597,17 +715,18 @@ function NS.SetByPaths(writes, windowId, summary)
     end
     if plans[1] == nil then return true end
 
-    for _, plan in ipairs(plans) do storeWrite(plan) end
-
     local page, id = plans[1].page, plans[1].windowId
-    for _, plan in ipairs(plans) do
-        reactWrite(plan)
-        if not summary then logWrite(plan) end
-        if plan.page ~= page then page = nil end
-        if plan.windowId ~= id then id = nil end
+    local function apply()
+        for _, plan in ipairs(plans) do storeWrite(plan) end
+        for _, plan in ipairs(plans) do
+            reactWrite(plan)
+            logWrite(plan)
+            if plan.page ~= page then page = nil end
+            if plan.windowId ~= id then id = nil end
+        end
     end
+    if summary then runBulk(summary, apply) else apply() end
 
-    if summary and NS.Debug then NS.Debug("Bulk", "%s: %d rows", summary, #plans) end
     announceWrite(page, id)
     return true
 end

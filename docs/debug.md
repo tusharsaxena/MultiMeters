@@ -74,6 +74,34 @@ is a documented deviation from `debug-logging-§8` — see `## Documented deviat
 [ARCHITECTURE.md](ARCHITECTURE.md) — and it exists because four passes a second into a capped buffer
 otherwise leaves a console holding forty seconds of one repeated string.
 
+### Settings lines
+
+Every settings write is logged once, at the write seam (`NS.SetByPath`, `settings/Schema_Paths.lua`),
+as `[Set] <path> = <value>` (`debug-logging-§10`). Two kinds of act are logged differently.
+
+| Act | What the console shows |
+|---|---|
+| One write: a widget, `/mm set`, `/mm reset <path>` | `[Set] <path> = <value>` |
+| A batch that is not a bulk act: a header sort, a resize, a segment pick | one `[Set] <path> = <value>` per row |
+| A page's **Defaults** button | `[Set] reset <page>: N rows` |
+| The Columns page's **Defaults** button (the array and the header rows) | `[Set] reset columns: N rows` |
+| Copy settings from one window onto another | `[Set] copy from '<source>' to '<target>': N rows` |
+| **Reset all settings**, `/mm resetall`, or Profiles → **Reset Profile** | `[Set] reset profile '<name>' to defaults` |
+| Profiles → **Copy From** | `[Set] copied profile '<source>' → '<name>'` |
+| A profile switch | `[Profile] switched to '<name>'` |
+
+**A bulk act writes no line per row.** N counts the rows whose stored value actually moved, so a
+row already at its default does not add to it and a second Defaults press reads `0 rows`. The count
+is kept by the seam itself inside `NS.Bulk`'s bracket, not taken from the library. Brackets nest,
+and only the outermost logs. A reactor line a row's `onChange` emits during the act, such as
+`[Test] off`, is not a `[Set]` line, so it stays.
+
+**A profile reset is one line, from the profile handler.** `core/Database.lua`'s `OnProfileReset`
+logs it. The reset-all bracket, which also wraps the session-row walk, adds nothing, and the re-seed's
+`[Init]` trace is quiet during a reset. The line carries no row count. A reset deletes every extra
+window, so "rows changed" is neither cheap nor well defined, and `debug-logging-§10` allows the count
+to be left off. It must never be the profile's stored-row total.
+
 ## The probes
 
 Each answers to one issue and is self-contained so it can be deleted with that issue. They were

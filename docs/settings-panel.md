@@ -339,11 +339,19 @@ Two groups make the point, and both are deliberate:
 Columns is **not** one of these any more: the array became the whole catalog (every statistic ships
 on the page; only which are ticked, and in what order, can differ from the shipped list), which gives
 "restore this page's defaults" something exact to mean, so the page now carries its own Defaults
-button (`ctx.panel.defaultsOnClick = restoreShippedColumns`) that ticks and orders the block editor
-back to the shipped list — a bespoke handler rather than `H.RestoreDefaults`, because that helper
-walks a page's *schema rows* and the block editor is not one, though the page's other two tabs
-(Header text, Header background) are ordinary schema rows and would be covered by the sweep either
-way.
+button that ticks and orders the block editor back to the shipped list. Its `defaultsOnClick` is
+bespoke, because `H.RestoreDefaults` walks a page's *schema rows* and the block editor is not one:
+it runs `restoreShippedColumns` for the array, then `H.RestoreDefaults` for the page's other two tabs
+(Header text, Header background), which are ordinary schema rows. Both halves run inside one
+`NS.Bulk.run("reset", "columns", …)` bracket, and the library's own page bracket nests inside it, so
+the press logs a single `[Set] reset columns: N rows` with the array counted as one row
+(debug-logging-§10).
+
+**Every page's Defaults press is one log line.** `H.RestoreDefaults` brackets its page walk through
+the descriptor's `bulkBegin` / `bulkEnd` (LibKa0s-Options-1.0 minor 16). Inside the bracket the write
+seam mutes its per-row `[Set]` line. At the close it logs `[Set] reset <page>: N rows`, where N is
+the rows whose stored value actually moved, so a second press on a page already at its defaults
+reads `0 rows`. Each row's validation and `onChange` still run.
 
 - **Windows** — nothing on it is a schema row except the name. "Restore this page's defaults" would
   have to mean deleting the registry back to one seed window, which is not what a player clicking
@@ -606,7 +614,7 @@ so none of them can be a schema row. The two on the General page are drawn by th
 |---|---|---|---|
 | **Reset position** | General | Master controls | `WindowManager:ResetPosition(activeWindowId)` — the active window only. Positions are not rows (four values, one concept, and never read back off a live frame), so `NS.ApplyDefault` cannot reach them. |
 | **Reset meter data** | *the window header, not a page* | — | Confirms, then `NS.Provider.Reset()`. Irreversible and reaches **outside** this addon: `C_DamageMeter.ResetAllCombatSessions` wipes the data Blizzard's own meter is showing too. Routed through the provider and never straight at the Compat shim — the provider is the only permitted caller of the meter shims, and it also forgets the memoized availability answer and announces `METER_RESET`. |
-| **Reset all settings** | General | Master controls | Confirms, then `Helpers.RestoreAllDefaults()` — the same implementation the header Defaults button and `/mm resetall` use, so the three cannot drift. `afterRestoreAll` hands the profile to `db:ResetProfile()`, which makes this the **equivalent of a new profile**: every setting back to shipped, extra windows **deleted**, names reset, one fresh window left. Other profiles untouched. See *Reset all settings vs Reset Profile* below. |
+| **Reset all settings** | General | Master controls | Confirms, then `Helpers.RestoreAllDefaults()`, the same function `/mm resetall` calls, so the two cannot drift. The descriptor's `resetProfile` hands the profile to `db:ResetProfile()`, which makes this the **equivalent of a new profile**: every setting back to shipped, extra windows **deleted**, names reset, one fresh window left. Other profiles are untouched. The debug console shows one line, `[Set] reset profile '<name>' to defaults`, from `OnProfileReset`. See *Reset all settings vs Reset Profile* below. |
 | **Test mode** | General | General | A `sessionOnly` schema row over `NS.State.testMode`, carrying its own `get`/`set`. Fills every window with placeholder rows so columns can be laid out without being in combat. Session-only: persisting it would mean logging in to a screen full of fake numbers. Also reachable as `/mm test`. **Not** implied by unlocking a window any more — `WindowManager:SetLocked` used to also switch it on, which made `/mm lock off` silently turn placeholder data on and made unchecking Test mode a no-op while any window was unlocked; locking is now about movement and nothing else, and a player who wants a grid to aim at asks for one with `/mm test`. |
 | **Debug console** | General | Master controls | The console **window's** visibility, not the logging flag. Logging runs with the console closed so a bug can be reproduced first and the log read afterwards; the flag itself is `/mm debug on\|off`'s and is never written to SavedVariables (`debug-logging-§5`). The row is emitted by `H.MasterControls` under the path `state.debugConsole`, and this repo dresses the rest back on — the label in the composer call's `labels` table (`settings/Schema_Compose.lua:649`), and the description and both accessors in the `dress()` block at `settings/Schema_Compose.lua:700-709`, where `get` asks `NS.DebugLog:IsShown` and `set` calls `Show`/`Hide`. `LibKa0s-DebugLog-1.0`'s own `D:ConsoleCheckbox()` is no longer what draws it: nothing under `settings/` calls it, and the only `ConsoleCheckbox` left in this repo is the degraded stub's at `core/DebugLogSetup.lua:295`, kept so a library-less load still answers the member. |
 
@@ -780,7 +788,19 @@ reset **cannot** reach — the `sessionOnly` rows (`state.testMode`, `state.debu
 storage is their own `set()` rather than the db.
 
 Window positions come back with the rest of the profile, so `afterRestoreAll` no longer calls
-`ResetPositions`. The **Reset position** button — on General since it moved off Frame — is
+`ResetPositions`.
+
+**`/mm resetall` is this act too, and was not until 2026-09-12.** The verb went to the library's
+`CliResetAll`. That walks the schema once through `NS.ApplyDefault`, and every `window.` path resolves
+against the active window. So the verb reset the window the picker was on, left every other window
+alone, deleted nothing, and logged a `[Set]` line per row. The four docs that called it a profile
+reset were describing the popup. The verb now calls `Helpers.RestoreAllDefaults()`, the function the
+popup calls. `tests/test_slash.lua` pins it with two windows.
+
+**It logs one line.** `RestoreAllDefaults` runs the session-row walk and `resetProfile` inside the
+library's bulk bracket (Options minor 16). The seam mutes the session rows it writes, and the close
+adds nothing because `info.profileReset` is set. The one line is `OnProfileReset`'s:
+`[Set] reset profile '<name>' to defaults`. The degraded stub brackets its own walk the same way. The **Reset position** button — on General since it moved off Frame — is
 unaffected and still moves the active window alone.
 
 **What was wrong before.** Every `window.` path resolves against ONE window — whichever

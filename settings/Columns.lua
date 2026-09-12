@@ -370,9 +370,16 @@ local function Build(mainCategory)
     -- window.columnHeader.* schema rows on its other two tabs. options-ui-§13 makes the Defaults
     -- button page-wide, not tab-wide, so both halves have to come back regardless of which tab is
     -- showing when it is clicked.
+    --
+    -- ONE LOG LINE FOR BOTH (debug-logging-§10). The page brackets the pair itself, so the array
+    -- write sits in the same bracket as the library's page walk -- whose own bracket nests inside
+    -- this one -- and the press logs a single `[Set] reset columns: N rows`, the array counted as
+    -- one row when it moved. Left outside, the array logged a `[Set] window.columns` line of its own.
     ctx.panel.defaultsOnClick = function()
-        restoreShippedColumns()
-        H.RestoreDefaults(PAGE, ctx)
+        NS.Bulk.run("reset", PAGE, function()
+            restoreShippedColumns()
+            H.RestoreDefaults(PAGE, ctx)
+        end)
     end
 
     H.SetRenderer(ctx, function(c)

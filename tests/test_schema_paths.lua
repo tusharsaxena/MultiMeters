@@ -693,7 +693,9 @@ test("SetByPaths: a BULK copy or reset logs ONE flow line and no [Set] line per 
     -- helper is one debug-logging-§8 flow line naming the act, its source and
     -- target, and how many rows it wrote. Seventy `[Set]` lines for one click
     -- would evict the rest of the log. The announcement is still one.
-    -- red under: a summary argument that is ignored, or logged under `Set`.
+    -- THE TAG IS [Set] (standard v2.44.0, the owner's final ruling): the one
+    -- line is `[Set] <act> <scope>: N rows`, never a [Bulk] or any other tag.
+    -- red under: a summary argument that is ignored, or logged under `Bulk`.
     local inst, first, second = twoWindows()
     local NS = inst.NS
     NS.State.SetActiveWindow(first)
@@ -710,11 +712,106 @@ test("SetByPaths: a BULK copy or reset logs ONE flow line and no [Set] line per 
     assertTrue(ok)
     assertEqual(NS.Database.FindWindow(second).frame.width, 400)
     assertEqual(#lines, 1, "one line for the whole bulk write")
-    assertEqual(lines[1][1], "Bulk", "a flow line, not a [Set] line")
+    assertEqual(lines[1][1], "Set", "the bulk line is a [Set] line")
     local text = lines[1][2]:format(lines[1][3], lines[1][4])
     assertEqual(text, "copy from 'A' to 'B': 3 rows")
     assertEqual(#seen, 1)
     assertEqual(seen[1].windowId, second)
+end)
+
+test("SetByPaths: a bulk copy counts only the rows whose stored value CHANGED", function()
+    -- debug-logging-§10: N is the rows the act actually wrote, not the rows in
+    -- its scope. A row already holding the value it is handed is not counted,
+    -- and neither is the whole column array when it comes back identical.
+    -- red under: N = #writes, which says 3 here.
+    local inst, _, second = twoWindows()
+    local NS = inst.NS
+    local w = NS.Database.FindWindow(second)
+    local cols = {}
+    for i, c in ipairs(w.columns) do cols[i] = { stat = c.stat, enabled = c.enabled } end
+    local lines, restore = heardDebug(NS)
+
+    local ok = NS.SetByPaths({
+        { "window.frame.width", w.frame.width },
+        { "window.frame.height", 277 },
+        { "window.columns", cols },
+    }, second, "copy from 'A' to 'B'")
+    restore()
+
+    assertTrue(ok)
+    assertEqual(#lines, 1)
+    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "copy from 'A' to 'B': 1 rows")
+end)
+
+-- ---------------------------------------------------------------------------
+-- NS.Bulk: the one mute every bulk act shares
+-- ---------------------------------------------------------------------------
+
+test("NS.Bulk: a nested bracket logs ONCE, at the outermost close, summing every level", function()
+    -- The Columns page brackets its own array write AROUND the library's page
+    -- bracket (Options minor 16), so brackets nest. Only the outermost close
+    -- may emit, with what every level changed, and a row written twice counts
+    -- once. red under: a close that emits at any depth (two lines), or a count
+    -- taken from the library's bulkEnd argument (which says 7 here).
+    local inst = T.load()
+    local NS = inst.NS
+    local lines, restore = heardDebug(NS)
+
+    NS.Bulk.run("reset", "columns", function()
+        assertTrue(NS.SetByPath("window.frame.width", 401))
+        NS.Bulk.begin("reset", "columns")
+        assertTrue(NS.SetByPath("window.frame.height", 277))
+        assertTrue(NS.SetByPath("window.frame.height", 278))
+        assertTrue(NS.SetByPath("window.bars.border", false))   -- already its default
+        NS.Bulk.finish("reset", "columns", 7, nil, { profileReset = false })
+    end)
+    restore()
+
+    assertEqual(#lines, 1, "one line for the whole nested act, and no [Set] line per row")
+    assertEqual(lines[1][1], "Set")
+    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "reset columns: 2 rows")
+end)
+
+test("NS.Bulk: a level that reports a profile reset silences the whole bracket", function()
+    -- A whole-profile reset is logged ONCE, by the profile-event handler, and
+    -- no bulk bracket may add a second line. The mute is still released.
+    -- red under: finish ignoring info.profileReset.
+    local inst = T.load()
+    local NS = inst.NS
+    local lines, restore = heardDebug(NS)
+
+    NS.Bulk.begin("reset", "all")
+    assertTrue(NS.SetByPath("window.frame.width", 401))
+    NS.Bulk.finish("reset", "all", 1, nil, { profileReset = true })
+    assertEqual(#lines, 0, "the bracket added a line beside the handler's")
+
+    assertTrue(NS.SetByPath("window.frame.width", 402))
+    restore()
+    assertEqual(#lines, 1, "the mute stuck after the bracket closed")
+    assertEqual(lines[1][2], "%s = %s")
+end)
+
+test("NS.Bulk: a raising act still closes the bracket, logs what it changed, and re-raises", function()
+    -- The library's own rule, kept for the host's brackets: a begun bracket
+    -- always closes, so a mute cannot stick, and the error is the same value.
+    -- red under: running the act without pcall.
+    local inst = T.load()
+    local NS = inst.NS
+    local lines, restore = heardDebug(NS)
+    local boom = {}
+
+    local ok, err = pcall(NS.Bulk.run, "reset", "frame", function()
+        assertTrue(NS.SetByPath("window.frame.width", 401))
+        error(boom)
+    end)
+    assertEqual(ok, false)
+    assertEqual(err, boom, "the raised value comes back unwrapped")
+    assertEqual(#lines, 1)
+    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "reset frame: 1 rows")
+
+    assertTrue(NS.SetByPath("window.frame.width", 402))
+    restore()
+    assertEqual(#lines, 2, "the mute stuck after a raise")
 end)
 
 test("SetByPaths: every written row's onChange still fires, with the window id", function()

@@ -167,7 +167,8 @@ that names no window is refused. `NS.State.activeWindowId` does not move.
   the window it renames.
 - `WindowManager:CopyFrom` reads each copied row off the source with `NS.GetSetting(path, sourceId)`
   and writes them onto the target as one `NS.SetByPaths` batch. Every entry is validated before any
-  is stored, and the copy logs one `[Set]` line and sends one `CONFIG_CHANGED`. A value the row
+  is stored, and the copy logs one `[Set] copy from '<source>' to '<target>': N rows` line, N the
+  rows whose stored value moved, and sends one `CONFIG_CHANGED`. A value the row
   refuses stops the copy and names the row. `window.columns` goes as one whole-array entry. The
   window's sort and session type are rows now (issue #50) and travel in the batch with the rest of
   the `data` group, and so does the pinned segment, `data.sessionID`. `frame.position` is never
@@ -1286,9 +1287,19 @@ before any is stored, so one refusal stores nothing. Only the tail differs: one 
 the batch. Its `section` is the page when every row shares one and `nil` when they do not, so no
 subscriber skips part of a change. The log follows debug-logging-§10 as ruled on 2026-09-12: a batch
 logs one `[Set] <path> = <value>` line per row, whatever it is (a resize drag, a header sort, a
-segment pick). A **bulk copy or reset** is the one exception. It passes `summary`, and the seam logs
-one `[Bulk]` flow line instead, such as `copy from 'A' to 'B': 42 rows`, with no `[Set]` line per
-row. Copy-from is the only bulk caller today.
+segment pick). A **bulk copy or reset** is the one exception. It passes `summary`, and the batch
+runs inside the seam's bulk bracket (`NS.Bulk`). Inside the bracket the per-row line is muted, and
+the close logs one `[Set] <summary>: N rows` line, such as `[Set] copy from 'A' to 'B': 42 rows`.
+The tag is `[Set]`, which standard v2.44.0 makes a MUST. N counts the rows whose stored value
+actually moved: the seam reads each row before and after its write while the bracket is open, and
+counts a row once, however often it is written. A row already holding its value is not counted.
+Copy-from is the only `summary` caller. The library's reset walks reach the same bracket through
+the descriptors' `bulkBegin` / `bulkEnd`:
+- each page's **Defaults** button logs `[Set] reset <page>: N rows`;
+- the Columns page brackets its array write around the library's page walk, so the brackets nest
+  and only the outermost close logs.
+
+A whole-profile reset adds no line from the bracket, because `OnProfileReset` logs it once.
 
 **Order is load-bearing**: write → react (`onChange`) → log once → announce `CONFIG_CHANGED` →
 re-sync the panel's scalars. Reacting before the write would hand a refresher the old value; logging

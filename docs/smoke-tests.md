@@ -1068,7 +1068,8 @@ switch back to Default → copy from Test → reset.
   touch the other's.
 - Resetting a profile re-seeds exactly one window.
 - **The page is still fresh after a switch made off it.** Open Profiles, page away to **General**,
-  then `/mm resetall` and confirm — that is a profile reset, so it moves the active profile out from
+  then type `/mm resetall`. It does not ask first; the confirmation popup belongs to the button. It
+  is a profile reset, so it moves the active profile out from
   under the hidden page. Come back to Profiles: the profile list and the scope dropdowns must be
   redrawn against the profile you are actually on. `M2-18` moved this page onto `H.SetRenderer`,
   which draws once and then only when the library is told the page is dirty, and the
@@ -1099,6 +1100,13 @@ switch back to Default → copy from Test → reset.
   **deleted** and the one that is re-seeded comes back at the shipped position with the rest of the
   profile. `afterRestoreAll` no longer calls `ResetPositions`.
 - After `/mm resetall` the column list is back to the six shipped columns, in catalog order.
+- **Each reset is one line in the console.** Turn on `/mm debug on`, open the console and clear it.
+  - A page's **Defaults** press reads `[Set] reset <page>: N rows`, with no `[Set] <path> = …` line
+    under it, and a second press reads `0 rows`.
+  - The Columns page reads `[Set] reset columns: N rows`, with the column list counted as one row.
+  - **Reset all settings** and `/mm resetall` each read exactly `[Set] reset profile '<name>' to
+    defaults`, with no `reset all` line beside it.
+  - Copying settings between two windows reads `[Set] copy from '<A>' to '<B>': N rows`.
 
 ### 17. LibKa0s absent
 
@@ -1111,8 +1119,8 @@ switch back to Default → copy from Test → reset.
 - One honest chat line names the cause, once, on the first line the addon prints — the shared clause
   *"The LibKa0s library is missing from this installation of Ka0s Multi Meters (expected in
   libs/LibKa0s)"* — followed by what is unavailable.
-- `/mm config` says the settings panel is unavailable. `/mm list|get|set|reset|resetall` each name the
-  missing library. `/mm perf` says performance measurement is unavailable.
+- `/mm config` says the settings panel is unavailable. `/mm list|get|set|reset` each name the missing
+  library. `/mm perf` says performance measurement is unavailable.
 - **The host verbs still work**: `/mm lock`, `/mm test`, `/mm toggle`, `/mm window list`,
   `/mm reset-positions`. They never went to the library.
 - **`/mm resetall` still works.** The user whose panel will not open is exactly the user who needs

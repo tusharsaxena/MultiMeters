@@ -207,6 +207,44 @@ test("Slash: `resetall` restores every row", function()
     assertEqual(NSi.GetSetting("window.rows.height"), 16)
 end)
 
+test("Slash: `resetall` is the PROFILE reset, so every window resets, and it logs ONE line", function()
+    -- options-ui-§12 makes `/mm resetall` the same act as General -> Reset all
+    -- settings, and four docs say it is. It was not: the verb went to the
+    -- library's CliResetAll, which walks the schema ONCE against the ACTIVE
+    -- window, so every other window kept its settings -- and every row logged
+    -- its own [Set] line. The reset-all is one line, the profile handler's.
+    -- red under: the verb routed back to cli:CliResetAll.
+    local inst = T.load()
+    local NSi = inst.NS
+    assertTrue(NSi.WindowManager:Create("Second"))
+    local list = NSi.Database.GetWindows()
+    assertEqual(#list, 2)
+    assertTrue(NSi.SetByPath("window.frame.width", 300, list[1].id))
+    assertTrue(NSi.SetByPath("window.frame.width", 310, list[2].id))
+    NSi.State.SetActiveWindow(list[1].id)
+    NSi.State.debug = true
+
+    local lines, original = {}, NSi.Debug
+    NSi.Debug = function(tag, fmt, ...)
+        local a = { ... }
+        for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
+        lines[#lines + 1] = "[" .. tag .. "] " .. tostring(fmt):format(a[1], a[2], a[3], a[4])
+    end
+    local ok, chat = pcall(say, inst, "resetall")
+    NSi.Debug = original
+    assertTrue(ok, tostring(chat))
+
+    local after = NSi.Database.GetWindows()
+    assertEqual(#after, 1, "a profile reset leaves one fresh window, not the second one restyled or kept")
+    assertEqual(after[1].frame.width, 694, "the window left is at the shipped width")
+    for _, w in ipairs(after) do
+        assertTrue(w.frame.width ~= 310, "the second window's setting survived the reset")
+    end
+    assertEqual(#lines, 1, "resetall logged: " .. table.concat(lines, " | "))
+    assertEqual(lines[1], "[Set] reset profile 'Default' to defaults")
+    assertTrue(joined(chat) ~= "", "the verb says it took")
+end)
+
 test("Slash: `list` groups by the row's PAGE, the same key the panel pages use", function()
     local inst = T.load()
     local text = joined(say(inst, "list"))

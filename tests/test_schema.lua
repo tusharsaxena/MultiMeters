@@ -1145,3 +1145,47 @@ test("A profile reset rebuilds through the ONE message, not by direct calls", fu
     NS.Helpers.RestoreAllDefaults()
     assertTrue(seen > 0, "PROFILE_CHANGED was not published, so nothing rebuilt")
 end)
+
+test("RestoreAllDefaults logs ONE line in total: the profile handler's, and no bulk line", function()
+    -- debug-logging-§10, the owner's final ruling: AceDB replacing the whole
+    -- profile is logged ONCE, by the profile-event handler, in words chosen by
+    -- the event, and no bulk bracket adds a second line. Options minor 16
+    -- brackets the session-row walk AND resetProfile and hands bulkEnd
+    -- `info.profileReset = true`, so the seam emits nothing at the close and the
+    -- session row it wrote first stays muted.
+    -- red under: bulkEnd logging `reset all: N rows` despite info.profileReset,
+    -- no bracket (state.testMode logs its own [Set] line), the handler still
+    -- calling a reset "switched to", or the re-seed's [Init] trace beside it.
+    local inst = twoWindows()
+    local NS = inst.NS
+    NS.State.debug = true
+
+    --- Every line `fn` logs, as "[tag] text". Lua 5.1's `%s` raises on a table,
+    --- so the arguments are tostring()ed first.
+    local function logged(fn)
+        local lines, original = {}, NS.Debug
+        NS.Debug = function(tag, fmt, ...)
+            local a = { ... }
+            for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
+            lines[#lines + 1] = "[" .. tag .. "] " .. tostring(fmt):format(a[1], a[2], a[3], a[4])
+        end
+        local ok, err = pcall(fn)
+        NS.Debug = original
+        assertTrue(ok, tostring(err))
+        return lines
+    end
+
+    local lines = logged(NS.Helpers.RestoreAllDefaults)
+    assertEqual(#lines, 1, "the reset-all logged: " .. table.concat(lines, " | "))
+    assertEqual(lines[1], "[Set] reset profile 'Default' to defaults")
+    assertEqual(#NS.Database.GetWindows(), 1)
+
+    -- A session row off its default: the walk writes it, muted, and the row's own
+    -- reactor line ([Test] off) is not a [Set] line, so it stays.
+    NS.State.SetTestMode(true)
+    lines = logged(NS.Helpers.RestoreAllDefaults)
+    assertEqual(#lines, 2, "with a session row moved: " .. table.concat(lines, " | "))
+    assertEqual(lines[1], "[Test] off", "the row's reactor line stays; its [Set] line does not")
+    assertEqual(lines[2], "[Set] reset profile 'Default' to defaults")
+    assertEqual(NS.State.testMode, false, "the session row was still reset, just not logged")
+end)

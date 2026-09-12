@@ -170,7 +170,10 @@ write belongs to, so the case that matters there is not "a path reads a value" b
 path reads a **different** window's value once the active window moves". Its instance-argument cases
 pin the other half: a window id writes and reads **that** window, a stale id is refused rather than
 redirected, and the picker never moves. `NS.SetByPaths` is held to all-or-nothing validation, one
-log line and one `CONFIG_CHANGED` per batch. `tests/test_windowmanager.lua` and
+`[Set]` line per row, and one `CONFIG_CHANGED` per batch. A bulk copy is the exception: one
+`[Set] <act>: N rows` line, where N counts only the rows that changed. The same suite pins
+`NS.Bulk`'s bracket: nesting, the changed-only count, silence after a profile reset, and a raise
+that still closes the bracket. `tests/test_windowmanager.lua` and
 `tests/test_window_placement.lua` prove that `Rename`, `CopyFrom`, `SetLocked` and `SaveSize` reach
 the seam ([schema.md](schema.md#the-window-registry-and-its-writer)).
 `settings/Schema_Compose.lua` is the one new module with no suite of its own, and deliberately: it

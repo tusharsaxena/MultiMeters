@@ -198,7 +198,7 @@ badge and any count quoted in the docs must agree with it.
 - Locale: the locale file registers no second table over NS.L
 - Locale: enUS is the only locale shipped, and it is unconditional
 
-### test_database.lua (68)
+### test_database.lua (70)
 
 - Database: InitDB publishes the live instance under both names
 - Database: the profile is the SHARED Default, not a per-character one
@@ -208,6 +208,8 @@ badge and any count quoted in the docs must agree with it.
 - Database: the merge fills every key the stored window is missing
 - Database: the merge deep-copies, so no window shares a sub-table with the template
 - Database: the three profile callbacks are registered in the method-name form
+- Database: each profile event is logged ONCE, in words chosen by the event
+- Database: the reset line carries NO row count -- never the rows the profile stores
 - Database: a stored columns array is left exactly as the user ordered it
 - Database: an ABSENT columns array becomes an empty array, never nil
 - Database: EnsureWindowShape is idempotent
@@ -1691,7 +1693,7 @@ badge and any count quoted in the docs must agree with it.
 - Rename writes window.name through the seam, for the window it names
 - Rename keeps the uniqueness check the row does not have
 - CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it copies
-- CopyFrom logs ONE flow line naming the source, the target and the row count
+- CopyFrom logs ONE [Set] line naming the source, the target and the rows it changed
 - CopyFrom goes through each row's validate, and stores nothing on a refusal
 - CopyFrom sends the sort through the seam, carries the pin, and never the position
 - SetLocked writes each window through the seam, tagged with its own id
@@ -1716,7 +1718,7 @@ badge and any count quoted in the docs must agree with it.
 - The profile ships the one key LibDBIcon reads, and nothing else
 - modules/Minimap.lua passes the silent flag to every LibStub call
 
-### test_schema.lua (35)
+### test_schema.lua (36)
 
 - Schema: a `hidden` row is writable and listable but draws no control
 - Schema: the sort and the session type are hidden rows the seam validates (issue #50)
@@ -1753,8 +1755,9 @@ badge and any count quoted in the docs must agree with it.
 - RestoreAllDefaults is the equivalent of a NEW PROFILE
 - RestoreAllDefaults leaves the profile LIST alone
 - A profile reset rebuilds through the ONE message, not by direct calls
+- RestoreAllDefaults logs ONE line in total: the profile handler's, and no bulk line
 
-### test_schema_paths.lua (42)
+### test_schema_paths.lua (46)
 
 - Schema: a window path resolves against the session's ACTIVE window
 - Schema: a global path is unaffected by which window is active
@@ -1794,6 +1797,10 @@ badge and any count quoted in the docs must agree with it.
 - SetByPaths: validates every write before storing any of them
 - SetByPaths: one [Set] line PER ROW, and one CONFIG_CHANGED for the whole batch
 - SetByPaths: a BULK copy or reset logs ONE flow line and no [Set] line per row
+- SetByPaths: a bulk copy counts only the rows whose stored value CHANGED
+- NS.Bulk: a nested bracket logs ONCE, at the outermost close, summing every level
+- NS.Bulk: a level that reports a profile reset silences the whole bracket
+- NS.Bulk: a raising act still closes the bracket, logs what it changed, and re-raises
 - SetByPaths: every written row's onChange still fires, with the window id
 - A header click writes the sort through the seam, for the window clicked (issue #50)
 - Picking Current or Overall writes the session type through the seam (issue #50)
@@ -1812,7 +1819,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (50)
+### test_slash.lua (51)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1827,6 +1834,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `set` on a window path writes the ACTIVE window
 - Slash: `reset <path>` restores exactly that one setting
 - Slash: `resetall` restores every row
+- Slash: `resetall` is the PROFILE reset, so every window resets, and it logs ONE line
 - Slash: `list` groups by the row's PAGE, the same key the panel pages use
 - Slash: `perf` is declared in NS.COMMANDS and routed to NS.Perf.OnCommand
 - Slash: `export` opens the modal on the window the player named
@@ -1865,7 +1873,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: Register is a no-op rather than a raise when there is no AceConsole
 - Slash: /mm list heads each block with the page AND the tab
 
-### test_options_panel.lua (38)
+### test_options_panel.lua (40)
 
 - Options: General is the FIRST page, above Windows
 - Options: every window page is marked as nested, and the two that are not are not
@@ -1881,6 +1889,8 @@ badge and any count quoted in the docs must agree with it.
 - Options: a page that declines a Defaults button never grows one
 - Options: the Columns page's Defaults button restores the SHIPPED column list
 - Options: the Columns page's Defaults button ALSO restores the window.columnHeader.* schema rows
+- Options: every page's Defaults press logs ONE [Set] line naming the page and the rows it changed
+- Options: the Columns Defaults press is ONE [Set] line, counting the column list with the rows
 - Options: the canvas footer's Defaults control reaches the same handler as the header button
 - Options: opening the panel is REFUSED under combat lockdown, with a notice
 - Options: a refused open is NOT deferred and replayed when combat ends
@@ -1958,7 +1968,7 @@ badge and any count quoted in the docs must agree with it.
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
 
-### test_degraded.lua (27)
+### test_degraded.lua (29)
 
 - Degraded: the library really is absent, so every case below is measuring a stub
 - Degraded: every seam soft-optionals its major, so a missing library is not a load error
@@ -1980,6 +1990,8 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: the options stub publishes every Helpers member the page files touch
 - Degraded: LSMValues keeps its DEFERRED shape and never answers an empty list
 - Degraded: reset-everything still works, and still refuses to touch the Profiles page
+- Degraded: `/mm resetall` still resets the profile, because it IS Reset all settings
+- Degraded: a reset-all logs ONE line in total, the profile handler's
 - Degraded: the schema row count is UNCHANGED versus a full load, bar the composed blocks
 - Degraded: the schema is the same rows, path for path and page for page
 - Degraded: every schema page is registered as an options page on both paths
@@ -2013,7 +2025,7 @@ badge and any count quoted in the docs must agree with it.
 | test_compat.lua | 34 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
-| test_database.lua | 68 |
+| test_database.lua | 70 |
 | test_diagnostics.lua | 21 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
@@ -2052,14 +2064,14 @@ badge and any count quoted in the docs must agree with it.
 | test_visibility.lua | 41 |
 | test_windowmanager.lua | 41 |
 | test_minimap.lua | 17 |
-| test_schema.lua | 35 |
-| test_schema_paths.lua | 42 |
+| test_schema.lua | 36 |
+| test_schema_paths.lua | 46 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 50 |
-| test_options_panel.lua | 38 |
+| test_slash.lua | 51 |
+| test_options_panel.lua | 40 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
-| test_degraded.lua | 27 |
+| test_degraded.lua | 29 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1804** |
+| **Total** | **1816** |

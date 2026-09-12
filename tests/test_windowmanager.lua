@@ -619,29 +619,35 @@ test("CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it co
 
     assertEqual(#seen, 1)
     assertEqual(seen[1].windowId, target.id)
-    assertEqual(#lines, 0, "a bulk copy suppresses the per-row [Set] lines")
+    assertEqual(#lines, 1, "a bulk copy is ONE [Set] line, never one per row")
+    assertEqual(lines[1][1], "%s: %d rows", "and that line is the copy's summary, not a row")
     assertEqual(inst.NS.State.activeWindowId, source.id, "the picker stays where it was")
 end)
 
-test("CopyFrom logs ONE flow line naming the source, the target and the row count", function()
-    -- debug-logging-§10 as ruled 2026-09-12: a bulk copy is one
-    -- debug-logging-§8 flow line, never a `[Set]` line per row.
-    -- red under: `[Set] copy from Source: N rows`, which names no target.
+test("CopyFrom logs ONE [Set] line naming the source, the target and the rows it changed", function()
+    -- debug-logging-§10 (standard v2.44.0, the owner's final ruling): a bulk
+    -- copy is `[Set] copy from '<src>' to '<dst>': N rows`, the tag is [Set],
+    -- and N is the rows whose stored value moved -- so the same copy made twice
+    -- says `0 rows` the second time.
+    -- red under: the line tagged [Bulk], or N counted as the rows in scope.
     local inst, M, source, target = twoWindows()
     target.name = "Target"
 
     local _, lines, restore, flows = listen(inst)
     assertEqual(M:CopyFrom(source.id, target.id, "bars"), true)
+    assertEqual(M:CopyFrom(source.id, target.id, "bars"), true)
     restore()
 
-    assertEqual(#lines, 0)
-    local bulk = {}
     for _, f in ipairs(flows) do
-        if f[1] == "Bulk" then bulk[#bulk + 1] = f[2] end
+        assertTrue(f[1] ~= "Bulk", "the [Bulk] tag is retired: " .. tostring(f[2]))
     end
-    assertEqual(#bulk, 1, "one flow line for the copy")
-    local n = tonumber(bulk[1]:match("^copy from 'Source' to 'Target': (%d+) rows$"))
-    assertTrue(n ~= nil and n > 0, "the line names source, target and count: " .. tostring(bulk[1]))
+    assertEqual(#lines, 2, "one [Set] line per copy")
+    local first  = lines[1][1]:format(lines[1][2], lines[1][3])
+    local second = lines[2][1]:format(lines[2][2], lines[2][3])
+    local n = tonumber(first:match("^copy from 'Source' to 'Target': (%d+) rows$"))
+    assertTrue(n ~= nil and n > 0, "the line names source, target and count: " .. first)
+    assertEqual(second, "copy from 'Source' to 'Target': 0 rows",
+        "a copy onto a target that already matches changed nothing")
 end)
 
 test("CopyFrom goes through each row's validate, and stores nothing on a refusal", function()
