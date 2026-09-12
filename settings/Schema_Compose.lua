@@ -480,7 +480,23 @@ do
             local H = NS.Helpers
             if H and H.InlineButtonPair then return H.InlineButtonPair(ctx, left, right) end
         end
-        optlib.__AttachCompose(C)
+        -- A COMPOSE DESCRIPTOR, and the composers read two fields off it and nothing
+        -- else: `resetProfile` and `profilesPage`, to word the Reset all settings
+        -- tooltip (OptionsCompose.lua's resetAllTooltip, LibKa0s-Options-1.0 minor
+        -- 18). They read it when MasterControls runs, which is this file's load,
+        -- before settings/OptionsSetup.lua builds the real descriptor. So the two are
+        -- declared here: this addon ships the Profiles page, and its global reset IS
+        -- a profile reset (options-ui-§12). `resetProfile` is not a second reset: it
+        -- forwards at call time to the real descriptor's, published as
+        -- NS.OptionsDescriptor, so the tooltip and the act cannot disagree.
+        optlib.__AttachCompose(C, {
+            profilesPage = true,
+            resetProfile = function(...)
+                local d = NS.OptionsDescriptor
+                if d and d.resetProfile then return d.resetProfile(...) end
+                return false
+            end,
+        })
     end
 end
 

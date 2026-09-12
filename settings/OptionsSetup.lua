@@ -280,6 +280,10 @@ local descriptor = {
     colorEncode = function(r, g, b, a) return { r = r, g = g, b = b, a = a or 1 } end,
 }
 
+-- Published for settings/Schema_Compose.lua's compose descriptor, whose
+-- `resetProfile` forwards to this one at call time rather than restating the reset.
+NS.OptionsDescriptor = descriptor
+
 -- ---------------------------------------------------------------------
 -- The degradation stub — VALUE-ANSWERING, not message-answering
 -- ---------------------------------------------------------------------

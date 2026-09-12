@@ -309,6 +309,10 @@ second edge to catch.
   restyled. That is the point: it is a profile reset, the same act as Profiles → **Reset Profile**,
   and the popup warns about the deletion before it happens. Confirm the two paths give the identical
   result, and that **`/mm resetall`** opens the same popup and, accepted, does too.
+- **The Reset all settings tooltip names the equivalence.** Hover the button on General → **Master
+  controls**: it reads, verbatim, *"Reset the current profile to its defaults — the same thing
+  Profiles → Reset Profile does. Your other profiles are not affected."* The old *"Restore every
+  setting in this addon to its default."* is the regression.
 - **A reset leaves your other profiles alone.** Make a second profile on the Profiles page, switch
   back, then reset. The profile list must be unchanged and you must still be on the profile you were
   on — a reset empties one profile, it never deletes any.

@@ -10,5 +10,8 @@
    payloads against the tag and skipping none.
 4. **Slash pin**, its own commit: a test that `window.name` set through the slash with several
    words is stored whole, red on Slash minor 9; `docs/test-cases.md` and the README badge
-   regenerated. **B1 is not adopted** (02_CANDIDATES B1), so no settings-panel or smoke-test line
-   about the tooltip moves.
+   regenerated. B1 was withheld in that commit (`00837e9`).
+5. **Adoption (B1)**, its own commit: a compose descriptor on `settings/Schema_Compose.lua`'s
+   `__AttachCompose` call, with its `resetProfile` forwarding to `NS.OptionsDescriptor`, published
+   by `settings/OptionsSetup.lua`; the tooltip test, which was red, now green; the settings-panel
+   and smoke-test lines that name the tooltip; `docs/test-cases.md` and the README badge.

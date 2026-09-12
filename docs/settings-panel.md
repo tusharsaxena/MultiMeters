@@ -755,6 +755,16 @@ rather than off `helpers()`, at call time:
 They are now the **same act**, deliberately: **General → Reset all settings** hands the profile to
 AceDB and is the equivalent of starting a brand-new profile.
 
+The button's tooltip says so, verbatim: *"Reset the current profile to its defaults — the same thing
+Profiles → Reset Profile does. Your other profiles are not affected."* The composer is its only writer
+and words it from the descriptor it was attached with (LibKa0s-Options-1.0 minor 18). This addon
+attaches the composers itself, at `settings/Schema_Compose.lua` load and before
+`settings/OptionsSetup.lua` builds the real descriptor, so it hands `__AttachCompose` a **compose
+descriptor** of two fields: `profilesPage = true`, and a `resetProfile` that forwards at call time to
+the real descriptor's (published as `NS.OptionsDescriptor`) rather than restating the reset.
+Without it the tooltip read *"Restore every setting in this addon to its default."*, which
+overstated the blast radius; `tests/test_options_panel.lua` pins the new text off the real button.
+
 ```lua
 resetProfile = function()
     local db = NS.db

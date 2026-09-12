@@ -1880,7 +1880,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: /mm list heads each block with the page AND the tab
 - Slash: `set window.name` keeps every word of a multi-word name
 
-### test_options_panel.lua (41)
+### test_options_panel.lua (42)
 
 - Options: General is the FIRST page, above Windows
 - Options: every window page is marked as nested, and the two that are not are not
@@ -1923,6 +1923,7 @@ badge and any count quoted in the docs must agree with it.
 - Panel: the Statistic colors tab says where its colours are actually worn
 - Panel: every window sub-page banners the active window, and Windows has no second picker
 - Panel: choosing a window in the banner retargets every page and keeps the tab
+- Panel: Reset all settings' tooltip says it is the same act as Profiles -> Reset Profile
 
 ### test_columnblocks.lua (35)
 
@@ -2076,10 +2077,10 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
 | test_slash.lua | 53 |
-| test_options_panel.lua | 41 |
+| test_options_panel.lua | 42 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 29 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1824** |
+| **Total** | **1825** |
