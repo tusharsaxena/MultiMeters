@@ -285,6 +285,12 @@ function M:Delete(key)
 end
 
 --- Rename a window. The new name is stored exactly as typed.
+---
+--- THE CHECK IS THE REGISTRY'S AND THE WRITE IS THE SEAM'S. `window.name` is a
+--- lookup key AND a row (the Windows page's name box), and architecture-§5 settles
+--- which wins: the row. So this keeps the one thing the row cannot do -- making
+--- the name unique -- and hands the write to NS.SetByPath, addressed to this
+--- window by id, where it is validated, logged and announced like any other.
 --- @return boolean ok, string|nil err
 function M:Rename(key, newName)
     local cfg = M.Resolve(key)
@@ -292,7 +298,8 @@ function M:Rename(key, newName)
     newName = tostring(newName or ""):match("^%s*(.-)%s*$")
     if newName == "" then return false, L["Window name"] end
 
-    cfg.name = uniqueName(newName)
+    local ok, err = NS.SetByPath("window.name", uniqueName(newName), cfg.id)
+    if not ok then return false, err end
     local inst = instances[cfg.id]
     if inst then inst:ApplyConfig() end
 
@@ -359,26 +366,69 @@ local function requestedGroups(groups)
     return wanted
 end
 
---- Deep-copy the wanted groups of one window config onto another, and answer how
---- many landed.
+-- What a copy never carries, though it sits inside a copied group. Where the
+-- window sits is not a setting: a copied `frame` group would drop the target
+-- exactly on top of the source, which reads as "the copy did nothing".
+local UNCOPIED = { ["window.frame.position"] = true }
+
+--- The seam writes that copy one group's ROWS from `src`, appended to `writes`.
 ---
---- EVERY group is deep-copied. Assigning `target.bars = source.bars` would make
---- two windows share one table, and the next edit to either would silently edit
---- both — the aliasing bug this whole file exists to prevent.
+--- Read through NS.GetSetting with the source's id and written back through the
+--- seam with the target's, so every value the copy lands is validated, deep
+--- copied on the way in and reacted to exactly as if the player had set it
+--- (architecture-§5: a copy-from that touches rows goes through the helper even
+--- when the registry is the caller). `columns` is the seam's whole-array
+--- carve-out, so it goes as one write and is normalized there.
+---
+--- @param src table
+--- @param key string   a COPY_GROUPS key
+--- @param writes table
+local function groupWrites(src, key, writes)
+    if key == "columns" then
+        writes[#writes + 1] = { "window.columns", src.columns }
+        return
+    end
+    local prefix = "window." .. key .. "."
+    for _, row in ipairs(NS.Schema) do
+        if row.path:sub(1, #prefix) == prefix then
+            local value = NS.GetSetting(row.path, src.id)
+            if value ~= nil then writes[#writes + 1] = { row.path, value } end
+        end
+    end
+end
+
+--- Copy what NO row addresses inside a group, leaf by leaf.
+---
+--- The only such leaves are the window's remembered VIEW -- `data.sessionType`,
+--- `data.sortColumn`, `data.sortMode`, `data.sortAscending` -- which the copy has
+--- always carried, and `frame.position`, which it never does. A leaf is skipped
+--- the moment a row names it, so a row added later under a group stops being
+--- copied here and starts going through the seam without anyone editing this.
 ---
 --- @param src table
 --- @param dst table
---- @param wanted table|nil  nil copies every group
---- @return number copied
-local function copyGroups(src, dst, wanted)
-    local copied = 0
-    for _, key in ipairs(COPY_GROUPS) do
-        if (not wanted or wanted[key]) and src[key] ~= nil then
-            dst[key] = deepcopy(src[key])
-            copied = copied + 1
+--- @param path string  the `window.`-relative path of `src`
+local function copyUnaddressed(src, dst, path)
+    for k, v in pairs(src) do
+        local p = path .. "." .. tostring(k)
+        if not (NS.FindSchemaRow(p) or UNCOPIED[p]) then
+            if type(v) == "table" then
+                if type(dst[k]) ~= "table" then dst[k] = {} end
+                copyUnaddressed(v, dst[k], p)
+            else
+                dst[k] = v
+            end
         end
     end
-    return copied
+end
+
+--- The COPY_GROUPS keys a copy from `src` will actually carry.
+local function groupsToCopy(src, wanted)
+    local keys = {}
+    for _, key in ipairs(COPY_GROUPS) do
+        if (not wanted or wanted[key]) and src[key] ~= nil then keys[#keys + 1] = key end
+    end
+    return keys
 end
 
 --- Copy settings from one window onto another.
@@ -392,9 +442,11 @@ end
 --- window's COLUMNS onto another while leaving its position and its visibility
 --- rules alone is the actual request behind "copy settings from".
 ---
---- EVERY group is deep-copied (copyGroups above). Assigning `target.bars =
---- source.bars` would make two windows share one table, and the next edit to
---- either would silently edit both.
+--- THE ROWS GO THROUGH THE SEAM, as ONE batch addressed to the target by id
+--- (NS.SetByPaths): validated before anything lands, deep-copied on the way in,
+--- announced once. A source value a row refuses stops the whole copy and names
+--- the row, rather than leaving a target that matches neither window. No group
+--- is ever assigned whole, so two windows can never end up sharing a sub-table.
 ---
 --- The target's IDENTITY is never copied: id and name stay the target's, or the
 --- registry would end up with two windows claiming to be the same one.
@@ -411,16 +463,20 @@ function M:CopyFrom(source, target, groups)
     if src == dst then return true end
 
     local wanted = requestedGroups(groups)
+    local keys = groupsToCopy(src, wanted)
 
-    -- Where the window sits is not a setting. A copied `frame` group carries the
-    -- source's position with it and would drop the target exactly on top of the
-    -- source, which reads as "the copy did nothing" — so the target's own
-    -- position is taken before the copy and put back after it.
-    local keepPosition = dst.frame and deepcopy(dst.frame.position)
+    local writes = {}
+    for _, key in ipairs(keys) do groupWrites(src, key, writes) end
+    local ok, err = NS.SetByPaths(writes, dst.id, "copy from " .. tostring(src.name))
+    if not ok then return false, err end
 
-    local copied = copyGroups(src, dst, wanted)
-
-    if keepPosition and dst.frame then dst.frame.position = keepPosition end
+    for _, key in ipairs(keys) do
+        if key ~= "columns" and type(src[key]) == "table" then
+            if type(dst[key]) ~= "table" then dst[key] = {} end
+            copyUnaddressed(src[key], dst[key], "window." .. key)
+        end
+    end
+    local copied = #keys
 
     NS.Database.EnsureWindowShape(dst)
 
@@ -508,10 +564,14 @@ end
 --- two things: `/mm lock off` silently turned placeholder data on, and unchecking
 --- Test mode did nothing while any window was unlocked. A player who wants a grid
 --- to position against asks for one with `/mm test`.
+---
+--- `window.frame.locked` is a row, so each window's lock goes through the seam
+--- addressed by that window's id (architecture-§5): one write, one log line and
+--- one CONFIG_CHANGED per window, each re-applying only itself.
 function M:SetLocked(locked)
     locked = locked and true or false
     for _, cfg in ipairs(windows()) do
-        if cfg.frame then cfg.frame.locked = locked end
+        if cfg.frame then NS.SetByPath("window.frame.locked", locked, cfg.id) end
     end
     for _, inst in ipairs(M.All()) do
         inst:RefreshUpvalues()

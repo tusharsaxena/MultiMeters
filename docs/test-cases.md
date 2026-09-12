@@ -1003,7 +1003,7 @@ badge and any count quoted in the docs must agree with it.
 - The atlas rung flips ONE texture with SetTexCoord, and only for ascending
 - With no art and no atlas the arrow is an ASCII character, and a legible one
 
-### test_window_placement.lua (30)
+### test_window_placement.lua (31)
 
 - Closing HIDES the window; it never deletes it
 - Dragging moves the ANCHOR, never the frame that holds the cells
@@ -1035,6 +1035,7 @@ badge and any count quoted in the docs must agree with it.
 - `resizeGrip` is gone from the code, not just from the panel
 - Unlocking does not resurrect the grip on a collapsed window
 - Either lock pins the window, and the master lock erases neither
+- SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)
 
 ### test_headercontrols.lua (65)
 
@@ -1615,7 +1616,7 @@ badge and any count quoted in the docs must agree with it.
 - A visibility field that is not a table reads as `no rules`, not as hide
 - The master enable, test mode and perf suspend are NOT read here
 
-### test_windowmanager.lua (34)
+### test_windowmanager.lua (40)
 
 - WindowManager is published under the flat name every caller uses
 - Init builds one live instance per stored config, and is idempotent
@@ -1651,6 +1652,12 @@ badge and any count quoted in the docs must agree with it.
 - BuildListLines names every window and says whether it is on screen
 - Suspend stops the coalescing timers without hiding anything
 - Resume restores from CURRENT state: a window made while suspended comes back
+- Rename writes window.name through the seam, for the window it names
+- Rename keeps the uniqueness check the row does not have
+- CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it copies
+- CopyFrom goes through each row's validate, and stores nothing on a refusal
+- CopyFrom carries the view state no row addresses, and never the position
+- SetLocked writes each window through the seam, tagged with its own id
 
 ### test_minimap.lua (17)
 
@@ -1708,7 +1715,7 @@ badge and any count quoted in the docs must agree with it.
 - RestoreAllDefaults leaves the profile LIST alone
 - A profile reset rebuilds through the ONE message, not by direct calls
 
-### test_schema_paths.lua (30)
+### test_schema_paths.lua (38)
 
 - Schema: a window path resolves against the session's ACTIVE window
 - Schema: a global path is unaffected by which window is active
@@ -1740,6 +1747,14 @@ badge and any count quoted in the docs must agree with it.
 - SetByPath: window.columns REFUSES an array whose every statistic this build dropped, with a message
 - SetByPath: a path INTO the column array is refused by name
 - Schema: NS.NormalizeColumns is published for the migration ladder
+- SetByPath: a window id addresses THAT window and leaves the picker where it was
+- SetByPath: the window id reaches onChange and CONFIG_CHANGED
+- SetByPath: a window id that names no window is refused, and nothing is written
+- SetByPath: a global row ignores the window id
+- SetByPath: window.columns takes the window id too
+- SetByPaths: validates every write before storing any of them
+- SetByPaths: one debug line and one CONFIG_CHANGED for the whole batch
+- SetByPaths: every written row's onChange still fires, with the window id
 
 ### test_schema_defaults.lua (10)
 
@@ -1978,7 +1993,7 @@ badge and any count quoted in the docs must agree with it.
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 59 |
 | test_window_header.lua | 72 |
-| test_window_placement.lua | 30 |
+| test_window_placement.lua | 31 |
 | test_headercontrols.lua | 65 |
 | test_row.lua | 76 |
 | test_row_namecell.lua | 30 |
@@ -1991,10 +2006,10 @@ badge and any count quoted in the docs must agree with it.
 | test_export.lua | 86 |
 | test_export_modal.lua | 26 |
 | test_visibility.lua | 41 |
-| test_windowmanager.lua | 34 |
+| test_windowmanager.lua | 40 |
 | test_minimap.lua | 17 |
 | test_schema.lua | 33 |
-| test_schema_paths.lua | 30 |
+| test_schema_paths.lua | 38 |
 | test_schema_defaults.lua | 10 |
 | test_slash.lua | 50 |
 | test_options_panel.lua | 38 |
@@ -2003,4 +2018,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1749** |
+| **Total** | **1764** |

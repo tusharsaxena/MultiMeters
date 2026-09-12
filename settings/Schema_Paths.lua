@@ -163,10 +163,19 @@ end
 --- Where a path lives: its root table, the index of its first segment inside that
 --- root, and the id of the window it landed in (nil for a global row).
 ---
+--- An EXPLICIT window id is taken literally. It is never swapped for the active
+--- window when it names nothing: a writer that asked for window 7 and quietly got
+--- window 1 has written the wrong window, which is worse than being refused.
+---
 --- @param parts table  the split path
+--- @param windowId number|nil  the window a `window.*` path addresses; nil means the active one
 --- @return table|nil root, number first, number|nil windowId
-local function resolveRoot(parts)
+local function resolveRoot(parts, windowId)
     if parts[1] == WINDOW_PREFIX then
+        if windowId ~= nil then
+            local w = NS.Database and NS.Database.FindWindow(windowId)
+            return w, 2, w and windowId or nil
+        end
         local w, id = activeWindow()
         return w, 2, id
     end
@@ -252,9 +261,13 @@ end
 --- `window.frame` — because `/mm get` is a debugging tool as much as a settings
 --- reader and refusing to show a node that plainly exists helps nobody.
 ---
+--- `windowId` reads a named window instead of the active one, exactly as it
+--- writes one in NS.SetByPath; an id that names no window reads nil.
+---
 --- @param path string
+--- @param windowId number|nil
 --- @return any
-function NS.GetSetting(path)
+function NS.GetSetting(path, windowId)
     if type(path) ~= "string" then return nil end
 
     local row = index[path]
@@ -267,7 +280,7 @@ function NS.GetSetting(path)
     end
 
     local parts = splitPath(path)
-    local root, first = resolveRoot(parts)
+    local root, first = resolveRoot(parts, windowId)
     if not root then return nil end
 
     local value = readFrom(root, parts, first)
@@ -418,31 +431,91 @@ end
 --- array" is how the migration and the write seam end up disagreeing about it.
 NS.NormalizeColumns = normalizeColumns
 
---- Write the whole column array of the active window.
+-- ---------------------------------------------------------------------------
+-- One write, in two halves
+-- ---------------------------------------------------------------------------
+--
+-- PREPARE decides whether a write may happen and where it lands, and stores
+-- nothing. STORE and REACT then do it. Split so the batch entry below can check
+-- EVERY write before committing ANY of them -- a batch that stored half its rows
+-- and then refused one would leave a window that matches neither the source nor
+-- what it was before -- while the single-row entry is the same three steps back
+-- to back, and so cannot drift from the batch.
+
+--- Everything a write needs before it touches the tree, or why it may not happen.
+---
+--- @param path string
 --- @param value any
---- @return boolean ok, string|nil err
-local function setColumns(value)
-    local cols, err = normalizeColumns(value)
-    if not cols then return false, err end
+--- @param windowId number|nil  the window a `window.*` path addresses; nil means the active one
+--- @return table|nil plan, string|nil err
+local function prepareWrite(path, value, windowId)
+    if type(path) ~= "string" then return nil, L["Setting not found: %s"]:format(tostring(path)) end
 
-    local w, id = activeWindow()
-    if not w then return false, L["No window is selected."] end
+    -- The columns carve-out. The array as a WHOLE is writable — that is the only
+    -- granularity a path can express — while a path INTO it is refused, because the
+    -- ordinal it would address moves on the next add, remove or reorder.
+    if path == COLUMNS_PREFIX then
+        local cols, err = normalizeColumns(value)
+        if not cols then return nil, err end
+        local w, _, id = resolveRoot(splitPath(path), windowId)
+        if not w then return nil, L["No window is selected."] end
+        return { columns = cols, root = w, windowId = id, page = "columns" }
+    end
+    if path:sub(1, #COLUMNS_PREFIX + 1) == COLUMNS_PREFIX .. "." then
+        return nil, L["A single column is not a setting — edit columns on the Columns page."]
+    end
 
-    -- No copy() on the way in: normalizeColumns already returned a table built
-    -- here, held by nobody else.
-    w.columns = cols
+    local row = index[path]
+    if not row then return nil, L["Setting not found: %s"]:format(path) end
+    if row.validate and not row.validate(value) then
+        return nil, L["Invalid value for %s"]:format(path)
+    end
 
-    -- HOW MANY ARE SHOWN, not how many there are. Every array is the catalog now,
-    -- so `#cols` is the same number on every write, and a log line that never
-    -- changes is a log line nobody can read a change out of. Two format arguments
-    -- because that is what announceWrite forwards -- a third would be dropped and
-    -- its `%d` would reach the console literally.
+    local plan = { row = row, path = path, value = value, page = row.page }
+    if not row.sessionOnly then
+        local parts = splitPath(path)
+        local root, first, id = resolveRoot(parts, windowId)
+        if not root then return nil, L["No window is selected."] end
+        plan.parts, plan.root, plan.first, plan.windowId = parts, root, first, id
+    end
+    return plan
+end
+
+--- Put a prepared write into the tree.
+local function storeWrite(plan)
+    if plan.columns then
+        -- No copy() on the way in: normalizeColumns already returned a table
+        -- built here, held by nobody else.
+        plan.root.columns = plan.columns
+        return
+    end
+    local row = plan.row
+    if row.sessionOnly then
+        -- No db write by definition; the row's own set() IS the storage.
+        if row.set then row.set(plan.value) end
+        return
+    end
+    -- copy() on the way in: a color table handed straight from a widget (or
+    -- from a row's default) would otherwise be shared with whoever else holds
+    -- it, and editing one window's color would edit theirs.
+    writeInto(plan.root, plan.parts, plan.first, copy(toStored(row, plan.value)))
+end
+
+--- Fire a stored write's `onChange`, told which window moved.
+local function reactWrite(plan)
+    local row = plan.row
+    if row and row.onChange then row.onChange(plan.value, plan.windowId) end
+end
+
+--- HOW MANY ARE SHOWN, not how many there are. Every array is the catalog now,
+--- so `#cols` is the same number on every write, and a log line that never
+--- changes is a log line nobody can read a change out of.
+local function shownCount(cols)
     local shown = 0
     for _, c in ipairs(cols) do
         if c.enabled then shown = shown + 1 end
     end
-    announceWrite("columns", id, "%s = %d shown", COLUMNS_PREFIX, shown)
-    return true
+    return shown
 end
 
 --- Write one setting. THE single write seam (settings-schema-§1): the panel's
@@ -454,52 +527,79 @@ end
 --- re-sync the panel. Reacting before the write would hand a refresher the old
 --- value; logging in the reactor would log it per subscriber.
 ---
+--- `windowId` IS THE INSTANCE ARGUMENT (architecture-§5, issue #49). Omitted,
+--- a `window.*` path means the active window, which is what the panel and
+--- `/mm set` want. Given, it means THAT window and never another: an id that
+--- names no window is refused rather than quietly redirected to the active one.
+--- It is how modules/WindowManager.lua renames, copies into and locks a window
+--- the picker is not pointed at, and how a resize drag saves the window that was
+--- dragged. Moving NS.State.activeWindowId so the seam points at the target
+--- would be going around the seam, so nothing does. Ignored by a global row.
+---
 --- @param path string
 --- @param value any
+--- @param windowId number|nil
 --- @return boolean ok, string|nil err
-function NS.SetByPath(path, value)
-    if type(path) ~= "string" then return false, L["Setting not found: %s"]:format(tostring(path)) end
+function NS.SetByPath(path, value, windowId)
+    local plan, err = prepareWrite(path, value, windowId)
+    if not plan then return false, err end
 
-    -- The columns carve-out. The array as a WHOLE is writable — that is the only
-    -- granularity a path can express — while a path INTO it is refused, because the
-    -- ordinal it would address moves on the next add, remove or reorder.
-    if path == COLUMNS_PREFIX then
-        return setColumns(value)
-    end
-    if path:sub(1, #COLUMNS_PREFIX + 1) == COLUMNS_PREFIX .. "." then
-        return false, L["A single column is not a setting — edit columns on the Columns page."]
-    end
+    storeWrite(plan)
+    reactWrite(plan)
 
-    local row = index[path]
-    if not row then
-        return false, L["Setting not found: %s"]:format(path)
-    end
-    if row.validate and not row.validate(value) then
-        return false, L["Invalid value for %s"]:format(path)
-    end
-
-    local windowId
-
-    if row.sessionOnly then
-        -- No db write by definition; the row's own set() IS the storage.
-        if row.set then row.set(value) end
+    if plan.columns then
+        -- Two format arguments because that is what announceWrite forwards -- a
+        -- third would be dropped and its `%d` would reach the console literally.
+        announceWrite("columns", plan.windowId, "%s = %d shown", COLUMNS_PREFIX, shownCount(plan.columns))
     else
-        local parts = splitPath(path)
-        local root, first, id = resolveRoot(parts)
-        if not root then
-            return false, L["No window is selected."]
-        end
-        windowId = id
-        -- copy() on the way in: a color table handed straight from a widget (or
-        -- from a row's default) would otherwise be shared with whoever else holds
-        -- it, and editing one window's color would edit theirs.
-        writeInto(root, parts, first, copy(toStored(row, value)))
+        announceWrite(plan.page, plan.windowId, "%s = %s", path, value)
+    end
+    return true
+end
+
+--- Write several settings as ONE change: every write is checked first, then all
+--- are stored, then each row reacts, then the change is logged and announced
+--- once.
+---
+--- THE SAME SEAM, NOT A SECOND ONE. Each entry goes through exactly what
+--- NS.SetByPath does -- the columns carve-out, the row lookup, the row's
+--- `validate`, the deep copy on the way in, the row's `onChange` -- and the
+--- one difference is the tail. A copy-from touches seventy-odd rows of one
+--- window, and seventy CONFIG_CHANGED messages would be seventy re-applies of
+--- that window and seventy lines in the log for a single click. So the batch
+--- takes one of each: the log line names the batch and how many rows it wrote,
+--- and the announcement names the page when every row shares one and none when
+--- they do not, because a subscriber skipping a section must not skip part of
+--- a change.
+---
+--- ALL OR NOTHING. One refused entry stores no entry at all, and the refusal
+--- names its path.
+---
+--- @param writes table         array of `{ path, value }`
+--- @param windowId number|nil  as NS.SetByPath's
+--- @param label string|nil     what the log line calls the batch
+--- @return boolean ok, string|nil err
+function NS.SetByPaths(writes, windowId, label)
+    if type(writes) ~= "table" then return false, L["Setting not found: %s"]:format(tostring(writes)) end
+
+    local plans = {}
+    for i, entry in ipairs(writes) do
+        local plan, err = prepareWrite(entry[1], entry[2], windowId)
+        if not plan then return false, err end
+        plans[i] = plan
+    end
+    if plans[1] == nil then return true end
+
+    for _, plan in ipairs(plans) do storeWrite(plan) end
+
+    local page, id = plans[1].page, plans[1].windowId
+    for _, plan in ipairs(plans) do
+        reactWrite(plan)
+        if plan.page ~= page then page = nil end
+        if plan.windowId ~= id then id = nil end
     end
 
-    if row.onChange then row.onChange(value, windowId) end
-
-    announceWrite(row.page, windowId, "%s = %s", path, value)
-
+    announceWrite(page, id, "%s: %d rows", label or "batch", #plans)
     return true
 end
 

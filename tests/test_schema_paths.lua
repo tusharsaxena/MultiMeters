@@ -1,9 +1,9 @@
 -- tests/test_schema_paths.lua
 --
 -- settings/Schema_Paths.lua: the path machinery, and NS.SetByPath, the ONE seam
--- a schema-row write belongs to (docs/schema.md, "The window registry and its
--- writer", lists the writers that still bypass it). Two ideas here are not
--- standard-issue:
+-- a schema-row write belongs to -- including a write to a window the picker is
+-- not pointed at, through its window-id argument (issue #49). Two ideas here are
+-- not standard-issue:
 --
 --   1. THE WINDOW-RELATIVE PATH MODEL (design 8). A `window.`-prefixed path has
 --      no window in it. It resolves against the SESSION'S ACTIVE WINDOW, so the
@@ -518,4 +518,178 @@ test("Schema: NS.NormalizeColumns is published for the migration ladder", functi
     assertTrue(out[1].enabled)
 
     assertEqual(NS.NormalizeColumns({}), nil, "it refuses what it cannot repair")
+end)
+
+-- ---------------------------------------------------------------------------
+-- The instance argument (issue #49)
+-- ---------------------------------------------------------------------------
+--
+-- The seam used to resolve every `window.*` path against the ACTIVE window and
+-- nothing else, so a writer acting on a window the picker was not pointed at
+-- -- a rename, a copy-from, the lock sweep, a resize drag -- had no way to name
+-- its target and went around the seam instead (architecture-§5). The third
+-- argument is that name. Moving NS.State.activeWindowId so the seam points at
+-- the target would be going around it too, so every case here also proves the
+-- picker did not move.
+
+--- Every CONFIG_CHANGED payload, on a private target so nothing is clobbered.
+local function heardConfig(NS)
+    local seen = {}
+    local bus = NS.NewBusTarget()
+    bus:RegisterMessage(NS.Constants.MSG.CONFIG_CHANGED, function(_, payload)
+        seen[#seen + 1] = payload
+    end)
+    return seen
+end
+
+test("SetByPath: a window id addresses THAT window and leaves the picker where it was", function()
+    -- red under: SetByPath ignoring its third argument.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local before = NS.Database.FindWindow(first).frame.width
+
+    assertTrue(NS.SetByPath("window.frame.width", 480, second))
+    assertEqual(NS.State.activeWindowId, first, "writing another window must not move session state")
+    assertEqual(NS.Database.FindWindow(second).frame.width, 480)
+    assertEqual(NS.Database.FindWindow(first).frame.width, before, "the active window is untouched")
+    assertEqual(NS.GetSetting("window.frame.width", second), 480, "and the reader takes the same id")
+end)
+
+test("SetByPath: the window id reaches onChange and CONFIG_CHANGED", function()
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local seen = heardConfig(NS)
+
+    local row = NS.FindSchemaRow("window.visibility.world")
+    local original, sawWindow = row.onChange, nil
+    row.onChange = function(_, id) sawWindow = id end
+    local ok = NS.SetByPath("window.visibility.world", true, second)
+    row.onChange = original
+
+    assertTrue(ok)
+    assertEqual(sawWindow, second)
+    assertEqual(#seen, 1)
+    assertEqual(seen[1].windowId, second, "only the window that moved re-applies itself")
+end)
+
+test("SetByPath: a window id that names no window is refused, and nothing is written", function()
+    local inst, first = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local before = NS.Database.FindWindow(first).frame.width
+    local seen = heardConfig(NS)
+
+    local ok, err = NS.SetByPath("window.frame.width", 480, 9999)
+    assertFalse(ok, "a stale id must not fall back to the active window")
+    assertTrue(type(err) == "string")
+    assertEqual(NS.Database.FindWindow(first).frame.width, before)
+    assertEqual(#seen, 0)
+end)
+
+test("SetByPath: a global row ignores the window id", function()
+    local inst, _, second = twoWindows()
+    local NS = inst.NS
+    local seen = heardConfig(NS)
+    assertTrue(NS.SetByPath("enabled", false, second))
+    assertEqual(NS.db.profile.enabled, false)
+    assertEqual(seen[1].windowId, nil, "no window moved")
+end)
+
+test("SetByPath: window.columns takes the window id too", function()
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local cols = {}
+    for i, c in ipairs(NS.Database.FindWindow(first).columns) do
+        cols[i] = { stat = c.stat, enabled = c.enabled }
+    end
+    cols[1].enabled, cols[#cols].enabled = true, true
+    local lastStat = cols[#cols].stat
+
+    assertTrue(NS.SetByPath("window.columns", cols, second))
+    local shownOnSecond = false
+    for _, c in ipairs(NS.Database.FindWindow(second).columns) do
+        if c.stat == lastStat and c.enabled then shownOnSecond = true end
+    end
+    assertTrue(shownOnSecond, "the array landed on the window the id names")
+    assertEqual(NS.State.activeWindowId, first)
+end)
+
+test("SetByPaths: validates every write before storing any of them", function()
+    -- A batch is one write as far as a reader can tell, so a bad value in it
+    -- stores NOTHING rather than half of it.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local w = NS.Database.FindWindow(second)
+    local before = w.frame.width
+    local seen = heardConfig(NS)
+
+    local ok, err = NS.SetByPaths({
+        { "window.frame.width", 400 },
+        { "window.frame.scale", 99 },     -- outside the row's 0.5..2 validator
+    }, second)
+    assertFalse(ok)
+    assertTrue(tostring(err):find("window.frame.scale", 1, true) ~= nil, "the refusal names the path")
+    assertEqual(w.frame.width, before, "the valid half was not stored either")
+    assertEqual(#seen, 0)
+end)
+
+test("SetByPaths: one debug line and one CONFIG_CHANGED for the whole batch", function()
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local seen = heardConfig(NS)
+    local original, lines = NS.Debug, {}
+    NS.Debug = function(tag, fmt, a, b) if tag == "Set" then lines[#lines + 1] = { fmt, a, b } end end
+
+    local ok = NS.SetByPaths({
+        { "window.frame.width", 400 },
+        { "window.frame.height", 300 },
+    }, second, "resize")
+    -- `window.rows.*` would NOT do here: the Row tab lives on the Frame page,
+    -- so its rows are page "frame" too. Bars is a different page.
+    local okMixed = NS.SetByPaths({
+        { "window.frame.width", 410 },
+        { "window.bars.border", true },
+    }, second, "mixed")
+    NS.Debug = original
+
+    assertTrue(ok and okMixed)
+    assertEqual(NS.Database.FindWindow(second).frame.height, 300)
+    assertEqual(NS.Database.FindWindow(second).bars.border, true)
+    assertEqual(#lines, 2, "one line per batch, not one per row")
+    assertEqual(lines[1][2], "resize")
+    assertEqual(lines[1][3], 2)
+    assertEqual(#seen, 2, "one announcement per batch")
+    assertEqual(seen[1].windowId, second)
+    assertEqual(seen[1].section, "frame", "a batch inside one page names that page")
+    assertEqual(seen[2].section, nil, "a batch across pages names none, so no subscriber skips it")
+    assertEqual(NS.State.activeWindowId, first)
+end)
+
+test("SetByPaths: every written row's onChange still fires, with the window id", function()
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local calls = {}
+    local rows = { NS.FindSchemaRow("window.visibility.world"), NS.FindSchemaRow("window.visibility.dungeon") }
+    local originals = {}
+    for i, row in ipairs(rows) do
+        originals[i] = row.onChange
+        row.onChange = function(v, id) calls[#calls + 1] = { row.path, v, id } end
+    end
+    local ok = NS.SetByPaths({
+        { "window.visibility.world", true },
+        { "window.visibility.dungeon", false },
+    }, second)
+    for i, row in ipairs(rows) do row.onChange = originals[i] end
+
+    assertTrue(ok)
+    assertEqual(#calls, 2)
+    assertEqual(calls[1][1], "window.visibility.world")
+    assertEqual(calls[2][2], false)
+    assertEqual(calls[2][3], second)
 end)

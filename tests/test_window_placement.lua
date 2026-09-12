@@ -701,3 +701,40 @@ test("Either lock pins the window, and the master lock erases neither", function
     window:RefreshUpvalues()
     assertTrue(window.locked, "the window's own lock stopped being read")
 end)
+
+test("SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)", function()
+    -- `window.frame.width` and `window.frame.height` are rows, so a drag that
+    -- ends on them is a schema-row write: validated, logged and announced, and
+    -- addressed to THIS window by id rather than to whichever one the picker is
+    -- pointed at. The drag's own ticks write nothing -- OnSizeChanged only
+    -- remembers the size -- so the traffic is one announcement per drag.
+    -- red under: `frameCfg.width = ...` written straight into the config.
+    local inst, window, cfg = scene()
+    local NS = inst.NS
+    assertTrue(NS.WindowManager:Create("Other"))
+    local other = NS.Database.GetWindows()[2]
+    NS.State.SetActiveWindow(other.id)
+    local otherWidth = other.frame.width
+
+    local seen = {}
+    local bus = NS.NewBusTarget()
+    bus:RegisterMessage(NS.Constants.MSG.CONFIG_CHANGED, function(_, payload)
+        seen[#seen + 1] = payload
+    end)
+
+    window.anchor:_run("OnSizeChanged", 600, 280)
+    window.anchor:_run("OnSizeChanged", 620.2, 290.4)
+    window.anchor:_run("OnSizeChanged", 640.4, 300.6)
+    assertEqual(#seen, 0, "a drag in progress writes nothing")
+
+    window:SaveSize()
+    assertEqual(#seen, 1, "one announcement for the whole resize")
+    assertEqual(seen[1].windowId, cfg.id)
+    assertEqual(cfg.frame.width, 640)
+    assertEqual(cfg.frame.height, 301)
+    assertEqual(other.frame.width, otherWidth, "the active window is not the one that was dragged")
+    assertEqual(NS.State.activeWindowId, other.id)
+
+    window:SaveSize()
+    assertEqual(#seen, 1, "nothing pending, nothing written")
+end)

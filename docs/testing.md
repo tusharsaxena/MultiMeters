@@ -166,9 +166,13 @@ function of its arguments stays in `tests/test_export.lua`, which is why that su
 all.
 
 `tests/test_schema_paths.lua` covers the path machinery and `NS.SetByPath`, the one seam a schema-row
-write belongs to ([schema.md](schema.md#the-window-registry-and-its-writer) lists the writers that
-still bypass it), so the case that matters there is not "a path reads a value" but "the **same**
-path reads a **different** window's value once the active window moves".
+write belongs to, so the case that matters there is not "a path reads a value" but "the **same**
+path reads a **different** window's value once the active window moves". Its instance-argument cases
+pin the other half: a window id writes and reads **that** window, a stale id is refused rather than
+redirected, and the picker never moves. `NS.SetByPaths` is held to all-or-nothing validation, one
+log line and one `CONFIG_CHANGED` per batch. `tests/test_windowmanager.lua` and
+`tests/test_window_placement.lua` prove that `Rename`, `CopyFrom`, `SetLocked` and `SaveSize` reach
+the seam ([schema.md](schema.md#the-window-registry-and-its-writer)).
 `settings/Schema_Compose.lua` is the one new module with no suite of its own, and deliberately: it
 holds the vocabularies, validators and composers that build the row array, and
 `tests/test_schema.lua` asserts them where it asserts the array they produce.

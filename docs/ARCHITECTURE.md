@@ -90,9 +90,10 @@ anti-pattern #73. What comes out is an array of ordinary rows, so nothing downst
 [settings-panel.md](settings-panel.md#the-composed-blocks) for which block is used where, and the
 [deviation register](#documented-deviations) for what a load without LibKa0s does to them.
 
-The write seam is `NS.SetByPath`; the reader is `NS.GetSetting`. Both the panel and the CLI point at
-them, so `/mm set window.frame.width 300` takes exactly the path a slider takes — same validation,
-same debug line, same `CONFIG_CHANGED` message, same panel re-sync.
+The write seam is `NS.SetByPath`, with `NS.SetByPaths` as its batch form; the reader is
+`NS.GetSetting`. Both the panel and the CLI point at them, so `/mm set window.frame.width 300` takes
+exactly the path a slider takes — same validation, same debug line, same `CONFIG_CHANGED` message,
+same panel re-sync.
 
 **The window-relative path model** is the one thing here that is not standard-issue. Almost every
 setting is per-window, and a window is an instance created at runtime — so an absolute path would
@@ -119,13 +120,12 @@ still edits an ordered array whose length is the user's, a shape a path model ha
 validated and rebuilt entry by entry by the same seam.
 
 **The window registry has one writer** (`architecture-§5`), since no row can name a window's
-existence. Its storage keys are `db.profile.windows`, an array whose entries carry their `id` and
-unique `name`, and the id counter `db.profile.nextWindowId`. Its writer is
-`modules/WindowManager.lua` (`Create`, `Delete`, `Duplicate`, `Rename`'s uniqueness check), with
-`Database.NextWindowId` and `Database.EnsureWindowShape` as its helpers. Its load pass is
-`Database.SeedWindows`, run by `NS:RunMigrations` at initialization (`NS:OnInitialize`, `NS:InitDB`)
-and from AceDB's profile callbacks only. Rows inside a window stay `NS.SetByPath`'s, and some
-writers do not honor that yet ([schema.md](schema.md#the-window-registry-and-its-writer)).
+existence. Its storage keys are `db.profile.windows` (entries carry their `id` and unique `name`) and
+the id counter `db.profile.nextWindowId`. Its writer is `modules/WindowManager.lua` (`Create`,
+`Delete`, `Duplicate`, `Rename`'s uniqueness check) with its helpers `Database.NextWindowId` and
+`Database.EnsureWindowShape`. Its load pass is `Database.SeedWindows`, run only by `NS:RunMigrations`.
+Rows inside a window stay the seam's even when the registry writes them, through the seam's optional
+window id ([schema.md](schema.md#the-window-registry-and-its-writer)).
 
 `NS.ValidateSchema()` proves every row's `default` equals `defaults/Profile.lua`'s. The two are
 restated independently rather than sharing a reference precisely so the check can prove something.
@@ -152,7 +152,7 @@ typo in a subscriber is a nil-index at load rather than a callback that silently
 | `COMBAT_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
 | `PLAYER_STATE_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
 | `PROFILE_CHANGED` | `core/Database.lua` (`fireProfileChanged`) | `Format`, `Roster`, `Aggregator`, `Targets`, `WindowManager`, `DrillDown`, `Visibility`, `settings/Profiles.lua` | `{ newProfileKey }` |
-| `CONFIG_CHANGED` | `settings/Schema_Paths.lua` (`NS.SetByPath`) | `Format`, every `Window` | `{ section, windowId }` |
+| `CONFIG_CHANGED` | `settings/Schema_Paths.lua` (`NS.SetByPath`, and once per batch from `NS.SetByPaths`) | `Format`, every `Window` | `{ section, windowId }` |
 | `WINDOWS_CHANGED` | `modules/WindowManager.lua` (`announce`) | `DrillDown`; the settings panel repaints on the same registry actions through `NS.RefreshOptionsPanel`, by direct call rather than by subscription | `{ windowId, action }` |
 | `TEST_MODE_CHANGED` | `core/State.lua` (`State.SetTestMode`) | `Roster`, every `Window` | `{ enabled }` |
 | `DRILLDOWN_CHANGED` | `modules/DrillDown.lua` (`announce`) | the addressed `Window` | `{ windowId, active }` |

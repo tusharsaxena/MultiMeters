@@ -63,12 +63,24 @@ end
 
 --- Persist the size the user just dragged out, from the size the OnSizeChanged
 --- handler was HANDED rather than from a getter.
+---
+--- `frame.width` and `frame.height` ARE ROWS -- the Frame page's two sliders --
+--- so the drag that ends on them is a schema-row write (architecture-§5), and it
+--- goes through the seam as one batch addressed to THIS window by id: logged
+--- once, announced once, whichever window the settings panel is pointed at.
+--- Called from the grip's OnDragStop only; OnSizeChanged merely remembers the
+--- size, so a drag costs one write however many frames it lasts.
 function WindowProto:SaveSize()
-    local frameCfg = self.config.frame
-    if not (frameCfg and self.pendingWidth) then return end
-    frameCfg.width  = math.floor(self.pendingWidth + 0.5)
-    frameCfg.height = math.floor(self.pendingHeight + 0.5)
+    if not (self.config.frame and self.pendingWidth) then return end
+    local width  = math.floor(self.pendingWidth + 0.5)
+    local height = math.floor(self.pendingHeight + 0.5)
     self.pendingWidth, self.pendingHeight = nil, nil
+    if NS.SetByPaths then
+        NS.SetByPaths({
+            { "window.frame.width",  width },
+            { "window.frame.height", height },
+        }, self.id, "resize")
+    end
     self:ApplyConfig()
     self:MarkDirty()
 end

@@ -148,16 +148,25 @@ which no row path can name. The windows are this addon's one registry.
   AceDB's swap and copy replace the store whole, and this pass re-seeds after them.
 
 **Naming the writer covers membership and bookkeeping only.** A member field a row addresses is a
-schema-row write and belongs to `NS.SetByPath`, even when `WindowManager` is the caller. These
-writers do not do that yet, and none of them is ratified here:
+schema-row write and belongs to `NS.SetByPath`, even when `WindowManager` is the caller. The seam's
+optional window id is what makes that possible: `NS.SetByPath(path, value, windowId)` resolves a
+`window.*` path against the window the id names. It never substitutes the active window, and an id
+that names no window is refused. `NS.State.activeWindowId` does not move.
 
-- `WindowManager:Rename` writes `window.name`, `WindowManager:CopyFrom` deep-assigns whole row
-  groups onto its target, and `WindowManager:SetLocked` writes `window.frame.locked` on every
-  window. They bypass the seam because it resolves `window.*` against the active window only, with
-  no way to name another one.
-- `WindowProto:SaveSize` writes the `window.frame.width` and `window.frame.height` rows when a
-  resize drag ends, on whichever window was dragged. That is drag-written geometry, and the
-  deviation register has no `architecture-§5` row for it.
+- `WindowManager:Rename` keeps the uniqueness check and writes `window.name` through the seam for
+  the window it renames.
+- `WindowManager:CopyFrom` reads each copied row off the source with `NS.GetSetting(path, sourceId)`
+  and writes them onto the target as one `NS.SetByPaths` batch. Every entry is validated before any
+  is stored, and the copy logs one `[Set]` line and sends one `CONFIG_CHANGED`. A value the row
+  refuses stops the copy and names the row. `window.columns` goes as one whole-array entry. The
+  leaves no row addresses (the window's remembered view: `data.sessionType`, `data.sortColumn`,
+  `data.sortMode`, `data.sortAscending`) are copied leaf by leaf beside the batch, and
+  `frame.position` is never copied.
+- `WindowManager:SetLocked` writes `window.frame.locked` through the seam once per window, each
+  announcement tagged with that window's id.
+- `WindowProto:SaveSize` writes `window.frame.width` and `window.frame.height` as one batch for the
+  window that was dragged. It runs on the grip's drag-stop only; `OnSizeChanged` just remembers the
+  size, so a drag costs one write however many frames it lasts.
 - `frame.position` has no row (see [`frame`](#frame--the-standalone-window) below). It is written by a
   drag (`SavePosition`) and by `WindowManager:ResetPosition` / `:ResetPositions`, and the
   deviation register has no `architecture-§5` row for it either.
@@ -1175,9 +1184,18 @@ finished loading when the schema file ran.
 
 ## The write seam
 
-`NS.SetByPath(path, value)` is the single write seam (`settings-schema-§1`). The panel's widgets,
-`/mm set`, `/mm reset`, `NS.ApplyDefault` and the global Defaults sweep all land here, so validation,
-the debug line, the row's reaction and the refresh cannot be skipped by whichever caller forgot one.
+`NS.SetByPath(path, value, windowId)` is the single write seam (`settings-schema-§1`). The panel's
+widgets, `/mm set`, `/mm reset`, `NS.ApplyDefault` and the global Defaults sweep all land here, so
+validation, the debug line, the row's reaction and the refresh cannot be skipped by whichever caller
+forgot one. `windowId` is optional: omitted, a `window.*` path means the active window; given, it
+means that window and no other (see [the window registry](#the-window-registry-and-its-writer)).
+
+`NS.SetByPaths(writes, windowId, label)` is the same seam taking several `{ path, value }` writes as
+one change. Each entry goes through exactly what `NS.SetByPath` does, and every entry is checked
+before any is stored, so one refusal stores nothing. Only the tail differs: one debug line naming
+the batch and its row count, and one `CONFIG_CHANGED`. Its `section` is the page when every row
+shares one and `nil` when they do not, so no subscriber skips part of a change. A copy-from and a
+resize drag use it.
 
 **Order is load-bearing**: write → react (`onChange`) → log once → announce `CONFIG_CHANGED` →
 re-sync the panel's scalars. Reacting before the write would hand a refresher the old value; logging
