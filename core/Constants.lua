@@ -122,6 +122,13 @@ Constants.SESSION_TYPE = {
     Expired = enumValue("DamageMeterSessionType", "Expired", 2),
 }
 
+--- The pinned segment's "no pin" (`window.data.sessionID`). A window follows its
+--- session type unless a stored segment is pinned, and a row needs a default it
+--- can state, so "none" is this number rather than nil. The client's session ids
+--- are positive; Database.PinnedSegment is the one reader that turns this back
+--- into "no pin" for every consumer.
+Constants.NO_SEGMENT = 0
+
 --- Enum.DamageMeterSourceDisplayType. Rows are filtered to Ally; Enemy rows are
 --- what the enemy column modules/Targets.lua reads is made of, and None is the
 --- "not a displayable source" marker.

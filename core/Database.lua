@@ -127,6 +127,23 @@ function Database.EnsureWindowShape(w)
     end
 end
 
+--- The stored segment a window's `data` pins, or nil when it pins none.
+---
+--- THE ONE READER of `window.data.sessionID`. The row's "no pin" is
+--- Constants.NO_SEGMENT (0), not nil, so a reader asking `~= nil` -- the test
+--- every consumer used while the unpinned state was nil -- would take 0 for a
+--- session and send it to the ID shim, which answers an empty session. Every
+--- consumer asks here instead: the aggregator, the tooltip, the target list, the
+--- drill-down, the export, the header and the diagnostics.
+---
+--- @param data table|nil  a window's `data` group
+--- @return number|nil
+function Database.PinnedSegment(data)
+    local id = type(data) == "table" and data.sessionID or nil
+    if type(id) == "number" and id > 0 then return id end
+    return nil
+end
+
 --- The live window array. THE traversal seam: every consumer that reads or
 --- mutates the registry goes through here, so the `db.profile.windows` walk
 --- lives in exactly one place.

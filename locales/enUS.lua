@@ -235,6 +235,8 @@ L["Read the current pull, or the accumulated totals for the whole run. Chosen fr
     "Read the current pull, or the accumulated totals for the whole run. Chosen from the header's segment menu."
 L["Which column's numbers decide the row order. Chosen by clicking a column header."] =
     "Which column's numbers decide the row order. Chosen by clicking a column header."
+L["A stored fight to read instead of the session, picked from the header's segment menu. 0 pins none."] =
+    "A stored fight to read instead of the session, picked from the header's segment menu. 0 pins none."
 L["How rows are ordered: by value, by name, in the game's order or in group order. The Player header chooses by name."] =
     "How rows are ordered: by value, by name, in the game's order or in group order. The Player header chooses by name."
 L["Put the smallest numbers at the top. Clicking the sort column's header again flips it."] =
@@ -671,6 +673,7 @@ L["By name"] = "By name"
 L["Game order"] = "Game order"
 L["Group order"] = "Group order"
 L["Sort column"] = "Sort column"
+L["Pinned segment"] = "Pinned segment"
 L["Class-colored row background"] = "Class-colored row background"
 L["Tint each row with the player's class color. Rows with no class fall back to the alternating stripe."] =
     "Tint each row with the player's class color. Rows with no class fall back to the alternating stripe."

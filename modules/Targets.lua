@@ -151,7 +151,7 @@ end
 --- Which stored segment a window is pointed at, or nil for "the live one".
 local function sessionIDOf(window)
     local data = type(window) == "table" and window.data or nil
-    return data and data.sessionID or nil
+    return NS.Database.PinnedSegment(data)
 end
 
 --- A player name with its realm removed, for comparison only.

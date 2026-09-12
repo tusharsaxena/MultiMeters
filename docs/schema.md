@@ -160,11 +160,12 @@ that names no window is refused. `NS.State.activeWindowId` does not move.
   is stored, and the copy logs one `[Set]` line and sends one `CONFIG_CHANGED`. A value the row
   refuses stops the copy and names the row. `window.columns` goes as one whole-array entry. The
   window's sort and session type are rows now (issue #50) and travel in the batch with the rest of
-  the `data` group. The one leaf no row addresses, `data.sessionID`, is copied beside the batch, and
-  `frame.position` is never copied.
+  the `data` group, and so does the pinned segment, `data.sessionID`. `frame.position` is never
+  copied.
 - `WindowProto:SortByColumn` (a column-header click) writes the sort rows as one batch for the
-  window clicked, and `WindowProto:SetSessionType` (the segment menu's Current / Overall) writes
-  `window.data.sessionType` the same way.
+  window clicked. `WindowProto:SetSessionType` (the segment menu's Current / Overall) writes
+  `window.data.sessionType` and clears the pin as one batch the same way, and
+  `WindowProto:SetSegment` (a stored segment) writes `window.data.sessionID` alone.
 - `WindowManager:SetLocked` writes `window.frame.locked` through the seam once per window, each
   announcement tagged with that window's id.
 - `WindowProto:SaveSize` writes `window.frame.width` and `window.frame.height` as one batch for the
@@ -993,12 +994,12 @@ read fills both halves of the column.
 
 ### `data`
 
-`sessionType = Const.SESSION_TYPE.Overall` · `sortMode = "value"` · `sortColumn = "DamageDone"` ·
-`sortAscending = false`.
+`sessionType = Const.SESSION_TYPE.Overall` · `sessionID = Const.NO_SEGMENT` · `sortMode = "value"` ·
+`sortColumn = "DamageDone"` · `sortAscending = false`.
 
-**All four are hidden schema rows** (issue #50), filed on the Header page beside `frame.minimised`.
+**All five are hidden schema rows** (issue #50), filed on the Header page beside `frame.minimised`.
 Every one of them is chosen by a control on the window itself: the header's segment menu picks
-`sessionType`, and one click on a column header writes the three sort fields
+`sessionType` or pins a stored segment in `sessionID`, and one click on a column header writes the three sort fields
 (`modules/Window_Header.lua`'s `SortByColumn`). `architecture-§5` reads a control that chooses a
 value as setting it, so they are preferences rather than a remembered view, and a preference goes
 through the helper. The controls write them through `NS.SetByPath` / `NS.SetByPaths` with the
@@ -1031,19 +1032,22 @@ the Combat restriction is active the rows are the engine's own ranking of the so
 the engine's ordering for that stat, and the direction is applied as a reversal — so the two of them
 are live in both states while `sortMode` is not.
 
-**`sessionID` has no schema row and no default.** Its "unset" state is `nil` — "no segment pinned,
-follow `sessionType`" — which a defaults tree cannot express. It is persisted:
-`modules/Window_Header.lua`'s `SetSegment` writes it into `window.data` and AceDB stores it from
-there. `SetSessionType` and `DropStaleSegment` clear it, and `WindowManager:CopyFrom` copies it as
-the one `data` leaf no row addresses. **This is an open `architecture-§5` question, not a settled
-one.** The segment menu chooses the value, so by the standard's own test it is a preference and not
-a remembered view, and a preference with no row needs a row or a register row. A row needs a default
-the schema can state, and nil is not one. Issue #50's pass left it for the owner to rule on rather
-than add a register row or reshape the field.
+**`sessionID` is the fifth hidden row, and its "none" is a number.** The segment menu chooses it, so
+by `architecture-§5`'s own test it is a preference, and a preference goes through the helper. Its
+unpinned state used to be `nil`, which no row default can state, so it is now
+`Constants.NO_SEGMENT` (`0`): the row's default, the value its validator accepts beside a positive
+integer session id, and what `Database.PinnedSegment` answers as "no pin" for every reader. The
+client's session ids are positive, so the sentinel names none of them; a
+[smoke test](smoke-tests.md#33-the-pinned-segments-none) confirms that on a live client.
+`SetSegment` writes it through `NS.SetByPath` for its own window. `SetSessionType` clears it in the
+same `NS.SetByPaths` batch as the type. `DropStaleSegment` clears a stale one through the seam too,
+because a row wins. `WindowManager:CopyFrom` carries it in its batch like the other four. An account
+saved before the row existed has no key, and `Database.EnsureWindowShape`'s backfill fills in the
+sentinel.
 
-When it *is* set it **overrides `sessionType`**, and every read path honors it — the aggregator's
+When it *does* pin one it **overrides `sessionType`**, and every read path honors it — the aggregator's
 column reads, the header's duration, the tooltip's spell breakdown and the drill-down's. A pinned id
-the client no longer holds is dropped back to `nil` by `WindowProto:DropStaleSegment` at the top of
+the client no longer holds is dropped back to `NO_SEGMENT` by `WindowProto:DropStaleSegment` at the top of
 the next refresh, because a stale id does not error, it silently reads an empty session.
 
 ---
@@ -1083,7 +1087,7 @@ paths and resolve against `db.profile`. There are twenty-one of them: `enabled`,
 four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale, alpha and lock, distinct
 from the per-window `frame.*` three), `data.mergePets`, `data.throttle`, the three `export.*`
 preferences, the eight `statColors.*` swatches, and the two `sessionOnly` rows `state.testMode` and
-`state.debugConsole`, whose own `get`/`set` are the whole of their storage. The other 146 rows are
+`state.debugConsole`, whose own `get`/`set` are the whole of their storage. The other 147 rows are
 window rows.
 
 ```lua

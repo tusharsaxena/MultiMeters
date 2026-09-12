@@ -491,11 +491,12 @@ local function newPass(window)
         windowId    = window.id,
         sessionType = data.sessionType or Const.SESSION_TYPE.Current,
         -- The segment the header dropdown is pointed at, or nil for "whichever
-        -- session sessionType names". Read straight off the config rather than
-        -- off the window instance because modules/Window.lua CLEARS a stale id
-        -- back to nil before it aggregates, so the config is the resolved answer
-        -- by the time this runs — one source of truth rather than two.
-        sessionID   = data.sessionID,
+        -- session sessionType names" -- Database.PinnedSegment turns the row's
+        -- NO_SEGMENT into that nil. Read straight off the config rather than off
+        -- the window instance because modules/Window.lua CLEARS a stale id before
+        -- it aggregates, so the config is the resolved answer by the time this
+        -- runs — one source of truth rather than two.
+        sessionID   = NS.Database.PinnedSegment(data),
         keys        = keys,
         sortColumn  = sortColumn,
         mode        = data.sortMode or "value",

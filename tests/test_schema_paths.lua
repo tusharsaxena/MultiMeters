@@ -730,7 +730,7 @@ test("A header click writes the sort through the seam, for the window clicked (i
 end)
 
 test("Picking Current or Overall writes the session type through the seam (issue #50)", function()
-    -- The pinned segment it clears has no row, and is cleared beside the write.
+    -- The pinned segment it clears is a row too, cleared in the same batch.
     -- red under: `data.sessionType = sessionType` written straight into the config.
     local inst, first, second = twoWindows()
     local NS = inst.NS
@@ -744,6 +744,6 @@ test("Picking Current or Overall writes the session type through the seam (issue
     assertEqual(#seen, 1)
     assertEqual(seen[1].windowId, first)
     assertEqual(cfg.data.sessionType, NS.Constants.SESSION_TYPE.Current)
-    assertTrue(cfg.data.sessionID == nil, "the pin is still cleared")
+    assertEqual(cfg.data.sessionID, NS.Constants.NO_SEGMENT, "the pin is cleared in the same batch")
     assertEqual(window.sessionType, NS.Constants.SESSION_TYPE.Current)
 end)

@@ -473,14 +473,14 @@ end)
 test("Segment menu: picking Current CLEARS the pin", function()
     -- Picking "Current" out of a menu that is showing a stored fight means "stop
     -- showing that fight". Leaving the id set would make the choice do nothing.
-    -- red under: SetSessionType writing sessionType without nil-ing sessionID.
+    -- red under: SetSessionType writing sessionType without clearing sessionID.
     local inst, window, cfg = withSegments()
     window:SetSegment(4)
 
     window:OpenSegmentMenu()
     inst.mocks.__lastMenu:Nth("button", 3).callback()
 
-    assertNil(cfg.data.sessionID)
+    assertEqual(cfg.data.sessionID, inst.NS.Constants.NO_SEGMENT)
     assertEqual(cfg.data.sessionType, inst.NS.Constants.SESSION_TYPE.Current)
 end)
 
@@ -511,7 +511,7 @@ test("Segment: the header names the pinned segment rather than lying `Current`",
     cfg.data.sessionID = 4
     assertEqual(window:SessionLabel(false), "Bribed Guard   0:22")
 
-    cfg.data.sessionID = nil
+    cfg.data.sessionID = 0
     assertEqual(window:SessionLabel(false), "Current",
         "and with no pin it goes back to naming the session type")
 end)
@@ -526,7 +526,7 @@ test("Segment: a stale pin is dropped on the next refresh", function()
     cfg.data.sessionID = 99
 
     window:Refresh()
-    assertNil(cfg.data.sessionID, "a segment the client no longer holds must be forgotten")
+    assertEqual(cfg.data.sessionID, 0, "a segment the client no longer holds must be forgotten")
 end)
 
 test("Segment: a LIVE pin survives the staleness check", function()

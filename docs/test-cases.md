@@ -1047,6 +1047,19 @@ badge and any count quoted in the docs must agree with it.
 - Either lock pins the window, and the master lock erases neither
 - SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)
 
+### test_window_segment.lua (10)
+
+- Segment row: the pin is a hidden window row whose default is no pin
+- Segment row: it takes a session id or the sentinel, and nothing else
+- Segment row: a stored window with no pin backfills to the sentinel
+- Segment: picking a stored segment writes the pin through the seam for ITS window
+- Segment: picking Current clears the pin and sets the type as ONE change
+- Segment: a stale pin is cleared through the seam
+- Segment: an unpinned window is left alone by the staleness check
+- Segment: the sentinel reads the session TYPE, never the ID shim
+- Segment: the labels and the export read the sentinel as no pin
+- Segment: Database.PinnedSegment answers nil for every spelling of no pin
+
 ### test_headercontrols.lua (65)
 
 - HeaderControls: every control this addon builds is attached
@@ -2009,6 +2022,7 @@ badge and any count quoted in the docs must agree with it.
 | test_window.lua | 59 |
 | test_window_header.lua | 73 |
 | test_window_placement.lua | 31 |
+| test_window_segment.lua | 10 |
 | test_headercontrols.lua | 65 |
 | test_row.lua | 77 |
 | test_row_namecell.lua | 30 |
@@ -2033,4 +2047,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1779** |
+| **Total** | **1789** |

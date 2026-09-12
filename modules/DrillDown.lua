@@ -177,7 +177,7 @@ end
 --- switching to the live pull's the moment the next one starts.
 local function sessionIDOf(window)
     local data = type(window) == "table" and window.data or nil
-    return data and data.sessionID or nil
+    return NS.Database.PinnedSegment(data)
 end
 
 --- Announce a change to whoever is drawing this window.

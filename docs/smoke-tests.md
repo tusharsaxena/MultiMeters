@@ -82,6 +82,7 @@ in-client.
 | 28 | **Feign trace** | [**The feign-trace verbs and what the recording says (issue #25)**](#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25) |
 | 29 | **Shared registry** | [**The Border dropdown when five Ka0s addons share one registry**](#29-the-border-dropdown-when-five-ka0s-addons-share-one-registry) |
 | 32 | **Bar animation** | [**Bar fills slide between refreshes (issue #23)**](#32-bar-fills-slide-between-refreshes-issue-23) |
+| 33 | **Segments** | [**The pinned segment's none**](#33-the-pinned-segments-none) |
 
 ---
 
@@ -1976,6 +1977,32 @@ show a bar moving, and it cannot prove the client accepts the argument on a secr
 
 **Pass:** smooth fills in and out of combat, a snap when off, no error, identical text and order.
 **Record:** client build, and whether step 2 was in a key or a raid.
+
+---
+
+### 33. The pinned segment's none
+
+**Why this is in-client.** `window.data.sessionID` is a hidden row now, and its "no pin" is
+`Constants.NO_SEGMENT`, the number `0`. The headless suite proves that every reader turns 0 into "no
+pin", that the menu, the Current / Overall entries and the staleness check all write through the
+seam, and that an account saved without the key backfills to 0. It cannot prove the premise the
+sentinel rests on: **that the live client never hands out a stored session whose id is 0.** If it
+did, that fight could not be pinned.
+
+1. Run three or four pulls, then `/mm debug diag` and read the stored-session list it prints.
+   **Every `sessionID` is a positive integer.** None is 0.
+2. Log out and back in, run another pull, and read the list again. **Still no 0.** A counter that
+   restarts at login is the case that could mint one.
+3. Pin each listed fight in turn from the header's segment menu. **Each one pins**: the header names
+   it and the grid shows its numbers.
+4. `/mm get window.data.sessionID` answers the pinned id. Pick **Overall** from the menu and ask
+   again: it answers `0`.
+5. `/mm set window.data.sessionID 0` unpins a pinned window, and `/mm set window.data.sessionID -1`
+   is refused with *Invalid value*.
+
+**Pass:** no stored session ever carries id 0, every fight pins, and the CLI reads and writes the
+row as the menu does.
+**Record:** client build, and the lowest and highest ids seen.
 
 ---
 

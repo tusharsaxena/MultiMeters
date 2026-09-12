@@ -904,10 +904,12 @@ end
 -- The segment selector
 -- ---------------------------------------------------------------------------
 --
--- `data.sessionType` picks Current or Overall. `data.sessionID`, when set,
--- overrides it with one specific stored segment — the fight the player picked
--- out of the header dropdown. Nil means "no segment pinned", which is the
--- default and the behavior the addon had before this existed.
+-- `data.sessionType` picks Current or Overall. `data.sessionID`, when it pins
+-- one, overrides it with a specific stored segment — the fight the player picked
+-- out of the header dropdown. Constants.NO_SEGMENT (0) means "no segment
+-- pinned", which is the default; Database.PinnedSegment is how it is read. Both
+-- are hidden rows, and every write below goes through the seam addressed to
+-- this window (architecture-§5, issues #49 and #50).
 
 --- One stored session's entry, as menu text: its name, then its duration.
 ---
@@ -938,8 +940,8 @@ end
 
 --- Forget a pinned segment the client no longer holds. See Refresh.
 function WindowProto:DropStaleSegment()
-    local data = self.config.data
-    if not (data and data.sessionID ~= nil) then return end
+    local pinned = NS.Database.PinnedSegment(self.config.data)
+    if pinned == nil then return end
 
     local Provider = mod("Provider")
     -- No provider at all is a broken install, not a stale segment: leaving the
@@ -947,22 +949,31 @@ function WindowProto:DropStaleSegment()
     -- would quietly rewrite the player's setting because of our own load order.
     if not (Provider and Provider.HasSession) then return end
 
-    if not Provider.HasSession(data.sessionID) then
+    if not Provider.HasSession(pinned) then
         if NS.State and NS.State.debug then
-            NS.Debug("Window", "window %d dropped stale segment %s",
-                self.id, tostring(data.sessionID))
+            NS.Debug("Window", "window %d dropped stale segment %s", self.id, tostring(pinned))
         end
-        data.sessionID = nil
+        -- A row wins (architecture-§5): the pin is a row, so even this repair
+        -- writes it through the seam, addressed to this window.
+        if NS.SetByPath then NS.SetByPath("window.data.sessionID", Const.NO_SEGMENT, self.id) end
     end
 end
 
---- Point this window at one stored segment, or at nil for "follow sessionType".
+--- Point this window at one stored segment, or at Constants.NO_SEGMENT (or nil)
+--- for "follow sessionType".
+---
+--- The menu entry CHOOSES the pin, so it is a row and goes through the seam
+--- addressed to this window (architecture-§5), which validates, logs and
+--- announces it.
 --- @param sessionID number|nil
 function WindowProto:SetSegment(sessionID)
     local data = self.config.data
     if not data then return end
+    if sessionID == nil then sessionID = Const.NO_SEGMENT end
     if data.sessionID == sessionID then return end
-    data.sessionID = sessionID
+    if not (NS.SetByPath and NS.SetByPath("window.data.sessionID", sessionID, self.id)) then
+        return
+    end
     self:MarkDirty()
 end
 
@@ -972,16 +983,19 @@ end
 --- stored fight means "stop showing that fight", and leaving the id set would
 --- make the choice do nothing at all.
 ---
---- The menu entry CHOOSES the session type, so it is a row and goes through the
---- seam addressed to this window (architecture-§5, issue #50). The pin has no
---- row -- its unset state is nil -- and is cleared first, so the announcement
---- the seam sends describes a window that is already consistent.
+--- The menu entry CHOOSES the session type, and clearing the pin is part of the
+--- same choice, so both are one batch through the seam addressed to this window
+--- (architecture-§5, issues #49 and #50): validated together, stored together,
+--- announced once. A refused type stores neither, so the pin is never dropped
+--- for a choice that did not land.
 --- @param sessionType number
 function WindowProto:SetSessionType(sessionType)
     local data = self.config.data
     if not data then return end
-    data.sessionID = nil
-    if not (NS.SetByPath and NS.SetByPath("window.data.sessionType", sessionType, self.id)) then
+    if not (NS.SetByPaths and NS.SetByPaths({
+        { "window.data.sessionID",   Const.NO_SEGMENT },
+        { "window.data.sessionType", sessionType },
+    }, self.id, "segment")) then
         return
     end
     self.sessionType = sessionType
@@ -1047,7 +1061,7 @@ function WindowProto:SessionLabel(preview)
     -- showing a fight from ten minutes ago is the one label that is actively
     -- misleading, and it is also the only feedback the player gets that their
     -- click landed.
-    local sessionID = (self.config.data or {}).sessionID
+    local sessionID = NS.Database.PinnedSegment(self.config.data)
     if sessionID ~= nil then
         local Provider = mod("Provider")
         for _, entry in ipairs(Provider and Provider.GetAvailableSessions() or {}) do

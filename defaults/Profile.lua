@@ -601,6 +601,10 @@ local WINDOW_TEMPLATE = {
         sortColumn  = "DamageDone",
         -- Largest first. Toggled by clicking the sort column's header.
         sortAscending = false,
+        -- The pinned segment: a stored session the header's segment menu picked,
+        -- read instead of sessionType while it is set. Constants.NO_SEGMENT (0)
+        -- is "none", and Database.PinnedSegment is how everything reads it.
+        sessionID   = Const.NO_SEGMENT,
         -- `mergePets` and `throttle` USED TO LIVE HERE and are now addon-wide,
         -- at `profile.data` below. Neither is a property of how a window looks,
         -- which is the test everything else in this template passes: one is a

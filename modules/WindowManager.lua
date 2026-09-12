@@ -399,11 +399,11 @@ end
 
 --- Copy what NO row addresses inside a group, leaf by leaf.
 ---
---- The only such leaves are `data.sessionID`, the pinned segment, which the copy
---- has always carried, and `frame.position`, which it never does. The sort and
---- the session type used to be copied here too; they are rows since issue #50
---- and go through the seam in groupWrites. A leaf is skipped the moment a row
---- names it, which is why that move needed no edit here.
+--- The only such leaf is `frame.position`, which the copy never carries. The
+--- sort, the session type and the pinned segment used to be copied here too;
+--- they are rows since issue #50 and go through the seam in groupWrites. A leaf
+--- is skipped the moment a row names it, which is why neither move needed an
+--- edit here.
 ---
 --- @param src table
 --- @param dst table

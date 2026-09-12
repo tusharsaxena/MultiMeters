@@ -1125,7 +1125,7 @@ function WindowProto:Refresh()
     --
     -- Cleared in the CONFIG rather than shadowed on the instance so there is one
     -- resolved answer: modules/Aggregator.lua, the tooltip and the drill-down all
-    -- read `data.sessionID` directly, and a session id is never reused, so
+    -- read the pin through Database.PinnedSegment, and a session id is never reused, so
     -- forgetting one loses nothing that could come back.
     self:DropStaleSegment()
 

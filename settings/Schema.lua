@@ -669,8 +669,9 @@ NS.Schema = {
     -- second writer. With the click on the seam there is one writer again, so
     -- the rows come back, hidden: the control that chooses each one is on the
     -- window. Filed beside `frame.minimised`, the other state a header control
-    -- writes. `data.sessionID`, the pinned segment, stays off the schema: its
-    -- unset state is nil, which no row default can say.
+    -- writes. `data.sessionID`, the pinned segment, is the fifth: the same menu
+    -- chooses it, and its "none" is Constants.NO_SEGMENT (0) rather than nil, so
+    -- a default can say it.
     {
         path = "window.data.sessionType", type = "number", default = Const.SESSION_TYPE.Overall,
         hidden = true, page = "header", group = L["Controls"],
@@ -678,6 +679,14 @@ NS.Schema = {
             return v == Const.SESSION_TYPE.Current or v == Const.SESSION_TYPE.Overall
         end,
         label = L["Session"], desc = L["Read the current pull, or the accumulated totals for the whole run. Chosen from the header's segment menu."],
+    },
+    {
+        path = "window.data.sessionID", type = "number", default = Const.NO_SEGMENT,
+        hidden = true, page = "header", group = L["Controls"],
+        validate = function(v)
+            return v == Const.NO_SEGMENT or (type(v) == "number" and v > 0 and v % 1 == 0)
+        end,
+        label = L["Pinned segment"], desc = L["A stored fight to read instead of the session, picked from the header's segment menu. 0 pins none."],
     },
     {
         path = "window.data.sortColumn", type = "string", default = "DamageDone",

@@ -147,7 +147,7 @@ local function probeTarget(stats)
     end
     local windows = NS.Database and NS.Database.GetWindows and NS.Database.GetWindows()
     local data = windows and windows[1] and windows[1].data or {}
-    return data.sessionType, nil, data.sessionID
+    return data.sessionType, nil, NS.Database.PinnedSegment(data)
 end
 
 local function sourceFields(stats)

@@ -655,8 +655,8 @@ test("Schema: a hidden row is filed under a tab that exists, and draws nothing",
                 row.path .. " is hidden but carries no page or group")
         end
     end
-    assertEqual(hidden, 8, "eight rows are hidden: frame.minimised, the three export choices "
-        .. "and the four the window's own header controls choose (issue #50)")
+    assertEqual(hidden, 9, "nine rows are hidden: frame.minimised, the three export choices "
+        .. "and the five the window's own header controls choose (issue #50)")
 
     -- And the other half: no tab the strip actually draws is empty.
     for _, page in ipairs({ "general", "windows", "frame", "header", "bars", "tooltip",
@@ -803,7 +803,7 @@ test("Schema: the header controls are EDITED on Header and STORED under frame", 
     local NS, L = inst.NS, inst.NS.L
     local TABS = { [L["Controls"]] = true, [L["Button style"]] = true }
 
-    -- The four hidden `window.data.*` rows the segment menu and a column-header click write
+    -- The five hidden `window.data.*` rows the segment menu and a column-header click write
     -- (issue #50) are filed under Controls too, but they are the window's sort and session,
     -- stored where the aggregator has always read them, and are counted apart.
     local n, view = 0, 0
@@ -823,7 +823,7 @@ test("Schema: the header controls are EDITED on Header and STORED under frame", 
     -- `window.frame.minimised`, and the four meter buttons) + Button style (8). Walked over
     -- NS.Schema, not SchemaForPage, so the hidden row counts.
     assertEqual(n, 17, "the whole set moved, not one row of it")
-    assertEqual(view, 4, "sessionType, sortColumn, sortMode and sortAscending")
+    assertEqual(view, 5, "sessionType, sessionID, sortColumn, sortMode and sortAscending")
 end)
 
 

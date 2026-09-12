@@ -75,8 +75,8 @@ touching the data path.
 
 ## Settings schema
 
-`NS.Schema` in `settings/Schema.lua` is the single source of truth: **167 rows across 8 page keys**
-(windows 1, frame 26, header 35, bars 29, tooltip 30, visibility 17, columns 8, general 21), each one
+`NS.Schema` in `settings/Schema.lua` is the single source of truth: **168 rows across 8 page keys**
+(windows 1, frame 26, header 36, bars 29, tooltip 30, visibility 17, columns 8, general 21), each one
 wiring automatically into its panel widget — one tab per distinct `group`, via
 `LibKa0s-Options-1.0`'s `RenderTabbedSchema` — its `/mm get|set|list|reset` coverage, and the
 per-page and global defaults reset. A ninth registered page, Profiles, hosts no schema rows at all.
@@ -98,7 +98,7 @@ same panel re-sync.
 **The window-relative path model** is the one thing here that is not standard-issue. A window row's
 path is relative (`window.frame.width`) and the seam resolves it against `NS.State.activeWindowId`,
 which the settings panel's window picker moves, or against a window id the caller passes. The other
-twenty-one rows keep absolute paths against `db.profile`, so moving one integer retargets **146**
+twenty-one rows keep absolute paths against `db.profile`, so moving one integer retargets **147**
 rows ([schema.md](schema.md#the-window-relative-path-model) lists both sets).
 
 Profiles carries **zero** rows: AceDBOptions' own tree, the one place `AceConfigDialog` is permitted,
@@ -123,9 +123,9 @@ writes its derived 24 px offset. `Database.EnsureWindowShape` backfills a missin
 `Duplicate` or `CopyFrom` calls it. Nothing else writes it
 ([schema.md](schema.md#frameposition-is-named-non-setting-state)).
 
-**The sort and the session type are preferences, not a remembered view**: a header click and the
-segment menu choose them, so the four `window.data.*` fields are hidden rows written through the seam
-by window id. The pinned segment, `data.sessionID`, is open for the owner ([schema.md](schema.md#data)).
+**Sort, session type and the pinned segment are preferences, not a remembered view**: a header
+click and the segment menu choose them, so the five `window.data.*` fields are hidden rows written
+through the seam by window id; the pin's none is `NO_SEGMENT` (0) ([schema.md](schema.md#data)).
 
 **`MultiMetersPerfDB` is recorded data a vendored library writes.** `core/PerfSetup.lua` owns it and
 hands it to LibKa0s-Perf, whose `P.Save` appends a capture to the ring on `/mm perf finish`.
@@ -326,9 +326,10 @@ two synthetic entries `Current` and `Overall`. The menu anchors to the header's 
 is where it has always come out; that line used to be a 220px Button and opened the menu itself,
 which put an invisible click target across the middle of the title bar and was removed.
 
-The choice is stored in `window.data.sessionID`, which **overrides `sessionType` when set** and is
-`nil` when no segment is pinned. It has no schema row: it is not a settings-panel control and its
-unset state cannot be expressed as a default. It is persisted like any other key in `window.data`.
+The choice is stored in `window.data.sessionID`, which **overrides `sessionType` when it pins a
+segment** and holds `Constants.NO_SEGMENT` (0) when none is pinned. It is a hidden schema row: the
+menu is its control, and it writes the pin through `NS.SetByPath` addressed to its own window. Every
+consumer reads it through `Database.PinnedSegment`, which answers nil for the sentinel.
 
 Threading it took one optional trailing argument rather than a new shape. `Provider.GetColumn`,
 `GetSourceDetail` and `GetSessionDuration` each accept a trailing `sessionID`; nil routes to the
