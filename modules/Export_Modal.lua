@@ -908,8 +908,14 @@ function Export.Open(a, b)
     -- Only from a column the catalog answers for. A window that has never been
     -- sorted leaves whatever was chosen last time, which is the better of the
     -- two wrong answers.
+    --
+    -- And only when it CHANGES. The write is a global CONFIG_CHANGED, and every
+    -- window re-applies on one; a reopen on the metric already stored would buy
+    -- nothing for that.
     local seed = (cfgOf(win).data or {}).sortColumn
-    if seed and Const.STAT_BY_KEY[seed] then writeExport("metric", seed) end
+    if seed and Const.STAT_BY_KEY[seed] and readExport("metric", nil) ~= seed then
+        writeExport("metric", seed)
+    end
 
     refreshModal()
     centerOnWindow(frame, win)

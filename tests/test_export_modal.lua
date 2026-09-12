@@ -792,6 +792,29 @@ test("Opening the modal seeds the metric through the seam, and says so", functio
     assertTrue(#seen >= 1, "the seeded metric was never announced")
 end)
 
+test("Reopening with the metric unchanged writes nothing and announces nothing", function()
+    -- A seed write is a GLOBAL CONFIG_CHANGED, and every window re-applies on
+    -- one. Re-seeding the value that is already stored buys nothing and costs
+    -- a re-apply of every window on every open.
+    -- red under: Export.Open writing the seed on every open, unchanged or not.
+    local inst = T.load()
+    local NS = inst.NS
+    local win = { data = { sortColumn = "HealingDone" } }
+    local frame = NS.Export.Open(win)
+    assertEqual(NS.GetSetting("export.metric"), "HealingDone", "the first open seeds")
+    if frame then frame:Hide() end
+
+    local seen = heardConfig(NS)
+    local original, sets = NS.SetByPath, 0
+    NS.SetByPath = function(...) sets = sets + 1; return original(...) end
+    NS.Export.Open(win)
+    NS.SetByPath = original
+
+    assertEqual(sets, 0, "a reopen on the same metric wrote it again")
+    assertEqual(#seen, 0, "a reopen on the same metric announced a change")
+    assertEqual(NS.GetSetting("export.metric"), "HealingDone")
+end)
+
 test("A metric the seam refuses is not stored around it", function()
     -- red under: writeExport falling back to a raw profile write after a refusal.
     local inst = T.load()
