@@ -308,7 +308,7 @@ second edge to catch.
   called *Meter* at the screen centre wearing the shipped defaults — the extras **deleted**, not
   restyled. That is the point: it is a profile reset, the same act as Profiles → **Reset Profile**,
   and the popup warns about the deletion before it happens. Confirm the two paths give the identical
-  result, and that **`/mm resetall` does too**.
+  result, and that **`/mm resetall`** opens the same popup and, accepted, does too.
 - **A reset leaves your other profiles alone.** Make a second profile on the Profiles page, switch
   back, then reset. The profile list must be unchanged and you must still be on the profile you were
   on — a reset empties one profile, it never deletes any.
@@ -1068,7 +1068,7 @@ switch back to Default → copy from Test → reset.
   touch the other's.
 - Resetting a profile re-seeds exactly one window.
 - **The page is still fresh after a switch made off it.** Open Profiles, page away to **General**,
-  then type `/mm resetall`. It does not ask first; the confirmation popup belongs to the button. It
+  then type `/mm resetall` and accept the "Reset all settings?" popup it opens. It
   is a profile reset, so it moves the active profile out from
   under the hidden page. Come back to Profiles: the profile list and the scope dropdowns must be
   redrawn against the profile you are actually on. `M2-18` moved this page onto `H.SetRenderer`,
@@ -1086,26 +1086,32 @@ switch back to Default → copy from Test → reset.
 |---|---|
 | A page's **Defaults** button | every schema row on **that page**, for the **active window** |
 | General → **Reset all settings** (confirms) | every row on every page, for every window, in the active profile — **plus every window position** |
-| `/mm resetall` | identical to the above; it is the same implementation |
+| `/mm resetall` | opens the same **Reset all settings** popup; accepting gives the identical result, declining changes nothing |
 | `/mm reset <path>` | that one row |
 | General → **Master controls** → **Reset position** | the active window only, back to center |
 | `/mm reset-positions` | every window back to center |
 
 **Pass.**
+- **`/mm resetall` asks first.** With two windows up, type it: the same "Reset all settings?" popup
+  the General page's button opens appears, and nothing has changed yet. Click **No** (or press
+  Escape): both windows are still there, unchanged, and the console shows no `[Set]` line. Type it
+  again and click **Yes**: one fresh window, and one console line.
 - **Profiles are never touched** by any reset. Create a second profile first, then run
-  `/mm resetall`, then confirm the second profile still exists and is unchanged. This is enforced in
-  two places on purpose.
+  `/mm resetall` and accept, then confirm the second profile still exists and is unchanged. This is
+  enforced in two places on purpose.
 - "Reset all settings" **does** move every window back to center — but not through a position hook
   of its own any more. It is a **profile reset** (`db:ResetProfile()`), so the extra windows are
   **deleted** and the one that is re-seeded comes back at the shipped position with the rest of the
   profile. `afterRestoreAll` no longer calls `ResetPositions`.
-- After `/mm resetall` the column list is back to the six shipped columns, in catalog order.
+- After an accepted `/mm resetall` the column list is back to the six shipped columns, in catalog
+  order.
 - **Each reset is one line in the console.** Turn on `/mm debug on`, open the console and clear it.
   - A page's **Defaults** press reads `[Set] reset <page>: N rows`, with no `[Set] <path> = …` line
     under it, and a second press reads `0 rows`.
   - The Columns page reads `[Set] reset columns: N rows`, with the column list counted as one row.
-  - **Reset all settings** and `/mm resetall` each read exactly `[Set] reset profile '<name>' to
-    defaults`, with no `reset all` line beside it.
+  - **Reset all settings** and an accepted `/mm resetall` each read exactly `[Set] reset profile
+    '<name>' to defaults`, with no `reset all` line beside it. Showing or declining the popup logs
+    nothing.
   - Copying settings between two windows reads `[Set] copy from '<A>' to '<B>': N rows`.
 
 ### 17. LibKa0s absent
@@ -1123,8 +1129,9 @@ switch back to Default → copy from Test → reset.
   library. `/mm perf` says performance measurement is unavailable.
 - **The host verbs still work**: `/mm lock`, `/mm test`, `/mm toggle`, `/mm window list`,
   `/mm reset-positions`. They never went to the library.
-- **`/mm resetall` still works.** The user whose panel will not open is exactly the user who needs
-  "reset everything", and the schema loaded fine.
+- **`/mm resetall` still works.** It opens the same popup, and accepting resets the profile. The
+  user whose panel will not open is exactly the user who needs "reset everything", and the schema
+  loaded fine.
 - **No Lua error at load, and no half-loaded schema.** `/mm list`'s absence message is expected; a
   *partial* settings surface is not — that would mean a page file raised inside a schema-row literal
   and took its rows with it.

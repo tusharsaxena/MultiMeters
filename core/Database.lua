@@ -217,8 +217,8 @@ local reseedQuietly = false
 --- default window back into a profile the user had deleted their last window
 --- from — resurrecting it on every login, with no way to refuse it.
 ---
---- Traced, except while OnProfileReset rebuilds: that handler's own line already
---- says the profile is back to its one shipped window (debug-logging-§10 logs a
+--- Traced, except while OnProfileReset rebuilds: that handler's own line says
+--- the profile is back to its one shipped window (debug-logging-§10 logs a
 --- profile reset ONCE), so a second line here would restate it.
 function Database.SeedWindows()
     local windows = Database.GetWindows()
@@ -847,9 +847,11 @@ end
 --   copy    [Set] copied profile '<source>' -> '<name>'
 --   switch  [Profile] switched to '<name>'
 --
--- A reset-all from the panel or `/mm resetall` reaches the reset line from
--- inside the library's bulk bracket, which then adds nothing (NS.Bulk, in
--- settings/Schema_Paths.lua). The three share one rebuild.
+-- A reset-all accepted from the General page's popup, which `/mm resetall`
+-- opens too, reaches the reset line from inside the library's bulk bracket,
+-- which then adds nothing (NS.Bulk, in settings/Schema_Paths.lua). The three
+-- share one rebuild. The reset line is logged after it, and ends " (stopped by
+-- an error)" when it raised.
 --
 -- THE RESET LINE CARRIES NO ROW COUNT, deliberately. debug-logging-§10 allows
 -- one only where it is cheap to know, and it must be the rows the reset actually
@@ -896,13 +898,19 @@ end
 
 function Database:OnProfileReset(_, db)
     local key = activeKey(db)
-    if debugOn() then NS.Debug("Set", "reset profile '%s' to defaults", tostring(key)) end
-    -- The line above already says the profile is back to its one shipped window,
-    -- so the seed's own [Init] trace would be a second line about the same act.
+    -- The line below says the profile is back to its one shipped window, so the
+    -- seed's own [Init] trace would be a second line about the same act.
     -- Released under pcall, so a raising rebuild cannot silence every later seed.
     reseedQuietly = true
     local ok, err = pcall(rebuild, key)
     reseedQuietly = false
+    -- Logged AFTER the rebuild, so a line never reads as a finished reset when
+    -- the rebuild then raised: that one ends " (stopped by an error)", the
+    -- marker NS.Bulk's line carries in settings/Schema_Paths.lua.
+    if debugOn() then
+        NS.Debug("Set", "reset profile '%s' to defaults%s", tostring(key),
+            ok and "" or " (stopped by an error)")
+    end
     if not ok then error(err, 0) end
 end
 

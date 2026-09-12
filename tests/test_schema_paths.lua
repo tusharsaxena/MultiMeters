@@ -794,7 +794,9 @@ end)
 test("NS.Bulk: a raising act still closes the bracket, logs what it changed, and re-raises", function()
     -- The library's own rule, kept for the host's brackets: a begun bracket
     -- always closes, so a mute cannot stick, and the error is the same value.
-    -- red under: running the act without pcall.
+    -- The one line says the act did not finish, and the next bracket starts
+    -- clean. red under: running the act without pcall, a close that ignores the
+    -- failure, or a failure flag that outlives its bracket.
     local inst = T.load()
     local NS = inst.NS
     local lines, restore = heardDebug(NS)
@@ -807,11 +809,73 @@ test("NS.Bulk: a raising act still closes the bracket, logs what it changed, and
     assertEqual(ok, false)
     assertEqual(err, boom, "the raised value comes back unwrapped")
     assertEqual(#lines, 1)
-    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "reset frame: 1 rows")
+    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "reset frame: 1 rows (stopped by an error)")
+
+    assertTrue(NS.SetByPath("window.frame.width", 402))
+    assertEqual(#lines, 2, "the mute stuck after a raise")
+
+    NS.Bulk.run("reset", "frame", function() assertTrue(NS.SetByPath("window.frame.width", 403)) end)
+    restore()
+    assertEqual(lines[3][2]:format(lines[3][3], lines[3][4]), "reset frame: 1 rows",
+        "the failure marked the next bracket too")
+end)
+
+--- Only the [Set] lines of a heardDebug capture, formatted.
+local function setLines(lines)
+    local out = {}
+    for _, line in ipairs(lines) do
+        if line[1] == "Set" then out[#out + 1] = line[2]:format(select(3, unpack(line))) end
+    end
+    return out
+end
+
+test("NS.Bulk: a library Defaults press that raises logs its one line, marked, and re-raises", function()
+    -- Options minor 16 hands bulkEnd the error and then re-raises it. The host's
+    -- close must mark the line rather than read as a clean reset of N rows, and
+    -- release the mute. red under: bulkEnd dropping its `err` argument.
+    local inst = T.load()
+    local NS = inst.NS
+    assertTrue(NS.SetByPath("window.frame.height", 277))
+    local boom, real = {}, NS.ApplyDefault
+    NS.ApplyDefault = function(row)
+        real(row)
+        if row.path == "window.frame.height" then error(boom) end
+    end
+    local lines, restore = heardDebug(NS)
+
+    local ok, err = pcall(NS.Helpers.RestoreDefaults, "frame", nil)
+    NS.ApplyDefault = real
+    assertEqual(ok, false)
+    assertEqual(err, boom, "the library re-raises the row's error unwrapped")
+    assertEqual(table.concat(setLines(lines), " | "), "reset frame: 1 rows (stopped by an error)")
 
     assertTrue(NS.SetByPath("window.frame.width", 402))
     restore()
-    assertEqual(#lines, 2, "the mute stuck after a raise")
+    assertEqual(lines[#lines][2], "%s = %s", "the mute stuck after a raising press")
+end)
+
+test("NS.Bulk: a ResetProfile that raises leaves the reset-all's own line, marked", function()
+    -- The library sets info.profileReset only once resetProfile RETURNS, so a
+    -- reset that raised may never have reached OnProfileReset. Then the bracket's
+    -- line is the only record, and it must say the act stopped.
+    -- red under: runBulk's close ignoring the failure of a reset-all.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.State.debug = true
+    assertTrue(NS.SetByPath("state.testMode", true))
+    local boom = {}
+    NS.db.ResetProfile = function() error(boom) end
+    local lines, restore = heardDebug(NS)
+
+    local ok, err = pcall(NS.Helpers.RestoreAllDefaults)
+    assertEqual(ok, false)
+    assertEqual(err, boom, "the reset's error comes back unwrapped")
+    assertEqual(table.concat(setLines(lines), " | "), "reset all: 1 rows (stopped by an error)")
+
+    NS.Helpers.RestoreDefaults("frame", nil)
+    restore()
+    local set = setLines(lines)
+    assertEqual(set[#set], "reset frame: 0 rows", "the failure outlived its bracket")
 end)
 
 test("SetByPaths: every written row's onChange still fires, with the window id", function()

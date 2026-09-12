@@ -40,8 +40,14 @@ here, and `tests/_kit/run-automated-tests.sh` stays `100755`.
 |---|---|---|
 | Baseline, before the copy (`73dde5f`) | 1804 / 0 / 0 | 0 / 0 |
 | After the copy (`f60e229`) | 1804 / 0 / 0 | 0 / 0 |
-| Tests written, host unchanged | 1800 / 15 failed | — |
+| Tests written, host unchanged | 1800 / 16 / 0 | — |
 | After B1 + B2 (`3c41618`) | 1816 / 0 / 0 | 0 / 0 |
+
+The "tests written" row was recorded as "1800 / 15 failed", which does not add up to 1816. It was
+re-measured on 2026-09-12 by running `3c41618`'s tests over `f60e229`'s six host files in a scratch
+git worktree: 1798 passed, 16 failed, 2 skipped. The two skips are the vendor-sync cases, which skip
+there only because that worktree has no sibling `../LibKa0s`. They pass in the checkout, so the row
+is 1800 / 16 / 0. All 16 failures are the bulk-logging and `/mm resetall` cases B1 + B2 turned green.
 
 `tests/perf.lua` exits 0. `lizard -l lua -C 15 -w -x "./libs/*" -x "./tests/_kit/*" .` reports no
 function above CCN 15. `tests/test_vendor_sync.lua` ran rather than skipped at every step.

@@ -197,23 +197,17 @@ test("Slash: `reset <path>` restores exactly that one setting", function()
     assertEqual(NSi.GetSetting("window.frame.height"), 400, "reset must not sweep the page")
 end)
 
-test("Slash: `resetall` restores every row", function()
-    local inst = T.load()
-    local NSi = inst.NS
-    say(inst, "set window.frame.width 300")
-    say(inst, "set window.rows.height 30")
-    say(inst, "resetall")
-    assertEqual(NSi.GetSetting("window.frame.width"), 694)
-    assertEqual(NSi.GetSetting("window.rows.height"), 16)
-end)
+-- ── resetall: the General page's popup, then the profile reset ───────────────
+--
+-- The owner's decision of 2026-09-12: `/mm resetall` is a real profile reset, so
+-- it DELETES every extra window, and it asks first with the SAME "Reset all
+-- settings?" popup the General page's button opens. Nothing is reset until the
+-- player accepts.
 
-test("Slash: `resetall` is the PROFILE reset, so every window resets, and it logs ONE line", function()
-    -- options-ui-§12 makes `/mm resetall` the same act as General -> Reset all
-    -- settings, and four docs say it is. It was not: the verb went to the
-    -- library's CliResetAll, which walks the schema ONCE against the ACTIVE
-    -- window, so every other window kept its settings -- and every row logged
-    -- its own [Set] line. The reset-all is one line, the profile handler's.
-    -- red under: the verb routed back to cli:CliResetAll.
+--- A loaded instance with two moved windows, debug on, the popup key the verb
+--- asks for captured, and every debug line formatted. Answers the instance, the
+--- captured keys, the lines, and a function that puts NS.Debug back.
+local function resetallScene()
     local inst = T.load()
     local NSi = inst.NS
     assertTrue(NSi.WindowManager:Create("Second"))
@@ -224,25 +218,77 @@ test("Slash: `resetall` is the PROFILE reset, so every window resets, and it log
     NSi.State.SetActiveWindow(list[1].id)
     NSi.State.debug = true
 
+    local asked = {}
+    inst.mocks.StaticPopup_Show = function(key) asked[#asked + 1] = key end
     local lines, original = {}, NSi.Debug
     NSi.Debug = function(tag, fmt, ...)
         local a = { ... }
         for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
         lines[#lines + 1] = "[" .. tag .. "] " .. tostring(fmt):format(a[1], a[2], a[3], a[4])
     end
-    local ok, chat = pcall(say, inst, "resetall")
-    NSi.Debug = original
-    assertTrue(ok, tostring(chat))
+    return inst, asked, lines, function() NSi.Debug = original end
+end
+
+--- The two windows are still there, each at the width it was given.
+local function assertUntouched(NSi, why)
+    local list = NSi.Database.GetWindows()
+    assertEqual(#list, 2, why .. ": a window was deleted")
+    assertEqual(list[1].frame.width, 300, why .. ": the first window was reset")
+    assertEqual(list[2].frame.width, 310, why .. ": the second window was reset")
+end
+
+test("Slash: `resetall` opens the Reset all settings popup and changes nothing", function()
+    -- It used to reset on the spot. A reset that deletes windows asks first,
+    -- through the one popup the General page's button uses, so the two cannot
+    -- word the warning differently or reset different things.
+    -- red under: doResetAll calling Helpers.RestoreAllDefaults directly.
+    local inst, asked, lines, restore = resetallScene()
+    local ok, err = pcall(say, inst, "resetall")
+    restore()
+    assertTrue(ok, tostring(err))
+
+    assertEqual(table.concat(asked, ","), "MULTIMETERS_RESET_ALL")
+    assertEqual(type(inst.mocks.StaticPopupDialogs.MULTIMETERS_RESET_ALL.OnAccept), "function",
+        "the verb asked for a popup the General page does not declare")
+    assertUntouched(inst.NS, "showing the popup")
+    assertEqual(#lines, 0, "showing the popup logged: " .. table.concat(lines, " | "))
+end)
+
+test("Slash: accepting the `resetall` popup resets the profile and logs ONE line", function()
+    -- A profile reset leaves one fresh window at the shipped defaults, whichever
+    -- window the picker was on, and the one line is OnProfileReset's.
+    -- red under: an OnAccept that walks the rows of the active window alone.
+    local inst, asked, lines, restore = resetallScene()
+    local NSi = inst.NS
+    local ok, err = pcall(function()
+        say(inst, "resetall")
+        inst.mocks.StaticPopupDialogs[asked[1]].OnAccept()
+    end)
+    restore()
+    assertTrue(ok, tostring(err))
 
     local after = NSi.Database.GetWindows()
     assertEqual(#after, 1, "a profile reset leaves one fresh window, not the second one restyled or kept")
     assertEqual(after[1].frame.width, 694, "the window left is at the shipped width")
-    for _, w in ipairs(after) do
-        assertTrue(w.frame.width ~= 310, "the second window's setting survived the reset")
-    end
     assertEqual(#lines, 1, "resetall logged: " .. table.concat(lines, " | "))
     assertEqual(lines[1], "[Set] reset profile 'Default' to defaults")
-    assertTrue(joined(chat) ~= "", "the verb says it took")
+end)
+
+test("Slash: declining the `resetall` popup does nothing", function()
+    -- No, Escape and the popup closing on its own all end without OnAccept.
+    -- red under: an OnCancel (or OnHide) that resets anyway.
+    local inst, asked, lines, restore = resetallScene()
+    local ok, err = pcall(function()
+        say(inst, "resetall")
+        local dialog = inst.mocks.StaticPopupDialogs[asked[1]]
+        if dialog.OnCancel then dialog.OnCancel() end
+        if dialog.OnHide then dialog.OnHide() end
+    end)
+    restore()
+    assertTrue(ok, tostring(err))
+
+    assertUntouched(inst.NS, "declining the popup")
+    assertEqual(#lines, 0, "declining logged: " .. table.concat(lines, " | "))
 end)
 
 test("Slash: `list` groups by the row's PAGE, the same key the panel pages use", function()

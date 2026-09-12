@@ -71,11 +71,11 @@ local H = NS.Helpers or {}
 -- an OnAccept that does something the text did not warn about is how a player
 -- loses a layout they spent an evening on.
 --
--- The body is Helpers.RestoreAllDefaults so this popup, the header Defaults
--- button and `/mm resetall` are ONE implementation — the popup and the slash
--- command cannot drift into resetting different things — and so the Profiles
--- veto (settings/OptionsSetup.lua's skipRestoreAll) applies to all three
--- rather than to whichever path someone remembered.
+-- The body is Helpers.RestoreAllDefaults, and the button and `/mm resetall` both
+-- open THIS popup through NS.ShowResetAll below, so they are ONE implementation:
+-- the two cannot word the warning differently or drift into resetting different
+-- things, and the Profiles veto (settings/OptionsSetup.lua's skipRestoreAll)
+-- applies to both rather than to whichever path someone remembered.
 StaticPopupDialogs["MULTIMETERS_RESET_ALL"] = {
     text         = L["Reset this profile to the addon defaults? Every setting goes back to its shipped value and your extra windows are DELETED \226\128\148 you come back with one fresh window, exactly as if you had made a new profile. Your other profiles are not affected."],
     button1      = L["Yes"],
@@ -87,6 +87,21 @@ StaticPopupDialogs["MULTIMETERS_RESET_ALL"] = {
         if H.RestoreAllDefaults then H.RestoreAllDefaults() end
     end,
 }
+
+--- Ask before resetting everything. THE one opener of the popup above: the
+--- General page's button (settings/Schema_Compose.lua's onResetAll) and
+--- `/mm resetall` (settings/Slash.lua) both call it, and nothing resets until
+--- the player accepts. Left where Blizzard stacks it, unlike the meter-data
+--- dialog below: it is opened from the settings panel or the chat box, not from
+--- a window's header.
+---
+--- Answers the dialog frame, or nil when StaticPopup_Show is absent or every
+--- popup slot is in use.
+function NS.ShowResetAll()
+    local show = _G.StaticPopup_Show
+    if not show then return nil end
+    return show("MULTIMETERS_RESET_ALL")
+end
 
 -- ---------------------------------------------------------------------------
 -- Reset meter data

@@ -76,7 +76,7 @@ NS.COMMANDS = {
     { "get",      "Read one setting: /mm get <path>",      function(a) cli:CliGet(a) end },
     { "set",      "Write one setting: /mm set <path> <value>", function(a) cli:CliSet(a) end },
     { "reset",    "Reset one setting: /mm reset <path>",   function(a) cli:CliReset(a) end },
-    { "resetall", "Reset every setting to its default",    function() doResetAll() end },
+    { "resetall", "Reset all settings (asks first; deletes extra windows)", function() doResetAll() end },
     { "debug",    "Console; 'on'/'off' set logging, 'tooltip' toggles the noisy tooltip channel, 'diag' a diagnostic report, 'recap' the death-recap probe, 'identity' the mid-pull correlation capture, 'feign on|off' the feign recording",
                                                                      function(a) doDebug(a) end },
     { "perf",     "Performance capture; try /mm perf help", function(a) doPerf(a) end },
@@ -224,26 +224,26 @@ cli = SlashLib:New({
 -- ---------------------------------------------------------------------
 --
 -- `/mm resetall` IS the General page's "Reset all settings" (options-ui-§12): one
--- act behind the popup and the verb. It used to be the library's CliResetAll,
+-- act behind the button and the verb. It used to be the library's CliResetAll,
 -- which walks the schema ONCE through NS.ApplyDefault -- and every `window.` path
 -- resolves against the ACTIVE window, so the verb reset the window the picker
 -- happened to be on, left every other window exactly as it was, and logged a
 -- [Set] line per row, while four docs called it a profile reset.
 --
--- So it calls Helpers.RestoreAllDefaults, the function the popup's OnAccept calls:
--- the session rows, then db:ResetProfile(), inside the library's bulk bracket, and
--- one `[Set] reset profile ...` line from core/Database.lua's OnProfileReset. On a
--- library-less install that is the options stub's own real reset, so the verb
--- keeps working on exactly the install whose panel will not open.
+-- IT ASKS FIRST, with the SAME popup the button opens (the owner's decision of
+-- 2026-09-12). A profile reset deletes every extra window, and a verb that did
+-- that on the spot was the one path to it with no warning. NS.ShowResetAll
+-- (settings/General.lua) opens MULTIMETERS_RESET_ALL, and only its OnAccept
+-- resets: Helpers.RestoreAllDefaults, the session rows then db:ResetProfile()
+-- inside the library's bulk bracket, and one `[Set] reset profile ...` line from
+-- core/Database.lua's OnProfileReset. No and Escape do nothing. The popup is
+-- declared at file load, so a library-less install asks too, and its OnAccept
+-- reaches the options stub's own real reset.
 --
--- No confirmation, as before: the popup is for a click that can be mis-aimed, and
--- a typed verb is not one. The acknowledgment is the library's own RESET_ALL
--- wording where the library is present.
+-- No chat line: the popup is the answer, and the reset happens after the verb
+-- has returned.
 doResetAll = function()
-    local H = NS.Helpers
-    if not (H and H.RestoreAllDefaults) then return end
-    H.RestoreAllDefaults()
-    out(cli.Text and cli:Text("RESET_ALL") or NS.L["All settings reset to defaults"])
+    if NS.ShowResetAll then NS.ShowResetAll() end
 end
 
 -- ---------------------------------------------------------------------

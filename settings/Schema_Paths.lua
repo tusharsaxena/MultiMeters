@@ -500,22 +500,33 @@ end
 -- whole-profile reset, core/Database.lua's OnProfileReset has already logged
 -- `[Set] reset profile '<name>' to defaults (N rows)`, and a line from here
 -- would be a second one. The close emits nothing; the mute is still released.
-local bulk = { depth = 0, label = nil, seen = {}, changed = 0, profileReset = false }
+--
+-- AN ACT AN ERROR STOPPED STILL LOGS ITS ONE LINE, ending " (stopped by an
+-- error)", so the console never reads a half-finished reset as a clean one. Any
+-- level that closes with an error marks the whole bracket; a bracket opened at
+-- depth 0 starts unmarked. Re-raising the error is the caller's job, and both
+-- callers do it after the close, so the mute is released first.
+local STOPPED = " (stopped by an error)"
+local bulk = { depth = 0, label = nil, seen = {}, changed = 0, profileReset = false, failed = false }
 
 local function bulkOpen(label)
     if bulk.depth == 0 then
-        bulk.label, bulk.seen, bulk.changed, bulk.profileReset = label, {}, 0, false
+        bulk.label, bulk.seen, bulk.changed = label, {}, 0
+        bulk.profileReset, bulk.failed = false, false
     end
     bulk.depth = bulk.depth + 1
 end
 
 --- Close one level. Only the outermost close emits, and not after a profile reset.
-local function bulkClose(profileReset)
+local function bulkClose(profileReset, failed)
     if bulk.depth == 0 then return end   -- an unpaired close must not go negative
     bulk.depth = bulk.depth - 1
     if profileReset then bulk.profileReset = true end
+    if failed then bulk.failed = true end
     if bulk.depth > 0 or bulk.profileReset then return end
-    if NS.Debug then NS.Debug("Set", "%s: %d rows", bulk.label, bulk.changed) end
+    if NS.Debug then
+        NS.Debug("Set", "%s: %d rows" .. (bulk.failed and STOPPED or ""), bulk.label, bulk.changed)
+    end
 end
 
 --- Run `fn` inside a bracket that always closes, then re-raise what it raised,
@@ -525,7 +536,7 @@ end
 local function runBulk(label, fn)
     bulkOpen(label)
     local ok, res = pcall(fn)
-    bulkClose(ok and res == true)
+    bulkClose(ok and res == true, not ok)
     if not ok then error(res, 0) end
 end
 
@@ -562,10 +573,11 @@ local function tally(plan, before)
     bulk.changed = bulk.changed + 1
 end
 
--- The pair both library majors take as bulkBegin / bulkEnd.
+-- The pair both library majors take as bulkBegin / bulkEnd. The library hands
+-- bulkEnd the error its walk raised, then re-raises it itself.
 local function bulkBegin(act, scope) bulkOpen(tostring(act) .. " " .. tostring(scope)) end
-local function bulkEnd(_, _, _, _, info)
-    bulkClose(type(info) == "table" and info.profileReset == true)
+local function bulkEnd(_, _, _, err, info)
+    bulkClose(type(info) == "table" and info.profileReset == true, err ~= nil)
 end
 
 -- A bracket of the host's own. Named the way the library names a page reset, so

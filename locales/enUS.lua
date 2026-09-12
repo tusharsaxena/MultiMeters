@@ -915,8 +915,8 @@ L["List every setting and its current value"] = "List every setting and its curr
 L["Print a setting's current value"] = "Print a setting's current value"
 L["Set a setting"] = "Set a setting"
 L["Reset one setting to its default"] = "Reset one setting to its default"
-L["Reset every setting to its default"] = "Reset every setting to its default"
-L["All settings reset to defaults"] = "All settings reset to defaults"
+L["Reset all settings (asks first; deletes extra windows)"] =
+    "Reset all settings (asks first; deletes extra windows)"
 L["Clear every recorded combat session"] = "Clear every recorded combat session"
 L["Measure performance"] = "Measure performance"
 L["Debug subcommands"] = "Debug subcommands"

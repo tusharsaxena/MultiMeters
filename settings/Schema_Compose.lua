@@ -667,9 +667,9 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     end,
     -- options-ui-§12's global reset, through the confirmation this addon has always
     -- asked first: it DELETES the extra windows, which "reset settings" does not
-    -- sound like.
+    -- sound like. The same opener `/mm resetall` calls (settings/General.lua).
     onResetAll = function()
-        if _G.StaticPopup_Show then _G.StaticPopup_Show("MULTIMETERS_RESET_ALL") end
+        if NS.ShowResetAll then NS.ShowResetAll() end
     end,
 })
 

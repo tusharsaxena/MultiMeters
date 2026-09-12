@@ -281,6 +281,52 @@ test("Database: the reset line carries NO row count -- never the rows the profil
     assertEqual(lines[2], lines[1], "an untouched profile's reset must read the same, not carry a count")
 end)
 
+--- Every [Set] line NS.Debug is handed, formatted, until the returned restore runs.
+local function heardSet(NSi)
+    local lines, original = {}, NSi.Debug
+    NSi.Debug = function(tag, fmt, ...)
+        if tag ~= "Set" then return end
+        local a = { ... }
+        for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
+        lines[#lines + 1] = tostring(fmt):format(a[1], a[2], a[3], a[4])
+    end
+    return lines, function() NSi.Debug = original end
+end
+
+test("Database: the reset line is logged AFTER the rebuild, not before it", function()
+    -- A line logged first reads as a finished reset even when the rebuild then
+    -- raises. So the rebuild runs, then the line. red under: the Debug call
+    -- ahead of the pcall.
+    local inst = T.load{}
+    local NSi = inst.NS
+    NSi.State.debug = true
+    local lines, restore = heardSet(NSi)
+    local seenAtRebuild
+    NSi.NewBusTarget():RegisterMessage(MSG.PROFILE_CHANGED, function() seenAtRebuild = #lines end)
+
+    local ok, err = pcall(NSi.Database.OnProfileReset, NSi.Database, "OnProfileReset", NSi.db)
+    restore()
+    assertTrue(ok, tostring(err))
+    assertEqual(seenAtRebuild, 0, "the reset line was logged before the rebuild ran")
+    assertEqual(table.concat(lines, " | "), "reset profile 'Default' to defaults")
+end)
+
+test("Database: a reset whose rebuild raises is logged once, marked, and re-raised", function()
+    -- red under: the line logged before the rebuild (unmarked), or no line at all.
+    local inst = T.load{}
+    local NSi = inst.NS
+    NSi.State.debug = true
+    local boom = {}
+    NSi.RunMigrations = function() error(boom) end
+    local lines, restore = heardSet(NSi)
+
+    local ok, err = pcall(NSi.Database.OnProfileReset, NSi.Database, "OnProfileReset", NSi.db)
+    restore()
+    assertEqual(ok, false)
+    assertEqual(err, boom, "the rebuild's error comes back unwrapped")
+    assertEqual(table.concat(lines, " | "), "reset profile 'Default' to defaults (stopped by an error)")
+end)
+
 test("Database: a stored columns array is left exactly as the user ordered it", function()
     -- `columns` is an ordered list the user edits. Key-filling it against the
     -- template would re-add columns they removed, on every login.

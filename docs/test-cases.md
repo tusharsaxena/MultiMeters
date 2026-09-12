@@ -198,7 +198,7 @@ badge and any count quoted in the docs must agree with it.
 - Locale: the locale file registers no second table over NS.L
 - Locale: enUS is the only locale shipped, and it is unconditional
 
-### test_database.lua (70)
+### test_database.lua (72)
 
 - Database: InitDB publishes the live instance under both names
 - Database: the profile is the SHARED Default, not a per-character one
@@ -210,6 +210,8 @@ badge and any count quoted in the docs must agree with it.
 - Database: the three profile callbacks are registered in the method-name form
 - Database: each profile event is logged ONCE, in words chosen by the event
 - Database: the reset line carries NO row count -- never the rows the profile stores
+- Database: the reset line is logged AFTER the rebuild, not before it
+- Database: a reset whose rebuild raises is logged once, marked, and re-raised
 - Database: a stored columns array is left exactly as the user ordered it
 - Database: an ABSENT columns array becomes an empty array, never nil
 - Database: EnsureWindowShape is idempotent
@@ -1757,7 +1759,7 @@ badge and any count quoted in the docs must agree with it.
 - A profile reset rebuilds through the ONE message, not by direct calls
 - RestoreAllDefaults logs ONE line in total: the profile handler's, and no bulk line
 
-### test_schema_paths.lua (46)
+### test_schema_paths.lua (48)
 
 - Schema: a window path resolves against the session's ACTIVE window
 - Schema: a global path is unaffected by which window is active
@@ -1801,6 +1803,8 @@ badge and any count quoted in the docs must agree with it.
 - NS.Bulk: a nested bracket logs ONCE, at the outermost close, summing every level
 - NS.Bulk: a level that reports a profile reset silences the whole bracket
 - NS.Bulk: a raising act still closes the bracket, logs what it changed, and re-raises
+- NS.Bulk: a library Defaults press that raises logs its one line, marked, and re-raises
+- NS.Bulk: a ResetProfile that raises leaves the reset-all's own line, marked
 - SetByPaths: every written row's onChange still fires, with the window id
 - A header click writes the sort through the seam, for the window clicked (issue #50)
 - Picking Current or Overall writes the session type through the seam (issue #50)
@@ -1819,7 +1823,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (51)
+### test_slash.lua (52)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1833,8 +1837,9 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `get` and `set` land on the addon's own schema seam
 - Slash: `set` on a window path writes the ACTIVE window
 - Slash: `reset <path>` restores exactly that one setting
-- Slash: `resetall` restores every row
-- Slash: `resetall` is the PROFILE reset, so every window resets, and it logs ONE line
+- Slash: `resetall` opens the Reset all settings popup and changes nothing
+- Slash: accepting the `resetall` popup resets the profile and logs ONE line
+- Slash: declining the `resetall` popup does nothing
 - Slash: `list` groups by the row's PAGE, the same key the panel pages use
 - Slash: `perf` is declared in NS.COMMANDS and routed to NS.Perf.OnCommand
 - Slash: `export` opens the modal on the window the player named
@@ -1990,7 +1995,7 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: the options stub publishes every Helpers member the page files touch
 - Degraded: LSMValues keeps its DEFERRED shape and never answers an empty list
 - Degraded: reset-everything still works, and still refuses to touch the Profiles page
-- Degraded: `/mm resetall` still resets the profile, because it IS Reset all settings
+- Degraded: `/mm resetall` still asks, and accepting still resets the profile
 - Degraded: a reset-all logs ONE line in total, the profile handler's
 - Degraded: the schema row count is UNCHANGED versus a full load, bar the composed blocks
 - Degraded: the schema is the same rows, path for path and page for page
@@ -2025,7 +2030,7 @@ badge and any count quoted in the docs must agree with it.
 | test_compat.lua | 34 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
-| test_database.lua | 70 |
+| test_database.lua | 72 |
 | test_diagnostics.lua | 21 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
@@ -2065,13 +2070,13 @@ badge and any count quoted in the docs must agree with it.
 | test_windowmanager.lua | 41 |
 | test_minimap.lua | 17 |
 | test_schema.lua | 36 |
-| test_schema_paths.lua | 46 |
+| test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 51 |
+| test_slash.lua | 52 |
 | test_options_panel.lua | 40 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 29 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1816** |
+| **Total** | **1821** |

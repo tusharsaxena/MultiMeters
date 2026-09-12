@@ -384,18 +384,24 @@ function()
     end
 end)
 
-test("Degraded: `/mm resetall` still resets the profile, because it IS Reset all settings", function()
-    -- options-ui-§12: the verb and the General page's button are one act. It
-    -- used to reach the library's CliResetAll, which is absent here, so it named
-    -- the missing library and did nothing -- while the stub's RestoreAllDefaults,
-    -- kept real for exactly this user, sat unused one call away.
-    -- red under: the verb routed back to cli:CliResetAll.
+test("Degraded: `/mm resetall` still asks, and accepting still resets the profile", function()
+    -- options-ui-§12: the verb and the General page's button are one act, and
+    -- the popup is declared at file load, so it is there with no library. Its
+    -- OnAccept reaches the stub's RestoreAllDefaults, kept real for exactly this
+    -- user. red under: the verb routed back to cli:CliResetAll, or a degraded
+    -- verb that resets without asking.
     local inst = degradedInstance()
+    local asked
+    inst.mocks.StaticPopup_Show = function(key) asked = key end
     inst.NS.Slash:OnSlash("window new Second")
     assertEqual(#inst.NS.Database.GetWindows(), 2)
 
     inst.NS.Slash:OnSlash("resetall")
-    assertEqual(#inst.NS.Database.GetWindows(), 1, "the degraded resetall did not reset the profile")
+    assertEqual(asked, "MULTIMETERS_RESET_ALL")
+    assertEqual(#inst.NS.Database.GetWindows(), 2, "the degraded resetall reset without asking")
+
+    inst.mocks.StaticPopupDialogs[asked].OnAccept()
+    assertEqual(#inst.NS.Database.GetWindows(), 1, "accepting did not reset the profile")
 end)
 
 test("Degraded: a reset-all logs ONE line in total, the profile handler's", function()
