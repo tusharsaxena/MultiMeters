@@ -267,22 +267,22 @@ a missing db means. Its fallback is the defaults tree rather than a literal, so 
 
 | Path | Type | Default | Control |
 |---|---|---|---|
-| `export.metric` | string | `""` | no row — `Export.Open` reseeds it from the invoking window |
+| `export.metric` | string | the first `STATS` key | `hidden` row; drawn in the export modal, and `Export.Open` reseeds it from the invoking window |
 | `export.channel` | string | `"SELF"` | `hidden` row; drawn in the export modal |
 | `export.whisperTo` | string | `""` | `hidden` row; drawn in the export modal |
 | `export.lines` | number | `5` | `hidden` row; drawn in the export modal |
 
-The three rows are filed on page `general` and all marked **`hidden`**, so the panel draws none of
+The four rows are filed on page `general` and all marked **`hidden`**, so the panel draws none of
 them: the modal's own three controls are the ones a player uses, and a second copy on a settings page
 restated a control met only in the dialog — with a standing chance of the two disagreeing about what
 is selected.
 
-**Hidden rather than deleted**, unlike the sort and session rows that went with the Data page, and
-the difference is which seam writes them. Those were written directly by the window's own controls;
-these are written by the modal through `NS.SetByPath`, which **refuses a path with no row**. Deleting
-them would drop every export choice onto `writeExport`'s degraded fallback — the one that exists for
-a half-loaded install — losing the validation, the debug line and `CONFIG_CHANGED`, and would take
-`/mm set export.channel WHISPER` with it.
+**Hidden rather than deleted**, and the difference is which seam writes them. The modal writes them
+through `NS.SetByPath`, which **refuses a path with no row**, and `writeExport` stores nothing around
+a refusal. `export.metric` shows what an absent row cost: with none, every pick in the modal's Metric
+dropdown and every seed from `Export.Open` was refused and fell through to a raw profile write. The
+dropdown chooses the value, so under `architecture-§5` it is a preference, and it has a hidden row
+again.
 
 All are **absolute** paths — there is no `window.` prefix to resolve. They are the **one group in the profile that is not a property of
 anything on screen**: every other setting here answers "how should this look", and these answer
@@ -1083,9 +1083,9 @@ A window row's path is **relative to a window** and is spelled with a `window.` 
 
 `NS.GetSetting` and `NS.SetByPath` resolve that prefix against the session's **active window** —
 `NS.State.activeWindowId`, which the settings panel's window picker moves. Global rows keep absolute
-paths and resolve against `db.profile`. There are twenty-one of them: `enabled`, `minimap.hide`, the
+paths and resolve against `db.profile`. There are twenty-two of them: `enabled`, `minimap.hide`, the
 four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale, alpha and lock, distinct
-from the per-window `frame.*` three), `data.mergePets`, `data.throttle`, the three `export.*`
+from the per-window `frame.*` three), `data.mergePets`, `data.throttle`, the four `export.*`
 preferences, the eight `statColors.*` swatches, and the two `sessionOnly` rows `state.testMode` and
 `state.debugConsole`, whose own `get`/`set` are the whole of their storage. The other 147 rows are
 window rows.

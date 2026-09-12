@@ -75,8 +75,8 @@ touching the data path.
 
 ## Settings schema
 
-`NS.Schema` in `settings/Schema.lua` is the single source of truth: **168 rows across 8 page keys**
-(windows 1, frame 26, header 36, bars 29, tooltip 30, visibility 17, columns 8, general 21), each one
+`NS.Schema` in `settings/Schema.lua` is the single source of truth: **169 rows across 8 page keys**
+(windows 1, frame 26, header 36, bars 29, tooltip 30, visibility 17, columns 8, general 22), each one
 wiring automatically into its panel widget — one tab per distinct `group`, via
 `LibKa0s-Options-1.0`'s `RenderTabbedSchema` — its `/mm get|set|list|reset` coverage, and the
 per-page and global defaults reset. A ninth registered page, Profiles, hosts no schema rows at all.
@@ -98,7 +98,7 @@ same panel re-sync.
 **The window-relative path model** is the one thing here that is not standard-issue. A window row's
 path is relative (`window.frame.width`) and the seam resolves it against `NS.State.activeWindowId`,
 which the settings panel's window picker moves, or against a window id the caller passes. The other
-twenty-one rows keep absolute paths against `db.profile`, so moving one integer retargets **147**
+twenty-two rows keep absolute paths against `db.profile`, so moving one integer retargets **147**
 rows ([schema.md](schema.md#the-window-relative-path-model) lists both sets).
 
 Profiles carries **zero** rows: AceDBOptions' own tree, the one place `AceConfigDialog` is permitted,

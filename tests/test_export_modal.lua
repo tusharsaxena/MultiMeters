@@ -38,6 +38,7 @@ local test        = T.test
 local assertEqual = T.assertEqual
 local assertTrue  = T.assertTrue
 local assertNil   = T.assertNil
+local assertFalse = T.assertFalse
 
 local Const = T.NS.Constants
 
@@ -741,4 +742,64 @@ test("Print to Chat does not warn where the stagger is available or the dump is 
     assertEqual(#short.said, 1)
     assertEqual(short.said[1], "Exported 4 rows to chat.",
         "five lines is not more than one batch, so there is nothing to warn about")
+end)
+
+-- ---------------------------------------------------------------------------
+-- export.metric is a row (architecture-§5)
+-- ---------------------------------------------------------------------------
+--
+-- The modal's Metric dropdown CHOOSES the metric, and a control that chooses a
+-- value makes it a preference. It had no row -- dropped with the panel's
+-- "Default metric" control, since Export.Open reseeds it on every open -- so
+-- every pick and every seed was refused by the seam and fell through to a raw
+-- write around it. It is a hidden row now, beside the other three.
+
+--- Every CONFIG_CHANGED from here on.
+local function heardConfig(NS)
+    local seen = {}
+    NS.NewBusTarget():RegisterMessage(NS.Constants.MSG.CONFIG_CHANGED, function(_, payload)
+        seen[#seen + 1] = payload or {}
+    end)
+    return seen
+end
+
+test("export.metric is a hidden row beside the other three export choices", function()
+    -- red under: a schema with no row for export.metric.
+    local NS = T.load().NS
+    local metricRow = NS.FindSchemaRow("export.metric")
+    assertTrue(metricRow ~= nil, "export.metric has no row")
+    assertTrue(metricRow.hidden, "the modal is the control; the panel draws no copy")
+    assertEqual(metricRow.page, "general")
+    assertEqual(metricRow.default, Const.STATS[1].key)
+end)
+
+test("export.metric takes a stat the catalog holds, and refuses anything else", function()
+    local NS = T.load().NS
+    assertTrue(NS.SetByPath("export.metric", "Deaths"))
+    assertEqual(NS.GetSetting("export.metric"), "Deaths")
+    assertFalse((NS.SetByPath("export.metric", "NotAStat")))
+    assertEqual(NS.GetSetting("export.metric"), "Deaths", "a refused value is not stored")
+end)
+
+test("Opening the modal seeds the metric through the seam, and says so", function()
+    -- red under: the seed going around the seam, which announces nothing.
+    local inst = T.load()
+    local NS = inst.NS
+    storeMetric(inst, "Deaths")
+    local seen = heardConfig(NS)
+    NS.Export.Open({ data = { sortColumn = "HealingDone" } })
+    assertEqual(NS.GetSetting("export.metric"), "HealingDone")
+    assertTrue(#seen >= 1, "the seeded metric was never announced")
+end)
+
+test("A metric the seam refuses is not stored around it", function()
+    -- red under: writeExport falling back to a raw profile write after a refusal.
+    local inst = T.load()
+    local NS = inst.NS
+    storeMetric(inst, "Deaths")
+    local real = NS.SetByPath
+    NS.SetByPath = function() return false, "refused" end
+    NS.Export.Open({ data = { sortColumn = "HealingDone" } })
+    NS.SetByPath = real
+    assertEqual(NS.db.profile.export.metric, "Deaths", "the refused seed landed anyway")
 end)

@@ -655,7 +655,7 @@ test("Schema: a hidden row is filed under a tab that exists, and draws nothing",
                 row.path .. " is hidden but carries no page or group")
         end
     end
-    assertEqual(hidden, 9, "nine rows are hidden: frame.minimised, the three export choices "
+    assertEqual(hidden, 10, "ten rows are hidden: frame.minimised, the four export choices "
         .. "and the five the window's own header controls choose (issue #50)")
 
     -- And the other half: no tab the strip actually draws is empty.

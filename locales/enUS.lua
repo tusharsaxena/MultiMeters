@@ -856,6 +856,8 @@ L["Lines: %s"] = "Lines: %s"
 L["Export to CSV"] = "Export to CSV"
 L["Print to Chat"] = "Print to Chat"
 L["Metric"] = "Metric"
+L["Which statistic Print to Chat ranks by. Opening the export from a window picks that window's sort column."] =
+    "Which statistic Print to Chat ranks by. Opening the export from a window picks that window's sort column."
 L["Channel"] = "Channel"
 L["Lines"] = "Lines"
 L["Whisper to:"] = "Whisper to:"

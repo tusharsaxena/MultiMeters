@@ -1291,7 +1291,7 @@ NS.Schema = {
     -- ── Export ──────────────────────────────────────────────
     --
     -- Addon-wide rather than per-window, and last on the page so the tabs above
-    -- stay contiguous. ALL THREE ARE `hidden`. They are the choices the EXPORT
+    -- stay contiguous. ALL FOUR ARE `hidden`. They are the choices the EXPORT
     -- MODAL remembers -- its own three controls are the ones a player uses,
     -- sitting in the dialog they are exporting from -- so a second copy on the
     -- General page restated a control the player only ever meets in the other
@@ -1301,14 +1301,23 @@ NS.Schema = {
     -- the old Data page, and the difference is which seam does the writing.
     -- Those were written directly by the window's own controls; these are
     -- written by the modal through NS.SetByPath -- which REFUSES a path with no
-    -- row. Deleting them would drop every export choice onto writeExport's
-    -- degraded fallback, losing the validation, the debug line and
-    -- CONFIG_CHANGED, and would take `/mm set export.channel WHISPER` with it.
+    -- row. Deleting one would leave the modal's writes nowhere to go: the seam
+    -- refuses the path, and nothing stores a choice around it.
     --
-    -- THE METRIC IS NOT AMONG THEM, and its absence is deliberate. It used to be,
-    -- with a "Match the window" entry the sort column had no use for. Export.Open
-    -- now seeds the metric from the window it was opened from, so a value set
-    -- here would be overwritten before it was ever read.
+    -- THE METRIC IS AMONG THEM AGAIN (architecture-§5). It was dropped with the
+    -- panel's "Default metric" control, because Export.Open seeds it from the
+    -- window the modal opens on and a panel value would be overwritten before it
+    -- was read. But the modal's own Metric dropdown still CHOOSES it between
+    -- opens, and a control that chooses a value makes it a preference: with no
+    -- row, every pick and every seed was refused here and stored around the seam.
+    -- Hidden, like the other three, so no panel copy comes back.
+    {
+        path = "export.metric", type = "string", default = Const.STATS[1].key, hidden = true,
+        page = "general", group = L["Export"],
+        validate = function(v) return type(v) == "string" and Const.STAT_BY_KEY[v] ~= nil end,
+        label = L["Metric"],
+        desc = L["Which statistic Print to Chat ranks by. Opening the export from a window picks that window's sort column."],
+    },
     {
         path = "export.channel", type = "string", default = "SELF", hidden = true,
         values = CHANNEL_VALUES, sorting = CHANNEL_SORT,

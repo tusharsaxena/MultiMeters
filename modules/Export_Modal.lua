@@ -87,24 +87,20 @@ local function readExport(key, fallback)
     return fallback
 end
 
---- Remember one export choice.
+--- Remember one export choice, through the seam or not at all.
+---
+--- All four choices are rows (settings/Schema.lua), so NS.SetByPath validates,
+--- logs and announces each. A value the seam refuses is NOT stored around it:
+--- that is what the refusal means. This used to fall back to a raw profile
+--- write, which is how `export.metric` -- a choice with no row until
+--- architecture-§5's sweep -- reached the store for as long as it had none.
 ---
 --- @param key string
 --- @param value any
---- @return boolean  whether it was stored anywhere
+--- @return boolean  whether it was stored
 local function writeExport(key, value)
-    if type(NS.SetByPath) == "function" then
-        if NS.SetByPath(EXPORT_GROUP .. "." .. key, value) then return true end
-    end
-    local db = NS.db
-    if not (db and db.profile) then return false end
-    local group = db.profile[EXPORT_GROUP]
-    if type(group) ~= "table" then
-        group = {}
-        db.profile[EXPORT_GROUP] = group
-    end
-    group[key] = value
-    return true
+    if type(NS.SetByPath) ~= "function" then return false end
+    return NS.SetByPath(EXPORT_GROUP .. "." .. key, value) and true or false
 end
 
 -- ---------------------------------------------------------------------------

@@ -166,10 +166,9 @@ What comes out is **the whole segment and every stat in the catalog**, not the i
 column set, sort or row cap: what is on screen is a display choice, and "export this" means the data.
 The one thing that *is* inherited is the **segment** — exporting from a window pinned to a stored
 fight exports that fight, not the live pull. The four choices are remembered addon-wide at `export.*`
-in the profile. **The settings panel draws none of them**: `export.metric` has no schema row at all
-(`Export.Open` reseeds it from the invoking window), and `export.channel`, `export.whisperTo` and
-`export.lines` are `hidden` rows filed on page `general`, so `/mm list` and the defaults validator
-see them and no tab ever does. The modal writes all four back through `NS.SetByPath`, which is what
+in the profile. **The settings panel draws none of them**: all four are `hidden` rows filed on page
+`general` (`Export.Open` also reseeds `export.metric` from the invoking window), so `/mm list` and
+the defaults validator see them and no tab ever does. The modal writes all four back through `NS.SetByPath`, which is what
 keeps them one preference rather than two.
 
 **In code**, the entry points are all on `NS.Export`, a plain table on `NS` like `NS.Slash` rather

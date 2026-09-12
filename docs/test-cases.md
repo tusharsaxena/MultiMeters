@@ -1570,7 +1570,7 @@ badge and any count quoted in the docs must agree with it.
 - Export.Build goes through the aggregator and nowhere near the meter API
 - Export.Build answers nil when there is no aggregator to ask
 
-### test_export_modal.lua (26)
+### test_export_modal.lua (30)
 
 - Export.Open refuses to open at all while restricted
 - Export.ResolveMetric answers the pinned stat
@@ -1598,6 +1598,10 @@ badge and any count quoted in the docs must agree with it.
 - Print to Chat confirms a send that left the client, without counting the header
 - Print to Chat warns BEFORE a Say dump the server may truncate
 - Print to Chat does not warn where the stagger is available or the dump is short
+- export.metric is a hidden row beside the other three export choices
+- export.metric takes a stat the catalog holds, and refuses anything else
+- Opening the modal seeds the metric through the seam, and says so
+- A metric the seam refuses is not stored around it
 
 ### test_visibility.lua (41)
 
@@ -2036,7 +2040,7 @@ badge and any count quoted in the docs must agree with it.
 | test_tooltip_deaths.lua | 57 |
 | test_drilldown.lua | 58 |
 | test_export.lua | 86 |
-| test_export_modal.lua | 26 |
+| test_export_modal.lua | 30 |
 | test_visibility.lua | 41 |
 | test_windowmanager.lua | 40 |
 | test_minimap.lua | 17 |
@@ -2050,4 +2054,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1792** |
+| **Total** | **1796** |
