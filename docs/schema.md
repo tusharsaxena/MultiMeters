@@ -24,8 +24,18 @@ Everything below is about `MultiMetersDB`.
 ```lua
 db.global = {
     schemaVersion = 13,    -- CURRENT_DB_VERSION in core/Database.lua
+    roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data
 }
 ```
+
+**`roster` is named non-setting state** (`architecture-§5`: learned data), so it carries no row and
+no register row. It is the map of everyone the live group build has seen since the last meter reset,
+and every pet-owner link, kept so a player who has left the group stays on a meter that still holds
+their numbers. The player authors none of it. Its one owner is `modules/Roster.lua`: `build()` and its
+`linkPetOf` record into it on the lazy rebuild after a roster invalidation, and `Roster.Forget`
+clears it on `METER_RESET` with one traced line (`debug-logging-§8`). `remembered()` only creates the
+empty containers on first read, and the AceDB defaults ship them. It is account-wide because it
+describes the client's meter data, which no one profile owns.
 
 The version is **addon-wide rather than per-profile** (`savedvariables-§1`), so a migration runs
 once per account instead of once per profile. `NS:RunMigrations()` walks it forward one step at a
@@ -221,6 +231,14 @@ losing a configured window is worse than renumbering it.
 treats it as its own — it reads `hide` and **writes** `minimapPos` (and a lock / free-position pair
 if the player drags the button off the minimap). The addon must never enumerate the table or
 normalize keys out of it, or a dragged button snaps back on the next login.
+
+**`minimapPos` is named non-setting state** (`architecture-§5`: a vendored library's own writes). Its
+owner is `modules/Minimap.lua`, whose `Minimap.Init` hands LibDBIcon the live table through
+`icon:Register`; the one writer is LibDBIcon, on a drag of the button. The addon's only write into
+the table is the `minimap.hide` row, through the seam. `Minimap.Refresh` and the row's reactor call
+`icon:Refresh`, which re-reads the table and writes nothing. Nothing here calls LibDBIcon's
+`Hide`, `Show`, `Lock` or `Unlock`, so the library never writes `hide` or the lock on the addon's
+behalf.
 
 ### `master` — the addon-wide master controls
 

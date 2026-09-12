@@ -113,22 +113,19 @@ the id counter `db.profile.nextWindowId`. Its writer is `modules/WindowManager.l
 Rows inside a window stay the seam's even when the registry writes them, through the seam's optional
 window id ([schema.md](schema.md#the-window-registry-and-its-writer)).
 
-**`frame.position` is named non-setting state** (`architecture-§5`: geometry only a drag
-determines), so it needs no register row. Its storage key is `frame.position` in each
-`db.profile.windows` entry, and its one owner is `WindowProto` (`modules/Window_Placement.lua`).
-`WindowProto:SavePosition` writes it on the title bar's drag-stop. `WindowManager:ResetPosition`
-(General's *Reset position* button) and `:ResetPositions` (`/mm reset-positions`) put back the
-shipped center. `WindowManager:Create` writes it whole through `NS.DefaultWindow`, and `:Duplicate`
-writes its derived 24 px offset. `Database.EnsureWindowShape` backfills a missing one when `Create`,
-`Duplicate` or `CopyFrom` calls it. Nothing else writes it
-([schema.md](schema.md#frameposition-is-named-non-setting-state)).
+**Named non-setting state** (`architecture-§5`) is written outside the seam and needs no register
+row. Each piece has one owner, and every writer is listed with the act that reaches it:
+
+| Storage key | Class | Owner | Writers — and the act |
+|---|---|---|---|
+| `frame.position` in each `db.profile.windows` entry ([detail](schema.md#frameposition-is-named-non-setting-state)) | geometry only a drag determines | `WindowProto` (`modules/Window_Placement.lua`) | `WindowProto:SavePosition` (title-bar drag-stop); `WindowManager:ResetPosition` / `:ResetPositions` (General's *Reset position*, `/mm reset-positions`) put back the shipped center; `WindowManager:Create` (whole, via `NS.DefaultWindow`) and `:Duplicate` (its 24 px offset); `Database.EnsureWindowShape`'s backfill when `Create`, `Duplicate` or `CopyFrom` calls it |
+| `db.global.roster` (`byGuid`, `pets`) ([detail](schema.md#dbglobal--account-wide)) | learned data | `modules/Roster.lua` | `build()` and its `linkPetOf`, recording every member and pet-owner link the live build sees (the lazy rebuild after a roster invalidation); `Roster.Forget` clears it on `METER_RESET` |
+| `db.profile.minimap`'s `minimapPos` ([detail](schema.md#minimap)) | a vendored library's own writes | `modules/Minimap.lua` (`Minimap.Init` hands LibDBIcon the table) | LibDBIcon, when the player drags the minimap button. `hide` is the `minimap.hide` row |
+| `MultiMetersPerfDB` | recorded data a vendored library writes | `core/PerfSetup.lua` (hands LibKa0s-Perf the key) | LibKa0s-Perf's `P.Save` on `/mm perf finish`: appends, trims the ring to 10, discards an older schema |
 
 **Sort, session type and the pinned segment are preferences, not a remembered view**: a header
 click and the segment menu choose them, so the five `window.data.*` fields are hidden rows written
 through the seam by window id; the pin's none is `NO_SEGMENT` (0) ([schema.md](schema.md#data)).
-
-**`MultiMetersPerfDB` is recorded data a vendored library writes.** `core/PerfSetup.lua` owns it and
-hands it to LibKa0s-Perf, whose `P.Save` appends a capture to the ring on `/mm perf finish`.
 
 `NS.ValidateSchema()` proves every row's `default` equals `defaults/Profile.lua`'s. Panel behavior:
 [settings-panel.md](settings-panel.md); persisted shape and migrations: [schema.md](schema.md).
