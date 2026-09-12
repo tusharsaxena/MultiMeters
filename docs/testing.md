@@ -474,8 +474,8 @@ would pull an untested library release for the sake of a clean diff. That was th
 section was written, at `../LibKa0s` **v1.27.0** against a [`CLAUDE.md`](../CLAUDE.md) naming
 **v1.26.0**, with hundreds of differing lines on each payload and nothing wrong.
 
-Measured 2026-09-12 the two agree: `CLAUDE.md` names **v1.30.0**, the sibling checkout sits on
-**v1.30.0**, and all four commands above report nothing — content *and* bytes, for both payloads.
+Measured 2026-09-12 the two agree: `CLAUDE.md` names **v1.31.0**, the sibling checkout sits on
+**v1.31.0**, and all four commands above report nothing — content *and* bytes, for both payloads.
 That is the other normal state, and it is worth knowing it reads identically to never having looked.
 
 **The authoritative comparison is against the tag `CLAUDE.md` names**, and that one must be empty at
