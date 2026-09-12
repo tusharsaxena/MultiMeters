@@ -70,6 +70,20 @@ test("loadorder: every file the TOC names exists on disk", function()
     end
 end)
 
+test("loadorder: AceGUI-3.0 loads before AceConfig-3.0", function()
+    -- AceConfigDialog-3.0 runs `local gui = LibStub("AceGUI-3.0")` at file load, without the silent
+    -- flag, so it raises unless AceGUI is already registered. Listed first, AceConfig only loaded
+    -- when some earlier addon in the client had happened to load AceGUI already.
+    -- red under: MultiMeters.toc listing libs\AceConfig-3.0\AceConfig-3.0.xml above
+    -- libs\AceGUI-3.0\AceGUI-3.0.xml.
+    local src = readFile(ROOT .. "/MultiMeters.toc")
+    assertTrue(src ~= nil, "MultiMeters.toc could not be read")
+    local gui = src:find("libs\\AceGUI-3.0\\AceGUI-3.0.xml", 1, true)
+    local cfg = src:find("libs\\AceConfig-3.0\\AceConfig-3.0.xml", 1, true)
+    assertTrue(gui ~= nil and cfg ~= nil, "the TOC names both AceGUI-3.0 and AceConfig-3.0")
+    assertTrue(gui < cfg, "AceGUI-3.0 must load before AceConfig-3.0: AceConfigDialog needs it at load")
+end)
+
 test("loadorder: every shipped .lua on disk is named by the TOC", function()
     -- `libs/` is excluded because vendored libraries come in through their own
     -- XML, which the TOC scan deliberately cannot see inside; `tests/` is

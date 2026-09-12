@@ -6,9 +6,10 @@ badge and any count quoted in the docs must agree with it.
 
 **Generated — do not hand-edit.** Regenerate with `lua tests/run.lua --list > docs/test-cases.md`.
 
-### test_loadorder.lua (7)
+### test_loadorder.lua (8)
 
 - loadorder: every file the TOC names exists on disk
+- loadorder: AceGUI-3.0 loads before AceConfig-3.0
 - loadorder: every shipped .lua on disk is named by the TOC
 - loadorder: the TOC declares no duplicate file line
 - loadorder: no file captures an NS symbol a later file publishes
@@ -2018,7 +2019,7 @@ badge and any count quoted in the docs must agree with it.
 
 | Suite | Cases |
 |-------|------:|
-| test_loadorder.lua | 7 |
+| test_loadorder.lua | 8 |
 | test_layout_cap.lua | 3 |
 | test_complexity_register.lua | 4 |
 | test_deviation_register.lua | 1 |
@@ -2080,4 +2081,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 29 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1822** |
+| **Total** | **1823** |
