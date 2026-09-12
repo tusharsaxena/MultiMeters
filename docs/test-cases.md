@@ -6,9 +6,10 @@ badge and any count quoted in the docs must agree with it.
 
 **Generated — do not hand-edit.** Regenerate with `lua tests/run.lua --list > docs/test-cases.md`.
 
-### test_loadorder.lua (7)
+### test_loadorder.lua (8)
 
 - loadorder: every file the TOC names exists on disk
+- loadorder: AceGUI-3.0 loads before AceConfig-3.0
 - loadorder: every shipped .lua on disk is named by the TOC
 - loadorder: the TOC declares no duplicate file line
 - loadorder: no file captures an NS symbol a later file publishes
@@ -1823,7 +1824,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (52)
+### test_slash.lua (53)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1877,8 +1878,9 @@ badge and any count quoted in the docs must agree with it.
 - Slash: no raw SLASH_* global is claimed anywhere
 - Slash: Register is a no-op rather than a raise when there is no AceConsole
 - Slash: /mm list heads each block with the page AND the tab
+- Slash: `set window.name` keeps every word of a multi-word name
 
-### test_options_panel.lua (40)
+### test_options_panel.lua (42)
 
 - Options: General is the FIRST page, above Windows
 - Options: every window page is marked as nested, and the two that are not are not
@@ -1903,6 +1905,7 @@ badge and any count quoted in the docs must agree with it.
 - Options: no settings page wires its own OnShow
 - Options: the Profiles page refuses to render mid-combat, through the library's guard
 - Options: a profile switch re-opens the Profiles page's AceConfigDialog
+- Options: the Profiles page SHOWS the container AceConfigDialog fills, even a pooled (hidden) one
 - Options: a widget's set() routes through NS.SetByPath
 - Options: a checkbox's set() routes through NS.SetByPath too
 - Options: applyDefault routes through NS.SetByPath, not around it
@@ -1920,6 +1923,7 @@ badge and any count quoted in the docs must agree with it.
 - Panel: the Statistic colors tab says where its colours are actually worn
 - Panel: every window sub-page banners the active window, and Windows has no second picker
 - Panel: choosing a window in the banner retargets every page and keeps the tab
+- Panel: Reset all settings' tooltip says it is the same act as Profiles -> Reset Profile
 
 ### test_columnblocks.lua (35)
 
@@ -2017,7 +2021,7 @@ badge and any count quoted in the docs must agree with it.
 
 | Suite | Cases |
 |-------|------:|
-| test_loadorder.lua | 7 |
+| test_loadorder.lua | 8 |
 | test_layout_cap.lua | 3 |
 | test_complexity_register.lua | 4 |
 | test_deviation_register.lua | 1 |
@@ -2072,11 +2076,11 @@ badge and any count quoted in the docs must agree with it.
 | test_schema.lua | 36 |
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 52 |
-| test_options_panel.lua | 40 |
+| test_slash.lua | 53 |
+| test_options_panel.lua | 42 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 29 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1821** |
+| **Total** | **1825** |

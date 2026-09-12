@@ -132,14 +132,14 @@ Four things about how this addon calls them are worth knowing before editing a b
   a schema CLI.
 - **Two `LSM30_*` pickers survive outside a composer call, and they are not a group.**
   `grep -rn 'LSM30_Font\|LSM30_Border\|LSM30_Statusbar' settings/` returns two DECLARATIONS —
-  `settings/Schema.lua:270` (`window.barTexture`) and `:278` (`window.font`) — and neither is
+  `settings/Schema.lua:283` (`window.barTexture`) and `:291` (`window.font`) — and neither is
   composer-able. The other hits are prose: two lines of the comment above
   `settings/OptionsSetup.lua`'s `lib.__PatchLSM30Border()` call, which names `LSM30_Border` because
   that is the widget it argues about. No `dialogControl` there, and nothing for this bullet to
   account for. They are two of the
   four **broadcast meta rows** on Frame → General, under the *All surfaces* heading: each one *writes*
   a value into every surface that has a setting of that kind and is then read by nothing, which is
-  what the note above them at `settings/Schema.lua:224-237` says at length. `options-ui-§16` fixes
+  what the note above them at `settings/Schema.lua:237-250` says at length. `options-ui-§16` fixes
   the shape of a **group** — a contiguous font block, a border block, a bar block, each over one
   surface, each with a colour row and a companion. A single write-only setter over six surfaces has
   none of that shape: there is no size, no colour, no flags and no second surface to be contiguous
@@ -616,7 +616,7 @@ so none of them can be a schema row. The two on the General page are drawn by th
 | **Reset meter data** | *the window header, not a page* | — | Confirms, then `NS.Provider.Reset()`. Irreversible and reaches **outside** this addon: `C_DamageMeter.ResetAllCombatSessions` wipes the data Blizzard's own meter is showing too. Routed through the provider and never straight at the Compat shim — the provider is the only permitted caller of the meter shims, and it also forgets the memoized availability answer and announces `METER_RESET`. |
 | **Reset all settings** | General | Master controls | Confirms through `NS.ShowResetAll`, the opener `/mm resetall` calls too, then runs `Helpers.RestoreAllDefaults()` on accept, so the two cannot drift. The descriptor's `resetProfile` hands the profile to `db:ResetProfile()`, which makes this the **equivalent of a new profile**: every setting back to shipped, extra windows **deleted**, names reset, one fresh window left. Other profiles are untouched. The debug console shows one line, `[Set] reset profile '<name>' to defaults`, from `OnProfileReset`. See *Reset all settings vs Reset Profile* below. |
 | **Test mode** | General | General | A `sessionOnly` schema row over `NS.State.testMode`, carrying its own `get`/`set`. Fills every window with placeholder rows so columns can be laid out without being in combat. Session-only: persisting it would mean logging in to a screen full of fake numbers. Also reachable as `/mm test`. **Not** implied by unlocking a window any more — `WindowManager:SetLocked` used to also switch it on, which made `/mm lock off` silently turn placeholder data on and made unchecking Test mode a no-op while any window was unlocked; locking is now about movement and nothing else, and a player who wants a grid to aim at asks for one with `/mm test`. |
-| **Debug console** | General | Master controls | The console **window's** visibility, not the logging flag. Logging runs with the console closed so a bug can be reproduced first and the log read afterwards; the flag itself is `/mm debug on\|off`'s and is never written to SavedVariables (`debug-logging-§5`). The row is emitted by `H.MasterControls` under the path `state.debugConsole`, and this repo dresses the rest back on — the label in the composer call's `labels` table (`settings/Schema_Compose.lua:649`), and the description and both accessors in the `dress()` block at `settings/Schema_Compose.lua:700-709`, where `get` asks `NS.DebugLog:IsShown` and `set` calls `Show`/`Hide`. `LibKa0s-DebugLog-1.0`'s own `D:ConsoleCheckbox()` is no longer what draws it: nothing under `settings/` calls it, and the only `ConsoleCheckbox` left in this repo is the degraded stub's at `core/DebugLogSetup.lua:295`, kept so a library-less load still answers the member. |
+| **Debug console** | General | Master controls | The console **window's** visibility, not the logging flag. Logging runs with the console closed so a bug can be reproduced first and the log read afterwards; the flag itself is `/mm debug on\|off`'s and is never written to SavedVariables (`debug-logging-§5`). The row is emitted by `H.MasterControls` under the path `state.debugConsole`, and this repo dresses the rest back on — the label in the composer call's `labels` table (`settings/Schema_Compose.lua:668`), and the description and both accessors in the `dress()` block at `settings/Schema_Compose.lua:719-727`, where `get` asks `NS.DebugLog:IsShown` and `set` calls `Show`/`Hide`. `LibKa0s-DebugLog-1.0`'s own `D:ConsoleCheckbox()` is no longer what draws it: nothing under `settings/` calls it, and the only `ConsoleCheckbox` left in this repo is the degraded stub's at `core/DebugLogSetup.lua:295`, kept so a library-less load still answers the member. |
 
 Both General toggles are `sessionOnly` schema rows (`state.testMode`, `state.debugConsole`) so that
 `/mm list` and `/mm get` can reach them — a toggle that exists only in the panel is a toggle the CLI
@@ -754,6 +754,16 @@ rather than off `helpers()`, at call time:
 
 They are now the **same act**, deliberately: **General → Reset all settings** hands the profile to
 AceDB and is the equivalent of starting a brand-new profile.
+
+The button's tooltip says so, verbatim: *"Reset the current profile to its defaults — the same thing
+Profiles → Reset Profile does. Your other profiles are not affected."* The composer is its only writer
+and words it from the descriptor it was attached with (LibKa0s-Options-1.0 minor 18). This addon
+attaches the composers itself, at `settings/Schema_Compose.lua` load and before
+`settings/OptionsSetup.lua` builds the real descriptor, so it hands `__AttachCompose` a **compose
+descriptor** of two fields: `profilesPage = true`, and a `resetProfile` that forwards at call time to
+the real descriptor's (published as `NS.OptionsDescriptor`) rather than restating the reset.
+Without it the tooltip read *"Restore every setting in this addon to its default."*, which
+overstated the blast radius; `tests/test_options_panel.lua` pins the new text off the real button.
 
 ```lua
 resetProfile = function()

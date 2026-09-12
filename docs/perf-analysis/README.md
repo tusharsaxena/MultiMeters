@@ -129,48 +129,36 @@ emits `"failures": {}`, not `[]`. Non-empty lists encode as proper arrays.
   size × open windows × columns per window. A solo capture and a twenty-player capture are not
   comparable measurements of the same addon, and the write-up must say which it is.
 
-### Nesting is declared but never observed
+### Every nested bucket is observed
 
 Worth knowing **before** you read a report from this addon, because it changes what one of its lines
 means.
 
 Containment is supplied at the recording call — `Perf.Note(key, ms, parentKey)` — and the library
-reports a parent as *observed* only when that third argument was passed. Every bracket in this addon
-calls `Perf.Note(key, ms)` with **two** arguments and no `parentKey`:
+reports a parent as *observed* only when that third argument was passed. Every nested bracket in this
+addon now passes it:
 
-| Bucket | Call sites |
-|---|---|
-| `meterEvent` | `core/MultiMeters.lua:384`, `:394`, `:402` |
-| `refresh` | `modules/Window.lua:1856`, `:1866`, `:1889`, `:1896` |
-| `providerRead` | `modules/Provider.lua:349` |
-| `aggregate` | `modules/Aggregator.lua:1735`, `modules/DrillDown.lua:668`, `:700` |
-| `render` | `modules/Window.lua:1999` |
-| `renderRow` | `modules/Row.lua:1633` |
-| `tooltip` | `modules/Tooltip.lua:2400`, `:2534`, `:2552`, `:2613`, `:2627`, `:2641` |
-| `targets` | `modules/Targets.lua:394`, `:402`, `:416` |
+| Bucket | Declared within | Call sites | Parent passed |
+|---|---|---|---|
+| `meterEvent` | — | `core/MultiMeters.lua:382`, `:392`, `:400` | — |
+| `refresh` | — | `modules/Window.lua:1106`, `:1116`, `:1139`, `:1146` | — |
+| `providerRead` | — (more than one real parent) | `modules/Provider.lua:357` | Its caller's: `"aggregate"` from `modules/Aggregator.lua:1035` and `modules/Aggregator_Identity.lua:216`, `"targets"` from `modules/Targets.lua:277`, none from `core/Diagnostics.lua` or `core/Diagnostics_DeathRecap.lua` |
+| `aggregate` | `refresh` | `modules/Aggregator.lua:1258`, `modules/DrillDown.lua:700`, `:732` | Its caller's at `modules/Aggregator.lua:1258`; `"refresh"` at both `DrillDown` sites |
+| `render` | `refresh` | `modules/Window.lua:1251` | `"refresh"` |
+| `renderRow` | `render` | `modules/Row.lua:1387` | `"render"` |
+| `tooltip` | — | `modules/Tooltip_Builders.lua:788`, `:925`, `:943`, `:1004`, `:1018`, `:1032` | — |
+| `targets` | `tooltip` | `modules/Targets.lua:396`, `:404`, `:418` | `"tooltip"` |
 
-So `observedWithin` is **never populated** in a Ka0s Multi Meters record, and every report prints
-the *"`<bucket>` declares itself within `<parent>` — not observed"* form for the five nested buckets.
+So `observedWithin` is populated for every nested bucket, and a capture from a current build reports
+the declared tree as observed containment. `providerRead` declares no `within` because it has more
+than one real parent. Each record names the parent it ran in, and a read from the diagnostics report
+claims none.
 
-The declared tree in `core/PerfSetup.lua` — `providerRead`, `aggregate` and `render` within
-`refresh`, `renderRow` within `render`, `targets` within `tooltip` — is therefore an **unverified
-claim**. It is a reasoned one
-(a refresh pass calls all three inline, and the row loop runs inside the render), but reasoning is
-not observation. An `ANALYSIS.md` **must say so** rather than presenting the declared tree as
-measured containment, and must not subtract a declared child from its declared parent as though the
-overlap were confirmed. Closing that gap — threading `parentKey` through the call sites — is a
-legitimate action for a capture's `ANALYSIS.md` to raise.
-
-The first capture did not close that gap. In [`20260909-014604/`](20260909-014604/ANALYSIS.md) every
-nested row printed the *declared, not observed* form, so the tree is still unverified in both
-directions, and nothing in that capture promotes *unverified* to *wrong* — least of all a sum of
-nested buckets, which is the operation this section forbids. What that capture did establish, by
-reading the source rather than by arithmetic, is that **`providerRead` cannot be described by a
-single `within` at all**: `Provider.GetColumn` is reached from inside `aggregate` on the refresh path
-(`modules/Aggregator.lua:1027`, `:1463`), from inside `targets` on the tooltip path
-(`modules/Targets.lua:275`), and with no bracket above it from `core/Diagnostics.lua`. Read the
-`providerRead` row as a bucket with more than one real parent until `parentKey` is threaded and a
-record can say which one it ran in.
+The first capture predates this. In [`20260909-014604/`](20260909-014604/ANALYSIS.md) every nested
+row printed the *declared, not observed* form, because at the time no bracket passed a `parentKey`.
+Read that capture's tree as unverified, and never subtract a declared child from its declared parent
+in it as though the overlap were confirmed. That capture is also where `providerRead` was found to
+have more than one real parent, which is why it declares none today.
 
 One bucket is genuinely **not** nested and should not be read as though it were: `meterEvent`
 brackets the bus fan-out at event rate, while `refresh` brackets the coalesced pass on the window's
