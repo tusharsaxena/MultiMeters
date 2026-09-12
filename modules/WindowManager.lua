@@ -518,10 +518,10 @@ end
 
 --- Put every window back in the middle of the screen.
 ---
---- Reached from `/mm reset-positions` and from the options panel's
---- restore-defaults hook — window POSITIONS are not schema rows (they are
---- per-window instance state this file owns), so NS.ApplyDefault never reaches
---- them and this is the only path that does.
+--- Reached from `/mm reset-positions` and from nothing else. Window POSITIONS
+--- are not schema rows (they are per-window instance state this file owns), so
+--- NS.ApplyDefault never reaches them, and no restore-defaults hook calls this
+--- either.
 ---
 --- Put ONE window back in the middle of the screen — the Frame page's "Reset
 --- position" button, which acts on the window the picker is pointed at rather

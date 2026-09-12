@@ -660,8 +660,8 @@ end)
 test("CopyFrom sends the sort through the seam, carries the pin, and never the position", function()
     -- The sort and the session type are preferences with rows since issue #50,
     -- so they travel in the seam's batch and a value the row refuses stops the
-    -- copy. The pinned segment has no row and is still copied as a leaf. The
-    -- position is not copied at all.
+    -- copy. The pinned segment is a hidden row too, so it travels in the same
+    -- batch. The position is not copied at all.
     -- red under: the view copied leaf by leaf, around the seam.
     local _, M, source, target = twoWindows()
     source.data.sortColumn = "NotAStat"

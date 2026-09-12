@@ -1637,12 +1637,16 @@ misclick.
 **Pass.**
 - Channel, Lines and the whisper name come back exactly as you left them. They live at `export.*` in
   the **profile** and are **addon-wide**, not per window — "I print the top five to party" is a habit
-  rather than a window's appearance. Metric is not among them: the modal always seeds it from the
-  window it was opened from, so there is nothing to remember there.
-- **The General page shows NO Export group.** The modal's own three controls are the only ones: a
-  second copy on a settings page restated a control a player only ever meets in the dialog, and gave
-  the two a chance to disagree about what is selected. The rows still exist and are marked `hidden`,
-  which is what keeps the seam below working.
+  rather than a window's appearance. Metric is stored there too (`export.metric`), but every open
+  re-seeds it from the sort column of the window it was opened from. So after the reload it reads
+  that window's sort column, not Healing, unless that window is sorted by Healing. Re-open it on the
+  same window with `/mm debug on`: the second open prints no `[Set] export.metric` line, because a
+  seed that matches the stored metric is not written again.
+- **The General page shows NO Export group.** The modal's own controls are the only ones: a second
+  copy on a settings page restated a control a player only ever meets in the dialog, and gave the two
+  a chance to disagree about what is selected. All four export rows (`export.metric`,
+  `export.channel`, `export.lines`, `export.whisperTo`) still exist and are marked `hidden`, which is
+  what keeps the seam below working.
 - `/mm get export.channel` and `/mm set export.lines 10` still work, and the modal follows them —
   set `/mm set export.lines 10` with the modal closed, re-open it and confirm it reads `Lines: 10`.
   A "no such setting" answer means the rows were deleted rather than hidden, which also drops every
