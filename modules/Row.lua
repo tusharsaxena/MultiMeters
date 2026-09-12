@@ -338,7 +338,7 @@ end
 --- THE FALLBACK HAS TO BE A CLIENT FILE. LibKa0s ships bar textures and they
 --- reach LSM through core/MediaSetup.lua's RegisterLSM, so the only load that
 --- gets here with nothing is one where the payload is absent -- and on that load
---- NS.MediaTexture answers nil too. A fallback that needs the thing that is
+--- no catalog texture reached LSM either. A fallback that needs the thing that is
 --- missing is not a fallback (library-stack-§8; docs/ARCHITECTURE.md's
 --- "Hard-coded texture paths").
 local function barTexture(name)
