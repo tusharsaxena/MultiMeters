@@ -407,6 +407,11 @@ L["Draw a thin outline around each bar."] = "Draw a thin outline around each bar
 L["Fill direction"] = "Fill direction"
 L["Which edge of the cell each bar grows from."] =
     "Which edge of the cell each bar grows from."
+-- The animated fill (issue #23): the client interpolates the bar, so it is legal
+-- on a secret and needs no OnUpdate of ours.
+L["Animate bar fills"] = "Animate bar fills"
+L["Slide each bar to its new length between refreshes instead of jumping. The game draws the motion itself, so it works in combat and costs no extra updates."] =
+    "Slide each bar to its new length between refreshes instead of jumping. The game draws the motion itself, so it works in combat and costs no extra updates."
 
 -- ---------------------------------------------------------------------------
 -- Text page

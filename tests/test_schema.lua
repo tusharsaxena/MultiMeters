@@ -282,7 +282,7 @@ local PARTITION = {
                    { "Background and border", 6 }, { "Row", 8 } },
     header     = { { "Title bar", 8 }, { "Title text", 6 }, { "Controls", 8 },
                    { "Button style", 8 } },
-    bars       = { { "Bar", 5 }, { "Background", 3 }, { "Border", 5 },
+    bars       = { { "Bar", 6 }, { "Background", 3 }, { "Border", 5 },
                    { "Text content", 5 }, { "Text style", 7 }, { "Icons", 3 } },
     tooltip    = { { "General", 5 }, { "Bar", 5 }, { "Bar background", 3 },
                    { "Bar border", 4 }, { "Text", 6 }, { "Contents", 7 } },

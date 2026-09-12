@@ -127,7 +127,7 @@ badge and any count quoted in the docs must agree with it.
 - Secrets degraded: canaccessvalue alone missing still refuses a known secret
 - Secrets degraded: canaccesstable alone missing still refuses a secret table
 
-### test_compat.lua (33)
+### test_compat.lua (34)
 
 - Compat: GetSpellInfo flattens C_Spell's struct to the old multi-return
 - Compat: GetSpellInfo answers nil for an unknown spell rather than raising
@@ -161,6 +161,7 @@ badge and any count quoted in the docs must agree with it.
 - Compat.IsSkyriding reads glide CAPABILITY, not altitude
 - Compat.IsSkyriding is a PLAIN boolean, and false with no C_PlayerInfo
 - Compat.IsInHousing follows C_Housing, and is false without it
+- Compat.BarInterpolation answers the client's ease-out, and nil below 12.0 (#23)
 - Compat: a delve namespace present but missing its member does not raise
 
 ### test_state.lua (17)
@@ -1114,7 +1115,7 @@ badge and any count quoted in the docs must agree with it.
 - HeaderControls: close hides the window AS a deliberate close
 - HeaderControls: only the two toggles write to the settings seam
 
-### test_row.lua (76)
+### test_row.lua (77)
 
 - Row.OffsetFor is a pure function of the index and the row config
 - Cell:ApplyLayout places every cell from the layout table
@@ -1122,6 +1123,7 @@ badge and any count quoted in the docs must agree with it.
 - modules/Row.lua contains no geometry getter at all
 - Cell:SetValue hands the raw handle to SetValue and SetMinMaxValues
 - Cell:SetValue substitutes 0 and 1 for an ABSENT figure, not for a hidden one
+- Bar fills animate natively on BOTH setters, a secret still passes raw, and it switches off (#23)
 - A rate-capable column renders its RATE ALONE by default
 - Smart falls to the ABSOLUTE figure on a stat that has no rate
 - Combined shows BOTH figures in one slot, absolute first
@@ -1980,7 +1982,7 @@ badge and any count quoted in the docs must agree with it.
 | test_lintconfig.lua | 4 |
 | test_constants.lua | 23 |
 | test_secrets.lua | 38 |
-| test_compat.lua | 33 |
+| test_compat.lua | 34 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 68 |
@@ -2008,7 +2010,7 @@ badge and any count quoted in the docs must agree with it.
 | test_window_header.lua | 73 |
 | test_window_placement.lua | 31 |
 | test_headercontrols.lua | 65 |
-| test_row.lua | 76 |
+| test_row.lua | 77 |
 | test_row_namecell.lua | 30 |
 | test_targets.lua | 24 |
 | test_tooltip.lua | 20 |
@@ -2031,4 +2033,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1777** |
+| **Total** | **1779** |

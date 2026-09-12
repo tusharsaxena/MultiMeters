@@ -611,7 +611,18 @@ settings-panel controls answering a question that was already answered one page 
 { r=0.35, g=0.55, b=0.85, a=1 }` · `bgColor = { r=0, g=0, b=0, a=1 }` · `bgColorMode = "class"` ·
 `bgAlpha = 0.35` · `border = false` · `borderThickness = 1` ·
 `borderColor = { r=0, g=0, b=0, a=1 }` · `borderColorMode = "custom"` · `alpha = 1.0` ·
-`fillDirection = "LEFT"`.
+`fillDirection = "LEFT"` · `animate = true`.
+
+**`animate` slides each fill to its new length between refreshes instead of snapping** (issue #23).
+The slide is the client's. Patch 12.0 gave `StatusBar:SetValue` and `:SetMinMaxValues` an optional
+trailing `Enum.StatusBarInterpolation`, and `modules/Row.lua`'s `Cell:SetValue` passes
+`ExponentialEaseOut` (through `Compat.BarInterpolation`) to **both** setters, so the max moves with
+the value. Blizzard's API docs mark the argument `NeverSecret` and keep both setters
+`AllowedWhenTainted` with a secret value, so the bar animates toward a secret target in combat
+without this addon holding two values or stepping between them. An addon-side interpolation
+would be arithmetic on a secret, which is illegal mid-pull, exactly when the animation matters. Off,
+or on a client without the enum, the argument is omitted, which is `Immediate`: the snap. Text, sort
+order and export read nothing from the animation.
 
 `borderColorMode` is options-ui-§17's companion beside the outline's swatch, added in the
 settings-revamp-v2 pass. Two values, `class` and `custom`, and `class` is **the row's player's** —
@@ -1072,7 +1083,7 @@ paths and resolve against `db.profile`. There are twenty-one of them: `enabled`,
 four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale, alpha and lock, distinct
 from the per-window `frame.*` three), `data.mergePets`, `data.throttle`, the three `export.*`
 preferences, the eight `statColors.*` swatches, and the two `sessionOnly` rows `state.testMode` and
-`state.debugConsole`, whose own `get`/`set` are the whole of their storage. The other 145 rows are
+`state.debugConsole`, whose own `get`/`set` are the whole of their storage. The other 146 rows are
 window rows.
 
 ```lua

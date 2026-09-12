@@ -81,6 +81,7 @@ in-client.
 | 27 | **Identity** | [**The identity-correlation capture (issue #22)**](#27-the-identity-correlation-capture-issue-22) |
 | 28 | **Feign trace** | [**The feign-trace verbs and what the recording says (issue #25)**](#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25) |
 | 29 | **Shared registry** | [**The Border dropdown when five Ka0s addons share one registry**](#29-the-border-dropdown-when-five-ka0s-addons-share-one-registry) |
+| 32 | **Bar animation** | [**Bar fills slide between refreshes (issue #23)**](#32-bar-fills-slide-between-refreshes-issue-23) |
 
 ---
 
@@ -1953,6 +1954,28 @@ Then, with the panel open, `/mm debug` so the console sits beside it.
   regression the explicit `addonName` exists to prevent.
 - Clicking it closes the panel, and `/mm perf` reopens it.
 - No Lua error at any point.
+
+### 32. Bar fills slide between refreshes (issue #23)
+
+**Why this is in-client.** The headless suite proves that `Cell:SetValue` hands both status-bar
+setters the ease-out interpolation, that a secret value is still passed raw beside it, and that the
+switch and a client without `Enum.StatusBarInterpolation` both fall back to the plain call. It cannot
+show a bar moving, and it cannot prove the client accepts the argument on a secret in combat.
+
+1. With **Bars → Bar → Animate bar fills** on (the default), out of combat at a target dummy, watch
+   the top rows. Each fill **slides** to its new length over a fraction of a second rather than
+   stepping four times a second at the shipped 0.25 s throttle. The column max moves smoothly too:
+   when the leader's number grows, the other bars shrink smoothly rather than jumping.
+2. **In a real pull** (a Mythic+ pack or a raid pull, where the `Combat` restriction is active),
+   the bars still slide and **no Lua error** appears. This is the check that matters: every value
+   is secret there, and the slide must come from the client.
+3. Turn **Animate bar fills** off (or `/mm set window.bars.animate false`). The bars snap again,
+   exactly as before.
+4. With it on, confirm the **numbers, the row order and an export** are the same as with it off.
+   The animation is only drawn, and nothing reads it back.
+
+**Pass:** smooth fills in and out of combat, a snap when off, no error, identical text and order.
+**Record:** client build, and whether step 2 was in a key or a raid.
 
 ---
 

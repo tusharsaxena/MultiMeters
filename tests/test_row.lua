@@ -175,6 +175,40 @@ test("Cell:SetValue substitutes 0 and 1 for an ABSENT figure, not for a hidden o
     assertEqual(bar:HasSecretValues(), false)
 end)
 
+test("Bar fills animate natively on BOTH setters, a secret still passes raw, and it switches off (#23)", function()
+    -- The client interpolates from its own fill toward the new target, so this
+    -- file never holds two values or steps between them: the only change is a
+    -- NeverSecret enum constant on each setter. The max animates with the value,
+    -- or the fill would jump with it anyway.
+    -- red under: no interpolation, or one setter left snapping.
+    local inst, _, row, cfg = bench()
+    local mocks = inst.mocks
+    mocks.Enum.StatusBarInterpolation = { Immediate = 0, ExponentialEaseOut = 1 }
+    mocks.setRestricted(true)
+    local total = mocks.secret(4200000)
+    local function draw()
+        row:Update(entry{ DamageDone = { total = total, maxAmount = mocks.secret(5000000) } }, 1)
+        return row.cells.DamageDone.frame, row.cells.DamageDone.left:GetText()
+    end
+
+    assertEqual(cfg.bars.animate, true, "on by default")
+    local bar, animatedText = draw()
+    assertEqual(bar.__valueInterpolation, 1)
+    assertEqual(bar.__minMaxInterpolation, 1)
+    assertTrue(bar:GetValue() == total, "the handle is still passed raw")
+
+    cfg.bars.animate = false
+    local _, snappedText = draw()
+    assertNil(bar.__valueInterpolation, "switched off is the client's Immediate")
+    assertNil(bar.__minMaxInterpolation)
+    assertTrue(animatedText == snappedText, "the text does not depend on the animation")
+
+    cfg.bars.animate = true
+    mocks.Enum.StatusBarInterpolation = nil
+    draw()
+    assertNil(bar.__valueInterpolation, "a client without the enum snaps, and does not raise")
+end)
+
 test("A rate-capable column renders its RATE ALONE by default", function()
     -- The shipped layout: `leftSlot = "smart"`, `rightSlot = "none"`. Smart is the
     -- per-second figure on a stat that has one — "who is doing the most damage

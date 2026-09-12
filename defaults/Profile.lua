@@ -340,6 +340,9 @@ local WINDOW_TEMPLATE = {
         borderColorMode = "custom",            -- class | custom
         alpha         = 1.0,
         fillDirection = "LEFT",    -- LEFT (fills rightward) | RIGHT
+        -- Slide each fill to its new length rather than snapping (issue #23). The
+        -- client animates it from the interpolation argument, so it holds in combat.
+        animate       = true,
     },
 
     -- -----------------------------------------------------------------------

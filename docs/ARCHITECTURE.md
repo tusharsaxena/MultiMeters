@@ -75,8 +75,8 @@ touching the data path.
 
 ## Settings schema
 
-`NS.Schema` in `settings/Schema.lua` is the single source of truth: **166 rows across 8 page keys**
-(windows 1, frame 26, header 35, bars 28, tooltip 30, visibility 17, columns 8, general 21), each one
+`NS.Schema` in `settings/Schema.lua` is the single source of truth: **167 rows across 8 page keys**
+(windows 1, frame 26, header 35, bars 29, tooltip 30, visibility 17, columns 8, general 21), each one
 wiring automatically into its panel widget — one tab per distinct `group`, via
 `LibKa0s-Options-1.0`'s `RenderTabbedSchema` — its `/mm get|set|list|reset` coverage, and the
 per-page and global defaults reset. A ninth registered page, Profiles, hosts no schema rows at all.
@@ -98,7 +98,7 @@ same panel re-sync.
 **The window-relative path model** is the one thing here that is not standard-issue. A window row's
 path is relative (`window.frame.width`) and the seam resolves it against `NS.State.activeWindowId`,
 which the settings panel's window picker moves, or against a window id the caller passes. The other
-twenty-one rows keep absolute paths against `db.profile`, so moving one integer retargets **145**
+twenty-one rows keep absolute paths against `db.profile`, so moving one integer retargets **146**
 rows ([schema.md](schema.md#the-window-relative-path-model) lists both sets).
 
 Profiles carries **zero** rows: AceDBOptions' own tree, the one place `AceConfigDialog` is permitted,
@@ -570,9 +570,9 @@ files took the seam its own issue had already named, and the eight suites follow
 mirror.
 
 What remains worth knowing is the **1000–1500 on-notice band**, which is busier than it has ever
-been: 19 files, six of them source, because a peel lands a file wherever its seam falls and a seam
-chosen for what a reader can hold does not aim at a line count. The tightest is `tests/wow_mock.lua`
-with 34 lines of headroom, and the one to watch is `modules/Row.lua` at 1442 — source, on the refresh
+been: 20 files, nine of them source, because a peel lands a file wherever its seam falls and a seam
+chosen for what a reader can hold does not aim at a line count. The tightest is `tests/test_provider.lua`
+at exactly the cap, and the one to watch is `modules/Row.lua` at 1469 — source, on the refresh
 path, and the file every identity, spec-icon and pet-fold change has historically landed in.
 
 **The band is tabulated in [complexity.md](complexity.md#the-10001500-loc-band), not here.**

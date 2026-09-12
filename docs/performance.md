@@ -35,6 +35,15 @@ This addon has **exactly one hot path, and it is event-driven rather than per-fr
    column**, a GUID join across the group, an ordering pass, and then one cell drawn per row per
    column. A twenty-player raid with seven columns is 140 cells.
 
+**The animated bar fill adds nothing to this model** (issue #23, `window.bars.animate`, on by
+default). The slide is the client's: `Cell:SetValue` passes an interpolation enum to the same two
+setters it already called, so a refresh makes the same number of widget calls, and there is no
+`OnUpdate` per cell, no ticker to stop when a bar settles, and nothing to measure between refreshes.
+The added Lua per cell is one table read and one `Compat.BarInterpolation` call, which
+`refresh20x7` and `refresh20x7Restricted` cover with no new scenario. What the client spends drawing
+the ease-out is outside the addon's buckets; `/mm perf` against `/mm set window.bars.animate false`
+is the A/B if a capture ever asks.
+
 So the whole cost model is: **event rate → coalesced to a throttle → times open windows → times
 columns per window → times rows**. If a capture shows anything, it shows there. Everything else in
 this addon runs on context transitions — zone-in, roster change, settings write — and is not worth

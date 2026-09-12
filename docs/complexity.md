@@ -26,9 +26,9 @@ Nothing crossed. Everything that had crossed came back.
 
 ### The 1000–1500 LOC band
 
-Nineteen files, and **six of them are source**. That is the half worth reading twice: the band is
-here to warn whoever next opens a file, and a module at 1442 lines is a more useful warning than a
-suite at 1466.
+Twenty files, and **nine of them are source**. That is the half worth reading twice: the band is
+here to warn whoever next opens a file, and a module at 1469 lines is a more useful warning than a
+suite at 1479. (Re-counted 2026-09-12 on `fix/2026-09-12-triage`, after issues #50, #22 and #23.)
 
 Most of these were put here by the 2026-09-09 peels, but not all — `tests/wow_mock.lua`,
 `tests/test_provider.lua`, `tests/test_database.lua`, `tests/test_row.lua`, `tests/test_aggregator.lua`,
@@ -41,29 +41,31 @@ gate says so.
 
 | File | Lines | Headroom |
 |---|---|---|
-| `tests/wow_mock.lua` | 1466 | 34 |
-| `tests/test_row.lua` | 1456 | 44 |
-| `modules/Row.lua` | 1442 | 58 |
-| `tests/test_window_header.lua` | 1421 | 79 |
-| `modules/Window.lua` | 1418 | 82 |
+| `tests/test_provider.lua` | 1500 | 0 |
+| `tests/test_window_header.lua` | 1494 | 6 |
+| `tests/test_row.lua` | 1490 | 10 |
+| `tests/wow_mock.lua` | 1479 | 21 |
+| `modules/Row.lua` | 1469 | 31 |
+| `modules/Window.lua` | 1422 | 78 |
+| `settings/Schema.lua` | 1404 | 96 |
 | `tests/test_tooltip_deaths.lua` | 1391 | 109 |
-| `tests/test_provider.lua` | 1359 | 141 |
-| `settings/Schema.lua` | 1350 | 150 |
-| `modules/Aggregator.lua` | 1331 | 169 |
-| `settings/Schema_Compose.lua` | 1288 | 212 |
+| `modules/Aggregator.lua` | 1349 | 151 |
+| `settings/Schema_Compose.lua` | 1295 | 205 |
 | `tests/test_export.lua` | 1275 | 225 |
 | `tests/test_database.lua` | 1263 | 237 |
 | `tests/test_aggregator.lua` | 1255 | 245 |
 | `tests/test_window.lua` | 1240 | 260 |
-| `modules/Window_Header.lua` | 1184 | 316 |
+| `modules/Window_Header.lua` | 1213 | 287 |
 | `modules/Tooltip.lua` | 1167 | 333 |
 | `tests/test_headercontrols.lua` | 1159 | 341 |
-| `tests/test_schema.lua` | 1098 | 402 |
-| `modules/Tooltip_Builders.lua` | 1030 | 470 |
+| `tests/test_schema.lua` | 1147 | 353 |
+| `modules/Provider.lua` | 1064 | 436 |
+| `modules/Tooltip_Builders.lua` | 1033 | 467 |
 
-The four tightest — `tests/wow_mock.lua` (34), `tests/test_row.lua` (44), `modules/Row.lua` (58) and
-`tests/test_window_header.lua` (79) — are the ones where the next ordinary feature lands a file over
-the cap. `modules/Row.lua` is the one to watch: it is source, it is on the refresh path, and every
+The five tightest — `tests/test_provider.lua` (0), `tests/test_window_header.lua` (6),
+`tests/test_row.lua` (10), `tests/wow_mock.lua` (21) and `modules/Row.lua` (31) — are the ones where
+the next ordinary feature lands a file over the cap, and the three suites are already there: the next
+case added to any of them has to come with a peel. `modules/Row.lua` is the one to watch: it is source, it is on the refresh path, and every
 identity, spec-icon and pet-fold change has historically landed in it or in the name cell beside it.
 
 ### Reading the number, before acting on one

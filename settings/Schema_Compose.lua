@@ -844,6 +844,13 @@ local BARS_BAR_ROWS = compose("BarGroup", {
         path = "window.bars.fillDirection", type = "string", default = "LEFT",
         values = SIDE_VALUES, sorting = SIDE_SORT,
         label = L["Fill direction"], desc = L["Which edge of the cell each bar grows from."],
+    }, {
+        -- ON BY DEFAULT (issue #23). The client draws the slide itself, from the
+        -- interpolation argument modules/Row.lua passes both setters, so it is
+        -- legal on a secret and adds no update of its own. Off is the snap.
+        path = "window.bars.animate", type = "bool", default = true,
+        label = L["Animate bar fills"],
+        desc = L["Slide each bar to its new length between refreshes instead of jumping. The game draws the motion itself, so it works in combat and costs no extra updates."],
     } },
 })
 dress(BARS_BAR_ROWS, {

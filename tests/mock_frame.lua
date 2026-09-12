@@ -406,10 +406,19 @@ end
 -- The four setters a secret meter value legally reaches. Values are stored
 -- UNTOUCHED — no tonumber, no comparison, no default substitution — because the
 -- C side is the layer allowed to look and this stub is standing in for it.
-function FRAME.SetMinMaxValues(self, mn, mx) self.__min, self.__max = mn, mx; return self end
+--
+-- The optional trailing `interpolation` (patch 12.0, an Enum.StatusBarInterpolation)
+-- is recorded beside the value, so a suite can assert which setters animate
+-- (issue #23). Absent is recorded as nil, which is the client's `Immediate`.
+function FRAME.SetMinMaxValues(self, mn, mx, interpolation)
+    self.__min, self.__max = mn, mx
+    self.__minMaxInterpolation = interpolation
+    return self
+end
 function FRAME.GetMinMaxValues(self) return self.__min, self.__max end
-function FRAME.SetValue(self, v)
+function FRAME.SetValue(self, v, interpolation)
     self.__value = v
+    self.__valueInterpolation = interpolation
     self.__setValueCount = (self.__setValueCount or 0) + 1
     -- Mirror the client's HasSecretValues marking: a bar handed a secret has
     -- secret geometry from then on, and rule R3 says nothing may read it back.
