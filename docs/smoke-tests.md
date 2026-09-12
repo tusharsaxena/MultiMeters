@@ -1060,6 +1060,9 @@ is why the popup exists. Every open drill-down closes and this module's caches a
 switch back to Default → copy from Test → reset.
 
 **Pass.**
+- **The page draws.** Open another addon's options page first, then MultiMeters → Profiles → the
+  AceDBOptions controls render (current profile, New, Copy From, Delete, Reset Profile): never a
+  blank page under the header.
 - Switching profiles rebuilds every window immediately: the previous profile's windows are gone and
   the new profile's are drawn, positioned and populated.
 - The settings panel re-renders against the new profile's windows; the picker lists them.

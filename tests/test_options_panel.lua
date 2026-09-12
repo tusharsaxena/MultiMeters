@@ -591,6 +591,37 @@ test("Options: a profile switch re-opens the Profiles page's AceConfigDialog", f
         "the profile list is still the one drawn for the previous profile")
 end)
 
+test("Options: the Profiles page SHOWS the container AceConfigDialog fills, even a pooled (hidden) one",
+function()
+    -- AceGUI:Release hides a widget's frame before pooling it, and neither
+    -- AceGUI:Create nor AceConfigDialog:Open shows it again. settings/Profiles.lua
+    -- creates its SimpleGroup at build time, when AceGUI's pool is usually still
+    -- empty -- but any addon or page that released a SimpleGroup first hands it
+    -- a pooled, hidden one, AceConfigDialog fills that hidden frame, and the page
+    -- reads as blank under its header. The Create wrap below hands out every
+    -- SimpleGroup hidden, which is exactly the pooled case.
+    -- red under: the renderer not calling container.frame:Show().
+    local inst = T.load({ mutate = function(m)
+        local AceGUI = m.__libs["AceGUI-3.0"]
+        local create = AceGUI.Create
+        AceGUI.Create = function(self, wtype)
+            local w = create(self, wtype)
+            if wtype == "SimpleGroup" then w.frame:Hide() end
+            return w
+        end
+    end })
+    local ctx = panelFor(inst, "profiles")
+    local ACD = inst.mocks.__libs["AceConfigDialog-3.0"]
+
+    ctx.panel:Hide()
+    ctx.panel:Show()
+    assertTrue((ACD.__opens or 0) > 0, "the page never drew at all")
+    assertEqual(ACD.__lastOpen.name, "MultiMeters-Profiles")
+    local frame = ACD.__lastOpen.container and ACD.__lastOpen.container.frame
+    assertTrue(frame ~= nil, "AceConfigDialog is handed an AceGUI container")
+    assertTrue(frame:IsShown(), "the container AceConfigDialog fills is shown")
+end)
+
 -- ---------------------------------------------------------------------------
 -- One write seam, shared with the CLI
 -- ---------------------------------------------------------------------------
