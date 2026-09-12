@@ -40,7 +40,7 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 ├── core/
 │   ├── Compat.lua      — every cross-patch API call: C_Spell,
 │                         C_SpecializationInfo, all eight C_DamageMeter reads and
-│                         C_StringUtil.CreateNumericRuleFormatter. 28 shims, no logic
+│                         C_StringUtil.CreateNumericRuleFormatter. 29 shims, no logic
 │   ├── EnvSetup.lua    — the LibKa0s-Env seam: NS.Meta / NS.Version, the TOC-manifest
 │                         reader Compat used to own. BEFORE Namespace.lua, which
 │                         resolves NS.version at file scope
@@ -242,7 +242,7 @@ own strings entirely.
 
 | File | Owns | Publishes | Consumes |
 |---|---|---|---|
-| `Compat.lua` | All 28 cross-patch shims — the TOC-manifest reader is no longer among them; it moved to `EnvSetup.lua`. Never inspects a meter value; reading a field off a session table and passing it on is not inspection | `NS.Compat` | `_G` only |
+| `Compat.lua` | All 29 cross-patch shims — the TOC-manifest reader is no longer among them; it moved to `EnvSetup.lua`. Never inspects a meter value; reading a field off a session table and passing it on is not inspection | `NS.Compat` | `_G` only |
 | `Constants.lua` | The stat catalog, the **shipped** per-stat palette (`STAT_COLORS`, the seed for the `statColors.*` setting and the fallback every `NS.StatColor` call degrades to, plus the `STAT_DIM` factor), the two stat lookups — `STAT_BY_KEY` ("may this be a column") and `READABLE_STAT_BY_KEY` ("may this be read", the catalog plus `OFF_CATALOG_STATS`), enum resolutions, the `MSG` catalog, timing and pool bounds, the monospace font path (resolved from the LibKa0s payload, falling back to the client font) and its LSM key | `NS.Constants`, `NS.Const` | `_G.Enum`, `NS.MediaFont` |
 | `EnvSetup.lua` | The LibKa0s-Env seam: this addon's TOC manifest, and the one place the manifest-then-constant version pair is resolved. Repeats the reader ladder itself on a degraded install, so an install missing LibKa0s still reports its packaged version | `NS.Meta`, `NS.Version` | `LibKa0s-Env-1.0`, `NS.version` at call time. Owns no state and registers no event |
 | `Namespace.lua` | Addon identity, the collection's one class-color reader (four surfaces can wear one — the bars and cell text in `Row.lua`, both header strips in `Window.lua`, the tooltip), the one **statistic**-palette reader beside it (`NS.StatColor`, which reads the `statColors.*` setting and falls back to `Constants.STAT_COLORS`) and the bus-target factory. No side effects at all | `NS.PREFIX`, `NS.GRAY`, `NS.name`, `NS.version`, `NS.FALLBACK_VERSION`, `NS.ClassRGB`, `NS.PlayerClassRGB`, `NS.StatColor`, `NS.NewBusTarget` | `NS.Meta`, `_G.RAID_CLASS_COLORS`, `_G.UnitClass` |
