@@ -467,7 +467,10 @@ function M:CopyFrom(source, target, groups)
 
     local writes = {}
     for _, key in ipairs(keys) do groupWrites(src, key, writes) end
-    local ok, err = NS.SetByPaths(writes, dst.id, "copy from " .. tostring(src.name))
+    -- A BULK copy (debug-logging-§10), so the seam logs one flow line naming
+    -- both windows and the row count instead of a `[Set]` line per row.
+    local ok, err = NS.SetByPaths(writes, dst.id,
+        ("copy from '%s' to '%s'"):format(tostring(src.name), tostring(dst.name)))
     if not ok then return false, err end
 
     for _, key in ipairs(keys) do

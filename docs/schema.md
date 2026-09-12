@@ -1280,12 +1280,15 @@ validation, the debug line, the row's reaction and the refresh cannot be skipped
 forgot one. `windowId` is optional: omitted, a `window.*` path means the active window; given, it
 means that window and no other (see [the window registry](#the-window-registry-and-its-writer)).
 
-`NS.SetByPaths(writes, windowId, label)` is the same seam taking several `{ path, value }` writes as
-one change. Each entry goes through exactly what `NS.SetByPath` does, and every entry is checked
-before any is stored, so one refusal stores nothing. Only the tail differs: one debug line naming
-the batch and its row count, and one `CONFIG_CHANGED`. Its `section` is the page when every row
-shares one and `nil` when they do not, so no subscriber skips part of a change. A copy-from and a
-resize drag use it.
+`NS.SetByPaths(writes, windowId, summary)` is the same seam taking several `{ path, value }` writes
+as one change. Each entry goes through exactly what `NS.SetByPath` does, and every entry is checked
+before any is stored, so one refusal stores nothing. Only the tail differs: one `CONFIG_CHANGED` for
+the batch. Its `section` is the page when every row shares one and `nil` when they do not, so no
+subscriber skips part of a change. The log follows debug-logging-§10 as ruled on 2026-09-12: a batch
+logs one `[Set] <path> = <value>` line per row, whatever it is (a resize drag, a header sort, a
+segment pick). A **bulk copy or reset** is the one exception. It passes `summary`, and the seam logs
+one `[Bulk]` flow line instead, such as `copy from 'A' to 'B': 42 rows`, with no `[Set]` line per
+row. Copy-from is the only bulk caller today.
 
 **Order is load-bearing**: write → react (`onChange`) → log once → announce `CONFIG_CHANGED` →
 re-sync the panel's scalars. Reacting before the write would hand a refresher the old value; logging

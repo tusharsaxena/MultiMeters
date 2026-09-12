@@ -637,37 +637,84 @@ test("SetByPaths: validates every write before storing any of them", function()
     assertEqual(#seen, 0)
 end)
 
-test("SetByPaths: one debug line and one CONFIG_CHANGED for the whole batch", function()
+--- Every debug line from here on, tag first; call the answer to stop listening.
+local function heardDebug(NS)
+    local original, lines = NS.Debug, {}
+    NS.Debug = function(tag, fmt, ...) lines[#lines + 1] = { tag, fmt, ... } end
+    return lines, function() NS.Debug = original end
+end
+
+test("SetByPaths: one [Set] line PER ROW, and one CONFIG_CHANGED for the whole batch", function()
+    -- debug-logging-§10 as ruled 2026-09-12: a batch that is not a bulk copy or
+    -- reset logs every row it writes as `[Set] <path> = <value>`, even though
+    -- it announces once. A `[Set] resize: 2 rows` line hides the values.
+    -- red under: one `"%s: %d rows"` line naming the batch.
     local inst, first, second = twoWindows()
     local NS = inst.NS
     NS.State.SetActiveWindow(first)
     local seen = heardConfig(NS)
-    local original, lines = NS.Debug, {}
-    NS.Debug = function(tag, fmt, a, b) if tag == "Set" then lines[#lines + 1] = { fmt, a, b } end end
+    local lines, restore = heardDebug(NS)
 
     local ok = NS.SetByPaths({
         { "window.frame.width", 400 },
         { "window.frame.height", 300 },
-    }, second, "resize")
+    }, second)
     -- `window.rows.*` would NOT do here: the Row tab lives on the Frame page,
     -- so its rows are page "frame" too. Bars is a different page.
     local okMixed = NS.SetByPaths({
         { "window.frame.width", 410 },
         { "window.bars.border", true },
-    }, second, "mixed")
-    NS.Debug = original
+    }, second)
+    restore()
 
     assertTrue(ok and okMixed)
     assertEqual(NS.Database.FindWindow(second).frame.height, 300)
     assertEqual(NS.Database.FindWindow(second).bars.border, true)
-    assertEqual(#lines, 2, "one line per batch, not one per row")
-    assertEqual(lines[1][2], "resize")
-    assertEqual(lines[1][3], 2)
+    assertEqual(#lines, 4, "one line per row, and nothing else")
+    local want = {
+        { "window.frame.width", 400 }, { "window.frame.height", 300 },
+        { "window.frame.width", 410 }, { "window.bars.border", true },
+    }
+    for i, w in ipairs(want) do
+        assertEqual(lines[i][1], "Set")
+        assertEqual(lines[i][2], "%s = %s")
+        assertEqual(lines[i][3], w[1])
+        assertEqual(lines[i][4], w[2])
+    end
     assertEqual(#seen, 2, "one announcement per batch")
     assertEqual(seen[1].windowId, second)
     assertEqual(seen[1].section, "frame", "a batch inside one page names that page")
     assertEqual(seen[2].section, nil, "a batch across pages names none, so no subscriber skips it")
     assertEqual(NS.State.activeWindowId, first)
+end)
+
+test("SetByPaths: a BULK copy or reset logs ONE flow line and no [Set] line per row", function()
+    -- debug-logging-§10 as ruled 2026-09-12: a bulk copy or reset through the
+    -- helper is one debug-logging-§8 flow line naming the act, its source and
+    -- target, and how many rows it wrote. Seventy `[Set]` lines for one click
+    -- would evict the rest of the log. The announcement is still one.
+    -- red under: a summary argument that is ignored, or logged under `Set`.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local seen = heardConfig(NS)
+    local lines, restore = heardDebug(NS)
+
+    local ok = NS.SetByPaths({
+        { "window.frame.width", 400 },
+        { "window.frame.height", 300 },
+        { "window.bars.border", true },
+    }, second, "copy from 'A' to 'B'")
+    restore()
+
+    assertTrue(ok)
+    assertEqual(NS.Database.FindWindow(second).frame.width, 400)
+    assertEqual(#lines, 1, "one line for the whole bulk write")
+    assertEqual(lines[1][1], "Bulk", "a flow line, not a [Set] line")
+    local text = lines[1][2]:format(lines[1][3], lines[1][4])
+    assertEqual(text, "copy from 'A' to 'B': 3 rows")
+    assertEqual(#seen, 1)
+    assertEqual(seen[1].windowId, second)
 end)
 
 test("SetByPaths: every written row's onChange still fires, with the window id", function()
@@ -746,4 +793,31 @@ test("Picking Current or Overall writes the session type through the seam (issue
     assertEqual(cfg.data.sessionType, NS.Constants.SESSION_TYPE.Current)
     assertEqual(cfg.data.sessionID, NS.Constants.NO_SEGMENT, "the pin is cleared in the same batch")
     assertEqual(window.sessionType, NS.Constants.SESSION_TYPE.Current)
+end)
+
+test("The sort and segment batches log one [Set] line per row they write", function()
+    -- Neither is a bulk copy or reset, so each row is its own `[Set]` line
+    -- (debug-logging-§10), and each batch still announces once.
+    -- red under: `[Set] sort: 3 rows` and `[Set] segment: 2 rows`.
+    local inst, first = twoWindows()
+    local NS = inst.NS
+    local window = NS.Window.New(NS.Database.FindWindow(first))
+    local seen = heardConfig(NS)
+    local lines, restore = heardDebug(NS)
+
+    window:SortByColumn("Interrupts")
+    window:SetSessionType(NS.Constants.SESSION_TYPE.Current)
+    restore()
+
+    local paths = {}
+    for _, line in ipairs(lines) do
+        if line[1] == "Set" then
+            assertEqual(line[2], "%s = %s")
+            paths[#paths + 1] = line[3]
+        end
+    end
+    assertEqual(table.concat(paths, " "),
+        "window.data.sortColumn window.data.sortMode window.data.sortAscending"
+        .. " window.data.sessionID window.data.sessionType")
+    assertEqual(#seen, 2, "one announcement per batch")
 end)

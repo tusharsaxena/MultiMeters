@@ -66,8 +66,9 @@ end
 ---
 --- `frame.width` and `frame.height` ARE ROWS -- the Frame page's two sliders --
 --- so the drag that ends on them is a schema-row write (architecture-§5), and it
---- goes through the seam as one batch addressed to THIS window by id: logged
---- once, announced once, whichever window the settings panel is pointed at.
+--- goes through the seam as one batch addressed to THIS window by id: one
+--- `[Set]` line per dimension, announced once, whichever window the settings
+--- panel is pointed at.
 --- Called from the grip's OnDragStop only; OnSizeChanged merely remembers the
 --- size, so a drag costs one write however many frames it lasts.
 function WindowProto:SaveSize()
@@ -79,7 +80,7 @@ function WindowProto:SaveSize()
         NS.SetByPaths({
             { "window.frame.width",  width },
             { "window.frame.height", height },
-        }, self.id, "resize")
+        }, self.id)
     end
     self:ApplyConfig()
     self:MarkDirty()

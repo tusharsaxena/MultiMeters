@@ -738,3 +738,23 @@ test("SaveSize writes through the seam ONCE, at resize-stop, for its own window 
     window:SaveSize()
     assertEqual(#seen, 1, "nothing pending, nothing written")
 end)
+
+test("A resize logs one [Set] line per dimension, not a row count", function()
+    -- A resize is not a bulk copy or reset, so each row it writes is its own
+    -- `[Set] <path> = <value>` line (debug-logging-§10, ruled 2026-09-12).
+    -- red under: `[Set] resize: 2 rows`.
+    local inst, window = scene()
+    local NS = inst.NS
+    local original, lines = NS.Debug, {}
+    NS.Debug = function(tag, fmt, a, b)
+        if tag == "Set" then lines[#lines + 1] = fmt:format(a, b) end
+    end
+
+    window.anchor:_run("OnSizeChanged", 640.4, 300.6)
+    window:SaveSize()
+    NS.Debug = original
+
+    assertEqual(#lines, 2)
+    assertEqual(lines[1], "window.frame.width = 640")
+    assertEqual(lines[2], "window.frame.height = 301")
+end)

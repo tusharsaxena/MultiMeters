@@ -566,11 +566,15 @@ local function listen(inst)
     bus:RegisterMessage(NS.Constants.MSG.CONFIG_CHANGED, function(_, payload)
         seen[#seen + 1] = payload
     end)
-    local original = NS.Debug
-    NS.Debug = function(tag, fmt, a, b)
-        if tag == "Set" then lines[#lines + 1] = { fmt, a, b } end
+    local original, flows = NS.Debug, {}
+    NS.Debug = function(tag, fmt, ...)
+        if tag == "Set" then
+            lines[#lines + 1] = { fmt, ... }
+        else
+            flows[#flows + 1] = { tag, fmt:format(...) }
+        end
     end
-    return seen, lines, function() NS.Debug = original end
+    return seen, lines, function() NS.Debug = original end, flows
 end
 
 test("Rename writes window.name through the seam, for the window it names", function()
@@ -615,8 +619,29 @@ test("CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it co
 
     assertEqual(#seen, 1)
     assertEqual(seen[1].windowId, target.id)
-    assertEqual(#lines, 1, "one log line for the copy, not one per row")
+    assertEqual(#lines, 0, "a bulk copy suppresses the per-row [Set] lines")
     assertEqual(inst.NS.State.activeWindowId, source.id, "the picker stays where it was")
+end)
+
+test("CopyFrom logs ONE flow line naming the source, the target and the row count", function()
+    -- debug-logging-§10 as ruled 2026-09-12: a bulk copy is one
+    -- debug-logging-§8 flow line, never a `[Set]` line per row.
+    -- red under: `[Set] copy from Source: N rows`, which names no target.
+    local inst, M, source, target = twoWindows()
+    target.name = "Target"
+
+    local _, lines, restore, flows = listen(inst)
+    assertEqual(M:CopyFrom(source.id, target.id, "bars"), true)
+    restore()
+
+    assertEqual(#lines, 0)
+    local bulk = {}
+    for _, f in ipairs(flows) do
+        if f[1] == "Bulk" then bulk[#bulk + 1] = f[2] end
+    end
+    assertEqual(#bulk, 1, "one flow line for the copy")
+    local n = tonumber(bulk[1]:match("^copy from 'Source' to 'Target': (%d+) rows$"))
+    assertTrue(n ~= nil and n > 0, "the line names source, target and count: " .. tostring(bulk[1]))
 end)
 
 test("CopyFrom goes through each row's validate, and stores nothing on a refusal", function()

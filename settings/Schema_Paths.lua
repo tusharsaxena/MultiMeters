@@ -294,27 +294,17 @@ end
 
 local COLUMNS_PREFIX = WINDOW_PREFIX .. ".columns"
 
---- The tail EVERY write shares: log once, announce once, re-sync the panel.
+--- The tail EVERY write shares: announce once, re-sync the panel. The log line
+--- is the caller's, because a single write and a batch log differently.
 ---
 --- Factored out because the columns carve-out below is a second writer into the
 --- same config tree, and a carve-out that skipped the announcement would be a
 --- setting that changes without any window hearing about it — which is precisely
 --- the failure the single-seam rule exists to prevent.
 ---
---- The format is DEFERRED into NS.Debug (debug-logging-§10) rather than built
---- here, so a disabled log costs nothing.
----
 --- @param page string      the CONFIG_CHANGED section
 --- @param windowId number|nil
---- @param fmt string       debug format
---- @param a any
---- @param b any
-local function announceWrite(page, windowId, fmt, a, b)
-    -- Logged ONCE, here. Downstream reactors must not re-echo the same value: a
-    -- settings change that appears three times in the log is three changes as far
-    -- as a reader can tell.
-    if NS.Debug then NS.Debug("Set", fmt, a, b) end
-
+local function announceWrite(page, windowId)
     -- The ONE sender of CONFIG_CHANGED (architecture-§4). `section` is the row's
     -- page key, which is also the window config group it lives in, so a subscriber
     -- can skip work for a group it does not draw.
@@ -518,6 +508,21 @@ local function shownCount(cols)
     return shown
 end
 
+--- The `[Set] <path> = <value>` line for one stored write (debug-logging-§10).
+---
+--- Logged ONCE, here. Downstream reactors must not re-echo the same value: a
+--- settings change that appears three times in the log is three changes as far
+--- as a reader can tell. The format is DEFERRED into NS.Debug rather than built
+--- here, so a disabled log costs nothing.
+local function logWrite(plan)
+    if not NS.Debug then return end
+    if plan.columns then
+        NS.Debug("Set", "%s = %d shown", COLUMNS_PREFIX, shownCount(plan.columns))
+    else
+        NS.Debug("Set", "%s = %s", plan.path, plan.value)
+    end
+end
+
 --- Write one setting. THE single write seam (settings-schema-§1): the panel's
 --- widgets, `/mm set`, `/mm reset` and the defaults restore all land here, so
 --- validation, the debug line, the row's reaction and the refresh cannot be
@@ -546,40 +551,42 @@ function NS.SetByPath(path, value, windowId)
 
     storeWrite(plan)
     reactWrite(plan)
-
-    if plan.columns then
-        -- Two format arguments because that is what announceWrite forwards -- a
-        -- third would be dropped and its `%d` would reach the console literally.
-        announceWrite("columns", plan.windowId, "%s = %d shown", COLUMNS_PREFIX, shownCount(plan.columns))
-    else
-        announceWrite(plan.page, plan.windowId, "%s = %s", path, value)
-    end
+    logWrite(plan)
+    announceWrite(plan.page, plan.windowId)
     return true
 end
 
 --- Write several settings as ONE change: every write is checked first, then all
---- are stored, then each row reacts, then the change is logged and announced
+--- are stored, then each row reacts and is logged, then the change is announced
 --- once.
 ---
 --- THE SAME SEAM, NOT A SECOND ONE. Each entry goes through exactly what
 --- NS.SetByPath does -- the columns carve-out, the row lookup, the row's
 --- `validate`, the deep copy on the way in, the row's `onChange` -- and the
---- one difference is the tail. A copy-from touches seventy-odd rows of one
---- window, and seventy CONFIG_CHANGED messages would be seventy re-applies of
---- that window and seventy lines in the log for a single click. So the batch
---- takes one of each: the log line names the batch and how many rows it wrote,
---- and the announcement names the page when every row shares one and none when
---- they do not, because a subscriber skipping a section must not skip part of
---- a change.
+--- difference is the tail. A copy-from touches seventy-odd rows of one window,
+--- and seventy CONFIG_CHANGED messages would be seventy re-applies of that
+--- window for a single click. So the batch announces ONCE, naming the page when
+--- every row shares one and none when they do not, because a subscriber
+--- skipping a section must not skip part of a change.
+---
+--- THE LOG FOLLOWS debug-logging-§10 (ruled 2026-09-12). A batch logs every row
+--- it writes as its own `[Set] <path> = <value>` line: a sort, a resize or a
+--- segment pick is two or three settings, and a reader needs their values, not
+--- a count. A BULK copy or reset is the one exception, and `summary` is how the
+--- caller says it is one: that act logs ONE debug-logging-§8 flow line naming
+--- itself, its source and target, and how many rows it wrote, and no `[Set]`
+--- line per row -- seventy of those for one click would evict the rest of the
+--- log.
 ---
 --- ALL OR NOTHING. One refused entry stores no entry at all, and the refusal
 --- names its path.
 ---
 --- @param writes table         array of `{ path, value }`
 --- @param windowId number|nil  as NS.SetByPath's
---- @param label string|nil     what the log line calls the batch
+--- @param summary string|nil   ONLY for a bulk copy or reset: the act, naming
+---                             its source and target, e.g. "copy from 'A' to 'B'"
 --- @return boolean ok, string|nil err
-function NS.SetByPaths(writes, windowId, label)
+function NS.SetByPaths(writes, windowId, summary)
     if type(writes) ~= "table" then return false, L["Setting not found: %s"]:format(tostring(writes)) end
 
     local plans = {}
@@ -595,11 +602,13 @@ function NS.SetByPaths(writes, windowId, label)
     local page, id = plans[1].page, plans[1].windowId
     for _, plan in ipairs(plans) do
         reactWrite(plan)
+        if not summary then logWrite(plan) end
         if plan.page ~= page then page = nil end
         if plan.windowId ~= id then id = nil end
     end
 
-    announceWrite(page, id, "%s: %d rows", label or "batch", #plans)
+    if summary and NS.Debug then NS.Debug("Bulk", "%s: %d rows", summary, #plans) end
+    announceWrite(page, id)
     return true
 end
 

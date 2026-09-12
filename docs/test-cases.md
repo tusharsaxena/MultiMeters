@@ -1049,6 +1049,7 @@ badge and any count quoted in the docs must agree with it.
 - Unlocking does not resurrect the grip on a collapsed window
 - Either lock pins the window, and the master lock erases neither
 - SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)
+- A resize logs one [Set] line per dimension, not a row count
 
 ### test_window_segment.lua (10)
 
@@ -1647,7 +1648,7 @@ badge and any count quoted in the docs must agree with it.
 - A visibility field that is not a table reads as `no rules`, not as hide
 - The master enable, test mode and perf suspend are NOT read here
 
-### test_windowmanager.lua (40)
+### test_windowmanager.lua (41)
 
 - WindowManager is published under the flat name every caller uses
 - Init builds one live instance per stored config, and is idempotent
@@ -1686,6 +1687,7 @@ badge and any count quoted in the docs must agree with it.
 - Rename writes window.name through the seam, for the window it names
 - Rename keeps the uniqueness check the row does not have
 - CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it copies
+- CopyFrom logs ONE flow line naming the source, the target and the row count
 - CopyFrom goes through each row's validate, and stores nothing on a refusal
 - CopyFrom sends the sort through the seam, carries the pin, and never the position
 - SetLocked writes each window through the seam, tagged with its own id
@@ -1748,7 +1750,7 @@ badge and any count quoted in the docs must agree with it.
 - RestoreAllDefaults leaves the profile LIST alone
 - A profile reset rebuilds through the ONE message, not by direct calls
 
-### test_schema_paths.lua (40)
+### test_schema_paths.lua (42)
 
 - Schema: a window path resolves against the session's ACTIVE window
 - Schema: a global path is unaffected by which window is active
@@ -1786,10 +1788,12 @@ badge and any count quoted in the docs must agree with it.
 - SetByPath: a global row ignores the window id
 - SetByPath: window.columns takes the window id too
 - SetByPaths: validates every write before storing any of them
-- SetByPaths: one debug line and one CONFIG_CHANGED for the whole batch
+- SetByPaths: one [Set] line PER ROW, and one CONFIG_CHANGED for the whole batch
+- SetByPaths: a BULK copy or reset logs ONE flow line and no [Set] line per row
 - SetByPaths: every written row's onChange still fires, with the window id
 - A header click writes the sort through the seam, for the window clicked (issue #50)
 - Picking Current or Overall writes the session type through the seam (issue #50)
+- The sort and segment batches log one [Set] line per row they write
 
 ### test_schema_defaults.lua (10)
 
@@ -2028,7 +2032,7 @@ badge and any count quoted in the docs must agree with it.
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 59 |
 | test_window_header.lua | 73 |
-| test_window_placement.lua | 31 |
+| test_window_placement.lua | 32 |
 | test_window_segment.lua | 10 |
 | test_headercontrols.lua | 65 |
 | test_row.lua | 77 |
@@ -2042,10 +2046,10 @@ badge and any count quoted in the docs must agree with it.
 | test_export.lua | 86 |
 | test_export_modal.lua | 30 |
 | test_visibility.lua | 41 |
-| test_windowmanager.lua | 40 |
+| test_windowmanager.lua | 41 |
 | test_minimap.lua | 17 |
 | test_schema.lua | 35 |
-| test_schema_paths.lua | 40 |
+| test_schema_paths.lua | 42 |
 | test_schema_defaults.lua | 10 |
 | test_slash.lua | 50 |
 | test_options_panel.lua | 38 |
@@ -2054,4 +2058,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1796** |
+| **Total** | **1800** |

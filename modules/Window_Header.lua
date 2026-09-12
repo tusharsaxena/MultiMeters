@@ -873,11 +873,11 @@ function WindowProto:SortByColumn(key)
     --
     -- THE CLICK CHOOSES THE SORT, so the sort is a preference with rows
     -- (architecture-§5, issue #50) and the click writes them through the seam as
-    -- one batch addressed to THIS window: validated, logged once, announced once,
-    -- whichever window the settings panel is pointed at. The rows' own onChange
-    -- drops the frozen order, which is a snapshot of the OLD sort and would be
-    -- reapplied over the new one for the rest of the pull, so `/mm set` drops it
-    -- too.
+    -- one batch addressed to THIS window: validated, one `[Set]` line per row,
+    -- announced once, whichever window the settings panel is pointed at. The
+    -- rows' own onChange drops the frozen order, which is a snapshot of the OLD
+    -- sort and would be reapplied over the new one for the rest of the pull, so
+    -- `/mm set` drops it too.
     local writes
     if key == "name" then
         if data.sortMode == "name" then
@@ -893,7 +893,7 @@ function WindowProto:SortByColumn(key)
                    { "window.data.sortMode", "value" },
                    { "window.data.sortAscending", false } }
     end
-    if not (NS.SetByPaths and NS.SetByPaths(writes, self.id, "sort")) then return false end
+    if not (NS.SetByPaths and NS.SetByPaths(writes, self.id)) then return false end
 
     self:ApplyColumnHeaders()
     self:MarkDirty()
@@ -995,7 +995,7 @@ function WindowProto:SetSessionType(sessionType)
     if not (NS.SetByPaths and NS.SetByPaths({
         { "window.data.sessionID",   Const.NO_SEGMENT },
         { "window.data.sessionType", sessionType },
-    }, self.id, "segment")) then
+    }, self.id)) then
         return
     end
     self.sessionType = sessionType
