@@ -1817,6 +1817,28 @@ indication anything was wrong, and a recording running for the rest of the sessi
 **Record for the report:** group size and composition, whether the hunter was the local player or a
 party member, the full buffer, and the Deaths count you actually saw in the window beside it.
 
+**Then the provider check — does a feign's recap answer differently from a death's?** Blizzard's
+documented death row carries no field that marks a feign (see
+[scope.md](scope.md#known-limitations)), so the one place a signal could still hide is the recap
+behind the row's `deathRecapID`, whose event shape is undocumented. This check decides whether
+issue #25 is fixable from the provider at all.
+
+1. With a hunter in the party, out of combat, have them **feign once and not die**. Note the time.
+2. Have another party member **really die once** (or wait for one). Out of combat again.
+3. `/mm debug recap`. It dumps every death row the session holds with its recap id, then calls
+   `HasRecapEvents`, `GetRecapEvents` and `GetRecapMaxHealth` against chosen ids.
+4. Find the hunter's newest row and the real death's newest row in the dump, and compare what the
+   recap calls answered for each.
+
+**Pass (the issue closes as not fixable from this provider).** Both ids answer the same way:
+events present, a max health, the same shape of event list. Nothing distinguishes the feign, and the
+Known Limitations entry stands as written.
+
+**Finding (reopen the design).** The feign's id answers consistently differently from every real
+death's across at least three feigns: no events, a zero max health, or an event list with a marker
+a real death never carries. Paste the dump into the issue. That is a signal a filter could read off
+the row, and only then is a code change worth writing.
+
 ### 29. The pooled tab strip, and the perf strings, after the v1.27.0 re-vendor
 
 **Smoke, session 3. NOT YET RUN.** Two things arrived with `M4-01`'s LibKa0s v1.27.0 payload that
