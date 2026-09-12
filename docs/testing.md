@@ -168,10 +168,10 @@ all.
 `tests/test_schema_paths.lua` covers the path machinery and `NS.SetByPath`, the one seam a schema-row
 write belongs to ([schema.md](schema.md#the-window-registry-and-its-writer) lists the writers that
 still bypass it), so the case that matters there is not "a path reads a value" but "the **same**
-path reads a **different** window's value once the active window moves". `settings/Schema_Compose.lua` is the one
-new module with no suite of its own, and deliberately: it holds the vocabularies, validators and
-composers that build the row array, and `tests/test_schema.lua` asserts them where it asserts the
-array they produce.
+path reads a **different** window's value once the active window moves".
+`settings/Schema_Compose.lua` is the one new module with no suite of its own, and deliberately: it
+holds the vocabularies, validators and composers that build the row array, and
+`tests/test_schema.lua` asserts them where it asserts the array they produce.
 
 ## What the mock models, and what it admits it cannot
 
