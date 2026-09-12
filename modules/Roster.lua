@@ -541,21 +541,39 @@ function Roster.Refresh()
     State.WipeCache("Roster")
 end
 
+--- How many entries a remembered map holds. Keys are plain GUIDs (the map is
+--- only ever written through Secrets.IsSafeKey), so counting them is legal.
+local function count(map)
+    local n = 0
+    for _ in pairs(type(map) == "table" and map or {}) do n = n + 1 end
+    return n
+end
+
 --- Forget everyone — live and remembered.
 ---
 --- The meter-reset path, and the ONLY thing that clears the remembered map. A
 --- reset is the moment the numbers those GUIDs belonged to stopped existing,
 --- which is precisely when remembering them stops being useful and starts being
---- a list of strangers.
+--- a list of strangers. Reached from METER_RESET (OnEnable below).
 ---
---- core/MultiMeters.lua's reset handler wipes every cache namespace and so
---- reaches both of these already; this exists so a caller that means "the meter
---- was reset" has one spelling for it rather than having to know there are two
---- namespaces to clear.
+--- core/MultiMeters.lua's reset handler wipes the SESSION caches, the live half
+--- included, but never db.global.roster: that is persisted learned data, and
+--- this module owns it. Nothing called this before the subscription below, so
+--- the map only ever grew.
+---
+--- A forget of learned data is a data mutation, so it is traced, once, with
+--- what it dropped (debug-logging-§8, §10) -- and the count is built behind the
+--- gate (§9).
 function Roster.Forget()
     State.WipeCache("Roster")
     local db = NS.db
-    if db and db.global then db.global.roster = { byGuid = {}, pets = {} } end
+    if not (db and db.global) then return end
+    if State.debug then
+        local seen = db.global.roster or {}
+        NS.Debug("Roster", "forgot the remembered roster: %d members, %d pets",
+            count(seen.byGuid), count(seen.pets))
+    end
+    db.global.roster = { byGuid = {}, pets = {} }
 end
 
 -- ---------------------------------------------------------------------------
@@ -584,8 +602,14 @@ function Roster:OnEnable()
     self:RegisterMessage(MSG.ENTERING_WORLD,    "OnRosterChanged")
     self:RegisterMessage(MSG.PROFILE_CHANGED,   "OnRosterChanged")
     self:RegisterMessage(MSG.TEST_MODE_CHANGED, "OnRosterChanged")
+    -- The one message that clears the remembered map as well as the live one.
+    self:RegisterMessage(MSG.METER_RESET,       "OnMeterReset")
 end
 
 function Roster:OnRosterChanged()
     Roster.Refresh()
+end
+
+function Roster:OnMeterReset()
+    Roster.Forget()
 end

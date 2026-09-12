@@ -588,3 +588,26 @@ function()
     assertTrue(text:find("performance measurement is unavailable", 1, true) ~= nil,
         "the degraded answer does not name its own consequence")
 end)
+
+-- ── the capture ring's retention prune (Perf minor 11) ──────────────────────
+
+test("PerfSetup: a save past the ring's cap says what it dropped, in the console", function()
+    -- debug-logging-§8: a retention prune is traced. The library writes the line
+    -- (Perf minor 11); what this addon owns is that its `log` seam delivers it,
+    -- with debug logging OFF, exactly as every other perf line is delivered.
+    -- red under: a descriptor `log` that drops lines, or gates them on the flag.
+    local inst = T.load{}
+    assertFalse(inst.NS.State.debug, "the fixture needs the flag OFF")
+    local lib = inst.mocks.LibStub("LibKa0s-Perf-1.0")
+    local runs = {}
+    for i = 1, lib.DEFAULT_RING do runs[i] = { label = "old" .. i } end
+    _G.MultiMetersPerfDB = { schema = lib.SCHEMA, runs = runs }
+
+    inst.NS.Perf.Save({ label = "new" })
+
+    assertEqual(#_G.MultiMetersPerfDB.runs, lib.DEFAULT_RING, "the ring kept its size")
+    local found = inst.NS.DebugLog:FindLine("perf ring at its cap")
+    assertTrue(found ~= nil, "the prune left no line in the console")
+    assertTrue(found:find("dropped 1 oldest", 1, true) ~= nil, "got: " .. tostring(found))
+    _G.MultiMetersPerfDB = nil
+end)

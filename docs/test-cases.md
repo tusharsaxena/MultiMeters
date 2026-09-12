@@ -430,7 +430,7 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: NS.LIBKA0S_MISSING is set on BOTH paths, not only the degraded one
 - CoreSetup: all five seams append to the shared clause rather than re-spelling it
 
-### test_perfsetup.lua (22)
+### test_perfsetup.lua (23)
 
 - PerfSetup: NS.Perf is the library instance, with the gate as a plain boolean field
 - PerfSetup: the capture ring is a SECOND SavedVariables global, outside the AceDB tree
@@ -454,6 +454,7 @@ badge and any count quoted in the docs must agree with it.
 - PerfSetup: the descriptor resolves its modules at CALL time
 - PerfSetup: with LibKa0s absent the stub answers every member the addon reaches
 - PerfSetup: the degraded `/mm perf` answers with the shared cause and its own consequence
+- PerfSetup: a save past the ring's cap says what it dropped, in the console
 
 ### test_debuglogsetup.lua (30)
 
@@ -675,7 +676,7 @@ badge and any count quoted in the docs must agree with it.
 - Distinct PLAIN values are counted, so a constant field reads as one
 - A SECRET value is never compared or keyed on to count distinctness
 
-### test_roster.lua (39)
+### test_roster.lua (41)
 
 - Roster.GetGroup is player-first, then party order
 - Roster.GetGroup carries name, class and role off the unit API
@@ -716,6 +717,8 @@ badge and any count quoted in the docs must agree with it.
 - A completed build logs one line, with the counters the loop kept
 - The build line says whether this was a raid
 - A short build says so, and does not also claim it built the group
+- Roster.Forget traces what it forgot, in one line
+- A meter reset forgets the remembered roster, through the bus
 
 ### test_feign.lua (27)
 
@@ -2005,7 +2008,7 @@ badge and any count quoted in the docs must agree with it.
 | test_diagnostics_feign.lua | 19 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
-| test_perfsetup.lua | 22 |
+| test_perfsetup.lua | 23 |
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
@@ -2013,7 +2016,7 @@ badge and any count quoted in the docs must agree with it.
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 41 |
 | test_provider.lua | 78 |
-| test_roster.lua | 39 |
+| test_roster.lua | 41 |
 | test_feign.lua | 27 |
 | test_aggregator.lua | 61 |
 | test_aggregator_identity.lua | 27 |
@@ -2047,4 +2050,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1789** |
+| **Total** | **1792** |

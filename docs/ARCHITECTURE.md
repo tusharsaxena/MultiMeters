@@ -144,7 +144,7 @@ typo in a subscriber is a nil-index at load rather than a callback that silently
 |---|---|---|---|
 | `METER_UPDATED` | `core/MultiMeters.lua` | `Targets`, every `Window` | — |
 | `METER_SESSION` | `core/MultiMeters.lua` | `Provider`, `Targets`, every `Window` | `{ type, sessionID }` |
-| `METER_RESET` | `core/MultiMeters.lua`, and `Provider.Reset` for the manual path | `Provider`, `Feign`, `Aggregator`, `Targets`, `DrillDown`, every `Window` | — |
+| `METER_RESET` | `core/MultiMeters.lua`, and `Provider.Reset` for the manual path | `Provider`, `Roster`, `Feign`, `Aggregator`, `Targets`, `DrillDown`, every `Window` | — |
 | `ROSTER_CHANGED` | `core/MultiMeters.lua` | `Roster`, `Feign`, `Visibility`, every `Window` | — |
 | `ZONE_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
 | `ENTERING_WORLD` | `core/MultiMeters.lua` | `Provider`, `Roster`, `Feign`, `Visibility`, every `Window` | `{ isLogin, isReload }` |
