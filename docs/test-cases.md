@@ -544,7 +544,7 @@ badge and any count quoted in the docs must agree with it.
 - tests/_kit is the test kit that shipped with that release
 - the automated-test runner is recorded executable (100755)
 
-### test_format.lua (39)
+### test_format.lua (41)
 
 - Format: NS.Format is a callable table carrying both contracts
 - Format.Number goes through the native ABBREVIATING formatter
@@ -585,6 +585,8 @@ badge and any count quoted in the docs must agree with it.
 - Format.DeathTime defaults 'now' to the client clock
 - Format.DeathTime routes both countdown strings through the locale
 - Format.DeathTime refuses a secret timestamp in either style
+- A sub-thousand rate stays whole even when the client's OWN ladder is in force (#26)
+- 'full' keeps a sub-thousand rate whole on a client that refuses a fractional breakpoint (#26)
 
 ### test_provider.lua (78)
 
@@ -1983,7 +1985,7 @@ badge and any count quoted in the docs must agree with it.
 | test_envsetup.lua | 11 |
 | test_lifecycle.lua | 29 |
 | test_vendor_sync.lua | 3 |
-| test_format.lua | 39 |
+| test_format.lua | 41 |
 | test_provider.lua | 78 |
 | test_roster.lua | 39 |
 | test_feign.lua | 27 |
@@ -2018,4 +2020,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1764** |
+| **Total** | **1766** |

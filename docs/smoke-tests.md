@@ -1176,6 +1176,14 @@ on is not knowable from the headless harness, and rung 3 renders a window full o
    the same as they did out of combat. A number that renders `1.4M` out of combat and `<secret>` in it
    means the formatter rung changed under the restriction — report it with both screenshots.
 5. Set `window.text.numberFormat` to `full` and confirm the unabbreviated form appears.
+6. **A rate below 1000 (issue #26).** Put a Healing (or Damage) rate under 1000 on screen — a
+   healer's HPS at a dummy does it — on `abbreviated`, then on `full`. Read it out of combat and
+   **in combat**. It must be a whole number (`411`), never its float (`411.90476…`). If it shows its
+   digits, turn `/mm debug on`, change any setting (which rebuilds the formatter), and report the
+   `[Format]` line the console prints, which names the rung the client accepted, together with the
+   `-- number formatting --` block from `/mm debug diag`. **Unconfirmed in game:** the fix gives every
+   fallback a rule below 1000, but which fallback the reporting client actually lands on has only
+   been modeled headlessly.
 
 **If step 2 shows raw digits** (`1410000`), neither formatter exists on this client and the
 degradation ladder is landing on a rung nobody planned for. That is a different bug from anything in

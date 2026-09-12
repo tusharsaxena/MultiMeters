@@ -626,3 +626,69 @@ test("Format.DeathTime refuses a secret timestamp in either style", function()
     -- never handed to a client API either.
     assertTrue(nil == F.DeathTime(secret, "ago"))
 end)
+
+-- ---------------------------------------------------------------------------
+-- Issue #26 -- a rate below 1000 rendered every decimal digit it had
+-- ---------------------------------------------------------------------------
+--
+-- The live cell read `411.90476190...`. Two of the degradation ladder's
+-- candidates carried no rule below 1000 -- the ladder without its floor, and the
+-- client's own defaults -- so a client that refused our arrays fell through to a
+-- plain render, which for a float is every digit. And `full` mode's formatter set
+-- one fractional rung, never probed it and had no fallback at all.
+
+test("A sub-thousand rate stays whole even when the client's OWN ladder is in force (#26)", function()
+    -- A client that silently keeps its own rules whenever an array carries a
+    -- K/M/B rung that is not one of its own -- the shape the issue's `206K`
+    -- (no decimal) points at. Its defaults have nothing below 1000.
+    -- red under: installing GetDefaultAbbreviationBreakpoints() bare.
+    local inst = T.load{ mutate = function(mocks)
+        local real = mocks.C_StringUtil.CreateAbbreviatedNumberFormatter
+        local defaults = mocks.C_StringUtil.GetDefaultAbbreviationBreakpoints()
+        local own = {}
+        for _, bp in ipairs(defaults) do own[bp] = true end
+        mocks.C_StringUtil = setmetatable({
+            GetDefaultAbbreviationBreakpoints = function() return defaults end,
+            CreateAbbreviatedNumberFormatter = function()
+                local f = real()
+                f.SetBreakpoints = function(self, list)
+                    for _, bp in ipairs(list) do
+                        if bp.abbreviation ~= "" and not own[bp] then return end
+                    end
+                    self.__breakpoints = list
+                end
+                return f
+            end,
+        }, { __index = mocks.C_StringUtil })
+    end }
+    local F = inst.NS.Format
+
+    assertEqual(F.Number(47500), "47K", "the client's own K rung is the one in force")
+    assertEqual(F.Number(411.90476190476), "411", "a sub-thousand rate renders its whole part")
+    assertEqual(F.Rate(411.90476190476), "411")
+    assertEqual(F.Number(0.42857142857143), "0")
+end)
+
+test("'full' keeps a sub-thousand rate whole on a client that refuses a fractional breakpoint (#26)", function()
+    -- red under: plain() setting its single 0.001 rung with no probe and no
+    -- fallback, which leaves the formatter with no rule at all.
+    local inst = T.load{ mutate = function(mocks)
+        local real = mocks.C_StringUtil.CreateNumericRuleFormatter
+        mocks.C_StringUtil = setmetatable({
+            CreateNumericRuleFormatter = function()
+                local f = real()
+                f.SetBreakpoints = function(self, list)
+                    for _, bp in ipairs(list) do
+                        if bp.breakpoint < 1 then return end
+                    end
+                    self.__breakpoints = list
+                end
+                return f
+            end,
+        }, { __index = mocks.C_StringUtil })
+    end }
+    local F = inst.NS.Format
+
+    assertEqual(F.Number(411.90476190476, "full"), "411")
+    assertEqual(F.Number(4200000, "full"), "4200000", "and full still abbreviates nothing")
+end)
