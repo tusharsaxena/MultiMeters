@@ -8,8 +8,7 @@
    geometry-flip revision note, so there is no "revision 19 at the earliest" line to move.
 3. **Gate:** `lua tests/run.lua` and `luacheck .`, with `tests/test_vendor_sync.lua` comparing both
    payloads against the tag and skipping none.
-4. **Adoption (B1)**, its own commit: `profilesPage = true` on the descriptor in
-   `settings/OptionsSetup.lua`; a test, red before, that the Reset-all tooltip names the
-   equivalence; a test that `window.name` set through the slash with several words is stored whole;
-   the settings-panel and smoke-test lines that describe the tooltip; `docs/test-cases.md` and the
-   README badge regenerated.
+4. **Slash pin**, its own commit: a test that `window.name` set through the slash with several
+   words is stored whole, red on Slash minor 9; `docs/test-cases.md` and the README badge
+   regenerated. **B1 is not adopted** (02_CANDIDATES B1), so no settings-panel or smoke-test line
+   about the tooltip moves.

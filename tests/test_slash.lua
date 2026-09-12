@@ -869,3 +869,15 @@ test("Slash: /mm list heads each block with the page AND the tab", function()
     assertTrue(text:find("frame \226\128\186 ", 1, true) ~= nil,
         "no page \226\128\186 tab heading in the listing")
 end)
+
+test("Slash: `set window.name` keeps every word of a multi-word name", function()
+    -- LibKa0s-Slash-1.0 minor 10 hands a string row the whole remainder, trimmed.
+    -- Through minor 9 it took the first word, so `/mm set window.name Raid Damage
+    -- Meter` renamed the window "Raid".
+    -- red under: Slash.lua minor 9 (the parse splitting a string row's value).
+    local inst = T.load()
+    local out = say(inst, "set window.name  Raid Damage Meter ")
+    assertEqual(inst.NS.GetSetting("window.name"), "Raid Damage Meter", joined(out))
+    assertEqual(inst.NS.Database.GetWindows()[1].name, "Raid Damage Meter",
+        "the window record carries the whole name")
+end)

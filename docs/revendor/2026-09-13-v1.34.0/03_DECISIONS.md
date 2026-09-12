@@ -6,8 +6,8 @@ This run was **non-interactive**. The orchestrator's brief (re-vendor v1.34.0 on
 | Candidate | Decision | Why |
 |---|---|---|
 | Slash 10 whole-value string rows | **taken on the copy**, plus one pin | Class A. A test pins `window.name` set through the slash with more than one word, stored whole. |
-| Options 18 / OptionsCompose 5 tooltip | **taken on the copy** | Class A: the descriptor already supplies `resetProfile`. |
+| Options 18 / OptionsCompose 5 tooltip | **taken on the copy**; nothing moves | The composers are attached without the descriptor (02_CANDIDATES B1). |
 | Kit 19 `OnProfileReset` without a key | **taken on the copy** | Class A: the harness's own AceDB wrapper already passes none, so nothing moves. |
-| B1 `profilesPage = true` | **accepted** | `options-ui-§12`'s SHOULD; one descriptor line. Its own commit, with a test that was red before. |
+| B1 `profilesPage = true` | **withheld, for the owner** | The field cannot reach this addon's button (02_CANDIDATES B1). The tooltip test written for it was red and stays out of the tree. |
 
-Nothing was declined. No issue was filed, and none is owed.
+Nothing was declined outright. No issue was filed: the brief rules out issue changes on this branch.

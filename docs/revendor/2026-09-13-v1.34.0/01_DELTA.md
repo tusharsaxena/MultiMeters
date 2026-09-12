@@ -53,7 +53,8 @@ both `diff -r` forms, with and without `--strip-trailing-cr`, are empty for both
 `Options` is looked up at `settings/OptionsSetup.lua:110` and `settings/Schema_Compose.lua:476`;
 the descriptor supplies `resetProfile` at `settings/OptionsSetup.lua:197`, and
 `settings/Schema_Compose.lua:628` composes the General page's Master controls through
-`MasterControls`, the composer whose Reset-all tooltip moved. `Slash` is looked up at
+`MasterControls`, the composer whose Reset-all tooltip moved, on a table attached at `:484` without
+the descriptor (02_CANDIDATES B1). `Slash` is looked up at
 `settings/Slash.lua:110`. All three files that moved are consumed.
 
 ## 3f. Kit revision, and the pairing rule
