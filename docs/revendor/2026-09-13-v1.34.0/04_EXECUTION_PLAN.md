@@ -1,0 +1,15 @@
+# 04 — Execution plan
+
+1. **Re-vendor**, one commit on `chore/2026-09-12-libka0s-1.33.0`, on top of `e66fa0c`. Both
+   payloads were copied whole from the tag. Only `Options.lua`, `OptionsCompose.lua`, `Slash.lua`
+   and three kit files changed. CR equals LF in every changed file, and the runner stays `100755`.
+2. **Docs in the same commit:** the provenance line (`CLAUDE.md:52`) and the dated "the two agree"
+   measurement at `docs/testing.md:490`–`:491` move to v1.34.0. This repo carries no live
+   geometry-flip revision note, so there is no "revision 19 at the earliest" line to move.
+3. **Gate:** `lua tests/run.lua` and `luacheck .`, with `tests/test_vendor_sync.lua` comparing both
+   payloads against the tag and skipping none.
+4. **Adoption (B1)**, its own commit: `profilesPage = true` on the descriptor in
+   `settings/OptionsSetup.lua`; a test, red before, that the Reset-all tooltip names the
+   equivalence; a test that `window.name` set through the slash with several words is stored whole;
+   the settings-panel and smoke-test lines that describe the tooltip; `docs/test-cases.md` and the
+   README badge regenerated.
