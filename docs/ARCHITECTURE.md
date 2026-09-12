@@ -123,9 +123,9 @@ existence. Its storage keys are `db.profile.windows`, an array whose entries car
 unique `name`, and the id counter `db.profile.nextWindowId`. Its writer is
 `modules/WindowManager.lua` (`Create`, `Delete`, `Duplicate`, `Rename`'s uniqueness check), with
 `Database.NextWindowId` and `Database.EnsureWindowShape` as its helpers. Its load pass is
-`Database.SeedWindows`, run by `NS:RunMigrations` from `NS:InitDB` and AceDB's profile callbacks
-only. Rows inside a window stay `NS.SetByPath`'s, and some writers do not honor that yet
-([schema.md](schema.md#the-window-registry-and-its-writer)).
+`Database.SeedWindows`, run by `NS:RunMigrations` at initialization (`NS:OnInitialize`, `NS:InitDB`)
+and from AceDB's profile callbacks only. Rows inside a window stay `NS.SetByPath`'s, and some
+writers do not honor that yet ([schema.md](schema.md#the-window-registry-and-its-writer)).
 
 `NS.ValidateSchema()` proves every row's `default` equals `defaults/Profile.lua`'s. The two are
 restated independently rather than sharing a reference precisely so the check can prove something.

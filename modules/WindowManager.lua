@@ -3,7 +3,8 @@
 -- The window REGISTRY: create, delete, rename, duplicate, copy-settings-from,
 -- and the one instance of modules/Window.lua that stands behind each stored
 -- config. core/Database.lua owns the shape of a window config and the array it
--- lives in; this file owns the live objects and every mutation of the list.
+-- lives in; this file owns the live objects and every runtime mutation of the
+-- list. The one other writer is the load pass, core/Database.lua's SeedWindows.
 --
 -- WHY A REGISTRY AT ALL. A window is an instance, not a singleton (design §6):
 -- there are no global display settings, so "the meter" is however many

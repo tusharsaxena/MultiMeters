@@ -121,9 +121,9 @@ registry** rather than by a version — the same shape-driven rule as above.
 `Database.GetWindows()` is the one traversal seam; every consumer that reads the registry goes
 through it, and every consumer that *mutates* it at runtime goes through
 `modules/WindowManager.lua`, which is the sole sender of `WINDOWS_CHANGED`. The one other writer is
-the load pass: `Database.SeedWindows` above, reached only through `NS:RunMigrations` from
-`NS:InitDB` and AceDB's profile callbacks. [ARCHITECTURE.md](ARCHITECTURE.md#settings-schema) names
-both, as `architecture-§5` requires.
+the load pass: `Database.SeedWindows` above, reached only through `NS:RunMigrations` at
+initialization (`NS:OnInitialize` and `NS:InitDB`) and from AceDB's profile callbacks.
+[ARCHITECTURE.md](ARCHITECTURE.md#settings-schema) names both, as `architecture-§5` requires.
 
 ### The window registry and its writer
 
@@ -140,22 +140,27 @@ which no row path can name. The windows are this addon's one registry.
   and `Database.EnsureWindowShape` (the template backfill) are its helpers. The panel
   (`settings/Windows.lua`) and the slash verbs (`settings/Slash.lua`) call it, and neither touches
   the array itself.
-- **Load pass.** `Database.SeedWindows` runs at the end of `NS:RunMigrations`, whose only entry
-  points are `NS:InitDB` and `Database:OnProfileChanged` (AceDB's changed, copied and reset
-  callbacks). It seeds one window into an empty registry, mints a missing id and backfills the
-  template. It never applies a player's choice. "Reset all settings" (`db:ResetProfile()`) and
+- **Load pass.** `Database.SeedWindows` runs at the end of `NS:RunMigrations`, whose only callers
+  are initialization (`NS:InitDB`, then `NS:OnInitialize` again directly as an idempotent repeat)
+  and `Database:OnProfileChanged` (AceDB's changed, copied and reset callbacks). It seeds one
+  window into an empty registry, mints a missing id and backfills the template. It never applies a
+  player's choice. "Reset all settings" (`db:ResetProfile()`) and
   AceDB's swap and copy replace the store whole, and this pass re-seeds after them.
 
 **Naming the writer covers membership and bookkeeping only.** A member field a row addresses is a
 schema-row write and belongs to `NS.SetByPath`, even when `WindowManager` is the caller. These
 writers do not do that yet, and none of them is ratified here:
 
-- `WindowManager:Rename` writes `window.name`, and `WindowManager:CopyFrom` deep-assigns whole row
-  groups onto its target. Both bypass the seam because it resolves `window.*` against the active
-  window only, with no way to name another one.
+- `WindowManager:Rename` writes `window.name`, `WindowManager:CopyFrom` deep-assigns whole row
+  groups onto its target, and `WindowManager:SetLocked` writes `window.frame.locked` on every
+  window. They bypass the seam because it resolves `window.*` against the active window only, with
+  no way to name another one.
+- `WindowProto:SaveSize` writes the `window.frame.width` and `window.frame.height` rows when a
+  resize drag ends, on whichever window was dragged. That is drag-written geometry, and the
+  deviation register has no `architecture-§5` row for it.
 - `frame.position` has no row (see [`frame`](#frame--the-standalone-window) below). It is written by a
   drag (`SavePosition`) and by `WindowManager:ResetPosition` / `:ResetPositions`, and the
-  deviation register has no `architecture-§5` row for it.
+  deviation register has no `architecture-§5` row for it either.
 
 ### `nextWindowId` — ids are minted, never reused
 

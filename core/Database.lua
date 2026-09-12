@@ -133,8 +133,9 @@ end
 ---
 --- Returns an empty table rather than nil when the database is not up yet, so a
 --- caller can iterate unconditionally. Callers that need to MUTATE the registry
---- go through modules/WindowManager.lua, which owns create / delete / rename /
---- duplicate and is the sender of WINDOWS_CHANGED.
+--- at runtime go through modules/WindowManager.lua, which owns create / delete /
+--- rename / duplicate and is the sender of WINDOWS_CHANGED. The one other writer
+--- is the load pass, SeedWindows below, reached only through NS:RunMigrations.
 ---
 --- @return table  array of window config tables
 function Database.GetWindows()

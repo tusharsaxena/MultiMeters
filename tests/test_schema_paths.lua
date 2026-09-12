@@ -1,7 +1,9 @@
 -- tests/test_schema_paths.lua
 --
--- settings/Schema_Paths.lua: the path machinery, and the ONE seam every write
--- goes through. Two ideas here are not standard-issue:
+-- settings/Schema_Paths.lua: the path machinery, and NS.SetByPath, the ONE seam
+-- a schema-row write belongs to (docs/schema.md, "The window registry and its
+-- writer", lists the writers that still bypass it). Two ideas here are not
+-- standard-issue:
 --
 --   1. THE WINDOW-RELATIVE PATH MODEL (design 8). A `window.`-prefixed path has
 --      no window in it. It resolves against the SESSION'S ACTIVE WINDOW, so the

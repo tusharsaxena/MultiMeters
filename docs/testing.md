@@ -165,9 +165,10 @@ declining while the Combat restriction is active is not enough on its own. Every
 function of its arguments stays in `tests/test_export.lua`, which is why that suite needs no frame at
 all.
 
-`tests/test_schema_paths.lua` covers the path machinery and the single seam every write goes through,
-so the case that matters there is not "a path reads a value" but "the **same** path reads a
-**different** window's value once the active window moves". `settings/Schema_Compose.lua` is the one
+`tests/test_schema_paths.lua` covers the path machinery and `NS.SetByPath`, the one seam a schema-row
+write belongs to ([schema.md](schema.md#the-window-registry-and-its-writer) lists the writers that
+still bypass it), so the case that matters there is not "a path reads a value" but "the **same**
+path reads a **different** window's value once the active window moves". `settings/Schema_Compose.lua` is the one
 new module with no suite of its own, and deliberately: it holds the vocabularies, validators and
 composers that build the row array, and `tests/test_schema.lua` asserts them where it asserts the
 array they produce.
