@@ -912,9 +912,9 @@ what confirms its verdict against a second meter.**
 1. In a Mythic+ dungeon or a raid, with a full group and at least one completed pull, stand **out of
    combat**.
 2. Put the window on **Damage** by clicking the **Damage** column header, and click it once more if
-   the arrow is not pointing down. The sort is the window's own control — there is no settings row
-   and no `/mm set` for it, deliberately: the click path writes `sortMode`, `sortColumn` and
-   `sortAscending` directly.
+   the arrow is not pointing down. The sort is the window's own control, drawn nowhere on the panel:
+   the click writes the hidden rows `sortMode`, `sortColumn` and `sortAscending` through the seam
+   for this window, so `/mm get window.data.sortColumn` reads the same value back (issue #50).
 3. Pick **Overall** from the header's **segment** dropdown, so both meters are describing the same
    span. (Overall is the accumulated run and the shipped default; Current is the live pull.)
 4. Open **Blizzard's built-in damage meter** and put it on **Damage done**, same session scope.

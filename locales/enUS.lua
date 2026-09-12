@@ -229,6 +229,16 @@ L["Reveal controls on hover"] = "Reveal controls on hover"
 L["Fade every control except the one under the pointer. Off keeps them all visible."] = "Fade every control except the one under the pointer. Off keeps them all visible."
 L["Minimised"] = "Minimised"
 L["Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."] = "Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."
+-- The four hidden rows the window's own header controls write (issue #50): the
+-- segment menu's Current / Overall entries, and a click on a column header.
+L["Read the current pull, or the accumulated totals for the whole run. Chosen from the header's segment menu."] =
+    "Read the current pull, or the accumulated totals for the whole run. Chosen from the header's segment menu."
+L["Which column's numbers decide the row order. Chosen by clicking a column header."] =
+    "Which column's numbers decide the row order. Chosen by clicking a column header."
+L["How rows are ordered: by value, by name, in the game's order or in group order. The Player header chooses by name."] =
+    "How rows are ordered: by value, by name, in the game's order or in group order. The Player header chooses by name."
+L["Put the smallest numbers at the top. Clicking the sort column's header again flips it."] =
+    "Put the smallest numbers at the top. Clicking the sort column's header again flips it."
 L["Control color mode"] = "Control color mode"
 L["What colors the header controls at rest."] = "What colors the header controls at rest."
 L["Control color"] = "Control color"

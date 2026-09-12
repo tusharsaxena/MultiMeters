@@ -632,15 +632,23 @@ test("CopyFrom goes through each row's validate, and stores nothing on a refusal
     assertTrue(target.frame.scale ~= 99)
 end)
 
-test("CopyFrom carries the view state no row addresses, and never the position", function()
-    -- `data.sortColumn` and friends are what the window is LOOKING AT, not a
-    -- preference, and no row names them; the copy has always carried them and
-    -- still does. The position is not copied at all.
+test("CopyFrom sends the sort through the seam, carries the pin, and never the position", function()
+    -- The sort and the session type are preferences with rows since issue #50,
+    -- so they travel in the seam's batch and a value the row refuses stops the
+    -- copy. The pinned segment has no row and is still copied as a leaf. The
+    -- position is not copied at all.
+    -- red under: the view copied leaf by leaf, around the seam.
     local _, M, source, target = twoWindows()
-    source.data.sortColumn = "HealingDone"
+    source.data.sortColumn = "NotAStat"
+    local ok, err = M:CopyFrom(source.id, target.id, "data")
+    assertEqual(ok, false, "a sort the row refuses stops the copy")
+    assertTrue(tostring(err):find("window.data.sortColumn", 1, true) ~= nil)
 
+    source.data.sortColumn = "HealingDone"
+    source.data.sessionID  = 7
     assertEqual(M:CopyFrom(source.id, target.id, "data"), true)
     assertEqual(target.data.sortColumn, "HealingDone")
+    assertEqual(target.data.sessionID, 7)
 
     assertEqual(M:CopyFrom(source.id, target.id, "frame"), true)
     assertEqual(target.frame.position.x, 99)

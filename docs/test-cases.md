@@ -1663,7 +1663,7 @@ badge and any count quoted in the docs must agree with it.
 - Rename keeps the uniqueness check the row does not have
 - CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it copies
 - CopyFrom goes through each row's validate, and stores nothing on a refusal
-- CopyFrom carries the view state no row addresses, and never the position
+- CopyFrom sends the sort through the seam, carries the pin, and never the position
 - SetLocked writes each window through the seam, tagged with its own id
 
 ### test_minimap.lua (17)
@@ -1686,9 +1686,11 @@ badge and any count quoted in the docs must agree with it.
 - The profile ships the one key LibDBIcon reads, and nothing else
 - modules/Minimap.lua passes the silent flag to every LibStub call
 
-### test_schema.lua (33)
+### test_schema.lua (35)
 
 - Schema: a `hidden` row is writable and listable but draws no control
+- Schema: the sort and the session type are hidden rows the seam validates (issue #50)
+- Schema: a sort written from the CLI drops the frozen order, as a click does (issue #50)
 - Schema: the export choices are hidden from the panel but NOT from the seam
 - The meta colour mode sets every bar and header in the window at once
 - The meta colour mode leaves both TEXT surfaces alone
@@ -1722,7 +1724,7 @@ badge and any count quoted in the docs must agree with it.
 - RestoreAllDefaults leaves the profile LIST alone
 - A profile reset rebuilds through the ONE message, not by direct calls
 
-### test_schema_paths.lua (38)
+### test_schema_paths.lua (40)
 
 - Schema: a window path resolves against the session's ACTIVE window
 - Schema: a global path is unaffected by which window is active
@@ -1762,6 +1764,8 @@ badge and any count quoted in the docs must agree with it.
 - SetByPaths: validates every write before storing any of them
 - SetByPaths: one debug line and one CONFIG_CHANGED for the whole batch
 - SetByPaths: every written row's onChange still fires, with the window id
+- A header click writes the sort through the seam, for the window clicked (issue #50)
+- Picking Current or Overall writes the session type through the seam (issue #50)
 
 ### test_schema_defaults.lua (10)
 
@@ -2015,8 +2019,8 @@ badge and any count quoted in the docs must agree with it.
 | test_visibility.lua | 41 |
 | test_windowmanager.lua | 40 |
 | test_minimap.lua | 17 |
-| test_schema.lua | 33 |
-| test_schema_paths.lua | 38 |
+| test_schema.lua | 35 |
+| test_schema_paths.lua | 40 |
 | test_schema_defaults.lua | 10 |
 | test_slash.lua | 50 |
 | test_options_panel.lua | 38 |
@@ -2025,4 +2029,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1771** |
+| **Total** | **1775** |

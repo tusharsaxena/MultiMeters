@@ -129,6 +129,19 @@ local lsmValues            = SC.lsmValues
 local refreshMinimap       = SC.refreshMinimap
 local refreshVisibility    = SC.refreshVisibility
 
+-- The four orders modules/Aggregator.lua knows. `name` is what the Player
+-- header chooses; `provider` and `roster` are reachable from `/mm set` alone.
+local SORT_MODES = { value = true, name = true, provider = true, roster = true }
+
+--- A sort write drops the frozen order, whoever made it (issue #50).
+---
+--- The frozen order is a snapshot of the OLD sort, and it would be reapplied over
+--- the new one for the rest of the pull. The column-header click used to drop it
+--- itself; as the rows' onChange it covers `/mm set` and a copy-from as well.
+local function dropFrozenOrder()
+    if NS.State and NS.State.WipeCache then NS.State.WipeCache("Aggregator") end
+end
+
 -- What every colour swatch's tooltip says about the mode beside it. IN WORDS,
 -- because the swatch is NEVER disabled (options-ui-§17, anti-patterns #74): it is
 -- still read for its ALPHA under every mode -- no class colour and no palette
@@ -645,6 +658,47 @@ NS.Schema = {
         path = "window.frame.minimised", type = "bool", default = false, hidden = true,
         page = "header", group = L["Controls"],
         label = L["Minimised"], desc = L["Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."],
+    },
+    -- THE SORT AND THE SESSION TYPE ARE PREFERENCES, HIDDEN ONES (issue #50).
+    -- A click on a column header CHOOSES the sort, and the segment menu's
+    -- Current / Overall entries CHOOSE the session type. architecture-§5 reads a
+    -- control that chooses a value as setting it, so these are not a remembered
+    -- view: they need rows, and the controls write through NS.SetByPath with the
+    -- window's own id. They were rows once, on a Data page, and were deleted
+    -- because the click wrote around the seam and a CLI path beside it was a
+    -- second writer. With the click on the seam there is one writer again, so
+    -- the rows come back, hidden: the control that chooses each one is on the
+    -- window. Filed beside `frame.minimised`, the other state a header control
+    -- writes. `data.sessionID`, the pinned segment, stays off the schema: its
+    -- unset state is nil, which no row default can say.
+    {
+        path = "window.data.sessionType", type = "number", default = Const.SESSION_TYPE.Overall,
+        hidden = true, page = "header", group = L["Controls"],
+        validate = function(v)
+            return v == Const.SESSION_TYPE.Current or v == Const.SESSION_TYPE.Overall
+        end,
+        label = L["Session"], desc = L["Read the current pull, or the accumulated totals for the whole run. Chosen from the header's segment menu."],
+    },
+    {
+        path = "window.data.sortColumn", type = "string", default = "DamageDone",
+        hidden = true, page = "header", group = L["Controls"],
+        validate = function(v) return type(v) == "string" and Const.STAT_BY_KEY[v] ~= nil end,
+        onChange = dropFrozenOrder,
+        label = L["Sort column"], desc = L["Which column's numbers decide the row order. Chosen by clicking a column header."],
+    },
+    {
+        path = "window.data.sortMode", type = "string", default = "value",
+        hidden = true, page = "header", group = L["Controls"],
+        validate = function(v) return SORT_MODES[v] == true end,
+        onChange = dropFrozenOrder,
+        label = L["Sort mode"], desc = L["How rows are ordered: by value, by name, in the game's order or in group order. The Player header chooses by name."],
+    },
+    {
+        path = "window.data.sortAscending", type = "bool", default = false,
+        hidden = true, page = "header", group = L["Controls"],
+        validate = function(v) return type(v) == "boolean" end,
+        onChange = dropFrozenOrder,
+        label = L["Sort ascending"], desc = L["Put the smallest numbers at the top. Clicking the sort column's header again flips it."],
     },
     -- ── Button style ──────────────────────────────────────────────
     -- How every one of the eight controls above is drawn, not what any one of

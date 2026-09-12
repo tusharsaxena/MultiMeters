@@ -870,30 +870,30 @@ function WindowProto:SortByColumn(key)
     -- header labelled "Player" says. Ascending first, because A-Z is what a
     -- player means by "sort by name"; clicking again reverses it, exactly like a
     -- stat column.
+    --
+    -- THE CLICK CHOOSES THE SORT, so the sort is a preference with rows
+    -- (architecture-§5, issue #50) and the click writes them through the seam as
+    -- one batch addressed to THIS window: validated, logged once, announced once,
+    -- whichever window the settings panel is pointed at. The rows' own onChange
+    -- drops the frozen order, which is a snapshot of the OLD sort and would be
+    -- reapplied over the new one for the rest of the pull, so `/mm set` drops it
+    -- too.
+    local writes
     if key == "name" then
         if data.sortMode == "name" then
-            data.sortAscending = not data.sortAscending
+            writes = { { "window.data.sortAscending", not data.sortAscending } }
         else
-            data.sortMode      = "name"
-            data.sortAscending = true
+            writes = { { "window.data.sortMode", "name" },
+                       { "window.data.sortAscending", true } }
         end
-        self:ApplyColumnHeaders()
-        self:MarkDirty()
-        return true
-    end
-
-    if data.sortColumn == key and data.sortMode == "value" then
-        data.sortAscending = not data.sortAscending
+    elseif data.sortColumn == key and data.sortMode == "value" then
+        writes = { { "window.data.sortAscending", not data.sortAscending } }
     else
-        data.sortColumn    = key
-        data.sortMode      = "value"
-        data.sortAscending = false
+        writes = { { "window.data.sortColumn", key },
+                   { "window.data.sortMode", "value" },
+                   { "window.data.sortAscending", false } }
     end
-
-    -- The frozen order is a snapshot of the OLD sort and would be reapplied over
-    -- the new one for the rest of the pull. Dropping it is what makes the click
-    -- take effect rather than appear to.
-    if NS.State and NS.State.WipeCache then NS.State.WipeCache("Aggregator") end
+    if not (NS.SetByPaths and NS.SetByPaths(writes, self.id, "sort")) then return false end
 
     self:ApplyColumnHeaders()
     self:MarkDirty()
@@ -971,12 +971,19 @@ end
 --- Clearing is the point: picking "Current" out of a menu that is showing a
 --- stored fight means "stop showing that fight", and leaving the id set would
 --- make the choice do nothing at all.
+---
+--- The menu entry CHOOSES the session type, so it is a row and goes through the
+--- seam addressed to this window (architecture-§5, issue #50). The pin has no
+--- row -- its unset state is nil -- and is cleared first, so the announcement
+--- the seam sends describes a window that is already consistent.
 --- @param sessionType number
 function WindowProto:SetSessionType(sessionType)
     local data = self.config.data
     if not data then return end
-    data.sessionType = sessionType
-    data.sessionID   = nil
+    data.sessionID = nil
+    if not (NS.SetByPath and NS.SetByPath("window.data.sessionType", sessionType, self.id)) then
+        return
+    end
     self.sessionType = sessionType
     self:MarkDirty()
 end

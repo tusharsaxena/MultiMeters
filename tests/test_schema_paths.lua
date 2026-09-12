@@ -693,3 +693,57 @@ test("SetByPaths: every written row's onChange still fires, with the window id",
     assertEqual(calls[2][2], false)
     assertEqual(calls[2][3], second)
 end)
+
+-- ---------------------------------------------------------------------------
+-- The window's own header controls (issue #50)
+-- ---------------------------------------------------------------------------
+--
+-- A column-header click CHOOSES the sort and the segment menu's Current and
+-- Overall entries CHOOSE the session type, so under architecture-§5 all four
+-- fields are preferences with rows, not a remembered view. The controls sit on
+-- a window rather than on the panel, so each write is addressed to that window
+-- by id, whichever window the picker is pointed at.
+
+test("A header click writes the sort through the seam, for the window clicked (issue #50)", function()
+    -- red under: `data.sortColumn = key` written straight into the config.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(second)
+    local cfg, other = NS.Database.FindWindow(first), NS.Database.FindWindow(second)
+    local window = NS.Window.New(cfg)
+    local otherColumn = other.data.sortColumn
+    local seen = heardConfig(NS)
+
+    assertTrue(window:SortByColumn("Interrupts"))
+    assertEqual(#seen, 1, "one announcement for the whole sort, not one per field")
+    assertEqual(seen[1].windowId, first)
+    assertEqual(cfg.data.sortColumn, "Interrupts")
+    assertEqual(cfg.data.sortMode, "value")
+    assertEqual(cfg.data.sortAscending, false)
+    assertEqual(other.data.sortColumn, otherColumn, "the picker's window is not the one clicked")
+    assertEqual(NS.State.activeWindowId, second, "and the picker did not move")
+
+    assertTrue(window:SortByColumn("name"))
+    assertEqual(#seen, 2, "the Player header writes through the seam too")
+    assertEqual(cfg.data.sortMode, "name")
+    assertEqual(cfg.data.sortAscending, true)
+end)
+
+test("Picking Current or Overall writes the session type through the seam (issue #50)", function()
+    -- The pinned segment it clears has no row, and is cleared beside the write.
+    -- red under: `data.sessionType = sessionType` written straight into the config.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(second)
+    local cfg = NS.Database.FindWindow(first)
+    local window = NS.Window.New(cfg)
+    window:SetSegment(4)
+    local seen = heardConfig(NS)
+
+    window:SetSessionType(NS.Constants.SESSION_TYPE.Current)
+    assertEqual(#seen, 1)
+    assertEqual(seen[1].windowId, first)
+    assertEqual(cfg.data.sessionType, NS.Constants.SESSION_TYPE.Current)
+    assertTrue(cfg.data.sessionID == nil, "the pin is still cleared")
+    assertEqual(window.sessionType, NS.Constants.SESSION_TYPE.Current)
+end)
