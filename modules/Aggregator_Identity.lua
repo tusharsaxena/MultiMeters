@@ -211,7 +211,9 @@ local function takeColumn(pass, statKey)
     local column = pass.columns[statKey]
     if column ~= nil then return column, isCount end
 
-    column = Provider.GetColumn(pass.sessionType, statKey, pass.sessionID)
+    -- "aggregate": the bracket this runs inside, so the column read's capture
+    -- records where it ran (issue #47).
+    column = Provider.GetColumn(pass.sessionType, statKey, pass.sessionID, "aggregate")
     pass.columns[statKey] = column
     pass.columnTotals[statKey] = column.totalAmount
     if column.reason and pass.reason == nil then pass.reason = column.reason end

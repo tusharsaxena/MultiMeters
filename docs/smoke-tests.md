@@ -1149,13 +1149,29 @@ Then complete a pull, watch the log, and run a capture:
 - The A/B run makes the addon **inert** during its B window without a `/reload`: the provider stops
   reading, the coalescing timers stop, and every window is refused at the source. **Nothing** — a
   combat transition, a roster change, a settings write — may bring a window back while suspended.
-- After `finish`, the report names the declared buckets — `meterEvent`, `refresh`, and under it
-  `providerRead` / `aggregate` / `render`, with `renderRow` under `render`, plus `tooltip`.
+- After `finish`, the report names the declared buckets: `meterEvent`, `refresh` with `aggregate`
+  and `render` under it, `renderRow` under `render`, and `tooltip` with `targets` under it, plus
+  `providerRead`. The nesting note says **observed inside** for every nested bucket, never
+  *declares itself within X — not observed* (issue #47).
 - Every capture record carries the addon version. A record stamped `v?` is unattributable the moment
   it leaves the session and is a bug in its own right.
 - `/mm perf` output appears **whether or not** debug logging is on: a perf run is explicit user
   action, and a user who started one without enabling debug first should not watch an empty console.
 - Hand the report and the JSON dump to `/wow-addon:perf-analysis`, which writes the frozen bundle.
+
+**Group capture with the tooltip path (issue #47).** The first archived capture was solo, one
+window, five rows, and never hovered a cell, so `tooltip` and `targets` recorded nothing and the
+140-cell case was extrapolated rather than measured. Repeat the run **in a group of 15 or more**,
+with **Settings → Tooltip → Show targets** on. During the A window, park the mouse on your own
+**Damage** cell for several seconds, then on another player's.
+- `tooltip` and `targets` both record calls.
+- The nesting note reports `providerRead observed inside more than one parent`, because the column
+  read ran under both `aggregate` and `targets`. A run that never hovered reports it observed inside
+  `aggregate`.
+- `renderRow` calls per pass match the number of rows on screen, which turns the per-cell cost into
+  a measured number.
+- **Unconfirmed in game** until someone runs it. The headless suite proves the parents are passed and
+  recorded, not what the tree costs on a live client in a group.
 
 ---
 

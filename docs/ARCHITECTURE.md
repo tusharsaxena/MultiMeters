@@ -255,8 +255,10 @@ Everything else is a bus subscription. Registration by module is tabulated in
 [module-map.md](module-map.md#what-each-file-publishes-and-consumes).
 
 Perf buckets, declared in `core/PerfSetup.lua` with their nesting: `meterEvent` · `refresh`
-(→ `providerRead`, `aggregate`, `render` → `renderRow`) · `tooltip` (→ `targets`). A parent is never summed with
-its children. Detail in [performance.md](performance.md) and
+(→ `aggregate` → `providerRead`, `render` → `renderRow`) · `tooltip` (→ `targets` → `providerRead`).
+`providerRead` has two parents, so it declares none, and every nested bracket passes the parent it
+ran inside, so a capture reports the tree as observed. A parent is never summed with its children.
+Detail in [performance.md](performance.md) and
 [perf-analysis/README.md](perf-analysis/README.md).
 
 ## Taint notes

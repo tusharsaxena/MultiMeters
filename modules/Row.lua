@@ -1361,7 +1361,8 @@ function RowProto:Update(entry, index)
 
     self.frame:Show()
 
-    if t0 then Perf.Note("renderRow", debugprofilestop() - t0) end
+    -- Only WindowProto:Render updates a row, so its parent is observed (#47).
+    if t0 then Perf.Note("renderRow", debugprofilestop() - t0, "render") end
 end
 
 --- Toggle the mouseover overlay. Driven from the CELLS on the grid, and from the

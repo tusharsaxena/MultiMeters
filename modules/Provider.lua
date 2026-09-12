@@ -284,8 +284,14 @@ end
 --- }
 --- `sources` is in the order the API returned — see the header's assumption.
 --- Callable as either `Provider.GetColumn(s, k)` or `Provider:GetColumn(s, k)`.
-function Provider.GetColumn(a, b, c, d)
-    local sessionType, statKey, sessionID = args(a, b, c, d)
+---
+--- `parentKey` is the perf bracket the CALLER runs inside, handed to Perf.Note so
+--- a capture observes it (issue #47). This read has no single parent: it runs
+--- inside the aggregate on a refresh, inside the targets build on a tooltip, and
+--- inside nothing from a diagnostic. So core/PerfSetup.lua declares none and each
+--- caller says which, and a capture that saw two reports the bucket as mixed.
+function Provider.GetColumn(a, b, c, d, e)
+    local sessionType, statKey, sessionID, parentKey = args(a, b, c, d, e)
 
     -- TEST MODE SUBSTITUTES THE DATA SOURCE AND NOTHING ELSE.
     --
@@ -348,7 +354,7 @@ function Provider.GetColumn(a, b, c, d)
         collect = nil
     end
 
-    if t0 then Perf.Note("providerRead", debugprofilestop() - t0) end
+    if t0 then Perf.Note("providerRead", debugprofilestop() - t0, parentKey) end
     return column
 end
 

@@ -27,9 +27,10 @@ local addonName, NS = ...
 -- redraw, which is why the window coalesces to an interval instead of refreshing
 -- per event. So the two questions a capture has to answer are "how much does the
 -- event handler itself cost at raid rate" (meterEvent) and "what does one
--- coalesced pass cost" (refresh) — and the three buckets under `refresh` say
--- which third of that pass to look at: reading the columns off C_DamageMeter,
--- joining them by GUID and ordering them, or drawing.
+-- coalesced pass cost" (refresh) — and the buckets under `refresh` say which
+-- third of that pass to look at: reading the columns off C_DamageMeter (which
+-- the aggregate does, so that read sits inside it), joining them by GUID and
+-- ordering them, or drawing.
 --
 -- `renderRow` nests inside `render` rather than beside it because a 20-player
 -- group times 7 columns is 140 cells per pass, and per-row is the only grain at
@@ -114,7 +115,14 @@ NS.Perf = lib:New({
     buckets = {
         { key = "meterEvent" },                          -- a DAMAGE_METER_* event handler
         { key = "refresh" },                             -- one coalesced window refresh pass
-        { key = "providerRead", within = "refresh" },    -- one C_DamageMeter column read
+        -- NO `within`, and that is the finding rather than an omission (issue
+        -- #47). A column read runs inside `aggregate` on a refresh, inside
+        -- `targets` on a tooltip, and inside nothing from a diagnostic, so any
+        -- one parent named here is false on the other paths. Provider.GetColumn
+        -- passes Perf.Note whichever parent its caller ran inside instead, and a
+        -- capture that exercised both paths reports it observed inside more than
+        -- one parent.
+        { key = "providerRead" },                        -- one C_DamageMeter column read
         { key = "aggregate",    within = "refresh" },    -- GUID join + ordering
         { key = "render",       within = "refresh" },    -- window render
         { key = "renderRow",    within = "render"  },    -- one row's cells

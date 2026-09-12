@@ -589,20 +589,27 @@ removed key must fail loudly at load, not quietly ship a name no subscriber is l
 
 ## Add a perf bucket
 
-**1. `core/PerfSetup.lua`** — add the key to the `buckets` array, in report order, declaring nesting
-with `within`.
+**1. `core/PerfSetup.lua`** — add the key to the `buckets` array, in report order. Declare nesting
+with `within` **only** when the bucket runs inside exactly one parent. A bucket reached from more
+than one bracket declares none: `providerRead` runs inside `aggregate` on a refresh and inside
+`targets` on a tooltip.
 
 ```lua
 buckets = {
     { key = "meterEvent" },
     { key = "refresh" },
-    { key = "providerRead", within = "refresh" },
+    { key = "providerRead" },
     { key = "aggregate",    within = "refresh" },
     { key = "render",       within = "refresh" },
     { key = "renderRow",    within = "render"  },
     { key = "tooltip" },
+    { key = "targets",      within = "tooltip" },
 },
 ```
+
+Whatever it declares, the call site passes the bracket it actually runs inside as `Perf.Note`'s
+third argument (`Perf.Note("renderRow", ms, "render")`). That is what lets a capture report the
+nesting as observed rather than claimed. `tests/test_perfsetup.lua` scans every bracket for it.
 
 These keys are the contract the module layer brackets against. **A bracket naming a key that is not
 here still records — it just never appears in the report**, which is the quiet failure this list
