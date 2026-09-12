@@ -1055,9 +1055,11 @@ end
 --- modules/Roster.lua — the two files that talk to the client — so everything
 --- from here down is the live code reading invented numbers.
 ---
---- Called in the DOT form for the same reason meterAvailability is.
+--- Called in the DOT form for the same reason meterAvailability is. "refresh" is
+--- the perf bracket this runs inside, passed so the aggregate's capture observes
+--- its parent (issue #47).
 local function aggregateEntries(Aggregator, config)
-    if Aggregator.Build then return Aggregator.Build(config) end
+    if Aggregator.Build then return Aggregator.Build(config, "refresh") end
     return nil
 end
 
@@ -1123,7 +1125,7 @@ function WindowProto:Refresh()
     --
     -- Cleared in the CONFIG rather than shadowed on the instance so there is one
     -- resolved answer: modules/Aggregator.lua, the tooltip and the drill-down all
-    -- read `data.sessionID` directly, and a session id is never reused, so
+    -- read the pin through Database.PinnedSegment, and a session id is never reused, so
     -- forgetting one loses nothing that could come back.
     self:DropStaleSegment()
 
@@ -1244,7 +1246,9 @@ function WindowProto:Render(entries, preview, isDrill, drillTitle)
             self.id, drawn, #entries, preview and " (preview)" or "")
     end
 
-    if t0 then Perf.Note("render", debugprofilestop() - t0) end
+    -- Render runs only from Refresh, so its one parent is passed and the capture
+    -- OBSERVES the nesting rather than taking the descriptor's word (issue #47).
+    if t0 then Perf.Note("render", debugprofilestop() - t0, "refresh") end
 end
 
 -- ---------------------------------------------------------------------------

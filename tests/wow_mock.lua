@@ -36,15 +36,11 @@
 --     with REAL STATE are a correctness requirement here, exactly as they are in
 --     KickCD and WhatGroup. The base's own header names this as a divergence it
 --     expects consumers to make in their own extender.
---   * THE ACE MODULE LIFECYCLE. Seven of this addon's modules are
---     `NS:NewModule(name, "AceEvent-3.0")` children, and the base's AceAddon fake
---     has no NewModule / GetModule at all. Without them not one module file
---     loads.
---   * THE MESSAGE BUS. The base's AceEvent fake has RegisterMessage /
---     UnregisterMessage / SendMessage but no `UnregisterAllMessages`, which
---     modules/Provider.lua's Suspend and modules/Window.lua's UnregisterBus both
---     call. The fake is replaced rather than patched so the (message, target)
---     fan-out and the teardown live in one readable place.
+--   * NOTHING OF ACE'S EVENT OR ADDON LIBRARY. Both used to be replaced here: the
+--     AceEvent message half, for `UnregisterAllMessages` and string-method
+--     dispatch, and AceAddon, for NewModule / GetModule. Kit revision 17 (LibKa0s
+--     v1.31.0) models both from CallbackHandler and AceAddon-3.0 themselves, so
+--     the copies went; see LibStub extras below for what a suite reaches instead.
 --   * `C_AddOns`. The base deliberately does not stub it (see its header). This
 --     addon reads the TOC manifest through it for NS.version and for the perf
 --     descriptor's record stamp, so it is stubbed HERE, where a test that wants
@@ -435,7 +431,6 @@ local function build()
             deathRecapID      = spec.deaths and (1000 + i) or nil,
             classification    = "normal",
             sourceDisplayType = M.Enum.DamageMeterSourceDisplayType.Ally,
-            factionGroup      = "Alliance",
         }
     end
 
@@ -1190,71 +1185,21 @@ local function build()
     -- ── LibStub extras ─────────────────────────────────────────────────────
     local libs = M.__libs
 
-    --- AceEvent-3.0: the MESSAGE half replaced, the EVENT half the kit's.
-    ---
-    --- Game events go through the kit's own Embed (kit revision 16, LibKa0s
-    --- v1.30.0): RegisterEvent / UnregisterEvent / UnregisterAllEvents recorded on
-    --- `obj.__events` by the same three functions the kit's NewAddon target
-    --- carries, validated as CallbackHandler validates. Called first, so the
-    --- message functions below overwrite the kit's message half and nothing else.
-    --- This file carried its own event half until then; it is gone because the
-    --- kit now provides the same contract.
-    ---
-    --- The base's fake models the (message, target) fan-out correctly — which is
-    --- the property this addon most depends on, since every window subscribes to
-    --- the same refresh messages and CallbackHandler would otherwise let the last
-    --- registrant clobber the rest (anti-pattern #32). What it lacks is
-    --- `UnregisterAllMessages`, which modules/Provider.lua's Suspend and
-    --- modules/Window.lua's UnregisterBus both call, and the base's registry is
-    --- closure-private so it cannot be extended in place. One registry, shared
-    --- across every embed, dispatching fn(message, ...) exactly as CallbackHandler
-    --- fires a function-ref callback; a STRING method name resolves against the
-    --- registering object at dispatch time, which is the form every module in this
-    --- addon uses (`self:RegisterMessage(MSG.METER_RESET, "OnMeterInvalidated")`).
-    local busRegistry = {}   -- [message] = { [target] = callable }
-    M.__busRegistry = busRegistry
-
-    local function resolveCallback(target, method, message)
-        if type(method) == "function" then
-            return function(...) return method(...) end
-        end
-        local name = (type(method) == "string") and method or message
-        return function(...)
-            local fn = target[name]
-            if fn then return fn(target, ...) end
-        end
-    end
-
-    local baseAceEvent = libs["AceEvent-3.0"]
-
-    local function embedAceEvent(obj)
-        -- Game events are the addon object's, and core/MultiMeters.lua is the only
-        -- registrant. The kit records them; see __fireEvent below.
-        baseAceEvent:Embed(obj)
-        obj.RegisterMessage = function(self, message, method)
-            busRegistry[message] = busRegistry[message] or {}
-            busRegistry[message][self] = resolveCallback(self, method, message)
-        end
-        obj.UnregisterMessage = function(self, message)
-            if busRegistry[message] then busRegistry[message][self] = nil end
-        end
-        obj.UnregisterAllMessages = function(self)
-            for _, targets in pairs(busRegistry) do targets[self] = nil end
-        end
-        obj.SendMessage = function(_, message, ...)
-            local targets = busRegistry[message]
-            if not targets then return end
-            -- Snapshot: a handler may unregister (or register) during dispatch,
-            -- and mutating the table under `pairs` is undefined.
-            local snapshot = {}
-            for target, cb in pairs(targets) do snapshot[#snapshot + 1] = { target, cb } end
-            for _, entry in ipairs(snapshot) do entry[2](message, ...) end
-        end
-        return obj
-    end
-    M.__embedAceEvent = embedAceEvent
-
-    libs["AceEvent-3.0"] = { Embed = function(_, obj) return embedAceEvent(obj) end }
+    -- AceEvent-3.0 and AceAddon-3.0 are THE KIT'S, whole (kit revision 17). This
+    -- file carried its own message half -- one registry, `UnregisterAllMessages`
+    -- for modules/Provider.lua's Suspend and modules/Window.lua's UnregisterBus,
+    -- a string method resolved on the target at dispatch -- and its own module
+    -- layer, because the kit had neither. It has both now, taken from the real
+    -- CallbackHandler and AceAddon-3.0, so the copies are gone. What a suite
+    -- reaches instead:
+    --
+    --   mocks.__msgRegistry            [message] = { [target] = callable }
+    --   mocks.__fireEvent(event, ...)  a game event to every registrant; answers
+    --                                  how many handlers ran
+    --   AceAddon:EnableAddon(NS)       the enable cascade in the client's order --
+    --                                  the addon's OnEnable, then every module in
+    --                                  creation order (tests/run.lua's `enable`)
+    --   NS.modules, NS.orderedModules  AceAddon's own module tables
 
     --- AceDB-3.0 with CallbackHandler's STRING-METHOD registration form.
     ---
@@ -1297,13 +1242,19 @@ local function build()
             --- profile call is running, so this only has to cover what was
             --- withheld above -- and it runs AFTER that call, which is the same
             --- order CallbackHandler gives.
-            local function fireStrings(event)
+            ---
+            --- The key is the one real AceDB hands each event: the NEW profile for
+            --- a switch, the SOURCE for a copy (`CopyProfile(name)` fires
+            --- `OnProfileCopied, db, name`), and none at all for a reset. This used
+            --- to pass the current profile for all three, which named a copy's
+            --- target where the client names its source.
+            local function fireStrings(event, key)
                 for _, entry in ipairs(registered[event] or {}) do
                     local target, handler = entry.target, entry.handler
                     if type(handler) == "string" and type(target) == "table"
                         and type(target[handler]) == "function"
                     then
-                        target[handler](target, event, db, db.GetCurrentProfile())
+                        target[handler](target, event, db, key)
                     end
                 end
             end
@@ -1314,84 +1265,15 @@ local function build()
                 local base = db[name]
                 db[name] = function(...)
                     local result = base(...)
-                    fireStrings(event)
+                    local key
+                    if name == "SetProfile" then key = db.GetCurrentProfile()
+                    elseif name == "CopyProfile" then key = select(2, ...) end
+                    fireStrings(event, key)
                     return result
                 end
             end
 
             return db
-        end,
-    }
-
-    --- AceAddon-3.0 with the MODULE LIFECYCLE the base has no need for.
-    ---
-    --- Seven of this addon's files are `NS:NewModule(name, "AceEvent-3.0")`
-    --- children, so without NewModule / GetModule not one of them loads. Modules
-    --- are registered in creation order and exposed as `addon.__moduleOrder`, and
-    --- `addon:__enableAll()` runs every OnEnable in that order — which is what a
-    --- suite uses to reach the bus subscriptions the real client sets up during
-    --- AceAddon's enable pass.
-    local baseNewAddon = libs["AceAddon-3.0"].NewAddon
-    libs["AceAddon-3.0"] = {
-        NewAddon = function(self, target, ...)
-            local addon = baseNewAddon(self, target, ...)
-            embedAceEvent(addon)
-
-            addon.__modules     = {}
-            addon.__moduleOrder = {}
-
-            -- The mixin list every caller passes (`"AceEvent-3.0"`) is accepted and
-            -- discarded: embedAceEvent below is unconditional, so the fake gives every
-            -- module the bus whether or not it asked. Lua drops the surplus arguments
-            -- without a vararg in the signature; naming one here only claims a use.
-            addon.NewModule = function(host, name)
-                local m = { moduleName = name, __addon = host }
-                embedAceEvent(m)
-                m.ScheduleTimer = host.ScheduleTimer
-                m.CancelTimer   = host.CancelTimer
-                m.Enable  = function(mod) if mod.OnEnable then mod:OnEnable() end end
-                m.Disable = function(mod) if mod.OnDisable then mod:OnDisable() end end
-                m.IsEnabled = function() return true end
-                host.__modules[name] = m
-                host.__moduleOrder[#host.__moduleOrder + 1] = name
-                return m
-            end
-
-            addon.GetModule = function(host, name, silent)
-                local m = host.__modules[name]
-                if not m and not silent then
-                    error("Cannot find a module named " .. tostring(name), 2)
-                end
-                return m
-            end
-
-            addon.IterateModules = function(host) return pairs(host.__modules) end
-
-            --- Run every module's OnEnable, in registration order — the client's
-            --- own order. Not part of AceAddon's surface; it is the harness's
-            --- entry point into the lifecycle step a headless run has no client to
-            --- perform.
-            addon.__enableAll = function(host)
-                for _, name in ipairs(host.__moduleOrder) do
-                    local m = host.__modules[name]
-                    if m and m.OnEnable then m:OnEnable() end
-                end
-                if host.OnEnable then host:OnEnable() end
-            end
-
-            --- Fire a game event at the addon object, exactly as the client would.
-            --- Handlers are registered by NAME (`"OnMeterUpdated"`), so this is the
-            --- only way a suite can drive core/MultiMeters.lua's fan-out.
-            addon.__fireEvent = function(host, event, ...)
-                local handler = host.__events[event]
-                if handler == nil then return false end
-                local fn = (type(handler) == "function") and handler or host[handler]
-                if not fn then return false end
-                fn(host, event, ...)
-                return true
-            end
-
-            return addon
         end,
     }
 

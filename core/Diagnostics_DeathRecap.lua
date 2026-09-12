@@ -484,7 +484,7 @@ local function reportDeathRecap()
 
     local windows = NS.Database and NS.Database.GetWindows and NS.Database.GetWindows()
     local cfg = windows and windows[1]
-    local sessionID = cfg and cfg.data and cfg.data.sessionID or nil
+    local sessionID = NS.Database.PinnedSegment(cfg and cfg.data)
     local ST = NS.Constants.SESSION_TYPE
 
     -- BOTH SESSIONS, because they disagree and the disagreement matters. A live

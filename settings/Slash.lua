@@ -58,7 +58,7 @@ Sl.Version = NS.Version
 -- Forward declarations. See "WHY THE HANDLERS RESOLVE LATE" above — every one of
 -- these is assigned below the verb table that references it.
 local cli
-local doLock, doTest, doToggle, doWindow, doResetPositions, doExport, doDebug, doPerf
+local doLock, doTest, doToggle, doWindow, doResetPositions, doExport, doDebug, doPerf, doResetAll
 
 -- ---------------------------------------------------------------------
 -- The verb table
@@ -76,7 +76,7 @@ NS.COMMANDS = {
     { "get",      "Read one setting: /mm get <path>",      function(a) cli:CliGet(a) end },
     { "set",      "Write one setting: /mm set <path> <value>", function(a) cli:CliSet(a) end },
     { "reset",    "Reset one setting: /mm reset <path>",   function(a) cli:CliReset(a) end },
-    { "resetall", "Reset every setting to its default",    function() cli:CliResetAll() end },
+    { "resetall", "Reset all settings (asks first; deletes extra windows)", function() doResetAll() end },
     { "debug",    "Console; 'on'/'off' set logging, 'tooltip' toggles the noisy tooltip channel, 'diag' a diagnostic report, 'recap' the death-recap probe, 'identity' the mid-pull correlation capture, 'feign on|off' the feign recording",
                                                                      function(a) doDebug(a) end },
     { "perf",     "Performance capture; try /mm perf help", function(a) doPerf(a) end },
@@ -199,6 +199,15 @@ cli = SlashLib:New({
     -- end up sharing one table.
     applyDefault = function(row) if NS.ApplyDefault then NS.ApplyDefault(row) end end,
 
+    -- The bulk bracket (Slash minor 8), the same pair settings/OptionsSetup.lua hands
+    -- the Options major. No verb here reaches CliResetAll any more -- `resetall` is
+    -- the profile reset below -- so this is the guard for whoever calls it next:
+    -- a walk through it would log one `[Set] reset all: N rows`, not a line per row.
+    bulkBegin = function(act, scope) if NS.Bulk then NS.Bulk.begin(act, scope) end end,
+    bulkEnd   = function(act, scope, count, err, info)
+        if NS.Bulk then NS.Bulk.finish(act, scope, count, err, info) end
+    end,
+
     -- Written out rather than omitted, and it names BOTH halves of where a setting lives. `page`
     -- was the whole answer while a page was one scroll; a page is now a strip of tabs
     -- (options-ui-§13), and a listing that named only the page would send someone to a screen
@@ -209,6 +218,33 @@ cli = SlashLib:New({
         return (row.page or "?") .. " \226\128\186 " .. (row.group or "?")
     end,
 })
+
+-- ---------------------------------------------------------------------
+-- resetall — Reset all settings, not a schema walk
+-- ---------------------------------------------------------------------
+--
+-- `/mm resetall` IS the General page's "Reset all settings" (options-ui-§12): one
+-- act behind the button and the verb. It used to be the library's CliResetAll,
+-- which walks the schema ONCE through NS.ApplyDefault -- and every `window.` path
+-- resolves against the ACTIVE window, so the verb reset the window the picker
+-- happened to be on, left every other window exactly as it was, and logged a
+-- [Set] line per row, while four docs called it a profile reset.
+--
+-- IT ASKS FIRST, with the SAME popup the button opens (the owner's decision of
+-- 2026-09-12). A profile reset deletes every extra window, and a verb that did
+-- that on the spot was the one path to it with no warning. NS.ShowResetAll
+-- (settings/General.lua) opens MULTIMETERS_RESET_ALL, and only its OnAccept
+-- resets: Helpers.RestoreAllDefaults, the session rows then db:ResetProfile()
+-- inside the library's bulk bracket, and one `[Set] reset profile ...` line from
+-- core/Database.lua's OnProfileReset. No and Escape do nothing. The popup is
+-- declared at file load, so a library-less install asks too, and its OnAccept
+-- reaches the options stub's own real reset.
+--
+-- No chat line: the popup is the answer, and the reset happens after the verb
+-- has returned.
+doResetAll = function()
+    if NS.ShowResetAll then NS.ShowResetAll() end
+end
 
 -- ---------------------------------------------------------------------
 -- The host verbs

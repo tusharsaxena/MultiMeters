@@ -626,3 +626,144 @@ test("Format.DeathTime refuses a secret timestamp in either style", function()
     -- never handed to a client API either.
     assertTrue(nil == F.DeathTime(secret, "ago"))
 end)
+
+-- ---------------------------------------------------------------------------
+-- Issue #26 -- a rate below 1000 rendered every decimal digit it had
+-- ---------------------------------------------------------------------------
+--
+-- The live cell read `411.90476190...`. Two of the degradation ladder's
+-- candidates carried no rule below 1000 -- the ladder without its floor, and the
+-- client's own defaults -- so a client that refused our arrays fell through to a
+-- plain render, which for a float is every digit. And `full` mode's formatter set
+-- one fractional rung, never probed it and had no fallback at all.
+
+test("A sub-thousand rate stays whole even when the client's OWN ladder is in force (#26)", function()
+    -- A client that silently keeps its own rules whenever an array carries a
+    -- K/M/B rung that is not one of its own -- the shape the issue's `206K`
+    -- (no decimal) points at. Its defaults have nothing below 1000.
+    -- red under: installing GetDefaultAbbreviationBreakpoints() bare.
+    local inst = T.load{ mutate = function(mocks)
+        local real = mocks.C_StringUtil.CreateAbbreviatedNumberFormatter
+        local defaults = mocks.C_StringUtil.GetDefaultAbbreviationBreakpoints()
+        local own = {}
+        for _, bp in ipairs(defaults) do own[bp] = true end
+        mocks.C_StringUtil = setmetatable({
+            GetDefaultAbbreviationBreakpoints = function() return defaults end,
+            CreateAbbreviatedNumberFormatter = function()
+                local f = real()
+                f.SetBreakpoints = function(self, list)
+                    for _, bp in ipairs(list) do
+                        if bp.abbreviation ~= "" and not own[bp] then return end
+                    end
+                    self.__breakpoints = list
+                end
+                return f
+            end,
+        }, { __index = mocks.C_StringUtil })
+    end }
+    local F = inst.NS.Format
+
+    assertEqual(F.Number(47500), "47K", "the client's own K rung is the one in force")
+    assertEqual(F.Number(411.90476190476), "411", "a sub-thousand rate renders its whole part")
+    assertEqual(F.Rate(411.90476190476), "411")
+    assertEqual(F.Number(0.42857142857143), "0")
+end)
+
+test("'full' keeps a sub-thousand rate whole on a client that refuses a fractional breakpoint (#26)", function()
+    -- red under: plain() setting its single 0.001 rung with no probe and no
+    -- fallback, which leaves the formatter with no rule at all.
+    local inst = T.load{ mutate = function(mocks)
+        local real = mocks.C_StringUtil.CreateNumericRuleFormatter
+        mocks.C_StringUtil = setmetatable({
+            CreateNumericRuleFormatter = function()
+                local f = real()
+                f.SetBreakpoints = function(self, list)
+                    for _, bp in ipairs(list) do
+                        if bp.breakpoint < 1 then return end
+                    end
+                    self.__breakpoints = list
+                end
+                return f
+            end,
+        }, { __index = mocks.C_StringUtil })
+    end }
+    local F = inst.NS.Format
+
+    assertEqual(F.Number(411.90476190476, "full"), "411")
+    assertEqual(F.Number(4200000, "full"), "4200000", "and full still abbreviates nothing")
+end)
+
+--- A client that TAKES an array but silently drops every floor rung in it (the
+--- abbreviation-less one), with `refuseForeign` also refusing any array that
+--- carries a K/M/B rung it did not ship. Then builds the abbreviating formatter
+--- afresh with debug on and answers every [Format] line it logged.
+local function floorIgnoredFormatLines(refuseForeign)
+    local inst = T.load{ mutate = function(mocks)
+        local real = mocks.C_StringUtil.CreateAbbreviatedNumberFormatter
+        local defaults = mocks.C_StringUtil.GetDefaultAbbreviationBreakpoints()
+        local own = {}
+        for _, bp in ipairs(defaults) do own[bp] = true end
+        mocks.C_StringUtil = setmetatable({
+            GetDefaultAbbreviationBreakpoints = function() return defaults end,
+            CreateAbbreviatedNumberFormatter = function()
+                local f = real()
+                f.SetBreakpoints = function(self, list)
+                    local kept = {}
+                    for _, bp in ipairs(list) do
+                        if bp.abbreviation ~= "" then
+                            if refuseForeign and not own[bp] then return end
+                            kept[#kept + 1] = bp
+                        end
+                    end
+                    self.__breakpoints = kept
+                end
+                return f
+            end,
+        }, { __index = mocks.C_StringUtil })
+    end }
+    local NS = inst.NS
+    NS.Format.Invalidate()
+    NS.State.debug = true
+    local original, lines = NS.Debug, {}
+    NS.Debug = function(tag, fmt) if tag == "Format" then lines[#lines + 1] = fmt end end
+    local k = NS.Format.Number(47500)
+    NS.Debug = original
+    return lines, k
+end
+
+--- Whether `lines` holds exactly `want`.
+local function logged(lines, want)
+    for _, line in ipairs(lines) do
+        if line == want then return true end
+    end
+    return false
+end
+
+test("A floored rung whose floor did not take is not accepted on the K probe alone (#26)", function()
+    -- The K rung renders "47.5K" whether or not the floor under it took, so the
+    -- K probe cannot tell a floored rung from a floorless one. The rate probe
+    -- can: 470.67 renders "470" only under a floor. Probed on every floored
+    -- rung, as plain()'s tryFloor already does.
+    -- red under: the integer-floor rung accepted on "47.5K" alone, logging a
+    -- floor the client never took.
+    local lines, k = floorIgnoredFormatLines(false)
+    assertEqual(k, "47.5K", "our ladder is still in force")
+    assertFalse(logged(lines, "sub-one floor rejected; values below 1 will show their digits"),
+        "the integer-floor rung claimed a floor the client dropped")
+    assertTrue(logged(lines, "breakpoint floor rejected; values below 1000 will show their digits"),
+        "the floorless rung is the honest answer")
+end)
+
+test("The client's defaults under a floor that did not take are not accepted either (#26)", function()
+    -- The same probe on the two default rungs that carry our floor. A client
+    -- that refuses our K/M/B and drops the floor ends on its bare defaults,
+    -- and the log says so rather than naming a floor that is not there.
+    -- red under: the defaults-over-an-integer-floor rung accepted on "47K" alone.
+    local lines, k = floorIgnoredFormatLines(true)
+    assertEqual(k, "47K", "the client's own K rung is in force")
+    assertFalse(logged(lines,
+        "custom breakpoints refused; using the client's defaults over an integer floor"),
+        "the default rung claimed a floor the client dropped")
+    assertTrue(logged(lines,
+        "custom breakpoints and every floor refused; values below 1000 will show their digits"))
+end)

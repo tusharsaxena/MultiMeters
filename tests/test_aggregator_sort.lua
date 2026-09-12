@@ -264,7 +264,7 @@ test("the Activating edge is no longer listened for", function()
     local NS, mocks = inst.NS, inst.mocks
     NS.Aggregator:OnEnable()
 
-    assertEqual((mocks.__busRegistry[NS.Constants.MSG.RESTRICTION_CHANGED] or {})[NS.Aggregator],
+    assertEqual((mocks.__msgRegistry[NS.Constants.MSG.RESTRICTION_CHANGED] or {})[NS.Aggregator],
         nil, "a subscription with no handler behind it is dead wiring")
     assertEqual(NS.Aggregator.OnRestrictionChanged, nil)
 end)

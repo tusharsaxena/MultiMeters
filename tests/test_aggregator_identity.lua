@@ -541,6 +541,42 @@ test("A collided key lands in the collided bucket, not the absent one", function
     assertEqual(col.absent, 1, "and the warrior is absent, which is a different fact")
 end)
 
+test("The standing identity line names collided KEYS and ROWS, and every miss by cause (#22)", function()
+    -- The line is what a live capture is read from, and `collided=1/2` read as a
+    -- fraction. Keys and rows are separate figures with their own names, and the
+    -- blank cells are split into the two causes the line exists to tell apart:
+    -- `collided` (the correlation refused) and `unmatched` (a key in the column
+    -- that still found no row), beside `absent` (the player did none of it).
+    -- red under: the shipped `identity rows=N keys=N collided=K/R filled=F/P`.
+    local inst = debugging(loaded())
+    inst.mocks.setRestricted(true)
+    local lines = {}
+    inst.NS.DebugSteady = function(_, tag, fmt, ...)
+        if tag == "Aggregator" then lines[#lines + 1] = fmt:format(...) end
+    end
+    install(inst, {
+        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
+        src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
+        src(GAMMA,  30, { class = "PRIEST",  specIconID = 5 }),
+    }, { statKey = "DamageDone", maxAmount = 100 })
+    install(inst, {
+        src(BETA,  500, { class = "PRIEST", specIconID = 5 }),
+        src(GAMMA, 400, { class = "PRIEST", specIconID = 5 }),
+    }, { statKey = "HealingDone", maxAmount = 500 })
+
+    local stats = inst.NS.Aggregator.Build(makeWindow{
+        columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" }).identityStats
+    local line = ""
+    for _, l in ipairs(lines) do
+        if l:find("^identity ") then line = l end
+    end
+    assertTrue(line:find("collidedKeys=1 collidedRows=2", 1, true) ~= nil, "got: " .. line)
+    assertTrue(line:find("filled=0/3 collided=2 unmatched=0 absent=1", 1, true) ~= nil,
+        "got: " .. line)
+    assertEqual(stats.filled + stats.collided + stats.unmatched + stats.absent, stats.possible,
+        "every correlated cell lands in exactly one bucket")
+end)
+
 test("The sort column is named, and is not part of the correlated rectangle", function()
     -- Nothing is correlated onto the sort column: every row on the grid came
     -- FROM it. Counting it as filled would inflate the one ratio the capture is

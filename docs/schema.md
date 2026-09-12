@@ -24,8 +24,18 @@ Everything below is about `MultiMetersDB`.
 ```lua
 db.global = {
     schemaVersion = 13,    -- CURRENT_DB_VERSION in core/Database.lua
+    roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data
 }
 ```
+
+**`roster` is named non-setting state** (`architecture-§5`: learned data), so it carries no row and
+no register row. It is the map of everyone the live group build has seen since the last meter reset,
+and every pet-owner link, kept so a player who has left the group stays on a meter that still holds
+their numbers. The player authors none of it. Its one owner is `modules/Roster.lua`: `build()` and its
+`linkPetOf` record into it on the lazy rebuild after a roster invalidation, and `Roster.Forget`
+clears it on `METER_RESET` with one traced line (`debug-logging-§8`). `remembered()` only creates the
+empty containers on first read, and the AceDB defaults ship them. It is account-wide because it
+describes the client's meter data, which no one profile owns.
 
 The version is **addon-wide rather than per-profile** (`savedvariables-§1`), so a migration runs
 once per account instead of once per profile. `NS:RunMigrations()` walks it forward one step at a
@@ -148,19 +158,65 @@ which no row path can name. The windows are this addon's one registry.
   AceDB's swap and copy replace the store whole, and this pass re-seeds after them.
 
 **Naming the writer covers membership and bookkeeping only.** A member field a row addresses is a
-schema-row write and belongs to `NS.SetByPath`, even when `WindowManager` is the caller. These
-writers do not do that yet, and none of them is ratified here:
+schema-row write and belongs to `NS.SetByPath`, even when `WindowManager` is the caller. The seam's
+optional window id is what makes that possible: `NS.SetByPath(path, value, windowId)` resolves a
+`window.*` path against the window the id names. It never substitutes the active window, and an id
+that names no window is refused. `NS.State.activeWindowId` does not move.
 
-- `WindowManager:Rename` writes `window.name`, `WindowManager:CopyFrom` deep-assigns whole row
-  groups onto its target, and `WindowManager:SetLocked` writes `window.frame.locked` on every
-  window. They bypass the seam because it resolves `window.*` against the active window only, with
-  no way to name another one.
-- `WindowProto:SaveSize` writes the `window.frame.width` and `window.frame.height` rows when a
-  resize drag ends, on whichever window was dragged. That is drag-written geometry, and the
-  deviation register has no `architecture-§5` row for it.
-- `frame.position` has no row (see [`frame`](#frame--the-standalone-window) below). It is written by a
-  drag (`SavePosition`) and by `WindowManager:ResetPosition` / `:ResetPositions`, and the
-  deviation register has no `architecture-§5` row for it either.
+- `WindowManager:Rename` keeps the uniqueness check and writes `window.name` through the seam for
+  the window it renames.
+- `WindowManager:CopyFrom` reads each copied row off the source with `NS.GetSetting(path, sourceId)`
+  and writes them onto the target as one `NS.SetByPaths` batch. Every entry is validated before any
+  is stored, and the copy logs one `[Set] copy from '<source>' to '<target>': N rows` line, N the
+  rows whose stored value moved, and sends one `CONFIG_CHANGED`. A value the row
+  refuses stops the copy and names the row. `window.columns` goes as one whole-array entry. The
+  window's sort and session type are rows now (issue #50) and travel in the batch with the rest of
+  the `data` group, and so does the pinned segment, `data.sessionID`. `frame.position` is never
+  copied.
+- `WindowProto:SortByColumn` (a column-header click) writes the sort rows as one batch for the
+  window clicked. `WindowProto:SetSessionType` (the segment menu's Current / Overall) writes
+  `window.data.sessionType` and clears the pin as one batch the same way, and
+  `WindowProto:SetSegment` (a stored segment) writes `window.data.sessionID` alone.
+- `WindowManager:SetLocked` writes `window.frame.locked` through the seam once per window, each
+  announcement tagged with that window's id.
+- `WindowProto:SaveSize` writes `window.frame.width` and `window.frame.height` as one batch for the
+  window that was dragged. It runs on the grip's drag-stop only; `OnSizeChanged` just remembers the
+  size, so a drag costs one write however many frames it lasts.
+- `frame.position` has no row (see [`frame`](#frame--the-standalone-window) below). It is named
+  non-setting state, owned by `WindowProto`, and needs no register row; its writers are listed in
+  `docs/ARCHITECTURE.md` → Settings schema.
+
+### `frame.position` is named non-setting state
+
+`architecture-§5` lets geometry that only a drag or a resize determines be written outside the
+helper, with no register row, once `docs/ARCHITECTURE.md` → Settings schema names its storage key,
+its one owner and every writer. `frame.position` qualifies: no control chooses it and no row
+addresses it. That naming is the compliance; this is the detail behind it.
+
+- **Storage key.** `frame.position` (`{ point, relativePoint, x, y }`) inside each
+  `db.profile.windows` entry.
+- **Owner.** `WindowProto`, in `modules/Window_Placement.lua`, which also reads it
+  (`ApplyPosition`).
+- **Writers, and the act that reaches each.**
+  - `WindowProto:SavePosition` — the title bar's drag-stop (`modules/Window.lua`). It reads
+    `GetPoint` off the anchor frame that never holds a value (rule R3).
+  - `WindowManager:ResetPosition` — the *Reset position* button on General → Master controls, for
+    the window the picker is pointed at. It puts back the shipped center, which chooses nothing.
+  - `WindowManager:ResetPositions` — `/mm reset-positions`, every window back to the center.
+  - `WindowManager:Create` — a new window is written whole by `NS.DefaultWindow`, the template's
+    position included.
+  - `WindowManager:Duplicate` — the copy lands 24 px right of and below its source. The offset is
+    derived from the source and chooses nothing.
+  - `Database.EnsureWindowShape` — the template backfill writes a missing `frame.position` when
+    `Create`, `Duplicate` or `CopyFrom` calls it at runtime. The load pass (`Database.SeedWindows`)
+    calls it too, and the load pass is not a writer the naming has to list.
+
+`WindowManager:CopyFrom` is not a writer. Its rows go through the seam as one batch (#49), its leaf
+copy skips `frame.position` by name (`UNCOPIED`), and nothing puts a position back afterwards,
+because nothing took one away. `frame.width` and `frame.height` are **rows**, the Frame page's
+sliders, so they are not named state: the resize drag writes them through the seam by window id
+(`WindowProto:SaveSize`). A profile reset and AceDB's swap and copy replace positions with the rest
+of the profile.
 
 ### `nextWindowId` — ids are minted, never reused
 
@@ -176,6 +232,14 @@ losing a configured window is worse than renumbering it.
 treats it as its own — it reads `hide` and **writes** `minimapPos` (and a lock / free-position pair
 if the player drags the button off the minimap). The addon must never enumerate the table or
 normalize keys out of it, or a dragged button snaps back on the next login.
+
+**`minimapPos` is named non-setting state** (`architecture-§5`: a vendored library's own writes). Its
+owner is `modules/Minimap.lua`, whose `Minimap.Init` hands LibDBIcon the live table through
+`icon:Register`; the one writer is LibDBIcon, on a drag of the button. The addon's only write into
+the table is the `minimap.hide` row, through the seam. `Minimap.Refresh` and the row's reactor call
+`icon:Refresh`, which re-reads the table and writes nothing. Nothing here calls LibDBIcon's
+`Hide`, `Show`, `Lock` or `Unlock`, so the library never writes `hide` or the lock on the addon's
+behalf.
 
 ### `master` — the addon-wide master controls
 
@@ -222,22 +286,22 @@ a missing db means. Its fallback is the defaults tree rather than a literal, so 
 
 | Path | Type | Default | Control |
 |---|---|---|---|
-| `export.metric` | string | `""` | no row — `Export.Open` reseeds it from the invoking window |
+| `export.metric` | string | the first `STATS` key | `hidden` row; drawn in the export modal, and `Export.Open` reseeds it from the invoking window |
 | `export.channel` | string | `"SELF"` | `hidden` row; drawn in the export modal |
 | `export.whisperTo` | string | `""` | `hidden` row; drawn in the export modal |
 | `export.lines` | number | `5` | `hidden` row; drawn in the export modal |
 
-The three rows are filed on page `general` and all marked **`hidden`**, so the panel draws none of
+The four rows are filed on page `general` and all marked **`hidden`**, so the panel draws none of
 them: the modal's own three controls are the ones a player uses, and a second copy on a settings page
 restated a control met only in the dialog — with a standing chance of the two disagreeing about what
 is selected.
 
-**Hidden rather than deleted**, unlike the sort and session rows that went with the Data page, and
-the difference is which seam writes them. Those were written directly by the window's own controls;
-these are written by the modal through `NS.SetByPath`, which **refuses a path with no row**. Deleting
-them would drop every export choice onto `writeExport`'s degraded fallback — the one that exists for
-a half-loaded install — losing the validation, the debug line and `CONFIG_CHANGED`, and would take
-`/mm set export.channel WHISPER` with it.
+**Hidden rather than deleted**, and the difference is which seam writes them. The modal writes them
+through `NS.SetByPath`, which **refuses a path with no row**, and `writeExport` stores nothing around
+a refusal. `export.metric` shows what an absent row cost: with none, every pick in the modal's Metric
+dropdown and every seed from `Export.Open` was refused and fell through to a raw profile write. The
+dropdown chooses the value, so under `architecture-§5` it is a preference, and it has a hidden row
+again.
 
 All are **absolute** paths — there is no `window.` prefix to resolve. They are the **one group in the profile that is not a property of
 anything on screen**: every other setting here answers "how should this look", and these answer
@@ -417,14 +481,18 @@ either alone. `text.shadow` keeps its long-standing `true`.
 | `clampToScreen` | `true` | |
 | `closeButton` | `true` | a **header control**, grouped with the `show*` keys on the panel |
 | `minimised` | `false` | a **hidden** schema row: writable through `NS.SetByPath` and listed by `/mm list`, but drawn as no control. It is per-window state the header's own minimise button writes, not a preference |
-| `position` | `{ point="CENTER", relativePoint="CENTER", x=0, y=0 }` | **not a schema row** — see below |
+| `position` | `{ point="CENTER", relativePoint="CENTER", x=0, y=0 }` | **not a schema row** — named non-setting state, see below |
 
 The chrome itself is `LibKa0s-Core-1.0`'s shared `SKIN` / `ApplySkin`, which tints `frame.title` and
 `frame.divider` on its own, so the accent colors are not settings here. What the player owns is
 geometry, the backdrop and the LSM border, layered over the skin in that order.
 
-**`frame.position` is not a schema row and cannot be one.** It is four values behind one concept,
-which the flat path model has no vocabulary for, and it is written by a drag rather than typed. It
+**`frame.position` is not a schema row, and it is named non-setting state** (`architecture-§5`):
+geometry only a drag determines. It is four values behind one concept, no control chooses it (the
+Reset position button and `/mm reset-positions` put back the shipped center, which chooses nothing),
+and its owner is `WindowProto`. The naming, with every writer and the act that reaches each, is in
+`docs/ARCHITECTURE.md` → Settings schema; it is what makes the write outside the helper compliant,
+and it is why the deviation register carries no row for it. It
 is also the one piece of window state that must never be *read back* off the live frame (rule R3).
 `modules/Window.lua` keeps an empty, invisible `anchor` frame that never receives a value, and
 `modules/Window_Placement.lua`'s `SavePosition` reads `GetPoint` off **that**; the visible window is anchored to it. Because positions have no row,
@@ -563,7 +631,18 @@ settings-panel controls answering a question that was already answered one page 
 { r=0.35, g=0.55, b=0.85, a=1 }` · `bgColor = { r=0, g=0, b=0, a=1 }` · `bgColorMode = "class"` ·
 `bgAlpha = 0.35` · `border = false` · `borderThickness = 1` ·
 `borderColor = { r=0, g=0, b=0, a=1 }` · `borderColorMode = "custom"` · `alpha = 1.0` ·
-`fillDirection = "LEFT"`.
+`fillDirection = "LEFT"` · `animate = true`.
+
+**`animate` slides each fill to its new length between refreshes instead of snapping** (issue #23).
+The slide is the client's. Patch 12.0 gave `StatusBar:SetValue` and `:SetMinMaxValues` an optional
+trailing `Enum.StatusBarInterpolation`, and `modules/Row.lua`'s `Cell:SetValue` passes
+`ExponentialEaseOut` (through `Compat.BarInterpolation`) to **both** setters, so the max moves with
+the value. Blizzard's API docs mark the argument `NeverSecret` and keep both setters
+`AllowedWhenTainted` with a secret value, so the bar animates toward a secret target in combat
+without this addon holding two values or stepping between them. An addon-side interpolation
+would be arithmetic on a secret, which is illegal mid-pull, exactly when the animation matters. Off,
+or on a client without the enum, the argument is omitted, which is `Immediate`: the snap. Text, sort
+order and export read nothing from the animation.
 
 `borderColorMode` is options-ui-§17's companion beside the outline's swatch, added in the
 settings-revamp-v2 pass. Two values, `class` and `custom`, and `class` is **the row's player's** —
@@ -934,16 +1013,25 @@ read fills both halves of the column.
 
 ### `data`
 
-`sessionType = Const.SESSION_TYPE.Overall` · `sortMode = "value"` · `sortColumn = "DamageDone"` ·
-`sortAscending = false`.
+`sessionType = Const.SESSION_TYPE.Overall` · `sessionID = Const.NO_SEGMENT` · `sortMode = "value"` ·
+`sortColumn = "DamageDone"` · `sortAscending = false`.
 
-**None of these four is a schema row, and that is the point.** Every one of them is written by a
-control on the window itself — the header's segment dropdown writes `sessionType`, and one click on
-a column header writes all three sort fields (`modules/Window_Header.lua`'s `SortByColumn`) — so a settings
-page for them restated a control the player already has three inches from where they are looking.
-They were **deleted** rather than hidden, so there is no `/mm set` for them either: the click path
-writes the fields directly rather than through `NS.SetByPath`, and a CLI that could also write them
-was a second seam onto state the window owns.
+**All five are hidden schema rows** (issue #50), filed on the Header page beside `frame.minimised`.
+Every one of them is chosen by a control on the window itself: the header's segment menu picks
+`sessionType` or pins a stored segment in `sessionID`, and one click on a column header writes the three sort fields
+(`modules/Window_Header.lua`'s `SortByColumn`). `architecture-§5` reads a control that chooses a
+value as setting it, so they are preferences rather than a remembered view, and a preference goes
+through the helper. The controls write them through `NS.SetByPath` / `NS.SetByPaths` with the
+window's own id, so a click on one window never writes the window the settings panel is pointed at.
+`/mm set window.data.sortColumn HealingDone` takes the same path and the same validation: a stat
+outside the catalog, a sort mode the aggregator does not know or a session type the menu never
+offers is refused. The three sort rows' `onChange` drops the frozen order, so a sort written from
+the CLI takes effect exactly as a click does.
+
+They were rows once, on a Data page, and were deleted because the click wrote around the seam and a
+CLI path beside it was a second writer onto the same fields. With the click on the seam there is one
+writer again. They stay hidden because a panel copy of a control three inches from where the player
+is looking would be a second place for the two to disagree.
 
 **`mergePets` and `throttle` used to live here** and are addon-wide from `schemaVersion` 5, at
 `profile.data`. Neither described a window: one says what a pet's damage *is*, the other is a refresh
@@ -963,15 +1051,22 @@ the Combat restriction is active the rows are the engine's own ranking of the so
 the engine's ordering for that stat, and the direction is applied as a reversal — so the two of them
 are live in both states while `sortMode` is not.
 
-**`sessionID` has no schema row and no default**, and both absences are deliberate. It is set by the
-header's segment dropdown rather than by the settings panel, and its "unset" state is `nil` —
-"no segment pinned, follow `sessionType`" — which a defaults tree cannot express. It is persisted:
-`modules/Window_Header.lua`'s `SetSegment` writes it into `window.data` and AceDB stores it from
-there.
+**`sessionID` is the fifth hidden row, and its "none" is a number.** The segment menu chooses it, so
+by `architecture-§5`'s own test it is a preference, and a preference goes through the helper. Its
+unpinned state used to be `nil`, which no row default can state, so it is now
+`Constants.NO_SEGMENT` (`0`): the row's default, the value its validator accepts beside a positive
+integer session id, and what `Database.PinnedSegment` answers as "no pin" for every reader. The
+client's session ids are positive, so the sentinel names none of them; a
+[smoke test](smoke-tests.md#33-the-pinned-segments-none) confirms that on a live client.
+`SetSegment` writes it through `NS.SetByPath` for its own window. `SetSessionType` clears it in the
+same `NS.SetByPaths` batch as the type. `DropStaleSegment` clears a stale one through the seam too,
+because a row wins. `WindowManager:CopyFrom` carries it in its batch like the other four. An account
+saved before the row existed has no key, and `Database.EnsureWindowShape`'s backfill fills in the
+sentinel.
 
-When it *is* set it **overrides `sessionType`**, and every read path honors it — the aggregator's
+When it *does* pin one it **overrides `sessionType`**, and every read path honors it — the aggregator's
 column reads, the header's duration, the tooltip's spell breakdown and the drill-down's. A pinned id
-the client no longer holds is dropped back to `nil` by `WindowProto:DropStaleSegment` at the top of
+the client no longer holds is dropped back to `NO_SEGMENT` by `WindowProto:DropStaleSegment` at the top of
 the next refresh, because a stale id does not error, it silently reads an empty session.
 
 ---
@@ -1007,7 +1102,12 @@ A window row's path is **relative to a window** and is spelled with a `window.` 
 
 `NS.GetSetting` and `NS.SetByPath` resolve that prefix against the session's **active window** —
 `NS.State.activeWindowId`, which the settings panel's window picker moves. Global rows keep absolute
-paths (`enabled`, `minimap.hide`) and resolve against `db.profile`.
+paths and resolve against `db.profile`. There are twenty-two of them: `enabled`, `minimap.hide`, the
+four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale, alpha and lock, distinct
+from the per-window `frame.*` three), `data.mergePets`, `data.throttle`, the four `export.*`
+preferences, the eight `statColors.*` swatches, and the two `sessionOnly` rows `state.testMode` and
+`state.debugConsole`, whose own `get`/`set` are the whole of their storage. The other 147 rows are
+window rows.
 
 ```lua
 -- settings/Schema_Paths.lua
@@ -1175,9 +1275,31 @@ finished loading when the schema file ran.
 
 ## The write seam
 
-`NS.SetByPath(path, value)` is the single write seam (`settings-schema-§1`). The panel's widgets,
-`/mm set`, `/mm reset`, `NS.ApplyDefault` and the global Defaults sweep all land here, so validation,
-the debug line, the row's reaction and the refresh cannot be skipped by whichever caller forgot one.
+`NS.SetByPath(path, value, windowId)` is the single write seam (`settings-schema-§1`). The panel's
+widgets, `/mm set`, `/mm reset`, `NS.ApplyDefault` and the global Defaults sweep all land here, so
+validation, the debug line, the row's reaction and the refresh cannot be skipped by whichever caller
+forgot one. `windowId` is optional: omitted, a `window.*` path means the active window; given, it
+means that window and no other (see [the window registry](#the-window-registry-and-its-writer)).
+
+`NS.SetByPaths(writes, windowId, summary)` is the same seam taking several `{ path, value }` writes
+as one change. Each entry goes through exactly what `NS.SetByPath` does, and every entry is checked
+before any is stored, so one refusal stores nothing. Only the tail differs: one `CONFIG_CHANGED` for
+the batch. Its `section` is the page when every row shares one and `nil` when they do not, so no
+subscriber skips part of a change. The log follows debug-logging-§10 as ruled on 2026-09-12: a batch
+logs one `[Set] <path> = <value>` line per row, whatever it is (a resize drag, a header sort, a
+segment pick). A **bulk copy or reset** is the one exception. It passes `summary`, and the batch
+runs inside the seam's bulk bracket (`NS.Bulk`). Inside the bracket the per-row line is muted, and
+the close logs one `[Set] <summary>: N rows` line, such as `[Set] copy from 'A' to 'B': 42 rows`.
+The tag is `[Set]`, which standard v2.44.0 makes a MUST. N counts the rows whose stored value
+actually moved: the seam reads each row before and after its write while the bracket is open, and
+counts a row once, however often it is written. A row already holding its value is not counted.
+Copy-from is the only `summary` caller. The library's reset walks reach the same bracket through
+the descriptors' `bulkBegin` / `bulkEnd`:
+- each page's **Defaults** button logs `[Set] reset <page>: N rows`;
+- the Columns page brackets its array write around the library's page walk, so the brackets nest
+  and only the outermost close logs.
+
+A whole-profile reset adds no line from the bracket, because `OnProfileReset` logs it once.
 
 **Order is load-bearing**: write → react (`onChange`) → log once → announce `CONFIG_CHANGED` →
 re-sync the panel's scalars. Reacting before the write would hand a refresher the old value; logging

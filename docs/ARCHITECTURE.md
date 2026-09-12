@@ -75,8 +75,8 @@ touching the data path.
 
 ## Settings schema
 
-`NS.Schema` in `settings/Schema.lua` is the single source of truth: **162 rows across 8 page keys**
-(windows 1, frame 26, header 31, bars 28, tooltip 30, visibility 17, columns 8, general 21), each one
+`NS.Schema` in `settings/Schema.lua` is the single source of truth: **169 rows across 8 page keys**
+(windows 1, frame 26, header 36, bars 29, tooltip 30, visibility 17, columns 8, general 22), each one
 wiring automatically into its panel widget — one tab per distinct `group`, via
 `LibKa0s-Options-1.0`'s `RenderTabbedSchema` — its `/mm get|set|list|reset` coverage, and the
 per-page and global defaults reset. A ninth registered page, Profiles, hosts no schema rows at all.
@@ -90,48 +90,45 @@ anti-pattern #73. What comes out is an array of ordinary rows, so nothing downst
 [settings-panel.md](settings-panel.md#the-composed-blocks) for which block is used where, and the
 [deviation register](#documented-deviations) for what a load without LibKa0s does to them.
 
-The write seam is `NS.SetByPath`; the reader is `NS.GetSetting`. Both the panel and the CLI point at
-them, so `/mm set window.frame.width 300` takes exactly the path a slider takes — same validation,
-same debug line, same `CONFIG_CHANGED` message, same panel re-sync.
+The write seam is `NS.SetByPath`, with `NS.SetByPaths` as its batch form; the reader is
+`NS.GetSetting`. Both the panel and the CLI point at them, so `/mm set window.frame.width 300` takes
+exactly the path a slider takes — same validation, same debug line, same `CONFIG_CHANGED` message,
+same panel re-sync.
 
-**The window-relative path model** is the one thing here that is not standard-issue. Almost every
-setting is per-window, and a window is an instance created at runtime — so an absolute path would
-have to be `windows.<id>.frame.width`: dynamic, unknowable at load, and inexpressible in the flat
-path model the CLI and the panel both read. Resolution: a window row's path is **relative** and
-spelled `window.frame.width`, resolved by the seam against `NS.State.activeWindowId`, which the
-settings panel's window picker — `H.WindowBanner`, decorated by `settings/Windows.lua` and drawn on
-all seven window pages — moves. The other **twenty-one** rows keep absolute paths and resolve against
-`db.profile`: `enabled`, `minimap.hide`, the four `master.*` controls (`options-ui-§15`'s addon-wide
-visibility, scale, alpha and lock — distinct from the per-window `frame.*` three, and composed with
-them rather than replacing them), `data.mergePets`, `data.throttle` (addon-wide since schemaVersion
-5), the three `export.*` preferences, the eight `statColors.*` swatches (generated one per
-`Constants.STAT_COLORS` entry — see [settings-panel.md](settings-panel.md#the-statistic-palette)),
-and the two `sessionOnly` rows `state.testMode` and `state.debugConsole`, whose own `get`/`set` are
-the whole of their storage. Moving one integer of session state retargets **141** rows.
+**The window-relative path model** is the one thing here that is not standard-issue. A window row's
+path is relative (`window.frame.width`) and the seam resolves it against `NS.State.activeWindowId`,
+which the settings panel's window picker moves, or against a window id the caller passes. The other
+twenty-two rows keep absolute paths against `db.profile`, so moving one integer retargets **147**
+rows ([schema.md](schema.md#the-window-relative-path-model) lists both sets).
 
-One page carries **zero** schema rows: `settings/Profiles.lua` hosts AceDBOptions' own tree and is
-the one place `AceConfigDialog` is permitted, because the options table is not ours to re-express. It
-is also the one page vetoed from reset-all — resetting it deletes user data. `settings/Columns.lua`
-carries **eight** — the `window.columnHeader.*` text and background rows, moved here from Header
-because this is the page that labels the strip they style — alongside its bespoke block editor, which
-still edits an ordered array whose length is the user's, a shape a path model has no vocabulary for:
-`window.columns` is a documented carve-out, read like any node and accepted **whole-array** on write,
-validated and rebuilt entry by entry by the same seam.
+Profiles carries **zero** rows: AceDBOptions' own tree, the one place `AceConfigDialog` is permitted,
+and vetoed from reset-all. Columns carries eight `window.columnHeader.*` rows beside its block
+editor, whose `window.columns` array is the seam's documented whole-array carve-out.
 
 **The window registry has one writer** (`architecture-§5`), since no row can name a window's
-existence. Its storage keys are `db.profile.windows`, an array whose entries carry their `id` and
-unique `name`, and the id counter `db.profile.nextWindowId`. Its writer is
-`modules/WindowManager.lua` (`Create`, `Delete`, `Duplicate`, `Rename`'s uniqueness check), with
-`Database.NextWindowId` and `Database.EnsureWindowShape` as its helpers. Its load pass is
-`Database.SeedWindows`, run by `NS:RunMigrations` at initialization (`NS:OnInitialize`, `NS:InitDB`)
-and from AceDB's profile callbacks only. Rows inside a window stay `NS.SetByPath`'s, and some
-writers do not honor that yet ([schema.md](schema.md#the-window-registry-and-its-writer)).
+existence. Its storage keys are `db.profile.windows` (entries carry their `id` and unique `name`) and
+the id counter `db.profile.nextWindowId`. Its writer is `modules/WindowManager.lua` (`Create`,
+`Delete`, `Duplicate`, `Rename`'s uniqueness check) with its helpers `Database.NextWindowId` and
+`Database.EnsureWindowShape`. Its load pass is `Database.SeedWindows`, run only by `NS:RunMigrations`.
+Rows inside a window stay the seam's even when the registry writes them, through the seam's optional
+window id ([schema.md](schema.md#the-window-registry-and-its-writer)).
 
-`NS.ValidateSchema()` proves every row's `default` equals `defaults/Profile.lua`'s. The two are
-restated independently rather than sharing a reference precisely so the check can prove something.
+**Named non-setting state** (`architecture-§5`) is written outside the seam and needs no register
+row. Each piece has one owner, and every writer is listed with the act that reaches it:
 
-Panel behavior, the widget makers and the page tree: [settings-panel.md](settings-panel.md). The
-persisted shape and the migration seam: [schema.md](schema.md).
+| Storage key | Class | Owner | Writers — and the act |
+|---|---|---|---|
+| `frame.position` in each `db.profile.windows` entry ([detail](schema.md#frameposition-is-named-non-setting-state)) | geometry only a drag determines | `WindowProto` (`modules/Window_Placement.lua`) | `WindowProto:SavePosition` (title-bar drag-stop); `WindowManager:ResetPosition` / `:ResetPositions` (General's *Reset position*, `/mm reset-positions`) put back the shipped center; `WindowManager:Create` (whole, via `NS.DefaultWindow`) and `:Duplicate` (its 24 px offset); `Database.EnsureWindowShape`'s backfill when `Create`, `Duplicate` or `CopyFrom` calls it |
+| `db.global.roster` (`byGuid`, `pets`) ([detail](schema.md#dbglobal--account-wide)) | learned data | `modules/Roster.lua` | `build()` and its `linkPetOf`, recording every member and pet-owner link the live build sees (the lazy rebuild after a roster invalidation); `Roster.Forget` clears it on `METER_RESET` |
+| `db.profile.minimap`'s `minimapPos` ([detail](schema.md#minimap)) | a vendored library's own writes | `modules/Minimap.lua` (`Minimap.Init` hands LibDBIcon the table) | LibDBIcon, when the player drags the minimap button. `hide` is the `minimap.hide` row |
+| `MultiMetersPerfDB` | recorded data a vendored library writes | `core/PerfSetup.lua` (hands LibKa0s-Perf the key) | LibKa0s-Perf's `P.Save` on `/mm perf finish`: appends, trims the ring to 10, discards an older schema |
+
+**Sort, session type and the pinned segment are preferences, not a remembered view**: a header
+click and the segment menu choose them, so the five `window.data.*` fields are hidden rows written
+through the seam by window id; the pin's none is `NO_SEGMENT` (0) ([schema.md](schema.md#data)).
+
+`NS.ValidateSchema()` proves every row's `default` equals `defaults/Profile.lua`'s. Panel behavior:
+[settings-panel.md](settings-panel.md); persisted shape and migrations: [schema.md](schema.md).
 
 ## Message bus
 
@@ -144,7 +141,7 @@ typo in a subscriber is a nil-index at load rather than a callback that silently
 |---|---|---|---|
 | `METER_UPDATED` | `core/MultiMeters.lua` | `Targets`, every `Window` | — |
 | `METER_SESSION` | `core/MultiMeters.lua` | `Provider`, `Targets`, every `Window` | `{ type, sessionID }` |
-| `METER_RESET` | `core/MultiMeters.lua`, and `Provider.Reset` for the manual path | `Provider`, `Feign`, `Aggregator`, `Targets`, `DrillDown`, every `Window` | — |
+| `METER_RESET` | `core/MultiMeters.lua`, and `Provider.Reset` for the manual path | `Provider`, `Roster`, `Feign`, `Aggregator`, `Targets`, `DrillDown`, every `Window` | — |
 | `ROSTER_CHANGED` | `core/MultiMeters.lua` | `Roster`, `Feign`, `Visibility`, every `Window` | — |
 | `ZONE_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
 | `ENTERING_WORLD` | `core/MultiMeters.lua` | `Provider`, `Roster`, `Feign`, `Visibility`, every `Window` | `{ isLogin, isReload }` |
@@ -152,7 +149,7 @@ typo in a subscriber is a nil-index at load rather than a callback that silently
 | `COMBAT_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
 | `PLAYER_STATE_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
 | `PROFILE_CHANGED` | `core/Database.lua` (`fireProfileChanged`) | `Format`, `Roster`, `Aggregator`, `Targets`, `WindowManager`, `DrillDown`, `Visibility`, `settings/Profiles.lua` | `{ newProfileKey }` |
-| `CONFIG_CHANGED` | `settings/Schema_Paths.lua` (`NS.SetByPath`) | `Format`, every `Window` | `{ section, windowId }` |
+| `CONFIG_CHANGED` | `settings/Schema_Paths.lua` (`NS.SetByPath`, and once per batch from `NS.SetByPaths`) | `Format`, every `Window` | `{ section, windowId }` |
 | `WINDOWS_CHANGED` | `modules/WindowManager.lua` (`announce`) | `DrillDown`; the settings panel repaints on the same registry actions through `NS.RefreshOptionsPanel`, by direct call rather than by subscription | `{ windowId, action }` |
 | `TEST_MODE_CHANGED` | `core/State.lua` (`State.SetTestMode`) | `Roster`, every `Window` | `{ enabled }` |
 | `DRILLDOWN_CHANGED` | `modules/DrillDown.lua` (`announce`) | the addressed `Window` | `{ windowId, active }` |
@@ -191,7 +188,7 @@ that a load-time cycle between two majors.
 | `get <path>` | Read one setting |
 | `set <path> <value>` | Write one setting |
 | `reset <path>` | Reset one setting to its default |
-| `resetall` | Reset the active profile to the shipped defaults — a **profile reset**, so it is the equivalent of a new profile: extra windows are deleted and one fresh window is left. The same act as Profiles → Reset Profile; other profiles are never touched. See [settings-panel.md](settings-panel.md#reset-all-settings-vs-reset-profile) |
+| `resetall` | Reset the active profile to the shipped defaults, **after a confirmation**. It opens the General page's "Reset all settings?" popup (`MULTIMETERS_RESET_ALL`, through `NS.ShowResetAll`, the opener the button calls), and only accepting resets; No or Escape changes nothing. The reset is a **profile reset**, so it is the equivalent of a new profile: extra windows are deleted and one fresh window is left. The same act as Profiles → Reset Profile; other profiles are never touched. Until 2026-09-12 it went to the library's `CliResetAll`, which reset only the active window's rows, and then, until the owner's decision the same day, it reset without asking. See [settings-panel.md](settings-panel.md#reset-all-settings-vs-reset-profile) |
 | `debug` | Toggle the console window; `on` / `off` set session logging; **`tooltip`** toggles the tooltip log channel, off by default because a tooltip is rebuilt on every mouse-over and would evict the buffer; **`diag`** prints the diagnostic report; **`recap`** prints the death-recap probe alone; **`identity`** prints the mid-pull identity-correlation capture (issue #22); **`feign on`** / **`feign off`** arm and disarm the feign-death recording and **`feign`** prints it (issue #25) |
 | `perf` | Performance capture — `/mm perf help` for the run's own verbs |
 | `version` | Print the addon version, read from the TOC manifest |
@@ -255,8 +252,10 @@ Everything else is a bus subscription. Registration by module is tabulated in
 [module-map.md](module-map.md#what-each-file-publishes-and-consumes).
 
 Perf buckets, declared in `core/PerfSetup.lua` with their nesting: `meterEvent` · `refresh`
-(→ `providerRead`, `aggregate`, `render` → `renderRow`) · `tooltip` (→ `targets`). A parent is never summed with
-its children. Detail in [performance.md](performance.md) and
+(→ `aggregate` → `providerRead`, `render` → `renderRow`) · `tooltip` (→ `targets` → `providerRead`).
+`providerRead` has two parents, so it declares none, and every nested bracket passes the parent it
+ran inside, so a capture reports the tree as observed. A parent is never summed with its children.
+Detail in [performance.md](performance.md) and
 [perf-analysis/README.md](perf-analysis/README.md).
 
 ## Taint notes
@@ -324,9 +323,10 @@ two synthetic entries `Current` and `Overall`. The menu anchors to the header's 
 is where it has always come out; that line used to be a 220px Button and opened the menu itself,
 which put an invisible click target across the middle of the title bar and was removed.
 
-The choice is stored in `window.data.sessionID`, which **overrides `sessionType` when set** and is
-`nil` when no segment is pinned. It has no schema row: it is not a settings-panel control and its
-unset state cannot be expressed as a default. It is persisted like any other key in `window.data`.
+The choice is stored in `window.data.sessionID`, which **overrides `sessionType` when it pins a
+segment** and holds `Constants.NO_SEGMENT` (0) when none is pinned. It is a hidden schema row: the
+menu is its control, and it writes the pin through `NS.SetByPath` addressed to its own window. Every
+consumer reads it through `Database.PinnedSegment`, which answers nil for the sentinel.
 
 Threading it took one optional trailing argument rather than a new shape. `Provider.GetColumn`,
 `GetSourceDetail` and `GetSessionDuration` each accept a trailing `sessionID`; nil routes to the
@@ -375,9 +375,10 @@ thing is in it before opening it:
   says, and the feign-death filter has no plain key to join on until combat ends.
 - **Serializing mid-pull.** Both halves of export refuse, in a sentence, because `tostring` on a
   secret answers a secret string rather than raising.
-- **What the data source does not carry.** A past death cannot be dated against its run; pet
-  attribution has no owner link and is best-effort; the provider-order assumption is measured rather
-  than proven.
+- **What the data source does not carry.** A past death cannot be dated against its run; a feign's
+  death row carries nothing a real death's lacks, so the provider cannot filter one
+  ([#25](https://github.com/tusharsaxena/MultiMeters/issues/25)); pet attribution has no owner link
+  and is best-effort; the provider-order assumption is measured rather than proven.
 - **Deliberate ceilings.** English only, Retail only, a 40-row export cap, no in-window column drag
   editor (rule R3), wheel-only scrolling, a sticky roster, a drill-down list that is a snapshot, and
   session-only debug logging.
@@ -567,9 +568,9 @@ files took the seam its own issue had already named, and the eight suites follow
 mirror.
 
 What remains worth knowing is the **1000–1500 on-notice band**, which is busier than it has ever
-been: 19 files, six of them source, because a peel lands a file wherever its seam falls and a seam
-chosen for what a reader can hold does not aim at a line count. The tightest is `tests/wow_mock.lua`
-with 34 lines of headroom, and the one to watch is `modules/Row.lua` at 1442 — source, on the refresh
+been: 20 files, nine of them source, because a peel lands a file wherever its seam falls and a seam
+chosen for what a reader can hold does not aim at a line count. The tightest is `tests/test_provider.lua`
+at exactly the cap, and the one to watch is `modules/Row.lua` at 1469 — source, on the refresh
 path, and the file every identity, spec-icon and pet-fold change has historically landed in.
 
 **The band is tabulated in [complexity.md](complexity.md#the-10001500-loc-band), not here.**

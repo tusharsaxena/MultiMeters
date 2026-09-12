@@ -91,6 +91,36 @@ local NOT_A_KEY = {
     deathRecapID      = "identifies a death, not a player",
 }
 
+-- An absence the SESSION explains, keyed by the field that is missing. Each names
+-- the field whose presence on EVERY sampled row accounts for it (issue #48).
+--
+-- modules/Provider.lua's collectSource keeps a row when EITHER identifier is
+-- present, because a row carries one or the other: a player a GUID, an NPC a
+-- creature id. So a capture taken on a group's DamageDone, where every row is a
+-- player, finds `sourceCreatureID` absent on all of them, and that is correct.
+-- Printing "the addon READS this" beside it sent a reader after a non-problem.
+-- The same holds the other way round on an all-NPC column.
+local EXPLAINED_BY = {
+    sourceCreatureID = { by = "sourceGUID",
+        why = "expected: every sampled row has a sourceGUID, and only an NPC row carries a creature id" },
+    sourceGUID       = { by = "sourceCreatureID",
+        why = "expected: every sampled row has a sourceCreatureID, and only a player row carries a GUID" },
+}
+
+--- Why `field` is missing on the rows sampled, when the session explains it, or nil.
+---
+--- @param field table   one ProbeSourceFields descriptor
+--- @param byName table|nil  every descriptor of the same probe, by field name
+--- @return string|nil
+local function explainedAbsence(field, byName)
+    local rule = EXPLAINED_BY[field.name]
+    local other = rule and byName and byName[rule.by]
+    if other and (other.sampled or 0) > 0 and other.present == other.sampled then
+        return rule.why
+    end
+    return nil
+end
+
 --- The client's own inventory of a raw source row, or an empty list.
 ---
 --- IT FOLLOWS THE STATS, not the profile. The rectangle was built on a
@@ -117,7 +147,7 @@ local function probeTarget(stats)
     end
     local windows = NS.Database and NS.Database.GetWindows and NS.Database.GetWindows()
     local data = windows and windows[1] and windows[1].data or {}
-    return data.sessionType, nil, data.sessionID
+    return data.sessionType, nil, NS.Database.PinnedSegment(data)
 end
 
 local function sourceFields(stats)
@@ -222,8 +252,16 @@ end
 --- field carrying one value for the whole raid is no more a join key than no
 --- field at all. `distinct` is what separates the two, and it is why the probe
 --- counts rather than samples one row.
-local function fieldVerdict(field)
+---
+--- AN ABSENCE THE SESSION EXPLAINS IS NOT A FINDING (issue #48), and it prints
+--- in lower case with the reason beside it, outside the defect tally. See
+--- EXPLAINED_BY: a player row has no creature id and an NPC row has no GUID, so
+--- one of the two is missing on every row of a one-kind session by construction.
+local function fieldVerdict(field, byName)
+    local why = explainedAbsence(field, byName)
+
     if field.absent or field.present == 0 then
+        if why then return "absent", "  (" .. why .. ")" end
         local note = "  |cffff2020<- the addon READS this|r"
         local cost = ABSENCE_COST[field.name]
         if cost then note = note .. " — " .. cost end
@@ -231,6 +269,7 @@ local function fieldVerdict(field)
     end
 
     if field.present < field.sampled then
+        if why then return "partial", "  (" .. why .. ")" end
         local note = "  |cffff2020<- present on SOME rows only|r"
         if field.local_ then note = note .. ", including yours" end
         local cost = ABSENCE_COST[field.name]
@@ -256,8 +295,13 @@ end
 --- One line per field, and a tally of the three states worth acting on.
 local function printFieldRows(fields)
     local counts = { candidates = 0, absent = 0, partial = 0 }
+    -- Every descriptor by name, so a verdict can ask whether ANOTHER field
+    -- explains this one's absence (EXPLAINED_BY). The tally below counts only
+    -- the upper-case states, so an explained absence never reaches it.
+    local byName = {}
+    for _, field in ipairs(fields) do byName[field.name] = field end
     for _, field in ipairs(fields) do
-        local state, note = fieldVerdict(field)
+        local state, note = fieldVerdict(field, byName)
         if state == "ABSENT"  then counts.absent  = counts.absent + 1  end
         if state == "PARTIAL" then counts.partial = counts.partial + 1 end
         if note:find("WOULD widen", 1, true) then

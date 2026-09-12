@@ -491,11 +491,12 @@ local function newPass(window)
         windowId    = window.id,
         sessionType = data.sessionType or Const.SESSION_TYPE.Current,
         -- The segment the header dropdown is pointed at, or nil for "whichever
-        -- session sessionType names". Read straight off the config rather than
-        -- off the window instance because modules/Window.lua CLEARS a stale id
-        -- back to nil before it aggregates, so the config is the resolved answer
-        -- by the time this runs — one source of truth rather than two.
-        sessionID   = data.sessionID,
+        -- session sessionType names" -- Database.PinnedSegment turns the row's
+        -- NO_SEGMENT into that nil. Read straight off the config rather than off
+        -- the window instance because modules/Window.lua CLEARS a stale id before
+        -- it aggregates, so the config is the resolved answer by the time this
+        -- runs — one source of truth rather than two.
+        sessionID   = NS.Database.PinnedSegment(data),
         keys        = keys,
         sortColumn  = sortColumn,
         mode        = data.sortMode or "value",
@@ -1030,7 +1031,8 @@ end
 --- beats a phantom row or a mid-pull error). The refusals are tallied on the
 --- pass and reported once, not per source.
 local function scanColumn(pass, statKey)
-    local column = Provider.GetColumn(pass.sessionType, statKey, pass.sessionID)
+    -- "aggregate": the bracket this runs inside (issue #47).
+    local column = Provider.GetColumn(pass.sessionType, statKey, pass.sessionID, "aggregate")
     pass.columns[statKey] = column
     pass.columnTotals[statKey] = column.totalAmount
     if column.reason and pass.reason == nil then pass.reason = column.reason end
@@ -1208,10 +1210,18 @@ end
 --- modules/Window.lua uses the colon form, and a silent argument shift there
 --- would build the wrong window rather than error.
 ---
+--- `parentKey` is the perf bracket the CALLER runs inside, handed to Perf.Note so
+--- a capture observes the nesting instead of trusting the descriptor
+--- (performance-§3, issue #47). modules/Window.lua's refresh passes "refresh".
+--- An export build passes nothing, because it runs inside no bracket, and naming
+--- one it is not in would be the false claim this argument exists to replace.
+---
 --- @param window table  a window config from the profile
+--- @param parentKey string|nil
 --- @return table  the result table, which is also the row array (see the header)
-function Aggregator.Build(a, b)
-    local window = (a == Aggregator) and b or a
+function Aggregator.Build(a, b, c)
+    local window, parentKey = a, b
+    if a == Aggregator then window, parentKey = b, c end
     if type(window) ~= "table" then return { rows = {}, columns = {} } end
 
     local t0 = Perf.on and debugprofilestop()
@@ -1245,7 +1255,7 @@ function Aggregator.Build(a, b)
     local kept = Aggregator.ApplyRowLimit(pass.rows, window.rows or {})
     deriveRowFacts(kept, pass)
 
-    if t0 then Perf.Note("aggregate", debugprofilestop() - t0) end
+    if t0 then Perf.Note("aggregate", debugprofilestop() - t0, parentKey) end
 
     logPass(pass, #kept)
     return assembleResult(kept, pass)

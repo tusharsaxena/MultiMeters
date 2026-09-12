@@ -759,3 +759,19 @@ function Compat.IsInHousing()
     if not (housing and housing.IsInsideHouseOrPlot) then return false end
     return housing.IsInsideHouseOrPlot() and true or false
 end
+
+--- The interpolation a StatusBar setter takes to slide rather than snap, or nil.
+---
+--- Patch 12.0 gave `StatusBar:SetValue` and `:SetMinMaxValues` an optional
+--- trailing `Enum.StatusBarInterpolation` (issue #23). Blizzard's API docs mark
+--- it `NeverSecret`, and both setters stay `AllowedWhenTainted` with a secret
+--- value, so the widget animates from its own fill toward a secret target
+--- without this addon ever holding the two values. Nil on a client without the
+--- enum, which the caller answers by omitting the argument: `Immediate`, the
+--- snap every client had before.
+---
+--- @return number|nil  `ExponentialEaseOut`, or nil
+function Compat.BarInterpolation()
+    local enum = _G.Enum and _G.Enum.StatusBarInterpolation
+    return enum and enum.ExponentialEaseOut or nil
+end

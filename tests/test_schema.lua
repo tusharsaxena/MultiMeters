@@ -67,6 +67,45 @@ test("Schema: a `hidden` row is writable and listable but draws no control", fun
         "the seam must still accept it")
 end)
 
+test("Schema: the sort and the session type are hidden rows the seam validates (issue #50)", function()
+    -- A column-header click and the segment menu CHOOSE these, so they are
+    -- preferences (architecture-§5), not a remembered view: each has a row, the
+    -- header controls write through NS.SetByPath, and `/mm set` reaches them by
+    -- the same path. Hidden, because the control that sets each one is on the
+    -- window itself, and a panel copy was a second place for the two to disagree.
+    -- red under: no rows, or a row that takes a value its control never offers.
+    local inst = T.load()
+    local NS = inst.NS
+    local Const = NS.Constants
+
+    for _, path in ipairs({ "window.data.sessionType", "window.data.sortColumn",
+                            "window.data.sortMode", "window.data.sortAscending" }) do
+        local row = NS.FindSchemaRow(path)
+        assertTrue(row ~= nil, path .. " has no row, so its control writes around the helper")
+        assertTrue(row.hidden, path .. " is drawn on the panel")
+    end
+
+    assertTrue((NS.SetByPath("window.data.sortColumn", "HealingDone")))
+    assertEqual(NS.GetSetting("window.data.sortColumn"), "HealingDone")
+    assertFalse((NS.SetByPath("window.data.sortColumn", "NotAStat")), "a stat outside the catalog")
+    assertFalse((NS.SetByPath("window.data.sortMode", "sideways")))
+    assertFalse((NS.SetByPath("window.data.sortAscending", "yes")))
+    assertTrue((NS.SetByPath("window.data.sessionType", Const.SESSION_TYPE.Current)))
+    assertFalse((NS.SetByPath("window.data.sessionType", 42)), "a session type the menu never offers")
+end)
+
+test("Schema: a sort written from the CLI drops the frozen order, as a click does (issue #50)", function()
+    -- The frozen order is a snapshot of the OLD sort. The click used to drop it
+    -- itself; now the row does, so `/mm set` cannot leave a stale order behind.
+    -- red under: the WipeCache call living only in SortByColumn.
+    local inst = T.load()
+    local NS = inst.NS
+    local id = NS.Database.GetWindows()[1].id
+    NS.State.Cache("Aggregator")[id] = { "Player-1-0000000A" }
+    assertTrue((NS.SetByPath("window.data.sortColumn", "HealingDone", id)))
+    assertTrue(NS.State.Cache("Aggregator")[id] == nil, "the frozen order survived the write")
+end)
+
 test("Schema: the export choices are hidden from the panel but NOT from the seam", function()
     -- The modal's own three controls are the ones a player uses, so a second
     -- copy on General was a settings group restating a control met elsewhere --
@@ -243,7 +282,7 @@ local PARTITION = {
                    { "Background and border", 6 }, { "Row", 8 } },
     header     = { { "Title bar", 8 }, { "Title text", 6 }, { "Controls", 8 },
                    { "Button style", 8 } },
-    bars       = { { "Bar", 5 }, { "Background", 3 }, { "Border", 5 },
+    bars       = { { "Bar", 6 }, { "Background", 3 }, { "Border", 5 },
                    { "Text content", 5 }, { "Text style", 7 }, { "Icons", 3 } },
     tooltip    = { { "General", 5 }, { "Bar", 5 }, { "Bar background", 3 },
                    { "Bar border", 4 }, { "Text", 6 }, { "Contents", 7 } },
@@ -616,7 +655,8 @@ test("Schema: a hidden row is filed under a tab that exists, and draws nothing",
                 row.path .. " is hidden but carries no page or group")
         end
     end
-    assertEqual(hidden, 4, "four rows are hidden: frame.minimised and the three export choices")
+    assertEqual(hidden, 10, "ten rows are hidden: frame.minimised, the four export choices "
+        .. "and the five the window's own header controls choose (issue #50)")
 
     -- And the other half: no tab the strip actually draws is empty.
     for _, page in ipairs({ "general", "windows", "frame", "header", "bars", "tooltip",
@@ -763,18 +803,27 @@ test("Schema: the header controls are EDITED on Header and STORED under frame", 
     local NS, L = inst.NS, inst.NS.L
     local TABS = { [L["Controls"]] = true, [L["Button style"]] = true }
 
-    local n = 0
+    -- The five hidden `window.data.*` rows the segment menu and a column-header click write
+    -- (issue #50) are filed under Controls too, but they are the window's sort and session,
+    -- stored where the aggregator has always read them, and are counted apart.
+    local n, view = 0, 0
     for _, row in ipairs(NS.Schema) do
         if row.page == "header" and TABS[row.group] then
-            n = n + 1
-            assertTrue(row.path:find("^window%.frame%.") ~= nil,
-                row.path .. " is a header control and must still be stored under frame")
+            if row.path:find("^window%.data%.") then
+                view = view + 1
+                assertTrue(row.hidden, row.path .. " is window state and must draw no control")
+            else
+                n = n + 1
+                assertTrue(row.path:find("^window%.frame%.") ~= nil,
+                    row.path .. " is a header control and must still be stored under frame")
+            end
         end
     end
     -- Exactly 17: Controls (close/showMinimise/showLock/showSettings, the hidden
     -- `window.frame.minimised`, and the four meter buttons) + Button style (8). Walked over
     -- NS.Schema, not SchemaForPage, so the hidden row counts.
     assertEqual(n, 17, "the whole set moved, not one row of it")
+    assertEqual(view, 5, "sessionType, sessionID, sortColumn, sortMode and sortAscending")
 end)
 
 
@@ -1095,4 +1144,48 @@ test("A profile reset rebuilds through the ONE message, not by direct calls", fu
 
     NS.Helpers.RestoreAllDefaults()
     assertTrue(seen > 0, "PROFILE_CHANGED was not published, so nothing rebuilt")
+end)
+
+test("RestoreAllDefaults logs ONE line in total: the profile handler's, and no bulk line", function()
+    -- debug-logging-§10, the owner's final ruling: AceDB replacing the whole
+    -- profile is logged ONCE, by the profile-event handler, in words chosen by
+    -- the event, and no bulk bracket adds a second line. Options minor 16
+    -- brackets the session-row walk AND resetProfile and hands bulkEnd
+    -- `info.profileReset = true`, so the seam emits nothing at the close and the
+    -- session row it wrote first stays muted.
+    -- red under: bulkEnd logging `reset all: N rows` despite info.profileReset,
+    -- no bracket (state.testMode logs its own [Set] line), the handler still
+    -- calling a reset "switched to", or the re-seed's [Init] trace beside it.
+    local inst = twoWindows()
+    local NS = inst.NS
+    NS.State.debug = true
+
+    --- Every line `fn` logs, as "[tag] text". Lua 5.1's `%s` raises on a table,
+    --- so the arguments are tostring()ed first.
+    local function logged(fn)
+        local lines, original = {}, NS.Debug
+        NS.Debug = function(tag, fmt, ...)
+            local a = { ... }
+            for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
+            lines[#lines + 1] = "[" .. tag .. "] " .. tostring(fmt):format(a[1], a[2], a[3], a[4])
+        end
+        local ok, err = pcall(fn)
+        NS.Debug = original
+        assertTrue(ok, tostring(err))
+        return lines
+    end
+
+    local lines = logged(NS.Helpers.RestoreAllDefaults)
+    assertEqual(#lines, 1, "the reset-all logged: " .. table.concat(lines, " | "))
+    assertEqual(lines[1], "[Set] reset profile 'Default' to defaults")
+    assertEqual(#NS.Database.GetWindows(), 1)
+
+    -- A session row off its default: the walk writes it, muted, and the row's own
+    -- reactor line ([Test] off) is not a [Set] line, so it stays.
+    NS.State.SetTestMode(true)
+    lines = logged(NS.Helpers.RestoreAllDefaults)
+    assertEqual(#lines, 2, "with a session row moved: " .. table.concat(lines, " | "))
+    assertEqual(lines[1], "[Test] off", "the row's reactor line stays; its [Set] line does not")
+    assertEqual(lines[2], "[Set] reset profile 'Default' to defaults")
+    assertEqual(NS.State.testMode, false, "the session row was still reset, just not logged")
 end)

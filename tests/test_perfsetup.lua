@@ -259,13 +259,18 @@ function()
     -- prose. `renderRow` nests inside `render` because a 20-player group times 7
     -- columns is 140 cells per pass.
     local P = T.load{}.NS.Perf
-    assertEqual(P.BUCKET_WITHIN.providerRead, "refresh")
     assertEqual(P.BUCKET_WITHIN.aggregate, "refresh")
     assertEqual(P.BUCKET_WITHIN.render, "refresh")
     assertEqual(P.BUCKET_WITHIN.renderRow, "render")
+    assertEqual(P.BUCKET_WITHIN.targets, "tooltip")
     assertNil(P.BUCKET_WITHIN.refresh, "refresh is a top-level pass")
     assertNil(P.BUCKET_WITHIN.meterEvent)
     assertNil(P.BUCKET_WITHIN.tooltip)
+    -- A column read runs inside `aggregate` on a refresh, inside `targets` on a
+    -- tooltip, and inside nothing from a diagnostic. No single `within` is true,
+    -- so it declares none and the capture reports what it saw (issue #47).
+    -- red under: `{ key = "providerRead", within = "refresh" }`.
+    assertNil(P.BUCKET_WITHIN.providerRead, "providerRead has no single parent to declare")
 
     -- Every declared parent must itself be a declared bucket, or the report
     -- nests a total under a heading that is never printed.
@@ -275,6 +280,97 @@ function()
         assertTrue(declared[parent],
             key .. " nests inside '" .. parent .. "', which is not a declared bucket")
     end
+end)
+
+-- ── observed nesting (issue #47) ────────────────────────────────────────────
+--
+-- A `within` is a CLAIM; the parent a bracket passes to Perf.Note is what makes
+-- the capture OBSERVE it (performance-§3). With every call site on the two-
+-- argument form, the first live capture printed "declares itself within X -- not
+-- observed" for every nested bucket, so no child could be subtracted from its
+-- parent and no bucket quoted as a share of another.
+
+test("PerfSetup: every bracket passes the parent it runs inside, and a top-level one passes none (#47)",
+function()
+    -- red under: any two-argument Perf.Note at a nested site.
+    local EXPECT = {
+        refresh = false, meterEvent = false, tooltip = false,           -- top level
+        render = '"refresh"', renderRow = '"render"', targets = '"tooltip"',
+        aggregate = true, providerRead = true,          -- a parent threaded from the caller
+    }
+    local seen = 0
+    local shape = 'Perf%.Note%(%s*"([%w_]+)"%s*,%s*debugprofilestop%(%)%s*%-%s*t0%s*(.-)%)'
+    for key, rest in addonSource():gmatch(shape) do
+        seen = seen + 1
+        local parent = rest:match("^,%s*(.-)%s*$")
+        local want = EXPECT[key]
+        assertTrue(want ~= nil, "no expectation for bucket '" .. key .. "'")
+        if want == false then
+            assertNil(parent, key .. " is top-level and must name no parent")
+        elseif want == true then
+            assertTrue(parent ~= nil and parent ~= "",
+                key .. " must pass the parent its caller runs inside")
+        else
+            assertEqual(parent, want, key .. " runs inside exactly one bucket")
+        end
+    end
+    assertTrue(seen >= 22, "the bracket scan found only " .. seen .. " call sites")
+end)
+
+test("PerfSetup: a capture OBSERVES the tree, and a column read reached two ways is mixed (#47)",
+function()
+    local inst = T.load()
+    local NS, mocks = inst.NS, inst.mocks
+    mocks.setGroup({ { guid = "Player-1-0000000A", name = "Alpha", class = "MAGE", role = "DAMAGER" } })
+    NS.Roster.Refresh()
+    mocks.setSession(1, "*", {
+        combatSources = { { sourceGUID = "Player-1-0000000A", name = "Alpha",
+                            classFilename = "MAGE", totalAmount = 100, amountPerSecond = 1 } },
+        maxAmount = 100, totalAmount = 100,
+    })
+    local cfg = NS.Database.GetWindows()[1]
+    cfg.frame.locked = true
+    cfg.visibility = { dungeon = true, raid = true, arena = true, battleground = true,
+                       world = true, hideWhenSolo = false, hideInVehicle = false }
+    cfg.data.sessionType = 1
+    local window = NS.Window.New(cfg)
+    window:RefreshVisibility()
+
+    local P = NS.Perf
+    P.Reset()
+    P.on = true
+    window:Refresh()
+    local b = P.__buckets()
+    local refreshParent = b.refresh and b.refresh.observedWithin
+
+    -- Built for an export, the aggregate runs inside no bracket, and says so by
+    -- passing nothing rather than a parent it does not have.
+    local exportOnly = {}
+    P.Reset()
+    NS.Export.Build(cfg)
+    exportOnly.aggregate = P.__buckets().aggregate
+
+    -- The tooltip path: the targets build reads a column too.
+    P.Reset()
+    window:Refresh()
+    NS.Targets.ForPlayer(cfg, "Alpha", 3)
+    local mixed = P.__buckets()
+    P.on = false
+
+    assertTrue(b.refresh ~= nil, "the refresh bracket never fired: the fixture is vacuous")
+    assertNil(refreshParent, "refresh is the top of the tree")
+    assertEqual(b.aggregate.observedWithin, "refresh")
+    assertEqual(b.render.observedWithin, "refresh")
+    assertEqual(b.renderRow.observedWithin, "render")
+    assertEqual(b.providerRead.observedWithin, "aggregate")
+    assertNil(b.providerRead.observedMixed, "one path, one parent")
+
+    assertTrue(exportOnly.aggregate ~= nil, "the export build never reached the aggregate bracket")
+    assertNil(exportOnly.aggregate.observedWithin, "an export build runs inside no bracket")
+
+    assertEqual(mixed.targets.observedWithin, "tooltip")
+    assertEqual(mixed.providerRead.observedMixed, true,
+        "reached from the aggregate AND from the targets build, a column read has no single parent")
 end)
 
 test("PerfSetup: every instrumented module takes the probe as a file-scope upvalue", function()
@@ -368,7 +464,7 @@ test("PerfSetup: suspend takes the provider's bus subscriptions down", function(
     -- capture, and the subscription is where the work starts.
     local inst = enabled()
     local Provider = inst.NS.Provider
-    local registry = inst.mocks.__busRegistry
+    local registry = inst.mocks.__msgRegistry
     local msg = inst.NS.Constants.MSG.METER_RESET
     assertTrue(registry[msg] and registry[msg][Provider] ~= nil,
         "the provider must be subscribed before suspend, or this proves nothing")
@@ -491,4 +587,27 @@ function()
         "the degraded answer does not carry the shared cause clause")
     assertTrue(text:find("performance measurement is unavailable", 1, true) ~= nil,
         "the degraded answer does not name its own consequence")
+end)
+
+-- ── the capture ring's retention prune (Perf minor 11) ──────────────────────
+
+test("PerfSetup: a save past the ring's cap says what it dropped, in the console", function()
+    -- debug-logging-§8: a retention prune is traced. The library writes the line
+    -- (Perf minor 11); what this addon owns is that its `log` seam delivers it,
+    -- with debug logging OFF, exactly as every other perf line is delivered.
+    -- red under: a descriptor `log` that drops lines, or gates them on the flag.
+    local inst = T.load{}
+    assertFalse(inst.NS.State.debug, "the fixture needs the flag OFF")
+    local lib = inst.mocks.LibStub("LibKa0s-Perf-1.0")
+    local runs = {}
+    for i = 1, lib.DEFAULT_RING do runs[i] = { label = "old" .. i } end
+    _G.MultiMetersPerfDB = { schema = lib.SCHEMA, runs = runs }
+
+    inst.NS.Perf.Save({ label = "new" })
+
+    assertEqual(#_G.MultiMetersPerfDB.runs, lib.DEFAULT_RING, "the ring kept its size")
+    local found = inst.NS.DebugLog:FindLine("perf ring at its cap")
+    assertTrue(found ~= nil, "the prune left no line in the console")
+    assertTrue(found:find("dropped 1 oldest", 1, true) ~= nil, "got: " .. tostring(found))
+    _G.MultiMetersPerfDB = nil
 end)

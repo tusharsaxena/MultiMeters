@@ -444,7 +444,7 @@ test("Provider:Suspend drops its bus subscriptions and Resume republishes them",
     NS.Provider:Suspend()
     -- A busy pull behind a suspended capture must do no work at all: the
     -- invalidation messages have nowhere to land.
-    local registry = inst.mocks.__busRegistry
+    local registry = inst.mocks.__msgRegistry
     local targets = registry[NS.Constants.MSG.METER_RESET] or {}
     assertNil(targets[NS.Provider], "the subscription must come down")
 

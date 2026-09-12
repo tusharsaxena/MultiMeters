@@ -400,7 +400,7 @@ end
 --- cursor is on.
 local function sessionIDOf(window)
     local data = type(window) == "table" and window.data or nil
-    return data and data.sessionID or nil
+    return NS.Database.PinnedSegment(data)
 end
 
 --- The abbreviation style the hovered window is using, so the tooltip's numbers

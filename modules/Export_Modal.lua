@@ -87,24 +87,20 @@ local function readExport(key, fallback)
     return fallback
 end
 
---- Remember one export choice.
+--- Remember one export choice, through the seam or not at all.
+---
+--- All four choices are rows (settings/Schema.lua), so NS.SetByPath validates,
+--- logs and announces each. A value the seam refuses is NOT stored around it:
+--- that is what the refusal means. This used to fall back to a raw profile
+--- write, which is how `export.metric` -- a choice with no row until
+--- architecture-§5's sweep -- reached the store for as long as it had none.
 ---
 --- @param key string
 --- @param value any
---- @return boolean  whether it was stored anywhere
+--- @return boolean  whether it was stored
 local function writeExport(key, value)
-    if type(NS.SetByPath) == "function" then
-        if NS.SetByPath(EXPORT_GROUP .. "." .. key, value) then return true end
-    end
-    local db = NS.db
-    if not (db and db.profile) then return false end
-    local group = db.profile[EXPORT_GROUP]
-    if type(group) ~= "table" then
-        group = {}
-        db.profile[EXPORT_GROUP] = group
-    end
-    group[key] = value
-    return true
+    if type(NS.SetByPath) ~= "function" then return false end
+    return NS.SetByPath(EXPORT_GROUP .. "." .. key, value) and true or false
 end
 
 -- ---------------------------------------------------------------------------
@@ -912,8 +908,14 @@ function Export.Open(a, b)
     -- Only from a column the catalog answers for. A window that has never been
     -- sorted leaves whatever was chosen last time, which is the better of the
     -- two wrong answers.
+    --
+    -- And only when it CHANGES. The write is a global CONFIG_CHANGED, and every
+    -- window re-applies on one; a reopen on the metric already stored would buy
+    -- nothing for that.
     local seed = (cfgOf(win).data or {}).sortColumn
-    if seed and Const.STAT_BY_KEY[seed] then writeExport("metric", seed) end
+    if seed and Const.STAT_BY_KEY[seed] and readExport("metric", nil) ~= seed then
+        writeExport("metric", seed)
+    end
 
     refreshModal()
     centerOnWindow(frame, win)

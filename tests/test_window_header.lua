@@ -311,7 +311,7 @@ test("The restricted notice COUNTS the rows it could not tell apart — #22", fu
     assertTrue(line:find("restricted", 1, true) ~= nil, "got: " .. line)
     assertTrue(line:find("2 of 3", 1, true) ~= nil,
         "the notice must name how many rows are affected, got: " .. line)
-    assertTrue(line:find("class", 1, true) ~= nil,
+    assertTrue(line:find("duplicate spec", 1, true) ~= nil,
         "and why they are, got: " .. line)
 end)
 
@@ -370,7 +370,24 @@ test("The header names AMBIGUITY when two rows cannot be told apart", function()
 
     local line = window.sessionText:GetText() or ""
     assertTrue(line:find("2 of 2", 1, true) ~= nil, "got: " .. line)
-    assertTrue(line:find("share a class and spec", 1, true) ~= nil, "got: " .. line)
+    assertTrue(line:find("blank: duplicate specs", 1, true) ~= nil, "got: " .. line)
+end)
+
+test("Once a quarter of the rows are blanked, the notice says BLANK in plain words (#22)", function()
+    -- Below the share the grid mostly reads, and naming the cause is enough.
+    -- From a quarter up the player is looking at an empty grid and is owed the
+    -- effect as well as the cause. Both figures are plain integers the
+    -- aggregator counted, so the share is legal mid-pull.
+    -- red under: one sentence for every ambiguous grid, whatever it costs.
+    local _, window = scene()
+    local rows = {}
+    for i = 1, 9 do rows[i] = {} end
+    window.aggregate = { identityMode = true, ambiguous = true, ambiguousRows = 2, rows = rows }
+    local few = window:RestrictedNotice(false)
+    assertTrue(few:find("2 of 9 share a class and spec", 1, true) ~= nil, "got: " .. few)
+    window.aggregate.ambiguousRows = 3
+    local many = window:RestrictedNotice(false)
+    assertTrue(many:find("3 of 9 blank: duplicate specs", 1, true) ~= nil, "got: " .. many)
 end)
 
 test("The header line reads 'Test' while placeholder data is on screen", function()
@@ -456,14 +473,14 @@ end)
 test("Segment menu: picking Current CLEARS the pin", function()
     -- Picking "Current" out of a menu that is showing a stored fight means "stop
     -- showing that fight". Leaving the id set would make the choice do nothing.
-    -- red under: SetSessionType writing sessionType without nil-ing sessionID.
+    -- red under: SetSessionType writing sessionType without clearing sessionID.
     local inst, window, cfg = withSegments()
     window:SetSegment(4)
 
     window:OpenSegmentMenu()
     inst.mocks.__lastMenu:Nth("button", 3).callback()
 
-    assertNil(cfg.data.sessionID)
+    assertEqual(cfg.data.sessionID, inst.NS.Constants.NO_SEGMENT)
     assertEqual(cfg.data.sessionType, inst.NS.Constants.SESSION_TYPE.Current)
 end)
 
@@ -494,7 +511,7 @@ test("Segment: the header names the pinned segment rather than lying `Current`",
     cfg.data.sessionID = 4
     assertEqual(window:SessionLabel(false), "Bribed Guard   0:22")
 
-    cfg.data.sessionID = nil
+    cfg.data.sessionID = 0
     assertEqual(window:SessionLabel(false), "Current",
         "and with no pin it goes back to naming the session type")
 end)
@@ -509,7 +526,7 @@ test("Segment: a stale pin is dropped on the next refresh", function()
     cfg.data.sessionID = 99
 
     window:Refresh()
-    assertNil(cfg.data.sessionID, "a segment the client no longer holds must be forgotten")
+    assertEqual(cfg.data.sessionID, 0, "a segment the client no longer holds must be forgotten")
 end)
 
 test("Segment: a LIVE pin survives the staleness check", function()

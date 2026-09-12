@@ -63,13 +63,28 @@ end
 
 --- Persist the size the user just dragged out, from the size the OnSizeChanged
 --- handler was HANDED rather than from a getter.
+---
+--- `frame.width` and `frame.height` ARE ROWS -- the Frame page's two sliders --
+--- so the drag that ends on them is a schema-row write (architecture-§5), and it
+--- goes through the seam as one batch addressed to THIS window by id: one
+--- `[Set]` line per dimension, announced once, whichever window the settings
+--- panel is pointed at.
+--- Called from the grip's OnDragStop only; OnSizeChanged merely remembers the
+--- size, so a drag costs one write however many frames it lasts.
 function WindowProto:SaveSize()
-    local frameCfg = self.config.frame
-    if not (frameCfg and self.pendingWidth) then return end
-    frameCfg.width  = math.floor(self.pendingWidth + 0.5)
-    frameCfg.height = math.floor(self.pendingHeight + 0.5)
+    if not (self.config.frame and self.pendingWidth) then return end
+    local width  = math.floor(self.pendingWidth + 0.5)
+    local height = math.floor(self.pendingHeight + 0.5)
     self.pendingWidth, self.pendingHeight = nil, nil
-    self:ApplyConfig()
+    local wrote = NS.SetByPaths and NS.SetByPaths({
+        { "window.frame.width",  width },
+        { "window.frame.height", height },
+    }, self.id)
+    -- A write that landed was announced, and this window's CONFIG_CHANGED
+    -- handler has already re-applied it; a second ApplyConfig here would be a
+    -- second full re-apply of the same config. Only a write that did not happen
+    -- (no seam, or a refusal) leaves the frame to be put back explicitly.
+    if not wrote then self:ApplyConfig() end
     self:MarkDirty()
 end
 

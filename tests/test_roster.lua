@@ -300,7 +300,7 @@ test("Roster subscribes to the roster message; it never sends one", function()
     NS.Roster:OnEnable()
     for _, message in ipairs{ MSG.ROSTER_CHANGED, MSG.ENTERING_WORLD, MSG.PROFILE_CHANGED,
                               MSG.TEST_MODE_CHANGED } do
-        assertTrue((mocks.__busRegistry[message] or {})[NS.Roster] ~= nil,
+        assertTrue((mocks.__msgRegistry[message] or {})[NS.Roster] ~= nil,
             "Roster must listen on " .. message)
     end
 
@@ -721,4 +721,46 @@ test("A short build says so, and does not also claim it built the group", functi
         "got: " .. tostring(line))
     assertFalse(line:find("built members=", 1, true) ~= nil,
         "a short build must not be logged as a completed one")
+end)
+
+-- ---------------------------------------------------------------------------
+-- Forgetting the remembered map (debug-logging-§8, §10)
+-- ---------------------------------------------------------------------------
+
+test("Roster.Forget traces what it forgot, in one line", function()
+    -- A forget of learned data is a data mutation debug-logging-§8 traces, and
+    -- one line for the whole map rather than one per member (§9).
+    -- red under: a Forget that wipes db.global.roster silently.
+    local inst = grouped(PARTY)
+    local NS = inst.NS
+    NS.Roster.GetGroup()
+    NS.State.debug = true
+
+    NS.Roster.Forget()
+
+    local found = NS.DebugLog:FindLine("forgot the remembered roster")
+    assertTrue(found ~= nil, "the forget left no line in the log")
+    assertTrue(found:find("3 members", 1, true) ~= nil, "got: " .. tostring(found))
+    assertNil(next(NS.db.global.roster.byGuid), "and the map is empty afterwards")
+end)
+
+test("A meter reset forgets the remembered roster, through the bus", function()
+    -- The module's own header, Forget's docstring and the aggregator case "A meter
+    -- reset is what forgets them" all say the reset is what clears the map. The
+    -- reset handler wipes the SESSION caches only; nothing called Forget, so the
+    -- map only ever grew.
+    -- red under: a Roster that does not subscribe to METER_RESET.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    inst.mocks.setGroup(PARTY)
+    NS.Roster.Refresh()
+    NS.Roster.GetGroup()
+    assertTrue(NS.db.global.roster.byGuid["Player-1-0000000B"] ~= nil,
+        "the fixture needs a remembered member first")
+
+    inst.mocks.setSolo("Player-1-0000000A", "Tankadin", "PALADIN")
+    inst.mocks.__fireEvent("DAMAGE_METER_RESET")
+
+    assertNil(NS.db.global.roster.byGuid["Player-1-0000000B"],
+        "a stranger from before the reset is still remembered")
 end)

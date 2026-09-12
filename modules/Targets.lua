@@ -151,7 +151,7 @@ end
 --- Which stored segment a window is pointed at, or nil for "the live one".
 local function sessionIDOf(window)
     local data = type(window) == "table" and window.data or nil
-    return data and data.sessionID or nil
+    return NS.Database.PinnedSegment(data)
 end
 
 --- A player name with its realm removed, for comparison only.
@@ -272,7 +272,9 @@ local function buildMap(sessionType, sessionID)
     local P = provider()
     if not (P and P.GetColumn and P.GetSourceDetail) then return nil end
 
-    local column = P:GetColumn(sessionType, ENEMY_STAT, sessionID)
+    -- "targets": the bracket this read runs inside, which is what makes the
+    -- column read's parent MIXED once a capture hovers a cell (issue #47).
+    local column = P:GetColumn(sessionType, ENEMY_STAT, sessionID, "targets")
     if type(column) ~= "table" or type(column.sources) ~= "table" then return nil end
 
     -- Keyed by POSITION in the enemy column, never by the enemy's GUID: a source
@@ -391,7 +393,7 @@ function Targets.ForPlayer(window, player, limit)
         -- even if the nil WERE stored. This early return is the cheaper spelling
         -- of the same thing, not the guarantee — the guarantee is the recheck.
         if map == nil then
-            if t0 then Perf.Note("targets", debugprofilestop() - t0) end
+            if t0 then Perf.Note("targets", debugprofilestop() - t0, "tooltip") end
             return nil
         end
         cache.key, cache.map = key, map
@@ -399,7 +401,7 @@ function Targets.ForPlayer(window, player, limit)
 
     local built = map[player]
     if built == nil or #built == 0 then
-        if t0 then Perf.Note("targets", debugprofilestop() - t0) end
+        if t0 then Perf.Note("targets", debugprofilestop() - t0, "tooltip") end
         return nil
     end
 
@@ -413,7 +415,7 @@ function Targets.ForPlayer(window, player, limit)
     local list = {}
     for i = 1, cap do list[i] = built[i] end
 
-    if t0 then Perf.Note("targets", debugprofilestop() - t0) end
+    if t0 then Perf.Note("targets", debugprofilestop() - t0, "tooltip") end
     return list
 end
 

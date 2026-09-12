@@ -246,9 +246,11 @@ end)
 test("Degraded: the schema verbs NAME the missing library rather than going quiet", function()
     -- What is lost is the schema CLI. Each of those verbs says so; a silent
     -- `/mm list` reads as a bug in the addon.
+    -- `resetall` is NOT one of them any more: it is Reset all settings
+    -- (options-ui-§12), and that act works with no library -- see below.
     -- red under: making the degraded CliList a no-op.
     local inst = degradedInstance()
-    for _, verb in ipairs({ "list", "get", "set", "reset", "resetall" }) do
+    for _, verb in ipairs({ "list", "get", "set", "reset" }) do
         local before = #inst.mocks.__chat
         inst.NS.Slash:OnSlash(verb)
         local said = table.concat(inst.mocks.__chat, "\n", before + 1)
@@ -380,6 +382,49 @@ function()
     for _, page in ipairs(applied) do
         assertFalse(page == "profiles", "the degraded reset touched a profiles row")
     end
+end)
+
+test("Degraded: `/mm resetall` still asks, and accepting still resets the profile", function()
+    -- options-ui-§12: the verb and the General page's button are one act, and
+    -- the popup is declared at file load, so it is there with no library. Its
+    -- OnAccept reaches the stub's RestoreAllDefaults, kept real for exactly this
+    -- user. red under: the verb routed back to cli:CliResetAll, or a degraded
+    -- verb that resets without asking.
+    local inst = degradedInstance()
+    local asked
+    inst.mocks.StaticPopup_Show = function(key) asked = key end
+    inst.NS.Slash:OnSlash("window new Second")
+    assertEqual(#inst.NS.Database.GetWindows(), 2)
+
+    inst.NS.Slash:OnSlash("resetall")
+    assertEqual(asked, "MULTIMETERS_RESET_ALL")
+    assertEqual(#inst.NS.Database.GetWindows(), 2, "the degraded resetall reset without asking")
+
+    inst.mocks.StaticPopupDialogs[asked].OnAccept()
+    assertEqual(#inst.NS.Database.GetWindows(), 1, "accepting did not reset the profile")
+end)
+
+test("Degraded: a reset-all logs ONE line in total, the profile handler's", function()
+    -- The stub brackets its own walk and the profile reset exactly as Options
+    -- minor 16 does, so a library-less install logs the same one line.
+    -- red under: the stub's loop left unbracketed, or its close ignoring the
+    -- profile reset (a second `[Set] reset all: N rows` line).
+    local inst = degradedInstance()
+    local NSi = inst.NS
+    NSi.State.debug = true
+
+    local lines, original = {}, NSi.Debug
+    NSi.Debug = function(tag, fmt, ...)
+        local a = { ... }
+        for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
+        lines[#lines + 1] = "[" .. tag .. "] " .. tostring(fmt):format(a[1], a[2], a[3], a[4])
+    end
+    local ok, err = pcall(NSi.Helpers.RestoreAllDefaults)
+    NSi.Debug = original
+    assertTrue(ok, tostring(err))
+
+    assertEqual(#lines, 1, "the degraded reset-all logged: " .. table.concat(lines, " | "))
+    assertEqual(lines[1], "[Set] reset profile 'Default' to defaults")
 end)
 
 -- ── the measurable one ──────────────────────────────────────────────────────
@@ -575,7 +620,7 @@ test("Degraded: the addon still enables end to end with no library", function()
         assertTrue(inst.NS:GetModule(name, true) ~= nil, name .. " did not survive a degraded load")
     end
     -- And a full meter tick fans out without raising.
-    inst.NS:__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
-    inst.NS:__fireEvent("GROUP_ROSTER_UPDATE")
+    inst.mocks.__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
+    inst.mocks.__fireEvent("GROUP_ROSTER_UPDATE")
     inst.mocks.__flushTimers()
 end)

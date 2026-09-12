@@ -626,7 +626,7 @@ local function reportProviderOrder()
     local broken = false
     for _, stat in ipairs(NS.Constants.STATS) do
         local line, isBroken = orderVerdict(stat.key,
-            P:GetColumn(sessionType, stat.key, data.sessionID))
+            P:GetColumn(sessionType, stat.key, NS.Database.PinnedSegment(data)))
         if isBroken then broken = true end
         out(line)
     end
@@ -663,7 +663,7 @@ local function reportTargets()
     local windows = NS.Database and NS.Database.GetWindows and NS.Database.GetWindows()
     local cfg = windows and windows[1]
     local sessionType = (cfg and cfg.data and cfg.data.sessionType) or 1
-    local sessionID   = cfg and cfg.data and cfg.data.sessionID or nil
+    local sessionID   = NS.Database.PinnedSegment(cfg and cfg.data)
     out(string.format("  session type=%s id=%s", tostring(sessionType), tostring(sessionID)))
 
     local column = P:GetColumn(sessionType, "EnemyDamageTaken", sessionID)

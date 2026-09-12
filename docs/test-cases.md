@@ -127,7 +127,7 @@ badge and any count quoted in the docs must agree with it.
 - Secrets degraded: canaccessvalue alone missing still refuses a known secret
 - Secrets degraded: canaccesstable alone missing still refuses a secret table
 
-### test_compat.lua (33)
+### test_compat.lua (34)
 
 - Compat: GetSpellInfo flattens C_Spell's struct to the old multi-return
 - Compat: GetSpellInfo answers nil for an unknown spell rather than raising
@@ -161,6 +161,7 @@ badge and any count quoted in the docs must agree with it.
 - Compat.IsSkyriding reads glide CAPABILITY, not altitude
 - Compat.IsSkyriding is a PLAIN boolean, and false with no C_PlayerInfo
 - Compat.IsInHousing follows C_Housing, and is false without it
+- Compat.BarInterpolation answers the client's ease-out, and nil below 12.0 (#23)
 - Compat: a delve namespace present but missing its member does not raise
 
 ### test_state.lua (17)
@@ -197,7 +198,7 @@ badge and any count quoted in the docs must agree with it.
 - Locale: the locale file registers no second table over NS.L
 - Locale: enUS is the only locale shipped, and it is unconditional
 
-### test_database.lua (68)
+### test_database.lua (72)
 
 - Database: InitDB publishes the live instance under both names
 - Database: the profile is the SHARED Default, not a per-character one
@@ -207,6 +208,10 @@ badge and any count quoted in the docs must agree with it.
 - Database: the merge fills every key the stored window is missing
 - Database: the merge deep-copies, so no window shares a sub-table with the template
 - Database: the three profile callbacks are registered in the method-name form
+- Database: each profile event is logged ONCE, in words chosen by the event
+- Database: the reset line carries NO row count -- never the rows the profile stores
+- Database: the reset line is logged AFTER the rebuild, not before it
+- Database: a reset whose rebuild raises is logged once, marked, and re-raised
 - Database: a stored columns array is left exactly as the user ordered it
 - Database: an ABSENT columns array becomes an empty array, never nil
 - Database: EnsureWindowShape is idempotent
@@ -325,7 +330,7 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: the header section covers every control, by walking them
 - Diagnostics: a window with no controls says so rather than printing nothing
 
-### test_diagnostics_identity.lua (20)
+### test_diagnostics_identity.lua (23)
 
 - Diagnostics: the identity report is published and reachable
 - Diagnostics: `/mm debug identity` reaches it without the debug log
@@ -347,6 +352,9 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: a candidate that DOES vary is called out as worth trying
 - Diagnostics: the audit says how many rows it sampled
 - Diagnostics: a missing isLocalPlayer is NOT called a degraded key
+- The projection carries no factionGroup: the client does not send it and nothing reads it (#48)
+- Diagnostics: sourceCreatureID absent on an all-player session reads as EXPECTED (#48)
+- Diagnostics: sourceGUID absent on an all-NPC session reads as EXPECTED (#48)
 
 ### test_diagnostics_feign.lua (19)
 
@@ -426,7 +434,7 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: NS.LIBKA0S_MISSING is set on BOTH paths, not only the degraded one
 - CoreSetup: all five seams append to the shared clause rather than re-spelling it
 
-### test_perfsetup.lua (20)
+### test_perfsetup.lua (23)
 
 - PerfSetup: NS.Perf is the library instance, with the gate as a plain boolean field
 - PerfSetup: the capture ring is a SECOND SavedVariables global, outside the AceDB tree
@@ -437,6 +445,8 @@ badge and any count quoted in the docs must agree with it.
 - PerfSetup: every declared bucket is reached by a real bracket in the addon's source
 - PerfSetup: every bracket in the addon names a bucket the descriptor declares
 - PerfSetup: the bucket nesting is declared, so a reader never sums a parent with a child
+- PerfSetup: every bracket passes the parent it runs inside, and a top-level one passes none (#47)
+- PerfSetup: a capture OBSERVES the tree, and a column read reached two ways is mixed (#47)
 - PerfSetup: every instrumented module takes the probe as a file-scope upvalue
 - PerfSetup: every bracket is gated, so an unstarted capture costs one boolean read
 - PerfSetup: perf output is deliberately NOT gated on the debug flag
@@ -448,6 +458,7 @@ badge and any count quoted in the docs must agree with it.
 - PerfSetup: the descriptor resolves its modules at CALL time
 - PerfSetup: with LibKa0s absent the stub answers every member the addon reaches
 - PerfSetup: the degraded `/mm perf` answers with the shared cause and its own consequence
+- PerfSetup: a save past the ring's cap says what it dropped, in the console
 
 ### test_debuglogsetup.lua (30)
 
@@ -544,7 +555,7 @@ badge and any count quoted in the docs must agree with it.
 - tests/_kit is the test kit that shipped with that release
 - the automated-test runner is recorded executable (100755)
 
-### test_format.lua (39)
+### test_format.lua (43)
 
 - Format: NS.Format is a callable table carrying both contracts
 - Format.Number goes through the native ABBREVIATING formatter
@@ -585,6 +596,10 @@ badge and any count quoted in the docs must agree with it.
 - Format.DeathTime defaults 'now' to the client clock
 - Format.DeathTime routes both countdown strings through the locale
 - Format.DeathTime refuses a secret timestamp in either style
+- A sub-thousand rate stays whole even when the client's OWN ladder is in force (#26)
+- 'full' keeps a sub-thousand rate whole on a client that refuses a fractional breakpoint (#26)
+- A floored rung whose floor did not take is not accepted on the K probe alone (#26)
+- The client's defaults under a floor that did not take are not accepted either (#26)
 
 ### test_provider.lua (78)
 
@@ -667,7 +682,7 @@ badge and any count quoted in the docs must agree with it.
 - Distinct PLAIN values are counted, so a constant field reads as one
 - A SECRET value is never compared or keyed on to count distinctness
 
-### test_roster.lua (39)
+### test_roster.lua (41)
 
 - Roster.GetGroup is player-first, then party order
 - Roster.GetGroup carries name, class and role off the unit API
@@ -708,6 +723,8 @@ badge and any count quoted in the docs must agree with it.
 - A completed build logs one line, with the counters the loop kept
 - The build line says whether this was a raid
 - A short build says so, and does not also claim it built the group
+- Roster.Forget traces what it forgot, in one line
+- A meter reset forgets the remembered roster, through the bus
 
 ### test_feign.lua (27)
 
@@ -803,7 +820,7 @@ badge and any count quoted in the docs must agree with it.
 - The judge verdict is recorded per death source, after the prune
 - A column that is not counted records no judgement at all
 
-### test_aggregator_identity.lua (26)
+### test_aggregator_identity.lua (27)
 
 - A healer with no damage is on the mid-pull grid, from the healing column
 - An ambiguous key gets no invented row, because no column could ever fill it
@@ -822,6 +839,7 @@ badge and any count quoted in the docs must agree with it.
 - Identity stats count collided ROWS, not just collided keys
 - Identity stats attribute every miss to one of three causes
 - A collided key lands in the collided bucket, not the absent one
+- The standing identity line names collided KEYS and ROWS, and every miss by cause (#22)
 - The sort column is named, and is not part of the correlated rectangle
 - Identity stats carry the rows-per-key histogram
 - A collided key records where its sources sat in every column
@@ -928,7 +946,7 @@ badge and any count quoted in the docs must agree with it.
 - A maxRows cap LARGER than the frame holds does not win
 - BuildLayout survives a config with the sub-tables missing, on the shipped numbers
 
-### test_window_header.lua (72)
+### test_window_header.lua (73)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -944,6 +962,7 @@ badge and any count quoted in the docs must agree with it.
 - The restricted notice stays a bare word when NOTHING collided
 - The header says the grid was built the restricted way
 - The header names AMBIGUITY when two rows cannot be told apart
+- Once a quarter of the rows are blanked, the notice says BLANK in plain words (#22)
 - The header line reads 'Test' while placeholder data is on screen
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
@@ -1003,7 +1022,7 @@ badge and any count quoted in the docs must agree with it.
 - The atlas rung flips ONE texture with SetTexCoord, and only for ascending
 - With no art and no atlas the arrow is an ASCII character, and a legible one
 
-### test_window_placement.lua (30)
+### test_window_placement.lua (33)
 
 - Closing HIDES the window; it never deletes it
 - Dragging moves the ANCHOR, never the frame that holds the cells
@@ -1035,6 +1054,22 @@ badge and any count quoted in the docs must agree with it.
 - `resizeGrip` is gone from the code, not just from the panel
 - Unlocking does not resurrect the grip on a collapsed window
 - Either lock pins the window, and the master lock erases neither
+- SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)
+- SaveSize applies the config ONCE per resize-stop, and still applies when the seam refuses
+- A resize logs one [Set] line per dimension, not a row count
+
+### test_window_segment.lua (10)
+
+- Segment row: the pin is a hidden window row whose default is no pin
+- Segment row: it takes a session id or the sentinel, and nothing else
+- Segment row: a stored window with no pin backfills to the sentinel
+- Segment: picking a stored segment writes the pin through the seam for ITS window
+- Segment: picking Current clears the pin and sets the type as ONE change
+- Segment: a stale pin is cleared through the seam
+- Segment: an unpinned window is left alone by the staleness check
+- Segment: the sentinel reads the session TYPE, never the ID shim
+- Segment: the labels and the export read the sentinel as no pin
+- Segment: Database.PinnedSegment answers nil for every spelling of no pin
 
 ### test_headercontrols.lua (65)
 
@@ -1104,7 +1139,7 @@ badge and any count quoted in the docs must agree with it.
 - HeaderControls: close hides the window AS a deliberate close
 - HeaderControls: only the two toggles write to the settings seam
 
-### test_row.lua (76)
+### test_row.lua (77)
 
 - Row.OffsetFor is a pure function of the index and the row config
 - Cell:ApplyLayout places every cell from the layout table
@@ -1112,6 +1147,7 @@ badge and any count quoted in the docs must agree with it.
 - modules/Row.lua contains no geometry getter at all
 - Cell:SetValue hands the raw handle to SetValue and SetMinMaxValues
 - Cell:SetValue substitutes 0 and 1 for an ABSENT figure, not for a hidden one
+- Bar fills animate natively on BOTH setters, a secret still passes raw, and it switches off (#23)
 - A rate-capable column renders its RATE ALONE by default
 - Smart falls to the ABSOLUTE figure on a stat that has no rate
 - Combined shows BOTH figures in one slot, absolute first
@@ -1542,7 +1578,7 @@ badge and any count quoted in the docs must agree with it.
 - Export.Build goes through the aggregator and nowhere near the meter API
 - Export.Build answers nil when there is no aggregator to ask
 
-### test_export_modal.lua (26)
+### test_export_modal.lua (31)
 
 - Export.Open refuses to open at all while restricted
 - Export.ResolveMetric answers the pinned stat
@@ -1570,6 +1606,11 @@ badge and any count quoted in the docs must agree with it.
 - Print to Chat confirms a send that left the client, without counting the header
 - Print to Chat warns BEFORE a Say dump the server may truncate
 - Print to Chat does not warn where the stagger is available or the dump is short
+- export.metric is a hidden row beside the other three export choices
+- export.metric takes a stat the catalog holds, and refuses anything else
+- Opening the modal seeds the metric through the seam, and says so
+- Reopening with the metric unchanged writes nothing and announces nothing
+- A metric the seam refuses is not stored around it
 
 ### test_visibility.lua (41)
 
@@ -1615,7 +1656,7 @@ badge and any count quoted in the docs must agree with it.
 - A visibility field that is not a table reads as `no rules`, not as hide
 - The master enable, test mode and perf suspend are NOT read here
 
-### test_windowmanager.lua (34)
+### test_windowmanager.lua (41)
 
 - WindowManager is published under the flat name every caller uses
 - Init builds one live instance per stored config, and is idempotent
@@ -1651,6 +1692,13 @@ badge and any count quoted in the docs must agree with it.
 - BuildListLines names every window and says whether it is on screen
 - Suspend stops the coalescing timers without hiding anything
 - Resume restores from CURRENT state: a window made while suspended comes back
+- Rename writes window.name through the seam, for the window it names
+- Rename keeps the uniqueness check the row does not have
+- CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it copies
+- CopyFrom logs ONE [Set] line naming the source, the target and the rows it changed
+- CopyFrom goes through each row's validate, and stores nothing on a refusal
+- CopyFrom sends the sort through the seam, carries the pin, and never the position
+- SetLocked writes each window through the seam, tagged with its own id
 
 ### test_minimap.lua (17)
 
@@ -1672,9 +1720,11 @@ badge and any count quoted in the docs must agree with it.
 - The profile ships the one key LibDBIcon reads, and nothing else
 - modules/Minimap.lua passes the silent flag to every LibStub call
 
-### test_schema.lua (33)
+### test_schema.lua (36)
 
 - Schema: a `hidden` row is writable and listable but draws no control
+- Schema: the sort and the session type are hidden rows the seam validates (issue #50)
+- Schema: a sort written from the CLI drops the frozen order, as a click does (issue #50)
 - Schema: the export choices are hidden from the panel but NOT from the seam
 - The meta colour mode sets every bar and header in the window at once
 - The meta colour mode leaves both TEXT surfaces alone
@@ -1707,8 +1757,9 @@ badge and any count quoted in the docs must agree with it.
 - RestoreAllDefaults is the equivalent of a NEW PROFILE
 - RestoreAllDefaults leaves the profile LIST alone
 - A profile reset rebuilds through the ONE message, not by direct calls
+- RestoreAllDefaults logs ONE line in total: the profile handler's, and no bulk line
 
-### test_schema_paths.lua (30)
+### test_schema_paths.lua (48)
 
 - Schema: a window path resolves against the session's ACTIVE window
 - Schema: a global path is unaffected by which window is active
@@ -1740,6 +1791,24 @@ badge and any count quoted in the docs must agree with it.
 - SetByPath: window.columns REFUSES an array whose every statistic this build dropped, with a message
 - SetByPath: a path INTO the column array is refused by name
 - Schema: NS.NormalizeColumns is published for the migration ladder
+- SetByPath: a window id addresses THAT window and leaves the picker where it was
+- SetByPath: the window id reaches onChange and CONFIG_CHANGED
+- SetByPath: a window id that names no window is refused, and nothing is written
+- SetByPath: a global row ignores the window id
+- SetByPath: window.columns takes the window id too
+- SetByPaths: validates every write before storing any of them
+- SetByPaths: one [Set] line PER ROW, and one CONFIG_CHANGED for the whole batch
+- SetByPaths: a BULK copy or reset logs ONE flow line and no [Set] line per row
+- SetByPaths: a bulk copy counts only the rows whose stored value CHANGED
+- NS.Bulk: a nested bracket logs ONCE, at the outermost close, summing every level
+- NS.Bulk: a level that reports a profile reset silences the whole bracket
+- NS.Bulk: a raising act still closes the bracket, logs what it changed, and re-raises
+- NS.Bulk: a library Defaults press that raises logs its one line, marked, and re-raises
+- NS.Bulk: a ResetProfile that raises leaves the reset-all's own line, marked
+- SetByPaths: every written row's onChange still fires, with the window id
+- A header click writes the sort through the seam, for the window clicked (issue #50)
+- Picking Current or Overall writes the session type through the seam (issue #50)
+- The sort and segment batches log one [Set] line per row they write
 
 ### test_schema_defaults.lua (10)
 
@@ -1754,7 +1823,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (50)
+### test_slash.lua (52)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1768,7 +1837,9 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `get` and `set` land on the addon's own schema seam
 - Slash: `set` on a window path writes the ACTIVE window
 - Slash: `reset <path>` restores exactly that one setting
-- Slash: `resetall` restores every row
+- Slash: `resetall` opens the Reset all settings popup and changes nothing
+- Slash: accepting the `resetall` popup resets the profile and logs ONE line
+- Slash: declining the `resetall` popup does nothing
 - Slash: `list` groups by the row's PAGE, the same key the panel pages use
 - Slash: `perf` is declared in NS.COMMANDS and routed to NS.Perf.OnCommand
 - Slash: `export` opens the modal on the window the player named
@@ -1807,7 +1878,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: Register is a no-op rather than a raise when there is no AceConsole
 - Slash: /mm list heads each block with the page AND the tab
 
-### test_options_panel.lua (38)
+### test_options_panel.lua (40)
 
 - Options: General is the FIRST page, above Windows
 - Options: every window page is marked as nested, and the two that are not are not
@@ -1823,6 +1894,8 @@ badge and any count quoted in the docs must agree with it.
 - Options: a page that declines a Defaults button never grows one
 - Options: the Columns page's Defaults button restores the SHIPPED column list
 - Options: the Columns page's Defaults button ALSO restores the window.columnHeader.* schema rows
+- Options: every page's Defaults press logs ONE [Set] line naming the page and the rows it changed
+- Options: the Columns Defaults press is ONE [Set] line, counting the column list with the rows
 - Options: the canvas footer's Defaults control reaches the same handler as the header button
 - Options: opening the panel is REFUSED under combat lockdown, with a notice
 - Options: a refused open is NOT deferred and replayed when combat ends
@@ -1900,7 +1973,7 @@ badge and any count quoted in the docs must agree with it.
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
 
-### test_degraded.lua (27)
+### test_degraded.lua (29)
 
 - Degraded: the library really is absent, so every case below is measuring a stub
 - Degraded: every seam soft-optionals its major, so a missing library is not a load error
@@ -1922,6 +1995,8 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: the options stub publishes every Helpers member the page files touch
 - Degraded: LSMValues keeps its DEFERRED shape and never answers an empty list
 - Degraded: reset-everything still works, and still refuses to touch the Profiles page
+- Degraded: `/mm resetall` still asks, and accepting still resets the profile
+- Degraded: a reset-all logs ONE line in total, the profile handler's
 - Degraded: the schema row count is UNCHANGED versus a full load, bar the composed blocks
 - Degraded: the schema is the same rows, path for path and page for page
 - Degraded: every schema page is registered as an options page on both paths
@@ -1952,35 +2027,36 @@ badge and any count quoted in the docs must agree with it.
 | test_lintconfig.lua | 4 |
 | test_constants.lua | 23 |
 | test_secrets.lua | 38 |
-| test_compat.lua | 33 |
+| test_compat.lua | 34 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
-| test_database.lua | 68 |
+| test_database.lua | 72 |
 | test_diagnostics.lua | 21 |
 | test_diagnostics_deathrecap.lua | 30 |
-| test_diagnostics_identity.lua | 20 |
+| test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
-| test_perfsetup.lua | 20 |
+| test_perfsetup.lua | 23 |
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
 | test_lifecycle.lua | 29 |
 | test_vendor_sync.lua | 3 |
-| test_format.lua | 39 |
+| test_format.lua | 43 |
 | test_provider.lua | 78 |
-| test_roster.lua | 39 |
+| test_roster.lua | 41 |
 | test_feign.lua | 27 |
 | test_aggregator.lua | 61 |
-| test_aggregator_identity.lua | 26 |
+| test_aggregator_identity.lua | 27 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 59 |
-| test_window_header.lua | 72 |
-| test_window_placement.lua | 30 |
+| test_window_header.lua | 73 |
+| test_window_placement.lua | 33 |
+| test_window_segment.lua | 10 |
 | test_headercontrols.lua | 65 |
-| test_row.lua | 76 |
+| test_row.lua | 77 |
 | test_row_namecell.lua | 30 |
 | test_targets.lua | 24 |
 | test_tooltip.lua | 20 |
@@ -1989,18 +2065,18 @@ badge and any count quoted in the docs must agree with it.
 | test_tooltip_deaths.lua | 57 |
 | test_drilldown.lua | 58 |
 | test_export.lua | 86 |
-| test_export_modal.lua | 26 |
+| test_export_modal.lua | 31 |
 | test_visibility.lua | 41 |
-| test_windowmanager.lua | 34 |
+| test_windowmanager.lua | 41 |
 | test_minimap.lua | 17 |
-| test_schema.lua | 33 |
-| test_schema_paths.lua | 30 |
+| test_schema.lua | 36 |
+| test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 50 |
-| test_options_panel.lua | 38 |
+| test_slash.lua | 52 |
+| test_options_panel.lua | 40 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
-| test_degraded.lua | 27 |
+| test_degraded.lua | 29 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1749** |
+| **Total** | **1821** |

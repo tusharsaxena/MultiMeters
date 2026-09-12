@@ -870,30 +870,30 @@ function WindowProto:SortByColumn(key)
     -- header labelled "Player" says. Ascending first, because A-Z is what a
     -- player means by "sort by name"; clicking again reverses it, exactly like a
     -- stat column.
+    --
+    -- THE CLICK CHOOSES THE SORT, so the sort is a preference with rows
+    -- (architecture-§5, issue #50) and the click writes them through the seam as
+    -- one batch addressed to THIS window: validated, one `[Set]` line per row,
+    -- announced once, whichever window the settings panel is pointed at. The
+    -- rows' own onChange drops the frozen order, which is a snapshot of the OLD
+    -- sort and would be reapplied over the new one for the rest of the pull, so
+    -- `/mm set` drops it too.
+    local writes
     if key == "name" then
         if data.sortMode == "name" then
-            data.sortAscending = not data.sortAscending
+            writes = { { "window.data.sortAscending", not data.sortAscending } }
         else
-            data.sortMode      = "name"
-            data.sortAscending = true
+            writes = { { "window.data.sortMode", "name" },
+                       { "window.data.sortAscending", true } }
         end
-        self:ApplyColumnHeaders()
-        self:MarkDirty()
-        return true
-    end
-
-    if data.sortColumn == key and data.sortMode == "value" then
-        data.sortAscending = not data.sortAscending
+    elseif data.sortColumn == key and data.sortMode == "value" then
+        writes = { { "window.data.sortAscending", not data.sortAscending } }
     else
-        data.sortColumn    = key
-        data.sortMode      = "value"
-        data.sortAscending = false
+        writes = { { "window.data.sortColumn", key },
+                   { "window.data.sortMode", "value" },
+                   { "window.data.sortAscending", false } }
     end
-
-    -- The frozen order is a snapshot of the OLD sort and would be reapplied over
-    -- the new one for the rest of the pull. Dropping it is what makes the click
-    -- take effect rather than appear to.
-    if NS.State and NS.State.WipeCache then NS.State.WipeCache("Aggregator") end
+    if not (NS.SetByPaths and NS.SetByPaths(writes, self.id)) then return false end
 
     self:ApplyColumnHeaders()
     self:MarkDirty()
@@ -904,10 +904,12 @@ end
 -- The segment selector
 -- ---------------------------------------------------------------------------
 --
--- `data.sessionType` picks Current or Overall. `data.sessionID`, when set,
--- overrides it with one specific stored segment — the fight the player picked
--- out of the header dropdown. Nil means "no segment pinned", which is the
--- default and the behavior the addon had before this existed.
+-- `data.sessionType` picks Current or Overall. `data.sessionID`, when it pins
+-- one, overrides it with a specific stored segment — the fight the player picked
+-- out of the header dropdown. Constants.NO_SEGMENT (0) means "no segment
+-- pinned", which is the default; Database.PinnedSegment is how it is read. Both
+-- are hidden rows, and every write below goes through the seam addressed to
+-- this window (architecture-§5, issues #49 and #50).
 
 --- One stored session's entry, as menu text: its name, then its duration.
 ---
@@ -938,8 +940,8 @@ end
 
 --- Forget a pinned segment the client no longer holds. See Refresh.
 function WindowProto:DropStaleSegment()
-    local data = self.config.data
-    if not (data and data.sessionID ~= nil) then return end
+    local pinned = NS.Database.PinnedSegment(self.config.data)
+    if pinned == nil then return end
 
     local Provider = mod("Provider")
     -- No provider at all is a broken install, not a stale segment: leaving the
@@ -947,22 +949,31 @@ function WindowProto:DropStaleSegment()
     -- would quietly rewrite the player's setting because of our own load order.
     if not (Provider and Provider.HasSession) then return end
 
-    if not Provider.HasSession(data.sessionID) then
+    if not Provider.HasSession(pinned) then
         if NS.State and NS.State.debug then
-            NS.Debug("Window", "window %d dropped stale segment %s",
-                self.id, tostring(data.sessionID))
+            NS.Debug("Window", "window %d dropped stale segment %s", self.id, tostring(pinned))
         end
-        data.sessionID = nil
+        -- A row wins (architecture-§5): the pin is a row, so even this repair
+        -- writes it through the seam, addressed to this window.
+        if NS.SetByPath then NS.SetByPath("window.data.sessionID", Const.NO_SEGMENT, self.id) end
     end
 end
 
---- Point this window at one stored segment, or at nil for "follow sessionType".
+--- Point this window at one stored segment, or at Constants.NO_SEGMENT (or nil)
+--- for "follow sessionType".
+---
+--- The menu entry CHOOSES the pin, so it is a row and goes through the seam
+--- addressed to this window (architecture-§5), which validates, logs and
+--- announces it.
 --- @param sessionID number|nil
 function WindowProto:SetSegment(sessionID)
     local data = self.config.data
     if not data then return end
+    if sessionID == nil then sessionID = Const.NO_SEGMENT end
     if data.sessionID == sessionID then return end
-    data.sessionID = sessionID
+    if not (NS.SetByPath and NS.SetByPath("window.data.sessionID", sessionID, self.id)) then
+        return
+    end
     self:MarkDirty()
 end
 
@@ -971,12 +982,22 @@ end
 --- Clearing is the point: picking "Current" out of a menu that is showing a
 --- stored fight means "stop showing that fight", and leaving the id set would
 --- make the choice do nothing at all.
+---
+--- The menu entry CHOOSES the session type, and clearing the pin is part of the
+--- same choice, so both are one batch through the seam addressed to this window
+--- (architecture-§5, issues #49 and #50): validated together, stored together,
+--- announced once. A refused type stores neither, so the pin is never dropped
+--- for a choice that did not land.
 --- @param sessionType number
 function WindowProto:SetSessionType(sessionType)
     local data = self.config.data
     if not data then return end
-    data.sessionType = sessionType
-    data.sessionID   = nil
+    if not (NS.SetByPaths and NS.SetByPaths({
+        { "window.data.sessionID",   Const.NO_SEGMENT },
+        { "window.data.sessionType", sessionType },
+    }, self.id)) then
+        return
+    end
     self.sessionType = sessionType
     self:MarkDirty()
 end
@@ -1040,7 +1061,7 @@ function WindowProto:SessionLabel(preview)
     -- showing a fight from ten minutes ago is the one label that is actively
     -- misleading, and it is also the only feedback the player gets that their
     -- click landed.
-    local sessionID = (self.config.data or {}).sessionID
+    local sessionID = NS.Database.PinnedSegment(self.config.data)
     if sessionID ~= nil then
         local Provider = mod("Provider")
         for _, entry in ipairs(Provider and Provider.GetAvailableSessions() or {}) do
@@ -1092,11 +1113,21 @@ function WindowProto:RestrictedNotice(preview)
     -- Guarded on both being positive rather than on non-nil: an aggregate from a
     -- build that predates the count answers nil, and "0 of 0 rows" is a worse
     -- sentence than the one it would replace.
+    --
+    -- A QUARTER OF THE GRID is where naming the cause stops being enough (issue
+    -- #22). Every secondary cell on a collided row is blank, so the share of rows
+    -- is the share of the grid the blanks cost. Below a quarter the grid mostly
+    -- reads and the cause is the sentence; from a quarter up the player is
+    -- looking at an empty grid and the sentence says BLANK. Integer arithmetic on
+    -- two counts of our own, so it is legal mid-pull, and the string is no longer
+    -- than the one beside it (SESSION_LINE_WIDTH above).
     local ambiguous, total = aggregate.ambiguousRows, #(aggregate.rows or aggregate)
     if type(ambiguous) == "number" and ambiguous > 0 and total > 0 then
-        return NS.GRAY .. string.format(
-            L["restricted \226\128\148 %d of %d share a class and spec"],
-            ambiguous, total) .. "|r"
+        local QUARTER = 4
+        local fmt = (ambiguous * QUARTER >= total)
+            and L["restricted \226\128\148 %d of %d blank: duplicate specs"]
+            or  L["restricted \226\128\148 %d of %d share a class and spec"]
+        return NS.GRAY .. string.format(fmt, ambiguous, total) .. "|r"
     end
     return NS.GRAY .. L["restricted \226\128\148 some rows cannot be told apart"] .. "|r"
 end

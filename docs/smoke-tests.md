@@ -81,6 +81,8 @@ in-client.
 | 27 | **Identity** | [**The identity-correlation capture (issue #22)**](#27-the-identity-correlation-capture-issue-22) |
 | 28 | **Feign trace** | [**The feign-trace verbs and what the recording says (issue #25)**](#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25) |
 | 29 | **Shared registry** | [**The Border dropdown when five Ka0s addons share one registry**](#29-the-border-dropdown-when-five-ka0s-addons-share-one-registry) |
+| 32 | **Bar animation** | [**Bar fills slide between refreshes (issue #23)**](#32-bar-fills-slide-between-refreshes-issue-23) |
+| 33 | **Segments** | [**The pinned segment's none**](#33-the-pinned-segments-none) |
 
 ---
 
@@ -306,7 +308,7 @@ second edge to catch.
   called *Meter* at the screen centre wearing the shipped defaults — the extras **deleted**, not
   restyled. That is the point: it is a profile reset, the same act as Profiles → **Reset Profile**,
   and the popup warns about the deletion before it happens. Confirm the two paths give the identical
-  result, and that **`/mm resetall` does too**.
+  result, and that **`/mm resetall`** opens the same popup and, accepted, does too.
 - **A reset leaves your other profiles alone.** Make a second profile on the Profiles page, switch
   back, then reset. The profile list must be unchanged and you must still be on the profile you were
   on — a reset empties one profile, it never deletes any.
@@ -912,9 +914,9 @@ what confirms its verdict against a second meter.**
 1. In a Mythic+ dungeon or a raid, with a full group and at least one completed pull, stand **out of
    combat**.
 2. Put the window on **Damage** by clicking the **Damage** column header, and click it once more if
-   the arrow is not pointing down. The sort is the window's own control — there is no settings row
-   and no `/mm set` for it, deliberately: the click path writes `sortMode`, `sortColumn` and
-   `sortAscending` directly.
+   the arrow is not pointing down. The sort is the window's own control, drawn nowhere on the panel:
+   the click writes the hidden rows `sortMode`, `sortColumn` and `sortAscending` through the seam
+   for this window, so `/mm get window.data.sortColumn` reads the same value back (issue #50).
 3. Pick **Overall** from the header's **segment** dropdown, so both meters are describing the same
    span. (Overall is the accumulated run and the shipped default; Current is the live pull.)
 4. Open **Blizzard's built-in damage meter** and put it on **Damage done**, same session scope.
@@ -1066,7 +1068,8 @@ switch back to Default → copy from Test → reset.
   touch the other's.
 - Resetting a profile re-seeds exactly one window.
 - **The page is still fresh after a switch made off it.** Open Profiles, page away to **General**,
-  then `/mm resetall` and confirm — that is a profile reset, so it moves the active profile out from
+  then type `/mm resetall` and accept the "Reset all settings?" popup it opens. It
+  is a profile reset, so it moves the active profile out from
   under the hidden page. Come back to Profiles: the profile list and the scope dropdowns must be
   redrawn against the profile you are actually on. `M2-18` moved this page onto `H.SetRenderer`,
   which draws once and then only when the library is told the page is dirty, and the
@@ -1083,20 +1086,33 @@ switch back to Default → copy from Test → reset.
 |---|---|
 | A page's **Defaults** button | every schema row on **that page**, for the **active window** |
 | General → **Reset all settings** (confirms) | every row on every page, for every window, in the active profile — **plus every window position** |
-| `/mm resetall` | identical to the above; it is the same implementation |
+| `/mm resetall` | opens the same **Reset all settings** popup; accepting gives the identical result, declining changes nothing |
 | `/mm reset <path>` | that one row |
 | General → **Master controls** → **Reset position** | the active window only, back to center |
 | `/mm reset-positions` | every window back to center |
 
 **Pass.**
+- **`/mm resetall` asks first.** With two windows up, type it: the same "Reset all settings?" popup
+  the General page's button opens appears, and nothing has changed yet. Click **No** (or press
+  Escape): both windows are still there, unchanged, and the console shows no `[Set]` line. Type it
+  again and click **Yes**: one fresh window, and one console line.
 - **Profiles are never touched** by any reset. Create a second profile first, then run
-  `/mm resetall`, then confirm the second profile still exists and is unchanged. This is enforced in
-  two places on purpose.
+  `/mm resetall` and accept, then confirm the second profile still exists and is unchanged. This is
+  enforced in two places on purpose.
 - "Reset all settings" **does** move every window back to center — but not through a position hook
   of its own any more. It is a **profile reset** (`db:ResetProfile()`), so the extra windows are
   **deleted** and the one that is re-seeded comes back at the shipped position with the rest of the
   profile. `afterRestoreAll` no longer calls `ResetPositions`.
-- After `/mm resetall` the column list is back to the six shipped columns, in catalog order.
+- After an accepted `/mm resetall` the column list is back to the six shipped columns, in catalog
+  order.
+- **Each reset is one line in the console.** Turn on `/mm debug on`, open the console and clear it.
+  - A page's **Defaults** press reads `[Set] reset <page>: N rows`, with no `[Set] <path> = …` line
+    under it, and a second press reads `0 rows`.
+  - The Columns page reads `[Set] reset columns: N rows`, with the column list counted as one row.
+  - **Reset all settings** and an accepted `/mm resetall` each read exactly `[Set] reset profile
+    '<name>' to defaults`, with no `reset all` line beside it. Showing or declining the popup logs
+    nothing.
+  - Copying settings between two windows reads `[Set] copy from '<A>' to '<B>': N rows`.
 
 ### 17. LibKa0s absent
 
@@ -1109,12 +1125,13 @@ switch back to Default → copy from Test → reset.
 - One honest chat line names the cause, once, on the first line the addon prints — the shared clause
   *"The LibKa0s library is missing from this installation of Ka0s Multi Meters (expected in
   libs/LibKa0s)"* — followed by what is unavailable.
-- `/mm config` says the settings panel is unavailable. `/mm list|get|set|reset|resetall` each name the
-  missing library. `/mm perf` says performance measurement is unavailable.
+- `/mm config` says the settings panel is unavailable. `/mm list|get|set|reset` each name the missing
+  library. `/mm perf` says performance measurement is unavailable.
 - **The host verbs still work**: `/mm lock`, `/mm test`, `/mm toggle`, `/mm window list`,
   `/mm reset-positions`. They never went to the library.
-- **`/mm resetall` still works.** The user whose panel will not open is exactly the user who needs
-  "reset everything", and the schema loaded fine.
+- **`/mm resetall` still works.** It opens the same popup, and accepting resets the profile. The
+  user whose panel will not open is exactly the user who needs "reset everything", and the schema
+  loaded fine.
 - **No Lua error at load, and no half-loaded schema.** `/mm list`'s absence message is expected; a
   *partial* settings surface is not — that would mean a page file raised inside a schema-row literal
   and took its rows with it.
@@ -1149,13 +1166,29 @@ Then complete a pull, watch the log, and run a capture:
 - The A/B run makes the addon **inert** during its B window without a `/reload`: the provider stops
   reading, the coalescing timers stop, and every window is refused at the source. **Nothing** — a
   combat transition, a roster change, a settings write — may bring a window back while suspended.
-- After `finish`, the report names the declared buckets — `meterEvent`, `refresh`, and under it
-  `providerRead` / `aggregate` / `render`, with `renderRow` under `render`, plus `tooltip`.
+- After `finish`, the report names the declared buckets: `meterEvent`, `refresh` with `aggregate`
+  and `render` under it, `renderRow` under `render`, and `tooltip` with `targets` under it, plus
+  `providerRead`. The nesting note says **observed inside** for every nested bucket, never
+  *declares itself within X — not observed* (issue #47).
 - Every capture record carries the addon version. A record stamped `v?` is unattributable the moment
   it leaves the session and is a bug in its own right.
 - `/mm perf` output appears **whether or not** debug logging is on: a perf run is explicit user
   action, and a user who started one without enabling debug first should not watch an empty console.
 - Hand the report and the JSON dump to `/wow-addon:perf-analysis`, which writes the frozen bundle.
+
+**Group capture with the tooltip path (issue #47).** The first archived capture was solo, one
+window, five rows, and never hovered a cell, so `tooltip` and `targets` recorded nothing and the
+140-cell case was extrapolated rather than measured. Repeat the run **in a group of 15 or more**,
+with **Settings → Tooltip → Show targets** on. During the A window, park the mouse on your own
+**Damage** cell for several seconds, then on another player's.
+- `tooltip` and `targets` both record calls.
+- The nesting note reports `providerRead observed inside more than one parent`, because the column
+  read ran under both `aggregate` and `targets`. A run that never hovered reports it observed inside
+  `aggregate`.
+- `renderRow` calls per pass match the number of rows on screen, which turns the per-cell cost into
+  a measured number.
+- **Unconfirmed in game** until someone runs it. The headless suite proves the parents are passed and
+  recorded, not what the tree costs on a live client in a group.
 
 ---
 
@@ -1176,6 +1209,14 @@ on is not knowable from the headless harness, and rung 3 renders a window full o
    the same as they did out of combat. A number that renders `1.4M` out of combat and `<secret>` in it
    means the formatter rung changed under the restriction — report it with both screenshots.
 5. Set `window.text.numberFormat` to `full` and confirm the unabbreviated form appears.
+6. **A rate below 1000 (issue #26).** Put a Healing (or Damage) rate under 1000 on screen — a
+   healer's HPS at a dummy does it — on `abbreviated`, then on `full`. Read it out of combat and
+   **in combat**. It must be a whole number (`411`), never its float (`411.90476…`). If it shows its
+   digits, turn `/mm debug on`, change any setting (which rebuilds the formatter), and report the
+   `[Format]` line the console prints, which names the rung the client accepted, together with the
+   `-- number formatting --` block from `/mm debug diag`. **Unconfirmed in game:** the fix gives every
+   fallback a rule below 1000, but which fallback the reporting client actually lands on has only
+   been modeled headlessly.
 
 **If step 2 shows raw digits** (`1410000`), neither formatter exists on this client and the
 degradation ladder is landing on a rung nobody planned for. That is a different bug from anything in
@@ -1611,12 +1652,16 @@ misclick.
 **Pass.**
 - Channel, Lines and the whisper name come back exactly as you left them. They live at `export.*` in
   the **profile** and are **addon-wide**, not per window — "I print the top five to party" is a habit
-  rather than a window's appearance. Metric is not among them: the modal always seeds it from the
-  window it was opened from, so there is nothing to remember there.
-- **The General page shows NO Export group.** The modal's own three controls are the only ones: a
-  second copy on a settings page restated a control a player only ever meets in the dialog, and gave
-  the two a chance to disagree about what is selected. The rows still exist and are marked `hidden`,
-  which is what keeps the seam below working.
+  rather than a window's appearance. Metric is stored there too (`export.metric`), but every open
+  re-seeds it from the sort column of the window it was opened from. So after the reload it reads
+  that window's sort column, not Healing, unless that window is sorted by Healing. Re-open it on the
+  same window with `/mm debug on`: the second open prints no `[Set] export.metric` line, because a
+  seed that matches the stored metric is not written again.
+- **The General page shows NO Export group.** The modal's own controls are the only ones: a second
+  copy on a settings page restated a control a player only ever meets in the dialog, and gave the two
+  a chance to disagree about what is selected. All four export rows (`export.metric`,
+  `export.channel`, `export.lines`, `export.whisperTo`) still exist and are marked `hidden`, which is
+  what keeps the seam below working.
 - `/mm get export.channel` and `/mm set export.lines 10` still work, and the modal follows them —
   set `/mm set export.lines 10` with the modal closed, re-open it and confirm it reads `Lines: 10`.
   A "no such setting" answer means the rows were deleted rather than hidden, which also drops every
@@ -1708,6 +1753,13 @@ above it. 20+ is where it starts to be worth reading; 30 is what the issue was f
    mid-pull — which is how a candidate field gets settled either way. The `ABSENT` and `PARTIAL`
    lines hold in both states.
 5. `/mm debug` to open the console and copy the whole buffer.
+6. **While the pull is running, read the window's header line** and the standing `identity` line in
+   the buffer. The line must read `identity rows=N keys=N collidedKeys=N collidedRows=N filled=F/P
+   collided=N unmatched=N absent=N`, with `filled + collided + unmatched + absent == P`. The header
+   must say `restricted — N of M share a class and spec` while fewer than a quarter of the rows are
+   collided, and `restricted — N of M blank: duplicate specs` from a quarter up, with `N` equal to
+   the line's `collidedRows`. Check that the whole sentence fits the header without truncation at
+   two-digit counts; the line is a fixed 220 px wide.
 
 **What to read in it, and what each answer would mean:**
 
@@ -1792,6 +1844,28 @@ indication anything was wrong, and a recording running for the rest of the sessi
 
 **Record for the report:** group size and composition, whether the hunter was the local player or a
 party member, the full buffer, and the Deaths count you actually saw in the window beside it.
+
+**Then the provider check — does a feign's recap answer differently from a death's?** Blizzard's
+documented death row carries no field that marks a feign (see
+[scope.md](scope.md#known-limitations)), so the one place a signal could still hide is the recap
+behind the row's `deathRecapID`, whose event shape is undocumented. This check decides whether
+issue #25 is fixable from the provider at all.
+
+1. With a hunter in the party, out of combat, have them **feign once and not die**. Note the time.
+2. Have another party member **really die once** (or wait for one). Out of combat again.
+3. `/mm debug recap`. It dumps every death row the session holds with its recap id, then calls
+   `HasRecapEvents`, `GetRecapEvents` and `GetRecapMaxHealth` against chosen ids.
+4. Find the hunter's newest row and the real death's newest row in the dump, and compare what the
+   recap calls answered for each.
+
+**Pass (the issue closes as not fixable from this provider).** Both ids answer the same way:
+events present, a max health, the same shape of event list. Nothing distinguishes the feign, and the
+Known Limitations entry stands as written.
+
+**Finding (reopen the design).** The feign's id answers consistently differently from every real
+death's across at least three feigns: no events, a zero max health, or an event list with a marker
+a real death never carries. Paste the dump into the issue. That is a signal a filter could read off
+the row, and only then is a code change worth writing.
 
 ### 29. The pooled tab strip, and the perf strings, after the v1.27.0 re-vendor
 
@@ -1900,6 +1974,54 @@ Then, with the panel open, `/mm debug` so the console sits beside it.
   regression the explicit `addonName` exists to prevent.
 - Clicking it closes the panel, and `/mm perf` reopens it.
 - No Lua error at any point.
+
+### 32. Bar fills slide between refreshes (issue #23)
+
+**Why this is in-client.** The headless suite proves that `Cell:SetValue` hands both status-bar
+setters the ease-out interpolation, that a secret value is still passed raw beside it, and that the
+switch and a client without `Enum.StatusBarInterpolation` both fall back to the plain call. It cannot
+show a bar moving, and it cannot prove the client accepts the argument on a secret in combat.
+
+1. With **Bars → Bar → Animate bar fills** on (the default), out of combat at a target dummy, watch
+   the top rows. Each fill **slides** to its new length over a fraction of a second rather than
+   stepping four times a second at the shipped 0.25 s throttle. The column max moves smoothly too:
+   when the leader's number grows, the other bars shrink smoothly rather than jumping.
+2. **In a real pull** (a Mythic+ pack or a raid pull, where the `Combat` restriction is active),
+   the bars still slide and **no Lua error** appears. This is the check that matters: every value
+   is secret there, and the slide must come from the client.
+3. Turn **Animate bar fills** off (or `/mm set window.bars.animate false`). The bars snap again,
+   exactly as before.
+4. With it on, confirm the **numbers, the row order and an export** are the same as with it off.
+   The animation is only drawn, and nothing reads it back.
+
+**Pass:** smooth fills in and out of combat, a snap when off, no error, identical text and order.
+**Record:** client build, and whether step 2 was in a key or a raid.
+
+---
+
+### 33. The pinned segment's none
+
+**Why this is in-client.** `window.data.sessionID` is a hidden row now, and its "no pin" is
+`Constants.NO_SEGMENT`, the number `0`. The headless suite proves that every reader turns 0 into "no
+pin", that the menu, the Current / Overall entries and the staleness check all write through the
+seam, and that an account saved without the key backfills to 0. It cannot prove the premise the
+sentinel rests on: **that the live client never hands out a stored session whose id is 0.** If it
+did, that fight could not be pinned.
+
+1. Run three or four pulls, then `/mm debug diag` and read the stored-session list it prints.
+   **Every `sessionID` is a positive integer.** None is 0.
+2. Log out and back in, run another pull, and read the list again. **Still no 0.** A counter that
+   restarts at login is the case that could mint one.
+3. Pin each listed fight in turn from the header's segment menu. **Each one pins**: the header names
+   it and the grid shows its numbers.
+4. `/mm get window.data.sessionID` answers the pinned id. Pick **Overall** from the menu and ask
+   again: it answers `0`.
+5. `/mm set window.data.sessionID 0` unpins a pinned window, and `/mm set window.data.sessionID -1`
+   is refused with *Invalid value*.
+
+**Pass:** no stored session ever carries id 0, every fight pins, and the CLI reads and writes the
+row as the menu does.
+**Record:** client build, and the lowest and highest ids seen.
 
 ---
 

@@ -35,6 +35,15 @@ This addon has **exactly one hot path, and it is event-driven rather than per-fr
    column**, a GUID join across the group, an ordering pass, and then one cell drawn per row per
    column. A twenty-player raid with seven columns is 140 cells.
 
+**The animated bar fill adds nothing to this model** (issue #23, `window.bars.animate`, on by
+default). The slide is the client's: `Cell:SetValue` passes an interpolation enum to the same two
+setters it already called, so a refresh makes the same number of widget calls, and there is no
+`OnUpdate` per cell, no ticker to stop when a bar settles, and nothing to measure between refreshes.
+The added Lua per cell is one table read and one `Compat.BarInterpolation` call, which
+`refresh20x7` and `refresh20x7Restricted` cover with no new scenario. What the client spends drawing
+the ease-out is outside the addon's buckets; `/mm perf` against `/mm set window.bars.animate false`
+is the A/B if a capture ever asks.
+
 So the whole cost model is: **event rate → coalesced to a throttle → times open windows → times
 columns per window → times rows**. If a capture shows anything, it shows there. Everything else in
 this addon runs on context transitions — zone-in, roster change, settings write — and is not worth
@@ -73,17 +82,28 @@ overlap, and **a parent must never be summed with its children**.
 
 | Bucket | Inside | What it brackets | Call sites |
 |---|---|---|---|
-| `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:384`, `:394`, `:402` |
-| `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1104`, `:1114`, `:1137`, `:1144` (every exit) |
-| `providerRead` | `refresh` | one `C_DamageMeter` column read | `modules/Provider.lua:349` |
-| `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1239`, `modules/DrillDown.lua:700`, `:732` |
-| `render` | `refresh` | the window's draw | `modules/Window.lua:1247` |
-| `renderRow` | `render` | one row's cells | `modules/Row.lua:1360` |
-| `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:922`, `:940`, `:1001`, `:1015`, `:1029` |
-| `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:394`, `:402`, `:416` |
+| `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:382`, `:392`, `:400` |
+| `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1106`, `:1116`, `:1139`, `:1146` (every exit) |
+| `providerRead` | — (observed: `aggregate`, `targets`) | one `C_DamageMeter` column read | `modules/Provider.lua:357` |
+| `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1257`, `modules/DrillDown.lua:700`, `:732` |
+| `render` | `refresh` | the window's draw | `modules/Window.lua:1251` |
+| `renderRow` | `render` | one row's cells | `modules/Row.lua:1365` |
+| `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:925`, `:943`, `:1004`, `:1018`, `:1032` |
+| `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:396`, `:404`, `:418` |
 
-The three buckets under `refresh` exist to answer "which third of the pass is it" — reading the
-columns off `C_DamageMeter`, joining them by GUID and ordering them, or drawing.
+The buckets under `refresh` exist to answer "which third of the pass is it" — reading the columns
+off `C_DamageMeter`, joining them by GUID and ordering them, or drawing.
+
+**Every nested bracket passes the parent it ran inside** as `Perf.Note`'s third argument, so a
+capture reports the tree as *observed* rather than declared (`performance-§3`, issue #47). `render`,
+`renderRow` and `targets` each run inside exactly one bracket and pass it as a literal. `aggregate`
+passes what its caller hands it: the refresh passes `refresh`, the drill-down's build runs only
+inside a refresh, and an export build passes nothing because it runs inside no bracket.
+`providerRead` has **no single parent**. It runs inside `aggregate` on a refresh, inside `targets`
+on a tooltip, and inside nothing from a diagnostic, so it declares no `within` and
+`Provider.GetColumn` forwards whichever parent its caller names. A capture that exercised both paths
+reports it *observed inside more than one parent*; one that never hovered a Damage cell with Targets
+on reports it observed inside `aggregate` alone.
 
 `targets` nests inside `tooltip` because a tooltip is the only thing that triggers one, and it is the
 expensive half: the cross-reference makes a provider call **per enemy** to reconstruct a list the API

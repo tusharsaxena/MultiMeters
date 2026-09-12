@@ -353,6 +353,96 @@ function()
         "the header outline must be back to shipped after the page-wide Defaults click")
 end)
 
+-- ---------------------------------------------------------------------------
+-- A Defaults press is ONE [Set] line (debug-logging-§10)
+-- ---------------------------------------------------------------------------
+
+--- Every debug line `fn` produces, as { tag, text }. The arguments are
+--- tostring()ed first because this is Lua 5.1, whose `%s` raises on a table.
+local function logOf(NSx, fn)
+    local original, lines = NSx.Debug, {}
+    NSx.Debug = function(tag, fmt, ...)
+        local a = { ... }
+        for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
+        lines[#lines + 1] = { tag = tag, text = tostring(fmt):format(a[1], a[2], a[3], a[4], a[5]) }
+    end
+    local ok, err = pcall(fn)
+    NSx.Debug = original
+    if not ok then error(err, 0) end
+    return lines
+end
+
+--- The [Set] lines alone, as text.
+local function setLines(lines)
+    local out = {}
+    for _, l in ipairs(lines) do
+        if l.tag == "Set" then out[#out + 1] = l.text end
+    end
+    return out
+end
+
+test("Options: every page's Defaults press logs ONE [Set] line naming the page and the rows it changed",
+function()
+    -- debug-logging-§10 (standard v2.44.0): a page reset through the helper is
+    -- ONE `[Set] reset <scope>: N rows` line and no line per row. N is the rows
+    -- whose stored value moved, so a second press on a page already at its
+    -- defaults says `0 rows`. The library brackets RestoreDefaults (Options
+    -- minor 16); the seam mutes and counts inside the bracket.
+    -- red under: no bulkBegin/bulkEnd on the descriptor (a [Set] line per row),
+    -- or N taken from bulkEnd's count (the second press still says every row).
+    local inst = T.load()
+    local NSi = inst.NS
+    for _, key in ipairs({ "general", "frame", "header", "bars", "tooltip", "visibility" }) do
+        local ctx = showPage(inst, key)
+        local dirty
+        for _, row in ipairs(NSi.SchemaForPage(key)) do
+            if row.type == "bool" and not row.sessionOnly and not row.hidden then
+                dirty = row
+                break
+            end
+        end
+        assertTrue(dirty ~= nil, key .. " has no stored checkbox to move off its default")
+        assertTrue(NSi.SetByPath(dirty.path, not NSi.GetSetting(dirty.path)))
+
+        local first = setLines(logOf(NSi, ctx.panel.defaultsOnClick))
+        assertEqual(#first, 1, key .. ": " .. table.concat(first, " | "))
+        assertEqual(first[1], "reset " .. key .. ": 1 rows", key .. "'s Defaults line")
+
+        local again = setLines(logOf(NSi, ctx.panel.defaultsOnClick))
+        assertEqual(#again, 1, key .. ", pressed again: " .. table.concat(again, " | "))
+        assertEqual(again[1], "reset " .. key .. ": 0 rows", key .. " was already at its defaults")
+    end
+end)
+
+test("Options: the Columns Defaults press is ONE [Set] line, counting the column list with the rows",
+function()
+    -- restoreShippedColumns writes the whole array through the seam BEFORE the
+    -- library's page walk, so the page brackets both halves itself and the
+    -- library's bracket nests inside it: one line, at the outer close, with the
+    -- array counted as one row.
+    -- red under: restoreShippedColumns left outside the bracket (its own
+    -- `[Set] window.columns = N shown`), or a nested close that emits (two lines).
+    local inst = T.load()
+    local NSi = inst.NS
+    local ctx = showPage(inst, "columns")
+
+    local shipped = NSi.DefaultWindow(NSi.Database.GetWindows()[1].id).columns
+    local scrambled = {}
+    for i = #shipped, 1, -1 do
+        scrambled[#scrambled + 1] = { stat = shipped[i].stat, enabled = i % 2 == 0 }
+    end
+    assertTrue(NSi.SetByPath("window.columns", scrambled))
+    assertTrue(NSi.SetByPath("window.columnHeader.font", "Skurri"))
+
+    local lines = setLines(logOf(NSi, ctx.panel.defaultsOnClick))
+    assertEqual(#lines, 1, table.concat(lines, " | "))
+    assertEqual(lines[1], "reset columns: 2 rows")
+
+    lines = setLines(logOf(NSi, ctx.panel.defaultsOnClick))
+    assertEqual(#lines, 1, table.concat(lines, " | "))
+    assertEqual(lines[1], "reset columns: 0 rows")
+end)
+
 test("Options: the canvas footer's Defaults control reaches the same handler as the header button",
 function()
     local inst = T.load()

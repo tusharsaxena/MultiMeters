@@ -1039,6 +1039,33 @@ function Cell:ApplyLayout(layout, col)
     self:ApplyTextStyle(text)
 end
 
+--- The interpolation a cell's two setters take, or nil for the snap (issue #23).
+---
+--- THE SLIDE IS THE WIDGET'S, NOT THIS FILE'S. With `bars.animate` on, both
+--- setters get the client's ease-out, a NeverSecret enum constant, and the bar
+--- animates from its own fill toward the new target and stops there. Nothing here
+--- steps between two values: that would be arithmetic on a secret. Off, or on a
+--- client without the enum, the answer is nil and the argument is omitted, which
+--- is `Immediate`.
+local function barInterpolation(cfg)
+    local bars = cfg.bars
+    if bars ~= nil and bars.animate == false then return nil end
+    local C = NS.Compat
+    return C and C.BarInterpolation and C.BarInterpolation() or nil
+end
+
+--- Hand the max and the value to the bar, animated or not. The max moves with the
+--- value, or the fill would jump with it anyway. Both are opaque handles.
+local function fillBar(bar, maxValue, value, interp)
+    if interp ~= nil then
+        bar:SetMinMaxValues(0, maxValue, interp)
+        bar:SetValue(value, interp)
+    else
+        bar:SetMinMaxValues(0, maxValue)
+        bar:SetValue(value)
+    end
+end
+
 --- Draw one player's figure for this column.
 ---
 --- @param entry table  the aggregated row (a player, or a spell in a
@@ -1058,12 +1085,7 @@ function Cell:SetValue(entry)
     -- `== nil` is the ONE test this file applies to a meter value, and it is
     -- legal on a non-boolean secret. Everything else — how big it is, how it
     -- compares to the column max — is the widget's business, natively.
-    if colMax == nil then
-        bar:SetMinMaxValues(0, 1)
-    else
-        bar:SetMinMaxValues(0, colMax)
-    end
-    bar:SetValue(total == nil and 0 or total)
+    fillBar(bar, colMax == nil and 1 or colMax, total == nil and 0 or total, barInterpolation(cfg))
 
     -- UNCONDITIONAL. Show-bar was a per-column checkbox and is not a choice any
     -- more: the bar is what makes the grid readable at a glance, and a
@@ -1361,7 +1383,8 @@ function RowProto:Update(entry, index)
 
     self.frame:Show()
 
-    if t0 then Perf.Note("renderRow", debugprofilestop() - t0) end
+    -- Only WindowProto:Render updates a row, so its parent is observed (#47).
+    if t0 then Perf.Note("renderRow", debugprofilestop() - t0, "render") end
 end
 
 --- Toggle the mouseover overlay. Driven from the CELLS on the grid, and from the

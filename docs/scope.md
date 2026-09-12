@@ -227,10 +227,15 @@ default to total and rate.
   Blizzard's own meter shows the same thing on the same pull, so the ceiling here may be the
   client's rather than ours.
 
-  Tracked as [#22](https://github.com/tusharsaxena/MultiMeters/issues/22). Nothing is fixed yet.
-  What shipped is the instrumentation, one ordering bug it exposed (a key proved ambiguous by a late
-  column used to keep cells an early column had already written), and the absent-field report that
-  found the cause — see [testing.md](testing.md#capturing-an-identity-correlation-run).
+  Tracked as [#22](https://github.com/tusharsaxena/MultiMeters/issues/22). The blanking is correct
+  and stays. What shipped is the instrumentation, one ordering bug it exposed (a key proved ambiguous
+  by a late column used to keep cells an early column had already written), the absent-field report
+  that found the cause — see [testing.md](testing.md#capturing-an-identity-correlation-run) — and two
+  ways of saying it. The standing `identity` debug line names collided keys and collided rows apart
+  and splits the blank cells into `collided`, `unmatched` and `absent`, so a collision-driven blank
+  grid can be told from a mismatch without a capture. The header says it in words: `N of M share a
+  class and spec`, and once the collided rows reach a quarter of the grid, `N of M blank: duplicate
+  specs`.
 - **The feign-death filter cannot run mid-pull, and that is structural.** `C_DamageMeter` hands a
   Feign Death a valid `deathRecapID`, so the Deaths column counts a hunter's feign as a death.
   `modules/Feign.lua` records the GUID off the cast and `modules/Aggregator.lua` drops that source —
@@ -258,6 +263,24 @@ default to total and rate.
   report exists to show. The refusals are counted and the total is printed, because a large refusal
   count beside an empty log is itself the finding — the refresh ran and never met the GUID.
   Fix on that measurement, not on either hypothesis.
+- **The meter row carries nothing that tells a feign from a death, so the provider cannot filter
+  one** ([#25](https://github.com/tusharsaxena/MultiMeters/issues/25)). Checked against Blizzard's
+  live API documentation (`Gethe/wow-ui-source`, branch `live`, commit `8ea15b61`, build 12.1.0
+  69587, `Blizzard_APIDocumentationGenerated/DamageMeterDocumentation.lua`): a
+  `DamageMeterCombatSource` carries `sourceGUID`, `sourceCreatureID`, `name`, `classFilename`,
+  `specIconID`, `totalAmount`, `amountPerSecond`, `isLocalPlayer`, `deathRecapID`,
+  `deathTimeSeconds`, `classification`, `sourceDisplayType` and `factionGroup`, and nothing else.
+  None of them says how a death ended. A feign gets a valid `deathRecapID` like any death, which is
+  why it is counted. `DeathRecapDocumentation.lua` offers `HasRecapEvents`, `GetRecapEvents`,
+  `GetRecapMaxHealth` and `GetRecapLink` against that id, and documents `DeathRecapEventInfo` with
+  **no fields at all**, so nothing documented distinguishes a feign's recap either. The Deaths column
+  is a tally of those rows (`modules/Aggregator.lua`, `isCount` in `core/Constants.lua`), and
+  `modules/Provider.lua` copies every field it could filter on. The only route the addon has is the
+  cast join in `modules/Feign.lua` described above, which cannot run mid-pull and is unconfirmed for
+  party members. Unless the in-game recap check in
+  [smoke-tests.md §28](smoke-tests.md#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25)
+  finds a recap that answers differently for a feign, #25 is not fixable from this provider: a death
+  row is a death row.
 - **A past death cannot be dated against the run it happened in, so the addon does not try.**
   Measured on a live client: the **Current** session held *zero* deaths, the **Overall** session held
   eighteen and reported `deathTimeSeconds = -1` for every one, and the session's own duration is

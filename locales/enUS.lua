@@ -229,6 +229,18 @@ L["Reveal controls on hover"] = "Reveal controls on hover"
 L["Fade every control except the one under the pointer. Off keeps them all visible."] = "Fade every control except the one under the pointer. Off keeps them all visible."
 L["Minimised"] = "Minimised"
 L["Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."] = "Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."
+-- The four hidden rows the window's own header controls write (issue #50): the
+-- segment menu's Current / Overall entries, and a click on a column header.
+L["Read the current pull, or the accumulated totals for the whole run. Chosen from the header's segment menu."] =
+    "Read the current pull, or the accumulated totals for the whole run. Chosen from the header's segment menu."
+L["Which column's numbers decide the row order. Chosen by clicking a column header."] =
+    "Which column's numbers decide the row order. Chosen by clicking a column header."
+L["A stored fight to read instead of the session, picked from the header's segment menu. 0 pins none."] =
+    "A stored fight to read instead of the session, picked from the header's segment menu. 0 pins none."
+L["How rows are ordered: by value, by name, in the game's order or in group order. The Player header chooses by name."] =
+    "How rows are ordered: by value, by name, in the game's order or in group order. The Player header chooses by name."
+L["Put the smallest numbers at the top. Clicking the sort column's header again flips it."] =
+    "Put the smallest numbers at the top. Clicking the sort column's header again flips it."
 L["Control color mode"] = "Control color mode"
 L["What colors the header controls at rest."] = "What colors the header controls at rest."
 L["Control color"] = "Control color"
@@ -397,6 +409,11 @@ L["Draw a thin outline around each bar."] = "Draw a thin outline around each bar
 L["Fill direction"] = "Fill direction"
 L["Which edge of the cell each bar grows from."] =
     "Which edge of the cell each bar grows from."
+-- The animated fill (issue #23): the client interpolates the bar, so it is legal
+-- on a secret and needs no OnUpdate of ours.
+L["Animate bar fills"] = "Animate bar fills"
+L["Slide each bar to its new length between refreshes instead of jumping. The game draws the motion itself, so it works in combat and costs no extra updates."] =
+    "Slide each bar to its new length between refreshes instead of jumping. The game draws the motion itself, so it works in combat and costs no extra updates."
 
 -- ---------------------------------------------------------------------------
 -- Text page
@@ -656,6 +673,7 @@ L["By name"] = "By name"
 L["Game order"] = "Game order"
 L["Group order"] = "Group order"
 L["Sort column"] = "Sort column"
+L["Pinned segment"] = "Pinned segment"
 L["Class-colored row background"] = "Class-colored row background"
 L["Tint each row with the player's class color. Rows with no class fall back to the alternating stripe."] =
     "Tint each row with the player's class color. Rows with no class fall back to the alternating stripe."
@@ -795,6 +813,12 @@ L["restricted"] = "restricted"
 -- see. Every other format key in this file is plain for the same reason.
 L["restricted \226\128\148 %d of %d share a class and spec"] =
     "restricted \226\128\148 %d of %d share a class and spec"
+-- The same count once the blanked rows reach a quarter of the grid (issue #22):
+-- the player is looking at mostly empty cells and is owed the effect in plain
+-- words, not only the cause. No longer than the line above at two digits, for
+-- the SESSION_LINE_WIDTH reason given there.
+L["restricted \226\128\148 %d of %d blank: duplicate specs"] =
+    "restricted \226\128\148 %d of %d blank: duplicate specs"
 -- The fallback for an ambiguous grid whose row count did not reach the header --
 -- an aggregate from a build older than the count. Kept rather than deleted so a
 -- reader is never told "0 of 0".
@@ -832,6 +856,8 @@ L["Lines: %s"] = "Lines: %s"
 L["Export to CSV"] = "Export to CSV"
 L["Print to Chat"] = "Print to Chat"
 L["Metric"] = "Metric"
+L["Which statistic Print to Chat ranks by. Opening the export from a window picks that window's sort column."] =
+    "Which statistic Print to Chat ranks by. Opening the export from a window picks that window's sort column."
 L["Channel"] = "Channel"
 L["Lines"] = "Lines"
 L["Whisper to:"] = "Whisper to:"
@@ -889,7 +915,8 @@ L["List every setting and its current value"] = "List every setting and its curr
 L["Print a setting's current value"] = "Print a setting's current value"
 L["Set a setting"] = "Set a setting"
 L["Reset one setting to its default"] = "Reset one setting to its default"
-L["Reset every setting to its default"] = "Reset every setting to its default"
+L["Reset all settings (asks first; deletes extra windows)"] =
+    "Reset all settings (asks first; deletes extra windows)"
 L["Clear every recorded combat session"] = "Clear every recorded combat session"
 L["Measure performance"] = "Measure performance"
 L["Debug subcommands"] = "Debug subcommands"

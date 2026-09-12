@@ -163,10 +163,19 @@ end
 --- Where a path lives: its root table, the index of its first segment inside that
 --- root, and the id of the window it landed in (nil for a global row).
 ---
+--- An EXPLICIT window id is taken literally. It is never swapped for the active
+--- window when it names nothing: a writer that asked for window 7 and quietly got
+--- window 1 has written the wrong window, which is worse than being refused.
+---
 --- @param parts table  the split path
+--- @param windowId number|nil  the window a `window.*` path addresses; nil means the active one
 --- @return table|nil root, number first, number|nil windowId
-local function resolveRoot(parts)
+local function resolveRoot(parts, windowId)
     if parts[1] == WINDOW_PREFIX then
+        if windowId ~= nil then
+            local w = NS.Database and NS.Database.FindWindow(windowId)
+            return w, 2, w and windowId or nil
+        end
         local w, id = activeWindow()
         return w, 2, id
     end
@@ -252,9 +261,13 @@ end
 --- `window.frame` — because `/mm get` is a debugging tool as much as a settings
 --- reader and refusing to show a node that plainly exists helps nobody.
 ---
+--- `windowId` reads a named window instead of the active one, exactly as it
+--- writes one in NS.SetByPath; an id that names no window reads nil.
+---
 --- @param path string
+--- @param windowId number|nil
 --- @return any
-function NS.GetSetting(path)
+function NS.GetSetting(path, windowId)
     if type(path) ~= "string" then return nil end
 
     local row = index[path]
@@ -267,7 +280,7 @@ function NS.GetSetting(path)
     end
 
     local parts = splitPath(path)
-    local root, first = resolveRoot(parts)
+    local root, first = resolveRoot(parts, windowId)
     if not root then return nil end
 
     local value = readFrom(root, parts, first)
@@ -281,27 +294,17 @@ end
 
 local COLUMNS_PREFIX = WINDOW_PREFIX .. ".columns"
 
---- The tail EVERY write shares: log once, announce once, re-sync the panel.
+--- The tail EVERY write shares: announce once, re-sync the panel. The log line
+--- is the caller's, because a single write and a batch log differently.
 ---
 --- Factored out because the columns carve-out below is a second writer into the
 --- same config tree, and a carve-out that skipped the announcement would be a
 --- setting that changes without any window hearing about it — which is precisely
 --- the failure the single-seam rule exists to prevent.
 ---
---- The format is DEFERRED into NS.Debug (debug-logging-§10) rather than built
---- here, so a disabled log costs nothing.
----
 --- @param page string      the CONFIG_CHANGED section
 --- @param windowId number|nil
---- @param fmt string       debug format
---- @param a any
---- @param b any
-local function announceWrite(page, windowId, fmt, a, b)
-    -- Logged ONCE, here. Downstream reactors must not re-echo the same value: a
-    -- settings change that appears three times in the log is three changes as far
-    -- as a reader can tell.
-    if NS.Debug then NS.Debug("Set", fmt, a, b) end
-
+local function announceWrite(page, windowId)
     -- The ONE sender of CONFIG_CHANGED (architecture-§4). `section` is the row's
     -- page key, which is also the window config group it lives in, so a subscriber
     -- can skip work for a group it does not draw.
@@ -418,31 +421,234 @@ end
 --- array" is how the migration and the write seam end up disagreeing about it.
 NS.NormalizeColumns = normalizeColumns
 
---- Write the whole column array of the active window.
+-- ---------------------------------------------------------------------------
+-- One write, in two halves
+-- ---------------------------------------------------------------------------
+--
+-- PREPARE decides whether a write may happen and where it lands, and stores
+-- nothing. STORE and REACT then do it. Split so the batch entry below can check
+-- EVERY write before committing ANY of them -- a batch that stored half its rows
+-- and then refused one would leave a window that matches neither the source nor
+-- what it was before -- while the single-row entry is the same three steps back
+-- to back, and so cannot drift from the batch.
+
+--- Everything a write needs before it touches the tree, or why it may not happen.
+---
+--- @param path string
 --- @param value any
---- @return boolean ok, string|nil err
-local function setColumns(value)
-    local cols, err = normalizeColumns(value)
-    if not cols then return false, err end
+--- @param windowId number|nil  the window a `window.*` path addresses; nil means the active one
+--- @return table|nil plan, string|nil err
+local function prepareWrite(path, value, windowId)
+    if type(path) ~= "string" then return nil, L["Setting not found: %s"]:format(tostring(path)) end
 
-    local w, id = activeWindow()
-    if not w then return false, L["No window is selected."] end
+    -- The columns carve-out. The array as a WHOLE is writable — that is the only
+    -- granularity a path can express — while a path INTO it is refused, because the
+    -- ordinal it would address moves on the next add, remove or reorder.
+    if path == COLUMNS_PREFIX then
+        local cols, err = normalizeColumns(value)
+        if not cols then return nil, err end
+        local w, _, id = resolveRoot(splitPath(path), windowId)
+        if not w then return nil, L["No window is selected."] end
+        return { columns = cols, root = w, windowId = id, page = "columns" }
+    end
+    if path:sub(1, #COLUMNS_PREFIX + 1) == COLUMNS_PREFIX .. "." then
+        return nil, L["A single column is not a setting — edit columns on the Columns page."]
+    end
 
-    -- No copy() on the way in: normalizeColumns already returned a table built
-    -- here, held by nobody else.
-    w.columns = cols
+    local row = index[path]
+    if not row then return nil, L["Setting not found: %s"]:format(path) end
+    if row.validate and not row.validate(value) then
+        return nil, L["Invalid value for %s"]:format(path)
+    end
 
-    -- HOW MANY ARE SHOWN, not how many there are. Every array is the catalog now,
-    -- so `#cols` is the same number on every write, and a log line that never
-    -- changes is a log line nobody can read a change out of. Two format arguments
-    -- because that is what announceWrite forwards -- a third would be dropped and
-    -- its `%d` would reach the console literally.
+    local plan = { row = row, path = path, value = value, page = row.page }
+    if not row.sessionOnly then
+        local parts = splitPath(path)
+        local root, first, id = resolveRoot(parts, windowId)
+        if not root then return nil, L["No window is selected."] end
+        plan.parts, plan.root, plan.first, plan.windowId = parts, root, first, id
+    end
+    return plan
+end
+
+-- ---------------------------------------------------------------------------
+-- The bulk bracket (debug-logging-§10)
+-- ---------------------------------------------------------------------------
+--
+-- A BULK COPY OR RESET IS ONE [Set] LINE. An act whose purpose is to rewrite a
+-- set of rows wholesale -- a page's Defaults button, a copy from one window onto
+-- another -- is logged as `[Set] <act> <scope>: N rows` and never as a line per
+-- row. Validation and each row's onChange still run per row; only the log
+-- collapses. Every other batch (a sort, a resize, a segment pick) logs per row,
+-- because a reader needs its values.
+--
+-- ONE MUTE FOR EVERY BULK ACT. The library's walks reach it through the
+-- descriptors' bulkBegin / bulkEnd (Options minor 16, Slash minor 8); the
+-- Columns page, the degraded reset-all and NS.SetByPaths' copy reach it through
+-- NS.Bulk.run. A DEPTH, not a flag: the Columns page brackets its array write
+-- around the library's page bracket, so brackets nest, and only the close that
+-- brings the depth back to 0 emits -- once, with what every level wrote.
+--
+-- N IS COUNTED HERE, NOT TAKEN FROM bulkEnd. The library's `count` is the rows
+-- its applyDefault returned, and a row already at its default is one of them;
+-- the rule is the rows the act actually WROTE. So while a bracket is open the
+-- seam reads each row's stored value before and after its write and counts the
+-- row -- once, however often it is written -- only when the value moved. The
+-- column array, which no applyDefault reaches, is counted the same way.
+--
+-- A PROFILE RESET IS NOT OURS TO LOG. When a level says the act included a
+-- whole-profile reset, core/Database.lua's OnProfileReset has already logged
+-- `[Set] reset profile '<name>' to defaults (N rows)`, and a line from here
+-- would be a second one. The close emits nothing; the mute is still released.
+--
+-- AN ACT AN ERROR STOPPED STILL LOGS ITS ONE LINE, ending " (stopped by an
+-- error)", so the console never reads a half-finished reset as a clean one. Any
+-- level that closes with an error marks the whole bracket; a bracket opened at
+-- depth 0 starts unmarked. Re-raising the error is the caller's job, and both
+-- callers do it after the close, so the mute is released first.
+local STOPPED = " (stopped by an error)"
+local bulk = { depth = 0, label = nil, seen = {}, changed = 0, profileReset = false, failed = false }
+
+local function bulkOpen(label)
+    if bulk.depth == 0 then
+        bulk.label, bulk.seen, bulk.changed = label, {}, 0
+        bulk.profileReset, bulk.failed = false, false
+    end
+    bulk.depth = bulk.depth + 1
+end
+
+--- Close one level. Only the outermost close emits, and not after a profile reset.
+local function bulkClose(profileReset, failed)
+    if bulk.depth == 0 then return end   -- an unpaired close must not go negative
+    bulk.depth = bulk.depth - 1
+    if profileReset then bulk.profileReset = true end
+    if failed then bulk.failed = true end
+    if bulk.depth > 0 or bulk.profileReset then return end
+    if NS.Debug then
+        NS.Debug("Set", "%s: %d rows" .. (bulk.failed and STOPPED or ""), bulk.label, bulk.changed)
+    end
+end
+
+--- Run `fn` inside a bracket that always closes, then re-raise what it raised,
+--- unwrapped -- the library's own rule, so a raising row cannot leave the seam
+--- muted for the rest of the session. `fn` answers true when it reset the whole
+--- profile, which silences the close.
+local function runBulk(label, fn)
+    bulkOpen(label)
+    local ok, res = pcall(fn)
+    bulkClose(ok and res == true, not ok)
+    if not ok then error(res, 0) end
+end
+
+--- Equal all the way down. A color is `{ r, g, b, a }` and the column array is
+--- a list of `{ stat, enabled }`, so one level is not deep enough.
+local function sameValue(a, b)
+    if a == b then return true end
+    if type(a) ~= "table" or type(b) ~= "table" then return false end
+    for k, v in pairs(a) do
+        if not sameValue(v, b[k]) then return false end
+    end
+    for k in pairs(b) do
+        if a[k] == nil then return false end
+    end
+    return true
+end
+
+--- What a write replaces, read where the write lands. A session row is read
+--- through its own getter, and `false` and `nil` read alike there: the debug
+--- console's getter answers either one for "closed".
+local function storedOf(plan)
+    if plan.columns then return plan.root.columns end
+    if plan.row.sessionOnly then
+        return plan.row.get and plan.row.get() or nil
+    end
+    return readFrom(plan.root, plan.parts, plan.first)
+end
+
+--- Count one write toward the open bracket: once per row, and only if it moved.
+local function tally(plan, before)
+    local key = tostring(plan.windowId) .. "|" .. tostring(plan.path or COLUMNS_PREFIX)
+    if bulk.seen[key] or sameValue(before, storedOf(plan)) then return end
+    bulk.seen[key] = true
+    bulk.changed = bulk.changed + 1
+end
+
+-- The pair both library majors take as bulkBegin / bulkEnd. The library hands
+-- bulkEnd the error its walk raised, then re-raises it itself.
+local function bulkBegin(act, scope) bulkOpen(tostring(act) .. " " .. tostring(scope)) end
+local function bulkEnd(_, _, _, err, info)
+    bulkClose(type(info) == "table" and info.profileReset == true, err ~= nil)
+end
+
+-- A bracket of the host's own. Named the way the library names a page reset, so
+-- both read `[Set] reset <scope>: N rows`.
+local function bulkRun(act, scope, fn) runBulk(tostring(act) .. " " .. tostring(scope), fn) end
+
+-- Built from named locals rather than function literals in the constructor:
+-- lizard 1.24.0's Lua reader raises on anonymous functions in a table assigned
+-- to a dotted name, and a crashed complexity run measures nothing.
+NS.Bulk = { begin = bulkBegin, finish = bulkEnd, run = bulkRun }
+
+--- Put a prepared write into the tree.
+local function putWrite(plan)
+    if plan.columns then
+        -- No copy() on the way in: normalizeColumns already returned a table
+        -- built here, held by nobody else.
+        plan.root.columns = plan.columns
+        return
+    end
+    local row = plan.row
+    if row.sessionOnly then
+        -- No db write by definition; the row's own set() IS the storage.
+        if row.set then row.set(plan.value) end
+        return
+    end
+    -- copy() on the way in: a color table handed straight from a widget (or
+    -- from a row's default) would otherwise be shared with whoever else holds
+    -- it, and editing one window's color would edit theirs.
+    writeInto(plan.root, plan.parts, plan.first, copy(toStored(row, plan.value)))
+end
+
+--- Put a prepared write into the tree, and count it when a bulk act is open.
+--- Outside a bracket nothing is read back, so a lone write costs what it did.
+local function storeWrite(plan)
+    if bulk.depth == 0 then return putWrite(plan) end
+    local before = storedOf(plan)
+    putWrite(plan)
+    tally(plan, before)
+end
+
+--- Fire a stored write's `onChange`, told which window moved.
+local function reactWrite(plan)
+    local row = plan.row
+    if row and row.onChange then row.onChange(plan.value, plan.windowId) end
+end
+
+--- HOW MANY ARE SHOWN, not how many there are. Every array is the catalog now,
+--- so `#cols` is the same number on every write, and a log line that never
+--- changes is a log line nobody can read a change out of.
+local function shownCount(cols)
     local shown = 0
     for _, c in ipairs(cols) do
         if c.enabled then shown = shown + 1 end
     end
-    announceWrite("columns", id, "%s = %d shown", COLUMNS_PREFIX, shown)
-    return true
+    return shown
+end
+
+--- The `[Set] <path> = <value>` line for one stored write (debug-logging-§10).
+---
+--- Logged ONCE, here. Downstream reactors must not re-echo the same value: a
+--- settings change that appears three times in the log is three changes as far
+--- as a reader can tell. The format is DEFERRED into NS.Debug rather than built
+--- here, so a disabled log costs nothing.
+local function logWrite(plan)
+    -- Muted inside a bulk bracket: the act logs its one line when it closes.
+    if bulk.depth > 0 or not NS.Debug then return end
+    if plan.columns then
+        NS.Debug("Set", "%s = %d shown", COLUMNS_PREFIX, shownCount(plan.columns))
+    else
+        NS.Debug("Set", "%s = %s", plan.path, plan.value)
+    end
 end
 
 --- Write one setting. THE single write seam (settings-schema-§1): the panel's
@@ -454,52 +660,86 @@ end
 --- re-sync the panel. Reacting before the write would hand a refresher the old
 --- value; logging in the reactor would log it per subscriber.
 ---
+--- `windowId` IS THE INSTANCE ARGUMENT (architecture-§5, issue #49). Omitted,
+--- a `window.*` path means the active window, which is what the panel and
+--- `/mm set` want. Given, it means THAT window and never another: an id that
+--- names no window is refused rather than quietly redirected to the active one.
+--- It is how modules/WindowManager.lua renames, copies into and locks a window
+--- the picker is not pointed at, and how a resize drag saves the window that was
+--- dragged. Moving NS.State.activeWindowId so the seam points at the target
+--- would be going around the seam, so nothing does. Ignored by a global row.
+---
 --- @param path string
 --- @param value any
+--- @param windowId number|nil
 --- @return boolean ok, string|nil err
-function NS.SetByPath(path, value)
-    if type(path) ~= "string" then return false, L["Setting not found: %s"]:format(tostring(path)) end
+function NS.SetByPath(path, value, windowId)
+    local plan, err = prepareWrite(path, value, windowId)
+    if not plan then return false, err end
 
-    -- The columns carve-out. The array as a WHOLE is writable — that is the only
-    -- granularity a path can express — while a path INTO it is refused, because the
-    -- ordinal it would address moves on the next add, remove or reorder.
-    if path == COLUMNS_PREFIX then
-        return setColumns(value)
-    end
-    if path:sub(1, #COLUMNS_PREFIX + 1) == COLUMNS_PREFIX .. "." then
-        return false, L["A single column is not a setting — edit columns on the Columns page."]
-    end
+    storeWrite(plan)
+    reactWrite(plan)
+    logWrite(plan)
+    announceWrite(plan.page, plan.windowId)
+    return true
+end
 
-    local row = index[path]
-    if not row then
-        return false, L["Setting not found: %s"]:format(path)
-    end
-    if row.validate and not row.validate(value) then
-        return false, L["Invalid value for %s"]:format(path)
-    end
+--- Write several settings as ONE change: every write is checked first, then all
+--- are stored, then each row reacts and is logged, then the change is announced
+--- once.
+---
+--- THE SAME SEAM, NOT A SECOND ONE. Each entry goes through exactly what
+--- NS.SetByPath does -- the columns carve-out, the row lookup, the row's
+--- `validate`, the deep copy on the way in, the row's `onChange` -- and the
+--- difference is the tail. A copy-from touches seventy-odd rows of one window,
+--- and seventy CONFIG_CHANGED messages would be seventy re-applies of that
+--- window for a single click. So the batch announces ONCE, naming the page when
+--- every row shares one and none when they do not, because a subscriber
+--- skipping a section must not skip part of a change.
+---
+--- THE LOG FOLLOWS debug-logging-§10 (ruled 2026-09-12). A batch logs every row
+--- it writes as its own `[Set] <path> = <value>` line: a sort, a resize or a
+--- segment pick is two or three settings, and a reader needs their values, not
+--- a count. A BULK copy or reset is the one exception, and `summary` is how the
+--- caller says it is one: the batch runs inside a bulk bracket, which mutes
+--- the per-row line and logs ONE `[Set] <summary>: N rows` when it closes --
+--- `[Set] copy from 'A' to 'B': 42 rows` -- with N the rows whose stored value
+--- moved (see "The bulk bracket" above). The tag is [Set], never a tag of its
+--- own (standard v2.44.0). Seventy per-row lines for one click would evict the
+--- rest of the log.
+---
+--- ALL OR NOTHING. One refused entry stores no entry at all, and the refusal
+--- names its path.
+---
+--- @param writes table         array of `{ path, value }`
+--- @param windowId number|nil  as NS.SetByPath's
+--- @param summary string|nil   ONLY for a bulk copy or reset: the act, naming
+---                             its source and target, e.g. "copy from 'A' to 'B'"
+--- @return boolean ok, string|nil err
+function NS.SetByPaths(writes, windowId, summary)
+    if type(writes) ~= "table" then return false, L["Setting not found: %s"]:format(tostring(writes)) end
 
-    local windowId
+    local plans = {}
+    for i, entry in ipairs(writes) do
+        local plan, err = prepareWrite(entry[1], entry[2], windowId)
+        if not plan then return false, err end
+        plans[i] = plan
+    end
+    if plans[1] == nil then return true end
 
-    if row.sessionOnly then
-        -- No db write by definition; the row's own set() IS the storage.
-        if row.set then row.set(value) end
-    else
-        local parts = splitPath(path)
-        local root, first, id = resolveRoot(parts)
-        if not root then
-            return false, L["No window is selected."]
+    local page, id = plans[1].page, plans[1].windowId
+    local function apply()
+        for _, plan in ipairs(plans) do storeWrite(plan) end
+        for _, plan in ipairs(plans) do
+            reactWrite(plan)
+            logWrite(plan)
+            if plan.page ~= page then page = nil end
+            if plan.windowId ~= id then id = nil end
         end
-        windowId = id
-        -- copy() on the way in: a color table handed straight from a widget (or
-        -- from a row's default) would otherwise be shared with whoever else holds
-        -- it, and editing one window's color would edit theirs.
-        writeInto(root, parts, first, copy(toStored(row, value)))
     end
+    if summary then runBulk(summary, apply) else apply() end
 
-    if row.onChange then row.onChange(value, windowId) end
-
-    announceWrite(row.page, windowId, "%s = %s", path, value)
-
+    announceWrite(page, id)
     return true
 end
 

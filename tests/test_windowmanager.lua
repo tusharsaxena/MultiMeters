@@ -304,7 +304,11 @@ local function twoWindows()
     source.rows.height       = 33
     source.text.numberFormat = "full"
     source.visibility.world  = true
-    source.columns           = { { stat = "Deaths", width = 44, showBar = false } }
+    -- The column array in the shape the seam stores ({ stat, enabled }). The
+    -- copy goes through the seam's whole-array carve-out, which normalizes, so
+    -- the retired { stat, width, showBar } entry this fixture used to carry has
+    -- no enabled column and would be refused rather than copied verbatim.
+    source.columns           = { { stat = "Deaths", enabled = true } }
     source.frame.position    = { point = "TOPLEFT", relativePoint = "TOPLEFT", x = 5, y = -5 }
     target.frame.position    = { point = "CENTER", relativePoint = "CENTER", x = 99, y = 99 }
 
@@ -320,6 +324,7 @@ test("CopyFrom with no filter copies every group, deeply", function()
     assertEqual(target.text.numberFormat, "full")
     assertEqual(target.visibility.world, true)
     assertEqual(target.columns[1].stat, "Deaths")
+    assertEqual(target.columns[1].enabled, true)
 
     -- Identity is never copied, or the registry would end up with two windows
     -- claiming to be the same one.
@@ -334,10 +339,10 @@ test("CopyFrom with no filter copies every group, deeply", function()
     -- And the aliasing check, on every group that was copied.
     source.bars.colorMode  = "role"
     source.rows.height     = 1
-    source.columns[1].width = 999
+    source.columns[1].enabled = false
     assertEqual(target.bars.colorMode, "stat")
     assertEqual(target.rows.height, 33)
-    assertEqual(target.columns[1].width, 44)
+    assertEqual(target.columns[1].enabled, true)
     assertFalse(target.bars == source.bars, "two windows must never share a sub-table")
     assertFalse(target.columns == source.columns)
 
@@ -542,4 +547,160 @@ test("Resume restores from CURRENT state: a window made while suspended comes ba
     M:Resume()
     assertTrue(M.Get("Late") ~= nil)
     assertTrue(M.Get("Late").frame:GetScript("OnUpdate") ~= nil)
+end)
+
+-- ---------------------------------------------------------------------------
+-- Row writes go through the seam (issue #49)
+-- ---------------------------------------------------------------------------
+--
+-- The registry owns membership and bookkeeping and nothing else
+-- (architecture-§5). A window's NAME, its lock and every row a copy touches are
+-- rows, so the writer reaches them through NS.SetByPath with the window's id --
+-- and never by moving the picker to it.
+
+--- Every CONFIG_CHANGED payload, and every `Set` debug line, from here on.
+local function listen(inst)
+    local NS = inst.NS
+    local seen, lines = {}, {}
+    local bus = NS.NewBusTarget()
+    bus:RegisterMessage(NS.Constants.MSG.CONFIG_CHANGED, function(_, payload)
+        seen[#seen + 1] = payload
+    end)
+    local original, flows = NS.Debug, {}
+    NS.Debug = function(tag, fmt, ...)
+        if tag == "Set" then
+            lines[#lines + 1] = { fmt, ... }
+        else
+            flows[#flows + 1] = { tag, fmt:format(...) }
+        end
+    end
+    return seen, lines, function() NS.Debug = original end, flows
+end
+
+test("Rename writes window.name through the seam, for the window it names", function()
+    -- red under: `cfg.name = uniqueName(newName)` written straight into the config.
+    local inst, M = loaded()
+    M:Create("Second")
+    local windows = inst.NS.Database.GetWindows()
+    local first, second = windows[1], windows[2]
+    inst.NS.State.SetActiveWindow(first.id)
+
+    local seen, lines, restore = listen(inst)
+    assertEqual(M:Rename(second.id, "Raid"), true)
+    restore()
+
+    assertEqual(second.name, "Raid")
+    assertEqual(inst.NS.State.activeWindowId, first.id, "renaming must not move the picker")
+    assertEqual(#seen, 1)
+    assertEqual(seen[1].windowId, second.id)
+    assertEqual(seen[1].section, "windows")
+    assertEqual(#lines, 1)
+    assertEqual(lines[1][2], "window.name")
+end)
+
+test("Rename keeps the uniqueness check the row does not have", function()
+    local inst, M = loaded()
+    M:Create("Second")
+    local windows = inst.NS.Database.GetWindows()
+    assertEqual(M:Rename(windows[2].id, windows[1].name), true)
+    assertEqual(windows[2].name, windows[1].name .. " 2", "a taken name is disambiguated, not refused")
+end)
+
+test("CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it copies", function()
+    -- Seventy-odd rows through the seam one at a time would be seventy
+    -- re-applies of the target and seventy lines in the log for one click.
+    -- red under: deep-assigning the groups straight onto the target.
+    local inst, M, source, target = twoWindows()
+    inst.NS.State.SetActiveWindow(source.id)
+
+    local seen, lines, restore = listen(inst)
+    assertEqual(M:CopyFrom(source.id, target.id), true)
+    restore()
+
+    assertEqual(#seen, 1)
+    assertEqual(seen[1].windowId, target.id)
+    assertEqual(#lines, 1, "a bulk copy is ONE [Set] line, never one per row")
+    assertEqual(lines[1][1], "%s: %d rows", "and that line is the copy's summary, not a row")
+    assertEqual(inst.NS.State.activeWindowId, source.id, "the picker stays where it was")
+end)
+
+test("CopyFrom logs ONE [Set] line naming the source, the target and the rows it changed", function()
+    -- debug-logging-§10 (standard v2.44.0, the owner's final ruling): a bulk
+    -- copy is `[Set] copy from '<src>' to '<dst>': N rows`, the tag is [Set],
+    -- and N is the rows whose stored value moved -- so the same copy made twice
+    -- says `0 rows` the second time.
+    -- red under: the line tagged [Bulk], or N counted as the rows in scope.
+    local inst, M, source, target = twoWindows()
+    target.name = "Target"
+
+    local _, lines, restore, flows = listen(inst)
+    assertEqual(M:CopyFrom(source.id, target.id, "bars"), true)
+    assertEqual(M:CopyFrom(source.id, target.id, "bars"), true)
+    restore()
+
+    for _, f in ipairs(flows) do
+        assertTrue(f[1] ~= "Bulk", "the [Bulk] tag is retired: " .. tostring(f[2]))
+    end
+    assertEqual(#lines, 2, "one [Set] line per copy")
+    local first  = lines[1][1]:format(lines[1][2], lines[1][3])
+    local second = lines[2][1]:format(lines[2][2], lines[2][3])
+    local n = tonumber(first:match("^copy from 'Source' to 'Target': (%d+) rows$"))
+    assertTrue(n ~= nil and n > 0, "the line names source, target and count: " .. first)
+    assertEqual(second, "copy from 'Source' to 'Target': 0 rows",
+        "a copy onto a target that already matches changed nothing")
+end)
+
+test("CopyFrom goes through each row's validate, and stores nothing on a refusal", function()
+    -- red under: deep-assigning the groups straight onto the target.
+    local _, M, source, target = twoWindows()
+    target.bars.colorMode = "class"
+    source.frame.scale = 99            -- outside the row's 0.5..2 validator
+
+    local ok, err = M:CopyFrom(source.id, target.id)
+    assertEqual(ok, false)
+    assertTrue(tostring(err):find("window.frame.scale", 1, true) ~= nil, "the refusal names the row")
+    assertEqual(target.bars.colorMode, "class", "nothing was copied")
+    assertTrue(target.frame.scale ~= 99)
+end)
+
+test("CopyFrom sends the sort through the seam, carries the pin, and never the position", function()
+    -- The sort and the session type are preferences with rows since issue #50,
+    -- so they travel in the seam's batch and a value the row refuses stops the
+    -- copy. The pinned segment is a hidden row too, so it travels in the same
+    -- batch. The position is not copied at all.
+    -- red under: the view copied leaf by leaf, around the seam.
+    local _, M, source, target = twoWindows()
+    source.data.sortColumn = "NotAStat"
+    local ok, err = M:CopyFrom(source.id, target.id, "data")
+    assertEqual(ok, false, "a sort the row refuses stops the copy")
+    assertTrue(tostring(err):find("window.data.sortColumn", 1, true) ~= nil)
+
+    source.data.sortColumn = "HealingDone"
+    source.data.sessionID  = 7
+    assertEqual(M:CopyFrom(source.id, target.id, "data"), true)
+    assertEqual(target.data.sortColumn, "HealingDone")
+    assertEqual(target.data.sessionID, 7)
+
+    assertEqual(M:CopyFrom(source.id, target.id, "frame"), true)
+    assertEqual(target.frame.position.x, 99)
+    assertFalse(target.frame.position == source.frame.position)
+end)
+
+test("SetLocked writes each window through the seam, tagged with its own id", function()
+    -- red under: `cfg.frame.locked = locked` written straight into each config.
+    local inst, M = loaded()
+    M:Create("Second")
+    local windows = inst.NS.Database.GetWindows()
+    inst.NS.State.SetActiveWindow(windows[1].id)
+
+    local seen, lines, restore = listen(inst)
+    M:SetLocked(true)
+    restore()
+
+    assertEqual(#seen, 2, "one write per window")
+    assertEqual(seen[1].windowId, windows[1].id)
+    assertEqual(seen[2].windowId, windows[2].id)
+    assertEqual(#lines, 2)
+    assertEqual(inst.NS.State.activeWindowId, windows[1].id)
+    assertEqual(M:IsLocked(), true)
 end)

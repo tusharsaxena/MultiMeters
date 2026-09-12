@@ -129,6 +129,19 @@ local lsmValues            = SC.lsmValues
 local refreshMinimap       = SC.refreshMinimap
 local refreshVisibility    = SC.refreshVisibility
 
+-- The four orders modules/Aggregator.lua knows. `name` is what the Player
+-- header chooses; `provider` and `roster` are reachable from `/mm set` alone.
+local SORT_MODES = { value = true, name = true, provider = true, roster = true }
+
+--- A sort write drops the frozen order, whoever made it (issue #50).
+---
+--- The frozen order is a snapshot of the OLD sort, and it would be reapplied over
+--- the new one for the rest of the pull. The column-header click used to drop it
+--- itself; as the rows' onChange it covers `/mm set` and a copy-from as well.
+local function dropFrozenOrder()
+    if NS.State and NS.State.WipeCache then NS.State.WipeCache("Aggregator") end
+end
+
 -- What every colour swatch's tooltip says about the mode beside it. IN WORDS,
 -- because the swatch is NEVER disabled (options-ui-§17, anti-patterns #74): it is
 -- still read for its ALPHA under every mode -- no class colour and no palette
@@ -645,6 +658,56 @@ NS.Schema = {
         path = "window.frame.minimised", type = "bool", default = false, hidden = true,
         page = "header", group = L["Controls"],
         label = L["Minimised"], desc = L["Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."],
+    },
+    -- THE SORT AND THE SESSION TYPE ARE PREFERENCES, HIDDEN ONES (issue #50).
+    -- A click on a column header CHOOSES the sort, and the segment menu's
+    -- Current / Overall entries CHOOSE the session type. architecture-§5 reads a
+    -- control that chooses a value as setting it, so these are not a remembered
+    -- view: they need rows, and the controls write through NS.SetByPath with the
+    -- window's own id. They were rows once, on a Data page, and were deleted
+    -- because the click wrote around the seam and a CLI path beside it was a
+    -- second writer. With the click on the seam there is one writer again, so
+    -- the rows come back, hidden: the control that chooses each one is on the
+    -- window. Filed beside `frame.minimised`, the other state a header control
+    -- writes. `data.sessionID`, the pinned segment, is the fifth: the same menu
+    -- chooses it, and its "none" is Constants.NO_SEGMENT (0) rather than nil, so
+    -- a default can say it.
+    {
+        path = "window.data.sessionType", type = "number", default = Const.SESSION_TYPE.Overall,
+        hidden = true, page = "header", group = L["Controls"],
+        validate = function(v)
+            return v == Const.SESSION_TYPE.Current or v == Const.SESSION_TYPE.Overall
+        end,
+        label = L["Session"], desc = L["Read the current pull, or the accumulated totals for the whole run. Chosen from the header's segment menu."],
+    },
+    {
+        path = "window.data.sessionID", type = "number", default = Const.NO_SEGMENT,
+        hidden = true, page = "header", group = L["Controls"],
+        validate = function(v)
+            return v == Const.NO_SEGMENT or (type(v) == "number" and v > 0 and v % 1 == 0)
+        end,
+        label = L["Pinned segment"], desc = L["A stored fight to read instead of the session, picked from the header's segment menu. 0 pins none."],
+    },
+    {
+        path = "window.data.sortColumn", type = "string", default = "DamageDone",
+        hidden = true, page = "header", group = L["Controls"],
+        validate = function(v) return type(v) == "string" and Const.STAT_BY_KEY[v] ~= nil end,
+        onChange = dropFrozenOrder,
+        label = L["Sort column"], desc = L["Which column's numbers decide the row order. Chosen by clicking a column header."],
+    },
+    {
+        path = "window.data.sortMode", type = "string", default = "value",
+        hidden = true, page = "header", group = L["Controls"],
+        validate = function(v) return SORT_MODES[v] == true end,
+        onChange = dropFrozenOrder,
+        label = L["Sort mode"], desc = L["How rows are ordered: by value, by name, in the game's order or in group order. The Player header chooses by name."],
+    },
+    {
+        path = "window.data.sortAscending", type = "bool", default = false,
+        hidden = true, page = "header", group = L["Controls"],
+        validate = function(v) return type(v) == "boolean" end,
+        onChange = dropFrozenOrder,
+        label = L["Sort ascending"], desc = L["Put the smallest numbers at the top. Clicking the sort column's header again flips it."],
     },
     -- ── Button style ──────────────────────────────────────────────
     -- How every one of the eight controls above is drawn, not what any one of
@@ -1228,7 +1291,7 @@ NS.Schema = {
     -- ── Export ──────────────────────────────────────────────
     --
     -- Addon-wide rather than per-window, and last on the page so the tabs above
-    -- stay contiguous. ALL THREE ARE `hidden`. They are the choices the EXPORT
+    -- stay contiguous. ALL FOUR ARE `hidden`. They are the choices the EXPORT
     -- MODAL remembers -- its own three controls are the ones a player uses,
     -- sitting in the dialog they are exporting from -- so a second copy on the
     -- General page restated a control the player only ever meets in the other
@@ -1238,14 +1301,23 @@ NS.Schema = {
     -- the old Data page, and the difference is which seam does the writing.
     -- Those were written directly by the window's own controls; these are
     -- written by the modal through NS.SetByPath -- which REFUSES a path with no
-    -- row. Deleting them would drop every export choice onto writeExport's
-    -- degraded fallback, losing the validation, the debug line and
-    -- CONFIG_CHANGED, and would take `/mm set export.channel WHISPER` with it.
+    -- row. Deleting one would leave the modal's writes nowhere to go: the seam
+    -- refuses the path, and nothing stores a choice around it.
     --
-    -- THE METRIC IS NOT AMONG THEM, and its absence is deliberate. It used to be,
-    -- with a "Match the window" entry the sort column had no use for. Export.Open
-    -- now seeds the metric from the window it was opened from, so a value set
-    -- here would be overwritten before it was ever read.
+    -- THE METRIC IS AMONG THEM AGAIN (architecture-§5). It was dropped with the
+    -- panel's "Default metric" control, because Export.Open seeds it from the
+    -- window the modal opens on and a panel value would be overwritten before it
+    -- was read. But the modal's own Metric dropdown still CHOOSES it between
+    -- opens, and a control that chooses a value makes it a preference: with no
+    -- row, every pick and every seed was refused here and stored around the seam.
+    -- Hidden, like the other three, so no panel copy comes back.
+    {
+        path = "export.metric", type = "string", default = Const.STATS[1].key, hidden = true,
+        page = "general", group = L["Export"],
+        validate = function(v) return type(v) == "string" and Const.STAT_BY_KEY[v] ~= nil end,
+        label = L["Metric"],
+        desc = L["Which statistic Print to Chat ranks by. Opening the export from a window picks that window's sort column."],
+    },
     {
         path = "export.channel", type = "string", default = "SELF", hidden = true,
         values = CHANNEL_VALUES, sorting = CHANNEL_SORT,

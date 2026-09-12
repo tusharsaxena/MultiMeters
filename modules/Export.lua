@@ -283,7 +283,7 @@ function Export.SessionConfig(win, sortColumn)
         rows    = { maxRows = Const.MAX_ROWS },
         data    = {
             sessionType   = data.sessionType or Const.SESSION_TYPE.Current,
-            sessionID     = data.sessionID,
+            sessionID     = NS.Database.PinnedSegment(data),
             sortColumn    = sortColumn,
             sortMode      = "value",
             sortAscending = false,
@@ -328,7 +328,7 @@ function Export.SessionLabel(win)
     end
 
     local data = cfgOf(win).data or {}
-    if data.sessionID ~= nil then return L["Segment"] end
+    if NS.Database.PinnedSegment(data) ~= nil then return L["Segment"] end
     if data.sessionType == Const.SESSION_TYPE.Overall then return L["Overall"] end
     return L["Current"]
 end

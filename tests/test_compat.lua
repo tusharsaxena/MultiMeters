@@ -477,6 +477,18 @@ test("Compat.IsInHousing follows C_Housing, and is false without it", function()
     assertFalse(loadWithout("C_Housing").NS.Compat.IsInHousing())
 end)
 
+test("Compat.BarInterpolation answers the client's ease-out, and nil below 12.0 (#23)", function()
+    -- `Enum.StatusBarInterpolation` arrived with patch 12.0 and is absent from
+    -- the harness. Nil is the degraded answer, and it is today's snap, because a
+    -- setter handed no interpolation is `Immediate`.
+    -- red under: no shim, or a shim that raises without the enum.
+    assertNil(T.load().NS.Compat.BarInterpolation(), "no enum, no animation")
+    local inst = T.load{ mutate = function(m)
+        m.Enum.StatusBarInterpolation = { Immediate = 0, ExponentialEaseOut = 1 }
+    end }
+    assertEqual(inst.NS.Compat.BarInterpolation(), 1)
+end)
+
 test("Compat: a delve namespace present but missing its member does not raise", function()
     -- A PTR build can have the namespace without one of its functions, which is
     -- the shape that turns a guarded call into an error at the call site.

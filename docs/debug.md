@@ -65,14 +65,53 @@ the suite rather than quietly restoring the flood.
 ## The channels
 
 `NS.Debug(channel, format, ...)` is the sink; the channel is the bracketed name at the head of the
-line. Eighteen exist. The three that dominate a live capture are `Aggregator` (one summary line per
-refresh pass), `Render` (one per window per pass) and `Roster` (one per rebuild).
+line. Nineteen go through it: eighteen from this addon's own call sites, and `Cfg`, which the options
+library logs through the descriptor's `debug` hook. The nineteen do not include `Perf`, whose lines
+the perf harness writes straight to the buffer with `DebugLog:Add`, so the console can show twenty.
+The three that dominate a live capture are `Aggregator` (one summary line per refresh pass),
+`Render` (one per window per pass) and `Roster` (one per rebuild).
 
 A pass whose summary line is **unchanged** from the previous pass is not logged; a change is never
 delayed and never dropped, and a repeat is collapsed to a heartbeat carrying `(xN)`. That behaviour
 is a documented deviation from `debug-logging-§8` — see `## Documented deviations` in
 [ARCHITECTURE.md](ARCHITECTURE.md) — and it exists because four passes a second into a capped buffer
 otherwise leaves a console holding forty seconds of one repeated string.
+
+### Settings lines
+
+Every settings write is logged once, at the write seam (`NS.SetByPath`, `settings/Schema_Paths.lua`),
+as `[Set] <path> = <value>` (`debug-logging-§10`). Two kinds of act are logged differently.
+
+| Act | What the console shows |
+|---|---|
+| One write: a widget, `/mm set`, `/mm reset <path>` | `[Set] <path> = <value>` |
+| A batch that is not a bulk act: a header sort, a resize, a segment pick | one `[Set] <path> = <value>` per row |
+| A page's **Defaults** button | `[Set] reset <page>: N rows` |
+| The Columns page's **Defaults** button (the array and the header rows) | `[Set] reset columns: N rows` |
+| Copy settings from one window onto another | `[Set] copy from '<source>' to '<target>': N rows` |
+| **Reset all settings** or `/mm resetall` once its popup is accepted, or Profiles → **Reset Profile** | `[Set] reset profile '<name>' to defaults` |
+| Profiles → **Copy From** | `[Set] copied profile '<source>' → '<name>'` |
+| A profile switch | `[Profile] switched to '<name>'` |
+
+**A bulk act writes no line per row.** N counts the rows whose stored value actually moved, so a
+row already at its default does not add to it and a second Defaults press reads `0 rows`. The count
+is kept by the seam itself inside `NS.Bulk`'s bracket, not taken from the library. Brackets nest,
+and only the outermost logs. A reactor line a row's `onChange` emits during the act, such as
+`[Test] off`, is not a `[Set]` line, so it stays.
+
+**A profile reset is one line, from the profile handler.** `core/Database.lua`'s `OnProfileReset`
+logs it. The reset-all bracket, which also wraps the session-row walk, adds nothing, and the re-seed's
+`[Init]` trace is quiet during a reset. The line carries no row count. A reset deletes every extra
+window, so "rows changed" is neither cheap nor well defined, and `debug-logging-§10` allows the count
+to be left off. It must never be the profile's stored-row total.
+
+**An act an error stopped still logs its one line, ending ` (stopped by an error)`.** A row that
+raises partway through a Defaults press, a copy or a reset-all closes the bracket anyway. The line
+counts the rows written before the error, the mute is released, and the error is re-raised. The
+next bracket starts unmarked. `OnProfileReset` works the same way: it logs its line after the
+rebuild, as `[Set] reset profile '<name>' to defaults (stopped by an error)` when the rebuild
+raised. A reset-all whose `ResetProfile` itself raised never reaches that handler, so its bracket
+logs `[Set] reset all: N rows (stopped by an error)` instead.
 
 ## The probes
 
@@ -89,7 +128,11 @@ peeled out of `core/Diagnostics.lua` on 2026-09-09 for `layout-§1`, one file ap
 `identity` is the one typed **mid-pull**, by a player who was asked to type it. It reports what it
 needs — the flag on, and a pull running — rather than going quiet when it has neither, and it says
 plainly when a capture proves nothing: an all-plain reading taken after the pull refuses to draw the
-secret-GUID verdict rather than reporting the control as the answer.
+secret-GUID verdict rather than reporting the control as the answer. Its field audit also knows which
+absences a session explains. A player row has no creature id and an NPC row has no GUID, so on an
+all-player column `sourceCreatureID` is missing from every row by construction, and on an all-NPC
+column `sourceGUID` is. Those print in lower case with the reason beside them and stay out of the
+defect tally (issue #48).
 
 ## Rules a line in here obeys
 

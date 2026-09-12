@@ -166,10 +166,9 @@ What comes out is **the whole segment and every stat in the catalog**, not the i
 column set, sort or row cap: what is on screen is a display choice, and "export this" means the data.
 The one thing that *is* inherited is the **segment** — exporting from a window pinned to a stored
 fight exports that fight, not the live pull. The four choices are remembered addon-wide at `export.*`
-in the profile. **The settings panel draws none of them**: `export.metric` has no schema row at all
-(`Export.Open` reseeds it from the invoking window), and `export.channel`, `export.whisperTo` and
-`export.lines` are `hidden` rows filed on page `general`, so `/mm list` and the defaults validator
-see them and no tab ever does. The modal writes all four back through `NS.SetByPath`, which is what
+in the profile. **The settings panel draws none of them**: all four are `hidden` rows filed on page
+`general` (`Export.Open` also reseeds `export.metric` from the invoking window), so `/mm list` and
+the defaults validator see them and no tab ever does. The modal writes all four back through `NS.SetByPath`, which is what
 keeps them one preference rather than two.
 
 **In code**, the entry points are all on `NS.Export`, a plain table on `NS` like `NS.Slash` rather
@@ -302,8 +301,9 @@ somebody exports during a pull.
 ## Add a new setting
 
 One row, one default, one locale entry. A schema row automatically gains `/mm get`, `/mm set`,
-`/mm list`, `/mm reset`, its page widget, the per-page **Defaults** button and the `/mm resetall`
-sweep — so **do not** write a parallel mutator for a field that already has a row.
+`/mm list`, `/mm reset`, its page widget, the per-page **Defaults** button and its place in the
+profile reset behind `/mm resetall`, so **do not** write a parallel mutator for a field that already
+has a row.
 
 **1. `settings/Schema.lua`** — add the row in the block for its page **and tab**: `group` is now the
 tab label, not just a section heading, so the row lands wherever an existing row already carries that
@@ -589,20 +589,27 @@ removed key must fail loudly at load, not quietly ship a name no subscriber is l
 
 ## Add a perf bucket
 
-**1. `core/PerfSetup.lua`** — add the key to the `buckets` array, in report order, declaring nesting
-with `within`.
+**1. `core/PerfSetup.lua`** — add the key to the `buckets` array, in report order. Declare nesting
+with `within` **only** when the bucket runs inside exactly one parent. A bucket reached from more
+than one bracket declares none: `providerRead` runs inside `aggregate` on a refresh and inside
+`targets` on a tooltip.
 
 ```lua
 buckets = {
     { key = "meterEvent" },
     { key = "refresh" },
-    { key = "providerRead", within = "refresh" },
+    { key = "providerRead" },
     { key = "aggregate",    within = "refresh" },
     { key = "render",       within = "refresh" },
     { key = "renderRow",    within = "render"  },
     { key = "tooltip" },
+    { key = "targets",      within = "tooltip" },
 },
 ```
+
+Whatever it declares, the call site passes the bracket it actually runs inside as `Perf.Note`'s
+third argument (`Perf.Note("renderRow", ms, "render")`). That is what lets a capture report the
+nesting as observed rather than claimed. `tests/test_perfsetup.lua` scans every bracket for it.
 
 These keys are the contract the module layer brackets against. **A bracket naming a key that is not
 here still records — it just never appears in the report**, which is the quiet failure this list

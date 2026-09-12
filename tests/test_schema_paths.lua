@@ -1,9 +1,9 @@
 -- tests/test_schema_paths.lua
 --
 -- settings/Schema_Paths.lua: the path machinery, and NS.SetByPath, the ONE seam
--- a schema-row write belongs to (docs/schema.md, "The window registry and its
--- writer", lists the writers that still bypass it). Two ideas here are not
--- standard-issue:
+-- a schema-row write belongs to -- including a write to a window the picker is
+-- not pointed at, through its window-id argument (issue #49). Two ideas here are
+-- not standard-issue:
 --
 --   1. THE WINDOW-RELATIVE PATH MODEL (design 8). A `window.`-prefixed path has
 --      no window in it. It resolves against the SESSION'S ACTIVE WINDOW, so the
@@ -518,4 +518,467 @@ test("Schema: NS.NormalizeColumns is published for the migration ladder", functi
     assertTrue(out[1].enabled)
 
     assertEqual(NS.NormalizeColumns({}), nil, "it refuses what it cannot repair")
+end)
+
+-- ---------------------------------------------------------------------------
+-- The instance argument (issue #49)
+-- ---------------------------------------------------------------------------
+--
+-- The seam used to resolve every `window.*` path against the ACTIVE window and
+-- nothing else, so a writer acting on a window the picker was not pointed at
+-- -- a rename, a copy-from, the lock sweep, a resize drag -- had no way to name
+-- its target and went around the seam instead (architecture-§5). The third
+-- argument is that name. Moving NS.State.activeWindowId so the seam points at
+-- the target would be going around it too, so every case here also proves the
+-- picker did not move.
+
+--- Every CONFIG_CHANGED payload, on a private target so nothing is clobbered.
+local function heardConfig(NS)
+    local seen = {}
+    local bus = NS.NewBusTarget()
+    bus:RegisterMessage(NS.Constants.MSG.CONFIG_CHANGED, function(_, payload)
+        seen[#seen + 1] = payload
+    end)
+    return seen
+end
+
+test("SetByPath: a window id addresses THAT window and leaves the picker where it was", function()
+    -- red under: SetByPath ignoring its third argument.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local before = NS.Database.FindWindow(first).frame.width
+
+    assertTrue(NS.SetByPath("window.frame.width", 480, second))
+    assertEqual(NS.State.activeWindowId, first, "writing another window must not move session state")
+    assertEqual(NS.Database.FindWindow(second).frame.width, 480)
+    assertEqual(NS.Database.FindWindow(first).frame.width, before, "the active window is untouched")
+    assertEqual(NS.GetSetting("window.frame.width", second), 480, "and the reader takes the same id")
+end)
+
+test("SetByPath: the window id reaches onChange and CONFIG_CHANGED", function()
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local seen = heardConfig(NS)
+
+    local row = NS.FindSchemaRow("window.visibility.world")
+    local original, sawWindow = row.onChange, nil
+    row.onChange = function(_, id) sawWindow = id end
+    local ok = NS.SetByPath("window.visibility.world", true, second)
+    row.onChange = original
+
+    assertTrue(ok)
+    assertEqual(sawWindow, second)
+    assertEqual(#seen, 1)
+    assertEqual(seen[1].windowId, second, "only the window that moved re-applies itself")
+end)
+
+test("SetByPath: a window id that names no window is refused, and nothing is written", function()
+    local inst, first = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local before = NS.Database.FindWindow(first).frame.width
+    local seen = heardConfig(NS)
+
+    local ok, err = NS.SetByPath("window.frame.width", 480, 9999)
+    assertFalse(ok, "a stale id must not fall back to the active window")
+    assertTrue(type(err) == "string")
+    assertEqual(NS.Database.FindWindow(first).frame.width, before)
+    assertEqual(#seen, 0)
+end)
+
+test("SetByPath: a global row ignores the window id", function()
+    local inst, _, second = twoWindows()
+    local NS = inst.NS
+    local seen = heardConfig(NS)
+    assertTrue(NS.SetByPath("enabled", false, second))
+    assertEqual(NS.db.profile.enabled, false)
+    assertEqual(seen[1].windowId, nil, "no window moved")
+end)
+
+test("SetByPath: window.columns takes the window id too", function()
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local cols = {}
+    for i, c in ipairs(NS.Database.FindWindow(first).columns) do
+        cols[i] = { stat = c.stat, enabled = c.enabled }
+    end
+    cols[1].enabled, cols[#cols].enabled = true, true
+    local lastStat = cols[#cols].stat
+
+    assertTrue(NS.SetByPath("window.columns", cols, second))
+    local shownOnSecond = false
+    for _, c in ipairs(NS.Database.FindWindow(second).columns) do
+        if c.stat == lastStat and c.enabled then shownOnSecond = true end
+    end
+    assertTrue(shownOnSecond, "the array landed on the window the id names")
+    assertEqual(NS.State.activeWindowId, first)
+end)
+
+test("SetByPaths: validates every write before storing any of them", function()
+    -- A batch is one write as far as a reader can tell, so a bad value in it
+    -- stores NOTHING rather than half of it.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local w = NS.Database.FindWindow(second)
+    local before = w.frame.width
+    local seen = heardConfig(NS)
+
+    local ok, err = NS.SetByPaths({
+        { "window.frame.width", 400 },
+        { "window.frame.scale", 99 },     -- outside the row's 0.5..2 validator
+    }, second)
+    assertFalse(ok)
+    assertTrue(tostring(err):find("window.frame.scale", 1, true) ~= nil, "the refusal names the path")
+    assertEqual(w.frame.width, before, "the valid half was not stored either")
+    assertEqual(#seen, 0)
+end)
+
+--- Every debug line from here on, tag first; call the answer to stop listening.
+local function heardDebug(NS)
+    local original, lines = NS.Debug, {}
+    NS.Debug = function(tag, fmt, ...) lines[#lines + 1] = { tag, fmt, ... } end
+    return lines, function() NS.Debug = original end
+end
+
+test("SetByPaths: one [Set] line PER ROW, and one CONFIG_CHANGED for the whole batch", function()
+    -- debug-logging-§10 as ruled 2026-09-12: a batch that is not a bulk copy or
+    -- reset logs every row it writes as `[Set] <path> = <value>`, even though
+    -- it announces once. A `[Set] resize: 2 rows` line hides the values.
+    -- red under: one `"%s: %d rows"` line naming the batch.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local seen = heardConfig(NS)
+    local lines, restore = heardDebug(NS)
+
+    local ok = NS.SetByPaths({
+        { "window.frame.width", 400 },
+        { "window.frame.height", 300 },
+    }, second)
+    -- `window.rows.*` would NOT do here: the Row tab lives on the Frame page,
+    -- so its rows are page "frame" too. Bars is a different page.
+    local okMixed = NS.SetByPaths({
+        { "window.frame.width", 410 },
+        { "window.bars.border", true },
+    }, second)
+    restore()
+
+    assertTrue(ok and okMixed)
+    assertEqual(NS.Database.FindWindow(second).frame.height, 300)
+    assertEqual(NS.Database.FindWindow(second).bars.border, true)
+    assertEqual(#lines, 4, "one line per row, and nothing else")
+    local want = {
+        { "window.frame.width", 400 }, { "window.frame.height", 300 },
+        { "window.frame.width", 410 }, { "window.bars.border", true },
+    }
+    for i, w in ipairs(want) do
+        assertEqual(lines[i][1], "Set")
+        assertEqual(lines[i][2], "%s = %s")
+        assertEqual(lines[i][3], w[1])
+        assertEqual(lines[i][4], w[2])
+    end
+    assertEqual(#seen, 2, "one announcement per batch")
+    assertEqual(seen[1].windowId, second)
+    assertEqual(seen[1].section, "frame", "a batch inside one page names that page")
+    assertEqual(seen[2].section, nil, "a batch across pages names none, so no subscriber skips it")
+    assertEqual(NS.State.activeWindowId, first)
+end)
+
+test("SetByPaths: a BULK copy or reset logs ONE flow line and no [Set] line per row", function()
+    -- debug-logging-§10 as ruled 2026-09-12: a bulk copy or reset through the
+    -- helper is one debug-logging-§8 flow line naming the act, its source and
+    -- target, and how many rows it wrote. Seventy `[Set]` lines for one click
+    -- would evict the rest of the log. The announcement is still one.
+    -- THE TAG IS [Set] (standard v2.44.0, the owner's final ruling): the one
+    -- line is `[Set] <act> <scope>: N rows`, never a [Bulk] or any other tag.
+    -- red under: a summary argument that is ignored, or logged under `Bulk`.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local seen = heardConfig(NS)
+    local lines, restore = heardDebug(NS)
+
+    local ok = NS.SetByPaths({
+        { "window.frame.width", 400 },
+        { "window.frame.height", 300 },
+        { "window.bars.border", true },
+    }, second, "copy from 'A' to 'B'")
+    restore()
+
+    assertTrue(ok)
+    assertEqual(NS.Database.FindWindow(second).frame.width, 400)
+    assertEqual(#lines, 1, "one line for the whole bulk write")
+    assertEqual(lines[1][1], "Set", "the bulk line is a [Set] line")
+    local text = lines[1][2]:format(lines[1][3], lines[1][4])
+    assertEqual(text, "copy from 'A' to 'B': 3 rows")
+    assertEqual(#seen, 1)
+    assertEqual(seen[1].windowId, second)
+end)
+
+test("SetByPaths: a bulk copy counts only the rows whose stored value CHANGED", function()
+    -- debug-logging-§10: N is the rows the act actually wrote, not the rows in
+    -- its scope. A row already holding the value it is handed is not counted,
+    -- and neither is the whole column array when it comes back identical.
+    -- red under: N = #writes, which says 3 here.
+    local inst, _, second = twoWindows()
+    local NS = inst.NS
+    local w = NS.Database.FindWindow(second)
+    local cols = {}
+    for i, c in ipairs(w.columns) do cols[i] = { stat = c.stat, enabled = c.enabled } end
+    local lines, restore = heardDebug(NS)
+
+    local ok = NS.SetByPaths({
+        { "window.frame.width", w.frame.width },
+        { "window.frame.height", 277 },
+        { "window.columns", cols },
+    }, second, "copy from 'A' to 'B'")
+    restore()
+
+    assertTrue(ok)
+    assertEqual(#lines, 1)
+    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "copy from 'A' to 'B': 1 rows")
+end)
+
+-- ---------------------------------------------------------------------------
+-- NS.Bulk: the one mute every bulk act shares
+-- ---------------------------------------------------------------------------
+
+test("NS.Bulk: a nested bracket logs ONCE, at the outermost close, summing every level", function()
+    -- The Columns page brackets its own array write AROUND the library's page
+    -- bracket (Options minor 16), so brackets nest. Only the outermost close
+    -- may emit, with what every level changed, and a row written twice counts
+    -- once. red under: a close that emits at any depth (two lines), or a count
+    -- taken from the library's bulkEnd argument (which says 7 here).
+    local inst = T.load()
+    local NS = inst.NS
+    local lines, restore = heardDebug(NS)
+
+    NS.Bulk.run("reset", "columns", function()
+        assertTrue(NS.SetByPath("window.frame.width", 401))
+        NS.Bulk.begin("reset", "columns")
+        assertTrue(NS.SetByPath("window.frame.height", 277))
+        assertTrue(NS.SetByPath("window.frame.height", 278))
+        assertTrue(NS.SetByPath("window.bars.border", false))   -- already its default
+        NS.Bulk.finish("reset", "columns", 7, nil, { profileReset = false })
+    end)
+    restore()
+
+    assertEqual(#lines, 1, "one line for the whole nested act, and no [Set] line per row")
+    assertEqual(lines[1][1], "Set")
+    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "reset columns: 2 rows")
+end)
+
+test("NS.Bulk: a level that reports a profile reset silences the whole bracket", function()
+    -- A whole-profile reset is logged ONCE, by the profile-event handler, and
+    -- no bulk bracket may add a second line. The mute is still released.
+    -- red under: finish ignoring info.profileReset.
+    local inst = T.load()
+    local NS = inst.NS
+    local lines, restore = heardDebug(NS)
+
+    NS.Bulk.begin("reset", "all")
+    assertTrue(NS.SetByPath("window.frame.width", 401))
+    NS.Bulk.finish("reset", "all", 1, nil, { profileReset = true })
+    assertEqual(#lines, 0, "the bracket added a line beside the handler's")
+
+    assertTrue(NS.SetByPath("window.frame.width", 402))
+    restore()
+    assertEqual(#lines, 1, "the mute stuck after the bracket closed")
+    assertEqual(lines[1][2], "%s = %s")
+end)
+
+test("NS.Bulk: a raising act still closes the bracket, logs what it changed, and re-raises", function()
+    -- The library's own rule, kept for the host's brackets: a begun bracket
+    -- always closes, so a mute cannot stick, and the error is the same value.
+    -- The one line says the act did not finish, and the next bracket starts
+    -- clean. red under: running the act without pcall, a close that ignores the
+    -- failure, or a failure flag that outlives its bracket.
+    local inst = T.load()
+    local NS = inst.NS
+    local lines, restore = heardDebug(NS)
+    local boom = {}
+
+    local ok, err = pcall(NS.Bulk.run, "reset", "frame", function()
+        assertTrue(NS.SetByPath("window.frame.width", 401))
+        error(boom)
+    end)
+    assertEqual(ok, false)
+    assertEqual(err, boom, "the raised value comes back unwrapped")
+    assertEqual(#lines, 1)
+    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "reset frame: 1 rows (stopped by an error)")
+
+    assertTrue(NS.SetByPath("window.frame.width", 402))
+    assertEqual(#lines, 2, "the mute stuck after a raise")
+
+    NS.Bulk.run("reset", "frame", function() assertTrue(NS.SetByPath("window.frame.width", 403)) end)
+    restore()
+    assertEqual(lines[3][2]:format(lines[3][3], lines[3][4]), "reset frame: 1 rows",
+        "the failure marked the next bracket too")
+end)
+
+--- Only the [Set] lines of a heardDebug capture, formatted.
+local function setLines(lines)
+    local out = {}
+    for _, line in ipairs(lines) do
+        if line[1] == "Set" then out[#out + 1] = line[2]:format(select(3, unpack(line))) end
+    end
+    return out
+end
+
+test("NS.Bulk: a library Defaults press that raises logs its one line, marked, and re-raises", function()
+    -- Options minor 16 hands bulkEnd the error and then re-raises it. The host's
+    -- close must mark the line rather than read as a clean reset of N rows, and
+    -- release the mute. red under: bulkEnd dropping its `err` argument.
+    local inst = T.load()
+    local NS = inst.NS
+    assertTrue(NS.SetByPath("window.frame.height", 277))
+    local boom, real = {}, NS.ApplyDefault
+    NS.ApplyDefault = function(row)
+        real(row)
+        if row.path == "window.frame.height" then error(boom) end
+    end
+    local lines, restore = heardDebug(NS)
+
+    local ok, err = pcall(NS.Helpers.RestoreDefaults, "frame", nil)
+    NS.ApplyDefault = real
+    assertEqual(ok, false)
+    assertEqual(err, boom, "the library re-raises the row's error unwrapped")
+    assertEqual(table.concat(setLines(lines), " | "), "reset frame: 1 rows (stopped by an error)")
+
+    assertTrue(NS.SetByPath("window.frame.width", 402))
+    restore()
+    assertEqual(lines[#lines][2], "%s = %s", "the mute stuck after a raising press")
+end)
+
+test("NS.Bulk: a ResetProfile that raises leaves the reset-all's own line, marked", function()
+    -- The library sets info.profileReset only once resetProfile RETURNS, so a
+    -- reset that raised may never have reached OnProfileReset. Then the bracket's
+    -- line is the only record, and it must say the act stopped.
+    -- red under: runBulk's close ignoring the failure of a reset-all.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.State.debug = true
+    assertTrue(NS.SetByPath("state.testMode", true))
+    local boom = {}
+    NS.db.ResetProfile = function() error(boom) end
+    local lines, restore = heardDebug(NS)
+
+    local ok, err = pcall(NS.Helpers.RestoreAllDefaults)
+    assertEqual(ok, false)
+    assertEqual(err, boom, "the reset's error comes back unwrapped")
+    assertEqual(table.concat(setLines(lines), " | "), "reset all: 1 rows (stopped by an error)")
+
+    NS.Helpers.RestoreDefaults("frame", nil)
+    restore()
+    local set = setLines(lines)
+    assertEqual(set[#set], "reset frame: 0 rows", "the failure outlived its bracket")
+end)
+
+test("SetByPaths: every written row's onChange still fires, with the window id", function()
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(first)
+    local calls = {}
+    local rows = { NS.FindSchemaRow("window.visibility.world"), NS.FindSchemaRow("window.visibility.dungeon") }
+    local originals = {}
+    for i, row in ipairs(rows) do
+        originals[i] = row.onChange
+        row.onChange = function(v, id) calls[#calls + 1] = { row.path, v, id } end
+    end
+    local ok = NS.SetByPaths({
+        { "window.visibility.world", true },
+        { "window.visibility.dungeon", false },
+    }, second)
+    for i, row in ipairs(rows) do row.onChange = originals[i] end
+
+    assertTrue(ok)
+    assertEqual(#calls, 2)
+    assertEqual(calls[1][1], "window.visibility.world")
+    assertEqual(calls[2][2], false)
+    assertEqual(calls[2][3], second)
+end)
+
+-- ---------------------------------------------------------------------------
+-- The window's own header controls (issue #50)
+-- ---------------------------------------------------------------------------
+--
+-- A column-header click CHOOSES the sort and the segment menu's Current and
+-- Overall entries CHOOSE the session type, so under architecture-§5 all four
+-- fields are preferences with rows, not a remembered view. The controls sit on
+-- a window rather than on the panel, so each write is addressed to that window
+-- by id, whichever window the picker is pointed at.
+
+test("A header click writes the sort through the seam, for the window clicked (issue #50)", function()
+    -- red under: `data.sortColumn = key` written straight into the config.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(second)
+    local cfg, other = NS.Database.FindWindow(first), NS.Database.FindWindow(second)
+    local window = NS.Window.New(cfg)
+    local otherColumn = other.data.sortColumn
+    local seen = heardConfig(NS)
+
+    assertTrue(window:SortByColumn("Interrupts"))
+    assertEqual(#seen, 1, "one announcement for the whole sort, not one per field")
+    assertEqual(seen[1].windowId, first)
+    assertEqual(cfg.data.sortColumn, "Interrupts")
+    assertEqual(cfg.data.sortMode, "value")
+    assertEqual(cfg.data.sortAscending, false)
+    assertEqual(other.data.sortColumn, otherColumn, "the picker's window is not the one clicked")
+    assertEqual(NS.State.activeWindowId, second, "and the picker did not move")
+
+    assertTrue(window:SortByColumn("name"))
+    assertEqual(#seen, 2, "the Player header writes through the seam too")
+    assertEqual(cfg.data.sortMode, "name")
+    assertEqual(cfg.data.sortAscending, true)
+end)
+
+test("Picking Current or Overall writes the session type through the seam (issue #50)", function()
+    -- The pinned segment it clears is a row too, cleared in the same batch.
+    -- red under: `data.sessionType = sessionType` written straight into the config.
+    local inst, first, second = twoWindows()
+    local NS = inst.NS
+    NS.State.SetActiveWindow(second)
+    local cfg = NS.Database.FindWindow(first)
+    local window = NS.Window.New(cfg)
+    window:SetSegment(4)
+    local seen = heardConfig(NS)
+
+    window:SetSessionType(NS.Constants.SESSION_TYPE.Current)
+    assertEqual(#seen, 1)
+    assertEqual(seen[1].windowId, first)
+    assertEqual(cfg.data.sessionType, NS.Constants.SESSION_TYPE.Current)
+    assertEqual(cfg.data.sessionID, NS.Constants.NO_SEGMENT, "the pin is cleared in the same batch")
+    assertEqual(window.sessionType, NS.Constants.SESSION_TYPE.Current)
+end)
+
+test("The sort and segment batches log one [Set] line per row they write", function()
+    -- Neither is a bulk copy or reset, so each row is its own `[Set]` line
+    -- (debug-logging-§10), and each batch still announces once.
+    -- red under: `[Set] sort: 3 rows` and `[Set] segment: 2 rows`.
+    local inst, first = twoWindows()
+    local NS = inst.NS
+    local window = NS.Window.New(NS.Database.FindWindow(first))
+    local seen = heardConfig(NS)
+    local lines, restore = heardDebug(NS)
+
+    window:SortByColumn("Interrupts")
+    window:SetSessionType(NS.Constants.SESSION_TYPE.Current)
+    restore()
+
+    local paths = {}
+    for _, line in ipairs(lines) do
+        if line[1] == "Set" then
+            assertEqual(line[2], "%s = %s")
+            paths[#paths + 1] = line[3]
+        end
+    end
+    assertEqual(table.concat(paths, " "),
+        "window.data.sortColumn window.data.sortMode window.data.sortAscending"
+        .. " window.data.sessionID window.data.sessionType")
+    assertEqual(#seen, 2, "one announcement per batch")
 end)

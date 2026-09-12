@@ -177,7 +177,7 @@ end
 --- switching to the live pull's the moment the next one starts.
 local function sessionIDOf(window)
     local data = type(window) == "table" and window.data or nil
-    return data and data.sessionID or nil
+    return NS.Database.PinnedSegment(data)
 end
 
 --- Announce a change to whoever is drawing this window.
@@ -697,7 +697,7 @@ function DrillDown:BuildRows(window)
     -- and ignoring it would be a client read per refresh pass for nothing.
     if view.kind == "deaths" then
         local deathList = deathRows(view)
-        if t0 then Perf.Note("aggregate", debugprofilestop() - t0) end
+        if t0 then Perf.Note("aggregate", debugprofilestop() - t0, "refresh") end
         if State.debug and Debug then
             Debug("DrillDown", "rows window=%s stat=%s kind=deaths n=%d",
                 tostring(windowIdOf(window)), view.statKey, #deathList)
@@ -729,7 +729,7 @@ function DrillDown:BuildRows(window)
         end
     end
 
-    if t0 then Perf.Note("aggregate", debugprofilestop() - t0) end
+    if t0 then Perf.Note("aggregate", debugprofilestop() - t0, "refresh") end
     if State.debug and Debug then
         Debug("DrillDown", "rows window=%s stat=%s n=%d",
             tostring(windowIdOf(window)), view.statKey, #rows)

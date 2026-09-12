@@ -231,6 +231,27 @@ local PROBE_TWO      = "47.50K"
 local PROBE_SMALL          = 0.5
 local PROBE_SMALL_EXPECTED = "0"
 
+-- The third probe, for ANY rung that claims a floor: a rate with a fraction, the
+-- exact shape a formatter with no rule below 1000 renders digit for digit. The
+-- K probe cannot see a floor at all -- 47500 renders "47.5K" with or without
+-- one under it -- so a floored rung accepted on that alone could be a floorless
+-- rung the client quietly took. It is core/Diagnostics.lua's first
+-- NUMBER_PROBES value, so the in-game report and this probe ask the client the
+-- same question.
+local PROBE_RATE          = 470.66666666667
+local PROBE_RATE_EXPECTED = "470"
+
+--- Whether `f` renders `v` as exactly `want`.
+---
+--- THE EXACT STRING, not "does it contain a decimal point". The looser check is
+--- what let a wrong ladder through: under the previous divisors 47500 rendered
+--- "4.7K", which has a point, so the probe said yes to an answer that was off by
+--- two orders of magnitude.
+local function rendersAs(f, v, want)
+    local ok, out = pcall(f.FormatNumber, f, v)
+    return ok and out == want
+end
+
 --- Whether `f` is actually formatting the way the ladder above asks.
 ---
 --- SetBreakpoints RETURNING WITHOUT ERROR IS NOT PROOF THAT IT TOOK. The live
@@ -240,30 +261,27 @@ local PROBE_SMALL_EXPECTED = "0"
 --- assumed, on a number this addon owns.
 ---
 --- @param f table
+--- @param alsoSmall boolean  also prove the sub-one floor (PROBE_SMALL)
+--- @param expected string|nil
+--- @param alsoRate boolean   also prove there is a floor at all (PROBE_RATE)
 --- @return boolean
-local function ladderTook(f, alsoSmall, expected)
-    local ok, out = pcall(f.FormatNumber, f, PROBE_VALUE)
-    if not ok or type(out) ~= "string" then return false end
-    -- THE EXACT STRING, not "does it contain a decimal point".
-    --
-    -- The looser check is what let a wrong ladder through: under the previous
-    -- divisors 47500 rendered "4.7K", which has a point, so the probe said yes to
-    -- an answer that was off by two orders of magnitude.
-    if out ~= (expected or PROBE_EXPECTED) then return false end
-
-    if alsoSmall then
-        local okSmall, small = pcall(f.FormatNumber, f, PROBE_SMALL)
-        if not okSmall or small ~= PROBE_SMALL_EXPECTED then return false end
-    end
+local function ladderTook(f, alsoSmall, expected, alsoRate)
+    if not rendersAs(f, PROBE_VALUE, expected or PROBE_EXPECTED) then return false end
+    if alsoSmall and not rendersAs(f, PROBE_SMALL, PROBE_SMALL_EXPECTED) then return false end
+    if alsoRate and not rendersAs(f, PROBE_RATE, PROBE_RATE_EXPECTED) then return false end
     return true
 end
 
 --- Put our ladder on `f`, falling back to the client's own.
 ---
---- FOUR outcomes, in descending order of how much we like them: our full ladder;
---- our ladder without its floor entry (a `breakpoint = 0` row is the most likely
---- reason the client would reject the array wholesale); Blizzard's defaults; or a
---- formatter with none, which is the v0.1.0 behavior and abbreviates nothing.
+--- SIX candidates, in descending order of how much we like them: our full
+--- ladder; our ladder over an integer floor; our ladder with no floor;
+--- Blizzard's defaults over our sub-one floor; Blizzard's defaults over the
+--- integer floor; Blizzard's defaults bare. Past those, a formatter with none,
+--- which is the v0.1.0 behavior and abbreviates nothing. Only the floorless
+--- ladder and the bare defaults have no rule below 1000, and each is the last
+--- choice on its side, reached only by a client that refuses a floor outright --
+--- the difference between a rate reading `411` and `411.90476...` (issue #26).
 ---
 --- Each rung is CHECKED, not assumed — see ladderTook.
 --- Put one candidate array on `f` and report whether it actually took.
@@ -271,9 +289,33 @@ end
 --- Both halves matter and neither is enough alone: SetBreakpoints can refuse the
 --- array (the pcall), and it can accept the call while keeping its own rules
 --- (the probe). One rung, one question.
-local function tryLadder(f, list, probeSmall, expected)
+local function tryLadder(f, list, probeSmall, expected, probeRate)
     if not pcall(f.SetBreakpoints, f, list) then return false end
-    return ladderTook(f, probeSmall, expected)
+    return ladderTook(f, probeSmall, expected, probeRate)
+end
+
+-- The two floors a candidate can carry below the first abbreviation. The
+-- sub-one floor is the ladder's own first rung; the integer floor is the same
+-- rule starting at 1, for a client that refuses a fractional breakpoint.
+local FLOOR_SUB_ONE = BREAKPOINTS[1]
+local FLOOR_ONE     = { breakpoint = 1, abbreviation = "", significandDivisor = 1,
+                        fractionDivisor = 1, abbreviationIsGlobal = false }
+
+--- `floor` followed by every rung of `list`, or nil when there is no list.
+local function withFloor(floor, list)
+    if type(list) ~= "table" then return nil end
+    local out = { floor }
+    for i = 1, #list do out[#out + 1] = list[i] end
+    return out
+end
+
+--- Put ONE floor on the rule formatter `full` mode uses, and report whether it
+--- actually took -- measured on PROBE_RATE, for the reason ladderTook gives.
+local function tryFloor(f, floor, probeSmall)
+    if not pcall(f.SetBreakpoints, f, { floor }) then return false end
+    if not rendersAs(f, PROBE_RATE, PROBE_RATE_EXPECTED) then return false end
+    if probeSmall and not rendersAs(f, PROBE_SMALL, PROBE_SMALL_EXPECTED) then return false end
+    return true
 end
 
 --- @param f table
@@ -297,30 +339,47 @@ local function applyBreakpoints(f, ladder, expected)
     -- Derived from whichever ladder was asked for, so the decimal count survives
     -- the fallback: a client that refuses the sub-one floor should still get the
     -- number of decimals the player chose.
-    local integerFloor = { { breakpoint = 1, abbreviation = "", significandDivisor = 1,
-                             fractionDivisor = 1, abbreviationIsGlobal = false } }
     local withoutFloor = {}
-    for i = 2, #ladder do
-        integerFloor[#integerFloor + 1] = ladder[i]
-        withoutFloor[#withoutFloor + 1] = ladder[i]
-    end
+    for i = 2, #ladder do withoutFloor[#withoutFloor + 1] = ladder[i] end
 
     -- The first rung is probed for the SUB-ONE case as well, because that is the
-    -- only thing distinguishing it from the second.
-    if tryLadder(f, ladder, true, expected) then return true end
+    -- only thing distinguishing it from the second. And every rung that carries
+    -- a floor -- this one and three below -- is probed on PROBE_RATE too: the K
+    -- probe passes with or without a floor under it, so it alone cannot tell a
+    -- floored rung from a floorless one the client quietly took.
+    if tryLadder(f, ladder, true, expected, true) then return true end
 
+    -- THE CLIENT'S DEFAULTS NEVER GO ON BARE WHILE A FLOOR MIGHT GO WITH THEM
+    -- (issue #26). Blizzard's ladder starts at 1000, so installed alone it has
+    -- no rule for a rate below that and the formatter falls through to a plain
+    -- render: `411.90476190...` in a 92px cell. The first two default rungs
+    -- carry our floor under the client's own K/M/B, which is what a client that
+    -- refuses OUR abbreviations but not an empty one ends up with. Bare defaults
+    -- stay last, for a client that refuses any floor at all.
+    --
+    -- Every default rung drops the decimal count with everything else: these are
+    -- the client's own rules, so they are probed against the client's own string
+    -- rather than against what was asked for.
+    local defaults = Compat.GetDefaultAbbreviationBreakpoints()
+    --
+    -- Each rung is { list, log line, K-probe string, probe sub-one, probe rate };
+    -- the last is set on exactly the rungs that carry a floor.
     local rungs = {
-        { integerFloor, "sub-one floor rejected; values below 1 will show their digits", expected },
-        { withoutFloor, "breakpoint floor rejected; using the ladder without it", expected },
-        -- The LAST rung drops the decimal count with everything else: these are
-        -- the client's own rules, so it is probed against the client's own string
-        -- rather than against what was asked for.
-        { Compat.GetDefaultAbbreviationBreakpoints(),
-          "custom breakpoints refused; using the client's defaults", PROBE_WHOLE },
+        { withFloor(FLOOR_ONE, withoutFloor),
+          "sub-one floor rejected; values below 1 will show their digits", expected, false, true },
+        { withoutFloor, "breakpoint floor rejected; values below 1000 will show their digits", expected },
+        { withFloor(FLOOR_SUB_ONE, defaults),
+          "custom breakpoints refused; using the client's defaults over our floor", PROBE_WHOLE, true, true },
+        { withFloor(FLOOR_ONE, defaults),
+          "custom breakpoints refused; using the client's defaults over an integer floor", PROBE_WHOLE,
+          false, true },
+        { defaults,
+          "custom breakpoints and every floor refused; values below 1000 will show their digits",
+          PROBE_WHOLE },
     }
 
     for _, rung in ipairs(rungs) do
-        if rung[1] and tryLadder(f, rung[1], false, rung[3]) then
+        if rung[1] and tryLadder(f, rung[1], rung[4], rung[3], rung[5]) then
             if State.debug then NS.Debug("Format", rung[2]) end
             return true
         end
@@ -397,20 +456,24 @@ local function plain()
     local f = cache.plain
     if f == nil then
         f = Compat.CreateNumericRuleFormatter()
-        if f and type(f.SetBreakpoints) == "function" then
-            -- ONE entry, and it is not "no breakpoints". "Full" means every
-            -- DIGIT, not every decimal place: `amountPerSecond` is a float, and
-            -- an unbounded render of 53571.392857143 is fifteen characters in a
-            -- 92px cell. Dividing by 1 with no fraction keeps the whole number
-            -- and drops the tail.
-            -- 0.001 rather than 0, for the reason the ladder above gives: the
-            -- client refuses a `breakpoint = 0` row and takes the array with it,
-            -- which left THIS formatter with no rules at all — so "full" mode
-            -- rendered the very float it exists to trim.
-            pcall(f.SetBreakpoints, f, {
-                { breakpoint = 0.001, abbreviation = "", significandDivisor = 1,
-                  fractionDivisor = 1, abbreviationIsGlobal = false },
-            })
+        -- ONE entry, and it is not "no breakpoints". "Full" means every DIGIT,
+        -- not every decimal place: `amountPerSecond` is a float, and an
+        -- unbounded render of 53571.392857143 is fifteen characters in a 92px
+        -- cell. Dividing by 1 with no fraction keeps the whole number and drops
+        -- the tail.
+        --
+        -- 0.001 rather than 0, for the reason the ladder above gives: the client
+        -- refuses a `breakpoint = 0` row and takes the array with it. And
+        -- PROBED, with the integer floor behind it (issue #26): this formatter
+        -- used to set its one rung and trust it, so a client that refused a
+        -- fractional breakpoint left it with no rule at all and "full" rendered
+        -- the very float it exists to trim, with nothing to fall back to.
+        if f and type(f.SetBreakpoints) == "function"
+            and not tryFloor(f, FLOOR_SUB_ONE, true)
+            and not tryFloor(f, FLOOR_ONE, false)
+            and State.debug
+        then
+            NS.Debug("Format", "full: no floor took; rates will show their digits")
         end
         cache.plain = f or false
     end
