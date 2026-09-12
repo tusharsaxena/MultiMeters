@@ -538,10 +538,11 @@ badge and any count quoted in the docs must agree with it.
 - ShouldShow: the context rules are Visibility's, consulted rather than reimplemented
 - ShouldShow: a missing Visibility module fails OPEN
 
-### test_vendor_sync.lua (2)
+### test_vendor_sync.lua (3)
 
 - libs/LibKa0s is the LibKa0s release CLAUDE.md says this addon bundles
 - tests/_kit is the test kit that shipped with that release
+- the automated-test runner is recorded executable (100755)
 
 ### test_format.lua (39)
 
@@ -1966,7 +1967,7 @@ badge and any count quoted in the docs must agree with it.
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
 | test_lifecycle.lua | 29 |
-| test_vendor_sync.lua | 2 |
+| test_vendor_sync.lua | 3 |
 | test_format.lua | 39 |
 | test_provider.lua | 78 |
 | test_roster.lua | 39 |
@@ -2002,4 +2003,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 27 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1748** |
+| **Total** | **1749** |
