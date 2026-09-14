@@ -487,9 +487,12 @@ would pull an untested library release for the sake of a clean diff. That was th
 section was written, at `../LibKa0s` **v1.27.0** against a [`CLAUDE.md`](../CLAUDE.md) naming
 **v1.26.0**, with hundreds of differing lines on each payload and nothing wrong.
 
-Measured 2026-09-13 the two agree: `CLAUDE.md` names **v1.34.0**, the sibling checkout sits on
-**v1.34.0**, and all four commands above report nothing — content *and* bytes, for both payloads.
-That is the other normal state, and it is worth knowing it reads identically to never having looked.
+Measured 2026-09-14 the two all but agree: `CLAUDE.md` names **v1.35.0**, and the sibling checkout
+sits one docs-only merge past that tag (`1a1604a`). Both `libs/` commands report nothing — content
+*and* bytes. Both kit commands report `README.md` alone: repository counts in its prose that
+LibKa0s re-measured after tagging, which is the first state above in miniature. The tag comparison
+below is empty for both payloads. Full agreement is the other normal state, and it is worth knowing
+it reads identically to never having looked.
 
 **The authoritative comparison is against the tag `CLAUDE.md` names**, and that one must be empty at
 every commit:
