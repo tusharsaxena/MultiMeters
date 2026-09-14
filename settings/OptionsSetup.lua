@@ -347,9 +347,16 @@ if not lib then
         "SetRenderer", "RefreshAllPanels", "RefreshScalars", "RefreshPanel", "RestoreDefaults",
         "PatchAlwaysShowScrollbar", "RegisterOptionsPage", "CreateOptionsPanel",
         "SetChromeHeight", "TabStrip", "PageBanner", "RenderTabbedSchema",
+        "ChoiceGrid", "IdInput", "IdList",
     }) do
         Helpers[name] = function() end
     end
+    -- The id-picker's pure lookups (Options minor 18). No page calls them yet; with no
+    -- library there is nothing to resolve against, so nil ("no id") is the inert answer,
+    -- and an empty hint table the inert vocabulary. No copy of the library's kinds.
+    Helpers.ResolveId         = function() return nil end
+    Helpers.UnnamedCandidates = function() return nil end
+    Helpers.ID_NAME_HINT      = {}
     Helpers.__pages    = function() return {} end
     Helpers.__panels   = function() return {} end
     Helpers.__panelFor = function() return nil end

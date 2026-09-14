@@ -726,11 +726,11 @@ which is why bumping one without the other fails the suite. **Bump the line and 
 commit.**
 
 **3. Check the load list.** `tests/run.lua` derives `LIB_FILES` from `libs/LibKa0s/LibKa0s.xml` and
-then asserts the eight expected majors are present by name:
+then asserts the nine expected files are present by name:
 
 ```
 Core.lua  DebugLog.lua  Slash.lua  Options.lua
-OptionsWidgets.lua  OptionsScroll.lua  Perf.lua  PerfPanel.lua
+OptionsWidgets.lua  OptionsCompose.lua  OptionsScroll.lua  Perf.lua  PerfPanel.lua
 ```
 
 That assertion is not decoration. A short load list does not raise — it leaves the dependent major
