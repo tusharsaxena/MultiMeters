@@ -1840,7 +1840,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (55)
+### test_slash.lua (59)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1864,6 +1864,10 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `export` names a window it cannot find rather than opening another
 - Slash: `export` refuses while the game restricts combat data
 - Slash: the library did not register `perf` behind the addon's back
+- Slash: a bare `/mm`, and a whitespace-only one, run the `config` verb with ""
+- Slash: a bare `/mm` opens the settings panel, the same act as `/mm config`
+- Slash: a bare `/mm` lands on the top-level category, not a sub-page
+- Slash: `/mm help` prints every verb, and does not open the panel
 - Slash: `lock` sets, and a bare `lock` toggles
 - Slash: `test` repaints the panel on both edges, so the Test mode box follows the verb
 - Slash: `test` refuses to START in combat with one line, and still stops there
@@ -1995,7 +1999,7 @@ badge and any count quoted in the docs must agree with it.
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
 
-### test_degraded.lua (29)
+### test_degraded.lua (30)
 
 - Degraded: the library really is absent, so every case below is measuring a stub
 - Degraded: every seam soft-optionals its major, so a missing library is not a load error
@@ -2008,7 +2012,8 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: core/DebugLogSetup.lua takes its fallback and the flag still works
 - Degraded: settings/Slash.lua takes its fallback
 - Degraded: settings/OptionsSetup.lua takes its fallback and says the panel is unavailable
-- Degraded: `/mm` with no arguments still prints help
+- Degraded: a bare `/mm` runs `config`, which names the unavailable panel
+- Degraded: `/mm help` still prints every verb
 - Degraded: every declared verb is reachable and none of them raises
 - Degraded: the schema verbs NAME the missing library rather than going quiet
 - Degraded: the host verbs are untouched, because they never went to the library
@@ -2094,11 +2099,11 @@ badge and any count quoted in the docs must agree with it.
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 55 |
+| test_slash.lua | 59 |
 | test_options_panel.lua | 42 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
-| test_degraded.lua | 29 |
+| test_degraded.lua | 30 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1843** |
+| **Total** | **1848** |

@@ -221,15 +221,49 @@ end)
 
 -- ── /mm still answers ───────────────────────────────────────────────────────
 
-test("Degraded: `/mm` with no arguments still prints help", function()
-    -- `/mm` is registered unconditionally in Sl:Register, so something has to
-    -- answer it. Swallowing the verb looks like the addon is not installed.
+test("Degraded: a bare `/mm` runs `config`, which names the unavailable panel", function()
+    -- slash-commands-§4 holds on this path too: the stub mirrors LibKa0s-Slash
+    -- minor 11, so an empty or whitespace-only `/mm` is the `config` verb, called
+    -- with "". With no library that verb answers with one honest line, which is
+    -- still an answer -- swallowing the verb would look like the addon is not
+    -- installed.
+    -- red under: the stub's `if raw == "" then return stub.PrintHelp() end`.
+    local inst = degradedInstance()
+    local entry
+    for _, e in ipairs(inst.NS.COMMANDS) do
+        if e[1] == "config" then entry = e end
+    end
+    assertTrue(entry ~= nil, "`config` is not registered")
+
+    local realHandler, got = entry[3], {}
+    entry[3] = function(a) got[#got + 1] = a end
+    inst.NS.Slash:OnSlash("")
+    inst.NS.Slash:OnSlash("   ")
+    inst.NS.Slash:OnSlash(nil)
+    entry[3] = realHandler
+    assertEqual(#got, 3, "not every bare `/mm` reached config on the degraded path")
+    for i, a in ipairs(got) do assertEqual(a, "", "config was called with a remainder, case " .. i) end
+
+    local before = #inst.mocks.__chat
+    inst.NS.Slash:OnSlash(" ")
+    assertEqual(#inst.mocks.__chat - before, 1, "a bare degraded `/mm` should say one line")
+    assertTrue(inst.mocks.__chat[#inst.mocks.__chat]:find("settings panel is unavailable", 1, true)
+        ~= nil, "a bare degraded `/mm` did not name the unavailable panel")
+end)
+
+test("Degraded: `/mm help` still prints every verb", function()
+    -- The index moved to `/mm help`, so on the one install with no panel that is
+    -- how a player finds the host verbs that still work.
     local inst = degradedInstance()
     local before = #inst.mocks.__chat
-    inst.NS.Slash:OnSlash("")
+    inst.NS.Slash:OnSlash("help")
     local printed = #inst.mocks.__chat - before
     assertTrue(printed > #inst.NS.COMMANDS,
         "degraded help printed only " .. printed .. " lines for " .. #inst.NS.COMMANDS .. " verbs")
+    local text = table.concat(inst.mocks.__chat, "\n", before + 1)
+    for _, e in ipairs(inst.NS.COMMANDS) do
+        assertTrue(text:find("/mm " .. e[1], 1, true) ~= nil, "degraded help does not list " .. e[1])
+    end
 end)
 
 test("Degraded: every declared verb is reachable and none of them raises", function()

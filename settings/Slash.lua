@@ -148,15 +148,28 @@ if not SlashLib then
             out("v" .. tostring(d.version and d.version() or "?") .. " slash commands")
             for _, r in ipairs(stub.HelpRows()) do out(r) end
         end
+        local function findVerb(name)
+            for _, e in ipairs(d.commands or {}) do
+                if e[1] == name then return e end
+            end
+        end
         stub.OnSlash = function(_, msg)
             local raw = (msg or ""):match("^%s*(.-)%s*$") or ""
-            if raw == "" then return stub.PrintHelp() end
+            -- A bare `/mm` (empty or whitespace only) runs the host's `config`
+            -- verb with "", exactly as LibKa0s-Slash minor 11 does
+            -- (slash-commands-§4); the index is `/mm help`. With no library,
+            -- `config` answers that the panel is unavailable, which is still an
+            -- answer. No `config` entry falls back to the index, as the library does.
+            if raw == "" then
+                local config = findVerb("config")
+                if config then return config[3]("") end
+                return stub.PrintHelp()
+            end
             local verb, rest = raw:match("^(%S+)%s*(.*)$")
             verb = (verb or ""):lower()
             verb = (d.aliases or {})[verb] or verb
-            for _, e in ipairs(d.commands or {}) do
-                if e[1] == verb then return e[3](rest or "") end
-            end
+            local entry = findVerb(verb)
+            if entry then return entry[3](rest or "") end
             out("unknown command '" .. verb .. "'")
             stub.PrintHelp()
         end

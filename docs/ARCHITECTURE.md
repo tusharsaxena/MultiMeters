@@ -174,6 +174,10 @@ page own a private target from `NS.NewBusTarget()`. Nothing registers on the sha
 ## Slash commands
 
 `/mm` and `/multimeters` are aliases, registered through AceConsole (never a raw `SLASH_*` global).
+A bare `/mm` (empty, or whitespace only) runs the `config` verb with `""` and opens the settings
+panel on its landing page; `/mm help` prints the index (`slash-commands-§4`, LibKa0s-Slash minor 11).
+The library-absent stub in `settings/Slash.lua` mirrors the rule, so there `config` answers that the
+panel is unavailable.
 `NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **16 verbs**, the
 ten reserved ones first in the order the standard fixes, then this addon's six. The dispatcher, the
 help renderer and the schema CLI are LibKa0s-Slash-1.0's; the verb table stays this addon's and is
@@ -183,7 +187,7 @@ that a load-time cycle between two majors.
 | Command | What it does |
 |---|---|
 | `help` | Show the command index |
-| `config` | Open the settings panel (`options` is accepted as an alias) |
+| `config` | Open the settings panel on its landing page (`options` is accepted as an alias). A bare `/mm` runs this verb |
 | `list` | List every setting and its current value |
 | `get <path>` | Read one setting |
 | `set <path> <value>` | Write one setting |

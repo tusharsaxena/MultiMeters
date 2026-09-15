@@ -401,6 +401,79 @@ test("Slash: the library did not register `perf` behind the addon's back", funct
 end)
 
 -- ---------------------------------------------------------------------------
+-- A bare `/mm` (slash-commands-§4, standard v2.50.0)
+-- ---------------------------------------------------------------------------
+
+--- Chat text with WoW colour escapes removed, so a verb reads as `/mm help`
+--- whether or not the renderer painted it.
+local function plain(text)
+    return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+end
+
+test("Slash: a bare `/mm`, and a whitespace-only one, run the `config` verb with \"\"", function()
+    -- LibKa0s-Slash minor 11: an empty or whitespace-only message goes to the
+    -- host's registered `config` verb, called with "". The index is `/mm help`.
+    -- red under: a library below minor 11, or `config` dropped from NS.COMMANDS.
+    local inst = T.load()
+    local entry = findVerb(inst.NS.COMMANDS, "config")
+    assertTrue(entry ~= nil, "`config` is not registered, so a bare `/mm` falls back to help")
+
+    local realHandler, got = entry[3], {}
+    entry[3] = function(a) got[#got + 1] = a end
+    local printed = {}
+    for _, msg in ipairs({ "", "   ", "\t  \t" }) do
+        printed[#printed + 1] = joined(say(inst, msg))
+    end
+    printed[#printed + 1] = joined(say(inst, nil))
+    entry[3] = realHandler
+
+    assertEqual(#got, 4, "not every bare `/mm` reached config")
+    for i, a in ipairs(got) do assertEqual(a, "", "config was called with a remainder, case " .. i) end
+    assertEqual(table.concat(printed), "", "a bare `/mm` printed instead of running config")
+end)
+
+test("Slash: a bare `/mm` opens the settings panel, the same act as `/mm config`", function()
+    -- The verb is not replaced, only reached: the same NS.OpenOptionsPanel call,
+    -- so the library's combat refusal is what a player in a fight sees.
+    local inst = T.load()
+    local opened, real = 0, inst.NS.OpenOptionsPanel
+    inst.NS.OpenOptionsPanel = function() opened = opened + 1 end
+    say(inst, "")
+    say(inst, "  ")
+    say(inst, "config")
+    inst.NS.OpenOptionsPanel = real
+    assertEqual(opened, 3, "a bare `/mm` and `/mm config` must both open the panel")
+end)
+
+test("Slash: a bare `/mm` lands on the top-level category, not a sub-page", function()
+    -- `config` goes through LibKa0s-Options' OpenOptionsPanel, which opens the
+    -- PARENT category -- the landing page -- by the id Settings handed back when
+    -- it was registered. The harness's parent category answers id 1 and its
+    -- subcategories answer none, so any other id is a sub-page.
+    local inst = T.load()
+    local ids = {}
+    inst.mocks.Settings.OpenToCategory = function(id) ids[#ids + 1] = id end
+    say(inst, "")
+    assertEqual(#ids, 1, "a bare `/mm` did not open the settings window")
+    assertEqual(ids[1], 1, "a bare `/mm` opened something other than the landing category")
+end)
+
+test("Slash: `/mm help` prints every verb, and does not open the panel", function()
+    -- red under: `help` re-pointed at config, or the index losing a verb.
+    local inst = T.load()
+    local opened, real = 0, inst.NS.OpenOptionsPanel
+    inst.NS.OpenOptionsPanel = function() opened = opened + 1 end
+    local text = plain(joined(say(inst, "help")))
+    inst.NS.OpenOptionsPanel = real
+
+    assertEqual(opened, 0, "`/mm help` opened the panel")
+    for _, entry in ipairs(inst.NS.COMMANDS) do
+        assertTrue(text:find("/mm " .. entry[1], 1, true) ~= nil,
+            "`/mm help` does not list `" .. entry[1] .. "`: " .. text)
+    end
+end)
+
+-- ---------------------------------------------------------------------------
 -- The host verbs
 -- ---------------------------------------------------------------------------
 

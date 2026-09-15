@@ -679,9 +679,10 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
         debugConsole = L["Debug console"],
         testMode     = L["Test mode"],
     },
-    -- Resolved at CALL time, both of them: the popup is declared by
-    -- settings/General.lua and the registry by modules/WindowManager.lua, and this
-    -- file loads before either.
+    -- Resolved at CALL time, both of them. The popup is declared by
+    -- settings/General.lua, which loads after this file. The registry is
+    -- modules/WindowManager.lua's, which loads BEFORE it (TOC), but only a click
+    -- reaches it, and a call-time read keeps a partial install from freezing a nil in.
     --
     -- RESET POSITION KEEPS ITS PER-WINDOW MEANING. It is reached from the General
     -- page, which draws no banner, so what it moves is the window the Windows page

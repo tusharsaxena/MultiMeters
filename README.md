@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-1843%2F1843_passing-green)
+![Tests](https://img.shields.io/badge/Tests-1848%2F1848_passing-green)
 
 Most Damage meter addons show you one statistic at a time. This addon shows all of them in one grid — who kicked, who dispelled, who stood in the fire, who died. One row per player, one column per statistic.
 
@@ -58,7 +58,8 @@ Deaths cell for the recap, which is usually the more interesting trip. For a sec
 window new`, then copy the settings across from the first rather than building them twice.
 
 Everything else is configuration, and it lives in two places: the addon's own page under Settings →
-AddOns in game, and `/mm` (or `/multimeters`), which prints the full command list.
+AddOns in game, and the slash command. `/mm` (or `/multimeters`) on its own opens that page, and
+`/mm help` prints the full command list.
 
 ## How it works
 

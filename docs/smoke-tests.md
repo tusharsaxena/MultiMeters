@@ -92,7 +92,7 @@ in-client.
 **Setup.** Quit WoW. Delete `WTF/Account/<ACCOUNT>/SavedVariables/MultiMeters.lua` (and the `.bak`).
 Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi Meters**.
 
-**Steps.** Log in. Run `/mm`. Open Settings → AddOns.
+**Steps.** Log in. Run `/mm help`, then a bare `/mm`. Open Settings → AddOns.
 
 ### The header's controls (issues #6, #7)
 
@@ -164,7 +164,9 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
   Interrupts · Dispels · Avoidable Damage · Deaths**.
 - Standing solo in the open world the window is **shown**: every context ships on and every hide
   rule ships off.
-- `/mm` prints the help index. Every row carries the cyan `[MM]` banner; verb names are yellow.
+- `/mm help` prints the help index. Every row carries the cyan `[MM]` banner; verb names are yellow.
+- A bare `/mm` opens the settings panel on the **Ka0s Multi Meters** landing page, the same as
+  `/mm config`, and prints nothing to chat. `/mm` followed only by spaces does the same.
 - Settings → AddOns shows a **Ka0s Multi Meters** parent with **nine** subcategories in this
   order: General · Windows · Frame · Header · Bars · Tooltip · Visibility · Columns · Profiles. **General is first**, and the six between Windows and Profiles read as
   `  - Frame` — two spaces, a hyphen, a space — while General, Windows and Profiles sit flush.
@@ -1048,6 +1050,9 @@ is why the popup exists. Every open drill-down closes and this module's caches a
 
 **Pass.**
 - Every verb answers; none errors; unknown verbs print "unknown command" followed by the help index.
+- A bare `/mm` (or `/mm` followed only by spaces) is `/mm config` (`slash-commands-§4`): it opens the
+  settings panel on its landing page, and in combat it gives `/mm config`'s refusal. The index is
+  `/mm help`.
 - `/mm help` and the settings **landing page** list the **same** commands — the panel generates its
   list from `NS.COMMANDS` through the same formatter, so a divergence means someone wrote a second
   list.
@@ -1153,7 +1158,8 @@ switch back to Default → copy from Test → reset.
 - One honest chat line names the cause, once, on the first line the addon prints — the shared clause
   *"The LibKa0s library is missing from this installation of Ka0s Multi Meters (expected in
   libs/LibKa0s)"* — followed by what is unavailable.
-- `/mm config` says the settings panel is unavailable. `/mm list|get|set|reset` each name the missing
+- `/mm config`, and a bare `/mm` (which runs `config`), say the settings panel is unavailable.
+  `/mm help` still prints the index. `/mm list|get|set|reset` each name the missing
   library. `/mm perf` says performance measurement is unavailable.
 - **The host verbs still work**: `/mm lock`, `/mm test`, `/mm toggle`, `/mm window list`,
   `/mm reset-positions`. They never went to the library.

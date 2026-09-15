@@ -396,7 +396,8 @@ first OnShow      →  H.EnsureDefaultsButton(panel)                -- button bu
 
 The parent category and all nine subcategories are registered during `OnInitialize`, before
 anything is drawn. That is what makes the addon appear in the Blizzard AddOns list, what makes
-`/mm config` have somewhere to go, and what makes the Settings window's own search find the pages.
+`/mm config` (and a bare `/mm`, which runs it) have somewhere to go, and what makes the Settings
+window's own search find the pages.
 A category registered lazily is a category the player cannot find until they have already found it.
 
 ### Why the body is lazy — reason one: zero width
