@@ -47,7 +47,9 @@ NS.Database = Database
 -- v12 turns the column array from a chosen subset into the full catalog, ticked.
 -- v13 moves the title-bar toggle onto the header and turns the two control
 --     class-colour flags into modes.
-local CURRENT_DB_VERSION = 13
+-- v14 carries the addon-wide `master.locked` onto every window's own lock and
+--     prunes it.
+local CURRENT_DB_VERSION = 14
 
 -- The ONE Ka0s_MultiMeters_PROFILE_CHANGED emitter (architecture-§4: one sender
 -- per message). Every path that makes the active profile a different thing — a
@@ -799,6 +801,49 @@ migrations[12] = function(db)
     end
 
     db.global.schemaVersion = 13
+end
+
+--- Lock every window of one profile, through the lock each window owns.
+---
+--- A non-table entry in a hand-edited `windows` array is stepped over. A window
+--- with no frame block gets one holding just the lock: EnsureWindowShape fills
+--- the rest from the template after the walk, and never over a key already set.
+local function v14LockEveryWindow(windows)
+    for _, w in ipairs(windows) do
+        if type(w) == "table" then
+            if type(w.frame) ~= "table" then w.frame = {} end
+            w.frame.locked = true
+        end
+    end
+end
+
+--- v13 -> v14: THE ADDON-WIDE LOCK BECOMES EVERY WINDOW'S OWN.
+---
+--- General > Master controls' Lock frame was `master.locked`, a second lock ORed
+--- over every window's `frame.locked`. `/mm lock` writes the windows' own, so
+--- after it the box could neither unlock a window nor visibly lock one. The box is
+--- now a session-only view over the windows' own locks (settings/Schema_Compose.lua)
+--- and `master.locked` has no reader.
+---
+--- A TICKED MASTER LOCK IS CARRIED, NOT DROPPED. It had every window of that
+--- profile pinned, and the player must not log in to every window loose, so a
+--- stored `true` locks every window -- which is what they were looking at. A
+--- `false` or absent one pinned nothing, and each window keeps the lock it had.
+---
+--- The key is then pruned in every case, for the reason every step here gives:
+--- AceDB merges defaults in and never removes what they stopped naming.
+migrations[13] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        local master = profile.master
+        if type(master) == "table" then
+            if master.locked == true and type(profile.windows) == "table" then
+                v14LockEveryWindow(profile.windows)
+            end
+            master.locked = nil
+        end
+    end
+
+    db.global.schemaVersion = 14
 end
 
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every

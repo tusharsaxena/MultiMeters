@@ -468,6 +468,88 @@ test("IsLocked is false the moment any one window is unlocked", function()
     assertEqual(M:IsLocked(), false)
 end)
 
+-- ---------------------------------------------------------------------------
+-- General > Lock frame: a view over every window's own lock
+-- ---------------------------------------------------------------------------
+
+--- Every window's lock as the player meets it: the stored flag, the flag the
+--- window cached, and whether its title bar will start a drag. The last is what
+--- ApplyLock re-registers, so it is how a case proves the window was re-applied
+--- rather than merely re-stored.
+local function assertEveryWindowLocked(inst, M, want, why)
+    for _, cfg in ipairs(inst.NS.Database.GetWindows()) do
+        assertEqual(cfg.frame.locked, want, why .. ": window " .. cfg.id .. "'s own lock")
+    end
+    for _, w in ipairs(M.All()) do
+        assertEqual(w.locked, want, why .. ": window " .. w.id .. " did not follow")
+        local buttons = w.dragBar.__dragButtons or {}
+        assertEqual(buttons[1] == nil, want,
+            why .. ": window " .. w.id .. "'s drag registration was not re-applied")
+    end
+end
+
+test("Lock frame unlocks every window after `/mm lock`, and ticking it locks them all again", function()
+    -- THE BUG (owner-reported, 2026-09-16). The box was an addon-wide lock ORed
+    -- over every window's own, and `/mm lock` sets the windows' own. So after
+    -- `/mm lock`, unticking the box left every window locked by its own flag, and
+    -- ticking it showed no change. The box now reads and writes the windows' own
+    -- locks, exactly as `/mm lock` and `/mm unlock` do.
+    -- red under: master.locked stored in the profile and ORed in modules/Window.lua.
+    local inst, M = loaded()
+    local NS = inst.NS
+    M:Create("Second")
+
+    NS.Slash:OnSlash("lock on")
+    assertEveryWindowLocked(inst, M, true, "/mm lock")
+    assertEqual(NS.GetSetting("master.locked"), true, "the box reads unticked with every window locked")
+
+    assertTrue(NS.SetByPath("master.locked", false))
+    assertEveryWindowLocked(inst, M, false, "unticking Lock frame")
+    assertEqual(NS.GetSetting("master.locked"), false)
+
+    assertTrue(NS.SetByPath("master.locked", true))
+    assertEveryWindowLocked(inst, M, true, "ticking Lock frame")
+    assertEqual(NS.GetSetting("master.locked"), true)
+end)
+
+test("Lock frame reads ticked only while EVERY window is locked", function()
+    -- A window's own padlock still locks it on its own, and the box answers for all
+    -- of them: one window unlocked from its header and the box reads unticked.
+    -- red under: get() reading the active window, or any one window.
+    local inst, M = loaded()
+    local NS = inst.NS
+    M:Create("Second")
+    M:SetLocked(true)
+    assertEqual(NS.GetSetting("master.locked"), true, "every window is locked, so the box reads ticked")
+
+    local first, second = M.All()[1], M.All()[2]
+    assertTrue(second.controls ~= nil and second.controls.lock ~= nil,
+        "the second window has no header padlock")
+
+    second.controls.lock:_run("OnClick")
+    assertEqual(second.config.frame.locked, false, "the header padlock did not unlock its window")
+    assertEqual(first.config.frame.locked, true, "the header padlock reached another window")
+    assertFalse(second.locked, "the unlocked window still refuses the drag")
+    assertEqual(NS.GetSetting("master.locked"), false, "the box reads ticked with one window unlocked")
+
+    second.controls.lock:_run("OnClick")
+    assertEqual(NS.GetSetting("master.locked"), true, "every window is locked again")
+end)
+
+test("Lock frame is never written to the profile", function()
+    -- Its value is derived; the persistence is the per-window rows its set writes.
+    -- A stored copy is exactly what went stale and ORed itself over the windows.
+    -- red under: dropping `sessionOnly` from the row's dress, so the seam stores it.
+    local inst = loaded()
+    local NS = inst.NS
+    assertNil(NS.defaults.profile.master.locked, "the defaults still ship a master lock")
+
+    assertTrue(NS.SetByPath("master.locked", true))
+    assertTrue(NS.SetByPath("master.locked", false))
+    assertTrue(NS.SetByPath("master.locked", true))
+    assertNil(rawget(NS.db.profile.master, "locked"), "the box wrote master.locked into the profile")
+end)
+
 test("SetTestMode routes through core/State.lua and marks every window dirty", function()
     local _, M = loaded()
     for _, w in ipairs(M.All()) do w.dirty = false end

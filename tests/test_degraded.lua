@@ -276,6 +276,16 @@ test("Degraded: the host verbs are untouched, because they never went to the lib
 
     inst.NS.Slash:OnSlash("window new Second")
     assertEqual(#inst.NS.Database.GetWindows(), 2, "/mm window new did not create a window")
+
+    -- `/mm lock` writes each window's own `frame.locked`, a hand-written Frame-page
+    -- row, so it keeps working when the composed Lock frame box is gone with the
+    -- library.
+    assertEqual(inst.NS.FindSchemaRow("master.locked"), nil,
+        "the composed Lock frame row survived a load with no library")
+    inst.NS.Slash:OnSlash("lock on")
+    assertTrue(inst.NS.WindowManager:IsLocked(), "/mm lock on did not lock every window")
+    inst.NS.Slash:OnSlash("lock off")
+    assertFalse(inst.NS.WindowManager:IsLocked(), "/mm lock off did not unlock every window")
 end)
 
 test("Degraded: an unknown verb is named and followed by help", function()
@@ -371,9 +381,9 @@ function()
     -- the stub no longer resetting the profile.
     --
     -- The row walk has NOTHING to do on a degraded load, and that is correct: the
-    -- veto leaves it only `sessionOnly` rows, and this addon's two (the debug
-    -- console and Test mode) are both composed by LibKa0s' MasterControls, so a
-    -- library-less schema carries neither. What is pinned is that the walk touches
+    -- veto leaves it only `sessionOnly` rows, and this addon's three (the debug
+    -- console, Test mode and Lock frame) are all composed by LibKa0s'
+    -- MasterControls, so a library-less schema carries none of them. What is pinned is that the walk touches
     -- session rows only -- with the guard gone it applies every row, profiles
     -- included -- and that the profile reset, which IS the reset, still runs.
     local inst = degradedInstance()

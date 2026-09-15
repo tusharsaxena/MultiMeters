@@ -657,9 +657,10 @@ NS.WINDOW_TEMPLATE = WINDOW_TEMPLATE
 
 --- One addon-wide `master.*` setting, with the shipped value as the floor.
 ---
---- The four MASTER CONTROLS that are not per-window (options-ui-§15): the general
---- visibility answer, the scale and alpha multipliers stacked on top of every
---- window's own, and the addon-wide lock. Read exactly like `data.*` below and for
+--- The three stored MASTER CONTROLS (options-ui-§15): the general visibility
+--- answer, and the scale and alpha multipliers stacked on top of every window's
+--- own. Lock frame stores nothing -- it is a view over every window's own
+--- `frame.locked` (settings/Schema_Compose.lua). Read exactly like `data.*` below and for
 --- the same reason -- modules/Window.lua and core/MultiMeters.lua both want them,
 --- and each reaching into NS.db for itself is two chances to disagree about what a
 --- missing db means.
@@ -726,11 +727,11 @@ NS.defaults = {
         -- Master enable. Off means no window draws and no provider read happens.
         enabled      = true,
 
-        -- THE MASTER CONTROLS, and every one of them is ADDON-WIDE (options-ui-§15).
-        -- The per-window lock, scale and opacity on the Frame page are a different
-        -- question and stay where they are: these four say what the addon as a whole
-        -- does, those say what ONE window looks like, and conflating the two is how a
-        -- control retargets silently when the window picker moves.
+        -- THE MASTER CONTROLS that are stored, and every one of them is ADDON-WIDE
+        -- (options-ui-§15). The per-window scale and opacity on the Frame page are a
+        -- different question and stay where they are: these three say what the addon
+        -- as a whole does, those say what ONE window looks like, and conflating the
+        -- two is how a control retargets silently when the window picker moves.
         master       = {
             -- always | inCombat | outOfCombat | never. NEW rather than migrated: this
             -- addon never shipped a "show only in combat" checkbox at the addon-wide
@@ -745,10 +746,10 @@ NS.defaults = {
             -- about the other.
             scale      = 1.0,
             alpha      = 1.0,
-            -- ORs with the window's own `frame.locked`: a window is draggable only
-            -- when neither says otherwise. One tick to pin a whole layout down,
-            -- without erasing which windows the player had individually locked.
-            locked     = false,
+            -- NO `locked`. Master controls' Lock frame is a session-only VIEW over
+            -- every window's own `frame.locked` (settings/Schema_Compose.lua), so it
+            -- stores nothing here. core/Database.lua's v14 step carried a stored
+            -- `master.locked` onto the windows and cleared it.
         },
 
         -- The window registry: an ARRAY of window config tables, in the order

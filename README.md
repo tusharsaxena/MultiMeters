@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-1834%2F1834_passing-green)
+![Tests](https://img.shields.io/badge/Tests-1843%2F1843_passing-green)
 
 Most Damage meter addons show you one statistic at a time. This addon shows all of them in one grid — who kicked, who dispelled, who stood in the fire, who died. One row per player, one column per statistic.
 
@@ -39,7 +39,7 @@ corner to size it. Placing a meter between pulls is a pain because there is noth
 at, so `/mm test` fills every window with obvious placeholder rows and prints TEST in the header
 while you work. The same command turns it off, and so does the **Test mode** box on the General
 page. It switches itself off the moment you pull, and it won't start while you are fighting.
-`/mm lock` freezes everything once you are happy, and `/mm reset-positions` rescues anything you have dragged off the edge of the screen.
+`/mm lock` freezes everything once you are happy (the **Lock frame** box on the General page does the same), and `/mm reset-positions` rescues anything you have dragged off the edge of the screen.
 
 `/mm toggle` hides and shows windows by name or all at once, and the × in the title bar closes
 whichever one you clicked. You will get more out of the visibility settings, though: tell a window

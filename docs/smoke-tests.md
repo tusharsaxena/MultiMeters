@@ -83,6 +83,7 @@ in-client.
 | 29 | **Shared registry** | [**The Border dropdown when five Ka0s addons share one registry**](#29-the-border-dropdown-when-five-ka0s-addons-share-one-registry) |
 | 32 | **Bar animation** | [**Bar fills slide between refreshes (issue #23)**](#32-bar-fills-slide-between-refreshes-issue-23) |
 | 33 | **Segments** | [**The pinned segment's none**](#33-the-pinned-segments-none) |
+| 34 | Migration | [v13 → v14 Lock frame migration](#34-v13--v14-lock-frame-migration) |
 
 ---
 
@@ -197,6 +198,8 @@ second edge to catch.
 - `/mm lock off` (or uncheck **Frame → Lock window**).
 - Drag the window by its body. Drag the bottom-right grip.
 - `/mm lock on`. Try to drag again.
+- With two windows and the settings panel open on **General → Master controls**: `/mm lock on`, then
+  untick **Lock frame**, then tick it again. Then unlock one window from the padlock in its header.
 - `/mm test` on and off (or **General → Master controls → Test mode**), with the settings panel open.
 - Turn Test mode on again and start a fight (a target dummy will do). Repeat with the window's
   **hide in combat** rule ticked on its Visibility page.
@@ -209,6 +212,11 @@ second edge to catch.
   and unchecking Test mode while a window is unlocked now actually clears the placeholder rows rather
   than being a no-op. Confirm both halves: lock off with Test mode off shows a real (possibly empty)
   grid, and Test mode on with the window locked still shows placeholders.
+- **Lock frame is every window's own lock, not a second one.** After `/mm lock on` the box reads
+  ticked. Unticking it unlocks **every** window: each drags by its title bar and shows its grip.
+  Ticking it locks every window again. Unlocking one window from its header padlock leaves the others
+  locked, and the box reads **unticked** until that window is locked again. It used to be a separate
+  lock ORed over the windows' own, and unticking it after `/mm lock` changed nothing on screen.
 - **The Test mode box follows the verb.** With the panel open, `/mm test` ticks and unticks the box
   on General → Master controls without a click.
 - **Combat ends Test mode.** The pull prints one line, *Test mode off — combat started*; the
@@ -441,8 +449,8 @@ second edge to catch.
   Meters**, **General visibility**, **Master scale**, **Master alpha**, **Lock frame**, **Debug
   console**, **Test mode** (alone on its line, below Lock frame / Debug console), closed by the
   **Reset position** / **Reset all settings** button pair and one sentence
-  under it saying what each reaches. The four `master.*` rows are addon-wide and are **not** the
-  per-window lock, scale and opacity on Frame — set Master scale to 0.5 with a window already at
+  under it saying what each reaches. Master scale and Master alpha are addon-wide and are **not** the
+  per-window scale and opacity on Frame — set Master scale to 0.5 with a window already at
   0.8 and the window draws at 0.4, and putting the master back to 1.0 gives every window exactly the
   size it was set to. Below the canonical seven and **above** the button pair sit this addon's own
   three: the minimap toggle, starting a fresh line under Test mode, then **Merge pets into their
@@ -2042,6 +2050,27 @@ did, that fight could not be pinned.
 **Pass:** no stored session ever carries id 0, every fight pins, and the CLI reads and writes the
 row as the menu does.
 **Record:** client build, and the lowest and highest ids seen.
+
+---
+
+### 34. v13 → v14 Lock frame migration
+
+Needs a profile saved before this change (`schemaVersion` 13 or earlier) with **General → Master
+controls → Lock frame** ticked, so do this before wiping SavedVariables — same constraint as §22.
+
+1. On the old build, with at least two windows, unlock one of them from its own header padlock, then
+   tick **Lock frame** on General. Log out so it is saved.
+2. Update and log in. **Every window is locked**, including the one whose own padlock was open: a
+   ticked master lock is carried onto every window's own lock. A window that drags means the
+   migration dropped the stored lock instead of carrying it.
+3. **Lock frame** reads ticked. Untick it: every window unlocks.
+4. `/reload` and confirm nothing moves again: the step is idempotent and `schemaVersion` is now 14.
+   `/mm get master.locked` answers whether every window is locked, not a stored value.
+5. Check a **second profile** you had not activated this session that also had Lock frame ticked:
+   its windows arrive locked too.
+6. A profile that had Lock frame **unticked** arrives with each window's lock exactly as it was.
+
+**Record:** client build.
 
 ---
 

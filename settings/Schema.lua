@@ -227,7 +227,7 @@ NS.Schema = {
         path = "window.frame.locked", type = "bool", default = false,
         page = "frame", group = L["General"], subgroup = L["Window"],
         label = L["Lock window"],
-        desc = L["When unlocked you can drag the window to reposition it and drag its corner to resize. Nothing else changes \226\128\148 for placeholder rows use Test mode on the General page. Lock frame on the General page locks every window at once, whatever this says."],
+        desc = L["When unlocked you can drag the window to reposition it and drag its corner to resize. Nothing else changes \226\128\148 for placeholder rows use Test mode on the General page. Lock frame on the General page locks or unlocks every window at once."],
     },
     {
         path = "window.frame.clampToScreen", type = "bool", default = true,

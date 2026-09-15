@@ -199,7 +199,7 @@ badge and any count quoted in the docs must agree with it.
 - Locale: the locale file registers no second table over NS.L
 - Locale: enUS is the only locale shipped, and it is unconditional
 
-### test_database.lua (72)
+### test_database.lua (76)
 
 - Database: InitDB publishes the live instance under both names
 - Database: the profile is the SHARED Default, not a per-character one
@@ -273,6 +273,10 @@ badge and any count quoted in the docs must agree with it.
 - Database: v12 -> v13 maps each control flag on its own
 - Database: v12 -> v13 leaves a window with no frame block at all alone
 - Database: v12 -> v13 walks every saved profile, not just the active one
+- Database: v13 -> v14 turns a stored master lock into every window's own lock
+- Database: v13 -> v14 clears an unticked master lock and leaves the windows alone
+- Database: v13 -> v14 walks every saved profile, not just the active one
+- Database: v13 -> v14 survives a profile with no master block and a junk window
 
 ### test_diagnostics.lua (21)
 
@@ -1059,7 +1063,7 @@ badge and any count quoted in the docs must agree with it.
 - The resize grip is built unconditionally and follows the LOCK
 - `resizeGrip` is gone from the code, not just from the panel
 - Unlocking does not resurrect the grip on a collapsed window
-- Either lock pins the window, and the master lock erases neither
+- A window is locked exactly by its own Lock window; master.locked no longer pins it
 - SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)
 - SaveSize applies the config ONCE per resize-stop, and still applies when the seam refuses
 - A resize logs one [Set] line per dimension, not a row count
@@ -1662,7 +1666,7 @@ badge and any count quoted in the docs must agree with it.
 - A visibility field that is not a table reads as `no rules`, not as hide
 - The master enable, test mode and perf suspend are NOT read here
 
-### test_windowmanager.lua (41)
+### test_windowmanager.lua (44)
 
 - WindowManager is published under the flat name every caller uses
 - Init builds one live instance per stored config, and is idempotent
@@ -1692,6 +1696,9 @@ badge and any count quoted in the docs must agree with it.
 - ResetPosition defaults to the window the picker is pointed at
 - SetLocked flips every window and touches NOTHING else
 - IsLocked is false the moment any one window is unlocked
+- Lock frame unlocks every window after `/mm lock`, and ticking it locks them all again
+- Lock frame reads ticked only while EVERY window is locked
+- Lock frame is never written to the profile
 - SetTestMode routes through core/State.lua and marks every window dirty
 - Toggle with no name flips every window; with a name, one
 - MarkAllDirty costs one flag each and nothing else
@@ -1726,7 +1733,7 @@ badge and any count quoted in the docs must agree with it.
 - The profile ships the one key LibDBIcon reads, and nothing else
 - modules/Minimap.lua passes the silent flag to every LibStub call
 
-### test_schema.lua (38)
+### test_schema.lua (40)
 
 - Schema: a `hidden` row is writable and listable but draws no control
 - Schema: the sort and the session type are hidden rows the seam validates (issue #50)
@@ -1740,6 +1747,7 @@ badge and any count quoted in the docs must agree with it.
 - Schema: every page's tabs are the designed ones, in order, at the designed size
 - Schema: the General page opens on Master controls, holding exactly the canonical set
 - Schema: Test mode is the COMPOSED row right after Debug console, alone on its line
+- Schema: Lock frame is the COMPOSED row, session-only, over every window's own lock
 - Schema: ticking Test mode in combat is refused, says why, and leaves the box unticked
 - Schema: the master controls are ADDON-WIDE, and the per-window three are untouched
 - Schema: a moved setting is declared ONCE, not twice
@@ -1766,6 +1774,7 @@ badge and any count quoted in the docs must agree with it.
 - RestoreAllDefaults leaves the profile LIST alone
 - A profile reset rebuilds through the ONE message, not by direct calls
 - RestoreAllDefaults logs ONE line in total: the profile handler's, and no bulk line
+- The General page's Defaults unlock every window, through Lock frame's default
 
 ### test_schema_paths.lua (48)
 
@@ -2043,7 +2052,7 @@ badge and any count quoted in the docs must agree with it.
 | test_compat.lua | 34 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
-| test_database.lua | 72 |
+| test_database.lua | 76 |
 | test_diagnostics.lua | 21 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
@@ -2080,9 +2089,9 @@ badge and any count quoted in the docs must agree with it.
 | test_export.lua | 86 |
 | test_export_modal.lua | 31 |
 | test_visibility.lua | 41 |
-| test_windowmanager.lua | 41 |
+| test_windowmanager.lua | 44 |
 | test_minimap.lua | 17 |
-| test_schema.lua | 38 |
+| test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
 | test_slash.lua | 55 |
@@ -2092,4 +2101,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 29 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1834** |
+| **Total** | **1843** |

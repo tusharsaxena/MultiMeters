@@ -23,8 +23,9 @@
 -- The page is thin on purpose. A window is an instance (design §6), so everything
 -- a player thinks of as "a setting" belongs to one: width, columns, colors,
 -- visibility. What is left over is the handful of things that cannot sensibly
--- differ between windows -- and the four `master.*` rows, which are the
--- addon-wide half of three controls the Frame page owns per window.
+-- differ between windows -- and the four `master.*` rows: visibility, the
+-- addon-wide half of the scale and opacity the Frame page owns per window, and
+-- Lock frame, a view over every window's own lock rather than a second one.
 --
 -- Two controls here — Test mode and the Debug console — are SESSION state that is
 -- never written to SavedVariables. They are nonetheless SCHEMA ROWS, marked

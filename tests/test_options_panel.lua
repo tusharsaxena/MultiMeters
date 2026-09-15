@@ -759,6 +759,8 @@ test("Options: skipRestoreAll vetoes the profiles page from a global reset", fun
     assertTrue(seen["state.testMode"] ~= nil,
         "the session-only rows still have to be swept row by row")
     assertTrue(seen["state.debugConsole"] ~= nil)
+    assertTrue(seen["master.locked"] ~= nil,
+        "Lock frame is a session row, so the sweep has to reach it too")
 end)
 
 test("Options: a global reset restores window POSITIONS, which no schema row owns", function()

@@ -265,10 +265,11 @@ test("Defaults: the profile itself is nearly empty — almost everything is per-
     -- means is exactly the thing that breaks it.
     --
     -- `master` is the fourth and is the newest. options-ui-§15's Master controls
-    -- tab is addon-wide by definition -- a general visibility answer, a scale and
-    -- an alpha multiplier over every window, and an addon-wide lock -- and every
-    -- one of them is DISTINCT from the per-window `frame.locked` / `frame.scale` /
-    -- `frame.alpha` on the Frame page rather than a promotion of it.
+    -- tab is addon-wide by definition -- a general visibility answer, and a scale
+    -- and an alpha multiplier over every window -- and each is DISTINCT from the
+    -- per-window `frame.scale` / `frame.alpha` on the Frame page rather than a
+    -- promotion of it. Lock frame stores nothing here: it is a view over every
+    -- window's own `frame.locked` (a documented deviation; core/Database.lua v14).
     -- red under: promoting one of the three per-window rows here instead of adding
     -- the addon-wide setting beside it.
     local keys = {}

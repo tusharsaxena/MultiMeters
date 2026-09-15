@@ -40,7 +40,10 @@ local _, NS = ...
 -- What the row walk is left with is exactly what a profile reset CANNOT reach:
 -- `sessionOnly` rows, whose storage is their own `set()` rather than the db
 -- (`state.testMode`, `state.debugConsole`). Those have to be restored row by row
--- or they survive a reset that took everything around them.
+-- or they survive a reset that took everything around them. `master.locked` is
+-- the third session row and is swept too: its set writes every window's own
+-- lock, which the profile reset then replaces anyway, so there the walk is
+-- redundant but harmless.
 --
 -- Named ONCE because it is enforced TWICE -- by the library through
 -- descriptor.skipRestoreAll, and by the degradation stub's own reset loop, which

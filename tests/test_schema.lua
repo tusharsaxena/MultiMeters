@@ -432,6 +432,29 @@ function()
     assertEqual(NS.State.testMode, false)
 end)
 
+test("Schema: Lock frame is the COMPOSED row, session-only, over every window's own lock",
+function()
+    -- The owner's call, recorded in docs/ARCHITECTURE.md's deviation register
+    -- against options-ui-§15: the box is a view over the windows' own locks, so its
+    -- value is derived and it stores nothing. The default stays false, so Reset all
+    -- settings and the General page's Defaults unlock every window, which is what a
+    -- fresh profile ships.
+    -- red under: dropping `sessionOnly` or either accessor from the row's dress.
+    local inst = T.load()
+    local NS, L = inst.NS, inst.NS.L
+    local row = NS.FindSchemaRow("master.locked")
+
+    assertTrue(row ~= nil, "no master.locked row")
+    assertEqual(row.composed, true, "the row must come from the composer, not the schema's own text")
+    assertEqual(row.label, L["Lock frame"])
+    assertEqual(row.group, L["Master controls"])
+    assertEqual(row.type, "bool")
+    assertEqual(row.sessionOnly, true, "a stored copy is what went stale and ORed over the windows")
+    assertEqual(row.default, false)
+    assertEqual(type(row.get), "function")
+    assertEqual(type(row.set), "function")
+end)
+
 test("Schema: ticking Test mode in combat is refused, says why, and leaves the box unticked",
 function()
     -- preview-mode (standard v2.48.0). The box goes through the same switch as the
@@ -1268,4 +1291,31 @@ test("RestoreAllDefaults logs ONE line in total: the profile handler's, and no b
     assertEqual(lines[1], "[Test] off", "the row's reactor line stays; its [Set] line does not")
     assertEqual(lines[2], "[Set] reset profile 'Default' to defaults")
     assertEqual(NS.State.testMode, false, "the session row was still reset, just not logged")
+
+    -- Lock frame is a session row too, and its set writes every window's own lock
+    -- through the seam. Those writes land inside the same bracket, so they are
+    -- muted with the rest: still one line.
+    NS.WindowManager:SetLocked(true)
+    lines = logged(NS.Helpers.RestoreAllDefaults)
+    assertEqual(#lines, 1, "with every window locked: " .. table.concat(lines, " | "))
+    assertEqual(lines[1], "[Set] reset profile 'Default' to defaults")
+    assertFalse(NS.WindowManager:IsLocked(), "the reset left a window locked")
+end)
+
+test("The General page's Defaults unlock every window, through Lock frame's default", function()
+    -- Lock frame's default is false, and writing false unlocks every window, which
+    -- is what a fresh profile ships. Before, the button cleared an addon-wide lock
+    -- and left every window's own lock exactly where `/mm lock` had put it.
+    -- red under: master.locked stored in the profile rather than bound to
+    -- WindowManager:SetLocked.
+    local inst = twoWindows()
+    local NS = inst.NS
+    NS.WindowManager:SetLocked(true)
+
+    NS.Helpers.RestoreDefaults("general", nil)
+
+    for _, w in ipairs(NS.Database.GetWindows()) do
+        assertEqual(w.frame.locked, false, "window " .. w.id .. " stayed locked")
+    end
+    assertEqual(NS.GetSetting("master.locked"), false)
 end)

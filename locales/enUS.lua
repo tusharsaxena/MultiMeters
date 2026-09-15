@@ -724,8 +724,8 @@ L["Master alpha"] = "Master alpha"
 L["Opacity multiplier for every window, multiplied into each window's own Opacity on the Frame page."] =
     "Opacity multiplier for every window, multiplied into each window's own Opacity on the Frame page."
 L["Lock frame"] = "Lock frame"
-L["Lock every window at once. A window can be dragged only while neither this nor its own Lock window is on, so unticking this leaves the windows you locked one at a time locked."] =
-    "Lock every window at once. A window can be dragged only while neither this nor its own Lock window is on, so unticking this leaves the windows you locked one at a time locked."
+L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Frame page, or the lock button in its header) still locks it on its own."] =
+    "Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Frame page, or the lock button in its header) still locks it on its own."
 L["Reset position moves the window selected on the Windows page back to the center of the screen, and only that window. Reset all settings is addon-wide: it restores this profile and deletes every window but one, and asks first."] =
     "Reset position moves the window selected on the Windows page back to the center of the screen, and only that window. Reset all settings is addon-wide: it restores this profile and deletes every window but one, and asks first."
 -- Said once, appended to every non-palette colour swatch's tooltip

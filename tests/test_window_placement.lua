@@ -680,26 +680,28 @@ test("Unlocking does not resurrect the grip on a collapsed window", function()
     end
 end)
 
-test("Either lock pins the window, and the master lock erases neither", function()
-    -- ORed rather than overriding: unticking the addon-wide lock must leave the
-    -- windows a player locked one at a time locked, and an override would silently
-    -- unlock all of them.
-    -- red under: `self.locked = masterLocked` instead of `master or own`.
+test("A window is locked exactly by its own Lock window; master.locked no longer pins it", function()
+    -- General > Lock frame is a VIEW over every window's own lock now, not a
+    -- second lock ORed over them. The OR was the bug: after `/mm lock` set every
+    -- window's own flag, unticking Lock frame unlocked nothing and ticking it
+    -- showed no change. A stale `master.locked` a pre-v14 profile could still
+    -- hold must not pin anything.
+    -- red under: `self.locked = (masterSetting("locked") or own)`.
     local inst, window, cfg = scene()
 
     cfg.frame.locked = false
-    inst.NS.db.profile.master.locked = false
-    window:RefreshUpvalues()
-    assertFalse(window.locked, "neither lock is on")
-
     inst.NS.db.profile.master.locked = true
     window:RefreshUpvalues()
-    assertTrue(window.locked, "the master lock did not reach the window")
+    assertFalse(window.locked, "a stored master.locked still pins the window")
 
-    inst.NS.db.profile.master.locked = false
     cfg.frame.locked = true
     window:RefreshUpvalues()
     assertTrue(window.locked, "the window's own lock stopped being read")
+
+    cfg.frame.locked = false
+    inst.NS.db.profile.master.locked = nil
+    window:RefreshUpvalues()
+    assertFalse(window.locked)
 end)
 
 test("SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)", function()

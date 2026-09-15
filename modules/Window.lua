@@ -165,7 +165,7 @@ local MASTER_BOUNDS = {
 --- `NS.DataSetting` gets, and for the same reason: a second copy of 1.0 in a module
 --- is a value that can drift from the schema row that claims to set it.
 ---
---- @param key string  scale | alpha | locked
+--- @param key string  scale | alpha
 local function masterSetting(key)
     local read = NS.MasterSetting
     local v = read and read(key)
@@ -402,12 +402,13 @@ function WindowProto:RefreshUpvalues()
     self.throttle    = clamp(throttle, Const.THROTTLE_MIN, Const.THROTTLE_MAX)
     self.sessionType = data.sessionType or Const.SESSION_TYPE.Current
     self.sortColumn  = data.sortColumn or "DamageDone"
-    -- EITHER LOCK PINS THE WINDOW. `master.locked` (General -> Master controls) is
-    -- addon-wide and `frame.locked` (Frame -> General) is this window's own; a
-    -- window is draggable only while neither is on. ORed rather than overriding,
-    -- so unticking the master leaves the windows a player locked one at a time
-    -- locked -- an override would silently erase those.
-    self.locked      = (masterSetting("locked") or (cfg.frame or {}).locked) and true or false
+    -- A WINDOW IS LOCKED BY ITS OWN `frame.locked` AND NOTHING ELSE. General ->
+    -- Master controls' Lock frame is a view over every window's own lock, not a
+    -- lock of its own: ticking it writes each window's `frame.locked` through
+    -- WindowManager:SetLocked, the same as `/mm lock`. It used to be a second lock
+    -- ORed over this one, and after `/mm lock` that left the box unable to unlock
+    -- anything (docs/ARCHITECTURE.md, Documented deviations).
+    self.locked      = (cfg.frame or {}).locked and true or false
     self.layout      = self:BuildLayout()
 end
 

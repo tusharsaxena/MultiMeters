@@ -634,9 +634,12 @@ local MASTERVIS_SORT = { "always", "inCombat", "outOfCombat", "never" }
 -- `window.frame.alpha` stay on the Frame page. They are PER-WINDOW, they are
 -- reached through the window banner, and promoting one of them here would give the
 -- General page -- which draws no banner -- a control that silently retargeted
--- whenever the picker moved two pages away. The four `master.*` rows are the
--- addon-wide answers those three do not have, and modules/Window.lua composes each
--- pair rather than choosing between them (options-ui-§15's per-instance clause).
+-- whenever the picker moved two pages away. `master.scale` and `master.alpha` are
+-- the addon-wide answers the per-window pair does not have, and modules/Window.lua
+-- multiplies each pair rather than choosing between them (options-ui-§15's
+-- per-instance clause). `master.locked` is NOT a third such answer: it is a view
+-- over every window's own lock -- see its dress entry below, and the deviation
+-- docs/ARCHITECTURE.md records against that clause.
 --
 -- `enabled` and `state.debugConsole` MOVED here from the old General tab and are
 -- declared nowhere else; their stored paths did not change, because a `group` is
@@ -717,8 +720,28 @@ dress(MASTER_ROWS, {
         desc = L["Opacity multiplier for every window, multiplied into each window's own Opacity on the Frame page."],
         validate = isNumberIn(0, 1),
     },
+    -- LOCK FRAME IS A VIEW, NOT A LOCK OF ITS OWN (docs/ARCHITECTURE.md's deviation
+    -- register, against options-ui-§15). It reads ticked only while every window's
+    -- own `frame.locked` is on, and writing it locks or unlocks every window
+    -- through WindowManager:SetLocked -- the switch `/mm lock` uses, which writes
+    -- each window's row through the seam and re-applies the window. `sessionOnly`
+    -- because the value is derived: the persistence is those per-window rows. The
+    -- composer's default (false) is what the General page's Defaults and Reset all
+    -- settings write, and writing it unlocks every window, which is what a fresh
+    -- profile ships. The registry is reached through NS at CALL time, as
+    -- onResetPosition reaches it: only a runtime click or read wants it, and a
+    -- partial install then answers unticked rather than freezing a nil in.
     ["master.locked"] = {
-        desc = L["Lock every window at once. A window can be dragged only while neither this nor its own Lock window is on, so unticking this leaves the windows you locked one at a time locked."],
+        sessionOnly = true,
+        desc = L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Frame page, or the lock button in its header) still locks it on its own."],
+        get = function()
+            local M = NS.WindowManager
+            return M ~= nil and M.IsLocked ~= nil and M:IsLocked() or false
+        end,
+        set = function(v)
+            local M = NS.WindowManager
+            if M and M.SetLocked then M:SetLocked(v) end
+        end,
     },
     -- The console WINDOW's visibility, NOT the logging flag: logging runs with the
     -- console closed so a bug can be reproduced first and the log read afterwards,

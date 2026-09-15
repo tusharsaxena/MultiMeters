@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 13,    -- CURRENT_DB_VERSION in core/Database.lua
+    schemaVersion = 14,    -- CURRENT_DB_VERSION in core/Database.lua
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data
 }
 ```
@@ -42,8 +42,8 @@ once per account instead of once per profile. `NS:RunMigrations()` walks it forw
 time out of the `migrations` table in `core/Database.lua`, and is called from `NS:InitDB()` and
 again from every AceDB profile callback (changed / copied / reset).
 
-**Twelve steps are wired today**, `migrations[1]` through `migrations[12]`, walking an account from
-the shipped v1 shape to v13. Each is one line of the header block at the top of
+**Thirteen steps are wired today**, `migrations[1]` through `migrations[13]`, walking an account from
+the shipped v1 shape to v14. Each is one line of the header block at the top of
 `core/Database.lua`, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -60,12 +60,13 @@ the shipped v1 shape to v13. Each is one line of the header block at the top of
 | v10 → v11 | the colour mode comes off the title bar's text |
 | v11 → v12 | the column array stops being a chosen subset and becomes the full catalog, ticked |
 | v12 → v13 | the title-bar toggle moves onto the header, and the two control colour booleans become modes |
+| v13 → v14 | the addon-wide `master.locked` is carried onto every window's own `frame.locked` (a stored `true` locks every window) and pruned from every profile; see [`master`](#master--the-addon-wide-master-controls) |
 
-Adding a v14 is two edits and no bootstrap change:
+Adding a v15 is two edits and no bootstrap change:
 
 ```lua
-migrations[13] = function(db) ... end       -- the runner stamps the version
-local CURRENT_DB_VERSION = 14
+migrations[14] = function(db) ... end       -- the runner stamps the version
+local CURRENT_DB_VERSION = 15
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -98,7 +99,8 @@ db.profile = {
         visibility = "always",         -- always | inCombat | outOfCombat | never
         scale      = 1.0,              -- MULTIPLIED into every window's own scale
         alpha      = 1.0,              -- MULTIPLIED into every window's own alpha
-        locked     = false,            -- ORed with every window's own lock
+                                       -- no `locked`: Lock frame is a view over the
+                                       -- windows' own `frame.locked` (v14)
     },
     data         = {                   -- how the meter is read, addon-wide
         mergePets = false,             -- a pet's own row, or added to its owner's
@@ -178,7 +180,8 @@ that names no window is refused. `NS.State.activeWindowId` does not move.
   `window.data.sessionType` and clears the pin as one batch the same way, and
   `WindowProto:SetSegment` (a stored segment) writes `window.data.sessionID` alone.
 - `WindowManager:SetLocked` writes `window.frame.locked` through the seam once per window, each
-  announcement tagged with that window's id.
+  announcement tagged with that window's id. `/mm lock` calls it, and so does the Lock frame box on
+  General → Master controls, whose `set` is this function.
 - `WindowProto:SaveSize` writes `window.frame.width` and `window.frame.height` as one batch for the
   window that was dragged. It runs on the grip's drag-stop only; `OnSizeChanged` just remembers the
   size, so a drag costs one write however many frames it lasts.
@@ -248,17 +251,28 @@ behalf.
 | `master.visibility` | string | `"always"` | dropdown on `general` → Master controls |
 | `master.scale` | number | `1.0` | slider, 0.5 .. 2.0 |
 | `master.alpha` | number | `1.0` | slider, 0 .. 1 |
-| `master.locked` | bool | `false` | checkbox |
+| `master.locked` | bool, `sessionOnly` | `false` | checkbox. **Stores nothing**: a view over every window's `frame.locked` |
 
-`options-ui-§15` fixes this set and its order across every Ka0s addon. All four are **addon-wide**,
-and none of them is a promoted per-window row: a window here is an instance, so its own
-`frame.locked`, `frame.scale` and `frame.alpha` stay on the Frame page where the banner says which
-window they mean. `modules/Window.lua` **composes** each pair rather than choosing between them —
-the two scales and the two alphas multiply, the two locks OR — so one control can shrink or pin a
-whole layout without erasing the differences a player set between its windows. `master.visibility` is
-read by `core/MultiMeters.lua`'s show ladder, below test mode, and `never` is unforceable.
+`options-ui-§15` fixes this set and its order across every Ka0s addon. `master.visibility`,
+`master.scale` and `master.alpha` are **addon-wide**, and none of them is a promoted per-window row: a
+window here is an instance, so its own `frame.scale` and `frame.alpha` stay on the Frame page where
+the banner says which window they mean. `modules/Window.lua` **multiplies** each pair rather than
+choosing between them, so one control can shrink a whole layout without erasing the differences a
+player set between its windows. `master.visibility` is read by `core/MultiMeters.lua`'s show ladder,
+below test mode, and `never` is unforceable.
 
-`NS.MasterSetting` (`defaults/Profile.lua`) is the **one reader**, shaped exactly like
+**`master.locked` is not stored, and that is a ratified deviation** from `options-ui-§15`'s
+per-instance clause ([ARCHITECTURE.md → Documented deviations](ARCHITECTURE.md#documented-deviations)).
+Lock frame is a `sessionOnly` view over every window's own `frame.locked`: its `get` is
+`WindowManager:IsLocked()`, so it reads ticked only while every window is locked, and its `set` is
+`WindowManager:SetLocked(v)`, which writes each window's `frame.locked` through the seam, the same as
+`/mm lock on` and `/mm lock off`. A window is locked exactly when its own `frame.locked` is on. It
+used to be a stored boolean ORed over every window's lock, and after `/mm lock` that left the box
+unable to unlock anything. The v13 → v14 step carried a stored `true` onto every window's
+`frame.locked` and pruned the key from every profile. The row's default, `false`, is what the General
+page's Defaults and Reset all settings write, so both unlock every window.
+
+`NS.MasterSetting` (`defaults/Profile.lua`) is the **one reader** of the three stored keys, shaped exactly like
 `NS.DataSetting` below and for the same reason; `modules/Window.lua` clamps what it answers to the
 bounds of the sliders that write it, because these paths are also reachable from `/mm set` and from a
 hand-edited SavedVariables.
@@ -477,7 +491,7 @@ either alone. `text.shadow` keeps its long-standing `true`.
 | `borderColor` | `{ r=0, g=0, b=0, a=1 }` | |
 | `borderColorMode` | `"custom"` | `class` \| `custom`, the companion beside it. Same two values and same reading as `backdropColorMode`. |
 | `padding` | `6` | frame edge to rows |
-| `locked` | `false` | **not** coupled to Test mode — `WindowManager:SetLocked` used to also switch it on, which made unlocking a window fill it with placeholder rows and made unchecking Test mode a no-op while any window was unlocked. Locking is now about movement and nothing else; ask for a grid to aim at with `/mm test` |
+| `locked` | `false` | **not** coupled to Test mode — `WindowManager:SetLocked` used to also switch it on, which made unlocking a window fill it with placeholder rows and made unchecking Test mode a no-op while any window was unlocked. Locking is now about movement and nothing else; ask for a grid to aim at with `/mm test`. This is the window's only lock: General → Master controls' Lock frame reads and writes it for every window at once rather than adding a second one (v14 folded the old `master.locked` into it) |
 | `clampToScreen` | `true` | |
 | `closeButton` | `true` | a **header control**, grouped with the `show*` keys on the panel |
 | `minimised` | `false` | a **hidden** schema row: writable through `NS.SetByPath` and listed by `/mm list`, but drawn as no control. It is per-window state the header's own minimise button writes, not a preference |
@@ -1103,10 +1117,11 @@ A window row's path is **relative to a window** and is spelled with a `window.` 
 `NS.GetSetting` and `NS.SetByPath` resolve that prefix against the session's **active window** —
 `NS.State.activeWindowId`, which the settings panel's window picker moves. Global rows keep absolute
 paths and resolve against `db.profile`. There are twenty-two of them: `enabled`, `minimap.hide`, the
-four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale, alpha and lock, distinct
-from the per-window `frame.*` three), `data.mergePets`, `data.throttle`, the four `export.*`
-preferences, the eight `statColors.*` swatches, and the two composed `sessionOnly` rows `state.testMode` and
-`state.debugConsole`, whose own `get`/`set` are the whole of their storage. The other 147 rows are
+four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
+the session-only view over every window's own `frame.locked`), `data.mergePets`, `data.throttle`,
+the four `export.*` preferences, the eight `statColors.*` swatches, and the two composed
+`sessionOnly` rows `state.testMode` and `state.debugConsole`. Those two and `master.locked` are the
+three session rows, whose own `get`/`set` are the whole of their storage. The other 147 rows are
 window rows.
 
 ```lua
