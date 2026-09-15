@@ -1059,7 +1059,7 @@ end)
 -- and `profilesPage = true` is how the host says the page exists. Read the way
 -- AttachTooltip shows it: the real button's OnEnter, GameTooltip:AddLine spied.
 local RESET_ALL_TIP = "Reset the current profile to its defaults \226\128\148 the same thing "
-    .. "Profiles \226\134\146 Reset Profile does. Your other profiles are not affected."
+    .. "Profiles -> Reset Profile does. Your other profiles are not affected."
 
 local function findButton(w, text, depth)
     depth = depth or 0
