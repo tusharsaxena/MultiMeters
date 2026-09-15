@@ -290,10 +290,11 @@ function doTest(rest)
     if not (M and M.SetTestMode) then return end
     local want = boolArg(rest)
     if want == nil then want = not (M.IsTest and M:IsTest()) end
-    -- The one switch, shared with the General page's Test mode box and the combat
-    -- ending: it keeps the windows on screen when the mode goes off and repaints
-    -- the panel so the box follows (modules/WindowManager.lua).
-    M:SetTestMode(want)
+    -- The one manual switch, shared with the General page's Test mode box: it
+    -- keeps the windows on screen when the mode goes off, repaints the panel so
+    -- the box follows, and refuses a start during combat, printing its own line
+    -- (modules/WindowManager.lua) -- so a refusal prints nothing more here.
+    if not M:SetTestMode(want) then return end
     out("test mode " .. (want and "on \226\128\148 showing placeholder rows" or "off"))
 end
 

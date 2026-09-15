@@ -432,6 +432,40 @@ function()
     assertEqual(NS.State.testMode, false)
 end)
 
+test("Schema: ticking Test mode in combat is refused, says why, and leaves the box unticked",
+function()
+    -- preview-mode (standard v2.48.0). The box goes through the same switch as the
+    -- verb, so it is refused the same way, and the panel is repainted so the box
+    -- the player just clicked redraws unticked. Unticking in combat is allowed.
+    -- red under: the checkbox writing the flag directly, or a refusal that does not
+    -- repaint the panel.
+    local inst = T.load()
+    local NS = inst.NS
+    local row
+    for _, r in ipairs(NS.Schema) do
+        if r.path == "state.testMode" then row = r end
+    end
+    local repaints, real = 0, NS.RefreshOptionsPanel
+    NS.RefreshOptionsPanel = function() repaints = repaints + 1 end
+    inst.mocks.setInCombat(true)
+    local before = #inst.mocks.__chat
+
+    row.set(true)
+    NS.RefreshOptionsPanel = real
+
+    assertEqual(NS.State.testMode, false, "the box started test mode in combat")
+    assertEqual(row.get(), false, "the box reads ticked after a refused start")
+    assertTrue(repaints > 0, "the panel was not repainted, so the clicked box stays ticked")
+    assertEqual(#inst.mocks.__chat - before, 1, "the refusal is one line")
+    assertTrue(inst.mocks.__chat[#inst.mocks.__chat]:find("Cannot start test mode during combat", 1, true) ~= nil)
+
+    inst.mocks.setInCombat(false)
+    row.set(true)
+    inst.mocks.setInCombat(true)
+    row.set(false)
+    assertEqual(NS.State.testMode, false, "unticking in combat must stay allowed")
+end)
+
 test("Schema: the master controls are ADDON-WIDE, and the per-window three are untouched",
 function()
     -- options-ui-§15's per-instance clause. A window is an instance here, so its own

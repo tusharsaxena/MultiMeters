@@ -594,26 +594,26 @@ function M:IsLocked()
     return true
 end
 
---- Placeholder data on or off -- the ONE switch that `/mm test`, the General
---- page's Test mode box and the combat ending all go through. Routed through
---- core/State.lua for the same one-sender reason as above, then every window is
---- marked dirty so the change is visible on the next throttle tick rather than
---- at the next meter event — which, out of combat, may never come.
+--- Is the player fighting? UnitAffectingCombat and never InCombatLockdown -- the
+--- show ladder's own reading (core/MultiMeters.lua's `fighting`), so "in combat"
+--- means the same thing to the refusal below as to the window it would show.
+local function fighting()
+    local f = _G.UnitAffectingCombat
+    return (f and f("player")) and true or false
+end
+
+--- What every start and stop does: the flag, through core/State.lua for the same
+--- one-sender reason as above; every window re-checked and marked dirty, so the
+--- change is visible on the next throttle tick rather than at the next meter
+--- event — which, out of combat, may never come; and the panel repainted last,
+--- so the Test mode box follows every switch and not only its own click
+--- (options-ui-§15).
 ---
---- LEAVING TEST MODE IS NOT CLOSING THE WINDOW. Test mode forces a window
---- visible; without the Show below, turning it off just stopped forcing and the
---- ordinary visibility rules hid a window the player was looking at — so
---- `/mm test` read as a close button with a confusing name. Whatever was on
---- screen for test stays on screen for real data, and `/mm toggle` is how you
---- close it. NOT during a perf suspend: Show skips the ladder, and a suspended
---- capture must be inert (performance-§6), which the combat ending would
---- otherwise break on the first pull of a capture.
----
---- The panel is repainted last, so the Test mode box follows every switch and
---- not only its own click (options-ui-§15).
-function M:SetTestMode(enabled)
+--- `keepShown` is the manual turn-off's extra, and ONLY the manual one's. See
+--- SetTestMode for why it exists and EndTestModeForCombat for why the pull does
+--- not get it.
+local function applyTestMode(enabled, keepShown)
     if NS.State and NS.State.SetTestMode then NS.State.SetTestMode(enabled) end
-    local keepShown = not enabled and not (NS.Perf and NS.Perf.suspended)
     for _, inst in ipairs(M.All()) do
         inst:RefreshVisibility()
         inst:MarkDirty()
@@ -622,12 +622,45 @@ function M:SetTestMode(enabled)
     if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
 end
 
---- Combat started: end test mode, if it is on, through the same switch, and say
---- so in one line (preview-mode). Called by core/MultiMeters.lua at
---- PLAYER_REGEN_DISABLED, ahead of that edge's COMBAT_CHANGED fan-out.
+--- Placeholder data on or off, BY HAND -- the one switch `/mm test` and the
+--- General page's Test mode box both go through.
+---
+--- A START DURING COMBAT IS REFUSED (preview-mode, standard v2.48.0): one line
+--- says why and the panel is repainted, so a box the player just ticked redraws
+--- unticked. Turning it off in combat stays allowed, and so does asking for "on"
+--- when it already is.
+---
+--- LEAVING TEST MODE BY HAND IS NOT CLOSING THE WINDOW. Test mode forces a window
+--- visible; without the Show, turning it off just stopped forcing and the
+--- ordinary visibility rules hid a window the player was looking at — so
+--- `/mm test` read as a close button with a confusing name. Whatever was on
+--- screen for test stays on screen for real data, and `/mm toggle` is how you
+--- close it. NOT during a perf suspend: Show skips the ladder, and a suspended
+--- capture must be inert (performance-§6).
+---
+--- @param enabled boolean
+--- @return boolean applied  false when the start was refused
+function M:SetTestMode(enabled)
+    if enabled and not M:IsTest() and fighting() then
+        if NS.Print then NS.Print(L["Cannot start test mode during combat"]) end
+        if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
+        return false
+    end
+    applyTestMode(enabled, not enabled and not (NS.Perf and NS.Perf.suspended))
+    return true
+end
+
+--- Combat started: end test mode, if it is on, and say so in one line
+--- (preview-mode). Called by core/MultiMeters.lua at PLAYER_REGEN_DISABLED, ahead
+--- of that edge's COMBAT_CHANGED fan-out.
+---
+--- WITHOUT the manual turn-off's Show. That Show marks a window `forcedShow`, and
+--- a forced window overrules the context rules -- so a window set to hide in
+--- combat would have stayed up for the whole pull. The pull asked for nothing;
+--- each window goes where its own rules put it.
 function M:EndTestModeForCombat()
     if not M:IsTest() then return end
-    M:SetTestMode(false)
+    applyTestMode(false, false)
     if NS.Print then NS.Print(L["Test mode off \226\128\148 combat started"]) end
 end
 

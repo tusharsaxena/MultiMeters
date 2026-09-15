@@ -289,7 +289,8 @@ test("Lifecycle: combat ending test mode during a perf suspend re-shows no windo
     -- named as one of the things that may not re-show a window behind its back.
     -- Leaving test mode keeps windows on screen through WindowProto:Show, which
     -- skips the ladder, so it has to stand down while suspended.
-    -- red under: dropping the `suspended` guard in WindowManager:SetTestMode.
+    -- red under: the combat ending keeping windows on screen through Show, or the
+    -- manual turn-off doing so without the `suspended` guard.
     local inst = T.load{ enable = true }
     local ns = inst.NS
     local M = ns.WindowManager
@@ -306,6 +307,52 @@ test("Lifecycle: combat ending test mode during a perf suspend re-shows no windo
     for _, w in ipairs(M.All()) do
         assertFalse(w:IsShown(), "window " .. tostring(w.id) .. " was re-shown behind the suspend")
     end
+
+    -- The manual turn-off keeps windows on screen, but not behind a suspend either.
+    ns.Perf.suspended = true
+    M:SetTestMode(true)
+    M:SetTestMode(false)
+    ns.Perf.suspended = false
+    for _, w in ipairs(M.All()) do
+        assertFalse(w:IsShown(), "window " .. tostring(w.id) .. " was re-shown by /mm test off")
+    end
+end)
+
+test("Lifecycle: the combat ending lets the ladder decide, so a hide-in-combat window hides",
+function()
+    -- Only a MANUAL turn-off keeps windows on screen (`/mm test off`, unticking the
+    -- box): the player is looking at the window and asked. The pull asked nothing,
+    -- so each window goes where its own rules say, and "hide in combat" means
+    -- hidden. red under: the combat ending going through the manual path's Show,
+    -- which marks the window forcedShow and overrules the combat rule.
+    local inst = T.load{ enable = true }
+    local ns, M = inst.NS, inst.NS.WindowManager
+    ns.Database.GetWindows()[1].visibility.hideInCombat = true
+    local w = M.All()[1]
+
+    M:SetTestMode(true)
+    assertTrue(w:IsShown(), "the fixture needs test mode to put the window up")
+
+    inst.mocks.setInCombat(true)
+    inst.mocks.__fireEvent("PLAYER_REGEN_DISABLED")
+    assertEqual(ns.State.testMode, false)
+    assertFalse(w:IsShown(), "a window set to hide in combat stayed up after the pull ended test mode")
+    assertFalse(w.forcedShow == true, "the combat ending marked the window explicitly shown")
+end)
+
+test("Lifecycle: a MANUAL turn-off still keeps the window its rules would hide", function()
+    -- The other half: leaving test mode by hand is not closing the window.
+    -- red under: dropping the manual path's Show along with the combat path's.
+    local inst = T.load{ enable = true }
+    local ns, M = inst.NS, inst.NS.WindowManager
+    ns.Database.GetWindows()[1].visibility.hideOutOfCombat = true
+    local w = M.All()[1]
+
+    M:SetTestMode(true)
+    assertTrue(w:IsShown(), "the fixture needs test mode to put the window up")
+    ns.Slash:OnSlash("test off")
+    assertEqual(ns.State.testMode, false)
+    assertTrue(w:IsShown(), "`/mm test off` closed the window")
 end)
 
 test("Lifecycle: every player-state edge fans out as PLAYER_STATE_CHANGED", function()

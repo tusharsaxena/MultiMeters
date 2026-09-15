@@ -742,6 +742,7 @@ L["Test mode"] = "Test mode"
 L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."] =
     "Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."
 L["Test mode off \226\128\148 combat started"] = "Test mode off \226\128\148 combat started"
+L["Cannot start test mode during combat"] = "Cannot start test mode during combat"
 L["Debug console"] = "Debug console"
 L["Show or hide the on-screen debug console. Session only; it does not turn debug logging on."] =
     "Show or hide the on-screen debug console. Session only; it does not turn debug logging on."

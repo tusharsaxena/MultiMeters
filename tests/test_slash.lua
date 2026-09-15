@@ -441,6 +441,33 @@ function()
     assertFalse(row.get(), "the box still reads ticked after `/mm test off`")
 end)
 
+test("Slash: `test` refuses to START in combat with one line, and still stops there", function()
+    -- preview-mode (standard v2.48.0): a start during combat is refused, in one
+    -- line, whether asked for with `on` or by a bare toggle; turning it off in
+    -- combat stays allowed. red under: no combat check on the start, a check that
+    -- also blocks the stop, or the verb printing its "on" line after a refusal.
+    local inst = T.load()
+    local M = inst.NS.WindowManager
+    inst.mocks.setInCombat(true)
+
+    local lines = say(inst, "test on")
+    assertFalse(M:IsTest(), "`/mm test on` started test mode in combat")
+    assertEqual(#lines, 1, "the refusal is one line: " .. joined(lines))
+    assertTrue(lines[1]:find("Cannot start test mode during combat", 1, true) ~= nil, lines[1])
+
+    lines = say(inst, "test")
+    assertFalse(M:IsTest(), "a bare `/mm test` started test mode in combat")
+    assertEqual(#lines, 1, joined(lines))
+    assertTrue(lines[1]:find("Cannot start test mode during combat", 1, true) ~= nil, lines[1])
+
+    inst.mocks.setInCombat(false)
+    say(inst, "test on")
+    assertTrue(M:IsTest())
+    inst.mocks.setInCombat(true)
+    say(inst, "test off")
+    assertFalse(M:IsTest(), "turning test mode off in combat must stay allowed")
+end)
+
 test("Slash: `test` sets and toggles through the registry", function()
     local inst = T.load()
     local M = inst.NS.WindowManager

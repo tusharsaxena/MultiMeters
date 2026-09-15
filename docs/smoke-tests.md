@@ -198,7 +198,9 @@ second edge to catch.
 - Drag the window by its body. Drag the bottom-right grip.
 - `/mm lock on`. Try to drag again.
 - `/mm test` on and off (or **General → Master controls → Test mode**), with the settings panel open.
-- Turn Test mode on again and start a fight (a target dummy will do).
+- Turn Test mode on again and start a fight (a target dummy will do). Repeat with the window's
+  **hide in combat** rule ticked on its Visibility page.
+- While still in combat, tick the Test mode box, then type `/mm test`.
 
 **Pass.**
 - **Locking and Test mode are independent — not coupled.** `WindowManager:SetLocked` used to also
@@ -210,8 +212,12 @@ second edge to catch.
 - **The Test mode box follows the verb.** With the panel open, `/mm test` ticks and unticks the box
   on General → Master controls without a click.
 - **Combat ends Test mode.** The pull prints one line, *Test mode off — combat started*; the
-  placeholder rows give way to the real (possibly empty) grid, the window stays on screen, and the
-  Test mode box unticks. Leaving combat does not turn it back on.
+  placeholder rows give way to the real (possibly empty) grid and the Test mode box unticks. The
+  window then goes where its own rules put it: with **hide in combat** ticked it disappears,
+  otherwise it stays up. Leaving combat does not turn test mode back on. (`/mm test off` by hand is
+  different: it always leaves the window on screen.)
+- **Starting in combat is refused.** In combat, ticking the box or typing `/mm test` prints one
+  line, *Cannot start test mode during combat*, and the box stays unticked.
 - **Test mode fills the window with placeholder rows** — ten Ka0s-named members with plausible,
   **non-jittering** numbers. The numbers are deterministic; a preview that changes every refresh is
   unusable for judging column widths, which is the job it exists for.
