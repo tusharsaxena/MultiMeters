@@ -367,20 +367,37 @@ function()
     -- descriptor.skipRestoreAll and by this stub's own loop, because two
     -- spellings of one predicate is how a reset ends up deleting profiles on
     -- exactly the install nobody tests.
-    -- red under: dropping the vetoedFromResetAll guard from the stub's loop.
+    -- red under: dropping the vetoedFromResetAll guard from the stub's loop, or
+    -- the stub no longer resetting the profile.
+    --
+    -- The row walk has NOTHING to do on a degraded load, and that is correct: the
+    -- veto leaves it only `sessionOnly` rows, and this addon's two (the debug
+    -- console and Test mode) are both composed by LibKa0s' MasterControls, so a
+    -- library-less schema carries neither. What is pinned is that the walk touches
+    -- session rows only -- with the guard gone it applies every row, profiles
+    -- included -- and that the profile reset, which IS the reset, still runs.
     local inst = degradedInstance()
+    local sessionRows = 0
+    for _, row in ipairs(inst.NS.Schema) do
+        if row.sessionOnly then sessionRows = sessionRows + 1 end
+    end
+    inst.NS.Slash:OnSlash("window new Second")
+    assertEqual(#inst.NS.Database.GetWindows(), 2)
+
     local applied = {}
     local realApplyDefault = inst.NS.ApplyDefault
     inst.NS.ApplyDefault = function(row)
-        applied[#applied + 1] = row.page
+        applied[#applied + 1] = row
         return realApplyDefault(row)
     end
     inst.NS.Helpers.RestoreAllDefaults()
     inst.NS.ApplyDefault = realApplyDefault
 
-    assertTrue(#applied > 0, "the degraded reset applied no defaults at all")
-    for _, page in ipairs(applied) do
-        assertFalse(page == "profiles", "the degraded reset touched a profiles row")
+    assertEqual(#inst.NS.Database.GetWindows(), 1, "the degraded reset did not reset the profile")
+    assertEqual(#applied, sessionRows, "the degraded reset walked rows the veto should have left out")
+    for _, row in ipairs(applied) do
+        assertFalse(row.page == "profiles", "the degraded reset touched a profiles row")
+        assertTrue(row.sessionOnly == true, tostring(row.path) .. " is not a session row")
     end
 end)
 

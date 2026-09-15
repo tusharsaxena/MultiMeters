@@ -290,15 +290,10 @@ function doTest(rest)
     if not (M and M.SetTestMode) then return end
     local want = boolArg(rest)
     if want == nil then want = not (M.IsTest and M:IsTest()) end
+    -- The one switch, shared with the General page's Test mode box and the combat
+    -- ending: it keeps the windows on screen when the mode goes off and repaints
+    -- the panel so the box follows (modules/WindowManager.lua).
     M:SetTestMode(want)
-    -- LEAVING TEST MODE IS NOT CLOSING THE WINDOW. Test mode forces a window
-    -- visible; without this, turning it off just stopped forcing and the ordinary
-    -- visibility rules hid a window the player was looking at — so `/mm test`
-    -- read as a close button with a confusing name. Whatever was on screen for
-    -- test stays on screen for real data, and `/mm toggle` is how you close it.
-    if not want then
-        for _, inst in ipairs(M.All()) do inst:Show() end
-    end
     out("test mode " .. (want and "on \226\128\148 showing placeholder rows" or "off"))
 end
 

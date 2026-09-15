@@ -263,7 +263,19 @@ end
 --- publishing: the only subscriber reads UnitAffectingCombat("player") live, and
 --- a payload here would be a second answer that can disagree with the first
 --- across a death, where PLAYER_REGEN_ENABLED does not reliably fire.
-function NS:OnCombatChanged()
+---
+--- THE ONE EDGE THIS HANDLER READS is the start of combat, and only to end test
+--- mode (preview-mode): placeholder rows are not what a player wants to be
+--- looking at once a pull starts. modules/WindowManager.lua owns the ending and
+--- decides whether there is anything to end; it runs BEFORE the fan-out, so each
+--- window's own combat re-check already sees the mode off.
+---
+--- @param event string|nil
+function NS:OnCombatChanged(event)
+    if event == "PLAYER_REGEN_DISABLED" then
+        local M = NS.WindowManager
+        if M and M.EndTestModeForCombat then M:EndTestModeForCombat() end
+    end
     self:SendMessage(MSG.COMBAT_CHANGED)
 end
 

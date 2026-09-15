@@ -263,19 +263,20 @@ end)
 --- this one is what keeps those hidden rows honest.
 ---
 --- `Master controls` leads the General page and is options-ui-§15's canonical set:
---- enable, general visibility, master scale, master alpha, lock frame and the
---- debug console -- six rows, with the two resets drawn as a button pair rather
---- than as rows. The four counts that grew by one are the colour MODES
+--- enable, general visibility, master scale, master alpha, lock frame, the
+--- debug console and test mode -- seven rows, with the two resets drawn as a
+--- button pair rather than as rows. The four counts that grew by one are the colour MODES
 --- options-ui-§17 asked for beside the four swatches that had none (the window's
 --- fill and its edge, a cell's bar outline, a tooltip bar's outline).
 local PARTITION = {
-    -- TEN on Master controls, not six: the canonical six, then this addon's own
-    -- four appended after them. `General` was a tab of four rows -- a minimap
+    -- TEN on Master controls, not seven: the canonical seven, then this addon's
+    -- own three appended after them. `General` was a tab of four rows -- a minimap
     -- toggle, two addon-wide data settings and Test mode -- sitting next to the
-    -- tab everybody opens, and none of the four is a subject of its own. §15
-    -- forbids reordering, renaming or splitting the canonical set; it does not
-    -- forbid an addon's own rows after it, and the case below pins that the six
-    -- come FIRST and contiguous.
+    -- tab everybody opens, and none of the four is a subject of its own. Test mode
+    -- has since become a canonical row (options-ui-§15, standard v2.47.0) and is
+    -- composed; the other three follow the set. §15 forbids reordering, renaming
+    -- or splitting the canonical set; it does not forbid an addon's own rows after
+    -- it, and the case below pins that the seven come FIRST and contiguous.
     general    = { { "Master controls", 10 }, { "Statistic colors", 8 } },
     windows    = { { "Window", 1 } },
     frame      = { { "General", 6 }, { "Size and position", 6 },
@@ -340,6 +341,7 @@ local MASTER_ROWS = {
     { "master.alpha",       "Master alpha"        },
     { "master.locked",      "Lock frame"          },
     { "state.debugConsole", "Debug console"       },
+    { "state.testMode",     "Test mode"           },
 }
 
 test("Schema: the General page opens on Master controls, holding exactly the canonical set",
@@ -348,7 +350,7 @@ function()
     -- that applies to it and MUST NOT reorder them, rename them, or split them
     -- across tabs.
     -- The canonical rows are the tab's FIRST rows, contiguous and in order. This
-    -- addon's own four follow them -- §15 forbids reordering, renaming and
+    -- addon's own three follow them -- §15 forbids reordering, renaming and
     -- splitting the set, not appending after it -- so the assertion is on the
     -- PREFIX rather than on the whole tab, and the extras are pinned separately
     -- below.
@@ -374,16 +376,60 @@ function()
     for i = 1, #want do prefix[i] = got[i] end
     assertEqual(table.concat(prefix, "\n"), table.concat(want, "\n"))
 
-    -- ...and what follows them is this addon's four, in the order the retired
-    -- General tab had them.
+    -- ...and what follows them is this addon's three, in the order the retired
+    -- General tab had them. Test mode was the fourth; it is canonical now.
     local extras = {}
     for i = #want + 1, #got do extras[#extras + 1] = got[i] end
     assertEqual(table.concat(extras, "\n"), table.concat({
         "minimap.hide = " .. L["Show minimap button"],
         "data.mergePets = " .. L["Merge pets into their owner"],
         "data.throttle = " .. L["Refresh interval"],
-        "state.testMode = " .. L["Test mode"],
     }, "\n"), "the retired General tab's rows must follow the canonical set, in order")
+end)
+
+test("Schema: Test mode is the COMPOSED row right after Debug console, alone on its line",
+function()
+    -- options-ui-§15 / preview-mode (standard v2.47.0). The row is the one LibKa0s'
+    -- MasterControls composer emits from `testModePath`, never a hand-written copy:
+    -- session-only, on its own line, a boolean whose default is off so Reset all
+    -- settings ends the mode, and bound to this addon's own state.
+    -- red under: hand-writing the row again (no `composed` stamp), dropping
+    -- `testModePath` or `defaults.testMode` from the spec, or letting the next row
+    -- share its line.
+    local inst = T.load()
+    local NS, L = inst.NS, inst.NS.L
+
+    local rows = NS.SchemaForPage("general")
+    local at
+    for i, row in ipairs(rows) do
+        if row.path == "state.testMode" then
+            assertTrue(at == nil, "state.testMode is declared twice")
+            at = i
+        end
+    end
+    assertTrue(at ~= nil, "no state.testMode row")
+    local row = rows[at]
+
+    assertEqual(rows[at - 1].path, "state.debugConsole", "the row directly before Test mode")
+    assertEqual(row.composed, true, "the row must come from the composer, not the schema's own text")
+    assertEqual(row.label, L["Test mode"])
+    assertEqual(row.group, L["Master controls"])
+    assertEqual(row.type, "bool")
+    assertEqual(row.sessionOnly, true)
+    assertEqual(row.startsLine, true)
+    assertEqual(row.default, false, "no default and Reset all settings leaves the mode running")
+    assertEqual(type(row.get), "function")
+    assertEqual(type(row.set), "function")
+    assertTrue(rows[at + 1].startsLine == true,
+        rows[at + 1].path .. " would share Test mode's line")
+
+    -- The row reads and writes the one flag every other switch does.
+    assertEqual(row.get(), false)
+    row.set(true)
+    assertEqual(NS.State.testMode, true)
+    assertEqual(row.get(), true)
+    row.set(false)
+    assertEqual(NS.State.testMode, false)
 end)
 
 test("Schema: the master controls are ADDON-WIDE, and the per-window three are untouched",

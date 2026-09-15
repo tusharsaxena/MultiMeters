@@ -1196,22 +1196,23 @@ NS.Schema = {
     -- ONE VISIBLE TAB of settings, plus the palette. **Master controls** is
     -- options-ui-§15's canonical set and is FIRST on this page in every Ka0s addon
     -- -- enable, general visibility, the two master multipliers, the addon-wide
-    -- lock and the debug console -- and this addon's own four follow it: the
-    -- minimap button, the two addon-wide data settings and Test mode. The two
-    -- resets close the tab as a button pair.
+    -- lock, the debug console and Test mode -- and this addon's own three follow
+    -- it: the minimap button and the two addon-wide data settings. The two resets
+    -- close the tab as a button pair.
     --
-    -- **THE `General` TAB IS GONE**, and its four rows are that tail. It was four
+    -- **THE `General` TAB IS GONE**, and three of its four rows are that tail; the
+    -- fourth, Test mode, became a canonical row (standard v2.47.0). It was four
     -- rows with nothing in common but "addon-wide", sitting behind a click next to
     -- the tab everybody opens -- the same argument that retired Maintenance and
     -- Data before it, arriving one tab later. §15 forbids REORDERING, RENAMING or
     -- SPLITTING the canonical set; it does not forbid an addon's own rows after
-    -- it, and the six stay contiguous and first, which is what
+    -- it, and the seven stay contiguous and first, which is what
     -- tests/test_schema.lua pins. Nothing moved in storage: a `group` is not a
     -- stored path.
     --
-    -- `enabled` AND `state.debugConsole` MOVED INTO THE COMPOSED BLOCK and are
-    -- declared nowhere else -- two controls over one setting is the thing this
-    -- whole pass exists to remove. Their stored paths are unchanged, because a
+    -- `enabled`, `state.debugConsole` AND `state.testMode` MOVED INTO THE COMPOSED
+    -- BLOCK and are declared nowhere else -- two controls over one setting is the
+    -- thing this whole pass exists to remove. Their paths are unchanged, because a
     -- `group` is not a stored path and needs no migration.
     --
     -- TWO TABS BECAME NONE BEFORE THAT, ONE AT A TIME. "Maintenance" was one
@@ -1227,8 +1228,10 @@ NS.Schema = {
     block(MASTER_ROWS),
     -- The one inverted row: LibDBIcon owns this table and its key is `hide`, while
     -- a checkbox the user reads has to be phrased positively. See "Inversion".
+    -- `startsLine` because the composed Test mode row above it sits on a line of
+    -- its own (options-ui-§15), and without this the flow would pair the two.
     {
-        path = "minimap.hide", type = "bool", default = false, invert = true,
+        path = "minimap.hide", type = "bool", default = false, invert = true, startsLine = true,
         page = "general", group = L["Master controls"],
         label = L["Show minimap button"], desc = L["Show the minimap button for opening these settings."],
         onChange = refreshMinimap,
@@ -1257,35 +1260,6 @@ NS.Schema = {
         label = L["Refresh interval"],
         desc = L["Seconds between refreshes. Lower is more responsive and costs more; the display updates at most this often no matter how fast the game reports numbers."],
         validate = isNumberIn(Const.THROTTLE_MIN, Const.THROTTLE_MAX),
-    },
-    -- ── Session-only rows ──
-    --
-    -- Never persisted, so they have no home in the defaults tree and are exempt
-    -- from ValidateSchema's resolution check. They are rows anyway because they
-    -- belong on the page and in `/mm list` beside the settings they sit next to --
-    -- a toggle that exists only in the panel is a toggle the CLI cannot reach.
-    {
-        path = "state.testMode", type = "bool", default = false, sessionOnly = true,
-        page = "general", group = L["Master controls"],
-        label = L["Test mode"],
-        desc = L["Fill every window with placeholder data so you can lay out columns without being in combat."],
-        get = function() return NS.State and NS.State.testMode or false end,
-        set = function(v)
-            -- Through the registry when it is up (unlocking and preview are coupled
-            -- there), and through the state writer otherwise, which is the sole
-            -- sender of TEST_MODE_CHANGED either way.
-            local M = NS.WindowManager
-            if M and M.SetTestMode then
-                M:SetTestMode(v)
-                -- Same rule as `/mm test`: leaving test mode is not closing the
-                -- window. See settings/Slash.lua's doTest.
-                if not v then
-                    for _, inst in ipairs(M.All()) do inst:Show() end
-                end
-                return
-            end
-            if NS.State then NS.State.SetTestMode(v) end
-        end,
     },
 
     -- ── Export ──────────────────────────────────────────────

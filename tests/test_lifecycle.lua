@@ -230,6 +230,84 @@ test("Lifecycle: both combat edges fan out as one message carrying nothing", fun
     assertNil(seen.last)
 end)
 
+--- The General page's Test mode row, as the panel would read it.
+local function testModeRow(inst)
+    for _, row in ipairs(inst.NS.Schema) do
+        if row.path == "state.testMode" then return row end
+    end
+end
+
+test("Lifecycle: combat starting ENDS test mode, says so once, and the box follows", function()
+    -- preview-mode (standard v2.47.0): a test mode ends when combat starts. It ends
+    -- through the same switch `/mm test` and the checkbox use, prints one line, and
+    -- repaints the panel so the Test mode box is not left ticked over real data.
+    -- red under: OnCombatChanged only fanning out, keying on the wrong edge, or
+    -- ending the mode without repainting the panel.
+    local inst = T.load{ enable = true }
+    local ns = inst.NS
+    ns.WindowManager:SetTestMode(true)
+    assertTrue(testModeRow(inst).get(), "the fixture needs the box ticked")
+
+    local repaints, real = 0, ns.RefreshOptionsPanel
+    ns.RefreshOptionsPanel = function() repaints = repaints + 1 end
+    local seen = watch(inst, MSG.COMBAT_CHANGED)
+    local before = #inst.mocks.__chat
+
+    inst.mocks.__fireEvent("PLAYER_REGEN_DISABLED")
+    ns.RefreshOptionsPanel = real
+
+    assertEqual(ns.State.testMode, false, "combat started and test mode is still on")
+    assertFalse(testModeRow(inst).get(), "the Test mode box is still ticked")
+    assertTrue(repaints > 0, "the panel was not repainted, so an open panel shows a stale box")
+    assertEqual(#inst.mocks.__chat - before, 1, "exactly one line says why")
+    assertTrue(inst.mocks.__chat[#inst.mocks.__chat]:find("combat started", 1, true) ~= nil,
+        "the line does not say why: " .. tostring(inst.mocks.__chat[#inst.mocks.__chat]))
+    assertEqual(seen.n, 1, "the combat edge still fans out")
+end)
+
+test("Lifecycle: combat ending, or starting with test mode off, leaves it alone and says nothing",
+function()
+    -- red under: ending the mode on PLAYER_REGEN_ENABLED too, or printing the line
+    -- on every pull whether or not there was a test mode to end.
+    local inst = T.load{ enable = true }
+    local ns = inst.NS
+    local before = #inst.mocks.__chat
+
+    inst.mocks.__fireEvent("PLAYER_REGEN_DISABLED")
+    assertEqual(ns.State.testMode, false)
+    assertEqual(#inst.mocks.__chat, before, "a pull with no test mode printed something")
+
+    ns.WindowManager:SetTestMode(true)
+    before = #inst.mocks.__chat
+    inst.mocks.__fireEvent("PLAYER_REGEN_ENABLED")
+    assertEqual(ns.State.testMode, true, "leaving combat is not a reason to end test mode")
+    assertEqual(#inst.mocks.__chat, before)
+end)
+
+test("Lifecycle: combat ending test mode during a perf suspend re-shows no window", function()
+    -- performance-§6: a suspended capture must be inert, and a combat transition is
+    -- named as one of the things that may not re-show a window behind its back.
+    -- Leaving test mode keeps windows on screen through WindowProto:Show, which
+    -- skips the ladder, so it has to stand down while suspended.
+    -- red under: dropping the `suspended` guard in WindowManager:SetTestMode.
+    local inst = T.load{ enable = true }
+    local ns = inst.NS
+    local M = ns.WindowManager
+    M:SetTestMode(true)
+    ns.Perf.suspended = true
+    M:Suspend()
+    for _, w in ipairs(M.All()) do w:RefreshVisibility() end
+    for _, w in ipairs(M.All()) do assertFalse(w:IsShown(), "the fixture needs suspend to hide") end
+
+    inst.mocks.__fireEvent("PLAYER_REGEN_DISABLED")
+    ns.Perf.suspended = false
+
+    assertEqual(ns.State.testMode, false, "test mode still ends under a suspend")
+    for _, w in ipairs(M.All()) do
+        assertFalse(w:IsShown(), "window " .. tostring(w.id) .. " was re-shown behind the suspend")
+    end
+end)
+
 test("Lifecycle: every player-state edge fans out as PLAYER_STATE_CHANGED", function()
     local inst = T.load{ enable = true }
     local seen = watch(inst, MSG.PLAYER_STATE_CHANGED)

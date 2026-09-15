@@ -415,6 +415,32 @@ test("Slash: `lock` sets, and a bare `lock` toggles", function()
     assertTrue(M:IsLocked(), "a bare verb toggles, which is what a nil boolean parse means")
 end)
 
+test("Slash: `test` repaints the panel on both edges, so the Test mode box follows the verb",
+function()
+    -- options-ui-§15: the Master controls box must be ticked exactly while test mode
+    -- is on, whichever switch moved it. An open panel is only redrawn when asked.
+    -- red under: WindowManager:SetTestMode not repainting the panel.
+    local inst = T.load()
+    local ns = inst.NS
+    local row
+    for _, r in ipairs(ns.Schema) do
+        if r.path == "state.testMode" then row = r end
+    end
+    local repaints, real = 0, ns.RefreshOptionsPanel
+    ns.RefreshOptionsPanel = function() repaints = repaints + 1 end
+
+    say(inst, "test on")
+    local afterOn = repaints
+    local tickedOn = row.get()
+    say(inst, "test off")
+    ns.RefreshOptionsPanel = real
+
+    assertTrue(afterOn > 0, "turning test mode on did not repaint the panel")
+    assertTrue(repaints > afterOn, "turning test mode off did not repaint the panel")
+    assertTrue(tickedOn, "the box did not read ticked after `/mm test on`")
+    assertFalse(row.get(), "the box still reads ticked after `/mm test off`")
+end)
+
 test("Slash: `test` sets and toggles through the registry", function()
     local inst = T.load()
     local M = inst.NS.WindowManager

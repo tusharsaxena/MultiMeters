@@ -197,7 +197,8 @@ second edge to catch.
 - `/mm lock off` (or uncheck **Frame → Lock window**).
 - Drag the window by its body. Drag the bottom-right grip.
 - `/mm lock on`. Try to drag again.
-- `/mm test` on and off (or **General → General → Test mode**).
+- `/mm test` on and off (or **General → Master controls → Test mode**), with the settings panel open.
+- Turn Test mode on again and start a fight (a target dummy will do).
 
 **Pass.**
 - **Locking and Test mode are independent — not coupled.** `WindowManager:SetLocked` used to also
@@ -206,6 +207,11 @@ second edge to catch.
   and unchecking Test mode while a window is unlocked now actually clears the placeholder rows rather
   than being a no-op. Confirm both halves: lock off with Test mode off shows a real (possibly empty)
   grid, and Test mode on with the window locked still shows placeholders.
+- **The Test mode box follows the verb.** With the panel open, `/mm test` ticks and unticks the box
+  on General → Master controls without a click.
+- **Combat ends Test mode.** The pull prints one line, *Test mode off — combat started*; the
+  placeholder rows give way to the real (possibly empty) grid, the window stays on screen, and the
+  Test mode box unticks. Leaving combat does not turn it back on.
 - **Test mode fills the window with placeholder rows** — ten Ka0s-named members with plausible,
   **non-jittering** numbers. The numbers are deterministic; a preview that changes every refresh is
   unusable for judging column widths, which is the job it exists for.
@@ -427,21 +433,22 @@ second edge to catch.
   and it draws **no banner** — it is not a window page. Two tabs, in this order.
   **Master controls** is `options-ui-§15`'s canonical set and opens the page: **Enable Multi
   Meters**, **General visibility**, **Master scale**, **Master alpha**, **Lock frame**, **Debug
-  console**, closed by the **Reset position** / **Reset all settings** button pair and one sentence
+  console**, **Test mode** (alone on its line, below Lock frame / Debug console), closed by the
+  **Reset position** / **Reset all settings** button pair and one sentence
   under it saying what each reaches. The four `master.*` rows are addon-wide and are **not** the
   per-window lock, scale and opacity on Frame — set Master scale to 0.5 with a window already at
   0.8 and the window draws at 0.4, and putting the master back to 1.0 gives every window exactly the
-  size it was set to. Below the canonical six and **above** the button pair sit this addon's own four:
-  the minimap toggle, then **Merge pets into their owner** and **Refresh interval** — both
-  addon-wide: change either and **every** window follows, not just the selected one — then Test mode.
-  They were a tab called **General**; there must be no tab by that name on this page any more, and a
+  size it was set to. Below the canonical seven and **above** the button pair sit this addon's own
+  three: the minimap toggle, starting a fresh line under Test mode, then **Merge pets into their
+  owner** and **Refresh interval** — both addon-wide: change either and **every** window follows,
+  not just the selected one. With Test mode they were a tab called **General**; there must be no tab by that name on this page any more, and a
   strip showing three tabs here is the fold half-done. **Statistic colors** is the palette (below).
   The retired **Data**, **Maintenance** and **General** tabs are where those rows used to live.
   There is deliberately
   **no** Reset meter data button here, or on any page; the header's own reset control is the one way
   to it. Reset position is the one control on the page that is **not** addon-wide — it moves the
   window the banner is pointed at and nothing else, which the line under the pair says.
-  **Nothing is drawn twice**: Test mode and the debug console are `sessionOnly` schema rows, so a
+  **Nothing is drawn twice**: Test mode and the debug console are composed `sessionOnly` rows, so a
   second "Preview mode"/"Debug console" checkbox or a second *Debug* heading is the duplicate this
   redesign removed coming back.
 - **The statistic palette is editable, and every surface follows it.** General → **Statistic

@@ -518,7 +518,7 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
-### test_lifecycle.lua (29)
+### test_lifecycle.lua (32)
 
 - Lifecycle: NS IS the AceAddon object, promoted in place
 - Lifecycle: every module registers, and the enable cascade runs them all
@@ -530,6 +530,9 @@ badge and any count quoted in the docs must agree with it.
 - Lifecycle: OnEnable registers exactly the events the fan-out handles
 - Lifecycle: no module registers a game event of its own
 - Lifecycle: both combat edges fan out as one message carrying nothing
+- Lifecycle: combat starting ENDS test mode, says so once, and the box follows
+- Lifecycle: combat ending, or starting with test mode off, leaves it alone and says nothing
+- Lifecycle: combat ending test mode during a perf suspend re-shows no window
 - Lifecycle: every player-state edge fans out as PLAYER_STATE_CHANGED
 - Lifecycle: a client with no PLAYER_IS_GLIDING_CHANGED still enables
 - Lifecycle: PLAYER_ENTERING_WORLD is republished with its login/reload flags
@@ -1721,7 +1724,7 @@ badge and any count quoted in the docs must agree with it.
 - The profile ships the one key LibDBIcon reads, and nothing else
 - modules/Minimap.lua passes the silent flag to every LibStub call
 
-### test_schema.lua (36)
+### test_schema.lua (37)
 
 - Schema: a `hidden` row is writable and listable but draws no control
 - Schema: the sort and the session type are hidden rows the seam validates (issue #50)
@@ -1734,6 +1737,7 @@ badge and any count quoted in the docs must agree with it.
 - The Frame page's Defaults button does NOT broadcast
 - Schema: every page's tabs are the designed ones, in order, at the designed size
 - Schema: the General page opens on Master controls, holding exactly the canonical set
+- Schema: Test mode is the COMPOSED row right after Debug console, alone on its line
 - Schema: the master controls are ADDON-WIDE, and the per-window three are untouched
 - Schema: a moved setting is declared ONCE, not twice
 - Schema: every colour swatch has its mode beside it, on the same line
@@ -1824,7 +1828,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (53)
+### test_slash.lua (54)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1849,6 +1853,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `export` refuses while the game restricts combat data
 - Slash: the library did not register `perf` behind the addon's back
 - Slash: `lock` sets, and a bare `lock` toggles
+- Slash: `test` repaints the panel on both edges, so the Test mode box follows the verb
 - Slash: `test` sets and toggles through the registry
 - Slash: `lock` moves the lock and NOTHING else
 - Slash: `window new` and `window delete` act on the registry
@@ -2045,7 +2050,7 @@ badge and any count quoted in the docs must agree with it.
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
-| test_lifecycle.lua | 29 |
+| test_lifecycle.lua | 32 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
 | test_provider.lua | 78 |
@@ -2073,14 +2078,14 @@ badge and any count quoted in the docs must agree with it.
 | test_visibility.lua | 41 |
 | test_windowmanager.lua | 41 |
 | test_minimap.lua | 17 |
-| test_schema.lua | 36 |
+| test_schema.lua | 37 |
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 53 |
+| test_slash.lua | 54 |
 | test_options_panel.lua | 42 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 29 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1825** |
+| **Total** | **1830** |

@@ -6,15 +6,16 @@
 -- TWO TABS. **Master controls** is options-ui-§15's canonical set, first on this
 -- page in every Ka0s addon and COMPOSED rather than written out
 -- (settings/Schema.lua's MASTER_ROWS): enable, general visibility, master scale,
--- master alpha, lock frame, debug console -- then this addon's own four, the
--- minimap button, the two addon-wide data settings and Test mode, and then the
+-- master alpha, lock frame, debug console, test mode -- then this addon's own
+-- three, the minimap button and the two addon-wide data settings, and then the
 -- two resets as a button pair. **Statistic colors** is the generated palette.
 --
--- THE `General` TAB IS GONE and those four rows are that tail. It was four rows
--- with nothing in common but "addon-wide", behind a click next to the tab
--- everybody opens -- the same argument that retired Data and Maintenance, one tab
--- later. §15 forbids reordering, renaming or splitting the canonical set, not
--- appending after it; the six stay first and contiguous, which is what
+-- THE `General` TAB IS GONE and three of its four rows are that tail; the fourth,
+-- Test mode, is a canonical row now (standard v2.47.0) and is composed. It was
+-- four rows with nothing in common but "addon-wide", behind a click next to the
+-- tab everybody opens -- the same argument that retired Data and Maintenance, one
+-- tab later. §15 forbids reordering, renaming or splitting the canonical set, not
+-- appending after it; the seven stay first and contiguous, which is what
 -- tests/test_schema.lua pins. The page KEEPS its name: a page called General
 -- holding the addon-wide settings is right, and it was only the tab inside it
 -- that named nothing.
@@ -27,7 +28,8 @@
 --
 -- Two controls here — Test mode and the Debug console — are SESSION state that is
 -- never written to SavedVariables. They are nonetheless SCHEMA ROWS, marked
--- `sessionOnly`, and this file renders NOTHING of its own for them.
+-- `sessionOnly` and composed by LibKa0s' MasterControls (settings/Schema_Compose.lua
+-- binds both), and this file renders NOTHING of its own for them.
 --
 -- THAT IS A CORRECTION, and it is worth stating because the wrong shape looked
 -- reasonable. This page used to draw both bespoke, through

@@ -55,7 +55,8 @@ Retail only · English only.
   rules (solo, vehicle, mounted, skyriding, flight path, player housing, pet battle, dead, in
   combat, out of combat), all off by default.
 - **AceDB profiles**, all characters starting on the shared `"Default"` profile.
-- **Test mode** and an unlock/drag cycle, so a window can be laid out at a target dummy.
+- **Test mode** (the General page's Master controls box, or `/mm test`; combat ends it) and an
+  unlock/drag cycle, so a window can be laid out anywhere between pulls.
 - **A minimap button** and LDB launcher (left-click toggles the windows, right-click opens settings).
 - **A perf harness** (`/mm perf`) and an on-screen debug console (`/mm debug`), both LibKa0s's.
 

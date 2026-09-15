@@ -39,7 +39,7 @@ local _, NS = ...
 --
 -- What the row walk is left with is exactly what a profile reset CANNOT reach:
 -- `sessionOnly` rows, whose storage is their own `set()` rather than the db
--- (`state.preview`, `state.debugConsole`). Those have to be restored row by row
+-- (`state.testMode`, `state.debugConsole`). Those have to be restored row by row
 -- or they survive a reset that took everything around them.
 --
 -- Named ONCE because it is enforced TWICE -- by the library through

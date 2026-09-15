@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-1825%2F1825_passing-green)
+![Tests](https://img.shields.io/badge/Tests-1830%2F1830_passing-green)
 
 Most Damage meter addons show you one statistic at a time. This addon shows all of them in one grid — who kicked, who dispelled, who stood in the fire, who died. One row per player, one column per statistic.
 
@@ -37,8 +37,9 @@ The numbers are Blizzard's. Multi Meters asks the built-in meter for them and ar
 On the first run after installing, a default window shows up unlocked, so drag it by the title bar and pull the bottom-right
 corner to size it. Placing a meter between pulls is a pain because there is nothing in it to look
 at, so `/mm test` fills every window with obvious placeholder rows and prints TEST in the header
-while you work. Same command turns it off, `/mm lock` freezes everything once you are happy, and
-`/mm reset-positions` rescues anything you have dragged off the edge of the screen.
+while you work. The same command turns it off, and so does the **Test mode** box on the General
+page. It also switches itself off the moment you pull. `/mm lock` freezes everything once you are
+happy, and `/mm reset-positions` rescues anything you have dragged off the edge of the screen.
 
 `/mm toggle` hides and shows windows by name or all at once, and the × in the title bar closes
 whichever one you clicked. You will get more out of the visibility settings, though: tell a window
@@ -83,7 +84,7 @@ The one odd behaviour falls out of that. Midnight hands addons combat numbers as
 |---------|-----|
 | The window says the damage meter is unavailable | Blizzard's meter is off, or unavailable where you are standing. The window prints whatever reason the game gave. Switch the built-in meter on. |
 | The window is empty and says it is waiting for combat data | Nothing has happened yet in the session you are looking at, which is normal between pulls. Pick Overall or an older fight from the segment control. No setting for this; the header already has the control. |
-| The window only shows placeholder rows | Test mode is on. `/mm test`, or the General page. Unlocking has nothing to do with it — that used to switch preview on as a side effect, which made unticking Test mode look broken. The lock governs dragging now, nothing else. |
+| The window only shows placeholder rows | Test mode is on. `/mm test` or the **Test mode** box on the General page turns it off, and so does starting a fight. Unlocking has nothing to do with it — that used to switch preview on as a side effect, which made unticking Test mode look broken. The lock governs dragging now, nothing else. |
 | I cannot open the settings while fighting | On purpose. Blizzard protects the settings machinery in combat and the panel would rather refuse than risk your action bars. It opens the second you drop out. |
 | A pet has its own row and I wanted it folded into its owner | Separate rows is the default because it is exact in and out of combat. **Merge pets into their owner** on the General page folds them in, with one catch that is exactly why it is not the default: merging is addition, and the game will not let an addon add two combat numbers together mid-fight. A merged pet's damage goes missing until the pull ends. |
 | I cannot find the window | `/mm reset-positions`. |

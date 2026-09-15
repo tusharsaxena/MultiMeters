@@ -193,7 +193,7 @@ that a load-time cycle between two majors.
 | `perf` | Performance capture — `/mm perf help` for the run's own verbs |
 | `version` | Print the addon version, read from the TOC manifest |
 | `lock` | Lock or unlock every window for dragging. It governs movement and nothing else: unlocking no longer switches Test mode on |
-| `test` | Toggle test mode — placeholder rows, for positioning |
+| `test` | Toggle test mode — placeholder rows, for positioning. The General page's Test mode box is the same switch, and combat starting ends it |
 | `toggle` | Show or hide one window by name, or all of them |
 | `window` | `list` · `new <name>` · `delete <name>` · `copy <source> <target>` |
 | `reset-positions` | Move every window back to the center of the screen |

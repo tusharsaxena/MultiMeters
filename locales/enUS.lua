@@ -739,8 +739,9 @@ L["Color for this statistic wherever it identifies a column: bars set to Per-sta
 L["Show the minimap button for opening these settings."] =
     "Show the minimap button for opening these settings."
 L["Test mode"] = "Test mode"
-L["Fill every window with placeholder data so you can lay out columns without being in combat."] =
-    "Fill every window with placeholder data so you can lay out columns without being in combat."
+L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."] =
+    "Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."
+L["Test mode off \226\128\148 combat started"] = "Test mode off \226\128\148 combat started"
 L["Debug console"] = "Debug console"
 L["Show or hide the on-screen debug console. Session only; it does not turn debug logging on."] =
     "Show or hide the on-screen debug console. Session only; it does not turn debug logging on."
@@ -926,8 +927,6 @@ L["Invalid value for %s"] = "Invalid value for %s"
 L["Allowed values: %s"] = "Allowed values: %s"
 L["Windows are locked."] = "Windows are locked."
 L["Windows are unlocked."] = "Windows are unlocked."
-L["Test mode on."] = "Test mode on."
-L["Test mode off."] = "Test mode off."
 L["No window is selected."] = "No window is selected."
 
 -- ---------------------------------------------------------------------------

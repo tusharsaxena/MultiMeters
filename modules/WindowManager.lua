@@ -594,16 +594,41 @@ function M:IsLocked()
     return true
 end
 
---- Placeholder data on or off. Routed through core/State.lua for the same
---- one-sender reason as above, then every window is marked dirty so the change
---- is visible on the next throttle tick rather than at the next meter event —
---- which, out of combat, may never come.
+--- Placeholder data on or off -- the ONE switch that `/mm test`, the General
+--- page's Test mode box and the combat ending all go through. Routed through
+--- core/State.lua for the same one-sender reason as above, then every window is
+--- marked dirty so the change is visible on the next throttle tick rather than
+--- at the next meter event — which, out of combat, may never come.
+---
+--- LEAVING TEST MODE IS NOT CLOSING THE WINDOW. Test mode forces a window
+--- visible; without the Show below, turning it off just stopped forcing and the
+--- ordinary visibility rules hid a window the player was looking at — so
+--- `/mm test` read as a close button with a confusing name. Whatever was on
+--- screen for test stays on screen for real data, and `/mm toggle` is how you
+--- close it. NOT during a perf suspend: Show skips the ladder, and a suspended
+--- capture must be inert (performance-§6), which the combat ending would
+--- otherwise break on the first pull of a capture.
+---
+--- The panel is repainted last, so the Test mode box follows every switch and
+--- not only its own click (options-ui-§15).
 function M:SetTestMode(enabled)
     if NS.State and NS.State.SetTestMode then NS.State.SetTestMode(enabled) end
+    local keepShown = not enabled and not (NS.Perf and NS.Perf.suspended)
     for _, inst in ipairs(M.All()) do
         inst:RefreshVisibility()
         inst:MarkDirty()
+        if keepShown then inst:Show() end
     end
+    if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
+end
+
+--- Combat started: end test mode, if it is on, through the same switch, and say
+--- so in one line (preview-mode). Called by core/MultiMeters.lua at
+--- PLAYER_REGEN_DISABLED, ahead of that edge's COMBAT_CHANGED fan-out.
+function M:EndTestModeForCombat()
+    if not M:IsTest() then return end
+    M:SetTestMode(false)
+    if NS.Print then NS.Print(L["Test mode off \226\128\148 combat started"]) end
 end
 
 function M:IsTest()

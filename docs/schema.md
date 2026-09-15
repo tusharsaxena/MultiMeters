@@ -1105,7 +1105,7 @@ A window row's path is **relative to a window** and is spelled with a `window.` 
 paths and resolve against `db.profile`. There are twenty-two of them: `enabled`, `minimap.hide`, the
 four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale, alpha and lock, distinct
 from the per-window `frame.*` three), `data.mergePets`, `data.throttle`, the four `export.*`
-preferences, the eight `statColors.*` swatches, and the two `sessionOnly` rows `state.testMode` and
+preferences, the eight `statColors.*` swatches, and the two composed `sessionOnly` rows `state.testMode` and
 `state.debugConsole`, whose own `get`/`set` are the whole of their storage. The other 147 rows are
 window rows.
 
@@ -1248,7 +1248,8 @@ always the **stored** value, so the validator still compares like with like.
 
 ### `sessionOnly` — exempt from validation, still rows
 
-`state.testMode` and `state.debugConsole` are never persisted, so they have no home in the defaults
+`state.testMode` and `state.debugConsole`, both emitted by the `MasterControls` composer and dressed
+with their accessors in `settings/Schema_Compose.lua`, are never persisted, so they have no home in the defaults
 tree and `NS.ValidateSchema` skips them. They are rows anyway because they belong on the page and in
 `/mm list` beside the settings they sit next to — a toggle that exists only in the panel is a toggle
 the CLI cannot reach. Their own `get` / `set` **are** the whole storage; `NS.GetSetting` returns

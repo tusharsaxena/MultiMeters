@@ -628,7 +628,7 @@ local MASTERVIS_SORT = { "always", "inCombat", "outOfCombat", "never" }
 --
 -- THE FIRST TAB OF THE GENERAL PAGE, and the canonical set in the canonical
 -- order: enable, general visibility, master scale, master alpha, lock frame,
--- debug console, then the two resets as the tab's closing button pair.
+-- debug console, test mode, then the two resets as the tab's closing button pair.
 --
 -- WHAT IS NOT HERE, DELIBERATELY. `window.frame.locked`, `window.frame.scale` and
 -- `window.frame.alpha` stay on the Frame page. They are PER-WINDOW, they are
@@ -648,6 +648,14 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     -- VERBATIM and unprefixed: session state lives outside the block's own prefix,
     -- and this is the path the row this addon already had was stored under.
     debugConsolePath = "state.debugConsole",
+    -- Test mode (options-ui-§15, preview-mode, standard v2.47.0): the composer's
+    -- own session-only row, directly after the console on a line of its own. The
+    -- path is taken VERBATIM, like the console's, and it is the one `/mm set
+    -- state.testMode` has always used. The default is handed in because the
+    -- composer emits none, and a session row with no default is one Reset all
+    -- settings walks straight past, leaving the mode running.
+    testModePath     = "state.testMode",
+    defaults         = { testMode = false },
     -- The four new addon-wide settings live under `master.` rather than at the
     -- profile root, which is where every other grouped answer in this addon lives
     -- (`data.`, `minimap.`, `export.`) and what keeps `master.scale` from reading
@@ -666,6 +674,7 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
         alpha        = L["Master alpha"],
         locked       = L["Lock frame"],
         debugConsole = L["Debug console"],
+        testMode     = L["Test mode"],
     },
     -- Resolved at CALL time, both of them: the popup is declared by
     -- settings/General.lua and the registry by modules/WindowManager.lua, and this
@@ -723,6 +732,20 @@ dress(MASTER_ROWS, {
             local D = NS.DebugLog
             if not D then return end
             if v then D:Show() else D:Hide() end
+        end,
+    },
+    -- Test mode's box, bound to the one flag and the one switch. Through the
+    -- registry when it is up -- WindowManager:SetTestMode is also what `/mm test`
+    -- and the combat ending call, and it repaints the panel so this box follows
+    -- them -- and through the state writer otherwise, which is the sole sender of
+    -- TEST_MODE_CHANGED either way.
+    ["state.testMode"] = {
+        desc = L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."],
+        get = function() return NS.State ~= nil and NS.State.testMode == true end,
+        set = function(v)
+            local M = NS.WindowManager
+            if M and M.SetTestMode then M:SetTestMode(v) return end
+            if NS.State then NS.State.SetTestMode(v) end
         end,
     },
 })
