@@ -82,6 +82,45 @@ test("Launcher: the object wears this addon's OWN logo, not a borrowed icon", fu
     assertTrue(broker(inst).icon:find("multimeters%.logo%.128%.tga") ~= nil)
 end)
 
+test("Launcher: the broker label is the BRAND NAME, in plain text", function()
+    -- launcher-§1 fixes this string at `Ka0s <Name>` because a broker display prints it BESIDE THE
+    -- OTHER TEN: it is the one field that decides whether the collection reads as one collection in
+    -- Titan Panel or as eleven unrelated addons installed together. Across the collection's
+    -- adoptions it came out three ways, and a display sorting alphabetically filed one under `A`
+    -- while the rest sat under `K`.
+    local inst = T.load()
+    inst.NS.Launcher:Register()
+    local label = broker(inst).label
+
+    assertEqual(label, "Ka0s Multi Meters")
+    -- NO ESCAPE SEQUENCE OF ANY KIND. A display that draws the string raw splatters a coloured
+    -- label across a list of plain-text rows; one that strips escapes mangles it instead.
+    assertEqual(label:find("|c", 1, true), nil, "a colour escape leaked into the broker label")
+    assertEqual(label:find("|r", 1, true), nil, "a colour terminator leaked into the broker label")
+    assertEqual(label:find("|T", 1, true), nil, "a texture escape leaked into the broker label")
+    -- AND NOT THE FOLDER NAME, which is the registration `name` LibDBIcon keys the saved position
+    -- by. `MultiMeters` is an identifier; `Ka0s Multi Meters` is a name. Two fields, two jobs.
+    -- The object is looked up BY the folder name above, so reaching it at all is what proves the
+    -- registration still uses it; what this asserts is that the two fields did not converge.
+    assertTrue(label ~= ADDON, "the label is the brand name, not the folder name")
+end)
+
+test("Launcher: the label is NOT wired to the TOC's Title, even where the two agree", function()
+    -- The two strings match today, and that is a coincidence this case exists to keep harmless. A
+    -- `## Title` MAY carry colour escapes and one in the collection does — Ka0s Pretty Chat's is
+    -- `Ka0s |cffff0000P|cffff9900r|…` — so an addon that read its label off the manifest would put
+    -- that straight into a broker row (launcher-§1, anti-pattern #84). Driven by giving the mock
+    -- manifest an escaped Title BEFORE any source loads: a wired label would carry it through.
+    local inst = T.load{ mutate = function(m)
+        m.__toc.Title = "Ka0s |cffff0000M|cffff9900M|r"
+    end }
+    inst.NS.Launcher:Register()
+
+    assertEqual(broker(inst).label, "Ka0s Multi Meters")
+    -- The manifest really was changed, or the assertion above proves nothing.
+    assertEqual(inst.NS.Meta("Title"), "Ka0s |cffff0000M|cffff9900M|r")
+end)
+
 test("Launcher: the TOC's IconTexture names the same file the object does", function()
     local fh = assert(io.open(T.root .. "/MultiMeters.toc", "r"))
     local declared

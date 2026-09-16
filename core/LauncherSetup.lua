@@ -171,8 +171,21 @@ NS.Launcher = Launcher:New({
     -- rather than drawing an empty button.
     icon = NS.Constants and NS.Constants.LOGO_128,
 
-    -- What a broker display prints beside the icon. The addon's TITLE rather than its folder name,
-    -- because this one is read by a human in a list of plugins.
+    -- THE BRAND NAME IN PLAIN TEXT -- `Ka0s <Name>` -- and launcher-§1 fixes that spelling because
+    -- this string is printed BESIDE THE OTHER TEN. A broker display lists every plugin it has
+    -- together, so `label` is the single field that decides whether the collection reads as one
+    -- collection in Titan Panel or as eleven unrelated addons that happen to be installed at once;
+    -- across the collection's adoptions it came out three ways, and one sorted under `A` while the
+    -- rest sat under `K`.
+    --
+    -- DELIBERATELY NOT THE TOC'S `## Title`, and the two are not wired to each other even where
+    -- they agree, as they happen to here. A Title MAY carry colour escapes and one in the
+    -- collection does -- Ka0s Pretty Chat's is `Ka0s |cffff0000P|cffff9900r|…` -- which a display
+    -- that draws the string raw splatters across a row where every other row is plain text, and
+    -- one that strips escapes mangles instead. No escape sequence of any kind belongs here.
+    --
+    -- NOT THE FOLDER NAME EITHER: that is the registration `name` above, which LibDBIcon keys the
+    -- saved position by. `MultiMeters` is an identifier, `Ka0s Multi Meters` is a name.
     label = L["Ka0s Multi Meters"],
 
     -- A FUNCTION, not the table — see the header.

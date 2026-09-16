@@ -522,10 +522,12 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
-### test_launchersetup.lua (36)
+### test_launchersetup.lua (38)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
+- Launcher: the broker label is the BRAND NAME, in plain text
+- Launcher: the label is NOT wired to the TOC's Title, even where the two agree
 - Launcher: the TOC's IconTexture names the same file the object does
 - Launcher: the icon file exists, uncompressed and 32-bit
 - Launcher: Register is idempotent
@@ -2096,7 +2098,7 @@ badge and any count quoted in the docs must agree with it.
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
-| test_launchersetup.lua | 36 |
+| test_launchersetup.lua | 38 |
 | test_lifecycle.lua | 34 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
@@ -2134,4 +2136,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 30 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1876** |
+| **Total** | **1878** |
