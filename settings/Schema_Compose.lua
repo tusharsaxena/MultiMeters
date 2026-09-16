@@ -646,8 +646,9 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     -- THE PATH IS VERBATIM AND IT NAMES ITS STORE, which no other path in this schema
     -- does. LibDBIcon's `minimap` table lives in the GLOBAL store, outside the block's
     -- profile prefix, because a minimap button belongs to the INSTALLATION: a profile
-    -- switch must not move the player's buttons, and options-ui-§12's *Reset all
-    -- settings* -- a profile reset by definition -- must not un-hide one they hid.
+    -- switch must not move the player's buttons. That no RESET may move them either is a
+    -- separate PROPERTY of the setting rather than a consequence of the store, and its one
+    -- exemption lives in settings/OptionsSetup.lua (launcher-§3, standard v2.54.0).
     --
     -- NO `onChange`. The row's boolean says SHOWN while LibDBIcon's key says HIDDEN, and
     -- both the inversion and the call that moves the button live in the single write seam

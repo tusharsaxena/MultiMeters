@@ -110,6 +110,46 @@ local function vetoedFromResetAll(row)
     return not row.sessionOnly
 end
 
+-- ---------------------------------------------------------------------
+-- The one row no reset in this panel may write
+-- ---------------------------------------------------------------------
+--
+-- WHETHER THE MINIMAP BUTTON IS SHOWN IS A PER-INSTALLATION DISPLAY PREFERENCE, in the same class
+-- as the ANGLE the player dragged the button to -- which LibDBIcon keeps in the very same table
+-- and which no reset anywhere touches. Nobody has ever wanted "reset my settings" to also mean
+-- "and put the button back on my minimap". launcher-§3 states that as a PROPERTY of the setting
+-- rather than deriving it from where the value is stored, and this is the carve-out that makes it
+-- true here. The property is the reason; the scope is not.
+--
+-- BOTH RESETS ARE REACHED THROUGH ONE SEAM, and only one of them was ever a threat:
+--
+--   *Reset all settings* (options-ui-§12) never reached the row and still does not. It is a
+--   PROFILE reset -- the descriptor's `resetProfile` hands the whole profile to AceDB -- and this
+--   table lives in `db.global`, which AceDB leaves alone. The library narrows its row walk to the
+--   `sessionOnly` rows before it resets, and `vetoedFromResetAll` above vetoes this one anyway.
+--   `db.global.schemaVersion` survives the reset too, so the migration runner that follows is a
+--   no-op and cannot carry a fresh profile's table back over the global one.
+--
+--   THE PAGE-SCOPED *Defaults* BUTTON DID REACH IT, and that is what changed here. The minimap row
+--   is a Master-controls row on the General page, so `LibKa0s-Options-1.0`'s `RestoreDefaults`
+--   walked it with every other row on that page -- it consults no veto at all, by design, because
+--   a page button resets its page -- and wrote the row's default, which is SHOWN. A player who
+--   hid the button and later pressed Defaults on General to reset something else got the button
+--   back, at the library's default angle.
+--
+-- HERE, AT `applyDefault`, RATHER THAN AT `skipRestoreAll`: this is the single seam BOTH library
+-- walks put a default through, so one clause covers the page button, the global reset and any
+-- reset the library grows next. `skipRestoreAll` cannot do the job -- `RestoreDefaults` never asks
+-- it -- and a clause per page would be a clause to forget.
+--
+-- `/mm reset global.minimap.hide` IS NOT A RESET IN THIS SENSE and stays live. It reaches
+-- NS.ApplyDefault through the SLASH descriptor (settings/Slash.lua), which this clause does not
+-- sit on, and it is a player naming this one row on purpose -- the opposite of a sweep that
+-- reached it on the way past. So is the checkbox, and so is `/mm set`.
+local function survivesEveryReset(row)
+    return row.path ~= nil and row.path == NS.MINIMAP_PATH
+end
+
 local lib = LibStub and LibStub("LibKa0s-Options-1.0", true)
 
 local function helpers() return NS.Helpers end
@@ -140,7 +180,13 @@ local descriptor = {
     -- piece of session state rather than by rewriting paths.
     get          = function(path) return NS.GetSetting and NS.GetSetting(path) or nil end,
     set          = function(path, value) if NS.SetByPath then NS.SetByPath(path, value) end end,
-    applyDefault = function(row) if NS.ApplyDefault then NS.ApplyDefault(row) end end,
+    -- THE ONE EXEMPTION IS HERE, not per page and not per reset. See "The one row no reset in
+    -- this panel may write" above: the minimap row is a display preference the player arranged
+    -- once, and neither the page's Defaults button nor Reset all settings may write it.
+    applyDefault = function(row)
+        if survivesEveryReset(row) then return end
+        if NS.ApplyDefault then NS.ApplyDefault(row) end
+    end,
 
     -- `filter` is ctx.unit, passed through by the library without interpreting
     -- it. Here it carries the active WINDOW, so one page definition renders the

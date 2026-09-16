@@ -199,10 +199,10 @@ end
 -- anywhere a caller can see:
 --
 --   THE SCOPE. `launcher-§3` fixes LibDBIcon's `minimap` table at `db.global.minimap` -- a button
---   belongs to the installation, so a profile switch must not move it and `options-ui-§12`'s
---   *Reset all settings*, a profile reset by definition, must not un-hide it. Every other row in
---   this schema resolves against `db.profile`, so the path is spelled with its store in it and
---   resolved here instead of by resolveRoot.
+--   belongs to the installation, so a profile switch must not move it. Every other row in this
+--   schema resolves against `db.profile`, so the path is spelled with its store in it and resolved
+--   here instead of by resolveRoot. The scope is NOT what keeps a reset off the row: that is a
+--   property of the setting, and its one exemption is in settings/OptionsSetup.lua.
 --
 --   THE SENSE. The row's boolean says SHOWN; LibDBIcon's key says HIDDEN. A checkbox labelled
 --   with a negative is the classic settings-panel double-negative everyone mis-clicks once, and
@@ -220,6 +220,12 @@ end
 -- second inverted row to find.
 
 local MINIMAP_PATH = "global.minimap.hide"
+
+--- PUBLISHED, because one more file has to name this row. settings/OptionsSetup.lua exempts
+--- exactly this path from the settings panel's two resets (launcher-§3's survival property), and
+--- it loads after this file, so it reads the constant instead of spelling the string a third time.
+--- Nothing else about the row becomes public: the store and the inversion stay behind the seams.
+NS.MINIMAP_PATH = MINIMAP_PATH
 
 --- LibDBIcon's own table, or nil before NS:InitDB() has run.
 --- @return table|nil

@@ -879,8 +879,9 @@ end
 --- `launcher-§3` fixes LibDBIcon's own `minimap` table at `db.global.minimap`, and this addon was
 --- the collection's one outlier -- Bank Ledger and Loot History already stored it globally. The
 --- scope is the rule's point rather than tidiness: a minimap button belongs to the INSTALLATION,
---- so a profile switch must not move the player's buttons, and `options-ui-§12`'s *Reset all
---- settings* -- a profile reset by definition -- must not un-hide a button they deliberately hid.
+--- so a profile switch must not move the player's buttons. That no RESET may move them either is a
+--- separate property of the setting, not a consequence of this move, and settings/OptionsSetup.lua
+--- is where it is enforced -- including for the page Defaults button the scope never reached.
 ---
 --- IT CARRIES BOTH KEYS, and neither may be stranded. `hide` is the player's own answer to a
 --- checkbox; `minimapPos` is the ANGLE they dragged the button to, written by LibDBIcon itself,

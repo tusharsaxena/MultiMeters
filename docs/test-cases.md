@@ -522,7 +522,7 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
-### test_launchersetup.lua (34)
+### test_launchersetup.lua (36)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -543,11 +543,13 @@ badge and any count quoted in the docs must agree with it.
 - Minimap row: set inverts onto `hide` and never writes a second key
 - Minimap row: the write MOVES the button, not just the boolean
 - Minimap row: nothing else in the schema stores the negation of what it shows
-- Minimap row: Defaults restores it to SHOWN
+- Minimap row: `/mm reset <path>` restores it to SHOWN
 - Minimap row: the schema default and the shipped tree agree, through the inversion
 - Minimap store: the profile ships no `minimap` table any more
 - Minimap store: switching profiles does not move the player's button
 - Minimap store: Reset all settings does not un-hide a button the player hid
+- Minimap store: the General page's Defaults button does not un-hide it either
+- Minimap store: neither reset re-hides a button the player left shown
 - Database v15: the profile's minimap table moves to the global store, position included
 - Database v15: an account that already stored it globally keeps what it has
 - Database v15: a profile that never placed a button leaves the shipped default
@@ -2094,7 +2096,7 @@ badge and any count quoted in the docs must agree with it.
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
-| test_launchersetup.lua | 34 |
+| test_launchersetup.lua | 36 |
 | test_lifecycle.lua | 34 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
@@ -2132,4 +2134,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 30 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1874** |
+| **Total** | **1876** |

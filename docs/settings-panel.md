@@ -185,6 +185,18 @@ composer now drops `startsLine` from *Test mode* whenever a minimap row was emit
 cannot see. A `group` is not a stored path; the minimap row's **store** did move, from
 `db.profile.minimap` to `db.global.minimap`, and `core/Database.lua`'s v15 step carries it.
 
+**Minimap button is the one row on this page the Defaults button does not touch.** Whether the
+button is shown is a per-installation display preference — the same class of thing as the angle the
+player dragged it to, which LibDBIcon keeps in the very same table — so `launcher-§3` (standard
+v2.54.0) states as a **property** of the setting that it survives both *Reset all settings* and a
+page-scoped **Defaults** press. Here only the second was ever a threat: *Reset all settings* is a
+profile reset and this table is global, while **Defaults** walks every row of the page it is handed
+and consults no veto at all, so until this exemption landed, pressing it to reset something else on
+General put a deliberately hidden button back on the minimap at the library's default angle. The
+exemption is one clause on the options descriptor's `applyDefault` (`settings/OptionsSetup.lua`) —
+see [schema.md → `minimap`](schema.md#minimap--and-it-lives-under-global). Nothing else on the page
+changes, and `/mm reset global.minimap.hide` still resets the row.
+
 **The `master.*` rows are ADDON-WIDE, and none of them is a promoted per-window row.** A window
 here is an instance (design §6), and its own **Lock window**, **Scale** and **Opacity** stay on the
 Frame page where the banner says which window they mean — promoting one would give the General page,

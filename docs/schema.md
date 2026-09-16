@@ -241,10 +241,27 @@ out of it, or a dragged button snaps back on the next login.
 **The scope is `launcher-§3`'s decision, not an accident of where the neighbours live.** A minimap
 button belongs to the INSTALLATION: a profile is how a player configures what the addon *draws*,
 while the ring of buttons around the minimap is furniture they arranged once, and profile-scoped it
-would appear and vanish on a switch made for an unrelated reason. It also keeps `options-ui-§12`'s
-*Reset all settings* — a **profile** reset by definition — from un-hiding a button the player
-deliberately hid. `core/Database.lua`'s v15 step carries `hide` and `minimapPos` across from every
-profile that had them and prunes the profile key.
+would appear and vanish on a switch made for an unrelated reason. `core/Database.lua`'s v15 step
+carries `hide` and `minimapPos` across from every profile that had them and prunes the profile key.
+
+**Surviving a reset is a separate PROPERTY, and the scope is not the argument for it.** Whether the
+button is shown is a per-installation display preference, in the same class as the angle the player
+dragged it to; `launcher-§3` (standard v2.54.0) states that rather than deriving it, because the
+derivation — *Reset all settings is a profile reset, the table is global, therefore it cannot be
+reached* — only ever spoke about **one** of this addon's two resets. Both are covered now, and they
+were not in the same state:
+
+| Reset | Reached `global.minimap.hide`? | Why |
+|---|---|---|
+| **Reset all settings** (`Helpers.RestoreAllDefaults`) | **No**, and never did | The library narrows its row walk to `sessionOnly` rows and `skipRestoreAll` vetoes this one besides; the act itself is `db:ResetProfile()`, and AceDB leaves `db.global` alone. `schemaVersion` is global too, so the migration runner that follows a reset is a no-op and cannot carry a fresh profile's table back over the global one |
+| **Defaults** on General | **Yes, until this change** | The row is a Master-controls row on General, and `LibKa0s-Options-1.0`'s `RestoreDefaults` walks every row of the page it is handed — it consults no veto at all, by design, because a page button resets its page. A player who hid the button and later pressed Defaults on General to reset something else got the button back, at the library's default angle |
+
+The exemption is **one clause**, on the *options* descriptor's `applyDefault`
+(`settings/OptionsSetup.lua`) — the single seam both library walks put a default through, so it
+covers the page button, the global reset and whatever reset the library grows next.
+`/mm reset global.minimap.hide` is deliberately **not** affected: it reaches `NS.ApplyDefault`
+through the *slash* descriptor, and a player naming this one row is the opposite of a sweep that
+reached it on the way past.
 
 **`minimapPos` is named non-setting state** (`architecture-§5`: a vendored library's own writes). Its
 owner is `core/LauncherSetup.lua`, whose descriptor hands `LibKa0s-Launcher-1.0` a **closure**

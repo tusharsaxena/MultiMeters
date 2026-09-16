@@ -20,9 +20,12 @@
 --   single write seam invert. A sign error there is invisible in a settings panel screenshot and
 --   obvious to a player, which is the worst combination a gate can leave alone.
 --
---   THE STORE. `launcher-§3` fixes the table at `db.global.minimap`, and this addon stored it
---   under `profile` until schemaVersion 15. The scope is the rule's point: the cases below prove a
---   profile switch does not move the button and that *Reset all settings* does not un-hide it.
+--   THE STORE, AND THE SURVIVAL PROPERTY, which are two things rather than one. `launcher-§3`
+--   fixes the table at `db.global.minimap`, and this addon stored it under `profile` until
+--   schemaVersion 15, so the cases below prove a profile switch does not move the button. That no
+--   RESET moves it either is a separate property of the setting — the derivation from the scope is
+--   retired at standard v2.54.0 — so both of this addon's resets are driven for real, and one of
+--   them (the General page's Defaults button) did reach the row until the exemption landed.
 --
 --   THE DEGRADATION. Three libraries can be absent independently — LibKa0s, LibDataBroker,
 --   LibDBIcon — and a host with any of them missing must lose the button and nothing else.
@@ -322,15 +325,20 @@ test("Minimap row: nothing else in the schema stores the negation of what it sho
     assertEqual(table.concat(inverted, ","), "", "`invert` is retired; the carve-out names its one row")
 end)
 
-test("Minimap row: Defaults restores it to SHOWN", function()
+test("Minimap row: `/mm reset <path>` restores it to SHOWN", function()
     local NS = T.NS
     assertTrue(NS.SetByPath(PATH, false))
     assertEqual(NS.db.global.minimap.hide, true)
 
     NS.ApplyDefault(NS.FindSchemaRow(PATH))
     -- The row's `default` is display terms (shown) and the seam inverts it on the way in. Getting
-    -- this round trip backwards would make the Defaults button HIDE the button.
+    -- this round trip backwards would make a reset HIDE the button.
     assertEqual(NS.db.global.minimap.hide, false)
+
+    -- NS.ApplyDefault ITSELF is not vetoed, and that is the line the exemption below draws: a
+    -- player naming this one row on purpose is the opposite of a page sweep that reached it on
+    -- the way past. The veto sits on the OPTIONS descriptor's applyDefault, which `/mm reset` does
+    -- not go through (settings/OptionsSetup.lua).
 end)
 
 test("Minimap row: the schema default and the shipped tree agree, through the inversion", function()
@@ -372,16 +380,85 @@ test("Minimap store: switching profiles does not move the player's button", func
     assertEqual(inst.NS.db.global.minimap.minimapPos, 217)
 end)
 
+-- ---------------------------------------------------------------------------
+-- The button survives a reset, and that is a PROPERTY of the setting
+-- ---------------------------------------------------------------------------
+--
+-- launcher-§3 states it rather than deriving it: whether the button is shown is a per-installation
+-- display preference, in the same class as the ANGLE the player dragged it to, which LibDBIcon
+-- keeps in the very same table and which no reset touches. It MUST survive BOTH of the resets this
+-- addon ships, and the two cases below drive each of them for real rather than asserting where the
+-- value happens to be stored — the derivation the standard retired, because "it is global, and the
+-- reset is a profile reset" is not an argument a page's own Defaults button has ever heard.
+
 test("Minimap store: Reset all settings does not un-hide a button the player hid", function()
     local inst = T.load()
     assertTrue(inst.NS.SetByPath(PATH, false))
     assertEqual(inst.NS.db.global.minimap.hide, true)
 
-    -- options-ui-§12's global reset is a PROFILE reset by definition, so a profile-scoped
-    -- `minimap.hide` would come back false — a reset reaching past the settings it warned about
-    -- into the frame furniture.
+    -- THE ACT ITSELF, not the primitive underneath it: this is what MULTIMETERS_RESET_ALL's
+    -- OnAccept and `/mm resetall` both run (settings/General.lua). It sweeps the session rows,
+    -- hands the profile to AceDB and lands on the migration runner — three chances to reach a row
+    -- nobody meant it to reach, which is why the case drives all three rather than db:ResetProfile.
+    inst.NS.Helpers.RestoreAllDefaults()
+    assertEqual(inst.NS.db.global.minimap.hide, true,
+        "Reset all settings put the button back on a minimap the player had cleared")
+    assertFalse(inst.NS.Launcher:IsShown(), "and the button itself came back with it")
+
+    -- It really did reset: a case where the reset silently did nothing would pass the assertion
+    -- above for the wrong reason.
+    assertTrue(inst.NS.GetSetting("enabled"))
+
+    -- And the primitive, for the same reason: db.global is AceDB's other store, and a step that
+    -- reached across from a fresh profile would show up here.
+    assertTrue(inst.NS.SetByPath(PATH, false))
     inst.NS.db:ResetProfile()
     assertEqual(inst.NS.db.global.minimap.hide, true)
+    assertEqual(inst.NS.db.global.schemaVersion, 15,
+        "the version lives in db.global, so the migrations that follow a reset are a no-op")
+end)
+
+test("Minimap store: the General page's Defaults button does not un-hide it either", function()
+    -- THE ONE THAT ACTUALLY REACHED IT. The minimap row is a Master-controls row on General, and
+    -- LibKa0s-Options' RestoreDefaults walks every row of the page it is given — it consults no
+    -- veto, by design, because a page button resets its page. So a player who hid the button and
+    -- later pressed Defaults on General to reset something else got the button back, at the
+    -- library's default angle. red under: settings/OptionsSetup.lua's applyDefault exemption removed.
+    local inst = T.load()
+    local NSi = inst.NS
+
+    assertTrue(NSi.SetByPath(PATH, false))
+    assertTrue(NSi.SetByPath("master.scale", 1.75))
+
+    local ctx = NSi.Helpers.__panelFor("general")
+    assertTrue(ctx ~= nil, "no panel is registered for the General page")
+    assertTrue(ctx.panel.defaultsOnClick ~= nil, "the General page must offer a Defaults button")
+    -- The panel's OWN handler, which is what a click runs.
+    ctx.panel.defaultsOnClick()
+
+    assertEqual(NSi.db.global.minimap.hide, true,
+        "the page's Defaults button un-hid the button (launcher-§3: it must not)")
+    assertFalse(NSi.Launcher:IsShown())
+
+    -- ONE ROW, NOT THE WHOLE PAGE. An exemption that accidentally made the button inert would pass
+    -- the assertion above and break the button, so the case proves its neighbours still reset.
+    assertEqual(NSi.GetSetting("master.scale"), NSi.FindSchemaRow("master.scale").default,
+        "the exemption is one row wide; the rest of the page still resets")
+end)
+
+test("Minimap store: neither reset re-hides a button the player left shown", function()
+    -- The property is symmetric: a reset may not un-hide a hidden button, and may not hide a shown
+    -- one. The shipped state is SHOWN, so only the second half could ever be an accident of a
+    -- carve-out written the wrong way round.
+    local inst = T.load()
+    assertEqual(inst.NS.db.global.minimap.hide, false)
+
+    inst.NS.Helpers.__panelFor("general").panel.defaultsOnClick()
+    assertEqual(inst.NS.db.global.minimap.hide, false)
+
+    inst.NS.Helpers.RestoreAllDefaults()
+    assertEqual(inst.NS.db.global.minimap.hide, false)
+    assertTrue(inst.NS.Launcher:IsShown())
 end)
 
 -- ---------------------------------------------------------------------------

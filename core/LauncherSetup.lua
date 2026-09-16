@@ -47,10 +47,17 @@ local addonName, NS = ...
 -- settings row writes the same table.
 --
 -- GLOBAL, not profile, and that is `launcher-§3`'s decision rather than an accident: a minimap
--- button belongs to the INSTALLATION. A profile switch must not move the player's buttons, and
--- `options-ui-§12`'s *Reset all settings* — a profile reset by definition — must not un-hide a
--- button they deliberately hid. core/Database.lua's v15 step carries the table across from
--- `db.profile.minimap`, `minimapPos` included.
+-- button belongs to the INSTALLATION, so a profile switch must not move the player's buttons.
+-- core/Database.lua's v15 step carries the table across from `db.profile.minimap`, `minimapPos`
+-- included.
+--
+-- SURVIVING A RESET IS A SEPARATE PROPERTY AND THE SCOPE IS NOT THE ARGUMENT FOR IT. Whether the
+-- button is shown is a per-installation display preference, in the same class as the ANGLE the
+-- player dragged it to; the derivation this comment used to carry -- *Reset all settings* is a
+-- profile reset, the table is global, therefore it cannot be reached -- is retired at standard
+-- v2.54.0, because it only ever spoke about one of the two resets this addon ships and a page's
+-- own Defaults button walked straight past it. The exemption that makes the property true lives
+-- in settings/OptionsSetup.lua, at the one seam both resets put a default through.
 --
 -- ── THE INVERSION IS NOT HERE ────────────────────────────────────────────────────────────────
 --
