@@ -86,7 +86,7 @@ surface**, through the kit's `T.assertSurfaceParity(stub, "LibKa0s-Options-1.0",
 arrives on the list the moment the library publishes it and stays there until that file says out
 loud why the stub does not carry it. `tests/run.lua` registers where the live half is looked up
 (`Kit.setSurfaceSource`), because this stub mirrors the **instance** `lib:New(descriptor)` returned
-and not the four-member library table LibStub answers for the same name. The other five seams are
+and not the four-member library table LibStub answers for the same name. The other six seams are
 not compared by name, and the suite's header gives the reason for each.
 
 ### One environment detail worth knowing
