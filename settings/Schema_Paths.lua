@@ -860,6 +860,64 @@ local function sameDefault(a, b)
     return true
 end
 
+--- Judge the minimap row, which is the one row whose STORED value is the inverse of
+--- what the row SHOWS. Both checks, against the GLOBAL tree and through the inversion:
+--- the row's default is SHOWN and the tree ships HIDDEN, so "agreement" here means they
+--- are opposites -- which is the one comparison a reader would otherwise have to work
+--- out from two files, and the one a copy-paste of this row into a second addon gets
+--- wrong. It sits out here rather than inline so the loop below reads as two cases
+--- handed to two judges rather than one body carrying both.
+---
+--- @param row table
+--- @param out function|nil  NS.Print when something is listening, nil when nothing is
+--- @return number  1 when the row failed, 0 when it passed
+local function checkMinimapRow(row, out)
+    -- Read out in two steps, NEVER `type(t) == "table" and t.hide or nil`: the shipped
+    -- value IS `false`, and that idiom collapses a stored false to nil -- which would
+    -- report the path as unresolvable on the one healthy load this check exists to bless.
+    local table_ = ((NS.defaults or EMPTY_TREE).global or EMPTY_TREE).minimap
+    local shipped
+    if type(table_) == "table" then shipped = table_.hide end
+    if shipped == nil then
+        if out then out("schema path does not resolve against the defaults: " .. row.path) end
+        return 1
+    elseif shipped ~= (not row.default) then
+        if out then out("schema default disagrees with defaults/Profile.lua: " .. row.path) end
+        return 1
+    end
+    return 0
+end
+
+--- Judge an ordinary row against the defaults tree -- window rows against
+--- WINDOW_TEMPLATE, everything else against defaults.profile. The caller has already
+--- decided the row is neither the minimap row nor `sessionOnly`; this one only picks
+--- the root the path hangs off and runs the two checks.
+---
+--- @param row table
+--- @param profile table   defaults.profile, the root for a global path
+--- @param template table  NS.WINDOW_TEMPLATE, the root for a `window.` path
+--- @param out function|nil  NS.Print when something is listening, nil when nothing is
+--- @return number  1 when the row failed, 0 when it passed
+local function checkTreeRow(row, profile, template, out)
+    local parts = splitPath(row.path)
+    local root, first
+    if parts[1] == WINDOW_PREFIX then
+        root, first = template, 2
+    else
+        root, first = profile, 1
+    end
+
+    local shipped = readFrom(root, parts, first)
+    if shipped == nil then
+        if out then out("schema path does not resolve against the defaults: " .. row.path) end
+        return 1
+    elseif not sameDefault(shipped, row.default) then
+        if out then out("schema default disagrees with defaults/Profile.lua: " .. row.path) end
+        return 1
+    end
+    return 0
+end
+
 --- Prove the schema against the defaults tree. Returns the number of rows that
 --- FAILED, which is 0 on a healthy load and is what the headless suite asserts on.
 ---
@@ -890,40 +948,9 @@ function NS.ValidateSchema()
 
     for _, row in ipairs(NS.Schema) do
         if row.path == MINIMAP_PATH then
-            -- Both checks, against the GLOBAL tree and through the inversion. The row's default is
-            -- SHOWN and the tree ships HIDDEN, so "agreement" here means they are opposites --
-            -- which is the one comparison a reader would otherwise have to work out from two
-            -- files, and the one a copy-paste of this row into a second addon gets wrong.
-            -- Read out in two steps, NEVER `type(t) == "table" and t.hide or nil`: the shipped
-            -- value IS `false`, and that idiom collapses a stored false to nil -- which would
-            -- report the path as unresolvable on the one healthy load this check exists to bless.
-            local table_ = ((NS.defaults or EMPTY_TREE).global or EMPTY_TREE).minimap
-            local shipped
-            if type(table_) == "table" then shipped = table_.hide end
-            if shipped == nil then
-                failed = failed + 1
-                if out then out("schema path does not resolve against the defaults: " .. row.path) end
-            elseif shipped ~= (not row.default) then
-                failed = failed + 1
-                if out then out("schema default disagrees with defaults/Profile.lua: " .. row.path) end
-            end
+            failed = failed + checkMinimapRow(row, out)
         elseif not row.sessionOnly then
-            local parts = splitPath(row.path)
-            local root, first
-            if parts[1] == WINDOW_PREFIX then
-                root, first = template, 2
-            else
-                root, first = profile, 1
-            end
-
-            local shipped = readFrom(root, parts, first)
-            if shipped == nil then
-                failed = failed + 1
-                if out then out("schema path does not resolve against the defaults: " .. row.path) end
-            elseif not sameDefault(shipped, row.default) then
-                failed = failed + 1
-                if out then out("schema default disagrees with defaults/Profile.lua: " .. row.path) end
-            end
+            failed = failed + checkTreeRow(row, profile, template, out)
         end
     end
 
