@@ -82,7 +82,10 @@ Nothing here reads a PNG or writes a TGA any more.
 
 Two directories of assets are still in this repo and neither needs a tool.
 `media/logos/multimeters.logo.tga` is what `Constants.LOGO` points the settings landing page at,
-with the .png and .jpg masters beside it, both excluded from the package by `.pkgmeta`.
+and `media/logos/multimeters.logo.128.tga` is `Constants.LOGO_128` — the icon the TOC's
+`## IconTexture`, the minimap button and any broker display all draw, all three from that one path
+(`launcher-§4`). Both are cut from the .png and .jpg masters beside them, which are excluded from
+the package by `.pkgmeta`.
 `media/screenshots/` holds the five captures the CurseForge project page carries — the README
 embeds those from CurseForge's own CDN rather than from this repo.
 
