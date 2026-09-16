@@ -409,12 +409,19 @@ tainted by us. It is `pcall`'d; a failure leaves the `SetOwner` token's placemen
 
 ## Documentation map
 
-Every `.md` under `docs/` appears in exactly one of the three tables below (`documentation-§3`).
+Every `.md` under `docs/` appears in exactly one of the four tables below (`documentation-§3`).
 **A store gets one row; its dated bundles get none.** `docs/automated-tests/` and
-`docs/perf-analysis/` register their two live docs — the README that says how a bundle is produced
-and, for the automated-test record, the `RESULTS.md` the runner rewrites — and nothing else under
-them; the dated folders beside those files are frozen evidence, and evidence is not registered.
+`docs/perf-analysis/` register their live docs — the README that says how a bundle is produced and,
+for the automated-test record, the `RESULTS.md` the runner rewrites — and nothing else under them;
+the dated folders beside those files are frozen evidence, and evidence is not registered.
 `docs/revendor/` and `docs/superpowers/` are frozen through and through and get one row apiece.
+
+The two stores' READMEs do **not** land in the same table, and that is the standard's own
+classification rather than an inconsistency here: `automated-tests/README.md` is an unconditional
+member of `### Verification and record`, while `perf-analysis/README.md` is the one member of that
+group that is *also* a Tier 2 doc with a stated trigger, so `documentation-§3` sends it to
+`### Conditional` — the only table with the Status and Trigger columns that can express the state.
+The trigger decides the table.
 
 `docs/issues/` used to hold image evidence attached to GitHub issues — GitHub's API has no supported
 path for uploading an issue attachment, so a raw link to a committed file is the only way a
@@ -423,60 +430,55 @@ its links are re-pointed at the commit that last carried them, which keeps resol
 the repo carrying the weight; issue #1's are pinned to `dcb29ad`. Re-create it only when an open
 issue needs a picture, and expect it to empty itself again.
 
-### Canonical trio (Tier 1)
+### Required (documentation-§3, Tier 1)
 
 | Doc | Covers |
 |---|---|
 | `ARCHITECTURE.md` | This file — the hub: overview, module map, schema, bus, slash, events, taint, limitations, this register, deviations |
-| `testing.md` | How to run the harness and lint; the green commit gate |
-| `smoke-tests.md` | The in-game smoke-test suite |
-
-### Verification and record
-
-| Doc | Covers |
-|---|---|
-| `test-cases.md` | The generated case inventory (authoritative pass count) |
-| `performance.md` | The addon performance page: buckets, offline scenarios, the in-game A/B |
-| `perf-analysis/README.md` | What a recorded in-game capture bundle is and how to produce it |
-| `automated-tests/README.md` | What the automated-test record is and how to produce it |
-| `automated-tests/RESULTS.md` | One row per run; generated, never hand-edited |
-
-### Topic detail
-
-| Doc | Covers |
-|---|---|
 | `scope.md` | What the addon does and deliberately does not, including why scoring cannot be computed in combat |
 | `module-map.md` | Every non-vendored file, its responsibility, TOC load order, the AceAddon lifecycle |
 | `schema.md` | The persisted shape, every default, and the migration seam |
 | `settings-panel.md` | The nine pages, per-option behavior, and the write seam |
 | `data-flow.md` | `C_DamageMeter` → pixel, and the secret-value rules that shape every hop |
 | `common-tasks.md` | Recipes for the changes made most often here |
+
+### Conditional (documentation-§3, Tier 2)
+
+Each trigger was measured against the source, not assumed, and the measurement stays on the row
+whichever way it came out — so a later audit can re-run it rather than re-argue it. **Four of the
+seven ship**; the three that do not carry the count that decided it, and the number is what a
+re-check reads, not the verdict beside it.
+
+| Doc | Status | Trigger, as measured |
+|---|---|---|
+| `perf-analysis/README.md` | Present | **The performance harness is wired** — `core/PerfSetup.lua` plus `Perf` brackets in eight modules (`performance-§12`). The doc says what a recorded in-game capture bundle is and how to produce one; `docs/perf-analysis/20260909-014604/` is the standing example. |
+| `compat-layer.md` | Present | **`core/Compat.lua` is 777 lines and 29 shims** (8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap` and the bar-animation read `BarInterpolation`), each a guarded namespace check around one passthrough, with no feature decisions, no state, and nothing there inspecting a meter value. The row read *re-measure — the trigger now fires* from the day this addon's Compat passed KickCD's, which ships the doc: 389 lines and 18 shims when the row was last written, 777 and 29 now. `documentation-§3` has since given the trigger a number — **three or more** addon-specific shims, counted over this file alone — which settles it at any reading. Written, and registered on this row. |
+| `midnight-quirks.md` | Present | **At least one client-version workaround of the addon's own** — the trigger as §3 states it, and this addon carries four: the probed `PLAYER_IS_GLIDING_CHANGED`, `ADDON_RESTRICTION_STATE_CHANGED` registered against a namespace a client may not have, the settle pass over client state that lags its own event, and the secret-value model itself. It was read as Not applicable on the argument that a third copy of the secret-value rules would be the one that drifts — which was an argument against DUPLICATING them, not against the doc. The detail was MOVED here rather than copied: [Taint notes](#taint-notes) keeps the constraint, the operation lists and R1–R3, and nothing is stated twice. |
+| `debug.md` | Present | The console is `LibKa0s-DebugLog-1.0`'s window; this addon's own surface is the four probe verbs, the `tooltip` channel flag and the eighteen `NS.Debug` channels. **Written 2026-09-09, when this row's own re-check trigger fired.** It had read "Not applicable — print statements with no state and no options for a doc to describe", which was true until `/mm debug tooltip` added a session flag on `NS.State`. The trigger was recorded on the row and the doc followed in the same changeset. |
+| `slash-dispatch.md` | Not applicable | **18 verbs in `NS.COMMANDS`.** Twelve are the standard's reserved set, implemented entirely by LibKa0s-Slash-1.0 and documented by the standard. This addon's own surface is 6 verbs and one 4-entry sub-verb tree (`window`: list/new/delete/copy); `debug` takes 7 words, one of which (`feign`) takes an argument of its own and one of which (`tooltip`) is a session flag; `perf` delegates its whole sub-surface to the library, and `export` takes one optional window name. The [Slash commands](#slash-commands) section carries all of it in a screen. |
+| `message-bus.md` | Not applicable | **14 distinct messages**, all declared in one catalog (`core/Constants.lua` `MSG`) with the owning sender named beside each. Every payload is a flat table of one to two plain fields; none carries a handle, a curve object or a per-unit filter needing prose. The [Message bus](#message-bus) section carries sender, consumers and payload for all fourteen in one table. |
+| `profiles.md` | Not applicable | `settings/Profiles.lua` is 132 lines hosting **AceDBOptions-3.0's own tree** unchanged. The addon adds no profile semantics beyond the `PROFILE_CHANGED` fan-out already tabulated above and the reset-all veto already stated under [Settings schema](#settings-schema); the persisted shape is [schema.md](schema.md)'s. |
+
+### Verification and record (documentation-§3)
+
+| Doc | Covers |
+|---|---|
+| `testing.md` | How to run the harness and lint; the green commit gate |
+| `smoke-tests.md` | The in-game smoke-test suite |
+| `test-cases.md` | The generated case inventory (authoritative pass count) |
+| `performance.md` | The addon performance page: buckets, offline scenarios, the in-game A/B |
+| `automated-tests/README.md` | What the automated-test record is and how to produce it |
+| `automated-tests/RESULTS.md` | One row per run; generated, never hand-edited |
+
+### Addon-specific (documentation-§3, Tier 3)
+
+| Doc | Covers |
+|---|---|
 | `complexity.md` | The `lizard` report `performance-§10` fixes to this path — one file, overwritten in place, so the git history of it is the trend line. Carries the watch list and the 1000–1500 LOC band |
-| `compat-layer.md` | Every client API this addon shims: the `C_DamageMeter` and `C_DeathRecap` surfaces, the recap-discovery probe, the secret-safe number formatters, the icon-existence checks and the three player-context rules |
-| `debug.md` | The `/mm debug` surface: the console, the two session flags, the eighteen log channels and the four per-issue probes |
-| `midnight-quirks.md` | The 12.0 client behaviors this addon works around, and the secret-value detail behind `## Taint notes` |
 | `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact |
 | `revendor/` | Frozen — one dated bundle per LibKa0s re-vendor: the payload delta and what was adopted, declined or filed from it |
 | `audits/` | Frozen — one dated bundle per `/wow-addon:standards-audit` run: the state, the deviations and the evidence as they stood on that date |
 | `reviews/` | Frozen — one dated bundle per `/wow-addon:review` run: the findings, the proposed changes and the plan as they stood on that date |
-
-### Tier 2 conditional docs — evaluated at v0.1.0
-
-Each trigger was measured against the source, not assumed. **Five of the six do not ship**, and the
-measurements that decided that are recorded here so a later audit can re-run them rather than
-re-argue them. The sixth, `compat-layer.md`, crossed its own line and has been written; it is
-registered under [Topic detail](#topic-detail) and its row below is kept as the measurement that
-moved it. This is an evaluation record, not a fourth register table — every doc below that *does*
-exist is registered above.
-
-| Doc | Status | Trigger, as measured |
-|---|---|---|
-| `slash-dispatch.md` | Not applicable | **18 verbs in `NS.COMMANDS`.** Twelve are the standard's reserved set, implemented entirely by LibKa0s-Slash-1.0 and documented by the standard. This addon's own surface is 6 verbs and one 4-entry sub-verb tree (`window`: list/new/delete/copy); `debug` takes 7 words, one of which (`feign`) takes an argument of its own and one of which (`tooltip`) is a session flag; `perf` delegates its whole sub-surface to the library, and `export` takes one optional window name. The [Slash commands](#slash-commands) section carries all of it in a screen. |
-| `message-bus.md` | Not applicable | **14 distinct messages**, all declared in one catalog (`core/Constants.lua` `MSG`) with the owning sender named beside each. Every payload is a flat table of one to two plain fields; none carries a handle, a curve object or a per-unit filter needing prose. The [Message bus](#message-bus) section carries sender, consumers and payload for all fourteen in one table. |
-| `compat-layer.md` | Present | **`core/Compat.lua` is 777 lines and 29 shims** (8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap` and the bar-animation read `BarInterpolation`), each a guarded namespace check around one passthrough, with no feature decisions, no state, and nothing there inspecting a meter value. The row read *re-measure — the trigger now fires* from the day this addon's Compat passed KickCD's, which ships the doc: 389 lines and 18 shims when the row was last written, 777 and 29 now. `documentation-§3` has since given the trigger a number — **three or more** addon-specific shims, counted over this file alone — which settles it at any reading. Written; registered under [Topic detail](#topic-detail). |
-| `midnight-quirks.md` | **Present** | **At least one client-version workaround of the addon's own** — the trigger as §3 states it, and this addon carries four: the probed `PLAYER_IS_GLIDING_CHANGED`, `ADDON_RESTRICTION_STATE_CHANGED` registered against a namespace a client may not have, the settle pass over client state that lags its own event, and the secret-value model itself. It was read as Not applicable on the argument that a third copy of the secret-value rules would be the one that drifts — which was an argument against DUPLICATING them, not against the doc. The detail was MOVED here rather than copied: [Taint notes](#taint-notes) keeps the constraint, the operation lists and R1–R3, and nothing is stated twice. |
-| `profiles.md` | Not applicable | `settings/Profiles.lua` is 132 lines hosting **AceDBOptions-3.0's own tree** unchanged. The addon adds no profile semantics beyond the `PROFILE_CHANGED` fan-out already tabulated above and the reset-all veto already stated under [Settings schema](#settings-schema); the persisted shape is [schema.md](schema.md)'s. |
-| `debug.md` | Present | The console is `LibKa0s-DebugLog-1.0`'s window; this addon's own surface is the four probe verbs, the `tooltip` channel flag and the eighteen `NS.Debug` channels. **Written 2026-09-09, when this row's own re-check trigger fired.** It had read "Not applicable — print statements with no state and no options for a doc to describe", which was true until `/mm debug tooltip` added a session flag on `NS.State`. The trigger was recorded on the row and the doc followed in the same changeset. |
 
 ## Documented deviations
 

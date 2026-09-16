@@ -1,7 +1,7 @@
--- tests/test_docmap.lua — the Tier 2 evaluation record says what docs/ actually holds
+-- tests/test_docmap.lua — the Tier 2 register says what docs/ actually holds
 -- (documentation-§3).
 --
--- WHAT IT PROVES. That every row in docs/ARCHITECTURE.md's `### Tier 2 conditional docs` table
+-- WHAT IT PROVES. That every row in docs/ARCHITECTURE.md's `### Conditional` table
 -- agrees with the directory: a doc filed **Present** exists, and a doc filed **Not applicable** does
 -- not.
 --
@@ -31,7 +31,11 @@ local test, fail = T.test, T.fail
 local ROOT = T.root or "."
 
 local ARCHITECTURE = "/docs/ARCHITECTURE.md"
-local HEADING = "### Tier 2 conditional docs"
+-- The heading is `documentation-§3`'s own, shared with the other ten repositories. It was
+-- `### Tier 2 conditional docs` while this register carried a bespoke four-section shape of its
+-- own; the register was moved onto the standard's four tables and the gate followed it here, in
+-- the same change. Matching the canonical spelling is what keeps this gate portable.
+local HEADING = "### Conditional"
 
 local function architecture()
     local fh = io.open(ROOT .. ARCHITECTURE, "r")
@@ -50,8 +54,12 @@ end
 
 test("doc map: every Tier 2 row agrees with what docs/ holds", function()
     local body = architecture()
+    -- ANCHORED AT A LINE START, and that is load-bearing rather than tidy: the register's own
+    -- preamble names `### Conditional` in prose a few paragraphs above the heading, and an
+    -- unanchored match lands on the sentence instead — handing this gate a section with no table
+    -- in it, which reads as "the shape changed" rather than "the pattern is wrong".
     -- Reading stops at the next heading of ANY level, so a later section's table cannot leak in.
-    local section = body:match(HEADING .. "[^\n]*\n(.-)\n##")
+    local section = body:match("\n" .. HEADING .. "[^\n]*\n(.-)\n##")
     if not section then
         fail("docs/ARCHITECTURE.md has no `" .. HEADING .. "` section followed by another heading, "
             .. "so the Tier 2 rows cannot be read and this gate is measuring nothing", 2)
@@ -72,9 +80,11 @@ test("doc map: every Tier 2 row agrees with what docs/ holds", function()
         end
     end
 
-    if rows < 5 then
+    -- Seven rows, seven counted: a status cell that is decorated (`**Present**`) does not
+    -- parse, and a gate resting on its own threshold cannot tell that from a deleted row.
+    if rows < 7 then
         fail("read " .. rows .. " Tier 2 rows with a status this gate understands; the table "
-            .. "carried six when this was written, so either the shape changed or a status cell "
+            .. "carried seven when this was written, so either the shape changed or a status cell "
             .. "now says something other than Present / Not applicable", 2)
     end
 
