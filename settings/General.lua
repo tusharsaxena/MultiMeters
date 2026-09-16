@@ -121,7 +121,9 @@ end
 --
 -- The rest of the Data page's story: its four sort and session rows are written
 -- by the window's own controls and were deleted, and the two that were left --
--- Merge pets and Refresh interval -- are addon-wide now and render on this page.
+-- Merge pets and Refresh interval -- are addon-wide now and render on this page,
+-- under their own **Behavior** tab rather than on Master controls, whose set
+-- options-ui-§15 fixes.
 --
 -- The dialog is declared at FILE LOAD rather than inside the builder, because
 -- the header's own reset control opens it (modules/HeaderControls.lua) on an
@@ -213,8 +215,6 @@ local function Build(mainCategory)
     local function afterMaster(c)
         local tail = NS.MasterControlsAfterGroup
         if tail then tail(c) end
-        H.TextRow(c, L["Reset position moves the window selected on the Windows page back to the center of the screen, and only that window. Reset all settings is addon-wide: it restores this profile and deletes every window but one, and asks first."])
-        if H.Relayout then H.Relayout(c) end
     end
 
     -- WHERE THESE COLOURS ARE ACTUALLY WORN, said on the tab rather than left to

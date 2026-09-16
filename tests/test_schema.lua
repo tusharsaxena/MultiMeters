@@ -277,7 +277,7 @@ local PARTITION = {
     -- composed; the other three follow the set. §15 forbids reordering, renaming
     -- or splitting the canonical set; it does not forbid an addon's own rows after
     -- it, and the case below pins that the seven come FIRST and contiguous.
-    general    = { { "Master controls", 10 }, { "Statistic colors", 8 } },
+    general    = { { "Master controls", 8 }, { "Behavior", 2 }, { "Statistic colors", 8 } },
     windows    = { { "Window", 1 } },
     frame      = { { "General", 6 }, { "Size and position", 6 },
                    { "Background and border", 6 }, { "Row", 8 } },
@@ -376,15 +376,27 @@ function()
     for i = 1, #want do prefix[i] = got[i] end
     assertEqual(table.concat(prefix, "\n"), table.concat(want, "\n"))
 
-    -- ...and what follows them is this addon's three, in the order the retired
-    -- General tab had them. Test mode was the fourth; it is canonical now.
+    -- ...and what follows them is ONE row. Merge pets and Refresh interval were here
+    -- too, and moved to their own **Behavior** tab: options-ui-§15 fixes this tab's set,
+    -- and neither is canonical or about turning the addon up and down -- one says what a
+    -- pet's damage IS and the other is a refresh rate. They sat here because the page had
+    -- nowhere else to put them. Test mode was a fourth; it is canonical now.
     local extras = {}
     for i = #want + 1, #got do extras[#extras + 1] = got[i] end
-    assertEqual(table.concat(extras, "\n"), table.concat({
-        "minimap.hide = " .. L["Show minimap button"],
+    assertEqual(table.concat(extras, "\n"), "minimap.hide = " .. L["Show minimap button"],
+        "only the minimap row follows the canonical set")
+
+    -- And the two that left are on Behavior, in the order they had.
+    local behavior = {}
+    for _, row in ipairs(NS.SchemaForPage("general")) do
+        if row.group == L["Behavior"] then
+            behavior[#behavior + 1] = row.path .. " = " .. tostring(row.label)
+        end
+    end
+    assertEqual(table.concat(behavior, "\n"), table.concat({
         "data.mergePets = " .. L["Merge pets into their owner"],
         "data.throttle = " .. L["Refresh interval"],
-    }, "\n"), "the retired General tab's rows must follow the canonical set, in order")
+    }, "\n"), "the Behavior tab is exactly the two rows that left Master controls")
 end)
 
 test("Schema: Test mode is the COMPOSED row right after Debug console, alone on its line",

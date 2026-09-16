@@ -1236,9 +1236,16 @@ NS.Schema = {
         label = L["Show minimap button"], desc = L["Show the minimap button for opening these settings."],
         onChange = refreshMinimap,
     },
+    -- ── Behavior ─────────────────────────────────────────
+    --
+    -- THEIR OWN TAB, not Master controls. options-ui-§15 makes that tab a canonical
+    -- set -- the addon-wide switch, visibility, scale, alpha, the lock, the console
+    -- and Test mode -- and these two are neither canonical nor about turning the
+    -- addon up and down: one says what a pet's damage IS and the other is a refresh
+    -- rate. They sat there because there was nowhere else on the page to put them.
+    --
     -- `data.mergePets` and `data.throttle` were `window.data.*` and are not
-    -- per-window questions: one says what a pet's damage IS, the other is a
-    -- refresh rate, and two windows disagreeing about either is two answers to
+    -- per-window questions: two windows disagreeing about either is two answers to
     -- one question. core/Database.lua's v4 -> v5 step lifts a stored pair off the
     -- first window in each profile. There is no Data PAGE any more -- the sort
     -- and session rows that used to share it with these two were deleted rather
@@ -1249,14 +1256,14 @@ NS.Schema = {
     -- live.
     {
         path = "data.mergePets", type = "bool", default = false,
-        page = "general", group = L["Master controls"],
+        page = "general", group = L["Behavior"],
         label = L["Merge pets into their owner"],
         desc = L["Add a pet's numbers to its owner's row instead of giving it its own. Blizzard's combat restriction forbids the addition while you are fighting, so a merged pet's numbers are missing until the pull ends."],
     },
     {
         path = "data.throttle", type = "number", default = 0.25,
         min = Const.THROTTLE_MIN, max = Const.THROTTLE_MAX, step = 0.05, fmt = "%.2fs",
-        page = "general", group = L["Master controls"],
+        page = "general", group = L["Behavior"],
         label = L["Refresh interval"],
         desc = L["Seconds between refreshes. Lower is more responsive and costs more; the display updates at most this often no matter how fast the game reports numbers."],
         validate = isNumberIn(Const.THROTTLE_MIN, Const.THROTTLE_MAX),

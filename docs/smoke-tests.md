@@ -454,11 +454,14 @@ second edge to catch.
   under it saying what each reaches. Master scale and Master alpha are addon-wide and are **not** the
   per-window scale and opacity on Frame — set Master scale to 0.5 with a window already at
   0.8 and the window draws at 0.4, and putting the master back to 1.0 gives every window exactly the
-  size it was set to. Below the canonical seven and **above** the button pair sit this addon's own
-  three: the minimap toggle, starting a fresh line under Test mode, then **Merge pets into their
-  owner** and **Refresh interval** — both addon-wide: change either and **every** window follows,
-  not just the selected one. With Test mode they were a tab called **General**; there must be no tab by that name on this page any more, and a
-  strip showing three tabs here is the fold half-done. **Statistic colors** is the palette (below).
+  size it was set to. Below the canonical seven and **above** the button pair sits this addon's own
+  **one**: the minimap toggle, starting a fresh line under Test mode. **No prose under the button
+  pair** — a paragraph explaining Reset position used to sit there and was removed. **Behavior** is
+  the second tab: **Merge pets into their owner** and **Refresh interval**, both addon-wide — change
+  either and **every** window follows, not just the selected one. They were on Master controls until
+  `options-ui-§15`'s canonical set pushed them off. With Test mode they were once a tab called
+  **General**; there must be no tab by that name on this page. **Statistic colors** is the palette
+  (below), and the strip reads **[ Master controls ][ Behavior ][ Statistic colors ]**.
   The retired **Data**, **Maintenance** and **General** tabs are where those rows used to live.
   There is deliberately
   **no** Reset meter data button here, or on any page; the header's own reset control is the one way

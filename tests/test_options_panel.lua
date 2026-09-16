@@ -932,8 +932,9 @@ test("Panel: the Master controls tab closes with the composer's two reset button
     -- options-ui-§15 makes the two resets the tab's closing BUTTON PAIR rather than
     -- schema rows -- they are acts, not settings -- and the pair is drawn by the
     -- hook `H.MasterControls` HANDS BACK, so nine addons cannot end up with nine
-    -- wordings of "reset everything". settings/General.lua wires that hook and adds
-    -- the one sentence the composer cannot know: what Reset position means here.
+    -- wordings of "reset everything". settings/General.lua wires that hook and nothing
+    -- else: it used to add a sentence under the pair explaining that Reset position is
+    -- per-window here, and that prose is gone at the owner's request.
     -- red under: dropping NS.MasterControlsAfterGroup from afterMaster, or keying
     -- the hook to a group name the schema does not use, which errors nowhere.
     local inst = T.load()
@@ -957,8 +958,8 @@ test("Panel: the Master controls tab closes with the composer's two reset button
     local said = textOnPage()
     assertTrue(said:find("Reset position", 1, true) ~= nil, "no Reset position button")
     assertTrue(said:find("Reset all settings", 1, true) ~= nil, "no Reset all settings button")
-    assertTrue(said:find("selected on the Windows page", 1, true) ~= nil,
-        "the pair does not say that Reset position is per-window here")
+    assertTrue(said:find("selected on the Windows page", 1, true) == nil,
+        "the explanatory paragraph under the pair was removed; nothing should restore it")
 end)
 
 test("Panel: the Statistic colors tab says where its colours are actually worn", function()
@@ -994,9 +995,10 @@ test("Panel: the Statistic colors tab says where its colours are actually worn",
     assertTrue(textOnPage():find(note, 1, true) == nil,
         "the note is on the Master controls tab, which is not the tab it describes")
 
-    -- The SECOND tab: Master controls, then Statistic colors. It was the third
-    -- until the General tab's four rows became Master controls' tail.
-    ctx.__tabKids[2]:__fire("OnClick")
+    -- The THIRD tab: Master controls, Behavior, then Statistic colors. It was the
+    -- second until Merge pets and Refresh interval moved off Master controls onto a
+    -- Behavior tab of their own.
+    ctx.__tabKids[3]:__fire("OnClick")
     assertEqual(ctx.activeTab, L["Statistic colors"])
     assertTrue(textOnPage():find(note, 1, true) ~= nil,
         "the Statistic colors tab drew no note saying where its colours are worn")
