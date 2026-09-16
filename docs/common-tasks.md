@@ -524,6 +524,14 @@ a window name (that is user data, and folding it resolves something the user did
 page and the README's command table all read that string and nothing else — a sub-verb missing there
 is a sub-verb nobody can discover (`slash-commands-§4`).
 
+**5. Decide nothing about the disabled state unless the verb must stay live.** The gate below the
+table wraps every handler *not* named in `ALWAYS_LIVE`, so a new verb is refused while the addon is
+off by default, on one tagged line naming `/mm enable` — which is what a verb that drives a feature
+should do (`slash-commands-§2`). A verb that must keep answering with the addon off goes in
+`ALWAYS_LIVE`, and the standard's list of those is closed: `help`, `config`, `version`, `enable`,
+`disable`, `debug`, `perf` and the schema CLI. Adding a name there is a deliberate claim that the
+verb is not a feature, and `tests/test_slash.lua` restates the list, so the claim is made twice.
+
 **Gotchas.**
 - `perf` is a **reserved** verb across the collection and is already registered here. It is
   registered **by the addon**, never by the harness: `NS.COMMANDS` is the one place every command in

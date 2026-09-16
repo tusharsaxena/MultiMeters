@@ -1091,6 +1091,23 @@ is why the popup exists. Every open drill-down closes and this module's caches a
 - **Clear empties the log; copy opens the copy window**, whose own title bar carries the same close
   icon. Ctrl+C then Esc still works there.
 
+**Then turn the addon off and run the surface again** — `/mm disable`, then every verb above.
+
+- **The six feature verbs refuse, on ONE line each, naming `/mm enable`, and do nothing.**
+  `/mm toggle`, `/mm lock`, `/mm test`, `/mm window new Raid`, `/mm reset-positions`, `/mm export`.
+  Watch what does *not* happen as closely as what prints: `/mm window list` afterwards must show the
+  **same** windows (no `Raid`), and nothing may move on screen. A verb that printed the refusal and
+  then acted anyway is the failure this check exists for, and the line alone will not show it to you.
+- **Everything else still answers**: `/mm`, `/mm help`, `/mm config` (the panel opens),
+  `/mm version`, `/mm list`, `/mm get enabled`, `/mm set master.scale 1.5`, `/mm reset master.scale`,
+  `/mm resetall`, `/mm debug`, `/mm perf help`. You must be able to read and repair settings and to
+  reach the panel with the addon off — which is exactly when you are most likely to need to.
+- **`/mm enable` turns it back on**, and the six feature verbs work again immediately. Were that one
+  verb ever gated, the only route back would be the settings panel you were trying not to open.
+- **The help index is unchanged throughout.** A refused verb keeps its row in `/mm help` and on the
+  settings landing page; a verb that disappeared from either while the addon was off would be a
+  second way to lose it.
+
 ### 15. Profiles
 
 **Steps.** Profiles page → create "Test" → switch to it → change several settings and add a window →

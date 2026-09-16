@@ -188,7 +188,7 @@ that a load-time cycle between two majors.
 |---|---|
 | `help` | Show the command index |
 | `config` | Open the settings panel on its landing page (`options` is accepted as an alias). A bare `/mm` runs this verb |
-| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgement is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: `enabled` is read in one place (the show ladder's STEP 1) and nothing unregisters the chat command, so `/mm`, `enable`, `help`, `config` and `version` all still work with the addon off — the pair is never one-way |
+| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgement is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: nothing unregisters the chat command, tears down `NS.COMMANDS` or drops the dispatcher, so `/mm`, `enable`, `help`, `config` and `version` all still work with the addon off — the pair is never one-way. What a verb that is **not** on that list answers instead is *Feature verbs while disabled*, below the table |
 | `list` | List every setting and its current value |
 | `get <path>` | Read one setting |
 | `set <path> <value>` | Write one setting |
@@ -215,6 +215,21 @@ its numbers are as exportable as a drawn one's. Named with no argument it means 
 settings panel is pointed at, falling back to the first in the registry, because the CLI has no
 picker and `/mm export` on a fresh login has to mean something. Whether an export may run at all is
 asked once, of `NS.Export.Available()`, and is never re-decided here — see [Taint notes](#taint-notes).
+
+### Feature verbs while disabled
+
+`slash-commands-§2`: while `enabled` is false, a verb that **drives the addon's features** answers on
+one tagged line naming `/mm enable` and does nothing else — acting is the wrong answer twice over,
+and a silent no-op leaves the player with no clue why nothing happened. That is all six host verbs.
+These stay live always: `help`, `config`, `version`, `enable`, `disable`, `debug`, `perf` and the
+schema CLI (`get`, `set`, `list`, `reset`, `resetall`) — a player must be able to read and repair
+settings and reach the panel with the addon off, and `enable` above all or the pair is one-way.
+
+**One gate, and the live set is data.** `settings/Slash.lua` wraps the handler of every verb *not*
+named in its `ALWAYS_LIVE` table, once, between the `NS.COMMANDS` declaration and the dispatcher
+built from it — so a verb is gated **by default** and has to be named live to escape, and the next
+verb added is refused with the addon off without anyone remembering to say so. It is a gate rather
+than a removal: the verb keeps its help and landing-page row throughout. A SHOULD, and taken.
 
 ## Event subscriptions
 

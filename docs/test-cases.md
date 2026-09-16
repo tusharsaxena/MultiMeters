@@ -1861,7 +1861,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (67)
+### test_slash.lua (73)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1929,6 +1929,12 @@ badge and any count quoted in the docs must agree with it.
 - Slash: no raw SLASH_* global is claimed anywhere
 - Slash: Register is a no-op rather than a raise when there is no AceConsole
 - Slash: /mm list heads each block with the page AND the tab
+- Slash: a feature verb refuses while disabled AND does not act
+- Slash: a refused verb leaves no side effect in the store
+- Slash: EVERY verb off the live list refuses, so a new one is gated by default
+- Slash: every verb on the live list still answers with the addon off
+- Slash: enabling the addon again gives the feature verbs back
+- Slash: nothing refuses on an install whose store has not been built
 - Slash: `set window.name` keeps every word of a multi-word name
 
 ### test_options_panel.lua (43)
@@ -2129,11 +2135,11 @@ badge and any count quoted in the docs must agree with it.
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 67 |
+| test_slash.lua | 73 |
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 30 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1878** |
+| **Total** | **1884** |
