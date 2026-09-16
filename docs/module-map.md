@@ -215,7 +215,7 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
     │                     FindSchemaRow, RegisterSchemaRows, ApplyDefault,
     │                     SchemaForPage, ValidateSchema and the columns carve-out.
     │                     Names no single setting. THE ONE CONFIG_CHANGED SENDER
-    ├── Slash.lua       — LibKa0s-Slash-1.0 seam: NS.COMMANDS (16 verbs), the five
+    ├── Slash.lua       — LibKa0s-Slash-1.0 seam: NS.COMMANDS (18 verbs), the five
     │                     schema adapters, and the six host verbs
     ├── OptionsSetup.lua — LibKa0s-Options-1.0 seam: NS.Helpers IS the library
     │                     instance, plus the panel registry and the reset-all veto

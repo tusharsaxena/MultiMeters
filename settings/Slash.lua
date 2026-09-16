@@ -59,6 +59,7 @@ Sl.Version = NS.Version
 -- these is assigned below the verb table that references it.
 local cli
 local doLock, doTest, doToggle, doWindow, doResetPositions, doExport, doDebug, doPerf, doResetAll
+local doEnabled
 
 -- ---------------------------------------------------------------------
 -- The verb table
@@ -72,6 +73,13 @@ local doLock, doTest, doToggle, doWindow, doResetPositions, doExport, doDebug, d
 NS.COMMANDS = {
     { "help",     "Show this help",            function() cli:PrintHelp() end },
     { "config",   "Open the settings panel",   function() if NS.OpenOptionsPanel then NS.OpenOptionsPanel() end end },
+    -- RESERVED ALIASES, NOT A SECOND SWITCH (slash-commands-§2). Both write the path the
+    -- `Enable Multi Meters` checkbox writes, through the seam it writes through, so the two
+    -- surfaces can never show the player different answers and one onChange runs whichever
+    -- was used. They hold NO state of their own -- no second key, no session flag, no
+    -- `NS.enabled` local -- and `/mm set enabled true|false` is the same write by its long name.
+    { "enable",   "Turn the addon on",         function() doEnabled(true) end },
+    { "disable",  "Turn the addon off without unloading it",  function() doEnabled(false) end },
     { "list",     "List every setting",        function() cli:CliList() end },
     { "get",      "Read one setting: /mm get <path>",      function(a) cli:CliGet(a) end },
     { "set",      "Write one setting: /mm set <path> <value>", function(a) cli:CliSet(a) end },
@@ -203,7 +211,16 @@ cli = SlashLib:New({
     -- behind the seam rather than here, which is exactly why the CLI can be this
     -- thin: `/mm set window.frame.width 300` is one path lookup from the library's
     -- point of view, and the active-window question is the schema's to answer.
-    get          = function(path) return NS.GetSetting and NS.GetSetting(path) or nil end,
+    -- NOT `NS.GetSetting and NS.GetSetting(path) or nil`. That idiom collapses a stored
+    -- `false` to nil, so EVERY boolean row that is off printed `enabled = nil` through
+    -- `/mm get`, and every `/mm set <bool> false` echoed `nil` back as the value it had
+    -- just stored -- a read-back that contradicts the write it is confirming. The guard is
+    -- an explicit branch for that reason; the same shape NS.GetSetting itself uses for a
+    -- session row, and for the same defect.
+    get          = function(path)
+        if not NS.GetSetting then return nil end
+        return NS.GetSetting(path)
+    end,
     set          = function(path, v) if NS.SetByPath then NS.SetByPath(path, v) end end,
     findRow      = function(path) return NS.FindSchemaRow and NS.FindSchemaRow(path) or nil end,
     allRows      = function() return NS.Schema or {} end,
@@ -287,6 +304,31 @@ end
 local function boolArg(rest)
     local word = tostring(rest or ""):match("^%s*(%S*)")
     return SlashLib.ParseBool(word)
+end
+
+--- `/mm enable` and `/mm disable`, as ALIASES of the one stored path.
+---
+--- STRAIGHT THROUGH `CliSet`, which is what makes them aliases rather than look-alikes: it is
+--- the same call `/mm set enabled true` makes, so the write lands on NS.SetByPath with the
+--- row's own validation, the seam's `[Set]` line, the row's `onChange` (the show ladder's
+--- refresh) and the panel re-sync -- and the acknowledgement comes out in slash-commands-§5's
+--- `path = value` shape, from the library's shared formatter, RE-READ after the write rather
+--- than echoing what was asked for.
+---
+--- Spelling the boolean as a word rather than passing `true` is not a detour: `CliSet` takes
+--- the raw rest of a command line and parses it against the row, which is the one place the
+--- vocabulary for a boolean lives.
+---
+--- THE DISPATCHER SURVIVES THE DISABLED STATE, which is what keeps this pair from being
+--- one-way. `enabled` is read in exactly one place -- core/MultiMeters.lua's show ladder,
+--- STEP 1 -- and nothing anywhere unregisters the chat command, tears down NS.COMMANDS or
+--- drops the dispatcher. `/mm`, `/mm enable`, `/mm help`, `/mm config` and `/mm version` all
+--- keep working with the addon off, so the player who turned it off can turn it back on
+--- without opening the settings panel they were trying not to open.
+---
+--- @param want boolean
+function doEnabled(want)
+    cli:CliSet("enabled " .. tostring(want))
 end
 
 function doLock(rest)

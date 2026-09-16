@@ -98,8 +98,12 @@ test("Slash: no verb is declared twice", function()
 end)
 
 test("Slash: every reserved verb is present, in the order the standard fixes", function()
+    -- TWELVE now. `enable` and `disable` are reserved across the collection (slash-commands-§2)
+    -- and sit where the standard's own COMMANDS example puts them: after `config`, ahead of the
+    -- schema verbs. They are ALIASES for the `enabled` row -- the assertions below pin that they
+    -- hold no state of their own.
     local RESERVED = {
-        "help", "config", "list", "get", "set",
+        "help", "config", "enable", "disable", "list", "get", "set",
         "reset", "resetall", "debug", "perf", "version",
     }
     local names = verbNames(NS.COMMANDS)
@@ -140,6 +144,136 @@ test("Slash: every sub-verb a handler accepts is named in its own description", 
 end)
 
 -- ---------------------------------------------------------------------------
+-- `enable` / `disable` — aliases, never a second switch
+-- ---------------------------------------------------------------------------
+--
+-- slash-commands-§2 reserves both verbs collection-wide and fixes what they mean: they write the
+-- stored path the `Enable Multi Meters` checkbox writes, through the same single write seam, and
+-- they hold NO state of their own. The cases below pin both halves of that — the write lands where
+-- the checkbox's does, and nothing else anywhere changed — plus the clause that keeps the pair from
+-- being one-way: the dispatcher survives the disabled state.
+
+test("Slash: `enable` and `disable` write the Master-controls Enable path", function()
+    local inst = T.load()
+    local NSi = inst.NS
+
+    say(inst, "disable")
+    assertFalse(NSi.db.profile.enabled, "`disable` must write the row's own stored path")
+    assertFalse(NSi.GetSetting("enabled"), "and the seam must read it back the same way")
+
+    say(inst, "enable")
+    assertTrue(NSi.db.profile.enabled)
+end)
+
+test("Slash: they are the SAME write `/mm set enabled` makes", function()
+    local inst = T.load()
+    local NSi = inst.NS
+
+    -- Proven by intercepting the one seam rather than by comparing outcomes: two routes that
+    -- happen to agree today are exactly what drifts on the next behavior change.
+    local seen = {}
+    local real = NSi.SetByPath
+    NSi.SetByPath = function(path, value, windowId)
+        seen[#seen + 1] = tostring(path) .. "=" .. tostring(value)
+        return real(path, value, windowId)
+    end
+
+    say(inst, "disable")
+    say(inst, "set enabled false")
+    NSi.SetByPath = real
+
+    assertEqual(seen[1], "enabled=false")
+    assertEqual(seen[2], seen[1], "the verb must take the path the long form takes, not a copy")
+end)
+
+test("Slash: they hold no state of their own", function()
+    local inst = T.load()
+    local NSi = inst.NS
+
+    say(inst, "disable")
+    -- No second key, no session flag, no `NS.enabled` local. A second record of one state is free
+    -- to disagree with the checkbox, and the first time it does the player is told two things.
+    assertEqual(NSi.enabled, nil)
+    assertEqual(NSi.State.enabled, nil)
+    assertEqual(NSi.db.profile.disabled, nil)
+
+    -- And the checkbox reads the verb's write, because there is only one place to read.
+    local row = NSi.FindSchemaRow("enabled")
+    assertTrue(row ~= nil)
+    assertFalse(NSi.GetSetting(row.path))
+end)
+
+test("Slash: the acknowledgement is slash-commands-§5's `path = value` line", function()
+    local inst = T.load()
+    -- The library's shared formatter, re-read after the write. A verb that answered in its own
+    -- words would be untidy rather than broken, which is why this is the house shape and not a
+    -- second sentence to keep in step.
+    local lines = joined(say(inst, "disable"))
+    assertTrue(lines:find("enabled", 1, true) ~= nil, lines)
+    assertTrue(lines:find("false", 1, true) ~= nil, lines)
+end)
+
+test("Slash: the reactor runs, so the windows follow the verb", function()
+    local inst = T.load{ enable = true }
+    local refreshes = 0
+    inst.NS.Visibility.Refresh = function() refreshes = refreshes + 1 end
+
+    say(inst, "disable")
+    -- `enabled` carries `onChange = refreshVisibility`, because the effect is a window appearing
+    -- or disappearing rather than a window redrawing, which CONFIG_CHANGED cannot express. Going
+    -- around the seam would skip it and leave every window on screen with the addon off.
+    assertTrue(refreshes > 0, "the row's onChange did not run")
+end)
+
+test("Slash: the dispatcher survives the disabled state, so the pair is not one-way", function()
+    local inst = T.load{ enable = true }
+    local NSi = inst.NS
+
+    say(inst, "disable")
+    assertFalse(NSi.db.profile.enabled)
+
+    -- *Disabled* means the addon stands its features down. It does NOT mean it unregisters its
+    -- chat command, tears down NS.COMMANDS or drops its dispatcher — an addon that did any of
+    -- those has built a switch that only goes one way, and the only route back is the settings
+    -- panel the player was trying not to open (slash-commands-§2).
+    assertTrue(#say(inst, "help")    > 0, "`/mm help` went silent with the addon off")
+    assertTrue(#say(inst, "version") > 0, "`/mm version` went silent with the addon off")
+
+    -- A bare `/mm` runs the host's `config` verb (slash-commands-§4), so what proves it is
+    -- alive is the panel opening rather than a chat line.
+    local opened = 0
+    NSi.OpenOptionsPanel = function() opened = opened + 1 end
+    say(inst, "")
+    say(inst, "config")
+    assertEqual(opened, 2, "`/mm` and `/mm config` went silent with the addon off")
+
+    -- And the verb that matters most still works.
+    say(inst, "enable")
+    assertTrue(NSi.db.profile.enabled, "`/mm enable` could not turn the addon back on")
+end)
+
+test("Slash: the show ladder is the ONE reader of `enabled`", function()
+    -- What makes the case above structural rather than a lucky observation: the flag is read in
+    -- exactly one place, and it is not on any path that could reach the dispatcher.
+    local hits = {}
+    for _, rel in ipairs(T.loadedAddonFiles) do
+        local fh = io.open(T.root .. "/" .. rel, "r")
+        if fh then
+            local n = 0
+            for line in fh:lines() do
+                n = n + 1
+                if line:find("profile.enabled", 1, true) then
+                    hits[#hits + 1] = rel .. ":" .. n
+                end
+            end
+            fh:close()
+        end
+    end
+    assertEqual(table.concat(hits, ", "):gsub(":%d+", ""), "core/MultiMeters.lua",
+        "a second reader of the master switch is a second place it can turn something off")
+end)
+
+-- ---------------------------------------------------------------------------
 -- Dispatch
 -- ---------------------------------------------------------------------------
 
@@ -166,6 +300,20 @@ test("Slash: `version` reports the TOC's version rather than a hardcoded string"
     inst.mocks.__toc.Version = "9.9.9"
     assertTrue(joined(say(inst, "version")):find("9.9.9", 1, true) ~= nil,
         "the version must be read from the packaged manifest (slash-commands-§3)")
+end)
+
+test("Slash: a boolean that is OFF reads back as false, not nil", function()
+    local inst = T.load()
+    -- THE `and ... or nil` COLLAPSE, caught by the `/mm disable` echo. The descriptor's `get`
+    -- adapter was `NS.GetSetting and NS.GetSetting(path) or nil`, which turns a stored `false`
+    -- into nil -- so every boolean row that was off printed `nil` through `/mm get`, and every
+    -- `/mm set <bool> false` echoed `nil` as the value it had just stored: a read-back
+    -- contradicting the write it was confirming. slash-commands-§5 says booleans render
+    -- `true` / `false` and a nil STORED value renders `nil`, so the two were indistinguishable.
+    say(inst, "set window.frame.locked false")
+    local shown = joined(say(inst, "get window.frame.locked"))
+    assertTrue(shown:find("false", 1, true) ~= nil, shown)
+    assertTrue(shown:find("nil", 1, true) == nil, shown)
 end)
 
 test("Slash: `get` and `set` land on the addon's own schema seam", function()

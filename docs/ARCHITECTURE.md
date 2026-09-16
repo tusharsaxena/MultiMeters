@@ -178,8 +178,8 @@ A bare `/mm` (empty, or whitespace only) runs the `config` verb with `""` and op
 panel on its landing page; `/mm help` prints the index (`slash-commands-§4`, LibKa0s-Slash minor 11).
 The library-absent stub in `settings/Slash.lua` mirrors the rule, so there `config` answers that the
 panel is unavailable.
-`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **16 verbs**, the
-ten reserved ones first in the order the standard fixes, then this addon's six. The dispatcher, the
+`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **18 verbs**, the
+twelve reserved ones first in the order the standard fixes, then this addon's six. The dispatcher, the
 help renderer and the schema CLI are LibKa0s-Slash-1.0's; the verb table stays this addon's and is
 passed *in*, because the settings landing page renders the same rows and library ownership would make
 that a load-time cycle between two majors.
@@ -188,6 +188,7 @@ that a load-time cycle between two majors.
 |---|---|
 | `help` | Show the command index |
 | `config` | Open the settings panel on its landing page (`options` is accepted as an alias). A bare `/mm` runs this verb |
+| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgement is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: `enabled` is read in one place (the show ladder's STEP 1) and nothing unregisters the chat command, so `/mm`, `enable`, `help`, `config` and `version` all still work with the addon off — the pair is never one-way |
 | `list` | List every setting and its current value |
 | `get <path>` | Read one setting |
 | `set <path> <value>` | Write one setting |
@@ -455,7 +456,7 @@ exist is registered above.
 
 | Doc | Status | Trigger, as measured |
 |---|---|---|
-| `slash-dispatch.md` | Not applicable | **16 verbs in `NS.COMMANDS`.** Ten are the standard's reserved set, implemented entirely by LibKa0s-Slash-1.0 and documented by the standard. This addon's own surface is 6 verbs and one 4-entry sub-verb tree (`window`: list/new/delete/copy); `debug` takes 7 words, one of which (`feign`) takes an argument of its own and one of which (`tooltip`) is a session flag; `perf` delegates its whole sub-surface to the library, and `export` takes one optional window name. The [Slash commands](#slash-commands) section carries all of it in a screen. |
+| `slash-dispatch.md` | Not applicable | **18 verbs in `NS.COMMANDS`.** Twelve are the standard's reserved set, implemented entirely by LibKa0s-Slash-1.0 and documented by the standard. This addon's own surface is 6 verbs and one 4-entry sub-verb tree (`window`: list/new/delete/copy); `debug` takes 7 words, one of which (`feign`) takes an argument of its own and one of which (`tooltip`) is a session flag; `perf` delegates its whole sub-surface to the library, and `export` takes one optional window name. The [Slash commands](#slash-commands) section carries all of it in a screen. |
 | `message-bus.md` | Not applicable | **14 distinct messages**, all declared in one catalog (`core/Constants.lua` `MSG`) with the owning sender named beside each. Every payload is a flat table of one to two plain fields; none carries a handle, a curve object or a per-unit filter needing prose. The [Message bus](#message-bus) section carries sender, consumers and payload for all fourteen in one table. |
 | `compat-layer.md` | Present | **`core/Compat.lua` is 777 lines and 29 shims** (8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap` and the bar-animation read `BarInterpolation`), each a guarded namespace check around one passthrough, with no feature decisions, no state, and nothing there inspecting a meter value. The row read *re-measure — the trigger now fires* from the day this addon's Compat passed KickCD's, which ships the doc: 389 lines and 18 shims when the row was last written, 777 and 29 now. `documentation-§3` has since given the trigger a number — **three or more** addon-specific shims, counted over this file alone — which settles it at any reading. Written; registered under [Topic detail](#topic-detail). |
 | `midnight-quirks.md` | **Present** | **At least one client-version workaround of the addon's own** — the trigger as §3 states it, and this addon carries four: the probed `PLAYER_IS_GLIDING_CHANGED`, `ADDON_RESTRICTION_STATE_CHANGED` registered against a namespace a client may not have, the settle pass over client state that lags its own event, and the secret-value model itself. It was read as Not applicable on the argument that a third copy of the secret-value rules would be the one that drifts — which was an argument against DUPLICATING them, not against the doc. The detail was MOVED here rather than copied: [Taint notes](#taint-notes) keeps the constraint, the operation lists and R1–R3, and nothing is stated twice. |
