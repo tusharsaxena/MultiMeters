@@ -52,12 +52,12 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `core/` boundary | `EnvSetup.lua` | The `LibKa0s-Env-1.0` seam: `NS.Meta` / `NS.Version`, the TOC-manifest reader `Compat.lua` used to own. |
 | `core/` values | `Constants.lua`, `Namespace.lua`, `State.lua` | The stat catalog, the bus catalog, identity, session-only flags and the shared cache. |
 | `core/` the rule | `Secrets.lua` | **The only file that inspects a meter value.** |
-| `core/` seams | `MediaSetup`, `CoreSetup`, `PerfSetup`, `DebugLogSetup`, `PoolSetup` | LibKa0s wiring, the art and font seam, and the window row pool. The `LSM30_Border` fixup that used to make a sixth file here is `lib.__PatchLSM30Border()` now, called from `settings/OptionsSetup.lua`: AceGUI's widget registry is process-global, so a re-registration belongs to the library the whole collection shares. |
+| `core/` seams | `MediaSetup`, `CoreSetup`, `PerfSetup`, `DebugLogSetup`, `PoolSetup`, `LauncherSetup` | LibKa0s wiring, the art and font seam, and the window row pool. The `LSM30_Border` fixup that used to make a seventh file here is `lib.__PatchLSM30Border()` now, called from `settings/OptionsSetup.lua`: AceGUI's widget registry is process-global, so a re-registration belongs to the library the whole collection shares. |
 | `core/` runtime | `MultiMeters.lua`, `Database.lua` | The single game-event listener and the show ladder; AceDB and migrations. |
 | `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm debug diag` and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
 | `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret. |
-| `modules/` display | `WindowManager`, `Window` (+ `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility`, `Minimap` | The registry, one window, one row, the enemy cross-reference, the two hover surfaces, the breakdown, the context predicate, the launcher. |
+| `modules/` display | `WindowManager`, `Window` (+ `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window, one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
 | `settings/` | `Schema_Compose` → `Schema` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 9 pages | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, and the path and write seams. `ColumnBlocks` is the Columns page's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
 
@@ -120,7 +120,7 @@ row. Each piece has one owner, and every writer is listed with the act that reac
 |---|---|---|---|
 | `frame.position` in each `db.profile.windows` entry ([detail](schema.md#frameposition-is-named-non-setting-state)) | geometry only a drag determines | `WindowProto` (`modules/Window_Placement.lua`) | `WindowProto:SavePosition` (title-bar drag-stop); `WindowManager:ResetPosition` / `:ResetPositions` (General's *Reset position*, `/mm reset-positions`) put back the shipped center; `WindowManager:Create` (whole, via `NS.DefaultWindow`) and `:Duplicate` (its 24 px offset); `Database.EnsureWindowShape`'s backfill when `Create`, `Duplicate` or `CopyFrom` calls it |
 | `db.global.roster` (`byGuid`, `pets`) ([detail](schema.md#dbglobal--account-wide)) | learned data | `modules/Roster.lua` | `build()` and its `linkPetOf`, recording every member and pet-owner link the live build sees (the lazy rebuild after a roster invalidation); `Roster.Forget` clears it on `METER_RESET` |
-| `db.profile.minimap`'s `minimapPos` ([detail](schema.md#minimap)) | a vendored library's own writes | `modules/Minimap.lua` (`Minimap.Init` hands LibDBIcon the table) | LibDBIcon, when the player drags the minimap button. `hide` is the `minimap.hide` row |
+| `db.global.minimap`'s `minimapPos` ([detail](schema.md#minimap)) | a vendored library's own writes | `core/LauncherSetup.lua` (the descriptor's `minimap` closure hands LibDBIcon the table) | LibDBIcon, when the player drags the minimap button. `hide` is the `global.minimap.hide` row, written through the seam's minimap carve-out |
 | `MultiMetersPerfDB` | recorded data a vendored library writes | `core/PerfSetup.lua` (hands LibKa0s-Perf the key) | LibKa0s-Perf's `P.Save` on `/mm perf finish`: appends, trims the ring to 10, discards an older schema |
 
 **Sort, session type and the pinned segment are preferences, not a remembered view**: a header
@@ -594,7 +594,7 @@ because it was the biggest, not because anyone could reproduce it. So the number
 the command that produced it and the scope that command runs over, and this table is what an audit
 reads instead of measuring again.
 
-**Fifteen lines carrying fifteen paths, twelve distinct file/path pairs, measured 2026-09-08** over
+**Fifteen lines carrying fifteen paths, thirteen distinct file/path pairs, measured 2026-09-16** over
 the tracked `*.lua` this repository authors — `libs/` excluded because vendored code is audited where
 it is written, `tests/` excluded because a path in a fixture is an assertion about a string rather
 than chrome any player sees:
@@ -626,7 +626,7 @@ makes the subtraction from 19 checkable by a reader who runs the looser form.
 |---|---|---|
 | `core/Constants.lua` | `Interface\AddOns\MultiMeters\media\logos\multimeters.logo.tga` | The addon's **own shipped art**, which no icon catalog is meant to replace (`layout-§3`). The reasoning above the line is about the extension, not the hard-coding: `.tga` is the only form the client loads, and the `.png` master beside it is packaging. |
 | `modules/Export_Modal.lua` | `Interface\Buttons\WHITE8x8` | The flat 1px fill `standalone-windows-§1` **mandates** for the shared window edge — a client primitive, not a mark, so outside what the catalog answers for. `LibKa0s/Core.lua:91,94` reaches for the same file for the same reason. Two sites, one path. |
-| `modules/Minimap.lua` | `Interface\Icons\achievement_challengemode_gold` | **Pinned to the TOC.** `MultiMeters.toc:6`'s `## IconTexture` names this exact path, so the launcher and the AddOns-list entry are the same addon on sight; a catalog mark here would make them two. `library-stack-§8` sends a mark the catalog lacks **upstream** rather than into an addon, and there is nothing to send: the set is white-in-alpha by rule and this is the client's own colour art. |
+| `core/Constants.lua` | `Interface\AddOns\MultiMeters\media\logos\multimeters.logo.128.tga` | The addon's **own shipped art** again, in its icon form. `layout-§4` requires this exact file and `launcher-§4` requires it in three places at once -- the TOC's `## IconTexture`, the minimap button and a broker display -- so one path is read by `core/LauncherSetup.lua` and restated in `MultiMeters.toc`. A catalog mark here is the thing `launcher-§4` forbids outright: a borrowed icon makes the addon look like something else in the one list where the player is choosing what to turn off (**anti-pattern #82**). Replaced `modules/Minimap.lua`'s borrowed `achievement_challengemode_gold` when the launcher was adopted. |
 | `modules/Row.lua` | `Interface\TargetingFrame\UI-Classes-Circles` | The client's **class atlas**, cropped by coordinate. The catalog carries no class art and `library-stack-§8` sends a missing mark upstream rather than into an addon — but twelve class circles are Blizzard's own data, not a Ka0s glyph, and they change when the game's classes do. |
 | `modules/Row.lua` | `Interface\TargetingFrame\UI-StatusBar` | Last-resort bar fill after an LSM fetch answers nothing. The catalog **does** ship bar textures (`library-stack-§8`), and they reach LSM through `core/MediaSetup.lua`'s `RegisterLSM` — so the only load that reaches this line is one where the payload is absent, and on that load the catalog's textures never reached LSM either. A fallback that needs the thing that is missing is not a fallback. |
 | `modules/Tooltip.lua` | `Interface\ICONS\INV_Misc_QuestionMark` | The client's canonical unknown-item mark, standing in for a spellID it cannot resolve. `library-stack-§8` has no equivalent and could not sensibly grow one: the whole point of this texture is that every WoW player already reads it as "missing", which is a meaning the client owns and a Ka0s glyph cannot borrow. |
@@ -699,12 +699,17 @@ per-file reasoning in [module-map.md](module-map.md#load-order). The binding con
 5. `core/PoolSetup.lua` after the `libs/` block and **before `modules/Window.lua`**, the pool's only
    consumer. It carries no other constraint: it publishes `NS.Pool` and captures nothing.
 6. `core/CoreSetup.lua` before `core/MultiMeters.lua`, whose AceConsole reclaim reads
-   `NS.Util.print`; and **first of the five seams that share the cause clause**, because it defines
+   `NS.Util.print`; and **first of the six seams that share the cause clause**, because it defines
    `NS.LIBKA0S_MISSING`.
-7. `core/PerfSetup.lua` after `core/Namespace.lua` (a nil `version` stamps every capture record `v?`)
+7. `core/LauncherSetup.lua` **after `core/Constants.lua`**, whose `LOGO_128` its descriptor reads at
+   *file scope*: `LibKa0s-Launcher-1.0` raises on a launcher with no icon, and one wearing nothing
+   draws nothing and raises nothing (`launcher-§4`, anti-pattern #82). Everything else it names —
+   `NS.db`, `NS.WindowManager`, `NS.OpenOptionsPanel` — is resolved at *call* time, so it is free to
+   load before all three, and `Register()` runs from `OnInitialize` after `InitDB`.
+8. `core/PerfSetup.lua` after `core/Namespace.lua` (a nil `version` stamps every capture record `v?`)
    and **before every `modules/` file that takes `local Perf = NS.Perf` as a load-time upvalue**.
-8. `defaults/Profile.lua` after `core/Constants.lua`, whose stat catalog it captures at load.
-9. `modules/Format.lua` first in the module block; `modules/Row.lua` resolves `Tooltip` and
+9. `defaults/Profile.lua` after `core/Constants.lua`, whose stat catalog it captures at load.
+10. `modules/Format.lua` first in the module block; `modules/Row.lua` resolves `Tooltip` and
    `DrillDown` at *call* time because both load after it. `modules/Targets.lua` loads before
    `modules/Tooltip.lua`, its only caller. **Each of the eight `modules/` peels follows the parent it
    was cut from, and every one of those positions is load-bearing**: each resolves at *file scope*
@@ -712,7 +717,7 @@ per-file reasoning in [module-map.md](module-map.md#load-order). The binding con
    session. `modules/Export.lua` was the one file in the block whose position carried no constraint
    at all, and that is no longer true — `modules/Export_Modal.lua` reads `Export.__EM_DASH`,
    `Export.__cfgOf` and `Export.__channelRow` at file scope, so it must follow it.
-10. The settings block opens with the three schema files in the order `settings/Schema_Compose.lua`
+11. The settings block opens with the three schema files in the order `settings/Schema_Compose.lua`
     → `settings/Schema.lua` → `settings/Schema_Paths.lua`, and each of the three positions is
     load-bearing for a different reason: the array resolves every `NS.SchemaCompose` member at *file
     scope*, the path seam builds its `path → row` index by walking `NS.Schema` at *file scope*, and

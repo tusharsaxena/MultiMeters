@@ -23,6 +23,8 @@ local NS = T.NS
 local test, assertEqual, assertTrue = T.test, T.assertEqual, T.assertTrue
 
 local WINDOW_PREFIX = "window"
+local GLOBAL_PREFIX = "global"
+local MINIMAP_PATH  = "global.minimap.hide"
 
 -- ---------------------------------------------------------------------------
 -- The independent comparison
@@ -77,7 +79,26 @@ local function defaultsRootFor(parts)
     if parts[1] == WINDOW_PREFIX then
         return NS.WINDOW_TEMPLATE, 2
     end
+    -- ONE ROW NAMES ITS STORE, and it is the only one: `global.minimap.hide` is LibDBIcon's
+    -- own table, which launcher-§3 fixes in the GLOBAL store so a profile switch does not
+    -- move the player's buttons and options-ui-§12's profile reset does not un-hide one.
+    if parts[1] == GLOBAL_PREFIX then
+        return NS.defaults.global, 2
+    end
     return NS.defaults.profile, 1
+end
+
+--- The value a row's `default` is compared against, in the row's OWN sense.
+---
+--- The minimap row displays SHOWN and stores HIDDEN, so what the tree ships is the negation
+--- of what the row declares. Inverting here rather than special-casing each walk is what
+--- keeps both walks below mechanical -- and what stops a reader wondering whether the one
+--- row that differs was checked at all.
+local function shippedFor(row, parts)
+    local root, first = defaultsRootFor(parts)
+    local shipped = readFrom(root, parts, first)
+    if row.path == MINIMAP_PATH and type(shipped) == "boolean" then return not shipped end
+    return shipped
 end
 
 -- ---------------------------------------------------------------------------
@@ -110,8 +131,7 @@ test("Schema defaults: every non-session row resolves against defaults/Profile.l
         if not row.sessionOnly then
             checked = checked + 1
             local parts = split(row.path)
-            local root, first = defaultsRootFor(parts)
-            if readFrom(root, parts, first) == nil then
+            if shippedFor(row, parts) == nil then
                 unresolved[#unresolved + 1] = row.path
             end
         end
@@ -127,9 +147,7 @@ test("Schema defaults: every row's default equals the shipped default, compared 
     for _, row in ipairs(NS.Schema) do
         if not row.sessionOnly then
             local parts = split(row.path)
-            local root, first = defaultsRootFor(parts)
-            local shipped = readFrom(root, parts, first)
-            diff(row.default, shipped, row.path, problems)
+            diff(row.default, shippedFor(row, parts), row.path, problems)
         end
     end
     assertEqual(#problems, 0,

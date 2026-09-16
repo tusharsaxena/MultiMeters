@@ -2,7 +2,7 @@
 --
 -- THE PATH MACHINERY behind settings/Schema.lua, and the seams every reader and
 -- writer of a setting lands on: path resolution, window resolution, the one
--- inverted row, the index, the read seam, the write seam, the columns carve-out
+-- minimap carve-out, the index, the read seam, the write seam, the columns carve-out
 -- and the page and validation surfaces.
 --
 -- A SEPARATE FILE because settings/Schema.lua was 3080 lines against layout-§1's
@@ -24,7 +24,9 @@
 -- `window.` prefix against the session's ACTIVE window — NS.State.activeWindowId,
 -- which the panel's window picker moves and which defaults to the first window in
 -- the registry. Global rows keep absolute paths (`enabled`, `minimap.hide`),
--- resolved against db.profile.
+-- resolved against db.profile -- except `global.minimap.hide`, which names its store because it
+-- is LibDBIcon's table and launcher-§3 puts that one in the global store (see "The minimap
+-- carve-out").
 --
 -- What that buys: ONE schema, ONE write seam, and `/mm set window.frame.width 300`
 -- means "the window I am editing" on the CLI exactly as it does in the panel. The
@@ -84,6 +86,10 @@ local MSG   = Const.MSG
 -- re-resolves one path many times a second. The cache is keyed on the path
 -- string, so it can never grow beyond the paths that were actually asked for.
 local splitCache = {}
+
+-- Read-only stand-in for an absent tree, so ValidateSchema indexes one shape rather than
+-- branching on nil at every step.
+local EMPTY_TREE = {}
 
 --- "window.frame.width" -> { "window", "frame", "width" }, memoized.
 --- @param path string
@@ -184,27 +190,42 @@ local function resolveRoot(parts, windowId)
 end
 
 -- ---------------------------------------------------------------------------
--- Inversion
+-- The minimap carve-out: LibDBIcon's own table, in the GLOBAL store
 -- ---------------------------------------------------------------------------
 --
--- Exactly one row stores the negation of what it displays: LibDBIcon owns the
--- shape of `minimap`, and its key is `hide`, while the checkbox a user reads has
--- to say "Show minimap button" — a checkbox labelled with a negative is the
--- classic settings-panel double-negative that everyone mis-clicks once.
+-- ONE ROW IS NEITHER PROFILE-SCOPED NOR STORED IN ITS OWN SENSE, and it is the one the
+-- `MasterControls` composer emits when it is handed `minimapPath` (settings/Schema_Compose.lua).
+-- Two things about it are the library's rather than this addon's, and both land here rather than
+-- anywhere a caller can see:
 --
--- Rather than let that one row grow a private get/set pair (which the CLI would
--- then have to know about separately), the seam carries a two-line concept used at
--- three call sites and nowhere else. `default` is always the STORED value, so the
--- validator still compares like with like against defaults/Profile.lua.
+--   THE SCOPE. `launcher-§3` fixes LibDBIcon's `minimap` table at `db.global.minimap` -- a button
+--   belongs to the installation, so a profile switch must not move it and `options-ui-§12`'s
+--   *Reset all settings*, a profile reset by definition, must not un-hide it. Every other row in
+--   this schema resolves against `db.profile`, so the path is spelled with its store in it and
+--   resolved here instead of by resolveRoot.
+--
+--   THE SENSE. The row's boolean says SHOWN; LibDBIcon's key says HIDDEN. A checkbox labelled
+--   with a negative is the classic settings-panel double-negative everyone mis-clicks once, and
+--   the alternative -- a second `minimap.show` key beside the library's own -- would be two
+--   records of one state, free to disagree the first time the player used LibDBIcon's own menu
+--   (anti-pattern #81). So the row inverts, in exactly two places: the read seam below and
+--   putWrite.
+--
+-- THE `set` ALSO MOVES THE BUTTON. NS.Launcher:SetShown is called from putWrite, with every other
+-- write, so the button follows the checkbox immediately rather than at the next reload -- and so
+-- `/mm set global.minimap.hide false` and the checkbox do the identical thing.
+--
+-- This replaced a generic `row.invert` flag that exactly one row ever carried. A two-line concept
+-- with one user reads as a facility; named for what it is, the next reader knows there is no
+-- second inverted row to find.
 
-local function toStored(row, v)
-    if row.invert then return not v end
-    return v
-end
+local MINIMAP_PATH = "global.minimap.hide"
 
-local function toDisplay(row, v)
-    if row.invert then return not v end
-    return v
+--- LibDBIcon's own table, or nil before NS:InitDB() has run.
+--- @return table|nil
+local function minimapTable()
+    local db = NS.db
+    return db and db.global and db.global.minimap or nil
 end
 
 -- ---------------------------------------------------------------------------
@@ -270,6 +291,13 @@ end
 function NS.GetSetting(path, windowId)
     if type(path) ~= "string" then return nil end
 
+    if path == MINIMAP_PATH then
+        -- SHOWN is the answer, because that is what the row says. `not nil` is `true`, which is
+        -- also the right answer before the store exists: the button ships shown.
+        local t = minimapTable()
+        return not (t and t.hide)
+    end
+
     local row = index[path]
     if row and row.sessionOnly then
         -- Returned rather than `and`-ed through: a session row answering `false` is
@@ -283,9 +311,7 @@ function NS.GetSetting(path, windowId)
     local root, first = resolveRoot(parts, windowId)
     if not root then return nil end
 
-    local value = readFrom(root, parts, first)
-    if row then return toDisplay(row, value) end
-    return value
+    return readFrom(root, parts, first)
 end
 
 -- ---------------------------------------------------------------------------
@@ -462,6 +488,12 @@ local function prepareWrite(path, value, windowId)
     end
 
     local plan = { row = row, path = path, value = value, page = row.page }
+    -- The minimap row resolves against the GLOBAL store and stores the negation of what it
+    -- displays, so it takes neither resolveRoot nor writeInto. See "The minimap carve-out".
+    if path == MINIMAP_PATH then
+        plan.minimap = true
+        return plan
+    end
     if not row.sessionOnly then
         local parts = splitPath(path)
         local root, first, id = resolveRoot(parts, windowId)
@@ -559,6 +591,10 @@ end
 --- console's getter answers either one for "closed".
 local function storedOf(plan)
     if plan.columns then return plan.root.columns end
+    if plan.minimap then
+        local t = minimapTable()
+        return t and t.hide
+    end
     if plan.row.sessionOnly then
         return plan.row.get and plan.row.get() or nil
     end
@@ -597,6 +633,16 @@ local function putWrite(plan)
         plan.root.columns = plan.columns
         return
     end
+    if plan.minimap then
+        -- INVERTED on the way in: the row says shown, LibDBIcon's key says hidden.
+        local t = minimapTable()
+        if t then t.hide = not plan.value end
+        -- And the button follows the checkbox NOW rather than at the next reload. Answering
+        -- `false` is the normal state of a build with no broker library, not an error, so nothing
+        -- here reads the result.
+        if NS.Launcher and NS.Launcher.SetShown then NS.Launcher:SetShown(plan.value) end
+        return
+    end
     local row = plan.row
     if row.sessionOnly then
         -- No db write by definition; the row's own set() IS the storage.
@@ -606,7 +652,7 @@ local function putWrite(plan)
     -- copy() on the way in: a color table handed straight from a widget (or
     -- from a row's default) would otherwise be shared with whoever else holds
     -- it, and editing one window's color would edit theirs.
-    writeInto(plan.root, plan.parts, plan.first, copy(toStored(row, plan.value)))
+    writeInto(plan.root, plan.parts, plan.first, copy(plan.value))
 end
 
 --- Put a prepared write into the tree, and count it when a bulk act is open.
@@ -762,10 +808,10 @@ function NS.ApplyDefault(row)
     -- every other row and every other seam is indifferent to the difference.
     local was = NS.__restoring
     NS.__restoring = true
-    -- toDisplay, because SetByPath expects display terms and will invert back. The
-    -- round trip is what keeps `default` meaning "the stored value" for the
-    -- validator while the seam still sees what a user would have clicked.
-    NS.SetByPath(row.path, toDisplay(row, copy(row.default)))
+    -- `default` is what a user would have clicked, which for every row but one is also the
+    -- stored value. The minimap row is the exception -- its default is SHOWN and what it stores
+    -- is `hide` -- and the seam inverts it on the way in, so nothing is owed here.
+    NS.SetByPath(row.path, copy(row.default))
     NS.__restoring = was
 end
 
@@ -837,7 +883,25 @@ function NS.ValidateSchema()
     local failed = 0
 
     for _, row in ipairs(NS.Schema) do
-        if not row.sessionOnly then
+        if row.path == MINIMAP_PATH then
+            -- Both checks, against the GLOBAL tree and through the inversion. The row's default is
+            -- SHOWN and the tree ships HIDDEN, so "agreement" here means they are opposites --
+            -- which is the one comparison a reader would otherwise have to work out from two
+            -- files, and the one a copy-paste of this row into a second addon gets wrong.
+            -- Read out in two steps, NEVER `type(t) == "table" and t.hide or nil`: the shipped
+            -- value IS `false`, and that idiom collapses a stored false to nil -- which would
+            -- report the path as unresolvable on the one healthy load this check exists to bless.
+            local table_ = ((NS.defaults or EMPTY_TREE).global or EMPTY_TREE).minimap
+            local shipped
+            if type(table_) == "table" then shipped = table_.hide end
+            if shipped == nil then
+                failed = failed + 1
+                if out then out("schema path does not resolve against the defaults: " .. row.path) end
+            elseif shipped ~= (not row.default) then
+                failed = failed + 1
+                if out then out("schema default disagrees with defaults/Profile.lua: " .. row.path) end
+            end
+        elseif not row.sessionOnly then
             local parts = splitPath(row.path)
             local root, first
             if parts[1] == WINDOW_PREFIX then

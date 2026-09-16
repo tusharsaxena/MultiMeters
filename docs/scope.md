@@ -57,7 +57,10 @@ Retail only · English only.
 - **AceDB profiles**, all characters starting on the shared `"Default"` profile.
 - **Test mode** (the General page's Master controls box, or `/mm test`; combat ends it) and an
   unlock/drag cycle, so a window can be laid out anywhere between pulls.
-- **A minimap button** and LDB launcher (left-click toggles the windows, right-click opens settings).
+- **A launcher** — one LibDataBroker object drawn as a minimap button and in any broker display,
+  from `LibKa0s-Launcher-1.0`. Left-click toggles the windows (`launcher-§2` rung (a)), right-click
+  opens the settings. Its visibility is the Master-controls **Minimap button** row, stored in the
+  global store so a profile switch does not move it.
 - **A perf harness** (`/mm perf`) and an on-screen debug console (`/mm debug`), both LibKa0s's.
 
 **The catalog is one table, and there are two lookups over it.**

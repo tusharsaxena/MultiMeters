@@ -23,8 +23,9 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 14,    -- CURRENT_DB_VERSION in core/Database.lua
+    schemaVersion = 15,    -- CURRENT_DB_VERSION in core/Database.lua
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data
+    minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
 ```
 
@@ -42,8 +43,8 @@ once per account instead of once per profile. `NS:RunMigrations()` walks it forw
 time out of the `migrations` table in `core/Database.lua`, and is called from `NS:InitDB()` and
 again from every AceDB profile callback (changed / copied / reset).
 
-**Thirteen steps are wired today**, `migrations[1]` through `migrations[13]`, walking an account from
-the shipped v1 shape to v14. Each is one line of the header block at the top of
+**Fourteen steps are wired today**, `migrations[1]` through `migrations[14]`, walking an account from
+the shipped v1 shape to v15. Each is one line of the header block at the top of
 `core/Database.lua`, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -61,12 +62,13 @@ the shipped v1 shape to v14. Each is one line of the header block at the top of
 | v11 → v12 | the column array stops being a chosen subset and becomes the full catalog, ticked |
 | v12 → v13 | the title-bar toggle moves onto the header, and the two control colour booleans become modes |
 | v13 → v14 | the addon-wide `master.locked` is carried onto every window's own `frame.locked` (a stored `true` locks every window) and pruned from every profile; see [`master`](#master--the-addon-wide-master-controls) |
+| v14 → v15 | LibDBIcon's `minimap` table moves from the profile to the global store, carrying `hide` **and** `minimapPos` so an adopted button keeps the angle the player dragged it to; the profile key is pruned. See [`minimap`](#minimap--and-it-lives-under-global) |
 
-Adding a v15 is two edits and no bootstrap change:
+Adding a v16 is two edits and no bootstrap change:
 
 ```lua
-migrations[14] = function(db) ... end       -- the runner stamps the version
-local CURRENT_DB_VERSION = 15
+migrations[15] = function(db) ... end       -- the runner stamps the version
+local CURRENT_DB_VERSION = 16
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -94,7 +96,6 @@ db.profile = {
     enabled      = true,      -- master enable. Off = no window drawn, no provider read.
     windows      = { },       -- an ARRAY of window config tables, in picker order
     nextWindowId = 1,         -- monotonic id source; ids are never reused
-    minimap      = { hide = false },   -- LibDBIcon-1.0 owns this table's shape
     master       = {                   -- options-ui-§15's Master controls tab
         visibility = "always",         -- always | inCombat | outOfCombat | never
         scale      = 1.0,              -- MULTIPLIED into every window's own scale
@@ -229,20 +230,28 @@ active-window pointer and every window-relative schema path aimed at it. A windo
 hand-edited SavedVariables, a build that predates the counter) is **given** one rather than dropped:
 losing a configured window is worse than renumbering it.
 
-### `minimap`
+### `minimap` — and it lives under `global`
 
-`{ hide = false }` is all this addon declares. `LibDBIcon-1.0` is registered against this table and
-treats it as its own — it reads `hide` and **writes** `minimapPos` (and a lock / free-position pair
-if the player drags the button off the minimap). The addon must never enumerate the table or
-normalize keys out of it, or a dragged button snaps back on the next login.
+`{ hide = false }` is all this addon declares, and since **schemaVersion 15** it declares it in
+`db.global` rather than in the profile. `LibDBIcon-1.0` is registered against this table and treats
+it as its own — it reads `hide` and **writes** `minimapPos` (and a lock / free-position pair if the
+player drags the button off the minimap). The addon must never enumerate the table or normalize keys
+out of it, or a dragged button snaps back on the next login.
+
+**The scope is `launcher-§3`'s decision, not an accident of where the neighbours live.** A minimap
+button belongs to the INSTALLATION: a profile is how a player configures what the addon *draws*,
+while the ring of buttons around the minimap is furniture they arranged once, and profile-scoped it
+would appear and vanish on a switch made for an unrelated reason. It also keeps `options-ui-§12`'s
+*Reset all settings* — a **profile** reset by definition — from un-hiding a button the player
+deliberately hid. `core/Database.lua`'s v15 step carries `hide` and `minimapPos` across from every
+profile that had them and prunes the profile key.
 
 **`minimapPos` is named non-setting state** (`architecture-§5`: a vendored library's own writes). Its
-owner is `modules/Minimap.lua`, whose `Minimap.Init` hands LibDBIcon the live table through
-`icon:Register`; the one writer is LibDBIcon, on a drag of the button. The addon's only write into
-the table is the `minimap.hide` row, through the seam. `Minimap.Refresh` and the row's reactor call
-`icon:Refresh`, which re-reads the table and writes nothing. Nothing here calls LibDBIcon's
-`Hide`, `Show`, `Lock` or `Unlock`, so the library never writes `hide` or the lock on the addon's
-behalf.
+owner is `core/LauncherSetup.lua`, whose descriptor hands `LibKa0s-Launcher-1.0` a **closure**
+answering the live table rather than the table itself — `db.global.minimap` does not exist when
+core/ loads, and a table captured then is one AceDB replaces. The one writer is LibDBIcon, on a drag
+of the button. The addon's only write into the table is the `global.minimap.hide` row, through the
+seam's [minimap carve-out](#the-minimap-carve-out).
 
 ### `master` — the addon-wide master controls
 
@@ -1116,8 +1125,9 @@ A window row's path is **relative to a window** and is spelled with a `window.` 
 
 `NS.GetSetting` and `NS.SetByPath` resolve that prefix against the session's **active window** —
 `NS.State.activeWindowId`, which the settings panel's window picker moves. Global rows keep absolute
-paths and resolve against `db.profile`. There are twenty-two of them: `enabled`, `minimap.hide`, the
-four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
+paths and resolve against `db.profile` — all but one, and `global.minimap.hide` names its store
+because `launcher-§3` puts LibDBIcon's table in the global one. There are twenty-two of them:
+`enabled`, `global.minimap.hide`, the four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
 the session-only view over every window's own `frame.locked`), `data.mergePets`, `data.throttle`,
 the four `export.*` preferences, the eight `statColors.*` swatches, and the two composed
 `sessionOnly` rows `state.testMode` and `state.debugConsole`. Those two and `master.locked` are the
@@ -1221,7 +1231,6 @@ values/sorting/dialogControl  dropdown shape. A `number` row carrying `values` i
              inferred as an enum by both majors and constrained rather than clamped.
 validate     optional predicate; a false answer refuses the write.
 onChange     optional reaction for the few settings CONFIG_CHANGED cannot express.
-invert       display is the negation of storage (the one minimap row).
 sessionOnly  never persisted; the row's own get/set are the whole storage.
 composed     stamped by `expandBlocks` on every row a LibKa0s composer emitted.
              Inert to every reader of the schema; it exists so
@@ -1252,14 +1261,28 @@ is declared out of. What they add around the composers is three things:
 See [settings-panel.md](settings-panel.md#the-composed-blocks) for which block is used where, and
 `docs/ARCHITECTURE.md`'s deviation register for what a load without LibKa0s does to them.
 
-### `invert` — exactly one row
+### The minimap carve-out — exactly one row
 
-`minimap.hide` stores the negation of what it displays. LibDBIcon owns the `minimap` table and its
-key is `hide`, while a checkbox a user reads has to say "Show minimap button" — a checkbox labelled
-with a negative is the settings-panel double-negative everyone mis-clicks once. Rather than give
-that one row a private get/set pair (which the CLI would then have to know about separately), the
-seam carries a two-line `toStored` / `toDisplay` concept used at three call sites. `default` is
-always the **stored** value, so the validator still compares like with like.
+`global.minimap.hide` is the one row the seam handles specially, and two things about it are the
+library's rather than this addon's.
+
+**Its store is `db.global`**, not the profile — `launcher-§3`, for the reasons under
+[`minimap`](#minimap--and-it-lives-under-global) — so the path is spelled with its store in it and
+resolved by the carve-out rather than by `resolveRoot`.
+
+**Its boolean says SHOWN while LibDBIcon's key says HIDDEN**, so the read seam and `putWrite`
+invert. A checkbox labelled with a negative is the settings-panel double-negative everyone
+mis-clicks once, and the alternative — a second `minimap.show` key beside the library's own — would
+be two records of one state, free to disagree the first time the player used LibDBIcon's own menu
+(**anti-pattern #81**). The row's `default` is therefore what a user would have **clicked** (`true`,
+shown) while the defaults tree ships `hide = false`; `NS.ValidateSchema` compares the two as
+opposites, and `NS.ApplyDefault` needs no round trip because the seam inverts on the way in.
+
+The `set` also calls `NS.Launcher:SetShown`, so the button follows the checkbox immediately rather
+than at the next reload — and so `/mm set global.minimap.hide false` and the checkbox do the
+identical thing. This replaced a generic `row.invert` flag that exactly one row ever carried; a
+two-line facility with one user reads as a facility, and named for what it is, the next reader knows
+there is no second inverted row to find.
 
 ### `sessionOnly` — exempt from validation, still rows
 
@@ -1279,12 +1302,12 @@ panel re-reads its scalars. `onChange` exists only where the message genuinely c
 
 - every `window.visibility.*` row and `enabled` → `refreshVisibility()`, because the effect is a
   window appearing or disappearing (the show ladder's decision), not a window redrawing;
-- `minimap.hide` → `refreshMinimap()`, because LibDBIcon holds a Blizzard-side object outside our
-  config tree and has to be told to look again.
 
-Both live in `settings/Schema_Compose.lua` alongside the vocabularies and the composers, and both
-resolve their target at **call** time rather than at file scope — `refreshVisibility` reads
-`NS.Visibility`, `refreshMinimap` reads LibDBIcon's own registry — so neither depends on what had
+That is the only one. The minimap row used to be the second, with a `refreshMinimap` reactor that
+called LibDBIcon directly; moving the button is part of the **write** now, in the carve-out above,
+so `/mm set` and the checkbox cannot take different routes to it. `refreshVisibility` lives in
+`settings/Schema_Compose.lua` alongside the vocabularies and the composers, and resolves
+`NS.Visibility` at **call** time rather than at file scope, so it does not depend on what had
 finished loading when the schema file ran.
 
 ---

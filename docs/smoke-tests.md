@@ -449,13 +449,17 @@ second edge to catch.
   and it draws **no banner** — it is not a window page. Two tabs, in this order.
   **Master controls** is `options-ui-§15`'s canonical set and opens the page: **Enable Multi
   Meters**, **General visibility**, **Master scale**, **Master alpha**, **Lock frame**, **Debug
-  console**, **Test mode** (alone on its line, below Lock frame / Debug console), closed by the
+  console**, **Minimap button** and **Test mode** (the last two paired on one line below Lock
+  frame / Debug console, in that order), closed by the
   **Reset position** / **Reset all settings** button pair and one sentence
   under it saying what each reaches. Master scale and Master alpha are addon-wide and are **not** the
   per-window scale and opacity on Frame — set Master scale to 0.5 with a window already at
   0.8 and the window draws at 0.4, and putting the master back to 1.0 gives every window exactly the
-  size it was set to. Below the canonical seven and **above** the button pair sits this addon's own
-  **one**: the minimap toggle, starting a fresh line under Test mode. **No prose under the button
+  size it was set to. **Nothing of this addon's own follows the canonical eight** — the minimap
+  toggle used to, and is one of the eight now. Untick **Minimap button** and the button must vanish
+  from the minimap **immediately**, not at the next reload; tick it and it must come back at the
+  angle it was dragged to. Switch profiles and it must not move or reappear, and **Reset all
+  settings** must not un-hide it: both are what the global store buys. **No prose under the button
   pair** — a paragraph explaining Reset position used to sit there and was removed. **Behavior** is
   the second tab: **Merge pets into their owner** and **Refresh interval**, both addon-wide — change
   either and **every** window follows, not just the selected one. They were on Master controls until

@@ -126,7 +126,6 @@ local controlLabel         = SC.controlLabel
 local expandBlocks         = SC.expandBlocks
 local isNumberIn           = SC.isNumberIn
 local lsmValues            = SC.lsmValues
-local refreshMinimap       = SC.refreshMinimap
 local refreshVisibility    = SC.refreshVisibility
 
 -- The four orders modules/Aggregator.lua knows. `name` is what the Player
@@ -1226,19 +1225,6 @@ NS.Schema = {
     -- CONTIGUOUS: a group heading is emitted only when `group` CHANGES, so a
     -- block wedged between two "General" rows would print that heading twice.
     block(MASTER_ROWS),
-    -- The one inverted row: LibDBIcon owns this table and its key is `hide`, while
-    -- a checkbox the user reads has to be phrased positively. See "Inversion".
-    -- NO `startsLine`: this row PAIRS with the composed Test mode row above it. Test
-    -- mode carries `startsLine` of its own (options-ui-§15), which opens a fresh line
-    -- rather than claiming one alone, so the flow drops this checkbox into that
-    -- line's second column -- which is where the owner wants it, beside the other
-    -- session switch, rather than alone above the closing button pair.
-    {
-        path = "minimap.hide", type = "bool", default = false, invert = true,
-        page = "general", group = L["Master controls"],
-        label = L["Show minimap button"], desc = L["Show the minimap button for opening these settings."],
-        onChange = refreshMinimap,
-    },
     -- ── Behavior ─────────────────────────────────────────
     --
     -- THEIR OWN TAB, not Master controls. options-ui-§15 makes that tab a canonical

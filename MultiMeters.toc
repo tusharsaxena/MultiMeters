@@ -3,7 +3,7 @@
 ## Notes: One grid, one row per group member, one column per stat — read from Blizzard's built-in damage meter.
 ## Author: add1kted2ka0s
 ## Version: 1.0.0
-## IconTexture: Interface\Icons\achievement_challengemode_gold
+## IconTexture: Interface\AddOns\MultiMeters\media\logos\multimeters.logo.128.tga
 ## SavedVariables: MultiMetersDB, MultiMetersPerfDB
 ## OptionalDeps: Ace3, LibStub, CallbackHandler-1.0, LibSharedMedia-3.0, LibDataBroker-1.1, LibDBIcon-1.0
 ## DefaultState: enabled
@@ -51,6 +51,12 @@ core\Secrets.lua
 core\CoreSetup.lua
 core\PerfSetup.lua
 core\DebugLogSetup.lua
+# The LibKa0s-Launcher-1.0 seam: the ONE LibDataBroker object, registered twice (launcher-§1).
+# After core\Constants.lua, and that is LOAD-BEARING: the descriptor's `icon` is read at FILE
+# SCOPE, because the library raises on a launcher with no icon and one wearing nothing draws
+# nothing. Everything else it names -- NS.db, NS.WindowManager, NS.OpenOptionsPanel -- is resolved
+# at CALL time, so this may load before all three. Register() runs from OnInitialize, after InitDB.
+core\LauncherSetup.lua
 core\MultiMeters.lua
 core\Database.lua
 # `/mm debug diag`. Last in the block: it reads modules at CALL time and owns no
@@ -106,7 +112,6 @@ modules\Export.lua
 # it resolves that file's three published file-locals at FILE SCOPE, so it must load after it.
 modules\Export_Modal.lua
 modules\Visibility.lua
-modules\Minimap.lua
 
 # Settings (last — depend on everything else being initialized)
 # The vocabularies, validators and composed blocks that the schema array is declared

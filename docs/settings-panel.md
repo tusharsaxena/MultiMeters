@@ -59,7 +59,7 @@ that filter drops `hidden` rows before grouping runs).
 
 | # | Page | Panel key | Schema rows | Tabs | Defaults | Banner | What is on it |
 |---|---|---|---|---|---|---|---|
-| 1 | General | `general` | 22 (18 visible + 4 `hidden`) | 3 — **Master controls**, **Behavior**, **Statistic colors** | yes | no | **Master controls** — `options-ui-§15`'s canonical set, first on this page in every Ka0s addon and [composed rather than written out](#the-composed-blocks): Enable Multi Meters, General visibility, Master scale, Master alpha, Lock frame, Debug console, Test mode — then this addon's own **one**, the minimap button, closed by the **Reset position** / **Reset all settings** button pair the composer hands back, with no explanatory prose under it. **Behavior** holds the two rows that used to sit on Master controls, **Merge pets** and **Refresh interval** (both addon-wide since schemaVersion 5): `options-ui-§15` fixes Master controls' set, and neither of those is canonical or about turning the addon up and down — one says what a pet's damage IS, the other is a refresh rate. Master scale and Master alpha are ADDON-WIDE multipliers, not the per-window scale and opacity on the Frame page, and **Lock frame** is a session-only view over every window's own lock rather than a second lock — see [The Master controls tab](#the-master-controls-tab). **Statistic colors** — one swatch per entry of `Constants.STAT_COLORS`, [generated rather than written out](#the-statistic-palette), read back through `NS.StatColor`, with a note under the grid saying where those colours are actually worn (drawn through the same `afterGroup` hook, keyed to this tab). A fourth schema group, **Export**, holds the export modal's four remembered choices — all four `hidden`, so the group is real for `/mm list` and the schema-vs-defaults validator and never appears as a tab: this is the one *section that is not a tab*, and a wholly hidden group is not a strip-less page. General is not a window page, so it draws no banner. |
+| 1 | General | `general` | 22 (18 visible + 4 `hidden`) | 3 — **Master controls**, **Behavior**, **Statistic colors** | yes | no | **Master controls** — `options-ui-§15`'s canonical set, first on this page in every Ka0s addon and [composed rather than written out](#the-composed-blocks): Enable Multi Meters, General visibility, Master scale, Master alpha, Lock frame, Debug console, Minimap button, Test mode — and nothing of this addon's own after them, closed by the **Reset position** / **Reset all settings** button pair the composer hands back, with no explanatory prose under it. **Behavior** holds the two rows that used to sit on Master controls, **Merge pets** and **Refresh interval** (both addon-wide since schemaVersion 5): `options-ui-§15` fixes Master controls' set, and neither of those is canonical or about turning the addon up and down — one says what a pet's damage IS, the other is a refresh rate. Master scale and Master alpha are ADDON-WIDE multipliers, not the per-window scale and opacity on the Frame page, and **Lock frame** is a session-only view over every window's own lock rather than a second lock — see [The Master controls tab](#the-master-controls-tab). **Statistic colors** — one swatch per entry of `Constants.STAT_COLORS`, [generated rather than written out](#the-statistic-palette), read back through `NS.StatColor`, with a note under the grid saying where those colours are actually worn (drawn through the same `afterGroup` hook, keyed to this tab). A fourth schema group, **Export**, holds the export modal's four remembered choices — all four `hidden`, so the group is real for `/mm list` and the schema-vs-defaults validator and never appears as a tab: this is the one *section that is not a tab*, and a wholly hidden group is not a strip-less page. General is not a window page, so it draws no banner. |
 | 2 | Windows | `windows` | 1 (`window.name`) | 2 bespoke — **Window**, **Copy from** | no | yes | The picker, New / Duplicate / Delete, and Copy settings from, on the Window tab; the source picker, group filter and Copy button on Copy from. Content is bespoke rather than schema rows, so the strip is drawn directly with `H.TabStrip` rather than `RenderTabbedSchema`, which has nothing here to partition. |
 | 3 | `  - `Frame | `frame` | 26 | 4 — General, Size and position, Background and border, Row | yes | yes | **General** — the two window-wide toggles under a *Window* heading, then the four **meta rows** (Color mode, Bar texture, Font, Font outline, each "(all surfaces)") under an *All surfaces* heading, which broadcast one value to every surface with a setting of that kind and are read by nothing. The two headings are what stop a broadcast being mistaken for a font group. **Size and position** — geometry, scale, opacity, strata and padding. **Background and border** — the fill inside the window under a *Background* heading and the LSM edge around it under a *Border* heading, both composed; the merge is deliberate and the headings are what `options-ui-§7` adds to it. **Row** — height, count, spacing and growth, then always-show-self, highlight-self, mouseover highlight and the alternating stripe. |
 | 4 | `  - `Header | `header` | 36 (30 visible + 6 `hidden`) | 4 — Title bar, Title text, Controls, Button style | yes | yes | **Title bar** — three headings: *Layout* (whether it draws, its alignment and its height), *Background* (the one swatch in the addon with no colour mode beside it — a [documented deviation](ARCHITECTURE.md#documented-deviations)), and *Divider* (on/off, thickness, colour and a mode whose default `skin` writes nothing at all, so the shared skin still owns the line unless the player takes it). **Title text** — `options-ui-§16`'s composed font block, all six axes, with the colour mode (class or custom, never per-statistic) immediately right of the swatch. **Controls** — every toggle for the icon strip, **in the order the strip reads left to right** and each carrying **its own icon in front of its label** (`controlLabel`), plus six `hidden` rows the window's own header controls write: `window.frame.minimised`, the sort and session type (`window.data.sessionType`, `.sortColumn`, `.sortMode`, `.sortAscending`, issue #50) and the pinned segment (`window.data.sessionID`). **Button style** — three headings: *Icon* (reveal and size), *Color* (rest colour + its mode, then hover colour + its mode — each state one line, so the swatch and its companion can never be split), *Opacity* (rest and hover, read across). |
@@ -161,25 +161,29 @@ how do I make it smaller, how do I put it back — is in the same place under th
 | Enable Multi Meters (`enabled`) | General visibility (`master.visibility`) |
 | Master scale (`master.scale`) | Master alpha (`master.alpha`) |
 | Lock frame (`master.locked`, session-only: every window's own lock) | Debug console (`state.debugConsole`, session-only) |
-| Test mode (`state.testMode`, session-only) | Show minimap button (`minimap.hide`, this addon's own row, [inverted](schema.md#inversion)) |
+| Minimap button (`global.minimap.hide`, the GLOBAL store, [inverted](schema.md#the-minimap-carve-out--exactly-one-row)) | Test mode (`state.testMode`, session-only) |
 | Reset position | Reset all settings |
 
-**This addon's own one row follows the canonical set, on the same tab** — the minimap button,
-between the canonical rows and the closing button pair. *Merge pets into their owner* and *Refresh
-interval* were there too and have their own **Behavior** tab now. With *Test mode* the three were a
-tab called **General**: four rows with nothing in common
-but "addon-wide", behind a click, next to the tab everybody opens — the same argument that retired
-**Data** and **Maintenance** before it, arriving one tab later. *Test mode* has since become a
-canonical row itself (standard v2.47.0): the composer emits it from `testModePath`, directly after
-the debug console. **Show minimap button pairs with it**, in the second column of that line: the
-composed row's `startsLine` OPENS a line rather than claiming one, so this addon's own row simply
-carries no `startsLine` of its own and the flow drops it into the free half. It used to carry one
-and stand alone above the closing button pair. `§15`
-forbids **reordering**, **renaming** and **splitting** the canonical set; it does not forbid an
-addon's own rows after it, and `tests/test_schema.lua` pins that the canonical seven are the tab's
-first rows, contiguous and in order, with the minimap row following them. `tests/test_options_panel.lua`
-pins the LAID-OUT pairs above, which is the half the schema order cannot see. A `group` is
-not a stored path, so nothing moved in storage and no migration was owed.
+**This tab is now EXACTLY the canonical set, and this addon has no rows of its own on it.** All
+three that used to follow it are gone from the tail: *Merge pets into their owner* and *Refresh
+interval* have their own **Behavior** tab, and the minimap toggle became **canonical** in standard
+v2.53.0 (`launcher-§3`), emitted by the composer from `minimapPath` exactly as *Test mode* is
+emitted from `testModePath`. With *Test mode* those three were once a tab called **General**: four
+rows with nothing in common but "addon-wide", behind a click, next to the tab everybody opens — the
+same argument that retired **Data** and **Maintenance** before it, arriving one tab later.
+
+**Minimap button OPENS the fourth line and Test mode pairs beside it**, which is `§15`'s column
+order and not a preference: every addon has a minimap button and only some have a test mode, so the
+always-present row takes column 1 — put the other way round, an addon with no test mode draws a hole
+in the first column with a lone control to its right. Both halves are the composer's, which is what
+changed: this addon drew the pair in the OTHER order while its minimap row was hand-written, and the
+composer now drops `startsLine` from *Test mode* whenever a minimap row was emitted.
+
+`§15` forbids **reordering**, **renaming** and **splitting** the canonical set, and
+`tests/test_schema.lua` pins the eight as the tab's rows with nothing after them.
+`tests/test_options_panel.lua` pins the LAID-OUT pairs above, which is the half the schema order
+cannot see. A `group` is not a stored path; the minimap row's **store** did move, from
+`db.profile.minimap` to `db.global.minimap`, and `core/Database.lua`'s v15 step carries it.
 
 **The `master.*` rows are ADDON-WIDE, and none of them is a promoted per-window row.** A window
 here is an instance (design §6), and its own **Lock window**, **Scale** and **Opacity** stay on the

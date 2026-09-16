@@ -276,7 +276,7 @@ test("Defaults: the profile itself is nearly empty — almost everything is per-
     for key in pairs(NS.defaults.profile) do keys[#keys + 1] = key end
     table.sort(keys)
     assertEqual(table.concat(keys, ","),
-        "data,enabled,export,master,minimap,nextWindowId,statColors,windows")
+        "data,enabled,export,master,nextWindowId,statColors,windows")
 
     -- The per-window three are still on the window, untouched by the move.
     assertEqual(NS.WINDOW_TEMPLATE.frame.locked, false)
@@ -290,21 +290,28 @@ test("Defaults: the shipped registry is empty and the id counter starts at 1", f
     assertEqual(NS.defaults.profile.enabled, true)
 end)
 
-test("Defaults: the minimap table uses LibDBIcon's own `hide` key", function()
+test("Defaults: the minimap table uses LibDBIcon's own `hide` key, in the GLOBAL store", function()
     -- The shape belongs to LibDBIcon-1.0, not to this addon. Renaming it to
     -- `show` would leave the library writing its own `hide` beside ours.
-    assertEqual(NS.defaults.profile.minimap.hide, false)
+    assertEqual(NS.defaults.global.minimap.hide, false)
+    -- And it is GLOBAL since schemaVersion 15 (launcher-§3): a minimap button belongs
+    -- to the installation, so a profile switch must not move it and options-ui-§12's
+    -- *Reset all settings* -- a profile reset -- must not un-hide it. A copy left under
+    -- `profile` would be a second record of one state.
+    assertNil(NS.defaults.profile.minimap)
 end)
 
 test("Defaults: global carries only what is genuinely account-wide", function()
-    -- Two entries, and both describe the CLIENT rather than a profile: the schema
-    -- version (so a migration runs once per account) and the remembered roster
-    -- (which describes C_DamageMeter's data, not anybody's settings). Anything
-    -- else appearing here is a per-window setting that has escaped its window.
+    -- Three entries, and each describes the CLIENT or the INSTALLATION rather than a
+    -- profile: the schema version (so a migration runs once per account), the remembered
+    -- roster (which describes C_DamageMeter's data, not anybody's settings), and
+    -- LibDBIcon's `minimap` table (launcher-§3: furniture the player arranged around
+    -- their minimap, which a profile switch must not move). Anything else appearing here
+    -- is a per-window setting that has escaped its window.
     local keys = {}
     for key in pairs(NS.defaults.global) do keys[#keys + 1] = key end
     table.sort(keys)
-    assertEqual(table.concat(keys, ","), "roster,schemaVersion")
+    assertEqual(table.concat(keys, ","), "minimap,roster,schemaVersion")
 end)
 
 test("Defaults: the remembered roster ships EMPTY and with both of its maps", function()

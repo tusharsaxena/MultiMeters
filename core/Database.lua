@@ -49,7 +49,8 @@ NS.Database = Database
 --     class-colour flags into modes.
 -- v14 carries the addon-wide `master.locked` onto every window's own lock and
 --     prunes it.
-local CURRENT_DB_VERSION = 14
+-- v15 moves LibDBIcon's `minimap` table from the profile to the global store.
+local CURRENT_DB_VERSION = 15
 
 -- The ONE Ka0s_MultiMeters_PROFILE_CHANGED emitter (architecture-§4: one sender
 -- per message). Every path that makes the active profile a different thing — a
@@ -844,6 +845,86 @@ migrations[13] = function(db)
     end
 
     db.global.schemaVersion = 14
+end
+
+--- The `minimap` table a profile still carries, preferring the ACTIVE one.
+---
+--- There is one button per installation and there may be many profiles, so the move has to pick,
+--- and the active profile is the only defensible pick: it is the one whose button the player was
+--- looking at when they last dragged or hid it. A profile the player has not activated this
+--- session is still theirs, though, so an inactive one is taken when the active profile has no
+--- table at all -- which is what a fresh profile created after the button was placed looks like.
+---
+--- FIRST NON-EMPTY WINS among the inactive ones. Their order is `pairs` over the savedvariables,
+--- which is not stable, and that is acceptable precisely because the active profile is tried
+--- first: the arbitrary choice is only ever between profiles the player is not using.
+---
+--- @param db table
+--- @return table|nil
+local function v15SourceMinimap(db)
+    local active = db.profile
+    if type(active) == "table" and type(active.minimap) == "table" then
+        return active.minimap
+    end
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.minimap) == "table" and next(profile.minimap) ~= nil then
+            return profile.minimap
+        end
+    end
+    return nil
+end
+
+--- v14 -> v15: THE MINIMAP TABLE MOVES FROM THE PROFILE TO THE GLOBAL STORE.
+---
+--- `launcher-§3` fixes LibDBIcon's own `minimap` table at `db.global.minimap`, and this addon was
+--- the collection's one outlier -- Bank Ledger and Loot History already stored it globally. The
+--- scope is the rule's point rather than tidiness: a minimap button belongs to the INSTALLATION,
+--- so a profile switch must not move the player's buttons, and `options-ui-§12`'s *Reset all
+--- settings* -- a profile reset by definition -- must not un-hide a button they deliberately hid.
+---
+--- IT CARRIES BOTH KEYS, and neither may be stranded. `hide` is the player's own answer to a
+--- checkbox; `minimapPos` is the ANGLE they dragged the button to, written by LibDBIcon itself,
+--- and dropping it would put an adopted button back at the library's default position -- a silent
+--- loss that looks like the adoption broke something. The whole table is copied rather than three
+--- named keys, because its shape is the library's: it may also hold a free-position pair for a
+--- button dragged off the minimap, and enumerating what we think it contains is exactly what
+--- defaults/Profile.lua warns against.
+---
+--- NOTHING ALREADY GLOBAL IS OVERWRITTEN. AceDB's defaults merge materializes
+--- `db.global.minimap = { hide = false }` the moment `db.global` is first touched, so "already
+--- there" cannot be tested with `== nil`; what it is tested against is whether the global table
+--- says anything a default does not -- a `hide` of true, or any position key. An account that has
+--- already adopted keeps what it has.
+---
+--- The profile keys are then pruned in every case, for the reason every step here gives: AceDB
+--- merges defaults in and never removes what they stopped naming, so a `minimap` left under
+--- `profile` would sit in the savedvariables for good, writable by nothing and readable by a
+--- reader who would reasonably believe it.
+migrations[14] = function(db)
+    local global = db.global
+    if type(global.minimap) ~= "table" then global.minimap = {} end
+
+    local placed = global.minimap.hide == true
+    if not placed then
+        for key in pairs(global.minimap) do
+            if key ~= "hide" then placed = true break end
+        end
+    end
+
+    if not placed then
+        local source = v15SourceMinimap(db)
+        if source then
+            for key, value in pairs(source) do
+                global.minimap[key] = copy(value)
+            end
+        end
+    end
+
+    for _, profile in ipairs(allProfiles(db)) do
+        profile.minimap = nil
+    end
+
+    db.global.schemaVersion = 15
 end
 
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every

@@ -74,6 +74,25 @@ Constants.FONT_MONO_NAME = "JetBrains Mono"
 -- draws it at, so it renders pixel-exact rather than resampled.
 Constants.LOGO = "Interface\\AddOns\\MultiMeters\\media\\logos\\multimeters.logo.tga"
 
+-- The ICON form of the same art, and a DIFFERENT FILE doing a different job
+-- (layout-§4). One file is this addon's face in three places -- the AddOns list
+-- (the TOC's `## IconTexture`), the minimap button and a broker display
+-- (launcher-§4) -- so a player who has seen the addon once recognises it in all
+-- three, and core/LauncherSetup.lua hands this exact string to the launcher.
+--
+-- 128x128, UNCOMPRESSED 32-BIT (TGA image type 2, 32 bpp), regenerated from the
+-- 2000x2000 `.png` master beside it rather than hand-edited:
+--
+--   python3 -c "from PIL import Image; \
+--     Image.open(SRC).convert('RGBA').resize((128,128), Image.LANCZOS).save(OUT, format='TGA')"
+--
+-- The format is not a preference. The RLE-compressed (type 10) logos the
+-- collection also ships are unproven as an `IconTexture`, and an icon that fails
+-- to load draws nothing and raises nothing -- so no gate would report it, which
+-- is anti-pattern #82's subtler half. 128 is also power-of-two, which the
+-- 300x300 landing-page file above is not.
+Constants.LOGO_128 = "Interface\\AddOns\\MultiMeters\\media\\logos\\multimeters.logo.128.tga"
+
 -- ---------------------------------------------------------------------------
 -- Enum resolution
 -- ---------------------------------------------------------------------------

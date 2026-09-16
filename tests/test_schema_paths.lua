@@ -33,6 +33,7 @@
 local T = _G.MULTIMETERS_TEST
 local test = T.test
 local assertEqual, assertTrue, assertFalse = T.assertEqual, T.assertTrue, T.assertFalse
+local assertNil = T.assertNil
 
 --- A loaded addon with TWO windows, and their ids. Duplicated from
 --- tests/test_schema.lua rather than published: nine lines are cheaper to carry
@@ -109,13 +110,18 @@ test("Schema: a stale active-window id falls back to the first window", function
         NS.Database.FindWindow(first).frame.width)
 end)
 
-test("Schema: the inverted row stores the negation of what it displays", function()
+test("Schema: the minimap carve-out resolves the GLOBAL store and inverts the sense", function()
     local inst = T.load()
     local NS = inst.NS
-    -- LibDBIcon owns `minimap.hide`; the checkbox says "Show minimap button".
-    assertTrue(NS.SetByPath("minimap.hide", false))
-    assertEqual(NS.db.profile.minimap.hide, true, "display false stores hide = true")
-    assertEqual(NS.GetSetting("minimap.hide"), false, "and reads back in display terms")
+    -- The seam's one carve-out, and it carries BOTH halves. Every other path in this schema
+    -- resolves against db.profile; this one names its store, because launcher-§3 puts
+    -- LibDBIcon's table in the global one. And LibDBIcon's key says HIDDEN while the
+    -- checkbox says "Minimap button", so the seam inverts rather than letting the row keep a
+    -- private get/set pair the CLI would then have to know about separately.
+    assertTrue(NS.SetByPath("global.minimap.hide", false))
+    assertEqual(NS.db.global.minimap.hide, true, "display false stores hide = true")
+    assertEqual(NS.GetSetting("global.minimap.hide"), false, "and reads back in display terms")
+    assertNil(NS.db.profile.minimap, "and nothing lands under the profile on the way past")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -263,14 +269,15 @@ test("ApplyDefault: restores through the same seam, deep-copying a table default
         "storing the row's own default table would alias every profile onto it")
 end)
 
-test("ApplyDefault: round-trips the inverted row back to its SHIPPED stored value", function()
+test("ApplyDefault: round-trips the minimap row back to its SHIPPED stored value", function()
     local inst = T.load()
     local NS = inst.NS
-    assertTrue(NS.SetByPath("minimap.hide", false))       -- display false -> stored true
-    assertEqual(NS.db.profile.minimap.hide, true)
-    NS.ApplyDefault(NS.FindSchemaRow("minimap.hide"))
-    assertEqual(NS.db.profile.minimap.hide, false,
-        "`default` is the STORED value, so the restore must land on false")
+    assertTrue(NS.SetByPath("global.minimap.hide", false))   -- display false -> stored true
+    assertEqual(NS.db.global.minimap.hide, true)
+    NS.ApplyDefault(NS.FindSchemaRow("global.minimap.hide"))
+    -- `default` is what a user would have CLICKED -- shown -- and the seam inverts it on the
+    -- way in. Getting the round trip backwards would make the Defaults button hide the button.
+    assertEqual(NS.db.global.minimap.hide, false)
 end)
 
 -- ---------------------------------------------------------------------------

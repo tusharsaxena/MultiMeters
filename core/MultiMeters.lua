@@ -77,14 +77,12 @@ function NS:OnInitialize()
     -- a side effect of the one above.
     self:RunMigrations()
 
-    -- The LibDataBroker launcher and its minimap button. AFTER InitDB, and that
-    -- ordering is a requirement rather than tidiness: LibDBIcon stores the
-    -- button's position in the table it is registered against, which here is
-    -- NS.db.profile.minimap — registering before AceDB has built the profile
-    -- would hand it a table that is thrown away on the next profile swap.
-    -- Reached at call time because modules/ loads after core/, and guarded
-    -- because a build without the two vendored broker libs simply has no button.
-    if NS.Minimap and NS.Minimap.Init then NS.Minimap.Init() end
+    -- The launcher: the ONE LibDataBroker object, registered twice (launcher-§1). AFTER InitDB,
+    -- and that ordering is a requirement rather than tidiness -- LibDBIcon stores the button's
+    -- position in the table it is registered against, which is NS.db.global.minimap, and
+    -- registering before AceDB has built the store would hand it a table that is thrown away.
+    -- Idempotent, so a second call from a login handler is a no-op rather than a second button.
+    if NS.Launcher and NS.Launcher.Register then NS.Launcher:Register() end
 
     -- The options surface: schema validation, the parent canvas category, and
     -- the queued page builders. Reached at call time because settings/ loads

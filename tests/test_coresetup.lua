@@ -337,11 +337,12 @@ test("CoreSetup: NS.LIBKA0S_MISSING is set on BOTH paths, not only the degraded 
         "the shared clause must not carry its own terminal punctuation")
 end)
 
-test("CoreSetup: all five seams append to the shared clause rather than re-spelling it", function()
-    -- One cause said the same way five times, and a different consequence each
-    -- time. A hand-copied cause is five strings to keep in step.
+test("CoreSetup: all six seams append to the shared clause rather than re-spelling it", function()
+    -- One cause said the same way six times, and a different consequence each
+    -- time. A hand-copied cause is six strings to keep in step.
     -- red under: writing "The LibKa0s library is missing" out again in a seam.
     for _, rel in ipairs({ "core/PerfSetup.lua", "core/DebugLogSetup.lua",
+                           "core/LauncherSetup.lua",
                            "settings/Slash.lua", "settings/OptionsSetup.lua" }) do
         local fh = assert(io.open(T.root .. "/" .. rel, "r"))
         local src = fh:read("*a")

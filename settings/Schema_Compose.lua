@@ -26,7 +26,7 @@
 -- NS.WindowManager and NS.Visibility are all resolved at CALL time, because this
 -- file loads before all four.
 
-local addonName, NS = ...
+local _, NS = ...
 
 local L     = NS.L
 local Const = NS.Constants
@@ -159,19 +159,6 @@ local function broadcastFont(value) broadcast(FONT_PATHS, value) end
 
 --- @param value string  NONE | OUTLINE | THICKOUTLINE | MONOCHROME
 local function broadcastOutline(value) broadcast(OUTLINE_PATHS, value) end
-
---- Show or hide the minimap button. LibDBIcon holds the button and reads the same
---- `minimap` table this row writes, so it has to be told to look again. Guarded on
---- its registry rather than pcall'd: an unregistered button is the normal state of
---- an install whose broker never came up, not an error.
-local function refreshMinimap()
-    local icon = LibStub and LibStub("LibDBIcon-1.0", true)
-    if not (icon and icon.objects and icon.objects[addonName]) then return end
-    local db = NS.db
-    if icon.Refresh and db and db.profile then
-        icon:Refresh(addonName, db.profile.minimap)
-    end
-end
 
 -- ---------------------------------------------------------------------------
 -- Dropdown vocabularies
@@ -651,6 +638,23 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     -- VERBATIM and unprefixed: session state lives outside the block's own prefix,
     -- and this is the path the row this addon already had was stored under.
     debugConsolePath = "state.debugConsole",
+    -- The minimap button (options-ui-§15, launcher-§3, compose minor 7): the composer's
+    -- own STORED row, and the one that OPENS the fourth line -- every addon has a button
+    -- and only some have a test mode, so the always-present row takes column 1 and the
+    -- optional one pairs beside it.
+    --
+    -- THE PATH IS VERBATIM AND IT NAMES ITS STORE, which no other path in this schema
+    -- does. LibDBIcon's `minimap` table lives in the GLOBAL store, outside the block's
+    -- profile prefix, because a minimap button belongs to the INSTALLATION: a profile
+    -- switch must not move the player's buttons, and options-ui-§12's *Reset all
+    -- settings* -- a profile reset by definition -- must not un-hide one they hid.
+    --
+    -- NO `onChange`. The row's boolean says SHOWN while LibDBIcon's key says HIDDEN, and
+    -- both the inversion and the call that moves the button live in the single write seam
+    -- (settings/Schema_Paths.lua's "minimap carve-out"), which is where `/mm set` reaches
+    -- them too. This row used to be hand-written here with a `refreshMinimap` reactor that
+    -- called LibDBIcon directly; the composer owns the row now and the seam owns the act.
+    minimapPath      = "global.minimap.hide",
     -- Test mode (options-ui-§15, preview-mode, standard v2.47.0): the composer's
     -- own session-only row, directly after the console on a line of its own. The
     -- path is taken VERBATIM, like the console's, and it is the one `/mm set
@@ -678,6 +682,7 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
         locked       = L["Lock frame"],
         debugConsole = L["Debug console"],
         testMode     = L["Test mode"],
+        minimap      = L["Minimap button"],
     },
     -- Resolved at CALL time, both of them. The popup is declared by
     -- settings/General.lua, which loads after this file. The registry is
@@ -757,6 +762,18 @@ dress(MASTER_ROWS, {
             if not D then return end
             if v then D:Show() else D:Hide() end
         end,
+    },
+    -- THE ONLY ROW IN THIS SCHEMA WHOSE STORE IS NOT THE PROFILE, and the only one whose
+    -- boolean is the negation of what it stores. Both facts are the write seam's
+    -- (settings/Schema_Paths.lua's "minimap carve-out") and neither is restated here: what
+    -- is owed from this file is the sentence, because the composer's own is English rather
+    -- than this addon's locale key.
+    --
+    -- NO `get`/`set` PAIR either, unlike the three session rows around it. This row is
+    -- genuinely STORED -- a button the player hid stays hidden across a reload -- so it
+    -- takes the ordinary stored path, and the seam is what knows where that path lives.
+    ["global.minimap.hide"] = {
+        desc = L["Show this addon's button on the minimap. Left-click it to show or hide the meter windows, right-click it to open these settings. Shared by every profile, because the button belongs to the installation rather than to one character's layout."],
     },
     -- Test mode's box, bound to the one flag and the one switch. Through the
     -- registry when it is up -- WindowManager:SetTestMode is also what `/mm test`
@@ -1353,6 +1370,5 @@ NS.SchemaCompose = {
     expandBlocks         = expandBlocks,
     isNumberIn           = isNumberIn,
     lsmValues            = lsmValues,
-    refreshMinimap       = refreshMinimap,
     refreshVisibility    = refreshVisibility,
 }

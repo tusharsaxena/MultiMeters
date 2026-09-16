@@ -130,21 +130,22 @@ end)
 
 test("Lifecycle: OnInitialize builds the database FIRST", function()
     -- After InitDB returns, NS.db is live — a contract every module relies on,
-    -- and the reason it is first. The minimap launcher in particular must come
-    -- after it, because LibDBIcon stores the button's position in
-    -- NS.db.profile.minimap and registering earlier would hand it a table that
-    -- is thrown away on the next profile swap.
-    -- red under: moving the InitDB call below the Minimap.Init call.
+    -- and the reason it is first. The launcher in particular must come after it,
+    -- because LibDBIcon stores the button's position in the table it is registered
+    -- against -- NS.db.global.minimap -- and registering earlier would hand it one
+    -- that is thrown away, so the button would go back to the library's default
+    -- angle on every login.
+    -- red under: moving the InitDB call below the Launcher:Register call.
     local src = assert(io.open(ROOT .. "/core/MultiMeters.lua", "r")):read("*a")
     local body = src:match("function NS:OnInitialize%(%)(.-)\nend")
     assertTrue(body ~= nil, "could not find OnInitialize")
     local dbAt      = body:find("self:InitDB()", 1, true)
-    local minimapAt = body:find("NS.Minimap.Init()", 1, true)
+    local launcherAt = body:find("NS.Launcher:Register()", 1, true)
     local optionsAt = body:find("NS.CreateOptionsPanel()", 1, true)
     local slashAt   = body:find("NS.Slash:Register()", 1, true) or body:find("Slash:Register", 1, true)
-    assertTrue(dbAt ~= nil and minimapAt ~= nil and optionsAt ~= nil and slashAt ~= nil,
+    assertTrue(dbAt ~= nil and launcherAt ~= nil and optionsAt ~= nil and slashAt ~= nil,
         "OnInitialize no longer performs all four lifecycle steps")
-    assertTrue(dbAt < minimapAt, "the minimap button is registered before the profile exists")
+    assertTrue(dbAt < launcherAt, "the launcher is registered before the store exists")
     assertTrue(dbAt < optionsAt, "the options panel is created before the database")
     assertTrue(optionsAt < slashAt, "the slash verbs are claimed before the panel they open")
 end)

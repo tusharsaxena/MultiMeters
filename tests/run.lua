@@ -66,6 +66,13 @@ do
         -- out of it (options-ui-§15, §16), so a re-vendor that dropped it would
         -- take 50-odd schema rows with it rather than merely losing a widget.
         "OptionsWidgets.lua", "OptionsCompose.lua", "OptionsScroll.lua",
+        -- The tab strip and page banner, peeled off Options.lua in v1.39.0. It adds and renames
+        -- no member, so nothing here calls it BY NAME -- which is exactly why it is listed: a
+        -- re-vendor that dropped it would leave every page tab-less with nothing to read.
+        "OptionsTabs.lua",
+        -- core/LauncherSetup.lua takes its degradation stub without this one, so the whole
+        -- launcher suite would measure the stub and pass.
+        "Launcher.lua",
         "Perf.lua", "PerfPanel.lua",
     }
     local present = {}
@@ -152,13 +159,17 @@ local function loadInstance(opts)
     -- ── the lifecycle kick, in the client's own order ──────────────────────
     --
     -- core/MultiMeters.lua's OnInitialize does exactly this: InitDB, then
-    -- RunMigrations, then the minimap launcher, then the options panel, then the
+    -- RunMigrations, then the launcher, then the options panel, then the
     -- slash registration. It is spelled out here rather than called through
     -- OnInitialize so a suite can stop after any step — and so the standard's four
     -- lifecycle steps are visible in the runner rather than implied by one call.
     if opts.initDB ~= false then
         if NS.InitDB then NS:InitDB() end
         if NS.RunMigrations then NS:RunMigrations() end
+        -- AFTER the store exists, as OnInitialize does it: LibDBIcon keeps the button's position
+        -- in the table it is registered against, and a registration ahead of AceDB would hand it
+        -- one that is thrown away.
+        if NS.Launcher and NS.Launcher.Register then NS.Launcher:Register() end
     end
     if opts.options ~= false and NS.CreateOptionsPanel then
         NS.CreateOptionsPanel()
@@ -230,12 +241,13 @@ local SUITES = {
     "test_diagnostics_identity",
     "test_diagnostics_feign",
     "test_defaults",
-    -- the six LibKa0s seams and the addon lifecycle
+    -- the seven LibKa0s seams and the addon lifecycle
     "test_coresetup",
     "test_perfsetup",
     "test_debuglogsetup",
     "test_mediasetup",
     "test_envsetup",
+    "test_launchersetup",
     "test_lifecycle",
     "test_vendor_sync",
     -- the data path
@@ -265,7 +277,6 @@ local SUITES = {
     "test_export_modal",
     "test_visibility",
     "test_windowmanager",
-    "test_minimap",
     -- settings and the CLI
     "test_schema",
     "test_schema_paths",

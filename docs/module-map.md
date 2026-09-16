@@ -70,6 +70,11 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   ├── DebugLogSetup.lua — LibKa0s-DebugLog-1.0 seam: NS.DebugLog, the bare
 │                         NS.Debug(tag, fmt, …) sink, and NS.DebugSteady — the
 │                         same sink for a pass that repeats on a timer
+│   ├── LauncherSetup.lua — LibKa0s-Launcher-1.0 seam: NS.Launcher, the ONE
+│   │                     LibDataBroker object registered twice (launcher-§1). Holds the
+│   │                     descriptor and nothing else: the folder name, the logo, the
+│   │                     left click (rung (a): its windows) and how the panel opens.
+│   │                     Reads Constants.LOGO_128 at FILE SCOPE
 │   ├── PoolSetup.lua   — LibKa0s-Pool-1.0 seam: NS.Pool, the window row pool's
 │                         free/active halves. After libs/, BEFORE modules/Window.lua,
 │                         its only consumer. RANK STABILITY IS THE LIBRARY'S — minor 3
@@ -190,9 +195,8 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                     buttons and the copy-paste window. Every frame this
 │   │                     feature draws is here. Re-checks the combat refusal on
 │   │                     every click, because a pull can start while it is open
-│   ├── Visibility.lua  — the context predicate. Publishes no message and touches
+│   └── Visibility.lua  — the context predicate. Publishes no message and touches
 │                         no frame; refuses at the source
-│   └── Minimap.lua     — the LibDataBroker launcher and its LibDBIcon button
 └── settings/
     ├── Schema_Compose.lua
     │                   — WHAT THE ARRAY IS DECLARED OUT OF and nothing else: the
@@ -253,7 +257,8 @@ own strings entirely.
 | `PerfSetup.lua` | The perf descriptor: bucket list, suspend, resume, log routing | `NS.Perf` | `NS.Version`, and `Provider` / `WindowManager` / `Visibility` at call time |
 | `DebugLogSetup.lua` | The console descriptor (including `addonName`, which is what makes the console's own close/copy/clear draw the collection's art), the debug sink, and the steady-state sink a timer-driven pass logs through | `NS.DebugLog`, `NS.Debug`, `NS.DebugSteady`, `NS.DebugSteadyReset` | `NS.Constants.FONT_MONO`, `NS.State.debug`, `NS.Print`, `NS.SafeToString` |
 | `PoolSetup.lua` | The LibKa0s-Pool seam: the free/active halves of the window row pool. What stays in `modules/Window.lua` is what the library holds no opinion about — `pool.all` (every row ever built, so a **parked** row is re-laid-out too) and batch growth, folded into the `Acquire` factory closure. The degraded fallback is the same three members locally, parking **backward** exactly as `LibKa0s-Pool-1.0` minor 3 does; a forward-parked degraded install is the rank flicker back | `NS.Pool` | `LibKa0s-Pool-1.0`. Owns no state and registers no event |
-| `MultiMeters.lua` | AceAddon promotion, the printer reclaim, all 22 game-event registrations (21 outright plus `PLAYER_IS_GLIDING_CHANGED`, probed), the fan-out onto the bus, and `NS.ShouldShow` | `NS.addon`, `NS.ShouldShow`, `NS:OnInitialize` / `OnEnable` | `NS.Constants.MSG`, `NS.State`, `NS.Secrets`, `NS.Minimap`, `NS.CreateOptionsPanel`, `NS.Slash` |
+| `LauncherSetup.lua` | The LibKa0s-Launcher seam: the descriptor for the ONE LibDataBroker object LibDBIcon and any broker display both draw from (`launcher-§1`). Holds what is genuinely this addon's — the **folder** name (LibDBIcon keys the button's saved position by it), the logo, the tooltip, and the left click, which is `launcher-§2` rung **(a)**: `WindowManager:Toggle`, the seam `/mm toggle` drives. Right-click always opens the panel. The `minimap` field is a **closure**, never the table: `db.global.minimap` does not exist when core/ loads. The inversion is NOT here — it is the write seam's carve-out | `NS.Launcher` — `Register`, `IsRegistered`, `Object`, `IsShown`, `SetShown` | `LibKa0s-Launcher-1.0`, `NS.Constants.LOGO_128` (at file scope), `NS.db.global.minimap`, `NS.WindowManager`, `NS.OpenOptionsPanel` (both at call time) |
+| `MultiMeters.lua` | AceAddon promotion, the printer reclaim, all 22 game-event registrations (21 outright plus `PLAYER_IS_GLIDING_CHANGED`, probed), the fan-out onto the bus, and `NS.ShouldShow` | `NS.addon`, `NS.ShouldShow`, `NS:OnInitialize` / `OnEnable` | `NS.Constants.MSG`, `NS.State`, `NS.Secrets`, `NS.Launcher`, `NS.CreateOptionsPanel`, `NS.Slash` |
 | `Database.lua` | The AceDB instance, window shape key-fill, the monotonic id counter, seeding, migrations, and the AceDB profile callbacks | `NS.Database` (`GetWindows`, `FindWindow`, `NextWindowId`, `SeedWindows`, `EnsureWindowShape`), `NS.db`, `NS:InitDB`, `NS:RunMigrations` | `NS.defaults`, `NS.WINDOW_TEMPLATE`, `NS.DefaultWindow`, `NS.Constants.MSG` |
 | `Diagnostics.lua` | The `/mm debug diag` report: atlas probes, the formatter ladder, visibility, header, name column, cells, tooltip font and width, the Targets cross-reference, and the provider-order probe. Every section is `pcall`-wrapped, and nothing here inspects a meter value. It is also the FRAME the three probe files hang off — the print helpers are defined once, here | `NS.Diagnostics` (`Report`, `SetEmit`) and, for the three files below, the shared helpers `out` / `safe` / `shown` / `probe` / `SECRET` | `NS.DebugLog`, `NS.Print`, `NS.Provider`, `NS.Constants.STATS`, `NS.Database`, `NS.Secrets`, `NS.WindowManager` |
 | `Diagnostics_DeathRecap.lua` | `/mm debug recap` — issue #1's question, asked in one place: can a Death Recap window be built at all, and what does the recap API actually hand back. Self-contained, so it can be deleted with its issue; it also rides along in `/mm debug diag`, which is why its section function goes back onto the shared table | `Diagnostics.ReportDeathRecap`, `Diagnostics.reportDeathRecap` (the section the frame calls) | `NS.Diagnostics` and its print helpers, **at file scope** — the reason its TOC line must follow `core/Diagnostics.lua` |
@@ -269,7 +274,7 @@ own strings entirely.
 
 | File | Owns | Publishes | Consumes |
 |---|---|---|---|
-| `Profile.lua` | The window template (`frame`, `header`, `rows`, `bars`, `text`, `icons`, `tooltip`, `visibility`, `columns`, `data`) and the near-empty profile around it: the window array, the id counter, `enabled`, `minimap` | `NS.defaults`, `NS.WINDOW_TEMPLATE`, `NS.DefaultWindow(id, name)` | `NS.Constants` (stat catalog, font name) |
+| `Profile.lua` | The window template (`frame`, `header`, `rows`, `bars`, `text`, `icons`, `tooltip`, `visibility`, `columns`, `data`) and the near-empty profile around it: the window array, the id counter, `enabled` | `NS.defaults`, `NS.WINDOW_TEMPLATE`, `NS.DefaultWindow(id, name)` | `NS.Constants` (stat catalog, font name) |
 
 The default window ships six columns, derived from the catalog's `defaultEnabled` flags rather than
 restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deaths.
@@ -300,7 +305,6 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 | `Export.lua` | plain table | **The pure half**, which is the seam this file's own header had been naming since it was written: the two serializers and everything they need. `HeaderName`, `CsvField` and `Columns` derive the CSV shape from the stat catalog rather than restating it; `SessionConfig` builds the synthetic window config the aggregator is asked with; `ResolveChannel`, `ChatBatch`, `SendDelay` and `Send` carry the throttled dump and its whisper-failure watch. **Draws no frame.** **Refuses entire while the Combat restriction is active** — `tostring` is not a permitted operation on a secret | `NS.Export` — `Available`, `HeaderName`, `CsvField`, `Columns`, `SessionConfig`, `Build`, `SessionLabel`, `CSV`, `ChatLines`, `ResolveChannel`, `TargetName`, `NeedsHardwareEvent`, `ChatBatch`, `SendDelay`, `Send`, `NoteSystemMessage` — plus the three privates the modal reads, `Export.__EM_DASH`, `__cfgOf` and `__channelRow` | `NS.Aggregator.Build`, `NS.Format`, `NS.Constants` (`STATS`, `STAT_BY_KEY`, `MAX_ROWS`, `SESSION_TYPE`, `EXPORT_CHANNELS`, `EXPORT_CHANNEL_BY_KEY`), and `NS.Secrets` — resolved through its own `mod()` lookup at **call** time, never captured, so the pure half holds no sibling as an upvalue |
 | `Export_Modal.lua` | — | **The UI half**: the dialog the header glyph and `/mm export` open, its three selectors — `LibKa0s-Widgets-1.0` dropdowns since the collection grew a shared one — the whisper row, the two action buttons and the copy-paste window. Every frame this feature draws is here and nowhere else; all of it is built lazily on the first `Open` and reused forever, so a session in which nobody exports never pays for it. The combat refusal is enforced **again** here, and deliberately more than once — `Available()` on open, again inside each click handler, and once more inside the serializers — because the restriction can activate while the modal sits open, and the click is the last moment anyone can check | `NS.Export.Open`, `NS.Export.ResolveMetric` | `Export.__EM_DASH` / `__cfgOf` / `__channelRow` **at file scope**, which is what pins its TOC line after `modules/Export.lua`; plus `NS.Constants` (including `FONT_MONO` for the copy window), `NS.L`, `NS.GetSetting` / `NS.SetByPath`, `NS.ApplySkin`, `NS.MakeCloseButton`, `NS.NewBusTarget`, and `LibKa0s-Widgets-1.0` looked up directly — the one library this pair reaches for itself rather than through a `core/*Setup.lua` seam, because the widget is built lazily inside `Open` rather than wired at load; it calls `W.CloseMenu()` from the modal's `OnHide`, since the popup is process-wide and the modal's own `Hide` does not reach it. Subscribes exactly one message — `RESTRICTION_CHANGED`, on a private target taken with the modal frame, so an open dialog greys itself when a pull starts — and sends none |
 | `Visibility.lua` | AceAddon | The context translation table and the predicate: context first, then the hide-shaped vetoes, then the two combat rules. No frame is touched and no message is sent | `NS.Visibility` — `GetContext`, `ShouldShow`, `Allows`, `Evaluate`, `Refresh`, `LastResult`, `Forget` | `NS.Database.GetWindows`, the instance and player-state APIs through `_G`, and `NS.Compat` for the delve / skyriding / housing probes. Subscribes `ZONE_CHANGED`, `ENTERING_WORLD`, `ROSTER_CHANGED`, `COMBAT_CHANGED`, `PLAYER_STATE_CHANGED`, `PROFILE_CHANGED` — for the Evaluate pass and its debug line only; the window re-runs the ladder off the same two messages, because this module publishes nothing |
-| `Minimap.lua` | plain table | The LDB launcher object and the LibDBIcon registration | `NS.Minimap.Init`, `NS.Minimap.Refresh` | `NS.db.profile.minimap` (owned by LibDBIcon once registered), `NS.WindowManager`, `NS.OpenOptionsPanel` |
 
 ### `settings/`
 
@@ -319,7 +323,7 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 | `Visibility.lua` | The Visibility page (17 rows across three tabs — where, extra rules, combat). Pure schema | a page registration | `NS.Helpers` |
 | `ColumnBlocks.lua` | The ROW CONTENTS of a reorderable list — state glyph, label, and the rule where the enabled ones stop — plus the wiring that hands the list to LibKa0s. The **gesture and the chrome** are `LibKa0s-Widgets-1.0`'s `ReorderList` (minor 9): the handle, its 30px gutter, the **bounded box behind every row**, the carried copy, the insertion line and the clamp. The host's own row background was deleted in the same change as the re-vendor, or the two fills would stack. Loads **before** `Columns.lua` | `NS.ReorderableBlocks(ctx, spec)`, `NS.BLOCK_HEIGHT`, `NS.BLOCK_STRIDE` | `LibKa0s-Widgets-1.0`, `NS.Helpers.EnsureScroll`, `NS.AceGUI`, `NS.Icon` |
 | `Columns.lua` | The Columns page (8 schema rows — the `window.columnHeader.*` text and background rows moved here from Header — across two of its three tabs), plus the block editor: one block per statistic, ticked or not, dragged into order, on the tab that carries **no** schema rows. Every write to the array hands the seam a freshly built whole array, and every mutation re-checks combat | a page registration | `NS.ReorderableBlocks`, `NS.SetByPath("window.columns", …)`, `NS.Constants.STATS` |
-| `General.lua` | The General page (22 rows in all: **three** drawn tabs — **Master controls**, **Behavior**, Statistic colours — plus a fourth group, Export, whose four rows are `hidden` and therefore never become a tab): `options-ui-§15`'s canonical set, Test mode included, followed by this addon's own one (the minimap toggle, which pairs beside Test mode); the two addon-wide data settings, Merge pets and Refresh interval, moved to the **Behavior** tab, since §15 fixes Master controls' set and neither is canonical, and the eight generated statistic-colour swatches. The `General` tab that held those three and Test mode was retired into Master controls — §15 forbids reordering, renaming or splitting the canonical set, not appending after it, and the seven stay first and contiguous. The reset **button pair** is drawn by the hook `H.MasterControls` hands back, not here; what this file still supplies is the reset-everything confirmation popup and one sentence under each of two tabs. Also hosts the **reset-meter-data dialog**, which has no button on any page: the header's own reset control is the one way to open it, and it routes to `NS.Provider.Reset` rather than to the Compat shim | a page registration, `NS.ShowResetMeterData` | `NS.Helpers`, `NS.MasterControlsAfterGroup`, `NS.Provider.Reset` |
+| `General.lua` | The General page (22 rows in all: **three** drawn tabs — **Master controls**, **Behavior**, Statistic colours — plus a fourth group, Export, whose four rows are `hidden` and therefore never become a tab): `options-ui-§15`'s canonical set, Minimap button and Test mode included and nothing of this addon's own after it; the two addon-wide data settings, Merge pets and Refresh interval, moved to the **Behavior** tab, since §15 fixes Master controls' set and neither is canonical, and the eight generated statistic-colour swatches. The `General` tab that held those three and Test mode was retired into Master controls — §15 forbids reordering, renaming or splitting the canonical set, and the eight canonical rows are the whole tab now: Test mode became canonical in standard v2.47.0 and the minimap toggle in v2.53.0, so this addon has no row of its own left on it. The reset **button pair** is drawn by the hook `H.MasterControls` hands back, not here; what this file still supplies is the reset-everything confirmation popup and one sentence under each of two tabs. Also hosts the **reset-meter-data dialog**, which has no button on any page: the header's own reset control is the one way to open it, and it routes to `NS.Provider.Reset` rather than to the Compat shim | a page registration, `NS.ShowResetMeterData` | `NS.Helpers`, `NS.MasterControlsAfterGroup`, `NS.Provider.Reset` |
 | `Profiles.lua` | The AceDBOptions profile tree, hosted in this addon's canvas. **The one place `AceConfigDialog` is permitted**, and the one page vetoed from reset-all | a page registration | AceDBOptions-3.0, AceConfigDialog-3.0 |
 
 Schema rows total 169 across 8 page keys — windows 1, frame 26, header 36, bars 29, tooltip 30,
@@ -387,7 +391,7 @@ for the same "a flat path model has no vocabulary for this shape" reason.
    **`Aggregator_Identity` → `Aggregator_Preview`** → `WindowManager` → `Window` →
    **`Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_NameCell`** →
    `Targets` → `Tooltip` → **`Tooltip_Lines` → `Tooltip_Builders`** → `DrillDown` → `Export` →
-   **`Export_Modal`** → `Visibility` → `Minimap`.
+   **`Export_Modal`** → `Visibility`.
 
    The eight in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
    for the same reason: each resolves something its parent publishes at *file scope*, so a peel
@@ -453,8 +457,8 @@ Immediately after `NewAddon`, `NS.Print` is reclaimed from AceConsole's mixin by
    migrates and seeds.
 2. `self:RunMigrations()` — idempotent after step 1, called explicitly so the lifecycle reads as the
    standard's four steps.
-3. `NS.Minimap.Init()` — **after** `InitDB`, because LibDBIcon stores the button's position inside
-   `NS.db.profile.minimap`.
+3. `NS.Launcher:Register()` — **after** `InitDB`, because LibDBIcon stores the button's position
+   inside the table it is registered against, which is `NS.db.global.minimap`. Idempotent.
 4. `NS.CreateOptionsPanel()` — schema validation, the parent category, and the queued page builders.
 5. `NS.Slash:Register()` — `/mm` and `/multimeters`, through AceConsole. If the settings layer never
    loaded, both verbs are claimed anyway and say so rather than going silent.
@@ -509,13 +513,14 @@ roll-call, and it used to sit in `docs/ARCHITECTURE.md` → `## Overview`.
 
 Chrome comes from LibKa0s-Core-1.0's shared `SKIN` / `ApplySkin`, never a private lookalike, so the
 meter window, the debug console and the perf step panel wear the same Ka0s edge as every sibling
-addon. Nine LibKa0s majors are consumed — Core, Media, Perf, DebugLog, Env, Pool, Slash, Options and
-Widgets. Eight are reached through a seam file of their own (`core/CoreSetup.lua`,
+addon. Ten LibKa0s majors are consumed — Core, Media, Perf, DebugLog, Env, Pool, Launcher, Slash, Options
+and Widgets. Nine are reached through a seam file of their own (`core/CoreSetup.lua`,
 `core/MediaSetup.lua`, `core/PerfSetup.lua`, `core/DebugLogSetup.lua`, `core/EnvSetup.lua`,
-`core/PoolSetup.lua`, `settings/Slash.lua`, `settings/OptionsSetup.lua`); Widgets has no seam file and
+`core/PoolSetup.lua`, `core/LauncherSetup.lua`, `settings/Slash.lua`,
+`settings/OptionsSetup.lua`); Widgets has no seam file and
 is resolved at each of its two call sites — `modules/Export_Modal.lua`, which builds the addon's only
 dropdowns, and `settings/ColumnBlocks.lua`, whose block list is the library's `ReorderList` — because
-both widgets are built lazily on first use rather than wired at load. Every one of the nine degrades
+both widgets are built lazily on first use rather than wired at load. Every one of the ten degrades
 rather than erroring when `libs/LibKa0s` is absent. Three of them pass the addon's own **folder name** to the library, and all three now say so
 explicitly: `core/CoreSetup.lua`'s `MakeCloseButton` wrapper, and the descriptors in
 `core/DebugLogSetup.lua` and `core/PerfSetup.lua`. The perf one used to reach the right answer only
@@ -526,7 +531,7 @@ the one it used to carry drew a close button with the name dropped, so the panel
 multiplication sign beside a console wearing the mark. The name matters because a texture path is
 absolute from `Interface\AddOns\`
 and a vendored library cannot know which folder it was copied into — that is what lets the library's
-own windows wear the same close, copy and clear marks the meter window's header draws. Five explain the
+own windows wear the same close, copy and clear marks the meter window's header draws. Six explain the
 absence through the one shared cause clause `NS.LIBKA0S_MISSING`; **Media is deliberately silent**,
 because what it degrades is chrome. The icons this window draws and its monospace face ship inside the
 LibKa0s payload (`LibKa0s-Media-1.0`), so a missing library takes the art with it — the header walks

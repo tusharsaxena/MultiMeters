@@ -341,6 +341,13 @@ local MASTER_ROWS = {
     { "master.alpha",       "Master alpha"        },
     { "master.locked",      "Lock frame"          },
     { "state.debugConsole", "Debug console"       },
+    -- THE FOURTH LINE OF THE SET, in options-ui-§15's column order: the minimap button
+    -- OPENS it and Test mode pairs beside it. Not a preference and not a tidy-up -- every
+    -- addon has a button and only some have a test mode, so the always-present row takes
+    -- column 1; the other way round, an addon with no test mode draws a hole in the first
+    -- column with a lone control to its right. The path names its STORE because
+    -- launcher-§3 puts LibDBIcon's table in the global one.
+    { "global.minimap.hide", "Minimap button"     },
     { "state.testMode",     "Test mode"           },
 }
 
@@ -376,15 +383,16 @@ function()
     for i = 1, #want do prefix[i] = got[i] end
     assertEqual(table.concat(prefix, "\n"), table.concat(want, "\n"))
 
-    -- ...and what follows them is ONE row. Merge pets and Refresh interval were here
-    -- too, and moved to their own **Behavior** tab: options-ui-§15 fixes this tab's set,
-    -- and neither is canonical or about turning the addon up and down -- one says what a
-    -- pet's damage IS and the other is a refresh rate. They sat here because the page had
-    -- nowhere else to put them. Test mode was a fourth; it is canonical now.
+    -- ...and NOTHING follows them. This addon has no rows of its own on this tab any more.
+    -- Merge pets and Refresh interval moved to their own **Behavior** tab -- options-ui-§15
+    -- fixes this tab's set, and neither is canonical or about turning the addon up and down,
+    -- one says what a pet's damage IS and the other is a refresh rate. Test mode became a
+    -- canonical row (standard v2.47.0), and the minimap toggle became one too (v2.53.0,
+    -- compose minor 7), so this addon's last hand-written row on the tab went with it.
     local extras = {}
     for i = #want + 1, #got do extras[#extras + 1] = got[i] end
-    assertEqual(table.concat(extras, "\n"), "minimap.hide = " .. L["Show minimap button"],
-        "only the minimap row follows the canonical set")
+    assertEqual(table.concat(extras, "\n"), "",
+        "Master controls is exactly the canonical set now; an extra row belongs on Behavior")
 
     -- And the two that left are on Behavior, in the order they had.
     local behavior = {}
@@ -405,14 +413,15 @@ function()
     -- MasterControls composer emits from `testModePath`, never a hand-written copy:
     -- session-only, opening a line, a boolean whose default is off so Reset all
     -- settings ends the mode, and bound to this addon's own state.
-    -- `startsLine` OPENS a line, it does not claim one: the owner asked for Show
-    -- minimap button to sit beside Test mode in the second column, and the way it
-    -- gets there is that this addon's own row after it carries no `startsLine` of
-    -- its own. This used to pin the opposite -- the minimap row starting its own
-    -- line -- and the layout changed deliberately.
-    -- red under: hand-writing the row again (no `composed` stamp), dropping
-    -- `testModePath` or `defaults.testMode` from the spec, or giving the minimap row
-    -- `startsLine` back, which would strand Test mode alone on its line again.
+    -- BOTH HALVES OF THE LINE ARE THE COMPOSER'S NOW. `minimapPath` (compose minor 7)
+    -- emits the Minimap button row with `startsLine`, and Test mode DROPS its own
+    -- `startsLine` when a minimap row was emitted -- so the pair renders as
+    -- [Minimap button] [Test mode], which is the column order options-ui-§15 states.
+    -- This addon used to get that layout by hand-writing a minimap row with no
+    -- `startsLine` after a Test mode row that had one, which produced the same two
+    -- widgets in the OTHER order.
+    -- red under: hand-writing either row again (no `composed` stamp), dropping
+    -- `testModePath`, `minimapPath` or `defaults.testMode` from the spec.
     local inst = T.load()
     local NS, L = inst.NS, inst.NS.L
 
@@ -427,19 +436,21 @@ function()
     assertTrue(at ~= nil, "no state.testMode row")
     local row = rows[at]
 
-    assertEqual(rows[at - 1].path, "state.debugConsole", "the row directly before Test mode")
+    assertEqual(rows[at - 1].path, "global.minimap.hide",
+        "Minimap button opens the line Test mode pairs into")
+    assertEqual(rows[at - 2].path, "state.debugConsole", "and the console closes the line above")
     assertEqual(row.composed, true, "the row must come from the composer, not the schema's own text")
     assertEqual(row.label, L["Test mode"])
     assertEqual(row.group, L["Master controls"])
     assertEqual(row.type, "bool")
     assertEqual(row.sessionOnly, true)
-    assertEqual(row.startsLine, true)
+    assertTrue(not row.startsLine and not row.solo and not row.wide,
+        "Test mode must pair into Minimap button's second column, not claim a line")
     assertEqual(row.default, false, "no default and Reset all settings leaves the mode running")
     assertEqual(type(row.get), "function")
     assertEqual(type(row.set), "function")
-    assertEqual(rows[at + 1].path, "minimap.hide", "the row that shares Test mode's line")
-    assertTrue(not rows[at + 1].startsLine and not rows[at + 1].solo and not rows[at + 1].wide,
-        "Show minimap button must pair into Test mode's second column, not start a line")
+    assertEqual(rows[at - 1].startsLine, true, "and the minimap row is what opened it")
+    assertEqual(rows[at - 1].composed, true, "which is the composer's row too, not a copy")
 
     -- The row reads and writes the one flag every other switch does.
     assertEqual(row.get(), false)

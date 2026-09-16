@@ -761,10 +761,6 @@ NS.defaults = {
         -- pointer or a stale per-window schema path.
         nextWindowId = 1,
 
-        -- Minimap / DataBroker button (LibDBIcon-1.0 owns the shape of this
-        -- table — `hide` is its key, not ours).
-        minimap      = { hide = false },
-
         -- How the meter is read, addon-wide. Both of these were per-window and
         -- neither described a window: `mergePets` says what a pet's damage IS,
         -- and `throttle` is a refresh rate. Two windows disagreeing about either
@@ -820,6 +816,28 @@ NS.defaults = {
     },
     global = {
         schemaVersion = 1,
+
+        -- The minimap / DataBroker button. LibDBIcon-1.0 OWNS THE SHAPE of this
+        -- table -- `hide` is its key, not ours, and it also writes `minimapPos`
+        -- (and a lock / free-position pair if the player drags the button off the
+        -- minimap) as the player moves it. So only `hide` is declared: the addon
+        -- must never enumerate the table or normalize keys out of it, or a dragged
+        -- button snaps back on the next login. `minimapPos` is named non-setting
+        -- state in docs/ARCHITECTURE.md (architecture-§5: a vendored library's own
+        -- writes), and this declaration is what MATERIALIZES the table the
+        -- `global.minimap.hide` row addresses.
+        --
+        -- GLOBAL RATHER THAN PROFILE, and that is launcher-§3's decision rather
+        -- than where the neighbouring settings happen to live. A minimap button
+        -- belongs to the INSTALLATION: a profile is how a player configures what
+        -- the addon DRAWS, while the ring of buttons around the minimap is
+        -- furniture they arranged once, and profile-scoped it would appear and
+        -- vanish on a switch made for an unrelated reason. It also keeps
+        -- options-ui-§12's *Reset all settings* -- a PROFILE reset by definition --
+        -- from un-hiding a button the player deliberately hid. It lived under
+        -- `profile` until schemaVersion 15, whose step carries `hide` and
+        -- `minimapPos` across (core/Database.lua).
+        minimap = { hide = false },
         -- The remembered roster: who was in the group while the meter's current
         -- data was being collected, and whose pet was whose.
         --

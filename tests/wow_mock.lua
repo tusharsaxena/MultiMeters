@@ -1305,9 +1305,11 @@ local function build()
     }
     M.__media = media
 
-    -- LibDataBroker / LibDBIcon, for modules/Minimap.lua. Present rather than
-    -- absent so the registration path runs; a suite that wants the "no broker
-    -- library" degradation clears them from `mocks.__libs`.
+    -- LibDataBroker / LibDBIcon, for LibKa0s-Launcher-1.0 by way of
+    -- core/LauncherSetup.lua. Present rather than absent so the registration path runs;
+    -- a suite that wants the "no broker library" degradation clears them from
+    -- `mocks.__libs`. Show/Hide COUNT rather than doing nothing, because "the checkbox
+    -- moved the button" is the half of the minimap row a store assertion cannot see.
     local brokers = {}
     libs["LibDataBroker-1.1"] = {
         NewDataObject = function(_, name, obj)
@@ -1327,8 +1329,14 @@ local function build()
             local o = self.objects[name]
             if o then o.db = db end
         end,
-        Hide = function() end,
-        Show = function() end,
+        Hide = function(self, name)
+            self.__shown = self.__shown or {}
+            self.__shown[name] = false
+        end,
+        Show = function(self, name)
+            self.__shown = self.__shown or {}
+            self.__shown[name] = true
+        end,
     }
 
     -- AceDBOptions / AceConfig, for settings/Profiles.lua — the one page in this

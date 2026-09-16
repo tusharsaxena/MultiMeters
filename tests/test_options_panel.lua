@@ -928,20 +928,20 @@ function()
     assertFalse(labelled(L["Lock window"]), "the previous tab's widgets were left behind")
 end)
 
-test("Panel: the Master controls tab draws four pairs, Show minimap button beside Test mode",
+test("Panel: the Master controls tab draws four pairs, Test mode beside Minimap button",
 function()
     -- THE RENDERED LAYOUT, not the schema order the case in tests/test_schema.lua
     -- pins. The flow engine pairs rows two per line unless one opens a line, so
     -- which column a checkbox lands in is a property of every row above it -- and
     -- that is exactly what an assertion on the schema list cannot see.
     --
-    -- Show minimap button sits in the SECOND column of Test mode's line, at the
-    -- owner's request. It used to carry `startsLine` and stand alone above the
-    -- button pair; the layout changed deliberately, and the composed Test mode row
-    -- is untouched -- `startsLine` OPENS a line rather than claiming one, so no
-    -- library change was owed.
-    -- red under: giving the minimap row `startsLine` (or `solo`/`wide`) back, or
-    -- inserting a row between Test mode and it.
+    -- [Minimap button] [Test mode] is the column order options-ui-§15 states, and BOTH
+    -- halves are the composer's since compose minor 7: `minimapPath` emits the minimap row
+    -- with `startsLine`, and Test mode drops its own when a minimap row was emitted. The
+    -- reason for the order is that every addon has a button and only some have a test mode,
+    -- so the always-present row takes column 1. This addon drew the pair the other way round
+    -- while its minimap row was hand-written.
+    -- red under: giving Test mode `startsLine` back, or inserting a row between the two.
     local inst = T.load()
     local L = inst.NS.L
     local ctx = showPage(inst, "general")
@@ -960,7 +960,7 @@ function()
         L["Enable Multi Meters"] .. " | " .. L["General visibility"],
         L["Master scale"] .. " | " .. L["Master alpha"],
         L["Lock frame"] .. " | " .. L["Debug console"],
-        L["Test mode"] .. " | " .. L["Show minimap button"],
+        L["Minimap button"] .. " | " .. L["Test mode"],
         L["Reset position"] .. " | " .. L["Reset all settings"],
     }, "\n"))
 end)

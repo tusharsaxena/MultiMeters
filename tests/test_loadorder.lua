@@ -240,13 +240,21 @@ test("loadorder: the LibKa0s seams load in the order their headers pin", functio
     assertTrue(media < index["core/constants.lua"],
         "core/MediaSetup.lua must load before core/Constants.lua, which reads NS.MediaFont")
     for _, rel in ipairs({
-        "core/perfsetup.lua", "core/debuglogsetup.lua",
+        "core/perfsetup.lua", "core/debuglogsetup.lua", "core/launchersetup.lua",
         "settings/slash.lua", "settings/optionssetup.lua",
     }) do
         local at = index[rel]
         assertTrue(at ~= nil, rel .. " is not in the TOC")
         assertTrue(at > core, rel .. " must load after core/CoreSetup.lua")
     end
+
+    -- core/LauncherSetup.lua reads NS.Constants.LOGO_128 at FILE SCOPE, because
+    -- LibKa0s-Launcher-1.0 raises on a descriptor with no icon and a launcher wearing
+    -- nothing draws nothing and raises nothing (launcher-§4, anti-pattern #82). A seam
+    -- that loaded first would hand it nil and take the addon down at load.
+    local launcher = index["core/launchersetup.lua"]
+    assertTrue(launcher > index["core/constants.lua"],
+        "core/LauncherSetup.lua must load after core/Constants.lua, which publishes LOGO_128")
 
     -- settings/OptionsSetup.lua publishes NS.RegisterOptionsPage, and every
     -- settings/<page>.lua CALLS it at file load -- so a page above this one
