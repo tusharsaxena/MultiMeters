@@ -1746,7 +1746,7 @@ badge and any count quoted in the docs must agree with it.
 - The Frame page's Defaults button does NOT broadcast
 - Schema: every page's tabs are the designed ones, in order, at the designed size
 - Schema: the General page opens on Master controls, holding exactly the canonical set
-- Schema: Test mode is the COMPOSED row right after Debug console, alone on its line
+- Schema: Test mode is the COMPOSED row right after Debug console, paired with the minimap row
 - Schema: Lock frame is the COMPOSED row, session-only, over every window's own lock
 - Schema: ticking Test mode in combat is refused, says why, and leaves the box unticked
 - Schema: the master controls are ADDON-WIDE, and the per-window three are untouched
@@ -1902,7 +1902,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: /mm list heads each block with the page AND the tab
 - Slash: `set window.name` keeps every word of a multi-word name
 
-### test_options_panel.lua (42)
+### test_options_panel.lua (43)
 
 - Options: General is the FIRST page, above Windows
 - Options: every window page is marked as nested, and the two that are not are not
@@ -1941,6 +1941,7 @@ badge and any count quoted in the docs must agree with it.
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip
 - Panel: switching tabs re-renders without leaving the previous tab's widgets behind
+- Panel: the Master controls tab draws four pairs, Show minimap button beside Test mode
 - Panel: the Master controls tab closes with the composer's two reset buttons
 - Panel: the Statistic colors tab says where its colours are actually worn
 - Panel: every window sub-page banners the active window, and Windows has no second picker
@@ -2100,10 +2101,10 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
 | test_slash.lua | 59 |
-| test_options_panel.lua | 42 |
+| test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 30 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1848** |
+| **Total** | **1849** |

@@ -928,6 +928,43 @@ function()
     assertFalse(labelled(L["Lock window"]), "the previous tab's widgets were left behind")
 end)
 
+test("Panel: the Master controls tab draws four pairs, Show minimap button beside Test mode",
+function()
+    -- THE RENDERED LAYOUT, not the schema order the case in tests/test_schema.lua
+    -- pins. The flow engine pairs rows two per line unless one opens a line, so
+    -- which column a checkbox lands in is a property of every row above it -- and
+    -- that is exactly what an assertion on the schema list cannot see.
+    --
+    -- Show minimap button sits in the SECOND column of Test mode's line, at the
+    -- owner's request. It used to carry `startsLine` and stand alone above the
+    -- button pair; the layout changed deliberately, and the composed Test mode row
+    -- is untouched -- `startsLine` OPENS a line rather than claiming one, so no
+    -- library change was owed.
+    -- red under: giving the minimap row `startsLine` (or `solo`/`wide`) back, or
+    -- inserting a row between Test mode and it.
+    local inst = T.load()
+    local L = inst.NS.L
+    local ctx = showPage(inst, "general")
+    assertEqual(ctx.activeTab, L["Master controls"])
+
+    local lines = {}
+    for _, w in ipairs(ctx.scroll and ctx.scroll.children or {}) do
+        local cells = {}
+        for _, child in ipairs(w.children or {}) do
+            cells[#cells + 1] = child.labelText or child.text
+        end
+        if #cells > 0 then lines[#lines + 1] = table.concat(cells, " | ") end
+    end
+
+    assertEqual(table.concat(lines, "\n"), table.concat({
+        L["Enable Multi Meters"] .. " | " .. L["General visibility"],
+        L["Master scale"] .. " | " .. L["Master alpha"],
+        L["Lock frame"] .. " | " .. L["Debug console"],
+        L["Test mode"] .. " | " .. L["Show minimap button"],
+        L["Reset position"] .. " | " .. L["Reset all settings"],
+    }, "\n"))
+end)
+
 test("Panel: the Master controls tab closes with the composer's two reset buttons", function()
     -- options-ui-§15 makes the two resets the tab's closing BUTTON PAIR rather than
     -- schema rows -- they are acts, not settings -- and the pair is drawn by the

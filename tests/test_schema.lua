@@ -399,15 +399,20 @@ function()
     }, "\n"), "the Behavior tab is exactly the two rows that left Master controls")
 end)
 
-test("Schema: Test mode is the COMPOSED row right after Debug console, alone on its line",
+test("Schema: Test mode is the COMPOSED row right after Debug console, paired with the minimap row",
 function()
     -- options-ui-§15 / preview-mode (standard v2.47.0). The row is the one LibKa0s'
     -- MasterControls composer emits from `testModePath`, never a hand-written copy:
-    -- session-only, on its own line, a boolean whose default is off so Reset all
+    -- session-only, opening a line, a boolean whose default is off so Reset all
     -- settings ends the mode, and bound to this addon's own state.
+    -- `startsLine` OPENS a line, it does not claim one: the owner asked for Show
+    -- minimap button to sit beside Test mode in the second column, and the way it
+    -- gets there is that this addon's own row after it carries no `startsLine` of
+    -- its own. This used to pin the opposite -- the minimap row starting its own
+    -- line -- and the layout changed deliberately.
     -- red under: hand-writing the row again (no `composed` stamp), dropping
-    -- `testModePath` or `defaults.testMode` from the spec, or letting the next row
-    -- share its line.
+    -- `testModePath` or `defaults.testMode` from the spec, or giving the minimap row
+    -- `startsLine` back, which would strand Test mode alone on its line again.
     local inst = T.load()
     local NS, L = inst.NS, inst.NS.L
 
@@ -432,8 +437,9 @@ function()
     assertEqual(row.default, false, "no default and Reset all settings leaves the mode running")
     assertEqual(type(row.get), "function")
     assertEqual(type(row.set), "function")
-    assertTrue(rows[at + 1].startsLine == true,
-        rows[at + 1].path .. " would share Test mode's line")
+    assertEqual(rows[at + 1].path, "minimap.hide", "the row that shares Test mode's line")
+    assertTrue(not rows[at + 1].startsLine and not rows[at + 1].solo and not rows[at + 1].wide,
+        "Show minimap button must pair into Test mode's second column, not start a line")
 
     -- The row reads and writes the one flag every other switch does.
     assertEqual(row.get(), false)

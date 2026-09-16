@@ -161,19 +161,24 @@ how do I make it smaller, how do I put it back — is in the same place under th
 | Enable Multi Meters (`enabled`) | General visibility (`master.visibility`) |
 | Master scale (`master.scale`) | Master alpha (`master.alpha`) |
 | Lock frame (`master.locked`, session-only: every window's own lock) | Debug console (`state.debugConsole`, session-only) |
-| Test mode (`state.testMode`, session-only, on a line of its own) | |
+| Test mode (`state.testMode`, session-only) | Show minimap button (`minimap.hide`, this addon's own row, [inverted](schema.md#inversion)) |
 | Reset position | Reset all settings |
 
-**This addon's own three rows follow the canonical set, on the same tab** — the minimap button,
-*Merge pets into their owner* and *Refresh interval*, between the canonical rows and the closing
-button pair. With *Test mode* they were a tab called **General**: four rows with nothing in common
+**This addon's own one row follows the canonical set, on the same tab** — the minimap button,
+between the canonical rows and the closing button pair. *Merge pets into their owner* and *Refresh
+interval* were there too and have their own **Behavior** tab now. With *Test mode* the three were a
+tab called **General**: four rows with nothing in common
 but "addon-wide", behind a click, next to the tab everybody opens — the same argument that retired
 **Data** and **Maintenance** before it, arriving one tab later. *Test mode* has since become a
 canonical row itself (standard v2.47.0): the composer emits it from `testModePath`, directly after
-the debug console, and the minimap row carries `startsLine` so nothing shares its line. `§15`
+the debug console. **Show minimap button pairs with it**, in the second column of that line: the
+composed row's `startsLine` OPENS a line rather than claiming one, so this addon's own row simply
+carries no `startsLine` of its own and the flow drops it into the free half. It used to carry one
+and stand alone above the closing button pair. `§15`
 forbids **reordering**, **renaming** and **splitting** the canonical set; it does not forbid an
 addon's own rows after it, and `tests/test_schema.lua` pins that the canonical seven are the tab's
-first rows, contiguous and in order, with the three extras following in a stated order. A `group` is
+first rows, contiguous and in order, with the minimap row following them. `tests/test_options_panel.lua`
+pins the LAID-OUT pairs above, which is the half the schema order cannot see. A `group` is
 not a stored path, so nothing moved in storage and no migration was owed.
 
 **The `master.*` rows are ADDON-WIDE, and none of them is a promoted per-window row.** A window

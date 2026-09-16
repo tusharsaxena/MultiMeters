@@ -1228,10 +1228,13 @@ NS.Schema = {
     block(MASTER_ROWS),
     -- The one inverted row: LibDBIcon owns this table and its key is `hide`, while
     -- a checkbox the user reads has to be phrased positively. See "Inversion".
-    -- `startsLine` because the composed Test mode row above it sits on a line of
-    -- its own (options-ui-§15), and without this the flow would pair the two.
+    -- NO `startsLine`: this row PAIRS with the composed Test mode row above it. Test
+    -- mode carries `startsLine` of its own (options-ui-§15), which opens a fresh line
+    -- rather than claiming one alone, so the flow drops this checkbox into that
+    -- line's second column -- which is where the owner wants it, beside the other
+    -- session switch, rather than alone above the closing button pair.
     {
-        path = "minimap.hide", type = "bool", default = false, invert = true, startsLine = true,
+        path = "minimap.hide", type = "bool", default = false, invert = true,
         page = "general", group = L["Master controls"],
         label = L["Show minimap button"], desc = L["Show the minimap button for opening these settings."],
         onChange = refreshMinimap,
