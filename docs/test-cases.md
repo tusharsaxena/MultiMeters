@@ -404,7 +404,7 @@ badge and any count quoted in the docs must agree with it.
 - Defaults: the shipped position is stored, never read back off a frame
 - Defaults: the profile itself is nearly empty — almost everything is per-window
 - Defaults: the shipped registry is empty and the id counter starts at 1
-- Defaults: the minimap table uses LibDBIcon's own `hide` key
+- Defaults: the minimap table uses LibDBIcon's own `hide` key, in the GLOBAL store
 - Defaults: global carries only what is genuinely account-wide
 - Defaults: the remembered roster ships EMPTY and with both of its maps
 - Defaults: NS.C aliases the profile defaults rather than copying them
@@ -437,7 +437,7 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: the close button is the library's, told which addon is asking
 - CoreSetup: no addon file restates a Core.SKIN value
 - CoreSetup: NS.LIBKA0S_MISSING is set on BOTH paths, not only the degraded one
-- CoreSetup: all five seams append to the shared clause rather than re-spelling it
+- CoreSetup: all six seams append to the shared clause rather than re-spelling it
 
 ### test_perfsetup.lua (23)
 
@@ -521,6 +521,43 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: the deprecated bare global is still a live rung, all the way to NS.version
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
+
+### test_launchersetup.lua (34)
+
+- Launcher: Register creates ONE object and registers it against the global table
+- Launcher: the object wears this addon's OWN logo, not a borrowed icon
+- Launcher: the TOC's IconTexture names the same file the object does
+- Launcher: the icon file exists, uncompressed and 32-bit
+- Launcher: Register is idempotent
+- Launcher: IsRegistered and Object report what Register actually did
+- Launcher: OnInitialize registers it, after the database exists
+- Launcher: LEFT-click toggles the windows, through WindowManager's own seam
+- Launcher: RIGHT-click opens the settings, through OpenOptionsPanel
+- Launcher: a click on a build with no window manager does not raise
+- Launcher: the tooltip states BOTH clicks and the version
+- Launcher: the tooltip callback never shows or clears the tooltip itself
+- Launcher: the tooltip callback tolerates an object it cannot write to
+- Minimap row: it is COMPOSED, stored, and named for what it shows
+- Minimap row: it OPENS the fourth line and Test mode pairs beside it
+- Minimap row: get INVERTS LibDBIcon's key
+- Minimap row: set inverts onto `hide` and never writes a second key
+- Minimap row: the write MOVES the button, not just the boolean
+- Minimap row: nothing else in the schema stores the negation of what it shows
+- Minimap row: Defaults restores it to SHOWN
+- Minimap row: the schema default and the shipped tree agree, through the inversion
+- Minimap store: the profile ships no `minimap` table any more
+- Minimap store: switching profiles does not move the player's button
+- Minimap store: Reset all settings does not un-hide a button the player hid
+- Database v15: the profile's minimap table moves to the global store, position included
+- Database v15: an account that already stored it globally keeps what it has
+- Database v15: a profile that never placed a button leaves the shipped default
+- Database v15: it is idempotent
+- Degraded: Register answers false, quietly, when LibDataBroker is absent
+- Degraded: with no LibDBIcon there is still a broker plugin, and no button
+- Degraded: a host with NEITHER broker library loads and enables without raising
+- Degraded: with LibKa0s absent the seam stubs every member the addon calls
+- Degraded: with LibKa0s absent the stub still answers from the STORE
+- Degraded: core/LauncherSetup.lua passes the silent flag to LibStub
 
 ### test_lifecycle.lua (34)
 
@@ -1713,26 +1750,6 @@ badge and any count quoted in the docs must agree with it.
 - CopyFrom sends the sort through the seam, carries the pin, and never the position
 - SetLocked writes each window through the seam, tagged with its own id
 
-### test_minimap.lua (17)
-
-- Minimap.Init creates a launcher and registers it against the live profile
-- The launcher's name matches what the settings row looks it up by
-- Minimap.Init is idempotent
-- Minimap.Init adopts a broker object another path already created
-- Init answers false, quietly, when LibDataBroker is absent
-- Init answers false when LibDBIcon is absent
-- Init answers false before the database exists
-- Refresh before Init is a quiet no-op
-- Refresh re-reads minimap.hide off the live profile
-- Left-click toggles the windows through WindowManager's own seam
-- Right-click opens the settings through OpenOptionsPanel, not a private path
-- A click on a build with no window manager does nothing rather than raising
-- The tooltip states BOTH clicks and the version
-- The tooltip callback never shows or clears the tooltip itself
-- The tooltip callback tolerates an object it cannot write to
-- The profile ships the one key LibDBIcon reads, and nothing else
-- modules/Minimap.lua passes the silent flag to every LibStub call
-
 ### test_schema.lua (40)
 
 - Schema: a `hidden` row is writable and listable but draws no control
@@ -1782,7 +1799,7 @@ badge and any count quoted in the docs must agree with it.
 - Schema: a global path is unaffected by which window is active
 - Schema: an unset active window falls back to the FIRST window, never to nil
 - Schema: a stale active-window id falls back to the first window
-- Schema: the inverted row stores the negation of what it displays
+- Schema: the minimap carve-out resolves the GLOBAL store and inverts the sense
 - SetByPath: refuses a value the row's validate() rejects, and stores nothing
 - SetByPath: refuses a path that is not a row
 - SetByPath: fires the row's onChange exactly once, with the value and window id
@@ -1792,7 +1809,7 @@ badge and any count quoted in the docs must agree with it.
 - SetByPath: re-syncs open panels IN PLACE, never structurally
 - SetByPath: a table value is COPIED in, never stored by reference
 - ApplyDefault: restores through the same seam, deep-copying a table default
-- ApplyDefault: round-trips the inverted row back to its SHIPPED stored value
+- ApplyDefault: round-trips the minimap row back to its SHIPPED stored value
 - SetByPath: window.columns repairs any array into the WHOLE catalog
 - SetByPath: window.columns DROPS a statistic this build does not have
 - SetByPath: window.columns keeps a repeated statistic's FIRST appearance only
@@ -1840,7 +1857,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
 
-### test_slash.lua (59)
+### test_slash.lua (67)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1848,9 +1865,17 @@ badge and any count quoted in the docs must agree with it.
 - Slash: the host verbs are declared and each carries a real handler
 - Slash: `reset` takes a PATH, not a page
 - Slash: every sub-verb a handler accepts is named in its own description
+- Slash: `enable` and `disable` write the Master-controls Enable path
+- Slash: they are the SAME write `/mm set enabled` makes
+- Slash: they hold no state of their own
+- Slash: the acknowledgement is slash-commands-§5's `path = value` line
+- Slash: the reactor runs, so the windows follow the verb
+- Slash: the dispatcher survives the disabled state, so the pair is not one-way
+- Slash: the show ladder is the ONE reader of `enabled`
 - Slash: an unknown verb says so and prints the help
 - Slash: `options` is an alias for `config`, not a second command
 - Slash: `version` reports the TOC's version rather than a hardcoded string
+- Slash: a boolean that is OFF reads back as false, not nil
 - Slash: `get` and `set` land on the addon's own schema seam
 - Slash: `set` on a window path writes the ACTIVE window
 - Slash: `reset <path>` restores exactly that one setting
@@ -1941,7 +1966,7 @@ badge and any count quoted in the docs must agree with it.
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip
 - Panel: switching tabs re-renders without leaving the previous tab's widgets behind
-- Panel: the Master controls tab draws four pairs, Show minimap button beside Test mode
+- Panel: the Master controls tab draws four pairs, Test mode beside Minimap button
 - Panel: the Master controls tab closes with the composer's two reset buttons
 - Panel: the Statistic colors tab says where its colours are actually worn
 - Panel: every window sub-page banners the active window, and Windows has no second picker
@@ -2069,6 +2094,7 @@ badge and any count quoted in the docs must agree with it.
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
+| test_launchersetup.lua | 34 |
 | test_lifecycle.lua | 34 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
@@ -2096,15 +2122,14 @@ badge and any count quoted in the docs must agree with it.
 | test_export_modal.lua | 31 |
 | test_visibility.lua | 41 |
 | test_windowmanager.lua | 44 |
-| test_minimap.lua | 17 |
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
-| test_slash.lua | 59 |
+| test_slash.lua | 67 |
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 30 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1849** |
+| **Total** | **1874** |
