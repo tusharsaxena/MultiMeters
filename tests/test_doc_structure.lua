@@ -116,11 +116,12 @@ local function heading(name)
     end):gsub(" ", "%%s+") .. "%s*$"
 end
 
---- GitHub's heading-fragment slug: lowercased, formatting and punctuation dropped, spaces hyphened.
+--- GitHub's heading-fragment slug: lowercased, formatting and punctuation dropped, EACH space hyphened.
+--- Not runs of them: a dropped em dash leaves two spaces, and GitHub gives them two hyphens.
 local function slug(text)
     local s = text:lower():gsub("`", "")
     s = s:gsub("[^%w%s%-]", "")
-    s = s:gsub("%s+", "-")
+    s = s:gsub("%s", "-")
     return s
 end
 
