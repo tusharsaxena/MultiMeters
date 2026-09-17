@@ -105,79 +105,53 @@ NS.COMMANDS = {
 }
 
 -- ---------------------------------------------------------------------
--- The disabled gate — ONE place, and the live set is DATA
+-- The disabled gate -- the LIBRARY's, and the live set is its DATA
 -- ---------------------------------------------------------------------
 --
--- slash-commands-§2: a disabled addon SHOULD refuse a verb that DRIVES ITS FEATURES
--- rather than act on it. Acting is the wrong answer twice over -- the player asked
--- for something the addon is currently standing down from doing, and a silent
--- no-op leaves them with no clue why nothing happened -- so a feature verb answers
--- on ONE tagged line that names `/mm enable` and does nothing else. No partial
--- work, no side effect, no second line.
+-- slash-commands-§2: a disabled addon SHOULD refuse a verb that DRIVES ITS
+-- FEATURES rather than act on it. Acting is the wrong answer twice over -- the
+-- player asked for something the addon is currently standing down from doing, and
+-- a silent no-op leaves them with no clue why nothing happened -- so a feature
+-- verb answers on ONE tagged line that names `/mm enable` and does nothing else.
 --
--- IT IS A WRAP OVER THE TABLE, NOT A GUARD PASTED INTO EACH HANDLER, and the
--- polarity is the whole reason. A guard per verb is six places to forget and a
--- seventh the day somebody adds `/mm snapshot`; here a verb is gated BY DEFAULT
--- and has to be NAMED in ALWAYS_LIVE to escape, so the next verb added is refused
--- while the addon is off unless its author says otherwise. Every verb passes
--- through this loop, because the library dispatches through `entry[3]` and nothing
--- else -- including a verb registered later through the same table.
+-- THIS FILE USED TO WRAP `NS.COMMANDS` ITSELF, with its own ALWAYS_LIVE set and
+-- its own re-spelling of the refusal line. Both are gone, and neither was wrong
+-- when it was written: the wrap predated LibKa0s-Slash minor 12, and the wording
+-- predated slash-commands-§7 fixing ONE shape for the line collection-wide. What
+-- is left is two descriptor fields.
 --
--- THE LIVE SET IS §2'S OWN LIST, verbatim, and it is spelled out rather than
--- derived from "is it reserved": `resetall` and `reset` are reserved AND are the
--- schema CLI, while `toggle` is neither reserved nor live, so a rule about
--- reservedness would get two of them wrong. The reasoning behind the list is that
--- a player must be able to READ AND REPAIR SETTINGS and REACH THE PANEL while the
+--   * `isEnabled` is asked at DISPATCH TIME, never cached, so the command after
+--     `/mm enable` works.
+--   * the live set is `lib.LIVE_VERBS` -- the standard's TWELVE reserved verbs --
+--     and this host DELIBERATELY PASSES NO `liveVerbs` TO NARROW IT. The library
+--     defaults to the right set, a narrowing here would be this addon deciding for
+--     itself which half of the standard to keep, and v2.57.0 reversed exactly such
+--     a narrowing after the owner hit `/mm` on a disabled addon and got a refusal
+--     instead of the settings panel he was trying to reach.
+--   * the refusal line is `cli:DisabledLine()`, built from `brandName` and the
+--     library's own format string. Eleven addons each wording it slightly
+--     differently is the drift the shared printer exists to end.
+--
+-- WHAT STILL ANSWERS WHILE DISABLED: `help`, `config`, `version`, `enable`,
+-- `disable`, `debug`, `perf`, `get`, `set`, `list`, `reset`, `resetall`, and the
+-- BARE `/mm`, which opens the settings panel through the host's `config` verb. A
+-- player must be able to read and repair settings and reach the panel while the
 -- addon is off -- which is exactly when they are most likely to need to -- and
--- `enable` above all, or the pair is one-way again. `debug` and `perf` are
--- diagnostics rather than features: the usual reason to reach for either is that
--- the addon is misbehaving.
+-- `enable` above all, or the pair is one-way.
 --
--- IT IS A SHOULD, deliberately, and this addon takes it: six feature verbs is
--- enough that a silent no-op would be a real puzzle. Nothing here refuses anything
--- on the live list, which is the one thing §2 does NOT leave to the addon.
-local ALWAYS_LIVE = {
-    help = true, config = true, version = true,
-    enable = true, disable = true,
-    debug = true, perf = true,
-    -- The schema CLI, whole. Reading and repairing settings is what an addon that
-    -- has been turned off is most likely to be asked for next.
-    get = true, set = true, list = true, reset = true, resetall = true,
-}
-
---- Is the addon standing its features down right now?
----
---- THROUGH THE READ SEAM, never off `db.profile` directly: the master switch has exactly one
---- stored home and this must read it the way the checkbox and `/mm get enabled` do, or the
---- refusal and the show ladder could disagree about what "off" means.
----
---- `== false` rather than `not`, and that is load-bearing: NS.GetSetting answers nil before
---- NS:InitDB has built the store, and a nil read by a truthiness test would refuse every feature
---- verb on a half-loaded install. Absent means "nothing has said otherwise", which is not off.
----
---- @return boolean
-local function standingDown()
-    return NS.GetSetting ~= nil and NS.GetSetting("enabled") == false
-end
-
---- Wrap one entry's handler in the refusal, in place. Positional: the library reads `entry[3]`,
---- so replacing that slot is what puts the gate on the dispatch path; `entry[1]` and `entry[2]`
---- are untouched, because the help index and the settings landing page render the verb whether or
---- not it would act today -- a verb that vanished from the help block while the addon was off
---- would be a second way to lose it.
-local function gateFeatureVerb(entry)
-    if ALWAYS_LIVE[entry[1]] then return end
-    local act = entry[3]
-    entry[3] = function(rest)
-        if standingDown() then
-            out(L["Multi Meters is disabled \226\128\148 type |cFFFFFF00/mm enable|r to turn it back on."])
-            return
-        end
-        return act(rest)
-    end
-end
-
-for _, entry in ipairs(NS.COMMANDS) do gateFeatureVerb(entry) end
+-- WHAT IS REFUSED: this addon's own six feature verbs -- `lock`, `test`,
+-- `toggle`, `window`, `reset-positions`, `export`. Taking the SHOULD is a
+-- judgement and this addon takes it: six of them is enough that a silent no-op
+-- would be a real puzzle. `lock` is on that list under slash-commands-§8's own
+-- ruling -- unlocking a frame that is not drawn is not a coherent request -- and
+-- that says nothing about what `lock` MEANS here, which is this addon's ratified
+-- deviation and is untouched.
+--
+-- IT ASKS `NS.IsDisabled`, NOT `NS.IsStoodDown`, and the difference is the one
+-- case where the two disagree: a PERF-SUSPENDED addon is stood down and is not
+-- disabled. The refusal line names `/mm enable`, which is the wrong advice for
+-- someone mid-capture, and slash-commands-§7 keeps `perf` live for the same
+-- reason -- the harness is a diagnostic, not a feature.
 
 -- ---------------------------------------------------------------------
 -- The degradation stub
@@ -271,6 +245,26 @@ cli = SlashLib:New({
     slashAliases = { "/multimeters" },
     commands     = NS.COMMANDS,
     aliases      = { options = "config" },   -- back-compat with the collection's older spelling
+
+    -- The disabled gate (Slash minor 13). See "The disabled gate" above.
+    --
+    -- Resolved at CALL time through the seam rather than captured: this file loads
+    -- before NS:InitDB has built a store, and `NS.IsDisabled` answers false until
+    -- there is one -- absent means "nothing has said otherwise", which is not off.
+    isEnabled = function() return not (NS.IsDisabled and NS.IsDisabled()) end,
+
+    -- THE BRAND NAME IN PLAIN TEXT -- `Ka0s <Name>` -- and the SAME string
+    -- core/LauncherSetup.lua hands the LDB object as its `label` (launcher-\194\1671).
+    -- Reusing it is not an aesthetic choice: launcher-\194\1671 already forbids escape
+    -- sequences in that field, which is what makes it safe to drop into a coloured
+    -- line, and it means this addon has one brand spelling rather than a second one
+    -- invented for this message. NEVER the TOC `Title`, which MAY carry colour
+    -- escapes.
+    brandName = L["Ka0s Multi Meters"],
+
+    -- NO `liveVerbs`. The library's default IS the standard's twelve reserved
+    -- verbs; naming a set here could only narrow it, and narrowing it is what
+    -- standard v2.57.0 reversed.
 
     print   = function(line) out(line) end,
     version = NS.Version,
@@ -736,6 +730,17 @@ end
 -- ---------------------------------------------------------------------
 
 function Sl:OnSlash(msg)  return cli:OnSlash(msg)  end
+
+--- slash-commands-\194\1677's one refusal line, built by the library from `brandName`
+--- and the collection's own format string.
+---
+--- Published because core/LauncherSetup.lua needs the SAME line for a refused
+--- left-click, and launcher-\194\1672 says to call this rather than write the line
+--- again: the wording is the collection's, it MUST NOT be re-spelled per call
+--- site, and a second copy here is how eleven addons ended up with eleven
+--- wordings. The stub below answers it too, for the same reason it answers every
+--- other member the addon reaches.
+function Sl:DisabledLine() return cli:DisabledLine() end
 function Sl:PrintHelp()   return cli:PrintHelp()   end
 function Sl:HelpRows()    return cli:HelpRows()    end
 

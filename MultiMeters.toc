@@ -49,6 +49,12 @@ core\Namespace.lua
 core\State.lua
 core\Secrets.lua
 core\CoreSetup.lua
+# The LibKa0s-Lifecycle-1.0 seam: the ONE latch both `disabled` and `perf` hold
+# (slash-commands-§7). LOAD-BEARING POSITION: core\PerfSetup.lua's descriptor takes
+# `lifecycle` and LibKa0s-Perf-1.0 RAISES at :New without it, so a PerfSetup that loaded
+# first would take the addon down at load. Everything its two callbacks reach -- the
+# module layer, the window registry, the bus registry -- is resolved at CALL time.
+core\LifecycleSetup.lua
 core\PerfSetup.lua
 core\DebugLogSetup.lua
 # The LibKa0s-Launcher-1.0 seam: the ONE LibDataBroker object, registered twice (launcher-§1).

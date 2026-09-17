@@ -1404,6 +1404,7 @@ function WindowProto:Destroy()
         self.frame:SetScript("OnUpdate", nil)
         self.frame:Hide()
     end
+    if self.anchor then self.anchor:Hide() end
     self:HideAll()
 end
 

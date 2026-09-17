@@ -158,39 +158,43 @@ carry the brackets instead, which is also where a reader wants to see the number
 The offline `probeOverheadOff` / `probeOverheadOn` pair turns all of the above into evidence rather
 than a claim; see below.
 
-## Suspend and resume
+## Suspend and resume — one hold on the addon's one latch
 
 The A/B's B arm makes the addon inert **without a `/reload`**. Reloading, or disabling the addon
 through the AddOns list, shifts shared-frame ownership — the exact confound that makes the built-in
 profiler untrustworthy for this question. So the flip happens in place, live, mid-session.
 
-`suspend` stops three things, and it is three because the addon has three independent sources of
-work:
+**`suspend` and `resume` are no longer this file's.** From LibKa0s v1.41.0 (Perf minor 12) the perf
+descriptor takes a `lifecycle` and nothing on it reads `suspend` or `resume` any more.
+`P.Suspend()` takes the **`perf` hold** on `core/LifecycleSetup.lua`'s latch and `P.Resume()`
+releases it; the teardown and the rebuild are that latch's `standDown` and `standUp`, which the
+**`disabled`** hold reaches too. There is exactly one definition of *inert* in this addon, and both
+reasons to be inert go through it — a second teardown path beside this one is the anti-pattern, not
+the implementation detail (`slash-commands-§7`, anti-pattern \#85). The full teardown table is
+[disabled-state.md](disabled-state.md).
 
-1. **The meter reads.** `modules/Provider.lua` owns every `C_DamageMeter` registration, so its
-   `Suspend()` stops the reads **at the source** rather than letting them run and discarding the
-   result. A suspended provider answers an empty column carrying the reason `"suspended"`.
-2. **The coalescing timers.** `modules/WindowManager.lua:Suspend()` stops every window instance's
-   clock. A pass already queued when suspend lands would otherwise fire once more, *inside*
-   measurement window B, and be attributed to an addon that is supposed to be doing nothing.
-3. **Visibility** — and this is the rule that matters most:
+Two consequences worth stating here:
 
-> **Visibility is refused at the SOURCE, never by hiding frames.** `NS.ShouldShow` reads
-> `NS.Perf.suspended` as **step 0** of its ladder, above even the master enable. Nothing — a combat
-> transition, a zone-in, a roster change, a settings write — can re-show a window behind suspend's
-> back.
+- **`P.Resume()` releases its own hold and nothing else.** Whether the addon actually comes back is
+  the latch's decision, and it says no while `disabled` is still taken. `/mm disable` is a live verb,
+  so a player *can* switch the addon off mid-capture; with a boolean, the run finishing afterwards
+  brought it back to life under them.
+- **`P.suspended` is a VIEW of the latch**, not a stored boolean, and **assigning to it raises**.
+  A raw write would create a shadowing field that wins forever after, and from that moment there
+  would be two answers to "is this addon inert".
 
-`core/PerfSetup.lua` calls `Visibility:Refresh()` only to make the already-shown windows act on that
-step *now* rather than at the next event. It never calls `Hide()`. An imperative hide from the setup
-file would fight the ladder, and the ladder would win at the next context change — silently, mid
-measurement.
+> **Visibility is refused at the SOURCE, never by hiding frames.** `NS.ShouldShow` reads **the
+> latch** as **step 0** of its ladder, above everything. Nothing — a combat transition, a zone-in, a
+> roster change, a settings write — can re-show a window behind a suspend's back, or behind the
+> master switch's. `standDown` calls `Visibility:Refresh()` and one per-window pass only to make the
+> already-shown windows act on that step *now* rather than at the next event; it never hides a frame
+> imperatively, because the ladder would win at the next context change, silently, mid measurement.
 
-`resume` restores from **current** state, not from a snapshot: each module's `Resume` rebuilds its
-registrations from the columns and windows enabled *now*, so a column toggled or a window created
-while suspended comes back correctly. `WindowManager:Resume()` calls `Init()` first for exactly that
-reason. No `CONFIG_CHANGED` is published from the setup file — the modules' own resume paths
-re-register and re-render, so `core/PerfSetup.lua` never becomes a second sender of a message the bus
-already has an owner for.
+The rebuild restores from **current** state, not from a snapshot: `standUp` re-registers from the
+columns and windows enabled *now*, so a column toggled or a window created while the addon was down
+comes back correctly. `WindowManager:Resume()` calls `Init()` first for exactly that reason. No
+`CONFIG_CHANGED` is published from the latch — the modules' own paths re-register and re-render, so
+it never becomes a second sender of a message the bus already has an owner for.
 
 Perf output is **not** gated on `NS.State.debug`, unlike `NS.Debug`. That gate exists to keep the
 addon free when idle; a perf run is explicit user action and none of it executes unless someone typed

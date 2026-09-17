@@ -70,19 +70,6 @@ if not lib then
     return
 end
 
---- Resolve one runtime module at CALL time, never hoisted: this file loads before
---- modules/, so a load-time lookup would answer nil forever.
----
---- Both shapes are tried because the module layer is free to be either an
---- AceAddon child module or a plain NS table, and suspend must not be the file
---- that pins that choice.
-local function mod(name)
-    local m = NS[name]
-    if m then return m end
-    if NS.GetModule then return NS:GetModule(name, true) end
-    return nil
-end
-
 NS.Perf = lib:New({
     name    = addonName,
     -- THE FOLDER NAME, and a different question from the one above even though this
@@ -135,56 +122,27 @@ NS.Perf = lib:New({
         { key = "targets",      within = "tooltip" },    -- the target cross-reference
     },
 
-    --- Make the addon inert without a /reload.
-    ---
-    --- Reloading, or disabling the addon through the AddOns list, shifts
-    --- shared-frame ownership — the exact confound that makes the built-in
-    --- profiler untrustworthy for this question. So the flip has to happen in
-    --- place, live, mid-session.
-    ---
-    --- Three things have to stop, and they are three because the addon has three
-    --- independent sources of work:
-    ---   1. the meter events. Provider owns every C_DamageMeter registration, so
-    ---      its Suspend is what stops the reads at the source rather than letting
-    ---      them run and discarding the result.
-    ---   2. the coalescing timer. A pass already queued when suspend lands would
-    ---      otherwise fire once more, inside measurement window B, and be
-    ---      attributed to an addon that is supposed to be doing nothing.
-    ---   3. visibility. NOT enforced by hiding frames from here
-    ---      (performance-§6): Visibility's own show decision reads
-    ---      NS.Perf.suspended as step 0 of its ladder, so nothing — a combat
-    ---      transition, a roster change, a settings write — can re-show a window
-    ---      behind suspend's back. Refreshing it here is what makes the already
-    ---      shown windows act on that step now rather than at the next event.
-    suspend = function()
-        local provider = mod("Provider")
-        if provider and provider.Suspend then provider:Suspend() end
-
-        local wm = mod("WindowManager")
-        if wm and wm.Suspend then wm:Suspend() end
-
-        local vis = mod("Visibility")
-        if vis and vis.Refresh then vis:Refresh() end
-    end,
-
-    --- Restore everything suspend took away, from CURRENT state: each module's
-    --- Resume rebuilds its registrations from the columns and windows enabled
-    --- NOW, so a column toggled or a window created while suspended comes back
-    --- correctly (performance-§6).
-    ---
-    --- No CONFIG_CHANGED is published from here. The modules' own Resume paths
-    --- re-register and re-render, so this file does not become a second sender of
-    --- a message the bus already has an owner for.
-    resume = function()
-        local provider = mod("Provider")
-        if provider and provider.Resume then provider:Resume() end
-
-        local wm = mod("WindowManager")
-        if wm and wm.Resume then wm:Resume() end
-
-        local vis = mod("Visibility")
-        if vis and vis.Refresh then vis:Refresh() end
-    end,
+    -- THE LATCH, and it is REQUIRED from Perf minor 12 (LibKa0s v1.41.0).
+    --
+    -- `suspend` and `resume` USED TO LIVE HERE and are gone rather than kept
+    -- alongside: from minor 12 nothing on this descriptor reads them, and leaving
+    -- them would be two live copies of this addon's own teardown -- the perf arm's
+    -- and the disable arm's -- which is exactly how the two drift apart on the
+    -- first module added after the second was written (anti-pattern #85).
+    --
+    -- What they said is not lost. Their bodies are core/LifecycleSetup.lua's
+    -- `standDown` / `standUp`, which the `disabled` hold reaches too, and which
+    -- had to grow considerably to be a TOTAL stand-down rather than the partial
+    -- one a capture could get away with: the twenty-one game events, the module
+    -- message subscriptions and every anonymous bus target come down there now,
+    -- where suspend left all three registered and merely stopped the work.
+    --
+    -- `P.Suspend()` takes `lifecycle.HOLD_PERF` and `P.Resume()` releases it --
+    -- and only that. Whether the addon actually comes back is the latch's
+    -- decision, which says no while the player's `disabled` hold is still taken,
+    -- so a run that finished after the player switched the addon off mid-capture
+    -- can no longer bring it back to life.
+    lifecycle = NS.lifecycle,
 
     -- Perf output is deliberately NOT gated on NS.State.debug, unlike NS.Debug.
     -- That gate keeps the addon free when idle; a perf run is explicit user

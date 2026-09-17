@@ -524,13 +524,14 @@ a window name (that is user data, and folding it resolves something the user did
 page and the README's command table all read that string and nothing else — a sub-verb missing there
 is a sub-verb nobody can discover (`slash-commands-§4`).
 
-**5. Decide nothing about the disabled state unless the verb must stay live.** The gate below the
-table wraps every handler *not* named in `ALWAYS_LIVE`, so a new verb is refused while the addon is
-off by default, on one tagged line naming `/mm enable` — which is what a verb that drives a feature
-should do (`slash-commands-§2`). A verb that must keep answering with the addon off goes in
-`ALWAYS_LIVE`, and the standard's list of those is closed: `help`, `config`, `version`, `enable`,
-`disable`, `debug`, `perf` and the schema CLI. Adding a name there is a deliberate claim that the
-verb is not a feature, and `tests/test_slash.lua` restates the list, so the claim is made twice.
+**5. Decide nothing about the disabled state — the library already has.** `settings/Slash.lua` hands
+LibKa0s-Slash-1.0 an `isEnabled` and a `brandName` and **no `liveVerbs`**, so the live set is the
+library's default: the standard's twelve reserved verbs. Any verb this addon ships that is *not* one
+of them is refused while the addon is off, on one tagged line naming `/mm enable`
+(`slash-commands-§2`). A new host verb is therefore gated by default and there is nothing to
+remember. **Do not add a `liveVerbs` array to narrow that set** — standard v2.57.0 reversed exactly
+such a narrowing. If a new verb genuinely must stay live, it is a reserved verb and it is already on
+the list; if it is not on the list, it is a feature.
 
 **Gotchas.**
 - `perf` is a **reserved** verb across the collection and is already registered here. It is
@@ -646,9 +647,10 @@ if t0 then Perf.Note("myBucket", debugprofilestop() - t0) end
 - **`core/Secrets.lua` has no bracket either**, and must not grow one: `core/PerfSetup.lua` loads
   after it in the core block, so a load-time upvalue there would capture nil forever, and an `NS`
   lookup per value is exactly the per-call cost the perf contract forbids.
-- If the new bucket covers work that must stop under `suspend`, wire that in the descriptor's
-  `suspend` / `resume` hooks — and remember `resume` restores from **current** state, so a window
-  created while suspended comes back correctly.
+- If the new bucket covers work that must stop while the addon is inert, wire that into
+  `core/LifecycleSetup.lua`'s `standDown` / `standUp` — **not** into the perf descriptor, which no
+  longer carries `suspend` or `resume`. One teardown serves both holds. Remember `standUp` rebuilds
+  from **current** state, so a window created while the addon was down comes back correctly.
 
 ---
 

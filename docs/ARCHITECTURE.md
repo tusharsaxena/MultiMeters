@@ -42,7 +42,7 @@ what each degrades to are in [module-map.md](module-map.md#libka0s-seams).
 
 ## Module map
 
-Every file — all fifty-seven of them — what it owns, what it publishes, what it consumes, plus TOC
+Every file — all fifty-eight of them — what it owns, what it publishes, what it consumes, plus TOC
 load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The shape at a glance:
 
 | Layer | Files | Responsibility |
@@ -52,7 +52,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `core/` boundary | `EnvSetup.lua` | The `LibKa0s-Env-1.0` seam: `NS.Meta` / `NS.Version`, the TOC-manifest reader `Compat.lua` used to own. |
 | `core/` values | `Constants.lua`, `Namespace.lua`, `State.lua` | The stat catalog, the bus catalog, identity, session-only flags and the shared cache. |
 | `core/` the rule | `Secrets.lua` | **The only file that inspects a meter value.** |
-| `core/` seams | `MediaSetup`, `CoreSetup`, `PerfSetup`, `DebugLogSetup`, `PoolSetup`, `LauncherSetup` | LibKa0s wiring, the art and font seam, and the window row pool. The `LSM30_Border` fixup that used to make a seventh file here is `lib.__PatchLSM30Border()` now, called from `settings/OptionsSetup.lua`: AceGUI's widget registry is process-global, so a re-registration belongs to the library the whole collection shares. |
+| `core/` seams | `MediaSetup`, `CoreSetup`, `LifecycleSetup`, `PerfSetup`, `DebugLogSetup`, `PoolSetup`, `LauncherSetup` | LibKa0s wiring, the art and font seam, and the window row pool. `LifecycleSetup` is the ONE latch and the ONE teardown — `disabled` and `perf` are two holds on it — and it loads **before** `PerfSetup`, which raises without a `lifecycle`. The `LSM30_Border` fixup that used to make a seventh file here is `lib.__PatchLSM30Border()` now, called from `settings/OptionsSetup.lua`: AceGUI's widget registry is process-global, so a re-registration belongs to the library the whole collection shares. |
 | `core/` runtime | `MultiMeters.lua`, `Database.lua` | The single game-event listener and the show ladder; AceDB and migrations. |
 | `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm debug diag` and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
@@ -188,7 +188,7 @@ that a load-time cycle between two majors.
 |---|---|
 | `help` | Show the command index |
 | `config` | Open the settings panel on its landing page (`options` is accepted as an alias). A bare `/mm` runs this verb |
-| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgement is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: nothing unregisters the chat command, tears down `NS.COMMANDS` or drops the dispatcher, so `/mm`, `enable`, `help`, `config` and `version` all still work with the addon off — the pair is never one-way. What a verb that is **not** on that list answers instead is *Feature verbs while disabled*, below the table |
+| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgement is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: nothing unregisters the chat command, tears down `NS.COMMANDS` or drops the dispatcher, so every reserved verb — and the bare `/mm`, which opens the panel — still works with the addon off, and the pair is never one-way. `disable` **stands the addon down** rather than hiding its windows; what that means, and what the six feature verbs answer instead, is [disabled-state.md](disabled-state.md) |
 | `list` | List every setting and its current value |
 | `get <path>` | Read one setting |
 | `set <path> <value>` | Write one setting |
@@ -216,20 +216,18 @@ settings panel is pointed at, falling back to the first in the registry, because
 picker and `/mm export` on a fresh login has to mean something. Whether an export may run at all is
 asked once, of `NS.Export.Available()`, and is never re-decided here — see [Taint notes](#taint-notes).
 
-### Feature verbs while disabled
+### Disabled — total, and the slash surface is not
 
-`slash-commands-§2`: while `enabled` is false, a verb that **drives the addon's features** answers on
-one tagged line naming `/mm enable` and does nothing else — acting is the wrong answer twice over,
-and a silent no-op leaves the player with no clue why nothing happened. That is all six host verbs.
-These stay live always: `help`, `config`, `version`, `enable`, `disable`, `debug`, `perf` and the
-schema CLI (`get`, `set`, `list`, `reset`, `resetall`) — a player must be able to read and repair
-settings and reach the panel with the addon off, and `enable` above all or the pair is one-way.
+`slash-commands-§7`. **Disabled means the addon is not running.** Every game event unregistered,
+every module and bus subscription dropped, every timer cancelled, every window hidden at the source,
+nothing written from a game event. It is one `LibKa0s-Lifecycle-1.0` latch with two named holds —
+`disabled` from the stored `enabled` path, `perf` from the capture harness — and releasing one never
+stands up an addon the other still holds down. It replaced a draw gate.
 
-**One gate, and the live set is data.** `settings/Slash.lua` wraps the handler of every verb *not*
-named in its `ALWAYS_LIVE` table, once, between the `NS.COMMANDS` declaration and the dispatcher
-built from it — so a verb is gated **by default** and has to be named live to escape, and the next
-verb added is refused with the addon off without anyone remembering to say so. It is a gate rather
-than a removal: the verb keeps its help and landing-page row throughout. A SHOULD, and taken.
+**The command surface is deliberately unchanged.** All twelve reserved verbs answer, and the bare
+`/mm` opens the settings panel; only this addon's own six feature verbs refuse, on one line naming
+`/mm enable`. Full detail, the teardown table and the launcher's refused left-click:
+[disabled-state.md](disabled-state.md).
 
 ## Event subscriptions
 
@@ -474,6 +472,7 @@ re-check reads, not the verdict beside it.
 
 | Doc | Covers |
 |---|---|
+| `disabled-state.md` | What *disabled* means here — the one latch, its two holds, the full teardown and rebuild, what survives because it is setup, and the slash and launcher surfaces while the addon is off |
 | `complexity.md` | The `lizard` report `performance-§10` fixes to this path — one file, overwritten in place, so the git history of it is the trend line. Carries the watch list and the 1000–1500 LOC band |
 | `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact |
 | `revendor/` | Frozen — one dated bundle per LibKa0s re-vendor: the payload delta and what was adopted, declined or filed from it |

@@ -232,6 +232,13 @@ function WindowProto:Show()
     self:BuildFrame()
     -- An explicit request. See RefreshVisibility for why it is remembered.
     self.forcedShow = true
+    -- THE ANCHOR GOES WITH THE BODY, both ways. It is the empty geometry frame
+    -- the body is pinned to, it draws nothing, and it used to be shown once at
+    -- BuildFrame and never hidden again -- which made it a frame the addon owns
+    -- that survived a stand-down (slash-commands-§7: EVERY frame the addon owns is
+    -- hidden). Invisible is not hidden, and a rule written about what is on screen
+    -- is not the rule this one is.
+    if self.anchor then self.anchor:Show() end
     self.frame:Show()
     self:MarkDirty()
     -- THE SAME CLOCK NUDGE RefreshVisibility GIVES ITS OWN SHOW BRANCH, and it
@@ -262,6 +269,7 @@ function WindowProto:Hide(reason)
     -- be the same bug pointed the other way.
     if reason == "closed" or reason == "toggled" then self.forcedShow = nil end
     self.frame:Hide()
+    if self.anchor then self.anchor:Hide() end
     self:HideAll()
 end
 

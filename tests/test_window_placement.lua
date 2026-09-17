@@ -192,7 +192,7 @@ end)
 -- The show ladder
 -- ---------------------------------------------------------------------------
 
-test("ShouldShow STEP 0 is NS.Perf.suspended, above even the master enable", function()
+test("ShouldShow STEP 0 is THE LATCH, above even test mode", function()
     local inst = T.load()
     local NS = inst.NS
     local cfg = NS.Database.GetWindows()[1]
@@ -204,9 +204,9 @@ test("ShouldShow STEP 0 is NS.Perf.suspended, above even the master enable", fun
     -- Nothing may re-show a window behind suspend's back — not preview, not the
     -- master enable, not a context change (performance-§6).
     NS.State.SetTestMode(true)
-    NS.Perf.suspended = true
+    NS.Perf.Suspend()
     local show, reason = NS.ShouldShow(cfg)
-    NS.Perf.suspended = false
+    NS.Perf.Resume()
     NS.State.SetTestMode(false)
 
     assertEqual(show, false)
@@ -218,9 +218,11 @@ test("ShouldShow's ladder reads master enable, then test mode, then context", fu
     local NS = inst.NS
     local cfg = NS.Database.GetWindows()[1]
 
-    NS.db.profile.enabled = false
+    -- Through the write seam: the ladder reads the LATCH now, and only the seam's
+    -- onChange takes the `disabled` hold (slash-commands-\194\1677).
+    assertTrue(NS.SetByPath("enabled", false))
     assertEqual(select(2, NS.ShouldShow(cfg)), "disabled")
-    NS.db.profile.enabled = true
+    assertTrue(NS.SetByPath("enabled", true))
 
     -- The open world ships ON now, so the fixture has to switch it off itself to
     -- get a context that refuses — which is the step this case is measuring.
@@ -570,7 +572,7 @@ test("A perf suspend closes a window the player asked for", function()
     window:Show()
     assertTrue(window:IsShown())
 
-    NS.Perf.suspended = true
+    NS.Perf.Suspend()
     window:RefreshVisibility()
     assertFalse(window:IsShown(), "a suspended capture must be inert")
 end)

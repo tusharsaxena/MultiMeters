@@ -204,7 +204,34 @@ NS.Launcher = Launcher:New({
     -- `NS.WindowManager:Toggle()` is the SAME seam `/mm toggle` drives, resolved at call time
     -- because modules/ loads after core/. `GetModule` is the Ace fallback for a build where the
     -- namespace publication has not run; a build with neither does nothing rather than raising.
+    --
+    -- REFUSED WHILE THE ADDON IS DISABLED (launcher-\194\1672, slash-commands-\194\1677). This is
+    -- a rung-(a) left click, so what it drives is a primary window, and a window
+    -- is a feature: it prints the ONE refusal line and DOES NOTHING ELSE -- in
+    -- particular it must not write SavedVariables, which is what a minimap button
+    -- with no disabled gate does every time it is clicked, for an addon the player
+    -- switched off. `WindowManager:Toggle` writes each window's stored `shown`, so
+    -- this button was exactly that bug.
+    --
+    -- RUNG (c)'S CARVE-OUT DOES NOT APPLY HERE and is named so a reader does not
+    -- wonder: a rung-(c) left click opens the settings panel, which survives the
+    -- disabled state, so refusing it would decline one button for doing precisely
+    -- what the right button beside it is required to keep doing. This addon is on
+    -- rung (a), where there is no such contradiction.
+    --
+    -- RIGHT-CLICK IS UNCHANGED, in either state: the ruling narrows the SLASH
+    -- surface and a mouse click is not a slash command. `openSettings` above
+    -- carries no gate for that reason.
+    --
+    -- THE LINE IS THE DISPATCHER'S, through NS.Slash:DisabledLine, never written
+    -- again here: one shape, collection-wide, and a second copy in this file is
+    -- how it drifts. Resolved at CALL time because settings/ loads after core/.
     onClick = function()
+        if NS.IsDisabled and NS.IsDisabled() then
+            local Sl = NS.Slash
+            if Sl and Sl.DisabledLine and NS.Print then NS.Print(Sl:DisabledLine()) end
+            return
+        end
         local wm = NS.WindowManager or (NS.GetModule and NS:GetModule("WindowManager", true))
         if wm and wm.Toggle then wm:Toggle() end
     end,

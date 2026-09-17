@@ -932,13 +932,13 @@ L["Windows are locked."] = "Windows are locked."
 L["Windows are unlocked."] = "Windows are unlocked."
 L["No window is selected."] = "No window is selected."
 
--- The refusal a FEATURE verb answers with while the addon is disabled
--- (slash-commands-§2). ONE line, and it names the verb that undoes the state,
--- because a player who types `/mm toggle` with the addon off has no other clue
--- why nothing happened. A paragraph explaining the state would be a lecture
--- stapled to a command they are about to re-run anyway.
-L["Multi Meters is disabled \226\128\148 type |cFFFFFF00/mm enable|r to turn it back on."] =
-    "Multi Meters is disabled \226\128\148 type |cFFFFFF00/mm enable|r to turn it back on."
+-- NO ENTRY FOR THE DISABLED REFUSAL LINE, and its absence is the rule rather
+-- than an omission (slash-commands-§7). That line is exactly one shape
+-- collection-wide -- `<Brand> is disabled — enable it with /mm enable` -- built
+-- by LibKa0s-Slash-1.0 from its own format string and this addon's `brandName`.
+-- It MUST NOT be re-spelled per addon, per verb or per call site, and a locale
+-- key here would be precisely that second spelling: the library's `L` override
+-- deliberately does not reach it.
 
 -- ---------------------------------------------------------------------------
 -- Shared vocabulary

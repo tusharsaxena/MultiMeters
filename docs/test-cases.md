@@ -439,7 +439,7 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: NS.LIBKA0S_MISSING is set on BOTH paths, not only the degraded one
 - CoreSetup: all six seams append to the shared clause rather than re-spelling it
 
-### test_perfsetup.lua (23)
+### test_perfsetup.lua (24)
 
 - PerfSetup: NS.Perf is the library instance, with the gate as a plain boolean field
 - PerfSetup: the capture ring is a SECOND SavedVariables global, outside the AceDB tree
@@ -460,7 +460,8 @@ badge and any count quoted in the docs must agree with it.
 - PerfSetup: the show decision refuses every window while suspended, above the master enable
 - PerfSetup: resume restores from CURRENT state, not from a pre-suspend snapshot
 - PerfSetup: suspend and resume are idempotent
-- PerfSetup: the descriptor resolves its modules at CALL time
+- LifecycleSetup: the teardown resolves its modules at CALL time
+- PerfSetup: the descriptor hands over the latch and keeps no teardown of its own
 - PerfSetup: with LibKa0s absent the stub answers every member the addon reaches
 - PerfSetup: the degraded `/mm perf` answers with the shared cause and its own consequence
 - PerfSetup: a save past the ring's cap says what it dropped, in the console
@@ -1081,7 +1082,7 @@ badge and any count quoted in the docs must agree with it.
 - SavePosition reads GetPoint off the anchor and off nothing else
 - SaveSize uses the size OnSizeChanged was handed, never a getter
 - The window refuses to be dragged smaller than the grid needs
-- ShouldShow STEP 0 is NS.Perf.suspended, above even the master enable
+- ShouldShow STEP 0 is THE LATCH, above even test mode
 - ShouldShow's ladder reads master enable, then test mode, then context
 - RefreshVisibility shows, hides, and marks dirty exactly once on the way in
 - An explicit Show draws on the next tick too, not a throttle later
@@ -1875,7 +1876,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: the acknowledgement is slash-commands-§5's `path = value` line
 - Slash: the reactor runs, so the windows follow the verb
 - Slash: the dispatcher survives the disabled state, so the pair is not one-way
-- Slash: the show ladder is the ONE reader of `enabled`
+- Slash: NOTHING reads the raw `enabled` key any more
 - Slash: an unknown verb says so and prints the help
 - Slash: `options` is an alias for `config`, not a second command
 - Slash: `version` reports the TOC's version rather than a hardcoded string
@@ -1936,6 +1937,21 @@ badge and any count quoted in the docs must agree with it.
 - Slash: enabling the addon again gives the feature verbs back
 - Slash: nothing refuses on an install whose store has not been built
 - Slash: `set window.name` keeps every word of a multi-word name
+
+### test_disabled.lua (12)
+
+- Disabled 1: enabled, the addon registers, arms and draws something at all
+- Disabled 3: every registration the addon made is actually UNREGISTERED
+- Disabled 4: no timer, ticker or OnUpdate is left armed
+- Disabled 5: every frame that was shown is hidden
+- Disabled 6: every event fired anyway writes nothing, prints nothing, shows nothing
+- Disabled 7: every reserved verb and the bare command answer normally
+- Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam
+- Disabled 8: left-click refuses and writes nothing; right-click still opens the panel
+- Disabled 9: re-enabling restores the registration set it had
+- Disabled 9: the rebuild reflects a setting changed WHILE disabled
+- Disabled 10: releasing one hold does not resurrect an addon the other holds down
+- Disabled 10: the perf hold is session-only and the disabled hold is stored
 
 ### test_options_panel.lua (43)
 
@@ -2100,7 +2116,7 @@ badge and any count quoted in the docs must agree with it.
 | test_diagnostics_feign.lua | 19 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
-| test_perfsetup.lua | 23 |
+| test_perfsetup.lua | 24 |
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
@@ -2136,10 +2152,11 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
 | test_slash.lua | 73 |
+| test_disabled.lua | 12 |
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 30 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1884** |
+| **Total** | **1897** |

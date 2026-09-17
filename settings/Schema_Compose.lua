@@ -710,8 +710,18 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
 
 dress(MASTER_ROWS, {
     ["enabled"] = {
-        desc = L["Master switch for the addon. When off, no window is drawn and no data is read."],
-        onChange = refreshVisibility,
+        desc = L["Master switch for the addon. When off, the addon stops watching, stops drawing and stops writing \226\128\148 every event it registered is unregistered and every timer is cancelled, not merely ignored."],
+        -- THE LATCH, not a repaint (slash-commands-\194\1677). This row used to call
+        -- refreshVisibility, which is the DRAW GATE in one line: the frames went
+        -- away and all twenty-one game-event registrations stayed live. The
+        -- checkbox, `/mm enable`, `/mm disable` and `/mm set enabled false` all
+        -- reach this one onChange, so this is the single place the stored switch
+        -- becomes a stand-down. NS.SyncEnabledHold re-reads the path through the
+        -- read seam rather than trusting the value handed in, so the latch and
+        -- the store can never disagree.
+        onChange = function()
+            if NS.SyncEnabledHold then NS.SyncEnabledHold() end
+        end,
     },
     ["master.visibility"] = {
         values = MASTERVIS_VALUES, sorting = MASTERVIS_SORT,

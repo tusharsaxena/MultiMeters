@@ -599,8 +599,14 @@ test("SetByPath: a global row ignores the window id", function()
     local inst, _, second = twoWindows()
     local NS = inst.NS
     local seen = heardConfig(NS)
-    assertTrue(NS.SetByPath("enabled", false, second))
-    assertEqual(NS.db.profile.enabled, false)
+    -- `master.scale` rather than `enabled`, and the swap is the stand-down
+    -- (slash-commands-\194\1677). `enabled` is still a global row, but writing it false
+    -- now takes the addon DOWN inside this very call -- every bus subscription
+    -- unregistered, this fixture's listener included -- so the CONFIG_CHANGED that
+    -- follows reaches nobody. That is the addon behaving correctly and the wrong
+    -- row to measure path resolution with.
+    assertTrue(NS.SetByPath("master.scale", 1.25, second))
+    assertEqual(NS.db.profile.master.scale, 1.25)
     assertEqual(seen[1].windowId, nil, "no window moved")
 end)
 

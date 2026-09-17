@@ -165,11 +165,23 @@ NS.version = resolveVersion()
 -- for it without re-deriving the literal.
 NS.FALLBACK_VERSION = FALLBACK_VERSION
 
+--- Every bus target this factory has made, weakly keyed so a window that was
+--- destroyed and dropped does not keep its target alive.
+---
+--- THE STAND-DOWN IS WHY THIS EXISTS (slash-commands-§7). A bus target is
+--- anonymous: it is created inside the consumer that wants it, it subscribes in
+--- a closure, and nothing else has ever held a reference to it. That is fine
+--- while the addon only ever goes one way, and it is exactly what makes a TOTAL
+--- stand-down impossible -- `NS.StandDown` cannot unregister what it cannot
+--- reach, and a registration it cannot reach is one the client goes on walking
+--- for an addon the player switched off.
+local busTargets = setmetatable({}, { __mode = "k" })
+
 --- A fresh AceEvent-embedded table for a message-bus / event RECEIVER
 --- (architecture-§4).
 ---
---- Any consumer that is NOT itself an AceAddon module — a window instance, the
---- settings panel, the aggregator's throttle — MUST own a private target from
+--- Any consumer that is NOT itself an AceAddon module -- a window instance, the
+--- settings panel, the aggregator's throttle -- MUST own a private target from
 --- this factory rather than registering on the shared addon object.
 --- CallbackHandler keys callbacks by (message, target), so two receivers of one
 --- message registered on the SAME object silently clobber each other and only
@@ -177,12 +189,65 @@ NS.FALLBACK_VERSION = FALLBACK_VERSION
 --- exposed to that: every window subscribes to the same refresh messages, and
 --- there can be many windows.
 ---
+--- THE TARGET REMEMBERS WHAT IT SUBSCRIBED TO, and that is what makes the pair
+--- `__busStandDown` / `__busStandUp` possible: the stand-down drops every
+--- registration through AceEvent's own unregister -- actually gone from
+--- CallbackHandler's registry, not gated -- and the stand-up replays the
+--- recorded set. Replay is correct here rather than lazy because a bus
+--- subscription in this addon is unconditional: no consumer subscribes to a
+--- different set depending on a setting, so "rebuild from current state"
+--- (performance-§6) and "replay what was recorded" are the same set. A consumer
+--- that ever grows a conditional subscription must move that decision into its
+--- own re-wire, not into this table.
+---
+--- The two wrappers are what keep the record honest in the other direction: a
+--- consumer that genuinely retires a target -- `WindowProto:UnregisterBus` on a
+--- destroyed window -- clears the record too, so the stand-up does not
+--- resurrect a subscription its owner deliberately dropped.
+---
 --- @return table|nil  an AceEvent-embedded table, or nil when AceEvent-3.0 is
----   absent (a broken install — callers treat that as "no bus" and degrade).
+---   absent (a broken install -- callers treat that as "no bus" and degrade).
 function NS.NewBusTarget()
     local AceEvent = LibStub and LibStub("AceEvent-3.0", true)
     if not AceEvent then return nil end
     local target = {}
     AceEvent:Embed(target)
+
+    local subs = {}
+    local rawRegister      = target.RegisterMessage
+    local rawUnregister    = target.UnregisterMessage
+    local rawUnregisterAll = target.UnregisterAllMessages
+
+    target.RegisterMessage = function(self, message, handler, ...)
+        subs[message] = { handler }
+        return rawRegister(self, message, handler, ...)
+    end
+    target.UnregisterMessage = function(self, message, ...)
+        subs[message] = nil
+        return rawUnregister(self, message, ...)
+    end
+    target.UnregisterAllMessages = function(self, ...)
+        subs = {}
+        return rawUnregisterAll(self, ...)
+    end
+
+    -- Deliberately the RAW unregister: the record has to survive the stand-down,
+    -- or there is nothing left to stand back up with.
+    target.__busStandDown = function() rawUnregisterAll(target) end
+    target.__busStandUp = function()
+        for message, sub in pairs(subs) do rawRegister(target, message, sub[1]) end
+    end
+
+    busTargets[target] = true
     return target
+end
+
+--- Drop every bus subscription every live target holds, keeping the record.
+function NS.BusStandDown()
+    for target in pairs(busTargets) do target.__busStandDown() end
+end
+
+--- Put every recorded bus subscription back.
+function NS.BusStandUp()
+    for target in pairs(busTargets) do target.__busStandUp() end
 end

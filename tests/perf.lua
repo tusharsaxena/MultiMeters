@@ -627,14 +627,12 @@ assert_(math.abs(refresh.bytesPerIter - probeOff.bytesPerIter) < 2048,
 
 -- The gate must also be free where nothing runs at all: a suspended capture stops
 -- the addon ASKING for data, not merely stop drawing it (performance-§6).
-NS.Perf.suspended = true
-NS.Provider:Suspend()
+NS.Perf.Suspend()
 local suspended = measure("suspended", ITERS, function()
     inst.dirty = true
     inst:Refresh()
 end)
-NS.Provider:Resume()
-NS.Perf.suspended = false
+NS.Perf.Resume()
 assert_(suspended.apiPerIter == 0,
     ("a suspended capture still made %.2f meter API calls per pass — suspend must stop the "
      .. "reads at the source"):format(suspended.apiPerIter))

@@ -801,6 +801,19 @@ local function cancelQueue()
     pendingWhisper = nil
 end
 
+--- The same, published.
+---
+--- `core/LifecycleSetup.lua`'s stand-down calls it: a staggered chat dump is the
+--- one thing in this addon still on a clock that `NS:CancelAllTimers()` cannot
+--- reach, because it rides `C_Timer.After`, which hands back no handle to cancel.
+--- Bumping the generation is the only cancel available -- the queued callbacks
+--- still fire and each returns without sending -- and an addon the player has
+--- switched off finishing a whisper dump into a raid is exactly the kind of thing
+--- slash-commands-7 means by "not running".
+function Export.CancelSend()
+    cancelQueue()
+end
+
 --- One CHAT_MSG_SYSTEM line, offered by core/MultiMeters.lua's fan-out.
 ---
 --- WHY THIS IS A CALL AND NOT A SUBSCRIPTION. architecture-§4 gives

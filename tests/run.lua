@@ -74,6 +74,11 @@ do
         -- launcher suite would measure the stub and pass.
         "Launcher.lua",
         "Perf.lua", "PerfPanel.lua",
+        -- THE LATCH. Perf.lua RETURNS BEFORE NewLibrary without it from minor 12, so a payload
+        -- missing this file loses the perf probe outright rather than finding out mid-run -- and
+        -- core/LifecycleSetup.lua would take its degradation stub, which would make every case in
+        -- tests/test_disabled.lua a statement about the stub instead of about the addon.
+        "Lifecycle.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do
@@ -282,6 +287,11 @@ local SUITES = {
     "test_schema_paths",
     "test_schema_defaults",
     "test_slash",
+    -- slash-commands-\194\1677's conformance suite: the disabled state is TOTAL. It asserts on
+    -- the REGISTRATION SET rather than on a handler's return value, because an early
+    -- return is what a draw gate does and a suite written that way certifies the shape
+    -- it exists to catch (testing-\194\16712).
+    "test_disabled",
     "test_options_panel",
     "test_columnblocks",
     "test_columns",

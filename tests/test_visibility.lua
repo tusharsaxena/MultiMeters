@@ -876,7 +876,7 @@ test("The master enable, test mode and perf suspend are NOT read here", function
     -- window's own rules, and duplicating them here would give the addon two
     -- places that can answer "why is my window not showing" differently -- with
     -- the two answers free to disagree the moment one of the four moves.
-    NS.Perf.suspended       = true
+    NS.lifecycle:Hold("perf")
     NS.State.testMode       = true
     NS.db.profile.enabled   = false
 
@@ -894,6 +894,6 @@ test("The master enable, test mode and perf suspend are NOT read here", function
     assertEqual(show, false)
     assertEqual(reason, "dungeon")
 
-    NS.Perf.suspended = false
+    NS.lifecycle:Release("perf")
     NS.State.testMode = false
 end)

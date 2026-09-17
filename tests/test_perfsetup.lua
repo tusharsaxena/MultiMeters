@@ -538,20 +538,45 @@ test("PerfSetup: suspend and resume are idempotent", function()
     assertFalse(NS2.Provider.IsSuspended())
 end)
 
-test("PerfSetup: the descriptor resolves its modules at CALL time", function()
-    -- core/PerfSetup.lua loads before modules/, so a load-time lookup would
-    -- answer nil forever and suspend would silently do nothing at all — the
-    -- worst possible failure for a harness whose whole output is a comparison
-    -- against an inert addon.
+test("LifecycleSetup: the teardown resolves its modules at CALL time", function()
+    -- core/LifecycleSetup.lua loads before modules/, so a load-time lookup would
+    -- answer nil forever and the stand-down would silently do nothing at all --
+    -- the worst possible failure for BOTH holds: a harness whose whole output is
+    -- a comparison against an inert addon, and a master switch that claims to
+    -- have turned the addon off.
+    --
+    -- THE ASSERTION MOVED FILES rather than being retired. `suspend` and `resume`
+    -- left core/PerfSetup.lua at LibKa0s v1.41.0 (Perf minor 12): the descriptor
+    -- takes a `lifecycle` now and nothing on it reads those two any more, so the
+    -- bodies this case is about are the latch's `standDown` / `standUp`.
     -- red under: hoisting `local Provider = NS.Provider` to file scope.
-    local fh = assert(io.open(ROOT .. "/core/PerfSetup.lua", "r"))
+    local fh = assert(io.open(ROOT .. "/core/LifecycleSetup.lua", "r"))
     local src = fh:read("*a"):gsub("%-%-[^\r\n]*", "")
     fh:close()
-    assertNil(src:match("[\r\n]local%s+Provider%s*="), "the descriptor hoisted a module reference")
+    assertNil(src:match("[\r\n]local%s+Provider%s*="), "the teardown hoisted a module reference")
     assertNil(src:match("[\r\n]local%s+WindowManager%s*="))
     assertTrue(src:find('mod("Provider")', 1, true) ~= nil)
     assertTrue(src:find('mod("WindowManager")', 1, true) ~= nil)
     assertTrue(src:find('mod("Visibility")', 1, true) ~= nil)
+end)
+
+test("PerfSetup: the descriptor hands over the latch and keeps no teardown of its own", function()
+    -- Perf minor 12 REQUIRES `descriptor.lifecycle` and no longer calls `suspend`
+    -- or `resume`. Leaving those two here would be two live copies of this
+    -- addon's own teardown -- the perf arm's and the disable arm's -- which is
+    -- exactly how the two drift apart on the first module added after the second
+    -- was written (anti-pattern #85, slash-commands-\194\1677).
+    -- red under: putting `suspend = function() ... end` back on the descriptor.
+    local inst = T.load{ enable = true }
+    assertTrue(inst.NS.lifecycle ~= nil, "the addon must own a latch")
+
+    local fh = assert(io.open(ROOT .. "/core/PerfSetup.lua", "r"))
+    local src = fh:read("*a"):gsub("%-%-[^\r\n]*", "")
+    fh:close()
+    assertTrue(src:find("lifecycle = NS.lifecycle", 1, true) ~= nil,
+        "the descriptor must hand the library the host's latch")
+    assertNil(src:match("[\r\n]%s*suspend%s*="), "a second teardown path came back")
+    assertNil(src:match("[\r\n]%s*resume%s*="), "a second rebuild path came back")
 end)
 
 -- ── the degraded seam ───────────────────────────────────────────────────────

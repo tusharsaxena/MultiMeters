@@ -252,14 +252,17 @@ test("Slash: the dispatcher survives the disabled state, so the pair is not one-
     assertTrue(NSi.db.profile.enabled, "`/mm enable` could not turn the addon back on")
 end)
 
-test("Slash: the show ladder is the ONE reader of `enabled`", function()
+test("Slash: NOTHING reads the raw `enabled` key any more", function()
     -- What makes the case above structural rather than a lucky observation: the STORED PATH is read
     -- in exactly one place, and it is not on any path that could reach the dispatcher.
     --
-    -- The disabled gate below reads the same switch, and does not appear here on purpose: it goes
-    -- through NS.GetSetting, the read seam, exactly as the checkbox and `/mm get enabled` do. What
-    -- this case forbids is a SECOND reader of the raw profile key -- a second place the addon can
-    -- decide for itself what "off" means -- not a second caller of the one seam.
+    -- THE EXPECTED ANSWER IS NOW *NOTHING AT ALL*, and the move is the stand-down (slash-commands
+    -- \194\1677). `NS.ShouldShow` used to read `db.profile.enabled` directly as one rung of its
+    -- show ladder -- which was this addon's draw gate, and anti-pattern #85. The one reader left is
+    -- core/LifecycleSetup.lua's NS.SyncEnabledHold, and it goes through NS.GetSetting, the read
+    -- seam, exactly as the checkbox and `/mm get enabled` do. What this case forbids is any reader
+    -- of the RAW profile key -- a place the addon can decide for itself what "off" means without
+    -- the latch hearing about it -- not a second caller of the one seam.
     local hits = {}
     for _, rel in ipairs(T.loadedAddonFiles) do
         local fh = io.open(T.root .. "/" .. rel, "r")
@@ -274,8 +277,8 @@ test("Slash: the show ladder is the ONE reader of `enabled`", function()
             fh:close()
         end
     end
-    assertEqual(table.concat(hits, ", "):gsub(":%d+", ""), "core/MultiMeters.lua",
-        "a second reader of the master switch is a second place it can turn something off")
+    assertEqual(table.concat(hits, ", "):gsub(":%d+", ""), "",
+        "a raw reader of the master switch is a place it can turn something off behind the latch")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -1174,7 +1177,12 @@ local LIVE_WHILE_DISABLED = {
 
 --- The rendered refusal, READ OUT OF THE LOCALE TABLE rather than retyped, so a reworded line
 --- moves the case with it instead of quietly making it match nothing.
-local REFUSAL = NS.L["Multi Meters is disabled \226\128\148 type |cFFFFFF00/mm enable|r to turn it back on."]
+-- slash-commands-\194\1677's ONE refusal line, collection-wide, built from the library's own format
+-- string rather than re-typed here: the wording is not this addon's to spell, and a literal in the
+-- suite would be a second copy free to drift from the one the dispatcher prints. The brand name is
+-- the plain-text `Ka0s <Name>` the LDB object also wears (launcher-\194\1671).
+local REFUSAL = T.load().mocks.LibStub("LibKa0s-Slash-1.0").DISABLED_LINE_FORMAT
+    :format(NS.L["Ka0s Multi Meters"], "/mm enable")
 
 --- Did this line refuse? Matched on the WHOLE sentence and not on `/mm enable` alone: the help
 --- index prints a row for that very verb, so the shorter match called every help block a refusal.
@@ -1189,7 +1197,7 @@ end
 test("Slash: a feature verb refuses while disabled AND does not act", function()
     -- BOTH HALVES, because a case that only read the message would pass over a verb that printed
     -- and then acted anyway -- which is the exact failure a refusal exists to prevent.
-    -- red under: the gate removed from settings/Slash.lua's verb table.
+    -- red under: dropping `isEnabled` from settings/Slash.lua's descriptor.
     local inst = T.load{ enable = true }
     local NSi = inst.NS
     say(inst, "disable")
@@ -1227,10 +1235,11 @@ test("Slash: a refused verb leaves no side effect in the store", function()
 end)
 
 test("Slash: EVERY verb off the live list refuses, so a new one is gated by default", function()
-    -- THE STRUCTURAL HALF. The gate is one wrap over the verb table rather than a guard pasted into
-    -- each handler, and the polarity is the point: a verb is gated unless it is NAMED live, so the
-    -- next verb added is refused while the addon is off without anyone remembering to say so.
-    -- red under: moving the gate into the six handlers, and adding a seventh verb without one.
+    -- THE STRUCTURAL HALF. The gate is the LIBRARY's, sitting on the one dispatch path rather than
+    -- as a guard pasted into each handler, and the polarity is the point: a verb is refused unless
+    -- it is on the standard's twelve-verb live list, so the next verb this addon adds is refused
+    -- while it is off without anyone remembering to say so.
+    -- red under: passing a `liveVerbs` that names this addon's feature verbs.
     local inst = T.load{ enable = true }
     say(inst, "disable")
 
@@ -1261,7 +1270,7 @@ test("Slash: every verb on the live list still answers with the addon off", func
     NSi.OpenOptionsPanel = function() opened = opened + 1 end
 
     for _, command in ipairs({
-        "help", "version", "config", "list", "get enabled", "set master.alpha 0.5",
+        "version", "config", "list", "get enabled", "set master.alpha 0.5",
         "reset master.scale", "debug", "perf help",
     }) do
         local lines = say(inst, command)
@@ -1269,6 +1278,18 @@ test("Slash: every verb on the live list still answers with the addon off", func
             assertFalse(isRefusal(line), "`/mm " .. command .. "` was refused: " .. line)
         end
     end
+
+    -- `help` IS ON THE LIVE LIST AND IS NOT REFUSED, and it is driven apart from the rest because
+    -- it wears the refusal line as a NOTICE rather than as an answer (LibKa0s-Slash version 13).
+    -- The index prints in full -- the player has to be able to SEE `enable` in the list -- and the
+    -- line sits immediately under the header, unindented, because a reader scanning the rows needs
+    -- to know that most of what they are reading is standing down.
+    local help = say(inst, "help")
+    assertTrue(#help > 6, "the index must print in full, not collapse to the notice")
+    local refusals = 0
+    for _, line in ipairs(help) do if isRefusal(line) then refusals = refusals + 1 end end
+    assertEqual(refusals, 1, "exactly one notice, under the header")
+    assertTrue(joined(help):find("/mm enable", 1, true) ~= nil, "`enable` must still be listed")
 
     assertEqual(opened, 1, "`/mm config` must still open the panel with the addon off")
     -- The schema CLI really WROTE, rather than merely answering: repairing a setting is the whole
@@ -1300,10 +1321,10 @@ test("Slash: enabling the addon again gives the feature verbs back", function()
 end)
 
 test("Slash: nothing refuses on an install whose store has not been built", function()
-    -- `standingDown` reads the seam and tests for FALSE rather than for truthiness: NS.GetSetting
-    -- answers nil before NS:InitDB has run, and "nothing has said otherwise" is not "off". A
-    -- truthiness test would refuse every feature verb on a half-loaded install, where the player is
-    -- least equipped to work out why.
+    -- The descriptor's `isEnabled` reaches NS.IsDisabled, which tests the seam for FALSE rather
+    -- than for truthiness: NS.GetSetting answers nil before NS:InitDB has run, and "nothing has
+    -- said otherwise" is not "off". A truthiness test would refuse every feature verb on a
+    -- half-loaded install, where the player is least equipped to work out why.
     local inst = T.load{ initDB = false, options = false }
     local lines = say(inst, "toggle")
     for _, line in ipairs(lines) do

@@ -119,9 +119,11 @@ what it shows:
   the message or the window can never come back when the player groups up.
 - `ZONE_CHANGED` / `ENTERING_WORLD` → `RefreshVisibility()` only.
 
-**Perf suspend cuts higher than the throttle.** `NS.Perf.suspended` is step 0 of `NS.ShouldShow`,
-above even the master enable, and `Provider:Suspend()` makes reads answer an empty column and drops
-the bus subscriptions — so a suspended capture stops the addon *asking*, not merely stops it drawing.
+**The latch cuts higher than the throttle.** `NS.IsStoodDown()` is step 0 of `NS.ShouldShow`, above
+everything, and it answers for BOTH reasons this addon can be inert — the player's master switch and
+a perf capture's suspended arm. `Provider:Suspend()` makes reads answer an empty column and drops the
+bus subscriptions, and the rest of `standDown` unregisters every game event and cancels every timer,
+so a stood-down addon stops *asking*, not merely stops drawing ([disabled-state.md](disabled-state.md)).
 
 ## 2. Provider's column read
 

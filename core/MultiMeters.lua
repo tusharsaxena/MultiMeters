@@ -72,6 +72,13 @@ function NS:OnInitialize()
     -- it is first.
     self:InitDB()
 
+    -- THE `disabled` HOLD, re-taken from the stored path the moment there is a
+    -- store to read it from (slash-commands-\194\1677). Surviving a /reload is the
+    -- entire point of that setting, and this is where it does: before OnEnable,
+    -- so an addon the player switched off never registers anything in the first
+    -- place rather than registering and being torn down a frame later.
+    if NS.SyncEnabledHold then NS.SyncEnabledHold() end
+
     -- Idempotent after InitDB (which runs the same pass), and called explicitly
     -- so the lifecycle reads as the standard's four steps rather than relying on
     -- a side effect of the one above.
@@ -125,6 +132,17 @@ local function registerIfValid(target, event, handler)
 end
 
 function NS:OnEnable()
+    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-\194\1677).
+    -- AceAddon runs this cascade at load whether or not the player has the addon
+    -- switched off, so without this the stand-down taken in OnInitialize would be
+    -- undone one function call later. It is NOT a gate on a handler: no handler
+    -- early-returns anywhere in this addon any more, and there is nothing
+    -- registered for one to be called from. core/LifecycleSetup.lua's `standUp`
+    -- calls this function again, and the latch is already up by then -- the hold
+    -- set is mutated before the callback runs -- so the rebuild reads `false`
+    -- here and registers from the settings AS THEY ARE NOW (performance-\194\1676).
+    if NS.IsStoodDown and NS.IsStoodDown() then return end
+
     -- Lifecycle and context. PLAYER_ENTERING_WORLD covers login, /reload and
     -- every zone-in; ZONE_CHANGED_NEW_AREA covers the sub-zone moves that change
     -- an instance's visibility answer without a loading screen.
@@ -253,6 +271,18 @@ local statePending = false
 local function settlePlayerState()
     statePending = false
     NS:SendMessage(MSG.PLAYER_STATE_CHANGED)
+end
+
+--- Forget that a settle pass was booked.
+---
+--- core/LifecycleSetup.lua's stand-down cancels the addon's AceTimers, and this
+--- flag is the one piece of state that CancelAllTimers cannot reach. Left true,
+--- it would be true forever: the callback that clears it has been cancelled, so
+--- the first player-state edge after the addon stands back up would see a
+--- booking that will never arrive and never book another. The settle pass would
+--- be silently dead for the rest of the session.
+function NS.ResetStatePending()
+    statePending = false
 end
 
 --- PLAYER_REGEN_DISABLED / PLAYER_REGEN_ENABLED — entered or left combat.
@@ -467,18 +497,27 @@ local function masterVisibilityAllows()
 end
 
 function NS.ShouldShow(window)
-    -- STEP 0 — perf suspend. FIRST, and above even the master enable, because a
-    -- suspended capture must be inert: nothing — a combat transition, a zone-in,
-    -- a settings change — may re-show a window behind suspend's back
-    -- (performance-§6).
-    local Perf = NS.Perf
-    if Perf and Perf.suspended then return false, "suspended" end
+    -- STEP 0 — THE LATCH, and it now answers for BOTH reasons this addon can be
+    -- inert: the player's master switch and a perf capture's suspended arm
+    -- (slash-commands-§7, performance-§6). FIRST, because a stood-down addon must
+    -- be inert at the SOURCE: nothing — a combat transition, a zone-in, a settings
+    -- change — may re-show a window behind the switch's back. Hiding frames
+    -- imperatively would not do it, because a hidden frame comes back.
+    --
+    -- THE MASTER ENABLE IS NO LONGER A SEPARATE RUNG, and its disappearance from
+    -- this ladder is the point rather than a tidy-up. Reading the stored key
+    -- here was this addon's DRAW GATE (anti-pattern #85): the frames went away and
+    -- every one of its twenty-one game-event registrations stayed live. The stored
+    -- path is now read in exactly one place — NS.SyncEnabledHold — and what it
+    -- drives is the teardown, of which this step is the visible half.
+    --
+    -- The reason is still told apart, because a player reading `/mm debug diag`
+    -- wants to know WHICH switch is down.
+    if NS.IsStoodDown and NS.IsStoodDown() then
+        return false, NS.IsDisabled and NS.IsDisabled() and "disabled" or "suspended"
+    end
 
     if type(window) ~= "table" then return false, "no window" end
-
-    -- STEP 1 — master enable.
-    local profile = NS.db and NS.db.profile
-    if not (profile and profile.enabled) then return false, "disabled" end
 
     -- STEP 2 — test mode. A window in test mode shows regardless of context: the
     -- whole point is to lay a layout out wherever the player happens to be

@@ -686,8 +686,13 @@ die · pull a target dummy.
   are announced on the bus. Ticking **both** is a window that never shows; `/mm debug diag` still
   reports `ShouldShow -> false (in combat)` or `(out of combat)` depending on where you are standing.
 - After every one of these, `/mm debug diag` names the rule that decided in its `ShouldShow` line.
-- **Master enable off** (`/mm set enabled false`, or General → Enable Multi Meters) hides every
-  window immediately and stops the addon reading the meter at all.
+- **Master enable off** (`/mm set enabled false`, or General → Enable Multi Meters) **stands the
+  addon down** — every window hidden immediately, every game event unregistered, every timer
+  cancelled, nothing read from the meter. `/mm toggle`, `/mm lock`, `/mm test`, `/mm window`,
+  `/mm reset-positions` and `/mm export` each answer one line naming `/mm enable` and do nothing
+  else, and a LEFT-click on the minimap button answers the same line; `/mm` still opens the settings
+  panel, the whole schema CLI still reads and writes, and a RIGHT-click still opens the panel. See
+  [disabled-state.md](disabled-state.md).
 - **Test mode overrides context**: with Test mode on, the window shows wherever you are standing.
 
 ### 8. Mythic+ pull — the secret-value path

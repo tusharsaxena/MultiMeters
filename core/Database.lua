@@ -1001,6 +1001,24 @@ local function debugOn() return NS.State and NS.State.debug end
 --- Everything downstream — every window, the settings panel, the aggregator's
 --- caches — rebuilds off the single PROFILE_CHANGED message rather than off a
 --- direct call from here (architecture-§4).
+--- Re-take or release the `disabled` hold for the profile now active.
+---
+--- slash-commands-\194\1677 names this explicitly: `enabled` is a stored setting like any
+--- other and A PROFILE SWITCH CAN FLIP IT, with no verb and no checkbox touched.
+--- A player switching to a profile where the addon is enabled expects it to come
+--- up, so the latch has to be re-evaluated on all three AceDB callbacks -- which
+--- is also why those callbacks are on the section's *what MUST survive* list and
+--- cannot be dropped by the stand-down.
+---
+--- `Reevaluate` after `Set` rather than instead of it: `Set` fires an edge only
+--- when the hold actually changes, and `Reevaluate` is idempotent, so a profile
+--- that agrees with the old one produces no stand-down and no stand-up at all.
+local function resyncEnabledHold()
+    if NS.SyncEnabledHold then NS.SyncEnabledHold() end
+    local lc = NS.lifecycle
+    if lc and lc.Reevaluate then lc:Reevaluate() end
+end
+
 local function rebuild(key)
     -- The newly-active profile may be a copy authored at an older schema
     -- version, or a reset back to an empty registry. Both need the full
@@ -1012,6 +1030,8 @@ local function rebuild(key)
         NS.State.SetActiveWindow(nil)
         NS.State.WipeCache()
     end
+
+    resyncEnabledHold()
 
     fireProfileChanged(key)
 end

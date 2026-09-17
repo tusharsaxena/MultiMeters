@@ -296,24 +296,30 @@ test("Lifecycle: combat ending test mode during a perf suspend re-shows no windo
     local ns = inst.NS
     local M = ns.WindowManager
     M:SetTestMode(true)
-    ns.Perf.suspended = true
-    M:Suspend()
-    for _, w in ipairs(M.All()) do w:RefreshVisibility() end
+    -- THROUGH THE LATCH, never by assigning `Perf.suspended`: from LibKa0s
+    -- v1.41.0 that field is a VIEW of the hold set and writing it raises, which
+    -- is the point -- a raw write would create a shadowing field and the addon
+    -- would have two answers to "is this inert".
+    ns.Perf.Suspend()
     for _, w in ipairs(M.All()) do assertFalse(w:IsShown(), "the fixture needs suspend to hide") end
 
-    inst.mocks.__fireEvent("PLAYER_REGEN_DISABLED")
-    ns.Perf.suspended = false
+    -- AND THE COMBAT EVENT NO LONGER ARRIVES AT ALL, which is the stand-down
+    -- rather than a weaker version of this case (slash-commands-\194\1677). A suspended
+    -- addon has actually UNREGISTERED PLAYER_REGEN_DISABLED, so the client would
+    -- never dispatch it -- and `__fire` fires at the LIVE registration set only,
+    -- so it reaches nobody here either. Test mode is therefore untouched, and no
+    -- window is re-shown, which is the property the case is named for.
+    assertEqual(inst.mocks.__fire("PLAYER_REGEN_DISABLED"), 0,
+        "a stood-down addon must not still be registered for the combat event")
 
-    assertEqual(ns.State.testMode, false, "test mode still ends under a suspend")
+    assertEqual(ns.State.testMode, true, "nothing reached test mode, so nothing changed it")
     for _, w in ipairs(M.All()) do
         assertFalse(w:IsShown(), "window " .. tostring(w.id) .. " was re-shown behind the suspend")
     end
 
     -- The manual turn-off keeps windows on screen, but not behind a suspend either.
-    ns.Perf.suspended = true
     M:SetTestMode(true)
     M:SetTestMode(false)
-    ns.Perf.suspended = false
     for _, w in ipairs(M.All()) do
         assertFalse(w:IsShown(), "window " .. tostring(w.id) .. " was re-shown by /mm test off")
     end
@@ -531,11 +537,16 @@ test("ShouldShow: a non-table is refused before anything else is consulted", fun
 end)
 
 test("ShouldShow: the master enable refuses every window", function()
+    -- THROUGH THE WRITE SEAM, never by poking `db.profile.enabled`. The stored
+    -- key is no longer read by the ladder at all (slash-commands-\194\1677): what the
+    -- ladder reads is the latch, and only the seam's onChange takes the hold. A
+    -- fixture that writes the raw key is testing a draw gate that no longer
+    -- exists, and would go on passing over an addon that never stood down.
     local inst = T.load{ enable = true }
     inst.mocks.setInstance("party")
     inst.mocks.setGroup({ {}, {}, {}, {}, {} })
     local window = inst.NS.Database.GetWindows()[1]
-    inst.NS.db.profile.enabled = false
+    assertTrue(inst.NS.SetByPath("enabled", false))
     local ok, reason = inst.NS.ShouldShow(window)
     assertFalse(ok)
     assertEqual(reason, "disabled")
