@@ -1938,10 +1938,11 @@ badge and any count quoted in the docs must agree with it.
 - Slash: nothing refuses on an install whose store has not been built
 - Slash: `set window.name` keeps every word of a multi-word name
 
-### test_disabled.lua (12)
+### test_disabled.lua (13)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
+- Disabled 3b: standDown runs its seven steps in the documented order
 - Disabled 4: no timer, ticker or OnUpdate is left armed
 - Disabled 5: every frame that was shown is hidden
 - Disabled 6: every event fired anyway writes nothing, prints nothing, shows nothing
@@ -2152,11 +2153,11 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 10 |
 | test_slash.lua | 73 |
-| test_disabled.lua | 12 |
+| test_disabled.lua | 13 |
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 30 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1897** |
+| **Total** | **1898** |

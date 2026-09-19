@@ -191,6 +191,44 @@ test("Disabled 3: every registration the addon made is actually UNREGISTERED", f
     end
 end)
 
+test("Disabled 3b: standDown runs its seven steps in the documented order", function()
+    -- core/LifecycleSetup.lua's `standDown` is split into one local helper per
+    -- numbered step (issue #51, keeping the function under the collection's CCN
+    -- limit). This pins the ORDER those steps fire in -- events, then modules,
+    -- then the bus, then windows, then the provider, then the export cancel,
+    -- then visibility -- so a future split of the same function cannot reorder
+    -- them silently. Each subsystem entry point is wrapped rather than replaced,
+    -- so the real teardown still runs and every other assertion in this suite
+    -- stays honest.
+    -- red under: any reordering of the calls inside `standDown`.
+    local _, NS = scene()
+    local order = {}
+
+    local function wrap(owner, key)
+        local original = owner[key]
+        owner[key] = function(...)
+            order[#order + 1] = key
+            return original(...)
+        end
+    end
+
+    wrap(NS, "UnregisterAllEvents")
+    wrap(NS, "CancelAllTimers")
+    wrap(NS, "ResetStatePending")
+    wrap(NS, "IterateModules")
+    wrap(NS, "BusStandDown")
+    wrap(NS.WindowManager, "Suspend")
+    wrap(NS.Provider, "Suspend")
+    wrap(NS.Export, "CancelSend")
+    wrap(NS.Visibility, "Refresh")
+
+    assertTrue(NS.SetByPath("enabled", false))
+
+    assertEqual(table.concat(order, ","),
+        "UnregisterAllEvents,CancelAllTimers,ResetStatePending,IterateModules,"
+        .. "BusStandDown,Suspend,Suspend,CancelSend,Refresh")
+end)
+
 -- ---------------------------------------------------------------------------
 -- 4. Nothing is still going to wake up
 -- ---------------------------------------------------------------------------

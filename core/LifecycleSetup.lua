@@ -51,6 +51,61 @@ end
 -- The teardown
 -- ---------------------------------------------------------------------------
 
+-- Each helper below is one numbered step of `standDown`'s own doc comment
+-- (further down this file), broken out so every function in this file stays
+-- under the collection's complexity limit. The split is purely structural --
+-- `standDown` still runs them in exactly this order and nothing else changed.
+
+-- 1. The game events. All twenty-one of them, on the one AceEvent target that
+--    owns them, plus the settle timer core/MultiMeters.lua arms.
+local function standDownEvents()
+    if NS.UnregisterAllEvents then NS:UnregisterAllEvents() end
+    if NS.CancelAllTimers then NS:CancelAllTimers() end
+    if NS.ResetStatePending then NS.ResetStatePending() end
+end
+
+-- 2. The AceAddon children. Each is its own AceEvent target, so each owns its
+--    own message subscriptions and `UnregisterAllMessages` on the addon object
+--    would not reach a single one of them.
+local function standDownModules()
+    if NS.IterateModules then
+        for _, m in NS:IterateModules() do
+            if m.UnregisterAllMessages then m:UnregisterAllMessages() end
+        end
+    end
+end
+
+-- 4. The windows: the OnUpdate that drives the coalesced refresh, and the
+--    per-window bus target. A coalescing repaint timer left armed to wake up
+--    and find a flag is the shape slash-commands-7 names as the single most
+--    expensive one.
+local function standDownWindows()
+    local wm = mod("WindowManager")
+    if wm and wm.Suspend then wm:Suspend() end
+end
+
+-- 5. The provider stops ASKING the meter for anything, so a read during the
+--    stand-down answers an empty column rather than a live one.
+local function standDownProvider()
+    local provider = mod("Provider")
+    if provider and provider.Suspend then provider:Suspend() end
+end
+
+-- 6. A staggered chat dump already queued. `C_Timer.After` has no handle to
+--    cancel, so modules/Export.lua bumps a generation instead and the queued
+--    callbacks return without sending -- which is the only cancel available.
+local function standDownExport()
+    local export = NS.Export
+    if export and export.CancelSend then export.CancelSend() end
+end
+
+-- 7. Act on the ladder NOW rather than at the next event: the windows already
+--    on screen have to go, and this is the pass that asks them to.
+local function standDownVisibility()
+    local vis = mod("Visibility")
+    if vis and vis.Refresh then vis:Refresh() end
+end
+
 --- Make the addon genuinely inert, in the same turn as the write.
 ---
 --- EVERY REGISTRATION ACTUALLY UNREGISTERED, never gated. The order below is the
@@ -74,46 +129,16 @@ end
 --- goes to empty. An addon that later grows secure work adds the hold-pending
 --- here and releases it on that one event -- it does not start gating handlers.
 local function standDown()
-    -- 1. The game events. All twenty-one of them, on the one AceEvent target
-    --    that owns them, plus the settle timer core/MultiMeters.lua arms.
-    if NS.UnregisterAllEvents then NS:UnregisterAllEvents() end
-    if NS.CancelAllTimers then NS:CancelAllTimers() end
-    if NS.ResetStatePending then NS.ResetStatePending() end
-
-    -- 2. The AceAddon children. Each is its own AceEvent target, so each owns its
-    --    own message subscriptions and `UnregisterAllMessages` on the addon
-    --    object would not reach a single one of them.
-    if NS.IterateModules then
-        for _, m in NS:IterateModules() do
-            if m.UnregisterAllMessages then m:UnregisterAllMessages() end
-        end
-    end
+    standDownEvents()
+    standDownModules()
 
     -- 3. Every anonymous bus target (core/Namespace.lua's registry).
     if NS.BusStandDown then NS.BusStandDown() end
 
-    -- 4. The windows: the OnUpdate that drives the coalesced refresh, and the
-    --    per-window bus target. A coalescing repaint timer left armed to wake up
-    --    and find a flag is the shape slash-commands-7 names as the single most
-    --    expensive one.
-    local wm = mod("WindowManager")
-    if wm and wm.Suspend then wm:Suspend() end
-
-    -- 5. The provider stops ASKING the meter for anything, so a read during the
-    --    stand-down answers an empty column rather than a live one.
-    local provider = mod("Provider")
-    if provider and provider.Suspend then provider:Suspend() end
-
-    -- 6. A staggered chat dump already queued. `C_Timer.After` has no handle to
-    --    cancel, so modules/Export.lua bumps a generation instead and the queued
-    --    callbacks return without sending -- which is the only cancel available.
-    local export = NS.Export
-    if export and export.CancelSend then export.CancelSend() end
-
-    -- 7. Act on the ladder NOW rather than at the next event: the windows already
-    --    on screen have to go, and this is the pass that asks them to.
-    local vis = mod("Visibility")
-    if vis and vis.Refresh then vis:Refresh() end
+    standDownWindows()
+    standDownProvider()
+    standDownExport()
+    standDownVisibility()
 end
 
 --- Put it all back, FROM CURRENT STATE and never from a snapshot taken on the
