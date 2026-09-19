@@ -237,8 +237,12 @@ test("texturepaths: every census row carries a disposition that can be followed"
         -- The three terminal states the plan allows, and nothing else: a rule citation saying the
         -- catalog does not answer for this class, or the deviation register above. A cell that
         -- names neither is a note, and a note is what this whole section exists to stop being
-        -- enough.
-        if not (row.disposition:find("%-§%d") or row.disposition:find("[Rr]egister row")) then
+        -- enough. A rule citation is either a numbered subsection (`options-ui-§15`) or, for a
+        -- standard section with no numbered subsections, its bare backticked filename
+        -- (`standalone-windows`), which is the form documentation-§6 prescribes for those.
+        local d = row.disposition
+        local rule = d:find("%-§%d") or d:find("`%l[%l]*%-[%l%-]*%l`")
+        if not (rule or d:find("[Rr]egister row")) then
             unfollowable[#unfollowable + 1] = row.file .. " -> " .. row.path
         end
     end

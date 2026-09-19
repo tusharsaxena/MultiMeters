@@ -1331,7 +1331,7 @@ finished loading when the schema file ran.
 
 ## The write seam
 
-`NS.SetByPath(path, value, windowId)` is the single write seam (`settings-schema-§1`). The panel's
+`NS.SetByPath(path, value, windowId)` is the single write seam (`architecture-§5`). The panel's
 widgets, `/mm set`, `/mm reset`, `NS.ApplyDefault` and the global Defaults sweep all land here, so
 validation, the debug line, the row's reaction and the refresh cannot be skipped by whichever caller
 forgot one. `windowId` is optional: omitted, a `window.*` path means the active window; given, it

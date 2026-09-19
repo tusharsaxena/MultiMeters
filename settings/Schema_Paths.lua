@@ -703,7 +703,7 @@ local function logWrite(plan)
     end
 end
 
---- Write one setting. THE single write seam (settings-schema-§1): the panel's
+--- Write one setting. THE single write seam (architecture-§5): the panel's
 --- widgets, `/mm set`, `/mm reset` and the defaults restore all land here, so
 --- validation, the debug line, the row's reaction and the refresh cannot be
 --- skipped by whichever caller forgot one.

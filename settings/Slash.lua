@@ -272,7 +272,7 @@ cli = SlashLib:New({
     -- ── The schema seams ──────────────────────────────────────────────────
     --
     -- All five point at the addon's ONE write seam and ONE reader
-    -- (settings-schema-§1), so a `/mm set` takes exactly the path a panel
+    -- (architecture-§5), so a `/mm set` takes exactly the path a panel
     -- checkbox takes: same validation, same debug line at the seam, same
     -- onChange, same panel refresh.
     --

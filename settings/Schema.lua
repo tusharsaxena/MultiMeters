@@ -1,6 +1,6 @@
 -- settings/Schema.lua
 --
--- THE single source of truth for settings (settings-schema-§1). One ordered
+-- THE single source of truth for settings (architecture-§5). One ordered
 -- array of rows drives three surfaces that would otherwise drift apart: the
 -- options panel's widgets, the `/mm get|set|list|reset|resetall` CLI, and the
 -- defaults reset. Adding a setting is one row here and nothing else.
