@@ -1849,7 +1849,7 @@ badge and any count quoted in the docs must agree with it.
 - Picking Current or Overall writes the session type through the seam (issue #50)
 - The sort and segment batches log one [Set] line per row they write
 
-### test_schema_defaults.lua (10)
+### test_schema_defaults.lua (18)
 
 - Schema defaults: the two trees the validator compares are both present
 - Schema defaults: every non-session row resolves against defaults/Profile.lua
@@ -1861,6 +1861,14 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: counts a row whose default disagrees with the defaults tree
 - ValidateSchema: counts a row whose path does not resolve
 - ValidateSchema: compares a color CHANNEL, not just the presence of a table
+- ValidateSchema: names the path when an ordinary row's default disagrees
+- ValidateSchema: names the path when an ordinary row does not resolve
+- ValidateSchema: the minimap row is judged through the inversion, and a match is not one
+- ValidateSchema: a minimap row whose global tree lacks the key is unresolved, not agreed
+- ValidateSchema: a minimap row with no global tree at all is unresolved, and does not raise
+- ValidateSchema: answers 0 when there is no window template to compare against
+- ValidateSchema: answers 0 when there is no profile tree to compare against
+- ValidateSchema: counts every failure, in schema order, with nothing listening
 
 ### test_slash.lua (73)
 
@@ -2151,7 +2159,7 @@ badge and any count quoted in the docs must agree with it.
 | test_windowmanager.lua | 44 |
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
-| test_schema_defaults.lua | 10 |
+| test_schema_defaults.lua | 18 |
 | test_slash.lua | 73 |
 | test_disabled.lua | 13 |
 | test_options_panel.lua | 43 |
@@ -2160,4 +2168,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 30 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1898** |
+| **Total** | **1906** |

@@ -255,3 +255,118 @@ test("ValidateSchema: compares a color CHANNEL, not just the presence of a table
     row.default = { r = 0, g = 0, b = 0, a = 0.5 }   -- shipped alpha is 0.75
     assertEqual(inst.NS.ValidateSchema(), 1)
 end)
+
+-- ---------------------------------------------------------------------------
+-- Every branch the validator has, pinned by its answer AND its message
+-- ---------------------------------------------------------------------------
+--
+-- The four cases above reach the ordinary row's two failure arms. The ones below
+-- reach the rest: the minimap row's own pair (it is judged through the inversion,
+-- against the GLOBAL tree, so the ordinary arms never see it), the early return
+-- when there is nothing to compare against, and the `if out then` guard around
+-- every print. The message strings are asserted verbatim because they are the
+-- only thing a player or a developer ever reads from this check.
+
+--- Run the validator with NS.Print captured, and hand back the count and the lines.
+local function validateCapturing(inst)
+    local lines = {}
+    local real = inst.NS.Print
+    inst.NS.Print = function(msg) lines[#lines + 1] = msg end
+    local ok, failed = pcall(inst.NS.ValidateSchema)
+    inst.NS.Print = real
+    assertTrue(ok, "ValidateSchema raised: " .. tostring(failed))
+    return failed, lines
+end
+
+test("ValidateSchema: names the path when an ordinary row's default disagrees", function()
+    local inst = T.load()
+    local row = inst.NS.FindSchemaRow("window.frame.width")
+    row.default = row.default + 17
+    local failed, lines = validateCapturing(inst)
+    assertEqual(failed, 1)
+    assertEqual(#lines, 1)
+    assertEqual(lines[1], "schema default disagrees with defaults/Profile.lua: window.frame.width")
+end)
+
+test("ValidateSchema: names the path when an ordinary row does not resolve", function()
+    local inst = T.load()
+    inst.NS.RegisterSchemaRows({
+        { path = "window.frame.widht", type = "number", default = 480, page = "frame" },
+    })
+    local failed, lines = validateCapturing(inst)
+    assertEqual(failed, 1)
+    assertEqual(#lines, 1)
+    assertEqual(lines[1], "schema path does not resolve against the defaults: window.frame.widht")
+end)
+
+test("ValidateSchema: the minimap row is judged through the inversion, and a match is not one", function()
+    -- The row shows SHOWN (true) and the tree ships HIDDEN (false): opposites agree.
+    -- Making them EQUAL is the disagreement, which a plain `==` would have blessed.
+    local inst = T.load()
+    local row = inst.NS.FindSchemaRow(MINIMAP_PATH)
+    assertEqual(row.default, true, "the row ships shown")
+    assertEqual(inst.NS.defaults.global.minimap.hide, false, "the tree ships not-hidden")
+    row.default = false
+    local failed, lines = validateCapturing(inst)
+    assertEqual(failed, 1)
+    assertEqual(#lines, 1)
+    assertEqual(lines[1], "schema default disagrees with defaults/Profile.lua: " .. MINIMAP_PATH)
+end)
+
+test("ValidateSchema: a minimap row whose global tree lacks the key is unresolved, not agreed", function()
+    local inst = T.load()
+    inst.NS.defaults.global.minimap.hide = nil
+    local failed, lines = validateCapturing(inst)
+    assertEqual(failed, 1)
+    assertEqual(#lines, 1)
+    assertEqual(lines[1], "schema path does not resolve against the defaults: " .. MINIMAP_PATH)
+end)
+
+test("ValidateSchema: a minimap row with no global tree at all is unresolved, and does not raise", function()
+    local inst = T.load()
+    inst.NS.defaults.global = nil
+    local failed, lines = validateCapturing(inst)
+    assertEqual(failed, 1)
+    assertEqual(lines[1], "schema path does not resolve against the defaults: " .. MINIMAP_PATH)
+end)
+
+test("ValidateSchema: answers 0 when there is no window template to compare against", function()
+    local inst = T.load()
+    inst.NS.FindSchemaRow("window.frame.width").default = -1
+    inst.NS.WINDOW_TEMPLATE = nil
+    local failed, lines = validateCapturing(inst)
+    assertEqual(failed, 0)
+    assertEqual(#lines, 0)
+end)
+
+test("ValidateSchema: answers 0 when there is no profile tree to compare against", function()
+    local inst = T.load()
+    inst.NS.FindSchemaRow("window.frame.width").default = -1
+    inst.NS.defaults.profile = nil
+    local failed, lines = validateCapturing(inst)
+    assertEqual(failed, 0)
+    assertEqual(#lines, 0)
+end)
+
+test("ValidateSchema: counts every failure, in schema order, with nothing listening", function()
+    local inst = T.load()
+    inst.NS.FindSchemaRow("window.frame.width").default = -1
+    inst.NS.FindSchemaRow(MINIMAP_PATH).default = false
+    local failed, lines = validateCapturing(inst)
+    assertEqual(failed, 2)
+    assertEqual(#lines, 2)
+    -- Order is the schema array's, whatever it is: the validator walks it once.
+    local order = {}
+    for i, row in ipairs(inst.NS.Schema) do order[row.path] = i end
+    local first, second = "window.frame.width", MINIMAP_PATH
+    if order[first] > order[second] then first, second = second, first end
+    assertTrue(lines[1]:sub(-#first) == first, "first line names " .. first .. ": " .. lines[1])
+    assertTrue(lines[2]:sub(-#second) == second, "second line names " .. second .. ": " .. lines[2])
+    -- The `if out then` guard: with NS.Print gone the count is unchanged and nothing raises.
+    local real = inst.NS.Print
+    inst.NS.Print = nil
+    local ok, quiet = pcall(inst.NS.ValidateSchema)
+    inst.NS.Print = real
+    assertTrue(ok, "ValidateSchema raised with no NS.Print: " .. tostring(quiet))
+    assertEqual(quiet, 2)
+end)
