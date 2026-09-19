@@ -473,7 +473,6 @@ re-check reads, not the verdict beside it.
 | Doc | Covers |
 |---|---|
 | `disabled-state.md` | What *disabled* means here — the one latch, its two holds, the full teardown and rebuild, what survives because it is setup, and the slash and launcher surfaces while the addon is off |
-| `complexity.md` | The `lizard` report `performance-§10` fixes to this path — one file, overwritten in place, so the git history of it is the trend line. Carries the watch list and the 1000–1500 LOC band |
 | `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact |
 | `revendor/` | Frozen — one dated bundle per LibKa0s re-vendor: the payload delta and what was adopted, declined or filed from it |
 | `audits/` | Frozen — one dated bundle per `/wow-addon:standards-audit` run: the state, the deviations and the evidence as they stood on that date |
@@ -595,9 +594,9 @@ chosen for what a reader can hold does not aim at a line count. The tightest is 
 at exactly the cap, and the one to watch is `modules/Row.lua` at 1469 — source, on the refresh
 path, and the file every identity, spec-icon and pet-fold change has historically landed in.
 
-**The band is tabulated in [complexity.md](complexity.md#the-10001500-loc-band), not here.**
-`performance-§10` fixes that report to a single path and makes it the home for the watch list and the
-band together, so this section carries the reading and that file carries the figures. Two copies of a
+**The band is tabulated in [automated-tests/RESULTS.md](automated-tests/RESULTS.md#files-by-layout-1-band), not here.**
+`automated-tests-§4` makes that one overwritten file the home for the watch list and the band
+together, so this section carries the reading and that file carries the figures. Two copies of a
 measurement stay equal only by there being one — which is the failure this whole cycle is a repair
 for, in miniature.
 
@@ -695,7 +694,7 @@ holds vacuously over an empty table, and every one of its checks — that the st
 rows, that each Location names a file that exists, that no function is entered twice, that every
 disposition is followable — comes back the moment a row does. `lizard` is never run from the suite,
 because `performance-§10` forbids gating a commit on complexity and a test that shelled out to it
-would be that gate wearing a test's clothes. The measurement lives in `docs/complexity.md` and in each
+would be that gate wearing a test's clothes. The measurement lives in `docs/automated-tests/RESULTS.md` and in each
 run's `docs/automated-tests/<stamp>/complexity.txt`.
 
 ## Load order

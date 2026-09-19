@@ -376,9 +376,9 @@ recorded run — and it does not try to: the CCN figures and line ranges in the 
 measurements, exactly as the line counts in the cap census were, and pinning them would redden the
 suite on every ordinary edit to a warned function.
 
-Where the measurement lives now that the register does not: `docs/complexity.md`, the path
-`performance-§10` fixes for the report — one file, overwritten in place and never dated, so that the
-git history of the single path is the trend line — plus each run's
+Where the measurement lives now that the register does not: `docs/automated-tests/RESULTS.md`, the
+path `automated-tests-§4` fixes for the watch list — one file, overwritten in place and never dated, so
+that the git history of the single path is the trend line — plus each run's
 `docs/automated-tests/<stamp>/complexity.txt`. The report is where a *new* warned function shows up;
 the register was only ever where a warned function's **disposition** lived.
 
