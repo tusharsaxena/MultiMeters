@@ -29,11 +29,13 @@
 -- never read back on the way IN (design rule R3). There is no code path where a
 -- cell's geometry is a question anyone asks.
 --
--- The combat guard below is the same rule at the other end. The library already
--- refuses to render a page under lockdown, so this page cannot normally be
--- opened mid-pull — but a panel left open when a pull STARTS is still clickable,
--- and adding a column then would rebuild a frame whose cells are holding secret
--- values. So every mutation re-checks.
+-- The combat guard below is the same rule at the other end: options-ui-§2's
+-- gate for a settings setter that creates or destroys frames. The library locks
+-- a page shown in combat (LibKa0s v1.46.0+: a cover that takes the mouse, over a
+-- page opened mid-pull and over one left open when a pull STARTS), so this is a
+-- backstop for a write that gets past the cover -- a handle drag already in
+-- flight -- because adding a column then would rebuild a frame whose cells are
+-- holding secret values. So every mutation re-checks.
 --
 -- ---------------------------------------------------------------------------
 -- WHY THE WRITES GO THROUGH THE SCHEMA SEAM

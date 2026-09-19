@@ -283,13 +283,12 @@ on *Border* for the new window, and reloading or closing the panel forgets which
 A tab pointing at a group the current page no longer has (a stale `activeTab` surviving a schema
 change) heals to the first group rather than rendering a blank page under the strip.
 
-**Clicking a tab is not combat-guarded, and that is deliberate (`options-ui-§13`).** The library's
-combat refusal lives in the panel's `OnShow` and covers *opening or switching a settings category* —
-the action Blizzard's own lockdown protects. Redrawing widgets inside a category that is already open
-is not a protected action, so a tab click never checks `InCombatLockdown()` and is never refused —
-see [Combat lockdown: the panel refuses, it never defers](#combat-lockdown-the-panel-refuses-it-never-defers)
-for the guard that *does* apply, which is about reaching the panel at all, not about what you click
-once you are in it.
+**A tab click in combat is refused, and the library does the refusing (`options-ui-§13`).** Since
+LibKa0s v1.46.0 (standard v2.60.0) a page shown in combat is locked whole — the tab strip under the
+same cover as everything else — so a tab click does nothing until `PLAYER_REGEN_ENABLED`. No page here
+carries a tab guard of its own, and none may: a second guard is a second place for the lock to
+disagree with itself. See
+[Combat lockdown: the panel refuses, it never defers](#combat-lockdown-the-panel-refuses-it-never-defers).
 
 **The banner is the only window picker left on a window sub-page.** Frame, Header, Bars, Tooltip,
 Visibility, Columns and Windows itself each open with `H.WindowBanner(ctx)` before their tab strip —
@@ -471,13 +470,26 @@ addon helpfully queued it — is a window nobody asked for at a moment nobody wa
 addon it would land on top of the meter the player was reading. The refusal prints one gray notice
 line and stops.
 
-Two places re-state the guard, and each is a real hole rather than caution:
+**A page reached anyway is locked, not closed** (`options-ui-§2`, anti-pattern #88; LibKa0s
+v1.46.0+). The Blizzard AddOns sidebar reaches a page's `OnShow` without passing through
+`NS.OpenOptionsPanel`. Through LibKa0s v1.45 that `OnShow` closed the Settings window, which ran
+Blizzard's close-and-commit path from addon code, tainted. Now the library puts a cover over the whole
+page — header, banner and tab strip included — draws nothing under it, prints one gray line
+(`settings are locked during combat …`) per combat, and refuses every write, Defaults press and tab
+click until `PLAYER_REGEN_ENABLED`, when the cover lifts and the page on screen renders from current
+state. The same cover falls over a page already open when a pull starts. The Settings window itself
+is never touched, and nothing is re-opened. The lock is the library's alone: no page here carries a
+cover, refusal or render guard of its own.
 
-1. **`settings/Columns.lua`'s `commit()`.** The library already refuses to *render* a page under
-   lockdown, so the Columns page cannot normally be *opened* mid-pull — but a panel left open when a
-   pull **starts** is still clickable. Every column mutation therefore re-checks
+Two places re-state a combat rule, and neither is a second copy of the page lock:
+
+1. **`settings/Columns.lua`'s `commit()`**, `options-ui-§2`'s *"same gate for any settings setter
+   that creates or destroys frames"*. Adding, removing or reordering a column rebuilds the window's
+   cells, and doing that while they hold secret values is what the design exists to avoid. The
+   library's cover already takes the mouse off a page open when a pull starts, so this is a backstop
+   for a write that gets past it (a drag already in flight): every column mutation re-checks
    `InCombatLockdown()` and prints "Columns cannot be changed during combat." rather than rebuilding
-   a frame whose cells are holding secret values.
+   the cells.
 2. **`modules/Tooltip.lua`'s `hideInCombat`**, which is a preference rather than a guard, and uses
    `UnitAffectingCombat("player")` rather than `InCombatLockdown()` because the two differ at both
    ends of a pull and the setting is a statement about the player.
@@ -675,9 +687,9 @@ Ace window. An AceGUI `SimpleGroup` is parented to `ctx.body` and `AceConfigDial
 which lands the widgets inside this canvas instead of opening a second floating window over the
 settings panel.
 
-**It draws through `SetRenderer`, like every other page.** That is where its combat refusal comes
+**It draws through `SetRenderer`, like every other page.** That is where its combat lock comes
 from: the Blizzard AddOns sidebar reaches a canvas without going through `NS.OpenOptionsPanel`, and a
-page carrying its own copy of the refusal has one that drifts from the other eight the moment the
+page carrying its own copy of the lock has one that drifts from the other eight the moment the
 library's moves. This page hand-rolled that copy until the `CX03` sweep, and paid for it by being the
 one page the library did not draw.
 

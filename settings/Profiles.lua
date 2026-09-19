@@ -36,11 +36,12 @@
 -- ---------------------------------------------------------------------------
 --
 -- This page goes through H.SetRenderer exactly like the other eight, and the
--- reason is the combat refusal. The Blizzard AddOns sidebar reaches a canvas
--- without going through OpenOptionsPanel, so a page with no guard of its own is
--- reachable mid-pull — and that guard is the library's, inline in SetRenderer,
--- so a page that hand-rolls its own copy has a refusal that drifts from the
--- other eight the first time the library's wording or behaviour moves.
+-- reason is the combat lock. The Blizzard AddOns sidebar reaches a canvas
+-- without going through OpenOptionsPanel, so a page is reachable mid-pull —
+-- and the lock (a cover, nothing drawn, writes refused until combat ends) is
+-- the library's, inline in SetRenderer, so a page that hand-rolls its own copy
+-- has a lock that drifts from the other eight the first time the library's
+-- wording or behaviour moves.
 --
 -- SetRenderer's contract is "draw once, and again when the library says you are
 -- dirty", and that is one draw short here: the widget tree belongs to

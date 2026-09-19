@@ -518,25 +518,26 @@ second edge to catch.
   `window.frame.minimised`, which the **panel does not draw** — that row is `hidden`, because it is
   state the header's own minimise button writes rather than a preference. `/mm set
   window.frame.minimised true` must still collapse the window.
-- **A tab click works in combat.** With a tabbed page already open, enter combat (a dummy is fine)
-  and click a different tab. It redraws normally with **no** refusal — the strip is deliberately not
-  combat-guarded (`options-ui-§13`): redrawing widgets inside an already-open panel is not a
-  protected action. What **is** refused is *reaching* the panel mid-combat in the first place, which
-  is the next bullet — a tab click that refuses is the defect here, not one that works.
+- **An open page locks when combat starts.** With a tabbed page already open, enter combat (a dummy
+  is fine). A cover falls over the **whole** page — banner and tab strip included — reading
+  *Settings are locked during combat.* in gray, and one gray chat line says settings are locked. A
+  tab click, a widget and the Defaults button all do nothing under it (`options-ui-§2`/`§13`). The
+  Settings window stays open. When combat ends the cover lifts on its own and the page shows current
+  values; nothing re-opens.
 - **Clicking the tab you are already on does nothing at all** — no flicker, no repaint, no refusal
   message.
 - **Combat refusal.** Enter combat (a dummy is fine here). `/mm config` **refuses** and prints one
   gray notice. It must **not** queue the request and open the panel when combat ends.
 - **Every sub-page mid-combat, from the Blizzard sidebar.** With the Settings window closed, enter
   combat, then open Settings → AddOns → Ka0s Multi Meters from the Blizzard sidebar and walk **every**
-  sub-page in the category, **Profiles included**. Each must close the Settings window and print the
-  same gray refusal. That route bypasses `/mm config` entirely, which is why the guard lives on the
-  page rather than on the slash command — and since `M2-18` the Profiles page gets it from
-  `H.SetRenderer` like the other eight instead of from a hand-rolled copy of it, so the failure this
-  step is for is **eight pages refusing and one rendering**, or one refusing in different words.
-  (Session 1 of the 2026-09-07 remediation bundle runs the same step against AbsorbTracker and
-  KickCD, which were changed the same way. Not yet run — no client has been available since the
-  change.)
+  sub-page in the category, **Profiles included**. Each must show the gray combat cover with nothing
+  drawn under it, and the **Settings window must stay open** — no close, no `ADDON_ACTION_BLOCKED`,
+  no `C stack overflow` (anti-pattern #88, which the old close-the-window refusal caused). Exactly
+  one gray *settings are locked during combat* line for the whole walk. After combat, the page on
+  screen draws itself without a click. That route bypasses `/mm config` entirely, which is why the
+  lock lives on the page (in the library's `H.SetRenderer`) rather than on the slash command — and
+  the Profiles page gets it from the same place as the other eight, so the failure this step is for
+  is **eight pages covered and one rendering**. (LibKa0s v1.46.1; not yet run in a client.)
 
 ### 5. Column editor
 
@@ -604,12 +605,13 @@ pool, which is where every leftover in this page's history has come from.
 Also check: every column draws its **bar** (there is no numbers-only column any more), and the
 columns share the frame width evenly (there is no per-column width to set).
 
-**Combat refusal.** Leave the Columns page **open**, then pull. Click a glyph and drag a handle.
+**Combat lock.** Leave the Columns page **open**, then pull. Click a glyph and drag a handle.
 
-**Pass.** Both are refused with "Columns cannot be changed during combat." — printed, not silent.
-**No Lua error.** This is the case the library's render-time refusal does not cover: a panel left
-open when a pull starts is still clickable, and rebuilding cells that are holding secret values is
-precisely what must not happen.
+**Pass.** The library's gray cover is over the page, so neither lands: the columns do not change,
+and the one chat line is the library's *settings are locked during combat*. **No Lua error.** Then,
+out of combat, start a handle drag and pull while still holding it; drop. The drop is refused with
+"Columns cannot be changed during combat." — `commit()`'s own backstop, because rebuilding cells that
+are holding secret values is precisely what must not happen.
 
 ### 6. Multi-window
 

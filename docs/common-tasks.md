@@ -488,9 +488,9 @@ to `WINDOW_TEMPLATE` **and** to `COPY_GROUPS` in `modules/WindowManager.lua` and
   to restore, and a button that appears to do nothing is worse than no button — unless, like Columns,
   the page gives the button bespoke work to do (`ctx.panel.defaultsOnClick` can be any function, not
   only `H.RestoreDefaults`).
-- A tab click needs no combat guard and none should be added — `options-ui-§13` covers this, and the
-  library's own combat refusal already lives in the panel's `OnShow`, which guards *opening or
-  switching* a category, not redrawing inside one that is already open.
+- A tab click needs no combat guard and none may be added — `options-ui-§2`/`§13`: the library
+  locks a page shown in combat whole (cover, refused writes, refused tab clicks, one gray line) and
+  a host guard beside it is a second place for the lock to disagree with itself.
 - If the page has destructive controls, add its key to `vetoedFromResetAll` in
   `settings/OptionsSetup.lua` — and remember that predicate is enforced twice, in the descriptor and
   in the degradation stub's own reset loop.
