@@ -218,10 +218,11 @@ end)
 -- ---------------------------------------------------------------------------
 
 test("Columns: no change is applied under combat lockdown, and the reason is said", function()
-    -- The library refuses to RENDER a page under lockdown, so this page cannot
-    -- normally be OPENED mid-pull — but a panel left open when a pull STARTS is
-    -- still clickable, which is why every mutation re-checks rather than trusting
-    -- the render guard.
+    -- The library's combat cover takes the mouse off a page shown in combat, but
+    -- a write that gets past it (a handle drag already in flight) would rebuild
+    -- cells holding secret values -- options-ui-§2's gate for a frame-building
+    -- setter -- which is why every mutation re-checks rather than trusting the
+    -- cover. The harness fires the glyph directly, as that stray write would.
     local inst, _, blocks = openPage()
     local before = table.concat(statKeys(inst), ",")
 

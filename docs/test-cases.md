@@ -1975,9 +1975,9 @@ badge and any count quoted in the docs must agree with it.
 - Options: the canvas footer's Defaults control reaches the same handler as the header button
 - Options: opening the panel is REFUSED under combat lockdown, with a notice
 - Options: a refused open is NOT deferred and replayed when combat ends
-- Options: a page reached from the Blizzard sidebar mid-combat refuses to render
+- Options: a page reached from the Blizzard sidebar mid-combat is COVERED and draws nothing
 - Options: no settings page wires its own OnShow
-- Options: the Profiles page refuses to render mid-combat, through the library's guard
+- Options: the Profiles page is covered mid-combat, through the library's guard
 - Options: a profile switch re-opens the Profiles page's AceConfigDialog
 - Options: the Profiles page SHOWS the container AceConfigDialog fills, even a pooled (hidden) one
 - Options: a widget's set() routes through NS.SetByPath

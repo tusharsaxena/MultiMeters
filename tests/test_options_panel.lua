@@ -495,22 +495,58 @@ test("Options: a refused open is NOT deferred and replayed when combat ends", fu
     assertEqual(opens, 1)
 end)
 
-test("Options: a page reached from the Blizzard sidebar mid-combat refuses to render", function()
+-- The window-close spy: Blizzard's settings window must not be touched in combat. The kit mock
+-- records SettingsPanel:Close; HideUIPanel is a global the kit does not stub, so it is spied here.
+local function spyWindowClose(inst)
+    local spy = { hides = 0 }
+    inst.mocks.HideUIPanel = function() spy.hides = spy.hides + 1 end
+    spy.closedBefore = inst.mocks.__settingsClosed
+    return spy
+end
+
+-- Every chat line since `from` that carries the library's combat-lock notice.
+local function combatNotices(inst, from)
+    local lib = inst.mocks.LibStub("LibKa0s-Options-1.0", true)
+    local notice = lib and lib.STRINGS and lib.STRINGS.COMBAT_LOCKED_NOTICE
+    assertTrue(type(notice) == "string", "the library publishes no COMBAT_LOCKED_NOTICE")
+    local out = {}
+    for i = from + 1, #inst.mocks.__chat do
+        if inst.mocks.__chat[i]:find(notice, 1, true) then out[#out + 1] = inst.mocks.__chat[i] end
+    end
+    return out, notice
+end
+
+test("Options: a page reached from the Blizzard sidebar mid-combat is COVERED and draws nothing", function()
+    -- options-ui-§2 / §13, anti-pattern #88 (LibKa0s Options minor 22+): the sidebar bypasses
+    -- OpenOptionsPanel's guard, so the page's own OnShow locks it. It used to close the settings
+    -- window; that close ran Blizzard's close-and-commit path from addon code, tainted. Now the page
+    -- is covered, nothing renders, the window is left alone, and the user reads one gray line.
     local inst = T.load()
     local ctx = panelFor(inst, "frame")
+    local spy = spyWindowClose(inst)
     inst.mocks.setRestricted(true)
+    local chatBefore = #inst.mocks.__chat
 
     ctx.panel:Hide()
     ctx.panel:Show()
 
-    assertFalse(ctx._rendered, "the sidebar bypasses OpenOptionsPanel's guard, so OnShow re-checks")
+    assertFalse(ctx._rendered, "a page shown under lockdown must not draw half a page")
     assertEqual(ctx.scroll, nil, "no body may be built under lockdown")
-    assertTrue(inst.mocks.__settingsClosed > 0,
-        "closing the window is what makes the refusal legible; a silent no-render reads as a bug")
+    assertTrue(ctx.__combatCover ~= nil, "the library built no combat cover for the page")
+    assertTrue(ctx.__combatCover:IsShown(), "the cover is what makes the refusal legible on the page")
+    assertEqual(inst.mocks.__settingsClosed, spy.closedBefore,
+        "the settings window was closed from addon code in combat (anti-pattern #88)")
+    assertEqual(spy.hides, 0, "HideUIPanel was called in combat (anti-pattern #88)")
 
-    -- And it really is only the render that was refused: the Defaults button is
-    -- built above the combat check, on every show, which is the ordering the
-    -- previous case pins from the other direction.
+    -- A second show in the same combat adds no second line: one notice per combat.
+    ctx.panel:Hide()
+    ctx.panel:Show()
+    local lines, notice = combatNotices(inst, chatBefore)
+    assertEqual(#lines, 1, "expected exactly one combat-lock notice, got " .. #lines)
+    assertTrue(notice:find("|cffaaaaaa", 1, true) == 1, "the notice is gray")
+
+    -- And it really is only the render that was refused: the Defaults button is built above the
+    -- combat check, on every show.
     assertTrue(ctx.panel.defaultsBtn ~= nil)
 end)
 
@@ -537,29 +573,37 @@ test("Options: no settings page wires its own OnShow", function()
         "these pages drive their own show path instead of H.SetRenderer")
 end)
 
-test("Options: the Profiles page refuses to render mid-combat, through the library's guard",
+test("Options: the Profiles page is covered mid-combat, through the library's guard",
 function()
     -- The page whose widget tree is AceConfigDialog's is reached from the
     -- Blizzard sidebar exactly like the other eight, so it needs the same
-    -- refusal -- and now gets it from the same place rather than from a copy.
+    -- lock -- and gets it from the same place rather than from a copy.
     local inst = T.load()
     local ctx = panelFor(inst, "profiles")
     local ACD = inst.mocks.__libs["AceConfigDialog-3.0"]
     local before = ACD.__opens or 0
+    local spy = spyWindowClose(inst)
 
     inst.mocks.setRestricted(true)
+    local chatBefore = #inst.mocks.__chat
     ctx.panel:Hide()
     ctx.panel:Show()
 
     assertEqual(ACD.__opens or 0, before, "AceConfigDialog drew into the canvas under lockdown")
-    assertTrue(inst.mocks.__settingsClosed > 0,
-        "closing the window is what makes the refusal legible")
-    -- And the page is still drawable once combat drops: a refusal that leaves
+    assertTrue(ctx.__combatCover ~= nil and ctx.__combatCover:IsShown(),
+        "the page is not covered under lockdown")
+    assertEqual(inst.mocks.__settingsClosed, spy.closedBefore,
+        "the settings window was closed from addon code in combat (anti-pattern #88)")
+    assertEqual(spy.hides, 0, "HideUIPanel was called in combat (anti-pattern #88)")
+    assertEqual(#combatNotices(inst, chatBefore), 1, "expected exactly one combat-lock notice")
+
+    -- And the page is still drawable once combat drops: a lock that leaves
     -- ctx._rendered set would blank the page for the rest of the session.
     inst.mocks.setRestricted(false)
     ctx.panel:Hide()
     ctx.panel:Show()
-    assertTrue((ACD.__opens or 0) > before, "the page never recovered after the refusal")
+    assertTrue((ACD.__opens or 0) > before, "the page never recovered after the lock")
+    assertFalse(ctx.__combatCover:IsShown(), "the cover stayed up after combat")
 end)
 
 test("Options: a profile switch re-opens the Profiles page's AceConfigDialog", function()
