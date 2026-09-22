@@ -77,7 +77,7 @@ Constants.LOGO = "Interface\\AddOns\\MultiMeters\\media\\logos\\multimeters.logo
 -- The ICON form of the same art, and a DIFFERENT FILE doing a different job
 -- (layout-§4). One file is this addon's face in three places -- the AddOns list
 -- (the TOC's `## IconTexture`), the minimap button and a broker display
--- (launcher-§4) -- so a player who has seen the addon once recognises it in all
+-- (launcher-§4) -- so a player who has seen the addon once recognizes it in all
 -- three, and core/LauncherSetup.lua hands this exact string to the launcher.
 --
 -- 128x128, UNCOMPRESSED 32-BIT (TGA image type 2, 32 bpp), regenerated from the
@@ -180,7 +180,7 @@ Constants.SOURCE_DISPLAY_TYPE = {
 --                  longer uses it (see headerLabel).
 --   headerLabel    what the grid's column header says. Optional — defaults to
 --                  `label`, and is only spelled out where the full label does not
---                  fit COLUMN_WIDTH. Full words beat initialisms in a header: a
+--                  fit COLUMN_WIDTH. Full words beat abbreviations in a header: a
 --                  player reading "AVD" has to remember what it stood for, and
 --                  the header is read far less often than the numbers under it,
 --                  so the space is worth spending.

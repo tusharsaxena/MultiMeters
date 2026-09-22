@@ -307,7 +307,7 @@ local TAB_HEADER_BG = L["Header background"]
 local function render(ctx)
     -- BEFORE ClearScroll, not after. ClearScroll hands every AceGUI container on this page back to
     -- a process-wide pool, and a drag handle is parented to one of them until the controller is
-    -- cancelled -- so cancelling afterwards means some unrelated widget has already been handed a
+    -- canceled -- so canceling afterwards means some unrelated widget has already been handed a
     -- frame with a live handle on it.
     if NS.CancelReorder then NS.CancelReorder(ctx) end
     H.ClearScroll(ctx)
@@ -329,7 +329,7 @@ local function render(ctx)
             if key == ctx.activeTab then return end
             ctx.activeTab = key
             -- No H.ClearScroll here: RefreshPanel(ctx, true) re-enters render(), which clears the
-            -- scroll AFTER cancelling the reorder controller (see the comment at the top of render
+            -- scroll AFTER canceling the reorder controller (see the comment at the top of render
             -- above). Clearing here too would run BEFORE the cancel on a tab click -- the one path
             -- that matters, since this is the page with a live reorder controller.
             H.RefreshPanel(ctx, true)

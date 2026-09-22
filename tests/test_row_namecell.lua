@@ -11,10 +11,10 @@
 -- tests/test_row.lua: the handle goes to SetText untouched, because SetText is
 -- a widget setter and not a log renderer.
 --
--- What lives here: class colour on the name string, the spec/class icon slot
+-- What lives here: class color on the name string, the spec/class icon slot
 -- and the space it consumes, the realm strip and the character-counting cap,
 -- and the fold arrow and drill-down hand-off that hang off the same cell. What
--- stays in tests/test_row.lua: the value cell, the shared colour/media/mouse
+-- stays in tests/test_row.lua: the value cell, the shared color/media/mouse
 -- parts and the cell descriptor.
 
 local T = _G.MULTIMETERS_TEST
@@ -461,12 +461,12 @@ test("Icons on the RIGHT anchor to the right edge and give the name the left one
         "the right-hand layout reserved a different amount of room")
 end)
 
-test("The icon takes its configured size and is centred in the row", function()
-    -- The vertical centring is `(rowHeight - size) * -0.5`, which is the only
+test("The icon takes its configured size and is centered in the row", function()
+    -- The vertical centering is `(rowHeight - size) * -0.5`, which is the only
     -- arithmetic in this function -- and an icon larger than the shipped 14 is
     -- exactly when getting it wrong shows, because half of it hangs into the row
     -- above. The stride the name is pushed by is the SAME size plus the gap.
-    -- red under: a constant y, or a centring that forgets the sign.
+    -- red under: a constant y, or a centering that forgets the sign.
     local inst, window, row = bench(function(c)
         c.icons.showIcon = true
         c.icons.size     = 20
@@ -480,7 +480,7 @@ test("The icon takes its configured size and is centred in the row", function()
 
     local _, _, _, x, y = tex:GetPoint(1)
     assertEqual(x, 2)
-    assertEqual(y, (window.layout.rowHeight - 20) * -0.5, "the icon is not centred on the row")
+    assertEqual(y, (window.layout.rowHeight - 20) * -0.5, "the icon is not centered on the row")
 
     local _, _, _, lx = cell.left:GetPoint(1)
     assertEqual(lx, 2 + 20 + gap, "the name did not move with the bigger icon")

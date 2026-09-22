@@ -327,7 +327,7 @@ function DrillDown:Enter(window, row, statKey, kind)
         kind          = kind or "spells",
         deaths        = (kind == "deaths") and copyRecapIDs(row.deaths) or nil,
         -- Which of the three timestamp styles this window is set to. Read at
-        -- Enter so every row in one list is labelled the same way even if the
+        -- Enter so every row in one list is labeled the same way even if the
         -- setting changes while it is open.
         timeStyle     = timeStyleOf(window),
         name          = row.name,
@@ -398,7 +398,7 @@ end
 ---
 --- The deaths view first, where the client can read a recap and the row knows
 --- which deaths to list. Blizzard's own frame second, so a client without
---- C_DeathRecap keeps exactly the behaviour it has today rather than losing the
+--- C_DeathRecap keeps exactly the behavior it has today rather than losing the
 --- one thing that worked. Neither rung firing returns nil, and the caller takes
 --- the ladder's last rung itself.
 ---
@@ -467,7 +467,7 @@ end
 ---
 --- A DEATH ROW OPENS BLIZZARD'S OWN RECAP. Confirmed in-client: the frame
 --- renders another player's death in full when it is handed a live id, which is
---- what makes the division of labour work — this list answers "when", and the
+--- what makes the division of labor work — this list answers "when", and the
 --- game's frame answers "what killed them" better than a second window of ours
 --- would. It does NOT leave the list: the frame opens over the window, and
 --- returning to a grid the player did not ask for would lose their place.
@@ -574,7 +574,7 @@ local function spellRow(spell, view, maxAmount)
     }
 end
 
---- How this death is labelled, in whichever style the window is set to.
+--- How this death is labeled, in whichever style the window is set to.
 ---
 --- THE MOMENT OF DEATH COMES FROM THE RECAP'S OWN NEWEST EVENT, and never from
 --- `deathTimeSeconds`. The two are different clocks: an event timestamp is

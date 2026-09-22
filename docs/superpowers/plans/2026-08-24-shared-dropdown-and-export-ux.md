@@ -32,7 +32,7 @@
 |---|---|
 | `LibKa0s/Widgets.lua` | **Create.** The whole `LibKa0s-Widgets-1.0` major: `Widgets.Dropdown`, the shared pooled popup menu, the click catcher, the pooled row buttons. Depends on `Core` only. |
 | `LibKa0s/LibKa0s.xml` | Modify. One `<Script>` line, after `Media.lua`. |
-| `tests/test_widgets.lua` | **Create.** The dropdown/menu suite, moved from `BankLedger/tests/test_browser.lua:469-662`, plus a local geometry-modelling frame factory and new cases for the three injected options. |
+| `tests/test_widgets.lua` | **Create.** The dropdown/menu suite, moved from `BankLedger/tests/test_browser.lua:469-662`, plus a local geometry-modeling frame factory and new cases for the three injected options. |
 | `tests/run.lua` | Modify. A `MAJORS` row and a `Kit.run` suite entry. |
 | `docs/api/LibKa0s-Widgets-1.0/version-1-docs.md` | **Create.** The public contract. Gated by `test_versioning.lua`. |
 | `docs/api/README.md` | Modify. One table row. |
@@ -75,7 +75,7 @@ Branch: `git checkout -b ux/export-corrections` in `MultiMeters/`. These three t
 
 ### Task 1: The sort arrow gains a LibKa0s-Media top rung
 
-Spec §5. The column-header sort arrow currently resolves a Blizzard atlas with an ASCII fallback. It gains a rung above both: the collection's own `sort-up` / `sort-down`, tinted with the header colour, which is what BankLedger's `LedgerTable.lua` already draws.
+Spec §5. The column-header sort arrow currently resolves a Blizzard atlas with an ASCII fallback. It gains a rung above both: the collection's own `sort-up` / `sort-down`, tinted with the header color, which is what BankLedger's `LedgerTable.lua` already draws.
 
 **Files:**
 - Modify: `modules/Window.lua:114-125` (the `SORT_*` constants and their comment), `modules/Window.lua:920-951` (the branch in `ApplyColumnHeaders`)
@@ -169,9 +169,9 @@ In `modules/Window.lua`, immediately after the existing `SORT_ASCII_UP` line (`:
 -- both, and flipping one of a matched pair would draw an inverted glyph that
 -- looks right today and stops looking right the moment the art is redrawn.
 --
--- Tinted with the HEADER colour rather than shipped gold, exactly as
+-- Tinted with the HEADER color rather than shipped gold, exactly as
 -- BankLedger's LedgerTable.lua tints the same two marks: the art is near-white
--- by contract, and near-white beside a gold label reads as a second colour
+-- by contract, and near-white beside a gold label reads as a second color
 -- inside one string rather than as one control.
 local SORT_MARK_DOWN = "sort-down"
 local SORT_MARK_UP   = "sort-up"
@@ -239,7 +239,7 @@ git commit -m "The column sort arrow wears the collection's own mark
 It was reaching for auctionhouse-ui-sortarrow and flipping it, while
 sort-up.tga and sort-down.tga sat unused in the vendored payload. Now the
 mark is the top rung of the ladder that was already there, tinted with the
-header colour the way BankLedger's column headers tint the same two marks.
+header color the way BankLedger's column headers tint the same two marks.
 
 The atlas and the ASCII rungs stay underneath. Two assets rather than one
 flipped, so the ascending arrow is not an upside-down descending one."
@@ -386,7 +386,7 @@ function Export.ResolveMetric(win)
 end
 ```
 
-Its docblock's third and fourth paragraphs — the ones arguing that `""` is a choice rather than an absent value, and that an earlier draft's seeding made the follow behaviour reachable exactly once — are replaced by:
+Its docblock's third and fourth paragraphs — the ones arguing that `""` is a choice rather than an absent value, and that an earlier draft's seeding made the follow behavior reachable exactly once — are replaced by:
 
 ```lua
 --- Which stat the chat dump actually ranks by, right now.
@@ -436,7 +436,7 @@ In `Export.Open`, replace the "No metric seeding here" comment block and add the
     -- shape stored "" — "match whichever column the window is sorted by" — and
     -- resolved it fresh at every use, which meant the Metric button showed a
     -- label naming a rule instead of naming a stat. The rule was right and
-    -- unreadable; seeding keeps the behaviour and puts the answer in the control.
+    -- unreadable; seeding keeps the behavior and puts the answer in the control.
     --
     -- It is also what makes the settings panel's "Default metric" row removable:
     -- a preference every open overwrites is a preference in name only.
@@ -495,13 +495,13 @@ cd MultiMeters && luacheck .
 git add modules/Export.lua settings/Schema.lua defaults/Profile.lua locales/enUS.lua tests/
 git commit -m "Remove 'Match the window' from the export metric selector
 
-The behaviour was right and the label was not: a Metric button reading
+The behavior was right and the label was not: a Metric button reading
 'Match the window' names a rule rather than a stat, and there is no way to
 tell from it what Print to Chat is about to do.
 
 Export.Open now seeds the metric from the invoking window's sort column, so
 opening the modal from a window sorted by Healing shows Healing. Same
-behaviour, visible in the control.
+behavior, visible in the control.
 
 That makes the settings panel's Default metric row a preference every open
 overwrites, so it goes too, with its two locale strings. A profile carrying
@@ -593,7 +593,7 @@ Replace the `whisperLabel` FontString and the `InputBoxTemplate` EditBox (`:1343
 
 ```lua
     -- Shown only while the channel is WHISPER. Hidden rather than disabled: a
-    -- greyed-out name box on a raid-channel export is a control asking to be
+    -- grayed-out name box on a raid-channel export is a control asking to be
     -- filled in for no reason.
     --
     -- NOT InputBoxTemplate, and that is the fix rather than a preference. The
@@ -714,7 +714,7 @@ Branch: `git checkout -b feat/widgets-dropdown` in `LibKa0s/`.
 
 ### Task 4: `LibKa0s-Widgets-1.0` and its suite
 
-Spec §2. BankLedger's dropdown moves into the library, with its existing test suite. One behavioural change is made on the way, and only one — see Step 4.
+Spec §2. BankLedger's dropdown moves into the library, with its existing test suite. One behavioral change is made on the way, and only one — see Step 4.
 
 **Files:**
 - Create: `LibKa0s/Widgets.lua`
@@ -765,7 +765,7 @@ Spec §2. BankLedger's dropdown moves into the library, with its existing test s
 -- No search box, no keyboard navigation, no scrolling for a long list, no sub-menus, no per-row
 -- disable. None of those is wanted by either shipped consumer, and every one of them is reachable
 -- later without a major bump. A widget that grows features nobody asked for is a widget whose
--- degraded behaviour nobody has tested.
+-- degraded behavior nobody has tested.
 --
 -- Depends on LibStub and LibKa0s-Core-1.0, and on no addon framework.
 
@@ -818,7 +818,7 @@ and the arrow's texture line becomes:
   arrow:SetTexture(opts.chevron or CHEVRON_FALLBACK)
 ```
 
-3. **The one behavioural change.** `makeMenuRow` used to set the glyph's font once at row creation. The row pool is now process-wide and shared between addons that may not agree on a mono face, so the font moves into `paintMenuRow`, which already repaints every field on every pass for exactly this class of reason. In `makeMenuRow`, drop the `gl:SetFont(...)` line; in `paintMenuRow`, above the `SetText`:
+3. **The one behavioral change.** `makeMenuRow` used to set the glyph's font once at row creation. The row pool is now process-wide and shared between addons that may not agree on a mono face, so the font moves into `paintMenuRow`, which already repaints every field on every pass for exactly this class of reason. In `makeMenuRow`, drop the `gl:SetFont(...)` line; in `paintMenuRow`, above the `SetText`:
 
 ```lua
   -- FONT SET ON EVERY PAINT, not once at creation, and that is the one thing this widget does
@@ -862,7 +862,7 @@ end
 
 - [ ] **Step 4: Create the suite**
 
-`tests/test_widgets.lua`. Its head installs a geometry-modelling frame factory, because LibKa0s's shared mock is the kit's base stub — `GetWidth` returns 0, `SetSize` is a no-op and `CreateTexture` answers the frame itself, none of which this widget's arithmetic survives. It is installed **here** rather than in `tests/wow_mock.lua` so the other fifteen suites in this repo keep the base's behaviour and this move stays behaviour-neutral for them.
+`tests/test_widgets.lua`. Its head installs a geometry-modeling frame factory, because LibKa0s's shared mock is the kit's base stub — `GetWidth` returns 0, `SetSize` is a no-op and `CreateTexture` answers the frame itself, none of which this widget's arithmetic survives. It is installed **here** rather than in `tests/wow_mock.lua` so the other fifteen suites in this repo keep the base's behavior and this move stays behavior-neutral for them.
 
 ```lua
 -- tests/test_widgets.lua — LibKa0s-Widgets-1.0: the flat dropdown and its shared popup menu.
@@ -882,7 +882,7 @@ end
 -- reason.
 --
 -- The factory is installed HERE rather than in tests/wow_mock.lua deliberately: fifteen other
--- suites in this repo are written against the base's behaviour, and widening the shared mock to
+-- suites in this repo are written against the base's behavior, and widening the shared mock to
 -- suit one of them is a change to all sixteen.
 
 local T = _G.LK_TEST
@@ -973,7 +973,7 @@ Then append the divider and the moved block:
 
 followed by that block with three mechanical substitutions: `B:MakeDropdown(parent, width)` becomes `W.Dropdown(parent, width, { check = HOST_CHECK, glyphFont = HOST_FONT })`; the `CHECK` local becomes `"|T" .. HOST_CHECK .. ":0|t "`; and the comment naming `Browser.lua` names `Widgets.lua`. Nothing else in it changes.
 
-Finally, add two cases for the glyph-font rule, which is the move's one behavioural change:
+Finally, add two cases for the glyph-font rule, which is the move's one behavioral change:
 
 ```lua
 test("A glyphed row is painted in the host's face on every pass", function()
@@ -1039,7 +1039,7 @@ path from the consuming addon's name, and a vendored copy does not know which
 folder it was copied into. Chevron, tick and glyph face all arrive as
 parameters, each falling to the Blizzard rung the host had before.
 
-One behavioural change on the way across: the row glyph's font is set on every
+One behavioral change on the way across: the row glyph's font is set on every
 paint rather than once at row creation. The pool is process-wide and now spans
 addons, so a face set at creation would be whichever host opened a dropdown
 first.
@@ -1089,7 +1089,7 @@ Create `docs/api/LibKa0s-Widgets-1.0/version-1-docs.md`, following the shape of 
 - A *What changed at this version* section reading "First release. Lifted from BankLedger's `modules/Browser.lua`; see that repo's history before v1.11.0 for the widget's prior life."
 - `Since: 1` on every member
 - The full contract: `Widgets.Dropdown(parent, width, opts)` with the three `opts` fields and each one's fallback; every instance method and its parameters; `dd.onSelect` / `dd.onMultiSelect`; the fields a host may read (`dd.text`, `dd.arrow`, `dd._value`, `dd._selected`, `dd.multi`)
-- A **Behaviour a host must know** section stating: the popup menu is a process-wide singleton, so exactly one dropdown is open at a time across every addon using the library; rows are pooled across dropdowns and every field is repainted on every pass; the glyph column is absent unless `opts.glyphFont` is given
+- A **Behavior a host must know** section stating: the popup menu is a process-wide singleton, so exactly one dropdown is open at a time across every addon using the library; rows are pooled across dropdowns and every field is repainted on every pass; the glyph column is absent unless `opts.glyphFont` is given
 - A **Degraded** section: with `LibKa0s-Widgets-1.0` absent, `LibStub(..., true)` answers nil and the host must have a plan — both shipped consumers refuse the surface rather than draw dead controls
 
 - [ ] **Step 3: Add the README row**
@@ -1271,7 +1271,7 @@ In `tests/test_browser.lua`, **delete** lines 469-662 (everything from the `-- �
 ```lua
 -- ── The dropdown forwarder ────────────────────────────────────────────────────
 --
--- The widget itself is LibKa0s-Widgets-1.0's now, and its behaviour is asserted in that repo's
+-- The widget itself is LibKa0s-Widgets-1.0's now, and its behavior is asserted in that repo's
 -- tests/test_widgets.lua — the cases that used to sit here moved there verbatim. What is still this
 -- addon's is the INJECTION: three resolved paths that only a host can produce, because the library
 -- builds a path from an addon name it does not have. Getting one of them wrong draws nothing and
@@ -1580,7 +1580,7 @@ Add `chevron-down` to `core/MediaSetup.lua`'s consumer notes, naming `modules/Ex
 - Click outside the menu. It closes and the click does **not** land on the modal
   behind it.
 - Pick a different metric. The menu closes, the button reads `Metric: <that one>`.
-- Repeat for **Channel** and **Lines**. Same skin, same behaviour, in all three.
+- Repeat for **Channel** and **Lines**. Same skin, same behavior, in all three.
 - Open the modal from a window sorted by **Healing**. Metric reads
   **`Metric: Healing`** before you touch anything — there is no
   "Match the window" entry any more, and there should not be one.

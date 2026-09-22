@@ -481,7 +481,7 @@ local LOOKUP_SAMPLE_ROWS = 6
 ---
 --- `sourceCreatureID` IS WITHHELD WHILE IT IS SECRET. The client refuses a
 --- secret argument #4 by RAISING -- `bad argument #4 ... Secret values are only
---- allowed during untainted execution`, modelled in tests/wow_mock.lua. Passing
+--- allowed during untainted execution`, modeled in tests/wow_mock.lua. Passing
 --- one would answer "raised" for a reason that has nothing to do with the GUID,
 --- which is exactly the misreading this probe exists to prevent. Only rows that
 --- carry a GUID are probed, so nothing here needs the creature id to match.
@@ -891,7 +891,7 @@ end
 
 --- recapID -> { events, maxHealth }, or `false` for "asked, there is nothing".
 ---
---- THE MEMO IS A CORRECTNESS REQUIREMENT, NOT AN OPTIMISATION. The death
+--- THE MEMO IS A CORRECTNESS REQUIREMENT, NOT AN OPTIMIZATION. The death
 --- drill-down needs one read PER DEATH merely to label its rows with a wall-clock
 --- time, and modules/Window.lua rebuilds those rows on every refresh pass — four
 --- times a second. Uncached, a five-death list is twenty client calls a second

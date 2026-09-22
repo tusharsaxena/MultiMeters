@@ -44,7 +44,7 @@ end
 --- With every texture loadable -- which is the mock's default and a live
 --- client's usual state -- the first rung wins for every control, and the atlas
 --- and ASCII rungs below it become unreachable in a test while remaining the
---- live behaviour on any client missing the file. Both of those rungs exist
+--- live behavior on any client missing the file. Both of those rungs exist
 --- because this addon has already shipped invisible controls twice.
 local ICON_PATH = "Interface\\AddOns\\MultiMeters\\libs\\LibKa0s\\media\\icons\\"
 local function withoutOurArt(inst)
@@ -122,9 +122,9 @@ test("HeaderControls: hiding the LAST control moves nothing", function()
     assertEqual(offsetOf(after.controls.settings), settingsAt)
 end)
 
-test("HeaderControls: the strip is CENTRED in the title bar", function()
-    -- Centred in what a player SEES as the title bar -- the frame's top edge down
-    -- to the divider -- rather than in the tinted band alone. Centring in the
+test("HeaderControls: the strip is CENTERED in the title bar", function()
+    -- Centered in what a player SEES as the title bar -- the frame's top edge down
+    -- to the divider -- rather than in the tinted band alone. Centering in the
     -- band leaves the padding above as dead space and lands the row against the
     -- divider, which is what "everything is anchored to the bottom" meant.
     -- red under: y = -(padding - 1), and again under -(padding + (title - h)/2).
@@ -137,9 +137,9 @@ test("HeaderControls: the strip is CENTRED in the title bar", function()
     assertEqual(topOf(window.controls.settings), -7)
 end)
 
-test("HeaderControls: the strip and the title share one centre line", function()
+test("HeaderControls: the strip and the title share one center line", function()
     -- Two placements of one row. The whole point of routing both through
-    -- Window:TitleRowTop is that they cannot be centred differently.
+    -- Window:TitleRowTop is that they cannot be centered differently.
     local _, window = scene(function(cfg)
         cfg.header.height = 24
         cfg.header.size = 14
@@ -148,11 +148,11 @@ test("HeaderControls: the strip and the title share one centre line", function()
     local iconTop = topOf(window.controls.settings)
     local textTop = select(5, window.frame.title:GetPoint(1))
     assertEqual(iconTop - 18 / 2, textTop - 14 / 2,
-        "the icons and the title are on different centre lines")
+        "the icons and the title are on different center lines")
 end)
 
 test("HeaderControls: a control taller than its bar overflows DOWNWARD", function()
-    -- Centring a 32px control in an 18px bar puts its top above the frame, where
+    -- Centering a 32px control in an 18px bar puts its top above the frame, where
     -- half of it is drawn outside the window.
     local _, window = scene(function(cfg)
         cfg.header.height = 18
@@ -167,7 +167,7 @@ local function tintOf(button)
     return c[1], c[2], c[3]
 end
 
-test("HeaderControls: a control at rest takes the control colour", function()
+test("HeaderControls: a control at rest takes the control color", function()
     -- The art ships white and is tinted by a MULTIPLY, so the shipped default is
     -- the identity and the icons read as chrome rather than as a line of the
     -- header text. It is a picker, not a switch, so a profile can say otherwise.
@@ -184,10 +184,10 @@ test("HeaderControls: a control at rest takes the control colour", function()
     assertEqual(tr .. "," .. tg .. "," .. tb, "0.2,0.4,0.6")
 end)
 
-test("HeaderControls: the control under the pointer takes the HOVER colour", function()
-    -- Hover is the only feedback a control gives, and the two colours are what
+test("HeaderControls: the control under the pointer takes the HOVER color", function()
+    -- Hover is the only feedback a control gives, and the two colors are what
     -- makes it readable at a glance rather than a brightness a player has to
-    -- compare against its neighbours.
+    -- compare against its neighbors.
     local _, window = scene()
     window.controls.settings:_run("OnEnter")
 
@@ -195,14 +195,14 @@ test("HeaderControls: the control under the pointer takes the HOVER colour", fun
     assertEqual(r .. "," .. g .. "," .. b, "1,0.82,0")
     local nr, ng, nb = tintOf(window.controls.lock)
     assertEqual(nr .. "," .. ng .. "," .. nb, "1,1,1",
-        "a control the pointer is not on changed colour")
+        "a control the pointer is not on changed color")
 
     window.controls.settings:_run("OnLeave")
     local br, bg, bb = tintOf(window.controls.settings)
-    assertEqual(br .. "," .. bg .. "," .. bb, "1,1,1", "the hover colour outlived the pointer")
+    assertEqual(br .. "," .. bg .. "," .. bb, "1,1,1", "the hover color outlived the pointer")
 end)
 
-test("HeaderControls: both colours come from config", function()
+test("HeaderControls: both colors come from config", function()
     local _, window = scene(function(cfg)
         cfg.frame.controlColor      = { r = 0, g = 0, b = 1, a = 1 }
         cfg.frame.controlHoverColor = { r = 0, g = 1, b = 0, a = 1 }
@@ -212,10 +212,10 @@ test("HeaderControls: both colours come from config", function()
     assertEqual(r .. "," .. g .. "," .. b, "0,1,0")
 end)
 
-test("HeaderControls: each colour has its OWN colour mode", function()
+test("HeaderControls: each color has its OWN color mode", function()
     -- Two modes rather than one, because hover and rest are two independent answers. A shared
-    -- mode would make the pointer's colour identical to the resting one for anybody who chose
-    -- class, which is the one thing a hover colour must never be.
+    -- mode would make the pointer's color identical to the resting one for anybody who chose
+    -- class, which is the one thing a hover color must never be.
     -- red under: a single `controlColorMode` key driving both, or reading the retired boolean.
     local inst, window = scene(function(cfg)
         cfg.frame.controlColor          = { r = 0, g = 0, b = 1, a = 1 }
@@ -226,19 +226,19 @@ test("HeaderControls: each colour has its OWN colour mode", function()
     -- Compared against the reader itself rather than against a literal: whose class it is, is
     -- the subject of another case, and hard-coding a hue here would only re-test the mock.
     local cr, cg, cb = inst.NS.PlayerClassRGB()
-    assertTrue(cr ~= nil, "the scene has no readable class to colour with")
+    assertTrue(cr ~= nil, "the scene has no readable class to color with")
 
     local r, g, b = tintOf(window.controls.settings)
     assertEqual(r .. "," .. g .. "," .. b, cr .. "," .. cg .. "," .. cb,
-        "the resting colour is not classed")
+        "the resting color is not classed")
 
     window.controls.settings:_run("OnEnter")
     local hr, hg, hb = tintOf(window.controls.settings)
     assertEqual(hr .. "," .. hg .. "," .. hb, "0,1,0",
-        "the resting mode classed the hover colour too")
+        "the resting mode classed the hover color too")
 end)
 
-test("HeaderControls: the hover mode classes the hover colour and nothing else", function()
+test("HeaderControls: the hover mode classes the hover color and nothing else", function()
     -- The other direction, and the one the type change put at risk: `hovered and A or B` used
     -- to answer B whenever A was false, and a mode STRING is never falsy -- so the same idiom
     -- would now answer the hover mode always instead of the resting one always. Same trap,
@@ -251,15 +251,15 @@ test("HeaderControls: the hover mode classes the hover colour and nothing else",
         cfg.frame.controlHoverColorMode = "class"
     end)
     local cr, cg, cb = inst.NS.PlayerClassRGB()
-    assertTrue(cr ~= nil, "the scene has no readable class to colour with")
+    assertTrue(cr ~= nil, "the scene has no readable class to color with")
 
     local r, g, b = tintOf(window.controls.settings)
-    assertEqual(r .. "," .. g .. "," .. b, "0,0,1", "the hover mode classed the resting colour")
+    assertEqual(r .. "," .. g .. "," .. b, "0,0,1", "the hover mode classed the resting color")
 
     window.controls.settings:_run("OnEnter")
     local hr, hg, hb = tintOf(window.controls.settings)
     assertEqual(hr .. "," .. hg .. "," .. hb, cr .. "," .. cg .. "," .. cb,
-        "the hover mode did not class the hover colour")
+        "the hover mode did not class the hover color")
 end)
 
 test("HeaderControls: both flags off is the shipped look, unchanged", function()
@@ -335,7 +335,7 @@ test("HeaderControls: an atlas beats the ASCII rung", function()
     assertFalse(window.controls.settings.glyph:IsShown())
 end)
 
-test("HeaderControls: an unlocked padlock is drawn at the same weight as its neighbours", function()
+test("HeaderControls: an unlocked padlock is drawn at the same weight as its neighbors", function()
     -- A window ships UNLOCKED, so the dimmed "off" half was the state the strip
     -- was in by default: one control at 0.45 beside six at full strength, which
     -- reads as a half-broken icon rather than as a state. The state is carried by
@@ -433,7 +433,7 @@ test("HeaderControls: reset asks before it wipes anything", function()
         "the click reset the meter without asking")
 end)
 
-test("HeaderControls: the reset confirmation opens in the CENTRE of the screen", function()
+test("HeaderControls: the reset confirmation opens in the CENTER of the screen", function()
     -- A StaticPopup anchors into the popup stack, near the top of the screen --
     -- so the one dialog that asks before destroying data opened nowhere near
     -- where the player was looking when they clicked a header control.
@@ -522,9 +522,9 @@ test("HeaderControls: the reveal moves rather than accumulating", function()
         "the control the pointer left is still lit")
 end)
 
-test("HeaderControls: with the reveal off, hover is colour alone", function()
+test("HeaderControls: with the reveal off, hover is color alone", function()
     -- `hoverReveal` off means every control stays visible, which is the whole
-    -- point of the setting -- so the hover colour is the only thing left to say
+    -- point of the setting -- so the hover color is the only thing left to say
     -- which one the pointer is on, and it still has to say it.
     local _, window = scene(function(cfg) cfg.frame.hoverReveal = false end)
     assertEqual(window.controls.export:GetAlpha(), 1)
@@ -538,7 +538,7 @@ end)
 
 test("HeaderControls: both ends of the reveal are settings, and default to what was hardcoded", function()
     -- 0.25 at rest and 1 under the pointer were literals in restAlpha until they
-    -- became these two rows, so the shipped values ARE the old behaviour -- a
+    -- became these two rows, so the shipped values ARE the old behavior -- a
     -- window that never touches either slider must be drawn exactly as it was.
     -- red under: a default that is not the number it replaced.
     local _, window = scene()
@@ -549,7 +549,7 @@ test("HeaderControls: both ends of the reveal are settings, and default to what 
 end)
 
 test("HeaderControls: the two opacity sliders each move their own end", function()
-    -- Two settings because they are two questions, exactly as the two colour
+    -- Two settings because they are two questions, exactly as the two color
     -- modes beside them are: how faint the strip sits, and how far the pointer
     -- lifts one control clear of it.
     -- red under: one slider driving both, or the hover value leaking into rest.
@@ -899,7 +899,7 @@ test("HeaderControls: a click with no window, or no control, does nothing", func
     -- redundant -- every button this file builds carries both fields -- but the
     -- handler is a plain function on a frame, and a dispatch table that is
     -- indexed before the guards run would raise on the first nil instead of
-    -- returning. Silently doing nothing is the pinned behaviour.
+    -- returning. Silently doing nothing is the pinned behavior.
     -- red under: `ACTIONS[frame.mmControl](frame.mmWindow, ...)` ahead of the guards.
     local inst, window = scene()
     local onClick = clickHandler(window)
@@ -915,7 +915,7 @@ test("HeaderControls: a click with no window, or no control, does nothing", func
 end)
 
 test("HeaderControls: a control name the chain does not know is a silent no-op", function()
-    -- The chain has no `else`, so an unrecognised name falls out of the bottom
+    -- The chain has no `else`, so an unrecognized name falls out of the bottom
     -- and nothing happens. A lookup table has to answer the same way: a missing
     -- key is a name this file does not serve, not an error to raise at a player.
     -- red under: an ACTIONS lookup called without checking the row exists.
@@ -1041,26 +1041,26 @@ test("HeaderControls: the gear still points the panel when there is no panel", f
     assertEqual(inst.NS.State.activeWindowId, window.id)
 end)
 
-test("HeaderControls: reset PREFERS the centred dialog over the bare popup", function()
+test("HeaderControls: reset PREFERS the centered dialog over the bare popup", function()
     -- Two arms, and the order between them is the whole point: settings/General.lua
-    -- owns the dialog and centres it, and the bare StaticPopup_Show behind it is
+    -- owns the dialog and centers it, and the bare StaticPopup_Show behind it is
     -- the degraded path only. A refactor that reached for the global first would
     -- pass every existing case -- the same dialog opens -- while quietly losing
-    -- the centring the "opens in the CENTRE" case above was written for.
+    -- the centering the "opens in the CENTER" case above was written for.
     -- red under: testing _G.StaticPopup_Show ahead of NS.ShowResetMeterData.
     local inst, window = scene()
-    local centred, bare = 0, 0
-    inst.NS.ShowResetMeterData = function() centred = centred + 1 end
+    local centered, bare = 0, 0
+    inst.NS.ShowResetMeterData = function() centered = centered + 1 end
     inst.mocks.StaticPopup_Show = function() bare = bare + 1 end
 
     window.controls.reset:_run("OnClick")
 
-    assertEqual(centred, 1, "the reset did not go through settings/General.lua")
+    assertEqual(centered, 1, "the reset did not go through settings/General.lua")
     assertEqual(bare, 0, "the reset also fired the degraded popup")
 end)
 
 test("HeaderControls: with settings/ absent the reset falls back to the bare popup", function()
-    -- The degraded arm, and the exact key it names: an uncentred confirmation
+    -- The degraded arm, and the exact key it names: an uncenterd confirmation
     -- still beats no confirmation, and a StaticPopup_Show handed the wrong name
     -- shows NOTHING -- which is a reset button that silently does not ask.
     -- Cleared AFTER the window is built, which is also what pins that the seam is

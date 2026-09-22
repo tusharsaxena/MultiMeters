@@ -182,7 +182,7 @@ fails to open must not put an error in front of the player mid-pull.
   `Compat.GetAddOnMetadata` its header names is a historical reference rather than a member of this
   file.
 - **`C_DeathRecap.GetRecapLink`** is left unshimmed until something wants a chat link (spec §10).
-- **`Compat.OpenDeathRecap`** does not exist. `modules/DrillDown.lua:271` probes for it optimistically
+- **`Compat.OpenDeathRecap`** does not exist. `modules/DrillDown.lua:271` probes for it optimiztically
   so that the call site picks it up with no edit if it is ever added; the guard there is the whole of
   its current behavior.
 - **Anything that reads a meter value.** `core/Secrets.lua` owns that, exclusively.

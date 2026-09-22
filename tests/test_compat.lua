@@ -359,7 +359,7 @@ test("Compat: a namespace present but missing one member does not take the rest 
 end)
 
 test("Compat: a recap call that raises is a nil answer, not a raise", function()
-    -- The client refuses ids it does not recognise, and a refusal reaching the
+    -- The client refuses ids it does not recognize, and a refusal reaching the
     -- render path would take the whole tooltip down mid-hover.
     -- red under: calling the member without pcall.
     local inst = T.load()
@@ -455,7 +455,7 @@ test("Compat.IsSkyriding reads glide CAPABILITY, not altitude", function()
     assertFalse(inst.NS.Compat.IsSkyriding())
     -- No IsFlying term on purpose: the rule fires on the ground the moment the
     -- skyriding bar is available, which is when the player has stopped fighting
-    -- and started travelling.
+    -- and started traveling.
     inst.mocks.setCanGlide(true)
     assertTrue(inst.NS.Compat.IsSkyriding())
 end)

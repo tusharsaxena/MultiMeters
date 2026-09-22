@@ -2,7 +2,7 @@
 --
 -- The Bars page — THE GRID AND EVERYTHING DRAWN IN IT, in seven groups, from the
 -- outside in: the row (how tall, how many, which way they grow, who is pinned and
--- highlighted), then the StatusBar itself (texture, colour, opacity, fill
+-- highlighted), then the StatusBar itself (texture, color, opacity, fill
 -- direction), the tint behind it, its border, the two TEXT slots, and the name
 -- column's icon.
 --

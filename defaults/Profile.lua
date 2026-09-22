@@ -60,7 +60,7 @@ local WINDOW_TEMPLATE = {
     -- the result to NS.DefaultWindow.
     name = "Multi Meters",
 
-    -- The META colour mode: what the Frame page's "Color mode (all surfaces)"
+    -- The META color mode: what the Frame page's "Color mode (all surfaces)"
     -- dropdown last broadcast to the ten surfaces that each carry one of their
     -- own. NOTHING READS IT -- it is a shortcut for setting all ten, and a player
     -- who changes one of them afterwards has changed one, not overridden this.
@@ -86,9 +86,9 @@ local WINDOW_TEMPLATE = {
     -- geometry, the backdrop fill, and the border the player picks from LSM.
     --
     -- The two SKIN ACCENTS are a different case and both are configurable, under
-    -- `header` below: `frame.title` takes the header text colour, and
+    -- `header` below: `frame.title` takes the header text color, and
     -- `frame.divider` takes `header.dividerColorMode`, whose shipped value leaves
-    -- the library's tint alone entirely. The rule they honour is "never RESTATE
+    -- the library's tint alone entirely. The rule they honor is "never RESTATE
     -- SKIN's values" -- not "never let a player choose" -- and neither of them
     -- copies a value out of that table.
     frame = {
@@ -103,10 +103,10 @@ local WINDOW_TEMPLATE = {
         alpha          = 1.0,
         strata         = "MEDIUM",     -- LOW | MEDIUM | HIGH | DIALOG
         backdropColor  = { r = 0, g = 0, b = 0, a = 0.75 },
-        -- The two colour MODES beside the two swatches (options-ui-§17). Two
+        -- The two color MODES beside the two swatches (options-ui-§17). Two
         -- values each, `class` and `custom`: a window's fill and its edge belong
         -- to the WINDOW, so "per statistic" could only ever mean the sort
-        -- column's colour -- the same argument that keeps the mode off the title
+        -- column's color -- the same argument that keeps the mode off the title
         -- bar. `class` is the local player's, for the same reason.
         backdropColorMode = "custom",  -- class | custom
         borderStyle    = "Blizzard Tooltip",  -- LSM "border" key
@@ -139,25 +139,25 @@ local WINDOW_TEMPLATE = {
         showReset       = true,
         showExport      = true,
         -- Chrome fades until the pointer is over the title strip. Off is the
-        -- behaviour every version before this one had, so it is the honest
+        -- behavior every version before this one had, so it is the honest
         -- fallback rather than a degraded one.
         hoverReveal     = true,
         -- STATE, not a preference, and deliberately not a settings row: the
         -- header's minimise control writes it, and a window left collapsed comes
         -- back collapsed. Persisted like every other window fact.
         minimised       = false,
-        -- TWO COLOURS, BECAUSE HOVER IS THE ONLY FEEDBACK A CONTROL GIVES. The
+        -- TWO COLORS, BECAUSE HOVER IS THE ONLY FEEDBACK A CONTROL GIVES. The
         -- art ships white and is tinted by a multiply, so white is the identity
-        -- and the icons read as chrome against any header colour a player picks;
+        -- and the icons read as chrome against any header color a player picks;
         -- the pointer turns one of them the gold the rest of the header text
         -- uses. Both are pickers rather than a "match the header" switch: the
         -- strip is the only part of the window whose two states a player sees
         -- constantly, and one of them being unconfigurable was the complaint.
-        -- One colour MODE each, and both ship "custom" so no window changes
+        -- One color MODE each, and both ship "custom" so no window changes
         -- appearance. Two rather than one because hover and rest are two
-        -- independent answers: sharing a mode would make the pointer's colour
+        -- independent answers: sharing a mode would make the pointer's color
         -- identical to the resting one for anybody who chose class, which is the
-        -- one thing a hover colour must never be. The LOCAL player's class, like
+        -- one thing a hover color must never be. The LOCAL player's class, like
         -- every other header surface — the strip is about the window, not about
         -- any row in it.
         controlColorMode       = "custom",
@@ -172,7 +172,7 @@ local WINDOW_TEMPLATE = {
         controlAlpha           = 0.25,
         controlHoverAlpha      = 1.0,
         -- The SLOT a control occupies -- its click target and the strip's layout
-        -- pitch. The art is drawn centred inside it at 72% of it, so 16 puts an
+        -- pitch. The art is drawn centered inside it at 72% of it, so 16 puts an
         -- 11px icon on the same line as a 12px title and the strip stops
         -- outweighing the text beside it.
         controlSize     = 16,
@@ -222,13 +222,13 @@ local WINDOW_TEMPLATE = {
         --
         divider          = true,
         dividerThickness = 1,
-        -- SKIN, not a colour. `skin` means *leave the texture alone*, so whatever
+        -- SKIN, not a color. `skin` means *leave the texture alone*, so whatever
         -- LibKa0s-Core-1.0's ApplySkin wrote stands -- which is how a re-skin
         -- still reaches this window along with the debug console and the perf
         -- panel (standalone-windows). The shared value is never copied here,
         -- never stored in a profile, and never needs migrating when it changes.
         dividerColorMode = "skin",       -- skin | class | custom
-        -- A MID GREY, and deliberately NOT SKIN.divider's values: seeding it from
+        -- A MID GRAY, and deliberately NOT SKIN.divider's values: seeding it from
         -- there would be exactly the copy the rule above exists to prevent. It is
         -- read only under `custom`, where the skin has already been declined, so
         -- it is a starting point for a picker rather than a claim about the
@@ -240,9 +240,9 @@ local WINDOW_TEMPLATE = {
     -- columnHeader — the "Player | Damage | Healing" strip above the rows
     -- -----------------------------------------------------------------------
     --
-    -- SEPARATE FROM BOTH NEIGHBOURS, and it was not before. The column headers
+    -- SEPARATE FROM BOTH NEIGHBORS, and it was not before. The column headers
     -- used to take their font PATH from `text`, their size from `text`, their
-    -- outline from `header` and their colour from `header` — so changing the
+    -- outline from `header` and their color from `header` — so changing the
     -- cell font silently restyled the headers, and there was no way to make the
     -- headers differ from the numbers under them at all.
     --
@@ -328,8 +328,8 @@ local WINDOW_TEMPLATE = {
         bgColor       = { r = 0, g = 0, b = 0, a = 1 },
         bgAlpha       = 0.1,
         border        = false,
-        -- The outline's own thickness and colour. It used to be one pixel of the
-        -- library skin's edge colour, which no setting could reach -- so "Bar
+        -- The outline's own thickness and color. It used to be one pixel of the
+        -- library skin's edge color, which no setting could reach -- so "Bar
         -- border" was a switch with no dial and no swatch beside it.
         borderStyle     = "None",              -- LSM "border" key; None = flat
         borderThickness = 1,
@@ -377,7 +377,7 @@ local WINDOW_TEMPLATE = {
         rightSlot    = "none",    -- none | smart | combined | total | rate | percent
         -- abbreviated | abbreviatedWhole | abbreviatedTwo | full
         numberFormat = "abbreviated",
-        -- How a death is labelled in the Deaths tooltip and the death list.
+        -- How a death is labeled in the Deaths tooltip and the death list.
         deathTimeFormat = "clock",     -- clock | ago
         -- Characters, not bytes, and 0 means "no cap". Above WoW's 12-character
         -- player-name limit because a meter also lists NPCs, which are not bound
@@ -468,7 +468,7 @@ local WINDOW_TEMPLATE = {
         -- reads well across a 90px cell often does not across a 14px line.
         barTexture         = "Blizzard Raid Bar",  -- LSM "statusbar" key
         barSpacing         = 1,                    -- px between tooltip lines
-        -- The fill and the backdrop each carry a colour, a MODE and an opacity.
+        -- The fill and the backdrop each carry a color, a MODE and an opacity.
         -- The fill was the hovered player's class with no setting reaching it; the
         -- backdrop was a hard-coded black at 0.35 with none either. It ships at
         -- 0.1: these bars sit on the tooltip's own dark backdrop, so a third of
@@ -699,7 +699,7 @@ end
 --- in this addon uses.
 ---
 --- BUILT FROM THE CATALOG rather than restated: a stat added to core/Constants.lua
---- with a palette entry gets a stored colour and a settings row without this file
+--- with a palette entry gets a stored color and a settings row without this file
 --- being touched, and one added WITHOUT a palette entry gets neither, which is
 --- the honest outcome -- settings/Schema.lua's generator walks the same table.
 local function statColorDefaults()
@@ -785,7 +785,7 @@ NS.defaults = {
         -- another AT A GLANCE, and two windows disagreeing about what green means
         -- is the one thing that breaks; and the tooltip's "All statistics" block
         -- lists every stat whether the hovered window has a column for it or not,
-        -- so there is no window to read the colour off in the first place.
+        -- so there is no window to read the color off in the first place.
         --
         -- SEEDED FROM core/Constants.lua's STAT_COLORS, which stays the shipped
         -- palette and the fallback for a key the profile has never stored. The
@@ -828,7 +828,7 @@ NS.defaults = {
         -- `global.minimap.hide` row addresses.
         --
         -- GLOBAL RATHER THAN PROFILE, and that is launcher-§3's decision rather
-        -- than where the neighbouring settings happen to live. A minimap button
+        -- than where the neighboring settings happen to live. A minimap button
         -- belongs to the INSTALLATION: a profile is how a player configures what
         -- the addon DRAWS, while the ring of buttons around the minimap is
         -- furniture they arranged once, and profile-scoped it would appear and

@@ -397,7 +397,7 @@ local function fillCorrelated(pass, statKey, collisions, localGuid)
             -- left empty above because the source might be the other player's,
             -- and a death list attached outside that refusal would put one
             -- player's deaths under the other player's name — the one
-            -- mislabelling this file refuses everywhere else.
+            -- mislabeling this file refuses everywhere else.
             local deaths = byDeaths and byDeaths[row.identityKey]
             if deaths ~= nil then row.deaths = deaths end
 

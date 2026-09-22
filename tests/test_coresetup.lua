@@ -225,7 +225,7 @@ end)
 
 -- ── the window chrome seam ──────────────────────────────────────────────────
 
-test("CoreSetup: the class colour is the LIBRARY's one resolver, not a private copy", function()
+test("CoreSetup: the class color is the LIBRARY's one resolver, not a private copy", function()
     -- options-ui-§17: the lookup is LibKa0s-Core-1.0's, so a bar in this window and
     -- the unit frame beside it read the same RAID_CLASS_COLORS and cache it the same
     -- way. This addon had its own two-line copy and consumes the library's now.
@@ -249,18 +249,18 @@ function()
     -- token at all -- they are a GUID and a class name out of C_DamageMeter -- so
     -- `NS.ClassRGB(classFilename)` is the roster reader and stays. Recorded as a
     -- documented deviation against options-ui-§17's "one resolver" clause.
-    -- red under: deleting ClassRGB in favour of the library's unit-keyed lookup,
-    -- which would silently uncolour every row for a player who is not in the group.
+    -- red under: deleting ClassRGB in favor of the library's unit-keyed lookup,
+    -- which would silently uncolor every row for a player who is not in the group.
     local inst = T.load()
     inst.mocks.RAID_CLASS_COLORS.WARLOCK = { r = 0.53, g = 0.53, b = 0.93 }
     local r, g, b = inst.NS.ClassRGB("WARLOCK")
     assertEqual(r, 0.53); assertEqual(g, 0.53); assertEqual(b, 0.93)
-    assertNil(inst.NS.ClassRGB("NOT_A_CLASS"), "an unknown class is nil, never a tenth colour")
+    assertNil(inst.NS.ClassRGB("NOT_A_CLASS"), "an unknown class is nil, never a tenth color")
 end)
 
-test("CoreSetup: the class colour degrades to a working reader, not to nothing", function()
-    -- Unlike SKIN. It is how every class-coloured bar, header and outline gets its
-    -- colour at all, and a degraded install still renders rows.
+test("CoreSetup: the class color degrades to a working reader, not to nothing", function()
+    -- Unlike SKIN. It is how every class-colored bar, header and outline gets its
+    -- color at all, and a degraded install still renders rows.
     -- red under: `NS.ClassColor = function() end` in the fallback branch.
     local inst = T.load{ libFiles = {} }
     assertEqual(type(inst.NS.ClassColor), "function")

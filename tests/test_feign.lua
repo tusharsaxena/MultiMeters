@@ -9,7 +9,7 @@
 -- The filter is deliberately narrow. It joins a GUID recorded from a cast
 -- against a GUID on a meter source row, and mid-pull the second of those is
 -- secret — so it can only run out of combat, and the tests below pin that
--- limitation as behaviour rather than leave it to be discovered.
+-- limitation as behavior rather than leave it to be discovered.
 
 local T = _G.MULTIMETERS_TEST
 
@@ -63,7 +63,7 @@ end)
 test("Feign: a SECRET spell id is not compared", function()
     -- `spellID == 5384` raises on a secret, and this handler runs on every cast
     -- in a raid. The honest answer when the comparison is refused is to record
-    -- nothing, which counts the feign as a death — the behaviour that shipped
+    -- nothing, which counts the feign as a death — the behavior that shipped
     -- before this filter existed, and the safe direction to fail in.
     -- red under: comparing before asking whether comparison is legal.
     local inst = loaded()
@@ -200,10 +200,10 @@ test("Feign: standing back up ends the feign, so the next death is real", functi
         "a death after standing up is a real one")
 end)
 
-test("Feign: a client with no UnitIsFeignDeath keeps the old behaviour", function()
+test("Feign: a client with no UnitIsFeignDeath keeps the old behavior", function()
     -- The API is read through _G at call time and may be absent. Missing must
     -- mean "cannot tell", which leaves the entry standing — the pre-existing
-    -- behaviour, not a silent clear that would let feigns through.
+    -- behavior, not a silent clear that would let feigns through.
     local inst = loaded()
     cast(inst, "player", FEIGN_DEATH)
     inst.mocks.setUnitFeignDeath("player", true)
@@ -380,7 +380,7 @@ test("Feign: a surviving entry is traced with evicted=false and its raw readings
     -- The verdict is recorded beside the readings it was drawn from, which is
     -- what makes the report evidence rather than an opinion — issue #25 is
     -- exactly the question of what another client is SHOWN for a feigner.
-    -- `evicted` is normalised to a boolean, never left nil: a missing field and
+    -- `evicted` is normalized to a boolean, never left nil: a missing field and
     -- a false one render differently, and a reader cannot tell the difference
     -- between "not evicted" and "the field was dropped".
     -- red under: `evicted = evicted` with the `and true or false` lost.

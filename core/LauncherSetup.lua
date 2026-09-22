@@ -179,7 +179,7 @@ NS.Launcher = Launcher:New({
     -- rest sat under `K`.
     --
     -- DELIBERATELY NOT THE TOC'S `## Title`, and the two are not wired to each other even where
-    -- they agree, as they happen to here. A Title MAY carry colour escapes and one in the
+    -- they agree, as they happen to here. A Title MAY carry color escapes and one in the
     -- collection does -- Ka0s Pretty Chat's is `Ka0s |cffff0000P|cffff9900r|…` -- which a display
     -- that draws the string raw splatters across a row where every other row is plain text, and
     -- one that strips escapes mangles instead. No escape sequence of any kind belongs here.

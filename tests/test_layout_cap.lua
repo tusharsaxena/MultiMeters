@@ -121,7 +121,7 @@ local function censusRows()
     end
 
     -- The ABSENCE of the section is not a failure by itself, and this is the one
-    -- place that judgement lives. layout-§1's terminal state for a repository with
+    -- place that judgment lives. layout-§1's terminal state for a repository with
     -- no breach left is no breach AND no census — a table standing with no rows in
     -- it is the graveyard the section's own prose warns about. So absence is
     -- reported to the callers, which each decide what it means: a breach with no

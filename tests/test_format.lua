@@ -103,7 +103,7 @@ end)
 test("Format.Number('full') renders a rate's DIGITS, not its decimals", function()
     -- `amountPerSecond` is a float. `string.format("%s", 53571.392857143)` — the
     -- old "full" path — put fifteen characters in a 92px cell, which is what
-    -- made the live window overlap into its neighbour.
+    -- made the live window overlap into its neighbor.
     -- red under: `return passthrough(v)` for the full mode.
     local out = T.load().NS.Format.Number(53571.392857143, "full")
     assertFalse(tostring(out):find("%.") ~= nil,
@@ -455,7 +455,7 @@ test("A ladder the client silently refuses is DETECTED, not assumed", function()
 end)
 
 -- ---------------------------------------------------------------------------
--- Format.DeathTime — how a death is labelled (issue #1)
+-- Format.DeathTime — how a death is labeled (issue #1)
 -- ---------------------------------------------------------------------------
 --
 -- Three ways to say when somebody died, because there are three different

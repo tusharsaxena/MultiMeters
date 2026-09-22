@@ -76,7 +76,7 @@ end)
 
 test("EnvSetup: NS.Meta answers nil — not a placeholder — for a field the TOC does not carry",
     function()
-        -- The behaviour the deleted Compat.GetAddOnMetadata was pinned on: callers can tell "no
+        -- The behavior the deleted Compat.GetAddOnMetadata was pinned on: callers can tell "no
         -- manifest" from "manifest says empty" and apply their own fallback.
         assertNil(NS.Meta("NoSuchTOCField"))
     end)

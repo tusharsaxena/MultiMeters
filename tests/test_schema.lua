@@ -4,7 +4,7 @@
 -- the vocabularies, validators and composers that build it. So what this suite
 -- asserts is what the schema DECLARES: which page a row is filed under, which
 -- tab it sits in and in what order, that its label and its tab name are
--- localized rather than bare literals, that every colour swatch has its mode
+-- localized rather than bare literals, that every color swatch has its mode
 -- beside it, that a group is contiguous so its heading prints once, and that
 -- the two row decorations this addon deliberately ships OFF are still off.
 --
@@ -135,15 +135,15 @@ test("Schema: the export choices are hidden from the panel but NOT from the seam
     assertEqual(NS.GetSetting("export.channel"), "PARTY")
 end)
 
-test("The meta colour mode sets every bar and header in the window at once", function()
-    -- Seven surfaces each carry a colour mode of their own -- the bar and its
+test("The meta color mode sets every bar and header in the window at once", function()
+    -- Seven surfaces each carry a color mode of their own -- the bar and its
     -- background, both header strips, the column strip's background and both of
     -- the tooltip's bars -- which is right when a player wants one of them
     -- different and tedious when they want them all the same.
     --
     -- The title bar's BACKGROUND is deliberately not among them: it is one strip
     -- over the whole window, so a per-statistic mode could only paint it the sort
-    -- column's colour, which is on screen twice already. It kept its colour
+    -- column's color, which is on screen twice already. It kept its color
     -- picker and lost the dropdown.
     -- red under: a path dropped from COLOR_MODE_PATHS.
     local inst = T.load()
@@ -160,11 +160,11 @@ test("The meta colour mode sets every bar and header in the window at once", fun
     end
 end)
 
-test("The meta colour mode leaves both TEXT surfaces alone", function()
+test("The meta color mode leaves both TEXT surfaces alone", function()
     -- Text is drawn ON TOP OF a surface the meta broadcasts to. Sending "per
     -- statistic" to the whole window painted the Damage number in the Damage
-    -- colour over a Damage-coloured bar, and the tooltip's text in the sorted
-    -- stat's colour over bars already carrying it -- the one place where making
+    -- color over a Damage-colored bar, and the tooltip's text in the sorted
+    -- stat's color over bars already carrying it -- the one place where making
     -- every surface agree is what makes the text stop being readable.
     -- red under: window.text.colorMode or window.tooltip.colorMode back in
     -- COLOR_MODE_PATHS.
@@ -189,7 +189,7 @@ test("The meta colour mode leaves both TEXT surfaces alone", function()
 end)
 
 test("The other three meta rows broadcast their own kind of setting", function()
-    -- Same bargain as the colour mode: the individual rows all still exist, and
+    -- Same bargain as the color mode: the individual rows all still exist, and
     -- each meta sets every surface that has one of its kind.
     -- red under: a path dropped from any of the three lists.
     local inst = T.load()
@@ -265,7 +265,7 @@ end)
 --- `Master controls` leads the General page and is options-ui-§15's canonical set:
 --- enable, general visibility, master scale, master alpha, lock frame, the
 --- debug console and test mode -- seven rows, with the two resets drawn as a
---- button pair rather than as rows. The four counts that grew by one are the colour MODES
+--- button pair rather than as rows. The four counts that grew by one are the color MODES
 --- options-ui-§17 asked for beside the four swatches that had none (the window's
 --- fill and its edge, a cell's bar outline, a tooltip bar's outline).
 local PARTITION = {
@@ -567,16 +567,16 @@ test("Schema: a moved setting is declared ONCE, not twice", function()
 end)
 
 -- ---------------------------------------------------------------------------
--- The class-colour companion (options-ui-§17)
+-- The class-color companion (options-ui-§17)
 -- ---------------------------------------------------------------------------
 
---- The colour swatch this addon deliberately ships with NO companion beside it,
+--- The color swatch this addon deliberately ships with NO companion beside it,
 --- and the only one. Recorded as a documented deviation in docs/ARCHITECTURE.md;
 --- the argument is in settings/Schema.lua beside the row.
 local NO_COMPANION = { ["window.header.bgColor"] = true }
 
-test("Schema: every colour swatch has its mode beside it, on the same line", function()
-    -- options-ui-§17: a swatch on its own asks the player to hand-match a colour
+test("Schema: every color swatch has its mode beside it, on the same line", function()
+    -- options-ui-§17: a swatch on its own asks the player to hand-match a color
     -- the game already knows. This addon's companion is the DROPDOWN form -- the
     -- richer one the rule names -- because `stat`, `skin` and `none` are answers a
     -- checkbox cannot give, and converting one back would lose them.
@@ -595,7 +595,7 @@ test("Schema: every colour swatch has its mode beside it, on the same line", fun
             and not NO_COMPANION[row.path] then
             local companion = NS.Schema[i + 1]
             assertTrue(companion ~= nil and companion.path:find("[Cc]olorMode$") ~= nil,
-                row.path .. " has no colour mode immediately after it")
+                row.path .. " has no color mode immediately after it")
             assertEqual(companion.group, row.group,
                 row.path .. "'s mode is filed under another tab")
             assertEqual(companion.subgroup, row.subgroup,
@@ -606,10 +606,10 @@ test("Schema: every colour swatch has its mode beside it, on the same line", fun
     end
 end)
 
-test("Schema: NO colour row is ever disabled, and every one says why in words", function()
+test("Schema: NO color row is ever disabled, and every one says why in words", function()
     -- options-ui-§17 / anti-patterns #74. The swatch is still read for its ALPHA
-    -- under every mode -- no class colour and no palette entry carries one -- so
-    -- greying it out tells the player something untrue, and setting a colour before
+    -- under every mode -- no class color and no palette entry carries one -- so
+    -- graying it out tells the player something untrue, and setting a color before
     -- switching the mode is the normal order of operations.
     -- red under: adding `disabledIf` to a swatch, or dropping the sentence.
     local inst = T.load()
@@ -633,7 +633,7 @@ test("Schema: NO colour row is ever disabled, and every one says why in words", 
     assertTrue(swatches >= 15, "only " .. swatches .. " swatches were checked")
 end)
 
-test("Schema: which class a colour means is DECLARED, not inferred from its path", function()
+test("Schema: which class a color means is DECLARED, not inferred from its path", function()
     -- options-ui-§17: a control stored under a per-instance prefix can still be
     -- about the local player, so the path cannot be trusted and the intent is
     -- stamped on the row. Here every `window.*` path is per-window and the split is
@@ -664,7 +664,7 @@ test("Schema: which class a colour means is DECLARED, not inferred from its path
     for path, source in pairs(WANT) do
         local row = NS.FindSchemaRow(path)
         assertTrue(row ~= nil, path .. " left the schema")
-        assertEqual(row.classColorSource, source, path .. ": class-colour source")
+        assertEqual(row.classColorSource, source, path .. ": class-color source")
     end
 end)
 
@@ -811,7 +811,7 @@ test("Schema: every tab name and row label is a localized string, not a bare lit
     -- LABELS ARE WALKED TOO, and that is what this case is really for: a regroup moves `group`
     -- and `label` in two different fields, and a retirement checked only the first can retire a
     -- key still carrying the second -- exactly what happened to "Bar background color", which
-    -- retired as a group name while still labelling window.bars.bgColor and
+    -- retired as a group name while still labeling window.bars.bgColor and
     -- window.tooltip.barBgColor. NOT `desc`: several desc strings were already missing their key
     -- before this case existed, and asserting on them here would fail this suite on a pre-existing
     -- gap this case is not the one to fix.
@@ -858,7 +858,7 @@ test("Schema: every Controls row carries its own icon in front of its words", fu
     -- session LINE -- the words "Overall" at the left of the header -- which is
     -- text the title face draws and has no glyph in the strip. Giving it one of
     -- the seven would put the same picture beside two different checkboxes,
-    -- which is worse than the row sitting a few pixels left of its neighbours.
+    -- which is worse than the row sitting a few pixels left of its neighbors.
     local NO_GLYPH = { ["window.frame.showSegmentText"] = true }
 
     local bare = {}
@@ -986,7 +986,7 @@ test("Schema: every group on every page is CONTIGUOUS, or a heading prints twice
     end
 end)
 
-test("Schema: every LSM border setting is one this suite knows honours \"None\"", function()
+test("Schema: every LSM border setting is one this suite knows honors \"None\"", function()
     -- "None" is LSM's own name for the empty border, and it has to mean NO EDGE on
     -- every surface that offers it. The window frame did not: its resolver fell
     -- back to the library's own edge on anything it could not fetch, and treated a
@@ -998,7 +998,7 @@ test("Schema: every LSM border setting is one this suite knows honours \"None\""
     -- these two.
     -- red under: adding an LSM30_Border row without a "None" case behind it.
     local COVERED = {
-        -- path -> the case that proves this surface honours "None"
+        -- path -> the case that proves this surface honors "None"
         ["window.frame.borderStyle"] =
             "test_window.lua: Border style None draws NO edge, whatever the library's own is",
         ["window.tooltip.barBorderStyle"] =
@@ -1030,17 +1030,17 @@ end)
 -- Every text surface offers the same four controls
 -- ---------------------------------------------------------------------------
 
-test("Schema: every text surface offers face, outline, shadow and colour", function()
+test("Schema: every text surface offers face, outline, shadow and color", function()
     -- FOUR SURFACES DRAW TEXT and they used to offer different subsets of the
     -- same controls: the cell text had a shadow and the other three did not, and
-    -- none of them could take a class colour. A player styling a window had to
+    -- none of them could take a class color. A player styling a window had to
     -- discover which of the four had grown which control.
     --
     -- The table is the contract. A fifth surface, or a fifth control, is a row
     -- added here and then made to pass -- which is the point: it fails until the
     -- surface actually offers it.
     --
-    -- THE CLASS-COLOUR CHECKBOX BECAME A THREE-WAY MODE on all four at once, and
+    -- THE CLASS-COLOR CHECKBOX BECAME A THREE-WAY MODE on all four at once, and
     -- "at once" is the property this case is really defending: class / per-
     -- statistic / custom answers a question the checkbox could only answer two
     -- thirds of, and a surface left on the old boolean would be the one a player
@@ -1050,10 +1050,10 @@ test("Schema: every text surface offers face, outline, shadow and colour", funct
         { label = "Cell text",      prefix = "window.text.",
           font = "font", outline = "outline", shadow = "shadow",
           color = "color", colorMode = "colorMode" },
-        -- NO colorMode. The Frame header is the one text surface with a colour
+        -- NO colorMode. The Frame header is the one text surface with a color
         -- picker and no mode beside it: the title bar is one strip over the whole
         -- window, so "per statistic" could only ever paint it the sort column's
-        -- colour and "class" only the local player's, and it is about neither --
+        -- color and "class" only the local player's, and it is about neither --
         -- it names the window.
         { label = "Frame header",   prefix = "window.header.",
           font = "font", outline = "outline", shadow = "shadow",
@@ -1108,7 +1108,7 @@ test("Schema: every text surface offers face, outline, shadow and colour", funct
         end
 
         need("shadow checkbox", surface.shadow, "bool")
-        need("colour picker", surface.color, "color")
+        need("color picker", surface.color, "color")
 
         -- THREE MODES, THE SAME THREE, ON EVERY SURFACE THAT HAS ONE. A surface
         -- offering a SUBSET is the drift this table exists to catch: `stat` means
@@ -1121,13 +1121,13 @@ test("Schema: every text surface offers face, outline, shadow and colour", funct
         -- the check is keyed on the table declaring a mode, and the day someone
         -- adds one back it starts applying again on its own.
         local mode = surface.colorMode
-            and need("colour mode dropdown", surface.colorMode, "string")
+            and need("color mode dropdown", surface.colorMode, "string")
         if mode then
             assertTrue(type(mode.values) == "table",
-                surface.label .. "'s colour mode has no value list")
+                surface.label .. "'s color mode has no value list")
             for _, key in ipairs({ "class", "stat", "custom" }) do
                 assertTrue(mode.values[key] ~= nil,
-                    surface.label .. "'s colour mode is missing " .. key)
+                    surface.label .. "'s color mode is missing " .. key)
             end
             assertTrue(mode.values.none == nil,
                 surface.label .. " offers 'none', which is text nobody can read")

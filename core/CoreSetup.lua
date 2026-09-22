@@ -161,9 +161,9 @@ if not lib then
     NS.SKIN            = {}
     NS.ApplySkin       = function() end
     NS.MakeCloseButton = function() return nil end
-    -- The class-colour lookup degrades the same way RGBA does and for the same
-    -- reason: it is not chrome, it is how a class-coloured bar, header or border
-    -- gets its colour at all, and a degraded install still draws rows. The
+    -- The class-color lookup degrades the same way RGBA does and for the same
+    -- reason: it is not chrome, it is how a class-colored bar, header or border
+    -- gets its color at all, and a degraded install still draws rows. The
     -- fallback goes through core/Namespace.lua's own classFilename reader rather
     -- than restating RAID_CLASS_COLORS a second time here.
     NS.ClassColor      = function(unit)
@@ -194,7 +194,7 @@ NS.SafeToString = lib.SafeToString
 -- in the file that owns both.
 NS.RGBA = lib.RGBA or fallbackRGBA
 
--- ONE CLASS-COLOUR RESOLVER FOR THE COLLECTION (options-ui-§17). `lib.ClassColor`
+-- ONE CLASS-COLOR RESOLVER FOR THE COLLECTION (options-ui-§17). `lib.ClassColor`
 -- arrived at Core minor 7 and reads RAID_CLASS_COLORS -- the table every other UI
 -- on the player's screen is already reading -- memoizes the PLAYER's answer on
 -- success and caches no other unit. This addon had its own two-line copy of that

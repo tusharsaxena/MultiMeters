@@ -85,7 +85,7 @@ local Debug    = NS.Debug
 --
 -- NOTE WHAT THAT MEANS NOW `world` SHIPS TRUE. An instance type a future patch
 -- invents will SHOW by default rather than hide, which is the opposite of the
--- 0.1.0 behaviour, where `world` shipped false and the fallthrough was
+-- 0.1.0 behavior, where `world` shipped false and the fallthrough was
 -- deny-by-default in practice. That is the deliberate trade: a context nobody has
 -- taught this addon about draws a meter the player can then switch off, rather
 -- than silently withholding one they cannot find the switch for.

@@ -45,7 +45,7 @@ local HEADING = "## Complexity register"
 -- watch list does not carry, which means the table and the report have drifted apart.
 local WARN_ABOVE = 15
 
---- docs/ARCHITECTURE.md with line endings normalised, or a failure.
+--- docs/ARCHITECTURE.md with line endings normalized, or a failure.
 local function architecture()
     local fh = io.open(ROOT .. ARCHITECTURE, "r")
     if not fh then fail("docs/ARCHITECTURE.md could not be opened") end

@@ -141,7 +141,7 @@ NS.COMMANDS = {
 --
 -- WHAT IS REFUSED: this addon's own six feature verbs -- `lock`, `test`,
 -- `toggle`, `window`, `reset-positions`, `export`. Taking the SHOULD is a
--- judgement and this addon takes it: six of them is enough that a silent no-op
+-- judgment and this addon takes it: six of them is enough that a silent no-op
 -- would be a real puzzle. `lock` is on that list under slash-commands-§8's own
 -- ruling -- unlocking a frame that is not drawn is not a coherent request -- and
 -- that says nothing about what `lock` MEANS here, which is this addon's ratified
@@ -256,9 +256,9 @@ cli = SlashLib:New({
     -- THE BRAND NAME IN PLAIN TEXT -- `Ka0s <Name>` -- and the SAME string
     -- core/LauncherSetup.lua hands the LDB object as its `label` (launcher-\194\1671).
     -- Reusing it is not an aesthetic choice: launcher-\194\1671 already forbids escape
-    -- sequences in that field, which is what makes it safe to drop into a coloured
+    -- sequences in that field, which is what makes it safe to drop into a colored
     -- line, and it means this addon has one brand spelling rather than a second one
-    -- invented for this message. NEVER the TOC `Title`, which MAY carry colour
+    -- invented for this message. NEVER the TOC `Title`, which MAY carry color
     -- escapes.
     brandName = L["Ka0s Multi Meters"],
 
@@ -382,7 +382,7 @@ end
 --- STRAIGHT THROUGH `CliSet`, which is what makes them aliases rather than look-alikes: it is
 --- the same call `/mm set enabled true` makes, so the write lands on NS.SetByPath with the
 --- row's own validation, the seam's `[Set]` line, the row's `onChange` (the show ladder's
---- refresh) and the panel re-sync -- and the acknowledgement comes out in slash-commands-§5's
+--- refresh) and the panel re-sync -- and the acknowledgment comes out in slash-commands-§5's
 --- `path = value` shape, from the library's shared formatter, RE-READ after the write rather
 --- than echoing what was asked for.
 ---
@@ -399,7 +399,7 @@ end
 --- WHAT DOES CHANGE WITH THE ADDON OFF is what a FEATURE verb answers -- see "The disabled
 --- gate" above the dispatcher. `enable` is named on that gate's live list, so this handler is
 --- reached unwrapped; a gate over it would BE the one-way switch the clause above exists to
---- prevent, which is why the live list is data rather than a judgement made per verb.
+--- prevent, which is why the live list is data rather than a judgment made per verb.
 ---
 --- @param want boolean
 function doEnabled(want)

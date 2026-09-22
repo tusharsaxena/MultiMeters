@@ -70,7 +70,7 @@ Widgets.Dropdown(parent, width, opts) -> dd
 | `opts.chevron` | resolved texture path for the ▼ affordance | falls to `Interface\Buttons\Arrow-Down-Up`, the rung BankLedger already keeps |
 | `opts.glyphFont` | font path for the optional leading row glyph | rows silently draw no glyph column |
 
-The instance methods are BankLedger's, unchanged in name and behaviour, because the point of the
+The instance methods are BankLedger's, unchanged in name and behavior, because the point of the
 move is that its call sites do not have to be rewritten:
 
 ```
@@ -177,7 +177,7 @@ and is out of scope here.
 ## 5. The sort arrow (complaint #1)
 
 `modules/Window.lua:118-121` declares an art ladder — atlas rungs, then ASCII. It gains a **new top
-rung**: `NS.Icon("sort-up")` / `NS.Icon("sort-down")`, tinted with the header colour via
+rung**: `NS.Icon("sort-up")` / `NS.Icon("sort-down")`, tinted with the header color via
 `SetVertexColor(hr, hg, hb)` so it wears the header's gold exactly as BankLedger's inline
 `tint255` markup does.
 
@@ -219,13 +219,13 @@ to press Enter in a name box before clicking the button under it.
 
 `FOLLOW_WINDOW` is the empty string stored in `export.metric`, meaning "rank by whichever column the
 invoking window is sorted by", resolved fresh at every use by `Export.ResolveMetric`
-(`modules/Export.lua:1119-1131`). It is the shipped default. The behaviour is defensible; the label
+(`modules/Export.lua:1119-1131`). It is the shipped default. The behavior is defensible; the label
 is not, and the decision is to remove the concept rather than rename it.
 
 **What replaces it:** `Export.Open` **seeds** `export.metric` from the invoking window's
 `data.sortColumn` when that column is a stat the catalog answers for. The Metric dropdown then
 always names one concrete stat, and opening the modal from a window sorted by Healing shows
-"Metric: Healing" — the useful half of the old behaviour, now visible in the control instead of
+"Metric: Healing" — the useful half of the old behavior, now visible in the control instead of
 hidden behind a label nobody could read.
 
 The comment at `Export.Open` currently says "**No metric seeding here**" and explains why. That
@@ -252,7 +252,7 @@ a reader will otherwise go looking for.
 
 ## 8. Complaints #5 and #6 — no change
 
-Recorded in §1 with file and line. Both behaviours are already what was asked for, and both are
+Recorded in §1 with file and line. Both behaviors are already what was asked for, and both are
 pinned by existing cases in `tests/test_export.lua`. If either misbehaves in-client, it is a bug
 against those cases and not this design.
 

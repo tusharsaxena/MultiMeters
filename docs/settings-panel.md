@@ -147,7 +147,7 @@ Four things about how this addon calls them are worth knowing before editing a b
   and no second surface to be contiguous with, and a composer asked to emit one would have to emit
   five rows this addon must not store. The
   headings are the guard — a reader who sees *All surfaces* over them cannot mistake them for the font
-  group on Header → Title text. **This is a judgement about scope, not a deviation**, so it carries no
+  group on Header → Title text. **This is a judgment about scope, not a deviation**, so it carries no
   register row; if `options-ui-§16` ever grows a clause about broadcast setters, this bullet is what
   gets re-read.
 

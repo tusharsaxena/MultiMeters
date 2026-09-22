@@ -371,7 +371,7 @@ name resolves to a character is the server's answer to give, not this seam's —
 nobody named falls back to printing to yourself rather than erroring at the send site. The modal
 catches the empty box before that fallback can swallow it silently ("Enter a name to whisper to."),
 and `Export.NoteSystemMessage` catches the server's *"no player named …"* answer to a name that is
-filled in but wrong, cancelling the rest of the dump so one mistyped name is one message rather than
+filled in but wrong, canceling the rest of the dump so one mistyped name is one message rather than
 one per line.
 
 The catalog carries **two whisper rows**, and they are two channels rather than one channel with a
@@ -601,7 +601,7 @@ statistic is this text about?") answered by whichever statistic the surface actu
 never for the writing itself, and a text surface set to "no color" is one nobody can read.
 
 The configured **alpha survives every mode**: neither `RAID_CLASS_COLORS` nor `Constants.STAT_COLORS`
-carries one, and a mode that silently reset transparency would be one setting cancelling another.
+carries one, and a mode that silently reset transparency would be one setting canceling another.
 That matters most for the two backgrounds, where the alpha is what makes a color a tint rather than
 a slab. A color that cannot be resolved — an unknown class, a stat with no palette entry — falls
 back to the configured one.
@@ -710,7 +710,7 @@ bar grows rightward (`SetReverseFill(false)`).
 The whole title row — name, session line and controls — is centered on one line through
 `Window:TitleRowTop`, computed from the padding, `header.height` and each item's own configured size.
 The band it centers in runs from the frame's **top edge** down to the divider, not the tinted band
-alone: the padding above is not a margin to anyone looking at the window, so centring in the band
+alone: the padding above is not a margin to anyone looking at the window, so centering in the band
 leaves it as dead space above the row and lands the text against the divider. Nothing in the title
 bar is anchored to a hand-picked offset any more.
 

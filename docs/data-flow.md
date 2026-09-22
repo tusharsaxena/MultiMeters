@@ -415,8 +415,8 @@ operations behind a click need no comparison at all:
 
 | Click | Mid-pull | Why |
 |---|---|---|
-| A different **stat** column | Honoured | Identity mode builds the whole row list out of `sortColumn`'s own `combatSources`, so changing which column that is re-ranks the grid by the engine's ordering for the new stat |
-| The **same** stat column again | Honoured | It only flips `sortAscending`, which the aggregator applies as a reversal |
+| A different **stat** column | Honored | Identity mode builds the whole row list out of `sortColumn`'s own `combatSources`, so changing which column that is re-ranks the grid by the engine's ordering for the new stat |
+| The **same** stat column again | Honored | It only flips `sortAscending`, which the aggregator applies as a reversal |
 | The **Player** column | Refused, with a message | `name` is `ConditionalSecret` and there is no engine ranking standing behind it — `name` mode mid-pull would draw the damage order under an arrow pointing at the Player header |
 
 **And the arrow follows the grid, not the request.** `Aggregator.Build` publishes `applied` — the

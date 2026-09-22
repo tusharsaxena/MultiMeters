@@ -393,7 +393,7 @@ test("Entering a vehicle hides the window on its own edge", function()
     cfg.frame.locked = true
     cfg.visibility = { world = true, hideInVehicle = true }
 
-    -- The registration is asserted as well as the behaviour: calling the handler
+    -- The registration is asserted as well as the behavior: calling the handler
     -- by hand proves the fan-out works and proves nothing about whether the game
     -- can ever reach it, which is exactly the gap this rule fell into.
     assertEqual(NS.__events["UNIT_ENTERED_VEHICLE"], "OnPlayerStateChanged")
@@ -645,7 +645,7 @@ test("The resize grip is built unconditionally and follows the LOCK", function()
 end)
 
 test("`resizeGrip` is gone from the code, not just from the panel", function()
-    -- The BEHAVIOURAL guard above cannot catch this one coming back. A resurrected
+    -- The BEHAVIORAL guard above cannot catch this one coming back. A resurrected
     -- `if frameCfg.resizeGrip ~= false then` reads a key no profile has any more,
     -- so it is always true and every case still passes -- right up until someone
     -- re-adds the schema row and the old bug with it. So the guard is static.

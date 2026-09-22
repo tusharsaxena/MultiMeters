@@ -170,15 +170,15 @@ function Diagnostics.TraceFeign(kind, fields)
     -- THE ADMISSION RULE. `judge` fires once per Deaths source on every refresh,
     -- for every death in the column; `cast` fires once per feign. Admit all three
     -- kinds on equal terms and a twenty-source column fills all 120 slots in six
-    -- passes with judgements on GUIDs nobody ever feigned — and the `cast` line,
+    -- passes with judgments on GUIDs nobody ever feigned — and the `cast` line,
     -- the one entry that says whether the addon was told about the feign at all,
-    -- is the first thing pushed out. So a judgement is admitted only for a GUID a
-    -- `cast` line has already named, which is also the only judgement that means
+    -- is the first thing pushed out. So a judgment is admitted only for a GUID a
+    -- `cast` line has already named, which is also the only judgment that means
     -- anything: `dropped=false` is a finding for a GUID the filter knew about and
     -- is the ordinary case for every other death in the group.
     --
     -- Ordering is not a hazard here. The feign has to be cast before the death it
-    -- explains can be judged, so the `cast` line always precedes its judgements.
+    -- explains can be judged, so the `cast` line always precedes its judgments.
     local key = shown(fields.guid)
     if kind == "cast" then
         feignNoted[key] = true

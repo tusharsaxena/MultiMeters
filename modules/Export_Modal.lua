@@ -241,7 +241,7 @@ end
 --- @param text string
 --- @param onClick function
 --- @param icon string  optional. A LibKa0s-Media icon name drawn to the left of the label.
---- @return table  the button, with `.text` for later relabelling
+--- @return table  the button, with `.text` for later relabeling
 local function makeButton(parent, text, onClick, icon)
     local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
     button:SetHeight(ROW_H)
@@ -266,8 +266,8 @@ local function makeButton(parent, text, onClick, icon)
     -- only irreversible-ish things in the modal -- one opens a copy window, the
     -- other writes to a chat channel other people read -- and a mark alone would
     -- make "which one sends to guild?" a question answered by hovering. The label
-    -- stays centred whether or not the art resolves, so a missing icon leaves the
-    -- button exactly as it was rather than off-centre.
+    -- stays centered whether or not the art resolves, so a missing icon leaves the
+    -- button exactly as it was rather than off-center.
     local path = icon and NS.Icon and NS.Icon(icon)
     if path then
         local art = button:CreateTexture(nil, "OVERLAY")
@@ -296,7 +296,7 @@ local function makeButton(parent, text, onClick, icon)
     return button
 end
 
---- Grey a button out, or bring it back.
+--- Gray a button out, or bring it back.
 ---
 --- Both halves matter. The Disable is what makes the click do nothing; the color
 --- is what tells the player why nothing happened before they click it a second
@@ -481,7 +481,7 @@ end
 --- Re-read every remembered choice and repaint the modal from it.
 ---
 --- One function rather than a repaint at each write site: the whisper box
---- appearing, the two action buttons greying out and the three labels changing
+--- appearing, the two action buttons graying out and the three labels changing
 --- are all one question — "what does the profile say now" — and splitting it is
 --- how a modal ends up showing a channel it is not going to send on.
 local function refreshModal()
@@ -566,7 +566,7 @@ end
 ---
 --- The availability check is repeated here, at the click, and that repetition is
 --- the point: the modal may have been opened out of combat and clicked ten
---- seconds into a pull, and the greyed-out button is a hint rather than a
+--- seconds into a pull, and the grayed-out button is a hint rather than a
 --- guarantee.
 local function onExportCsv()
     local available, reason = Export.Available()
@@ -738,7 +738,7 @@ local function EnsureFrame()
     linesDD.onSelect = function(v) chooseExport("lines", v) end
 
     -- Shown only while the channel is WHISPER. Hidden rather than disabled: a
-    -- greyed-out name box on a raid-channel export is a control asking to be
+    -- grayed-out name box on a raid-channel export is a control asking to be
     -- filled in for no reason.
     --
     -- NOT InputBoxTemplate, and that is the fix rather than a preference. The
@@ -900,7 +900,7 @@ function Export.Open(a, b)
     -- shape stored "" — "match whichever column the window is sorted by" — and
     -- resolved it fresh at every use, which meant the Metric button showed a
     -- label naming a rule instead of naming a stat. The rule was right and
-    -- unreadable; seeding keeps the behaviour and puts the answer in the control.
+    -- unreadable; seeding keeps the behavior and puts the answer in the control.
     --
     -- It is also what makes the settings panel's "Default metric" row removable:
     -- a preference every open overwrites is a preference in name only.

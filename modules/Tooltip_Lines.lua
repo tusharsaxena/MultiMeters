@@ -386,12 +386,12 @@ end
 --- @param config table      the resolved tooltip config
 --- @param color table|nil   the hovered player's class color, or nil
 --- @return table
---- Resolve one of the tooltip's three colour modes onto a starting colour.
+--- Resolve one of the tooltip's three color modes onto a starting color.
 ---
 --- ONE READER FOR THE THREE SURFACES a tooltip line draws -- its text, its fill
 --- and its backdrop -- because they are one question asked three times, and three
---- private answers is how a tooltip ends up with a class-coloured bar behind
---- stat-coloured writing for no reason a player can discover.
+--- private answers is how a tooltip ends up with a class-colored bar behind
+--- stat-colored writing for no reason a player can discover.
 ---
 --- CLASS IS THE HOVERED PLAYER'S: `color` is that same table, resolved by the
 --- caller off `row.classFilename`. A tooltip is about ONE player, which is what
@@ -403,7 +403,7 @@ end
 --- one of them, so per-column would have no meaning here; the sort column is the
 --- same answer the title bar gives (modules/Window.lua's surfaceColor).
 ---
---- With nothing to read either way the passed-in colour stands, which is the
+--- With nothing to read either way the passed-in color stands, which is the
 --- configured one at every call site.
 local function modeColor(mode, statKey, classColor, r, g, b)
     if mode == "class" then
@@ -449,10 +449,10 @@ local function lineStyle(config, color)
     -- here; the sort column is the same answer the title bar gives, for the same
     -- reason (modules/Window.lua's surfaceColor).
     --
-    -- With nothing to read either way, the configured colour stands.
+    -- With nothing to read either way, the configured color stands.
     tr, tg, tb = modeColor(config.colorMode, config.statKey, color, tr, tg, tb)
 
-    -- THE BAR AND ITS BACKDROP ANSWER THE SAME THREE, each with its own colour,
+    -- THE BAR AND ITS BACKDROP ANSWER THE SAME THREE, each with its own color,
     -- its own mode and its own opacity. The fill used to be the hovered player's
     -- class and nothing else -- no setting reached it, and the backdrop was a
     -- hard-coded black at 0.35 that no setting reached either.
@@ -485,11 +485,11 @@ local function lineStyle(config, color)
         -- THE OUTLINE ANSWERS A MODE TOO (options-ui-§17), and its `class` is the
         -- HOVERED player's -- the same class the fill it surrounds takes, and the
         -- one a tooltip is about. Two values, not three: an outline around one
-        -- spell line has no statistic of its own to be coloured by. Resolved to
+        -- spell line has no statistic of its own to be colored by. Resolved to
         -- three numbers plus the swatch's own alpha, which survives the mode
         -- exactly as it does for the fill and the backdrop above.
         -- KEYED, because that is the shape this file's own `rgba` reads and the
-        -- shape the stored swatch this replaces already had. The two bar colours
+        -- shape the stored swatch this replaces already had. The two bar colors
         -- above are positional because their consumer unpacks them.
         borderColor = { r = ebr, g = ebg, b = ebb, a = eba },
         fontPath   = path,
@@ -703,14 +703,14 @@ local MAX_DEATH_LINES = 12
 -- recap. The same em dash modules/DrillDown.lua puts in the cell.
 local NO_CLOCK_TEXT = "\226\128\148"
 
---- How one death is labelled, in whichever style the hovered window is set to.
+--- How one death is labeled, in whichever style the hovered window is set to.
 ---
 --- The moment of death is the recap's NEWEST event, never `deathTimeSeconds` —
 --- those are different clocks, one absolute and one seconds-into-session, and
 --- the second is unusable besides (see modules/Format.lua's DeathTime).
 ---
 --- Kept in step with modules/DrillDown.lua's copy on purpose: this tooltip is
---- the INDEX into that list, and the two labelling deaths differently would make
+--- the INDEX into that list, and the two labeling deaths differently would make
 --- one list look like two.
 ---
 --- @param recap table|nil

@@ -4,7 +4,7 @@
 
 **Goal:** Replace MultiMeters' nine flat settings scrolls with tabbed pages carrying a window banner, on shapes the Ka0s standard defines and `LibKa0s-Options-1.0` implements.
 
-**Architecture:** Three repos in strict dependency order. `WowAddonStandards` gains the tabbed-page and page-banner patterns so the code is conformant on its first commit. `LibKa0s-Options-1.0` gains a **chrome slot** — a reserved band between the page header and the scroll — plus `PageBanner`, `TabStrip` and `RenderTabbedSchema` built on it; a page that reserves no chrome renders byte-identically to today, which is what lets the other eight consumers re-vendor without a pixel moving. MultiMeters then regroups its 137 schema rows onto those shapes, renames one path, converts two booleans to colour-mode dropdowns, and deletes its own window picker in favour of the banner.
+**Architecture:** Three repos in strict dependency order. `WowAddonStandards` gains the tabbed-page and page-banner patterns so the code is conformant on its first commit. `LibKa0s-Options-1.0` gains a **chrome slot** — a reserved band between the page header and the scroll — plus `PageBanner`, `TabStrip` and `RenderTabbedSchema` built on it; a page that reserves no chrome renders byte-identically to today, which is what lets the other eight consumers re-vendor without a pixel moving. MultiMeters then regroups its 137 schema rows onto those shapes, renames one path, converts two booleans to color-mode dropdowns, and deletes its own window picker in favor of the banner.
 
 **Tech Stack:** Lua 5.1 (WoW client), AceGUI-3.0 via LibStub, AceDB-3.0, LibKa0s (`Core`, `Options`, `OptionsWidgets`, `OptionsScroll`, `Widgets`, `Slash`, `Media`), the vendored `tests/_kit` headless harness, `luacheck`, `lizard`.
 
@@ -24,7 +24,7 @@
 - **Non-ASCII is a byte escape, never a literal.** The collection writes `\226\128\148` for an em dash; this plan introduces `\226\128\186` for `›`. A literal depends on the file's encoding surviving every editor between here and a client.
 - **Line endings are CRLF** in both repos (`.gitattributes` enforces it; `tests/test_eol.lua` in LibKa0s and the addon's lint check it).
 - **`lib.LAYOUT` keys must be either published on the instance or carry an `-- INTERNAL: <KEY> — <reason>` comment with at least 30 characters of reason.** `tests/test_options.lua` fails naming any key that is neither, and fails again for any key that is both.
-- **LibKa0s is additive-only.** No existing published member changes signature or behaviour. A page that calls nothing new must render exactly as it does today.
+- **LibKa0s is additive-only.** No existing published member changes signature or behavior. A page that calls nothing new must render exactly as it does today.
 - **Every LibKa0s file you edit gets its minor bumped**, its `CHANGELOG.md` entry, and an API document for its major — `tests/test_versioning.lua` fails until the document exists.
 - **MultiMeters row shape:** a schema row's `page` is where it is edited and its `path` is where it is stored, and the two are allowed to disagree.
 
@@ -47,7 +47,7 @@
 
 **`MultiMeters`**
 - Modify: `libs/LibKa0s/**` — re-vendored payload (copy, never hand-edited)
-- Modify: `settings/Schema.lua` — every row's `page`/`group`, declaration order, the rename, the two colour-mode rows
+- Modify: `settings/Schema.lua` — every row's `page`/`group`, declaration order, the rename, the two color-mode rows
 - Modify: `core/Database.lua` — `CURRENT_DB_VERSION` 12 → 13, `migrations[12]`
 - Modify: `defaults/Profile.lua` — renamed key, two new keys, two deleted keys
 - Modify: `modules/HeaderControls.lua` — reads a mode, not a flag
@@ -1751,7 +1751,7 @@ Leave the rest of that case, and the export case below it, alone — the export 
 lua tests/run.lua 2>&1 | tail -30
 ```
 
-Expected: PASS on the new cases. Other suites may still fail — `test_schema_defaults.lua` and `test_options_panel.lua` are Task 9's and Task 11's. If `Schema: every group on every page is CONTIGUOUS` fails, a row was moved without moving its neighbours.
+Expected: PASS on the new cases. Other suites may still fail — `test_schema_defaults.lua` and `test_options_panel.lua` are Task 9's and Task 11's. If `Schema: every group on every page is CONTIGUOUS` fails, a row was moved without moving its neighbors.
 
 - [ ] **Step 7: Confirm `COPY_GROUPS` needs no change**
 
@@ -1950,7 +1950,7 @@ default into every profile and the default could never move again."
 
 ---
 
-### Task 10: The header controls get colour modes
+### Task 10: The header controls get color modes
 
 **Files:**
 - Modify: `settings/Schema.lua` — two rows removed, two added; a new values table
@@ -1967,10 +1967,10 @@ default into every profile and the default could never move again."
 In `tests/test_headercontrols.lua`, replace the two cases at lines ~222 and ~245 (which set `controlClassColor` / `controlHoverClassColor`) with:
 
 ```lua
-test("HeaderControls: each colour has its OWN colour mode", function()
+test("HeaderControls: each color has its OWN color mode", function()
     -- Two modes rather than one, because hover and rest are two independent answers. A shared
-    -- mode would make the pointer's colour identical to the resting one for anybody who chose
-    -- class, which is the one thing a hover colour must never be.
+    -- mode would make the pointer's color identical to the resting one for anybody who chose
+    -- class, which is the one thing a hover color must never be.
     -- red under: a single `controlColorMode` key driving both, or reading the retired boolean.
     local inst, window = scene(function(cfg)
         cfg.frame.controlColor          = { r = 0, g = 0, b = 1, a = 1 }
@@ -1981,19 +1981,19 @@ test("HeaderControls: each colour has its OWN colour mode", function()
     -- Compared against the reader itself rather than against a literal: whose class it is, is
     -- the subject of another case, and hard-coding a hue here would only re-test the mock.
     local cr, cg, cb = inst.NS.PlayerClassRGB()
-    assertTrue(cr ~= nil, "the scene has no readable class to colour with")
+    assertTrue(cr ~= nil, "the scene has no readable class to color with")
 
     local r, g, b = tintOf(window.controls.settings)
     assertEqual(r .. "," .. g .. "," .. b, cr .. "," .. cg .. "," .. cb,
-        "the resting colour is not classed")
+        "the resting color is not classed")
 
     window.controls.settings:_run("OnEnter")
     local hr, hg, hb = tintOf(window.controls.settings)
     assertEqual(hr .. "," .. hg .. "," .. hb, "0,1,0",
-        "the resting mode classed the hover colour too")
+        "the resting mode classed the hover color too")
 end)
 
-test("HeaderControls: the hover mode classes the hover colour and nothing else", function()
+test("HeaderControls: the hover mode classes the hover color and nothing else", function()
     -- The other direction, and the one the type change put at risk: `hovered and A or B` used
     -- to answer B whenever A was false, and a mode STRING is never falsy -- so the same idiom
     -- would now answer the hover mode always instead of the resting one always. Same trap,
@@ -2006,25 +2006,25 @@ test("HeaderControls: the hover mode classes the hover colour and nothing else",
         cfg.frame.controlHoverColorMode = "class"
     end)
     local cr, cg, cb = inst.NS.PlayerClassRGB()
-    assertTrue(cr ~= nil, "the scene has no readable class to colour with")
+    assertTrue(cr ~= nil, "the scene has no readable class to color with")
 
     local r, g, b = tintOf(window.controls.settings)
-    assertEqual(r .. "," .. g .. "," .. b, "0,0,1", "the hover mode classed the resting colour")
+    assertEqual(r .. "," .. g .. "," .. b, "0,0,1", "the hover mode classed the resting color")
 
     window.controls.settings:_run("OnEnter")
     local hr, hg, hb = tintOf(window.controls.settings)
     assertEqual(hr .. "," .. hg .. "," .. hb, cr .. "," .. cg .. "," .. cb,
-        "the hover mode did not class the hover colour")
+        "the hover mode did not class the hover color")
 end)
 ```
 
-`scene(configure)` and `tintOf(button)` are the file's own helpers, at `tests/test_headercontrols.lua:21` and `:165`. The two cases above replace the existing `each colour has its OWN class-colour flag` (line ~215) and `the hover flag classes the hover colour and nothing else` (line ~243) in place — same names' worth of coverage, one type later.
+`scene(configure)` and `tintOf(button)` are the file's own helpers, at `tests/test_headercontrols.lua:21` and `:165`. The two cases above replace the existing `each color has its OWN class-color flag` (line ~215) and `the hover flag classes the hover color and nothing else` (line ~243) in place — same names' worth of coverage, one type later.
 
 Append to `tests/test_database.lua`:
 
 ```lua
-test("Database: v12 -> v13 turns the control class-colour flags into modes", function()
-    -- The two booleans sat beside colour pickers while every other surface in this addon
+test("Database: v12 -> v13 turns the control class-color flags into modes", function()
+    -- The two booleans sat beside color pickers while every other surface in this addon
     -- expresses the same choice as a mode dropdown. A stored `true` becomes "class"; a stored
     -- `false` becomes "custom", which is what it already meant.
     -- red under: mapping false to nil, which leaves the row reading the schema default.
@@ -2062,7 +2062,7 @@ In `settings/Schema.lua`, beside `TEXTCOLOR_VALUES`:
 ```lua
 -- TWO modes, not the three every text surface offers. "Per-statistic" cannot say anything true
 -- about a header BUTTON: a close box does not belong to a statistic, so the option could only
--- ever paint it the sort column's colour -- which is a fact already on screen in that column's
+-- ever paint it the sort column's color -- which is a fact already on screen in that column's
 -- own header and in its arrow.
 local CONTROLCOLOR_VALUES = {
     class  = L["Class color"],
@@ -2071,7 +2071,7 @@ local CONTROLCOLOR_VALUES = {
 local CONTROLCOLOR_SORT = { "class", "custom" }
 ```
 
-Replace the two boolean rows with mode rows, each placed **directly before** its colour picker so the mode and the swatch pair onto one line:
+Replace the two boolean rows with mode rows, each placed **directly before** its color picker so the mode and the swatch pair onto one line:
 
 ```lua
     {
@@ -2132,7 +2132,7 @@ Replace the `classed` block at lines ~500-506:
 Inside `migrations[12]`'s window loop in `core/Database.lua`, after the `titleBar` clause:
 
 ```lua
-            -- The two class-colour flags become modes. A stored `false` becomes "custom", which
+            -- The two class-color flags become modes. A stored `false` becomes "custom", which
             -- is what it already meant -- mapping it to nil instead would leave the row reading
             -- the schema default, which is the same value today and need not be tomorrow.
             if type(frame) == "table" then
@@ -2171,9 +2171,9 @@ Expected: no hits outside the migration.
 ```sh
 luacheck .
 git add settings/Schema.lua defaults/Profile.lua modules/HeaderControls.lua core/Database.lua locales/enUS.lua tests/
-git commit -m "The header controls get a colour mode, like every other surface
+git commit -m "The header controls get a color mode, like every other surface
 
-Two booleans sat beside two colour pickers while every other surface
+Two booleans sat beside two color pickers while every other surface
 in this addon expresses the same choice as a mode dropdown -- so one
 control read 'Use class color' and the next read 'Text color mode',
 for the same decision.
@@ -2252,7 +2252,7 @@ function()
     local L = inst.NS.L
     local ctx = showPage(inst, "frame")
 
-    local function labelled(name)
+    local function labeled(name)
         for _, w in ipairs(ctx.scroll and ctx.scroll.children or {}) do
             for _, child in ipairs(w.children or {}) do
                 if child.labelText == name then return true end
@@ -2261,11 +2261,11 @@ function()
         return false
     end
 
-    assertTrue(labelled(L["Width"]), "the Frame page did not open on Size and position")
+    assertTrue(labeled(L["Width"]), "the Frame page did not open on Size and position")
     ctx.__tabKids[2]:__fire("OnClick")
     assertEqual(ctx.activeTab, L["Rows"])
-    assertTrue(labelled(L["Maximum rows"]), "the Rows tab did not render")
-    assertFalse(labelled(L["Width"]), "the previous tab's widgets were left behind")
+    assertTrue(labeled(L["Maximum rows"]), "the Rows tab did not render")
+    assertFalse(labeled(L["Width"]), "the previous tab's widgets were left behind")
 end)
 ```
 
@@ -2582,7 +2582,7 @@ someone to a screen with no word on which of six tabs to click."
 - Modify: `docs/settings-panel.md`, `docs/schema.md`, `docs/ARCHITECTURE.md`, `docs/common-tasks.md`, `README.md`
 
 **Interfaces:**
-- Consumes: the finished behaviour.
+- Consumes: the finished behavior.
 - Produces: docs that match the code. No code changes.
 
 - [ ] **Step 1: Verify every count claim before writing one**
@@ -2624,7 +2624,7 @@ Update: the pages table's row counts and descriptions; a new section **The tab s
 
 - [ ] **Step 3: Update `docs/schema.md`**
 
-The `group` field's description becomes "section heading inside the page, **and the tab label on a tabbed page** — one tab is exactly one group". Update the `header` and `columns` sub-trees for the moved column-header rows, `frame`/`header` for the renamed `show`, and the header-controls block for the two colour modes. Add a `v12 -> v13` line wherever the file lists migrations.
+The `group` field's description becomes "section heading inside the page, **and the tab label on a tabbed page** — one tab is exactly one group". Update the `header` and `columns` sub-trees for the moved column-header rows, `frame`/`header` for the renamed `show`, and the header-controls block for the two color modes. Add a `v12 -> v13` line wherever the file lists migrations.
 
 - [ ] **Step 4: Update `docs/ARCHITECTURE.md`**
 
@@ -2678,11 +2678,11 @@ These cannot be reached headlessly and are the acceptance list.
 
 - [ ] Every one of Frame, Header, Bars, Tooltip, Visibility, Columns and Windows shows the banner naming the active window; changing it on any one changes it on all the others.
 - [ ] Switching windows while on Bars' *Bar border* tab lands on *Bar border* for the new window.
-- [ ] Clicking a tab **in combat** WORKS — the strip is deliberately not combat-guarded, because redrawing inside an already-open panel is not a protected action. What is refused is *reaching* the panel mid-combat (`options-ui-§2`): opening it from the AddOns sidebar closes the window and prints the grey refusal. Verify both halves; a tab click that refuses is the defect here, not one that works.
+- [ ] Clicking a tab **in combat** WORKS — the strip is deliberately not combat-guarded, because redrawing inside an already-open panel is not a protected action. What is refused is *reaching* the panel mid-combat (`options-ui-§2`): opening it from the AddOns sidebar closes the window and prints the gray refusal. Verify both halves; a tab click that refuses is the defect here, not one that works.
 - [ ] Clicking the tab you are already on does nothing at all — no flicker, no refusal message.
 - [ ] Frame's six tabs and Bars' six fit one row at default UI scale; Header's five fit; note any that wrap.
 - [ ] **Tab art:** the strip is a flat backing with the active tab darker. Decide in the client whether that reads as tabs or wants Blizzard's tab atlas — this is the one deliberately-open question in the plan, and changing it is a `LibKa0s/OptionsWidgets.lua` edit plus a minor bump.
 - [ ] The Defaults button on a tabbed page resets the **whole page**, not the visible tab.
 - [ ] With a skinning addon (ElvUI / AddOnSkins) loaded, the banner's dropdown is skinned — it is built lazily on first `OnShow`, like the Defaults button.
-- [ ] A profile stored before this branch opens with its title bar and its control colours exactly as they were (the v12 → v13 migration).
+- [ ] A profile stored before this branch opens with its title bar and its control colors exactly as they were (the v12 → v13 migration).
 - [ ] `/mm list` heads each block `frame › Rows`, and `/mm set window.header.show false` hides the title bar.

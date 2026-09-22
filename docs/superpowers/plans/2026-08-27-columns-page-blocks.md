@@ -981,7 +981,7 @@ local HANDLE_ICON  = "list"
 --- gesture that means "move".
 ---
 --- @param from number      the index picked up
---- @param rows number      how many rows down the cursor travelled (negative = up)
+--- @param rows number      how many rows down the cursor traveled (negative = up)
 --- @param count number     how many blocks there are
 --- @param boundary number  how many of them are enabled
 --- @return number index    a valid index in `from`'s own group
@@ -1042,7 +1042,7 @@ local function makeBlock(parent, index, item, spec)
     label:SetPoint("RIGHT", block, "RIGHT", -10, 0)
     label:SetJustifyH("RIGHT")
     label:SetText(item.label or "")
-    -- Greyed rather than hidden: a disabled block is still a block you can drag,
+    -- Grayed rather than hidden: a disabled block is still a block you can drag,
     -- and a label you cannot read is a block you cannot aim at.
     if not item.enabled then label:SetTextColor(0.5, 0.5, 0.5) end
     block.mmLabel = label

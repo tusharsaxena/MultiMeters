@@ -263,7 +263,7 @@ default to total and rate.
   prune verdict with the raw readings behind it, and the per-row `ShouldDropDeath` answer — and
   `/mm debug feign` prints them. The per-row answer is recorded **only for a GUID a cast line
   named**: it fires once per death in the column on every refresh, so admitting all of them filled
-  the 120-entry ring with judgements on players who never feigned and evicted the one cast line the
+  the 120-entry ring with judgments on players who never feigned and evicted the one cast line the
   report exists to show. The refusals are counted and the total is printed, because a large refusal
   count beside an empty log is itself the finding — the refresh ran and never met the GUID.
   Fix on that measurement, not on either hypothesis.

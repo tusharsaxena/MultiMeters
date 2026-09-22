@@ -267,7 +267,7 @@ conversion needs anyway.
 No other path moves. Storage does not have to mirror the UI tree, and `window.rows.*` and
 `window.text.*` are accurate names for what they hold regardless of which page draws them.
 
-### Behaviours
+### Behaviors
 
 - **Defaults button** — page-wide, contract unchanged.
 - **Window switch from a sub-page** — stays on the same tab.

@@ -711,7 +711,7 @@ local function countdown(when, now)
     return string.format(L["%dm ago"] or "%dm ago", math.floor(seconds / 60))
 end
 
---- How a death is labelled, in one of three styles.
+--- How a death is labeled, in one of three styles.
 ---
 --- TWO STYLES BECAUSE THERE ARE TWO QUESTIONS: "when in the evening" wants a
 --- wall clock, and "how long ago" wants a countdown.

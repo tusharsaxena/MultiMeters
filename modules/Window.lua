@@ -122,7 +122,7 @@ local PlayerClassRGB = NS.PlayerClassRGB or function() return nil end
 
 -- Forward-declared because the window's own backdrop and border read it from
 -- ApplyBorder, which is written above the header surfaces it was extracted for.
--- Defined once, below, beside the other colour readers.
+-- Defined once, below, beside the other color readers.
 local surfaceColor
 
 local function borderPath(name)
@@ -591,7 +591,7 @@ function WindowProto:BuildFrame()
     -- comment on the frame above saying the body used to take the mouse and
     -- "stole every hover from the cells underneath it" — the cells are
     -- descendants and should still win, but that was learned the hard way, so the
-    -- grid keeps exactly the behaviour it has today and only a drilled window
+    -- grid keeps exactly the behavior it has today and only a drilled window
     -- changes.
     self.body:SetScript("OnMouseUp", function(_, button)
         if button ~= "RightButton" then return end
@@ -784,12 +784,12 @@ function WindowProto:ApplyBorder(frameCfg)
     -- row in it, so `class` is the LOCAL player's -- the same call headerColor
     -- makes for the strip along the top. "Per statistic" is deliberately absent for
     -- the reason it is absent from the title bar: over one surface spanning the
-    -- whole window it could only ever mean the sort column's colour, which is
+    -- whole window it could only ever mean the sort column's color, which is
     -- already on screen twice.
     --
     -- THE CONFIGURED ALPHA SURVIVES THE MODE, which is what makes the backdrop's
     -- 0.75 a tint under `class` rather than a slab: RAID_CLASS_COLORS carries no
-    -- alpha, and a mode that reset transparency would be one setting cancelling
+    -- alpha, and a mode that reset transparency would be one setting canceling
     -- another. It is also why neither swatch is ever disabled.
     local br, bg, bb, ba = surfaceColor(frameCfg.backdropColorMode, frameCfg.backdropColor,
         nil, 0, 0, 0, 0.75)
@@ -802,7 +802,7 @@ function WindowProto:ApplyBorder(frameCfg)
     end
 end
 
---- Resolve one of the header surfaces' three colour modes.
+--- Resolve one of the header surfaces' three color modes.
 ---
 --- ONE READER FOR BOTH HEADER STRIPS AND BOTH OF THEIR BACKGROUNDS, because they
 --- are one question asked four times and four private answers is how the title
@@ -820,15 +820,15 @@ end
 ---
 --- THE CONFIGURED ALPHA SURVIVES EVERY MODE. Neither RAID_CLASS_COLORS nor the
 --- stat palette carries one, and a mode that silently reset transparency would be
---- one setting cancelling another — which matters most for the two BACKGROUNDS,
---- where the alpha is what makes a colour a tint rather than a slab.
+--- one setting canceling another — which matters most for the two BACKGROUNDS,
+--- where the alpha is what makes a color a tint rather than a slab.
 ---
---- A colour that cannot be resolved — an unknown class, a stat with no palette
+--- A color that cannot be resolved — an unknown class, a stat with no palette
 --- entry — falls back to the CONFIGURED one, which is the honest answer rather
 --- than an invented hue.
 ---
 --- @param mode string|nil    "class" | "stat" | "custom"
---- @param stored table|nil   the configured colour
+--- @param stored table|nil   the configured color
 --- @param statKey string|nil which statistic `stat` means here
 --- @param dr number @param dg number @param db number @param da number
 --- @return number r, number g, number b, number a
@@ -935,7 +935,7 @@ end
 --- ONLY THE FLOOR IS APPLIED HERE. The ceiling is the length of a list this
 --- function does not have: it runs from a wheel event, between refreshes, and
 --- asking the aggregator for a fresh list to find out how long it is would turn
---- a scroll into a meter read. So the offset is allowed to run optimistically
+--- a scroll into a meter read. So the offset is allowed to run optimiztically
 --- past the end and `Render` clamps it against the list it is actually drawing.
 ---
 --- That is not a shortcut, it is the only ordering that cannot go stale: a
@@ -1185,7 +1185,7 @@ function WindowProto:Render(entries, preview, isDrill, drillTitle)
     end
 
     -- See the note where this script was installed: the body claims the mouse
-    -- only while a breakdown is open, so the grid's hover behaviour is untouched.
+    -- only while a breakdown is open, so the grid's hover behavior is untouched.
     self.body:EnableMouse(isDrill and true or false)
 
     -- THE CLAMP LIVES HERE, and only here. `ScrollBy` applies the floor; this

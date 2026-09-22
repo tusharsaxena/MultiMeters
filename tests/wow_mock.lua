@@ -180,7 +180,7 @@ end
 
 -- The class ladder a generated roster walks, one per source and wrapping at the
 -- end. Ten distinct classes so a fixture the size of a full party never repeats
--- a class — a repeat would make a class-colour or spec-icon assertion pass for
+-- a class — a repeat would make a class-color or spec-icon assertion pass for
 -- the wrong row.
 local DEFAULT_CLASSES = {
     "WARRIOR", "PRIEST", "MAGE", "ROGUE", "HUNTER", "WARLOCK",
@@ -517,13 +517,13 @@ local function build()
             -- execution`. A secret one used to slip through this mock and merely
             -- fail to match a fixture key, which is why the raise shipped —
             -- `sourceCreatureID` is plain out of combat and SECRET in a pull, so
-            -- nothing offline disagreed. Modelled so it fails here first.
+            -- nothing offline disagreed. Modeled so it fails here first.
             --
-            -- ARGUMENT #3 IS DELIBERATELY NOT MODELLED THE SAME WAY. A secret
+            -- ARGUMENT #3 IS DELIBERATELY NOT MODELED THE SAME WAY. A secret
             -- sourceGUID is believed to resolve nothing rather than to raise
             -- (modules/Targets.lua drops one before calling, so no path in this
             -- addon passes one), and there is no observed client raise for it.
-            -- Asserting one here would be inventing behaviour.
+            -- Asserting one here would be inventing behavior.
             if isSimulatedSecret(creatureID) then
                 error("bad argument #4 to 'GetCombatSessionSourceFromType' "
                     .. "(Secret values are only allowed during untainted execution)", 2)
@@ -569,7 +569,7 @@ local function build()
     -- The formatter is a NATIVE seam, which is the entire reason modules/Format.lua
     -- may hand it a secret at all — so this stub is allowed to reveal the value.
     -- Nothing else in the mock does.
-    -- A FORMATTER ONLY ABBREVIATES IF IT HAS BREAKPOINTS, and modelling that is
+    -- A FORMATTER ONLY ABBREVIATES IF IT HAS BREAKPOINTS, and modeling that is
     -- the whole point of this stub.
     --
     -- The previous version of this mock abbreviated unconditionally, inside

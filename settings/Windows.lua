@@ -128,7 +128,7 @@ local function activeWindow()
     return first
 end
 
---- The picker's option list: keyed by id, labelled by name.
+--- The picker's option list: keyed by id, labeled by name.
 ---
 --- Keyed by ID and not by name on purpose. Names are user text and nothing stops
 --- two windows being called "Meter"; ids are minted monotonically and never

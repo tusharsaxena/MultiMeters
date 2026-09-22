@@ -237,7 +237,7 @@ function FRAME.GetText(self) return self.__text end
 --- FontString that never held a value of its own still answers a secret width
 --- once anything else inside the same frame has held one.
 ---
---- Modelling only the direct case let a real rule-R3 violation ship green: the
+--- Modeling only the direct case let a real rule-R3 violation ship green: the
 --- addon measured GameTooltip's own line while its own amount slot, parented to
 --- the same tooltip, had just been handed a secret amount.
 local function inheritsSecret(frame)
@@ -318,7 +318,7 @@ function FRAME.SetWordWrap(self, v) self.__wordWrap = v; return self end
 -- With a total round-trip, a `SetTexture(p); if GetTexture() then` probe
 -- resolves for every path, so the addon's art ladder would take its first rung
 -- every time and the atlas and ASCII rungs below it would become unreachable in
--- tests while still being the live behaviour on a client missing the file.
+-- tests while still being the live behavior on a client missing the file.
 --
 -- `mocks.setTextureLoadable(path, false)` is how a case says "this file is not
 -- there". Unlisted paths still load, so every existing case is unaffected.
@@ -576,7 +576,7 @@ end
 -- instance, and the line widgets are registered on the mock table itself so
 -- `_G["GameTooltipTextLeft3"]` resolves through it.
 --
--- It lives in this file rather than in the builder because it is frame modelling:
+-- It lives in this file rather than in the builder because it is frame modeling:
 -- a real widget object with real state, for the same reason everything above is.
 
 --- Install GameTooltip, its line widgets and its two companions onto `M`.
@@ -611,7 +611,7 @@ local function installTooltip(M)
     end
     function tooltip:GetOwner() return self.__owner end
 
-    -- SHOW RE-ANCHORS THE TOOLTIP TO ITS OWNER, and modelling that is the whole
+    -- SHOW RE-ANCHORS THE TOOLTIP TO ITS OWNER, and modeling that is the whole
     -- reason this override exists. The client does it -- it is the same pass that
     -- re-fonts the tooltip's lines, which modules/Tooltip.lua already works around
     -- with `reapplyFonts` -- so a point set BEFORE the lines were added is
@@ -620,7 +620,7 @@ local function installTooltip(M)
     -- A mock whose Show kept our points made the anchor setting look implemented
     -- while the player got Blizzard's token placement instead: "Top left" sat
     -- directly above the cell growing right, and no anchor produced the box beside
-    -- it at all. The suite was green throughout. Modelling the awkward behaviour
+    -- it at all. The suite was green throughout. Modeling the awkward behavior
     -- rather than the convenient one is rule 5 of the mock's own header.
     function tooltip:Show()
         -- The base frame's Show, not a replacement for it: OnShow has to fire on

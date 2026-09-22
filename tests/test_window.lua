@@ -817,7 +817,7 @@ test("The body claims the mouse only while a breakdown is open", function()
     -- There is a hard-won comment saying the body taking the mouse "stole every
     -- hover from the cells underneath it". The cells are descendants and should
     -- still win, but that was learned the expensive way — so the grid keeps
-    -- exactly the behaviour it has today and only a drilled window changes.
+    -- exactly the behavior it has today and only a drilled window changes.
     -- red under: EnableMouse(true) on the body unconditionally.
     local _, window = scene()
     local rows = { { guid = ALPHA, name = "Alpha", values = {}, cells = {} } }
@@ -998,13 +998,13 @@ test("Master scale and alpha are CLAMPED to the sliders that write them", functi
     assertEqual(window.frame:GetAlpha(), 0, "the alpha floor is the slider's")
 end)
 
-test("The window's fill and its edge each answer a colour mode", function()
+test("The window's fill and its edge each answer a color mode", function()
     -- options-ui-§17: every swatch has a companion, and for this addon that
     -- companion is a two-value mode. `class` is the LOCAL player's -- a window is
     -- not about any one row -- and the CONFIGURED ALPHA survives it, which is what
     -- keeps a 0.75 backdrop a tint rather than a slab.
     -- red under: reading the swatch with RGBA and ignoring the mode, or letting the
-    -- class colour carry its own (absent) alpha.
+    -- class color carry its own (absent) alpha.
     local inst, window, cfg = scene()
     local mr, mg, mb = inst.NS.PlayerClassRGB()
     assertTrue(mr ~= nil, "the fixture needs the player's class in the palette")
@@ -1059,7 +1059,7 @@ end)
 test("The stored per-column width is what a NEW column is born at, never the drawn one", function()
     -- The whole point of the share: `col.width` describes the shape a column is
     -- CREATED with (core/Database.lua's v1->v2 migration writes it), and the
-    -- drawn width comes from the frame. A helper that started honouring the
+    -- drawn width comes from the frame. A helper that started honoring the
     -- stored number would bring back the bug the share replaced — a window
     -- dragged wider keeping its grid and growing empty space on the right.
     -- red under: `width = entry.col.width or statWidth`, or a peel that writes

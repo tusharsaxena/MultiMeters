@@ -290,7 +290,7 @@ test("Skyriding hides on capability, before the player has left the ground", fun
     local rules = defaultRules()
     rules.hideWhenSkyriding = true
     -- Not mounted, not flying: just sitting on a glide-capable mount. The rule is
-    -- about having stopped fighting and started travelling.
+    -- about having stopped fighting and started traveling.
     assertEqual(select(2, inst.NS.Visibility.ShouldShow(windowWith(rules))), "dungeon")
     inst.mocks.setCanGlide(true)
     assertEqual(select(2, inst.NS.Visibility.ShouldShow(windowWith(rules))), "skyriding")

@@ -119,7 +119,7 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
   are placed from `Window:TitleRowTop`, so check it again after changing **Header → Height**,
   **Header → Size** and **Control size**: any of those moving one of the three off the shared line
   means something is back on a hand-picked offset. A row that hugs the divider with clear space above
-  it means the centring is using the tinted band rather than the frame's top edge.
+  it means the centering is using the tinted band rather than the frame's top edge.
 - **Exactly one control reveals** — the one under the pointer comes up to full alpha and turns gold;
   the other six do not move. Two lit at once is the reveal having gone back to being strip-wide, and
   a control left bright after the pointer has moved on is the leave handler clearing a hover that has
@@ -146,7 +146,7 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
 - **Expanding restores the exact height** the window had, including after a `/reload` — a collapsed
   window comes back collapsed, and expands to the size you chose rather than to a default.
 - **Reset asks first.** It must open the confirmation, not clear anything, and the dialog must warn
-  that it wipes the game's own meter data too. Cancelling must leave the sessions intact. **The
+  that it wipes the game's own meter data too. Canceling must leave the sessions intact. **The
   dialog opens in the middle of the screen**, not up at the top where the popup stack puts it. It is
   re-anchored once, as it is shown: a SECOND popup opening on top of it re-stacks every dialog and
   can pull this one back up, which is accepted rather than fixed — a confirmation that is up at the
@@ -323,7 +323,7 @@ second edge to catch.
   players and the color follows. On Header → **Title text** and Columns → **Header text** it takes
   **your own** class, because those strips are about the window rather than any row. Also set **Text
   opacity** to 50% with the color mode set to Class: the text must stay half-transparent — a class
-  color that resets it is one setting cancelling another.
+  color that resets it is one setting canceling another.
 - **Reset all settings starts the profile over.** With **two or more** windows open, change something
   visible on each (font size, width, a column added or removed), rename them, select **one** in the
   window picker, then General → **Reset all settings**. You must come back with exactly **one** window
@@ -867,7 +867,7 @@ a raider most wants to know what killed them is the moment they are still fighti
 - The drill-down **does not reshuffle** while you watch it, in or out of combat.
 - **Settings → Text → Death timestamps** offers two styles — time of day, and how long ago — and the
   Deaths cell tooltip and the death list must agree on whichever is picked: the first is the index
-  into the second, and two labellings would make one list look like two. A third style, "time into
+  into the second, and two labelings would make one list look like two. A third style, "time into
   the fight", was built and removed; see Known limitations before adding one back.
 - **Deaths cell tooltip**: it lists **that player's deaths, one line each, newest first**, each
   labeled `Death N` with the wall-clock time in the right-hand column. It must NOT say "Spell
@@ -1955,7 +1955,7 @@ fourteen page files decorate one descriptor — so it is the likeliest place a r
   you pressed, and the strip's **band height** does not move as you go through it.
 
 **Steps — the strings.** `LibKa0s-Perf-1.0` minor 8 respells five player-facing strings: two
-`CANCELLED` and three `unlabelled` become `CANCELED` and `unlabeled`. No single capture shows all
+`CANCELED` and three `unlabeled` become `CANCELED` and `unlabeled`. No single capture shows all
 five, so run two.
 - `/mm perf start mylabel`, then `finish` — the started line and the report header both name the
   label.

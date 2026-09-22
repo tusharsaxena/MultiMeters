@@ -93,10 +93,10 @@ test("Launcher: the broker label is the BRAND NAME, in plain text", function()
     local label = broker(inst).label
 
     assertEqual(label, "Ka0s Multi Meters")
-    -- NO ESCAPE SEQUENCE OF ANY KIND. A display that draws the string raw splatters a coloured
+    -- NO ESCAPE SEQUENCE OF ANY KIND. A display that draws the string raw splatters a colored
     -- label across a list of plain-text rows; one that strips escapes mangles it instead.
-    assertEqual(label:find("|c", 1, true), nil, "a colour escape leaked into the broker label")
-    assertEqual(label:find("|r", 1, true), nil, "a colour terminator leaked into the broker label")
+    assertEqual(label:find("|c", 1, true), nil, "a color escape leaked into the broker label")
+    assertEqual(label:find("|r", 1, true), nil, "a color terminator leaked into the broker label")
     assertEqual(label:find("|T", 1, true), nil, "a texture escape leaked into the broker label")
     -- AND NOT THE FOLDER NAME, which is the registration `name` LibDBIcon keys the saved position
     -- by. `MultiMeters` is an identifier; `Ka0s Multi Meters` is a name. Two fields, two jobs.
@@ -107,7 +107,7 @@ end)
 
 test("Launcher: the label is NOT wired to the TOC's Title, even where the two agree", function()
     -- The two strings match today, and that is a coincidence this case exists to keep harmless. A
-    -- `## Title` MAY carry colour escapes and one in the collection does — Ka0s Pretty Chat's is
+    -- `## Title` MAY carry color escapes and one in the collection does — Ka0s Pretty Chat's is
     -- `Ka0s |cffff0000P|cffff9900r|…` — so an addon that read its label off the manifest would put
     -- that straight into a broker row (launcher-§1, anti-pattern #84). Driven by giving the mock
     -- manifest an escaped Title BEFORE any source loads: a wired label would carry it through.
@@ -480,7 +480,7 @@ test("Minimap store: the General page's Defaults button does not un-hide it eith
     assertFalse(NSi.Launcher:IsShown())
 
     -- ONE ROW, NOT THE WHOLE PAGE. An exemption that accidentally made the button inert would pass
-    -- the assertion above and break the button, so the case proves its neighbours still reset.
+    -- the assertion above and break the button, so the case proves its neighbors still reset.
     assertEqual(NSi.GetSetting("master.scale"), NSi.FindSchemaRow("master.scale").default,
         "the exemption is one row wide; the rest of the page still resets")
 end)

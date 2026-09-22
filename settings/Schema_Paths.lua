@@ -204,7 +204,7 @@ end
 --   here instead of by resolveRoot. The scope is NOT what keeps a reset off the row: that is a
 --   property of the setting, and its one exemption is in settings/OptionsSetup.lua.
 --
---   THE SENSE. The row's boolean says SHOWN; LibDBIcon's key says HIDDEN. A checkbox labelled
+--   THE SENSE. The row's boolean says SHOWN; LibDBIcon's key says HIDDEN. A checkbox labeled
 --   with a negative is the classic settings-panel double-negative everyone mis-clicks once, and
 --   the alternative -- a second `minimap.show` key beside the library's own -- would be two
 --   records of one state, free to disagree the first time the player used LibDBIcon's own menu
@@ -808,7 +808,7 @@ end
 --- @param row table
 function NS.ApplyDefault(row)
     if type(row) ~= "table" or row.path == nil then return end
-    -- A RESTORE IS NOT A CLICK, and one row cares: the Frame page's meta colour
+    -- A RESTORE IS NOT A CLICK, and one row cares: the Frame page's meta color
     -- mode broadcasts to ten rows on three other pages when it is SET, which is
     -- the point of it -- and must not when the page's own Defaults button walks
     -- it, or that button silently resets settings on pages it has no business

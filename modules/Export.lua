@@ -69,7 +69,7 @@ local _, NS = ...
 -- (NS.Export:Open) and nothing else.
 --
 -- It does take ONE bus subscription, and only once a modal has been built:
--- RESTRICTION_CHANGED, on a private target, so an open dialog greys its buttons
+-- RESTRICTION_CHANGED, on a private target, so an open dialog grays its buttons
 -- when a pull starts instead of waiting for a click to explain itself. Its only
 -- other lasting state is the window it was opened from and the two lazily built
 -- frames.
@@ -750,7 +750,7 @@ end
 
 --- How long after the click line `index` should go out.
 ---
---- CHAT_STAGGER between neighbours, plus one CHAT_BATCH_GAP for every whole
+--- CHAT_STAGGER between neighbors, plus one CHAT_BATCH_GAP for every whole
 --- batch already sent. The batch gap is the answer to the public-channel rule
 --- above: three-a-second is comfortably inside the byte budget and still trips
 --- the "too many messages" counter on a long run, and a pause every fifth line

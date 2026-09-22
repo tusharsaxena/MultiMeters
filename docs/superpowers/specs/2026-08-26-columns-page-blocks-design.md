@@ -76,11 +76,11 @@ vertically in the order the columns are drawn left to right.
 
 Block anatomy, left to right:
 
-| Element | Asset | Behaviour |
+| Element | Asset | Behavior |
 |---|---|---|
 | Drag handle | `libs/LibKa0s/media/icons/list.tga` | The **only** mouse-enabled region. Drag to reorder. |
 | State glyph | `Interface\RaidFrame\ReadyCheck-Ready` / `ReadyCheck-NotReady` | Clickable. **Is** the toggle, not a label beside one. |
-| Statistic name | — | Right-aligned. Full colour when enabled, greyed when not. |
+| Statistic name | — | Right-aligned. Full color when enabled, grayed when not. |
 
 The two `ReadyCheck` textures are the same pair `ConsumableMaster/settings/Category.lua:48-49` uses
 for its priority list, so the two addons read as one family.

@@ -17,7 +17,7 @@ three of them would each have sunk a different part of the plan.
 |---|---|
 | Can this machine produce a texture the WoW client loads? | **Yes.** `media/textures/Default.tga` is a 256×32 32-bit TGA the client already loads, and Pillow 10.2 (present) writes a compatible 32-bit TGA. |
 | Can it rasterise SVG? | **No.** No ImageMagick, Inkscape, rsvg or cairosvg. Every mainstream icon set ships SVG only — which rules out Feather, Lucide, Tabler, Bootstrap, Phosphor and Font Awesome. |
-| Is there a raster-shipping set with a usable licence? | **Yes — [Open Iconic](https://github.com/iconic/open-iconic), MIT.** It ships pre-rendered PNG at 8/16/24/32/48/64px, which sidesteps the missing rasteriser entirely. |
+| Is there a raster-shipping set with a usable license? | **Yes — [Open Iconic](https://github.com/iconic/open-iconic), MIT.** It ships pre-rendered PNG at 8/16/24/32/48/64px, which sidesteps the missing rasteriser entirely. |
 | Does it carry the glyphs we need? | **Yes**, all ten: `cog`, `lock-locked`, `lock-unlocked`, `x`, `reload`, `minus`, `plus`, `caret-top`, `caret-bottom`, `menu`, `list`, `data-transfer-download`. |
 | What shape are they? | `cog-8x.png` is **64×64 RGBA**, transparent background, `(0,0,0,α)` antialiased. Verified by fetching and inspecting it. |
 | Can PanelMaster's `artwork_cleaner.py` be used as-is? | **No.** Its output box is `SIZE = 1024` — it exists for full-panel backdrops, and would letterbox a 64px glyph onto a 1024 canvas. Its *machinery* is right; its target is not. |
@@ -38,7 +38,7 @@ The base is 8px, so `-8x` is the 64px one. And `raw.githubusercontent.com` times
 | Does a collapsed window still refresh? | **No — but it costs code.** See §6, AMENDED. |
 | Hover reveal? | **Yes**, per-window, default on, one hook for the whole strip — but `dragBar` needs a change first. See §7, AMENDED. |
 | Does reset confirm? | **Yes — through the dialog that already exists.** No new popup. |
-| Icon art source? | **Open Iconic**, MIT, recoloured white so `SetVertexColor` tints at runtime. |
+| Icon art source? | **Open Iconic**, MIT, recolored white so `SetVertexColor` tints at runtime. |
 | One atlas or one file per glyph? | **One file per glyph.** Drops the texcoord map from the design entirely. |
 | Does custom art replace the atlas ladder? | **No.** It becomes the ladder's first rung. See §10. |
 | Do #6 and #7 land together? | **Two commits, in that order.** #6 ships complete without any art. |
@@ -66,7 +66,7 @@ an indexed layout, hover machinery and two new controls — 300-odd lines into t
 take them.
 
 The boundary is clean because the controls already only touch three things: the frame they anchor
-to, the header's font and colour, and the window's own config. So:
+to, the header's font and color, and the window's own config. So:
 
 ```
 WindowProto:Build()          -> HeaderControls:Attach(window)   -- create the buttons
@@ -174,7 +174,7 @@ flag was doing nothing but suppressing hover.
 would silently replace the drag wiring.
 
 `window.frame.hoverReveal`, default **true**. Off means the controls are always at full alpha,
-which is today's behaviour and therefore the honest fallback.
+which is today's behavior and therefore the honest fallback.
 
 ## 8. Reset, and the dialog that already exists
 
@@ -203,18 +203,18 @@ same structure, same prose register, retargeted:
 | `SIZE = 1024` | `SIZE = 64` | A header glyph, not a panel backdrop. |
 | Real-ESRGAN upscale | **dropped** | The source is already 64×64. Nothing to upscale, and the vendored binary is PanelMaster's. |
 | `key_dark_background` | **dropped** | Open Iconic's PNGs already carry alpha. Keying an image that has alpha is how you damage it. |
-| `solidify` | **kept** | Pushes opaque colour under transparent pixels so edges cannot smear. Cheap, and it is what keeps a downscale clean. |
+| `solidify` | **kept** | Pushes opaque color under transparent pixels so edges cannot smear. Cheap, and it is what keeps a downscale clean. |
 | `normalize` | **kept** | Forces fully-transparent pixels to `(0,0,0,0)`. |
-| — | **recolour** | New. Black → white, alpha preserved, so `SetVertexColor` can tint at runtime. |
+| — | **recolor** | New. Black → white, alpha preserved, so `SetVertexColor` can tint at runtime. |
 
-**Why white.** The existing ASCII glyphs are tinted to the header's text colour at draw time
-(`headerColor(header)`). A white source multiplies to any colour; a black one multiplies to black.
-Shipping white is what lets the icons obey the same colour setting the rest of the header does,
+**Why white.** The existing ASCII glyphs are tinted to the header's text color at draw time
+(`headerColor(header)`). A white source multiplies to any color; a black one multiplies to black.
+Shipping white is what lets the icons obey the same color setting the rest of the header does,
 rather than becoming a second thing the player has to style.
 
 The tool fetches its sources through `gh api` and does not ship them. What ships is the TGAs and
 `LICENSE-open-iconic.txt`, beside the precedent `media/fonts/` already sets with `OFL.txt`. The
-tool's header records the upstream repo, the licence and the exact file names, so the provenance
+tool's header records the upstream repo, the license and the exact file names, so the provenance
 question #7 raises is answered in the one place that can go stale — the thing that regenerates them.
 
 **`DEPENDENCIES.md` grows a release/assets entry**: Python 3 with Pillow and numpy, needed only to
@@ -283,7 +283,7 @@ Two commits, both in one session.
 
 1. **#6** — the module, the seven controls, minimise, hover, reset, the schema, the docs. Ships
    complete against the existing atlas→ASCII ladder. No art, no new tool.
-2. **#7** — `icon_cleaner.py`, the TGAs, the licence, `Compat.FirstTexture`, and the ladder's first
+2. **#7** — `icon_cleaner.py`, the TGAs, the license, `Compat.FirstTexture`, and the ladder's first
    rung.
 
 The split is not ceremony. #6 is the larger and riskier change and it is worth reviewing without a
@@ -292,8 +292,8 @@ shippable rather than half-merged.
 
 ## 14. Not in scope
 
-* **The bar texture (#4).** #7's note suggests answering the licence-and-registration question once
-  for both. This design answers it for control glyphs — MIT source, licence file beside the art,
+* **The bar texture (#4).** #7's note suggests answering the license-and-registration question once
+  for both. This design answers it for control glyphs — MIT source, license file beside the art,
   provenance in the tool. #4 can adopt the same answer, but a bar texture is a different asset with
   a different shape and it is not being changed here.
 * **Details!-style bottom bar.** #6 names it as the alternative considered; the header is where this

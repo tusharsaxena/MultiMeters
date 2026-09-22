@@ -3,7 +3,7 @@
 --
 -- Peeled out of tests/test_window.lua alongside the module it mirrors. This is
 -- the band across the top of a window and everything the player clicks in it:
--- the padlock and the gear, the title text and its two colour modes, the
+-- the padlock and the gear, the title text and its two color modes, the
 -- hairline divider, the header LINE that says which fight is on screen, the
 -- per-column header buttons and the arrow that marks the sort, the segment
 -- picker, the notice text, and the minimise collapse that takes the whole body
@@ -15,7 +15,7 @@
 -- fails on one rung may be perfectly correct on another; read which rung the
 -- case forced. Second, the column-header `place()` closure creates once and
 -- dresses on every apply, and the cases at the bottom of this file pin that
--- boundary specifically: a header button is re-pointed and re-labelled, never
+-- boundary specifically: a header button is re-pointed and re-labeled, never
 -- rebuilt, and a column that goes away is hidden rather than destroyed.
 --
 -- Rule R3 still binds every case here — no geometry is read back off a cell that
@@ -153,7 +153,7 @@ end)
 
 test("The title-bar divider can be switched off, and does not move the title row", function()
     -- The one piece of the window's chrome a player can hide. What matters as much
-    -- as the hiding is that NOTHING ELSE MOVES: TitleRowTop centres the title row
+    -- as the hiding is that NOTHING ELSE MOVES: TitleRowTop centers the title row
     -- against the DIVIDER_INSET constant, not against this texture, so a hidden
     -- line leaves the title, the session line and the control strip exactly where
     -- they were. A layout that measured the divider would shift all three.
@@ -178,11 +178,11 @@ test("The divider's thickness is a setting", function()
     assertEqual(window.frame.divider:GetHeight(), 4)
 end)
 
-test("The divider's SKIN mode writes no colour at all, so a re-skin still reaches it", function()
-    -- The shipped mode, and the reason it is a mode rather than a stored colour.
+test("The divider's SKIN mode writes no color at all, so a re-skin still reaches it", function()
+    -- The shipped mode, and the reason it is a mode rather than a stored color.
     -- `skin` does not resolve SKIN.divider and write it -- it writes NOTHING, so
     -- whatever ApplySkin put on the texture stands. That is how standalone-windows
-    -- survives a per-window colour picker: the shared value is never copied into
+    -- survives a per-window color picker: the shared value is never copied into
     -- this repo and never into a profile, so changing it upstream still lands here.
     -- red under: seeding the swatch from SKIN.divider, or "skin" resolving to a
     -- literal — either one freezes today's skin into every saved profile.
@@ -200,8 +200,8 @@ test("The divider's SKIN mode writes no colour at all, so a re-skin still reache
         "the custom swatch was seeded from the skin")
 end)
 
-test("The divider takes a custom colour and a class colour, keeping the configured alpha", function()
-    -- A class colour has no alpha of its own, so it takes the swatch's — the same
+test("The divider takes a custom color and a class color, keeping the configured alpha", function()
+    -- A class color has no alpha of its own, so it takes the swatch's — the same
     -- rule the cell text keeps, where the configured alpha survives every mode.
     -- red under: a class divider drawn at 1.0 while the swatch says 0.4.
     local inst, window, cfg = scene()
@@ -217,7 +217,7 @@ test("The divider takes a custom colour and a class colour, keeping the configur
     window:ApplyConfig()
     local k = window.frame.divider.__colorTexture
     local cr = inst.NS.PlayerClassRGB()
-    assertEqual(k[1], cr, "the divider ignored the class colour")
+    assertEqual(k[1], cr, "the divider ignored the class color")
     assertEqual(k[4], 0.4, "the configured alpha did not survive the mode change")
 end)
 
@@ -454,7 +454,7 @@ test("Segment menu: stored segments first, then a divider, then Current/Overall"
     assertEqual(menu:Nth("button", 4).text, inst.NS.L["Overall"])
 end)
 
-test("Segment menu: an entry is labelled with its name AND its duration", function()
+test("Segment menu: an entry is labeled with its name AND its duration", function()
     local inst, window = withSegments()
     window:OpenSegmentMenu()
     assertEqual(inst.mocks.__lastMenu:Nth("button", 1).text, "Bribed Guard   0:22")
@@ -725,7 +725,7 @@ test("Clicking a header drops the frozen sort order", function()
     assertNil(inst.NS.State.Cache("Aggregator")[window.id])
 end)
 
-test("A STAT header is honoured in combat: the column it ranks by is a choice", function()
+test("A STAT header is honored in combat: the column it ranks by is a choice", function()
     -- The refusal used to cover every header, and it was too wide. Picking a
     -- different stat mid-pull compares NOTHING: modules/Aggregator.lua builds the
     -- whole mid-pull row list out of `sortColumn`'s own combatSources, so
@@ -757,7 +757,7 @@ end)
 
 test("The Player header sorts by PLAYER, ascending first", function()
     -- It used to toggle between `roster` and `value` — a reasonable thing for
-    -- some header to do, and not what a header labelled "Player" says. A-Z is
+    -- some header to do, and not what a header labeled "Player" says. A-Z is
     -- what a player means by "sort by name", so the first click ascends and the
     -- second reverses, exactly like a stat column.
     -- red under: toggling sortMode between roster and value.
@@ -906,7 +906,7 @@ end)
 
 test("Column headers take their own font, not the cells'", function()
     -- They used to borrow the font PATH and size from `text` and the outline and
-    -- colour from `header`, so changing the cell font silently restyled the
+    -- color from `header`, so changing the cell font silently restyled the
     -- headers and nothing could make the strip differ from the numbers beneath.
     -- red under: reading textCfg.font / textCfg.size in ApplyColumnHeaders.
     local _, window = scene{ configure = function(c)
@@ -921,7 +921,7 @@ test("Column headers take their own font, not the cells'", function()
     assertEqual(flags, "THICKOUTLINE", "the header took its outline from somewhere else")
 end)
 
-test("Column headers have their own colour and background", function()
+test("Column headers have their own color and background", function()
     -- The strip has never had a backdrop, so the setting is new capability and
     -- defaults transparent — an existing window must look identical.
     -- red under: tinting from header.color, or no headerBg texture at all.
@@ -933,19 +933,19 @@ test("Column headers have their own colour and background", function()
     window:ApplyColumnHeaders()
 
     local r, g = window.columnHeaders[1].text:GetTextColor()
-    assertEqual(r, 1, "the header label took the title strip's colour")
-    assertEqual(g, 0, "the header label took the title strip's colour")
+    assertEqual(r, 1, "the header label took the title strip's color")
+    assertEqual(g, 0, "the header label took the title strip's color")
 
     local bg = window.headerBg.__colorTexture
     assertTrue(bg ~= nil, "the header strip has no backdrop texture")
-    assertEqual(bg[3], 1, "the backdrop did not take the configured colour")
+    assertEqual(bg[3], 1, "the backdrop did not take the configured color")
 end)
 
-test("Per-statistic mode leaves the Player header white, not the sort column's colour", function()
+test("Per-statistic mode leaves the Player header white, not the sort column's color", function()
     -- The Player column labels the NAMES, not a statistic, so there is no stat
-    -- colour for it to take. It was taking one anyway: its fallback resolved
+    -- color for it to take. It was taking one anyway: its fallback resolved
     -- through windowStat() -- the sort column -- so "Player" came out red on a
-    -- damage-sorted window and changed colour whenever the sort moved.
+    -- damage-sorted window and changed color whenever the sort moved.
     -- red under: `button.text:SetTextColor(hr, hg, hb, ha)` for the name column.
     local inst, window, cfg = scene{ configure = function(c)
         c.columnHeader.colorMode = "stat"
@@ -961,12 +961,12 @@ test("Per-statistic mode leaves the Player header white, not the sort column's c
     assertEqual(ng, 1, "the Player header must be white in per-statistic mode")
     assertEqual(nb, 1, "the Player header must be white in per-statistic mode")
 
-    -- The stat columns still take their own colours, which is the whole feature.
+    -- The stat columns still take their own colors, which is the whole feature.
     local dr, dg, db = byKey["DamageDone"].text:GetTextColor()
     local want = inst.NS.Constants.STAT_COLORS["DamageDone"]
-    assertEqual(dr, want[1], "the Damage header lost its own statistic colour")
-    assertEqual(dg, want[2], "the Damage header lost its own statistic colour")
-    assertEqual(db, want[3], "the Damage header lost its own statistic colour")
+    assertEqual(dr, want[1], "the Damage header lost its own statistic color")
+    assertEqual(dg, want[2], "the Damage header lost its own statistic color")
+    assertEqual(db, want[3], "the Damage header lost its own statistic color")
 end)
 
 test("The Player header's sort arrow is white too, in per-statistic mode", function()
@@ -974,7 +974,7 @@ test("The Player header's sort arrow is white too, in per-statistic mode", funct
     -- from the same stat-resolved fallback the label was -- so the arrow stayed
     -- red over a label that is no longer red.
     -- red under: the arrow branches reading `hr, hg, hb` instead of the
-    -- per-header colour.
+    -- per-header color.
     local _, window = scene{ configure = function(c)
         c.columnHeader.colorMode = "stat"
     end }
@@ -1004,7 +1004,7 @@ end)
 -- Minimise (issue #6)
 -- ---------------------------------------------------------------------------
 --
--- Review found this had ZERO behavioural coverage: ApplyMinimised could be made
+-- Review found this had ZERO behavioral coverage: ApplyMinimised could be made
 -- a no-op and the suite stayed green, on the headline addition of the change.
 -- Everything below is a property somebody would notice in game and nothing
 -- offline was checking.
@@ -1147,7 +1147,7 @@ end)
 test("The header's text answers TWO modes, and the custom one is the picker", function()
     -- Custom is the shipped mode, so a window that never touches the dropdown is
     -- drawn from the picker exactly as it was before there was a dropdown.
-    -- red under: a default of "class", which would recolour every existing window
+    -- red under: a default of "class", which would recolor every existing window
     -- on upgrade.
     local inst, window, cfg = scene()
     inst.mocks.RAID_CLASS_COLORS.PALADIN = { r = 0.41, g = 0.8, b = 0.94 }
@@ -1165,14 +1165,14 @@ test("The header's text answers TWO modes, and the custom one is the picker", fu
         "the title and the session line are one header and must not differ")
 end)
 
-test("The header's text takes the CLASS colour, keeping the configured alpha", function()
+test("The header's text takes the CLASS color, keeping the configured alpha", function()
     -- The title used to be the one thing on the strip that could not wear a class
-    -- colour, while the controls and the divider beside it both could -- so it was
+    -- color, while the controls and the divider beside it both could -- so it was
     -- the odd one out rather than the principled one. It is still the LOCAL
     -- player's class, because that is the only class a window-wide strip can mean.
     --
     -- The ALPHA comes off the swatch, the same rule every other surface keeps: a
-    -- class colour carries none of its own, and inventing one would mean the
+    -- class color carries none of its own, and inventing one would mean the
     -- opacity changed when the mode did.
     -- red under: a class title drawn at 1.0 while the swatch says 0.35, or the
     -- session line beside it disagreeing with the title.
@@ -1183,22 +1183,22 @@ test("The header's text takes the CLASS colour, keeping the configured alpha", f
     window:ApplyConfig()
 
     local c = window.frame.title.__textColor
-    assertEqual(c[1], 0.41, "the title ignored the class colour")
+    assertEqual(c[1], 0.41, "the title ignored the class color")
     assertEqual(c[4], 0.35, "the configured alpha did not survive the mode")
     assertEqual(window.sessionText.__textColor[1], 0.41,
-        "the session line did not follow the title into class colour")
+        "the session line did not follow the title into class color")
 end)
 
 test("The header's text mode offers class and custom, and NOT per-statistic", function()
     -- The one half of the old refusal that stands. "Per statistic" could only ever
-    -- paint this the SORT column's colour -- already on screen in that column's own
+    -- paint this the SORT column's color -- already on screen in that column's own
     -- header and in its arrow -- and the title bar is one strip over the whole
     -- window rather than a thing belonging to a column. Same argument that took
     -- the mode off the title bar's BACKGROUND.
     -- red under: widening this row to the three-mode set every cell surface answers.
     local inst = T.load()
     local row  = inst.NS.FindSchemaRow("window.header.colorMode")
-    assertTrue(row ~= nil, "the title text has no colour mode row")
+    assertTrue(row ~= nil, "the title text has no color mode row")
 
     local keys = {}
     for _, k in ipairs(row.sorting) do keys[#keys + 1] = k end
@@ -1206,8 +1206,8 @@ test("The header's text mode offers class and custom, and NOT per-statistic", fu
     assertEqual(table.concat(keys, ","), "class,custom")
 end)
 
-test("The header colour survives a sort change, having nothing to do with it", function()
-    -- The old `stat` mode made the title bar change colour whenever the sort
+test("The header color survives a sort change, having nothing to do with it", function()
+    -- The old `stat` mode made the title bar change color whenever the sort
     -- moved, which is a relationship the title bar does not have.
     local _, window, cfg = scene()
     cfg.header.color    = { r = 0.2, g = 0.4, b = 0.6, a = 1 }
@@ -1221,11 +1221,11 @@ test("The header colour survives a sort change, having nothing to do with it", f
         "the title bar is not about the sorted column")
 end)
 
-test("The window NAME takes the header's colour", function()
+test("The window NAME takes the header's color", function()
     -- The title used to be left to the library's skin, so the Header text group
     -- styled every part of the strip except the one word a player thinks of as
     -- the header: font, size, outline and shadow all came from that group and
-    -- only the colour did not.
+    -- only the color did not.
     -- red under: dropping the SetTextColor from ApplyTitle, or letting ApplySkin
     -- run after it.
     local inst, window, cfg = scene()
@@ -1235,7 +1235,7 @@ test("The window NAME takes the header's colour", function()
     window:ApplyConfig()
 
     local c = window.frame.title.__textColor
-    assertEqual(c[1], 0.2, "the title ignored the header colour")
+    assertEqual(c[1], 0.2, "the title ignored the header color")
     assertEqual(c[3], 0.6)
     assertEqual(c[1], window.sessionText.__textColor[1],
         "the title and the session line are one header and must not differ")
@@ -1271,7 +1271,7 @@ end)
 --
 -- 133 lines and CCN 18, and the split it is headed for is create-once/dress —
 -- the same seam LibKa0s' TabStrip was cut along. The cases above cover the label,
--- the colours and which header wears the arrow; these cover the create/dress
+-- the colors and which header wears the arrow; these cover the create/dress
 -- boundary itself, the placement, the mutually-exclusive backgrounds and the two
 -- lower rungs of the arrow ladder.
 
@@ -1385,8 +1385,8 @@ end)
 test("The strip background and the per-column ones are mutually exclusive, both ways", function()
     -- BOTH ARE WRITTEN EVERY PASS. A player switching modes would otherwise keep
     -- whichever they left behind, drawn underneath the one they chose — and the
-    -- per-column texture is the only one that can carry a stat colour, while the
-    -- strip texture is the only one that can carry a class colour.
+    -- per-column texture is the only one that can carry a stat color, while the
+    -- strip texture is the only one that can carry a class color.
     -- red under: a dress helper that only ever SHOWS a background.
     local inst, window, cfg = scene{ configure = function(c)
         c.columns = { { stat = "DamageDone", enabled = true } }
@@ -1399,11 +1399,11 @@ test("The strip background and the per-column ones are mutually exclusive, both 
     assertFalse(window.headerBg:IsShown(), "per-column mode stands the strip texture down")
     assertTrue(damage.bg:IsShown(), "and paints one rectangle per column instead")
     assertFalse(nameButton.bg:IsShown(),
-        "the Player column is not a statistic and has no stat colour to take")
+        "the Player column is not a statistic and has no stat color to take")
 
     local want = inst.NS.Constants.STAT_COLORS["DamageDone"]
     local got = damage.bg.__colorTexture
-    assertTrue(got ~= nil, "the per-column texture was never given a colour")
+    assertTrue(got ~= nil, "the per-column texture was never given a color")
     assertEqual(got[1], want[1])
     assertEqual(got[2], want[2])
     assertEqual(got[3], want[3])

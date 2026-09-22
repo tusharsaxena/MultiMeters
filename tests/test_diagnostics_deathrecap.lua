@@ -177,7 +177,7 @@ test("Diagnostics: a client with no reader is the answer that RE-SCOPES the issu
 end)
 
 test("Diagnostics: a reader that refuses an id is reported, not swallowed", function()
-    -- "Death Recap unavailable" for a past death is the observed behaviour issue
+    -- "Death Recap unavailable" for a past death is the observed behavior issue
     -- #1 opens with. A refusal per id is the finding; a probe that died on the
     -- first one would print nothing for the three ids after it.
     -- red under: calling the reader outside the provider's pcall.
@@ -291,7 +291,7 @@ test("Diagnostics: it says WHICH search found each reader", function()
 
     local text = recapReport(inst)
     assertTrue(text:find("named", 1, true) ~= nil,
-        "a reader only a direct index could see must be labelled as such")
+        "a reader only a direct index could see must be labeled as such")
     assertTrue(text:find("the walk cannot see", 1, true) ~= nil,
         "and the report must say what that means")
 end)
@@ -335,7 +335,7 @@ end)
 test("Diagnostics: the verdict names WHICH of the four slots answered", function()
     -- The two open questions are slots, not totals. A reader that answers the
     -- local player's newest death and nothing else is Blizzard's frame
-    -- behaviour, and the report has to make that visible at a glance rather than
+    -- behavior, and the report has to make that visible at a glance rather than
     -- leaving it to be counted out of twenty probe lines.
     -- red under: reporting a bare answered/not-answered count.
     local inst = T.load{ enable = true }
@@ -354,7 +354,7 @@ test("Diagnostics: the verdict names WHICH of the four slots answered", function
     local text = recapReport(inst)
     assertTrue(text:find("answered: local/newest", 1, true) ~= nil,
         "the slot that answered must be named")
-    assertTrue(text:find("Blizzard's own frame behaviour", 1, true) ~= nil,
+    assertTrue(text:find("Blizzard's own frame behavior", 1, true) ~= nil,
         "and local/newest alone is exactly the outcome that sinks the design")
 end)
 
@@ -587,7 +587,7 @@ test("Diagnostics: the dating stops at four deaths", function()
 end)
 
 test("Diagnostics: a secret id costs the row its dating, and still spends one of the four", function()
-    -- Two behaviours in one, because they are one line apart and a refactor that
+    -- Two behaviors in one, because they are one line apart and a refactor that
     -- tidies the loop will meet both at once.
     --
     -- A secret `deathRecapID` cannot be dated from AT ALL — it cannot be handed

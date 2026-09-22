@@ -61,6 +61,11 @@ badge and any count quoted in the docs must agree with it.
 - lintconfig: every files[...] ignore is narrowed to a file or a name
 - lintconfig: no source file carries a bare inline luacheck ignore
 
+### test_prose.lua (2)
+
+- prose: no authored file carries a British spelling from localization-5's published list
+- prose: the gate carries localization-5's two lists whole, and nothing of its own
+
 ### test_constants.lua (23)
 
 - Constants: NS.Const and NS.Constants are the same table
@@ -251,7 +256,7 @@ badge and any count quoted in the docs must agree with it.
 - Database v5: the window's value beats whatever sits at the profile address
 - Database v5: a profile whose windows never carried the keys survives
 - Database v6: the two dead row-background keys are pruned from every window
-- Database v7: a class-colour boolean becomes a colour mode, on every surface
+- Database v7: a class-color boolean becomes a color mode, on every surface
 - Database v7: a window that never set one is left to the shipped default
 - Database v8: the four redundant header keys are pruned from every window
 - Database v8: a typed header title becomes the window's NAME, not nothing
@@ -260,7 +265,7 @@ badge and any count quoted in the docs must agree with it.
 - Database v10: a stored cursor anchor becomes TOP, and other anchors are left alone
 - Database: v12 -> v13 moves the title-bar toggle onto the header
 - Database: v12 -> v13 leaves a window that never stored the toggle alone
-- Database: v12 -> v13 turns the control class-colour flags into modes
+- Database: v12 -> v13 turns the control class-color flags into modes
 - Database v2: the widening uses the window's OWN padding, not the template's
 - Database v2: a frame with no numeric width is given one, and every window gets its own
 - Database v5: a stored false and a stored 0 are lifted, not read as unset
@@ -269,7 +274,7 @@ badge and any count quoted in the docs must agree with it.
 - Database v5: a first window whose data block is not a table lifts nothing
 - Database v5: EVERY profile lifts from its OWN first window
 - Database: v12 -> v13 keeps the rest of an existing header block
-- Database: v12 -> v13 overwrites a control colour mode that was already there
+- Database: v12 -> v13 overwrites a control color mode that was already there
 - Database: v12 -> v13 maps each control flag on its own
 - Database: v12 -> v13 leaves a window with no frame block at all alone
 - Database: v12 -> v13 walks every saved profile, not just the active one
@@ -430,9 +435,9 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: channels fall back independently, so a three-element color keeps its alpha
 - CoreSetup: RGBA answers the four defaults for a non-table
 - CoreSetup: the fallback color reader stands behind the library's
-- CoreSetup: the class colour is the LIBRARY's one resolver, not a private copy
+- CoreSetup: the class color is the LIBRARY's one resolver, not a private copy
 - CoreSetup: the classFilename reader is KEPT, because the library has no equivalent
-- CoreSetup: the class colour degrades to a working reader, not to nothing
+- CoreSetup: the class color degrades to a working reader, not to nothing
 - CoreSetup: the window edge comes from the library, never from a private lookalike
 - CoreSetup: the close button is the library's, told which addon is asking
 - CoreSetup: no addon file restates a Core.SKIN value
@@ -792,7 +797,7 @@ badge and any count quoted in the docs must agree with it.
 - Feign: pruning an empty set costs nothing
 - Feign: a death judged fake STAYS fake after the player really dies
 - Feign: standing back up ends the feign, so the next death is real
-- Feign: a client with no UnitIsFeignDeath keeps the old behaviour
+- Feign: a client with no UnitIsFeignDeath keeps the old behavior
 - Feign: a reset forgets the fake deaths too
 - Feign: ShouldDropDeath answers no for anything it cannot key on
 - Feign: a confirmed 0 HP evicts even while the client still reads feigning
@@ -870,7 +875,7 @@ badge and any count quoted in the docs must agree with it.
 - A counted column ignores the session's maxAmount, however loud
 - The Deaths pass prunes the feign set itself, and no other column does
 - The judge verdict is recorded per death source, after the prune
-- A column that is not counted records no judgement at all
+- A column that is not counted records no judgment at all
 
 ### test_aggregator_identity.lua (27)
 
@@ -934,7 +939,7 @@ badge and any count quoted in the docs must agree with it.
 - while restricted an ASCENDING sort reverses the engine's order
 - an ascending mid-pull reverse leads with the rows the sort column never named
 - the build PUBLISHES which order actually took effect
-- `provider` mode honours the direction OUT of combat too
+- `provider` mode honors the direction OUT of combat too
 
 ### test_window.lua (59)
 
@@ -985,7 +990,7 @@ badge and any count quoted in the docs must agree with it.
 - Master scale MULTIPLIES the window's own rather than replacing it
 - Master alpha MULTIPLIES the window's own opacity
 - Master scale and alpha are CLAMPED to the sliders that write them
-- The window's fill and its edge each answer a colour mode
+- The window's fill and its edge each answer a color mode
 - pool: every row built lands in `all`, including the batch surplus
 - The stored per-column width is what a NEW column is born at, never the drawn one
 - The name column is excluded from the share, and is not sized by the frame
@@ -1004,8 +1009,8 @@ badge and any count quoted in the docs must agree with it.
 - The padlock toggles THIS window only
 - The title-bar divider can be switched off, and does not move the title row
 - The divider's thickness is a setting
-- The divider's SKIN mode writes no colour at all, so a re-skin still reaches it
-- The divider takes a custom colour and a class colour, keeping the configured alpha
+- The divider's SKIN mode writes no color at all, so a re-skin still reaches it
+- The divider takes a custom color and a class color, keeping the configured alpha
 - The header folds its parts with `..`, and survives a secret piece
 - The header line says which fight, and stays out of the way otherwise
 - Show segment off leaves the header line blank again
@@ -1019,7 +1024,7 @@ badge and any count quoted in the docs must agree with it.
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
 - Segment menu: stored segments first, then a divider, then Current/Overall
-- Segment menu: an entry is labelled with its name AND its duration
+- Segment menu: an entry is labeled with its name AND its duration
 - Segment menu: picking a segment pins it and marks the window dirty
 - Segment menu: picking Current CLEARS the pin
 - Segment menu: with no menu API the click is refused, not an error
@@ -1037,7 +1042,7 @@ badge and any count quoted in the docs must agree with it.
 - The sort arrow falls to the Blizzard atlas with no LibKa0s art
 - Clicking a header sorts by it; clicking again reverses
 - Clicking a header drops the frozen sort order
-- A STAT header is honoured in combat: the column it ranks by is a choice
+- A STAT header is honored in combat: the column it ranks by is a choice
 - A stat header REVERSES in combat too, because reversing compares nothing
 - The Player header sorts by PLAYER, ascending first
 - The Player header is the ONE that still refuses while restricted
@@ -1048,8 +1053,8 @@ badge and any count quoted in the docs must agree with it.
 - Header art falls back to ASCII on a client with none of the atlases
 - Header art prefers an atlas where the client has one
 - Column headers take their own font, not the cells'
-- Column headers have their own colour and background
-- Per-statistic mode leaves the Player header white, not the sort column's colour
+- Column headers have their own color and background
+- Per-statistic mode leaves the Player header white, not the sort column's color
 - The Player header's sort arrow is white too, in per-statistic mode
 - Minimise hides everything below the title bar
 - Minimise actually shrinks the window
@@ -1059,10 +1064,10 @@ badge and any count quoted in the docs must agree with it.
 - Header shadow reaches every line of the strip
 - Column header shadow is its OWN setting, not the header's
 - The header's text answers TWO modes, and the custom one is the picker
-- The header's text takes the CLASS colour, keeping the configured alpha
+- The header's text takes the CLASS color, keeping the configured alpha
 - The header's text mode offers class and custom, and NOT per-statistic
-- The header colour survives a sort change, having nothing to do with it
-- The window NAME takes the header's colour
+- The header color survives a sort change, having nothing to do with it
+- The window NAME takes the header's color
 - Column header class color is the local player's too
 - A profile written before minimise existed is not collapsed
 - Header buttons are created ONCE per index and re-pointed, never rebuilt
@@ -1129,32 +1134,32 @@ badge and any count quoted in the docs must agree with it.
 - HeaderControls: a control turned off is not placed at all
 - HeaderControls: a hidden control YIELDS its slot
 - HeaderControls: hiding the LAST control moves nothing
-- HeaderControls: the strip is CENTRED in the title bar
-- HeaderControls: the strip and the title share one centre line
+- HeaderControls: the strip is CENTERED in the title bar
+- HeaderControls: the strip and the title share one center line
 - HeaderControls: a control taller than its bar overflows DOWNWARD
-- HeaderControls: a control at rest takes the control colour
-- HeaderControls: the control under the pointer takes the HOVER colour
-- HeaderControls: both colours come from config
-- HeaderControls: each colour has its OWN colour mode
-- HeaderControls: the hover mode classes the hover colour and nothing else
+- HeaderControls: a control at rest takes the control color
+- HeaderControls: the control under the pointer takes the HOVER color
+- HeaderControls: both colors come from config
+- HeaderControls: each color has its OWN color mode
+- HeaderControls: the hover mode classes the hover color and nothing else
 - HeaderControls: both flags off is the shipped look, unchanged
 - HeaderControls: control size comes from config
 - HeaderControls: the width reserved equals the width occupied
 - HeaderControls: no title bar means no strip and no reservation
 - HeaderControls: with no atlas the ASCII rung draws
 - HeaderControls: an atlas beats the ASCII rung
-- HeaderControls: an unlocked padlock is drawn at the same weight as its neighbours
+- HeaderControls: an unlocked padlock is drawn at the same weight as its neighbors
 - HeaderControls: the padlock's two states do not draw the same
 - HeaderControls: minimise shows the opposite of the state it is in
 - HeaderControls: a glyph is never given text before a font
 - HeaderControls: reset asks before it wipes anything
-- HeaderControls: the reset confirmation opens in the CENTRE of the screen
+- HeaderControls: the reset confirmation opens in the CENTER of the screen
 - HeaderControls: minimise writes through the settings seam
 - HeaderControls: the lock button toggles this window only
 - HeaderControls: only the control under the pointer is revealed
 - HeaderControls: the title bar itself reveals nothing
 - HeaderControls: the reveal moves rather than accumulating
-- HeaderControls: with the reveal off, hover is colour alone
+- HeaderControls: with the reveal off, hover is color alone
 - HeaderControls: both ends of the reveal are settings, and default to what was hardcoded
 - HeaderControls: the two opacity sliders each move their own end
 - HeaderControls: with the reveal off every control sits at the HOVER opacity
@@ -1184,7 +1189,7 @@ badge and any count quoted in the docs must agree with it.
 - HeaderControls: with no settings seam a toggle changes nothing and raises nothing
 - HeaderControls: the gear sets the active window BEFORE it opens the panel
 - HeaderControls: the gear still points the panel when there is no panel
-- HeaderControls: reset PREFERS the centred dialog over the bare popup
+- HeaderControls: reset PREFERS the centered dialog over the bare popup
 - HeaderControls: with settings/ absent the reset falls back to the bare popup
 - HeaderControls: reset with no popup API at all raises nothing
 - HeaderControls: segment and export are opened ON the window, or not at all
@@ -1222,8 +1227,8 @@ badge and any count quoted in the docs must agree with it.
 - Class color keeps the configured ALPHA, not the class's own
 - With no class to read, cell text keeps its configured color
 - Text opacity fades the TEXT, and leaves the bar alone
-- The bar border takes the player's thickness and colour
-- The bar border answers a colour mode, and its class is the ROW'S player
+- The bar border takes the player's thickness and color
+- The bar border answers a color mode, and its class is the ROW'S player
 - The bar border's shipped mode is Custom, so an upgraded window looks the same
 - The bar border is drawn ABOVE the fill, not under it
 - Border style None keeps the cheap flat outline and puts no backdrop on a cell
@@ -1234,14 +1239,14 @@ badge and any count quoted in the docs must agree with it.
 - Each of the four sides is anchored to its own two corners
 - A second layout pass re-places the border rather than stacking anchors
 - A thickness under one pixel is clamped to one, on both paths
-- The art path takes the edge FILE and the swatch's colour
-- The art path answers the colour mode too, and it is the ROW'S class
+- The art path takes the edge FILE and the swatch's color
+- The art path answers the color mode too, and it is the ROW'S class
 - Switching from the flat outline to art takes ALL FOUR sides down
-- Per-statistic cell text is the colour of the column the cell is in
+- Per-statistic cell text is the color of the column the cell is in
 - The statistic palette is a SETTING, and every surface reads it through one seam
-- A statistic the profile has never coloured keeps the shipped palette
-- Text opacity reaches the NAME and the numbers alike, class colour or not
-- Text opacity and the colour's own alpha multiply, rather than one winning
+- A statistic the profile has never colored keeps the shipped palette
+- Text opacity reaches the NAME and the numbers alike, class color or not
+- Text opacity and the color's own alpha multiply, rather than one winning
 - Bar opacity fades the FILL, and nothing else in the cell
 - Bar opacity and text opacity are independent, in both directions
 - highlightSelf honors both spellings of 'this row is you'
@@ -1297,7 +1302,7 @@ badge and any count quoted in the docs must agree with it.
 - An icon turned off STAYS off across the next refresh
 - The name starts clear of the icon, with a gap you can see
 - Icons on the RIGHT anchor to the right edge and give the name the left one
-- The icon takes its configured size and is centred in the row
+- The icon takes its configured size and is centered in the row
 - ApplyIcons returns the inset it consumed, and never zero
 - The slot list and the drawn flag are what SetPlayer reads
 - A narrow name column still leaves the string a width of at least one
@@ -1361,16 +1366,16 @@ badge and any count quoted in the docs must agree with it.
 - The bar is DRAWN mid-pull, because the widget does the division
 - A bar spans the FULL line, so its length is comparable down the column
 - A bar clears the icon rather than running underneath it
-- The player's name is class-coloured on every tooltip that names one
-- A row with no class keeps a white name rather than an invented colour
+- The player's name is class-colored on every tooltip that names one
+- A row with no class keeps a white name rather than an invented color
 - The scale reaches the tooltip BEFORE it is placed, and is put back after
 - A nonsense scale is bounded rather than handed to the client
-- The bar's fill and its backdrop each take their own colour and opacity
-- Per-statistic mode is the HOVERED column's colour, not the sort column's
+- The bar's fill and its backdrop each take their own color and opacity
+- Per-statistic mode is the HOVERED column's color, not the sort column's
 - The text mode follows the hovered column too
 - Class mode paints the bar with the hovered player's class
 - The bar border is drawn on the BAR, where it can be seen
-- The bar border answers a colour mode, and its class is the HOVERED player's
+- The bar border answers a color mode, and its class is the HOVERED player's
 - The bar border's shipped mode is Custom, so it still reads the swatch
 - A bar sits UNDER the tooltip's text, not over it
 - Bars come down when GameTooltip closes, whoever closed it
@@ -1378,12 +1383,12 @@ badge and any count quoted in the docs must agree with it.
 - The percent slot GOES QUIET mid-pull rather than approximating
 - The amount and the share sit in FIXED right-aligned slots
 - Both number slots are white by default, not two kinds of number
-- The tooltip text colour is configurable, and reaches every slot
+- The tooltip text color is configurable, and reaches every slot
 - The AMOUNT rides on the carrier, not on the bar
 - The tooltip is widened for the slots, and put back afterwards
 - The tooltip's own bar texture is used, not the grid's
 - Tooltip text takes the HOVERED player's class color when asked
-- With the class colour off, the tooltip keeps its configured text colour
+- With the class color off, the tooltip keeps its configured text color
 - Tooltip shadow reaches the line, and survives the post-Show re-font
 - The tooltip puts a SHARED line's shadow back when it lets go
 - A bar border is applied when asked and cleared off the POOLED line when not
@@ -1518,7 +1523,7 @@ badge and any count quoted in the docs must agree with it.
 - A death row is numbered CHRONOLOGICALLY, so the list counts down
 - A death row carries the wall-clock time as its cell caption
 - A death whose recap the client has dropped still gets a row
-- A Deaths click on a player with no deaths array keeps today's behaviour
+- A Deaths click on a player with no deaths array keeps today's behavior
 - With no C_DeathRecap a Deaths click does not enter an empty deaths view
 - A second click on the same Deaths cell leaves the deaths view
 - The deaths view never asks the provider for a spell breakdown
@@ -1761,8 +1766,8 @@ badge and any count quoted in the docs must agree with it.
 - Schema: the sort and the session type are hidden rows the seam validates (issue #50)
 - Schema: a sort written from the CLI drops the frozen order, as a click does (issue #50)
 - Schema: the export choices are hidden from the panel but NOT from the seam
-- The meta colour mode sets every bar and header in the window at once
-- The meta colour mode leaves both TEXT surfaces alone
+- The meta color mode sets every bar and header in the window at once
+- The meta color mode leaves both TEXT surfaces alone
 - The other three meta rows broadcast their own kind of setting
 - A surface changed after the broadcast keeps its own answer
 - The Frame page's Defaults button does NOT broadcast
@@ -1773,9 +1778,9 @@ badge and any count quoted in the docs must agree with it.
 - Schema: ticking Test mode in combat is refused, says why, and leaves the box unticked
 - Schema: the master controls are ADDON-WIDE, and the per-window three are untouched
 - Schema: a moved setting is declared ONCE, not twice
-- Schema: every colour swatch has its mode beside it, on the same line
-- Schema: NO colour row is ever disabled, and every one says why in words
-- Schema: which class a colour means is DECLARED, not inferred from its path
+- Schema: every color swatch has its mode beside it, on the same line
+- Schema: NO color row is ever disabled, and every one says why in words
+- Schema: which class a color means is DECLARED, not inferred from its path
 - Schema: every row on every page carries a group, so no page renders untabbed
 - Schema: a tab that mixes kinds of control names each kind between them
 - Schema: a subgroup is CONTIGUOUS, or its heading prints twice
@@ -1788,8 +1793,8 @@ badge and any count quoted in the docs must agree with it.
 - Schema: the column header strip is styled on the page where columns are chosen
 - Schema: the header controls are EDITED on Header and STORED under frame
 - Schema: every group on every page is CONTIGUOUS, or a heading prints twice
-- Schema: every LSM border setting is one this suite knows honours "None"
-- Schema: every text surface offers face, outline, shadow and colour
+- Schema: every LSM border setting is one this suite knows honors "None"
+- Schema: every text surface offers face, outline, shadow and color
 - Schema: Highlight yourself and Alternating background ship OFF
 - RestoreAllDefaults resets EVERY window, not just the selected one
 - RestoreAllDefaults is the equivalent of a NEW PROFILE
@@ -1881,7 +1886,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `enable` and `disable` write the Master-controls Enable path
 - Slash: they are the SAME write `/mm set enabled` makes
 - Slash: they hold no state of their own
-- Slash: the acknowledgement is slash-commands-§5's `path = value` line
+- Slash: the acknowledgment is slash-commands-§5's `path = value` line
 - Slash: the reactor runs, so the windows follow the verb
 - Slash: the dispatcher survives the disabled state, so the pair is not one-way
 - Slash: NOTHING reads the raw `enabled` key any more
@@ -2003,7 +2008,7 @@ badge and any count quoted in the docs must agree with it.
 - Panel: switching tabs re-renders without leaving the previous tab's widgets behind
 - Panel: the Master controls tab draws four pairs, Test mode beside Minimap button
 - Panel: the Master controls tab closes with the composer's two reset buttons
-- Panel: the Statistic colors tab says where its colours are actually worn
+- Panel: the Statistic colors tab says where its colors are actually worn
 - Panel: every window sub-page banners the active window, and Windows has no second picker
 - Panel: choosing a window in the banner retargets every page and keeps the tab
 - Panel: Reset all settings' tooltip says it is the same act as Profiles -> Reset Profile
@@ -2033,16 +2038,16 @@ badge and any count quoted in the docs must agree with it.
 - Blocks: the boundary is a COUNT of enabled items, never a scan for the first disabled
 - Blocks: the rule is an empty AceGUI Heading, sitting after the boundary block
 - Blocks: no rule is drawn when there is no divide to mark, at either end
-- Blocks: the label is gold when the column is shown and grey when it is not
+- Blocks: the label is gold when the column is shown and gray when it is not
 - Blocks: the carried copy says the same thing the row does
 - Blocks: every hidden row is registered, so the indices the library moves are the real ones
 - Blocks: the geometry handed to the library is the published pair, not a private copy
-- Blocks: the handle offers the localized drag tooltip, and the catalogued icon
+- Blocks: the handle offers the localized drag tooltip, and the cataloged icon
 - Blocks: the glyph sits clear of the library's handle gutter
 - Blocks: a reused block comes back at full alpha
 - Blocks: an item with no label draws an empty string, not a nil
 - Blocks: CancelReorder survives a page that never rendered a list
-- Blocks: cancelling twice releases the blocks once
+- Blocks: canceling twice releases the blocks once
 - Blocks: the release is announced on the debug log, with the count
 - Blocks: the returned list and the list parked on the ctx are two tables, same contents
 
@@ -2113,6 +2118,7 @@ badge and any count quoted in the docs must agree with it.
 | test_docmap.lua | 1 |
 | test_doc_structure.lua | 5 |
 | test_lintconfig.lua | 4 |
+| test_prose.lua | 2 |
 | test_constants.lua | 23 |
 | test_secrets.lua | 38 |
 | test_compat.lua | 34 |
@@ -2168,4 +2174,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 30 |
 | test_surface_parity.lua | 1 |
 | test_eol.lua | 1 |
-| **Total** | **1906** |
+| **Total** | **1908** |

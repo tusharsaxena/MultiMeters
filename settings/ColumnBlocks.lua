@@ -22,7 +22,7 @@
 --
 -- What is left is the ROW's CONTENTS, which the library deliberately owns none of:
 -- the tick-or-cross glyph and what clicking it means, the statistic's name, the
--- grey it goes when a column is not shown, and the rule drawn under the last
+-- gray it goes when a column is not shown, and the rule drawn under the last
 -- enabled block. That split is the whole reason the library member exists in the
 -- shape it does -- ConsumableMaster's priority list draws a completely different
 -- row and shares the identical gesture.
@@ -62,7 +62,7 @@ NS.BLOCK_STRIDE = NS.BLOCK_HEIGHT + 4
 -- LibKa0s-Media's ICONS, so this is a DEVIATION from library-stack-§8 -- the
 -- rule that says a mark the addon needs comes from the catalog -- and not a gap
 -- in the art. It is ratified as one: docs/ARCHITECTURE.md's deviation register
--- carries the row, with the colour and degraded-install arguments written out
+-- carries the row, with the color and degraded-install arguments written out
 -- and a re-check trigger that names what ends it.
 --
 -- The short version is the parity line above, and it is the argument that binds.
@@ -187,7 +187,7 @@ local function applyBlock(block, index, item, spec)
     block.mmGlyph:SetNormalTexture(block.mmGlyphTexture)
 
     block.mmLabel:SetText(item.label or "")
-    -- Greyed rather than hidden: a label you cannot read is a block you cannot
+    -- Grayed rather than hidden: a label you cannot read is a block you cannot
     -- aim at, and aiming at it is how you turn the column back on.
     if item.enabled then
         block.mmLabel:SetTextColor(1, 0.82, 0)

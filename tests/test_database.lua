@@ -745,7 +745,7 @@ test("Database v3: the three dead keys are REMOVED, not left to rot", function()
     -- AceDB merges defaults into a stored profile but never prunes what the
     -- defaults stopped naming, so without this they sit in every saved profile
     -- forever and the next reader has to work out which of four keys the code
-    -- honours.
+    -- honors.
     -- red under: setting showIcon without clearing the old flags.
     local inst = v2Icons{ showClass = true, showSpec = true, showRole = true }
     local icons = inst.NS.Database.FindWindow(1).icons
@@ -867,7 +867,7 @@ test("Database v5: the window's value beats whatever sits at the profile address
     -- window's value is the only one that carries intent, because before v5 the
     -- profile-level key did not exist and nothing read it.
     -- red under: an `if profile.data.throttle == nil` guard, which would discard
-    -- every deliberate per-window value in favour of the merged default.
+    -- every deliberate per-window value in favor of the merged default.
     local inst = v4Data({ { id = 1, data = { throttle = 2 } } }, { throttle = 0.75 })
     assertEqual(inst.NS.db.profile.data.throttle, 2)
 end)
@@ -885,7 +885,7 @@ test("Database v6: the two dead row-background keys are pruned from every window
     -- They were settings-panel rows pointing at keys NOTHING read: the row tint
     -- is `bars.bgColorMode`, painted per cell. AceDB never prunes what the
     -- defaults stopped naming, so without this they sit in every saved window
-    -- forever and the next reader has to work out which of two keys is honoured.
+    -- forever and the next reader has to work out which of two keys is honored.
     -- red under: deleting the schema rows and leaving the stored keys.
     local inst = preSeeded({
         profiles = {
@@ -911,7 +911,7 @@ test("Database v6: the two dead row-background keys are pruned from every window
     assertEqual(inst.NS.db.global.schemaVersion, 15)
 end)
 
-test("Database v7: a class-colour boolean becomes a colour mode, on every surface", function()
+test("Database v7: a class-color boolean becomes a color mode, on every surface", function()
     -- The checkbox could only ever answer two thirds of the question. `true` is
     -- "class" and `false` is "custom", which is exactly what it meant.
     -- red under: migrating only `text`, or leaving the dead key behind.
@@ -1042,7 +1042,7 @@ test("Database v9: the title bar's background mode is pruned, the column strip's
     local w = inst.NS.Database.FindWindow(1)
     assertNil(w.header.bgColorMode, "the title bar kept a mode it no longer has")
     assertEqual(w.columnHeader.bgColorMode, "stat", "the column strip lost the mode it keeps")
-    assertEqual(w.header.bgColor.r, 1, "the colour picker went with the dropdown")
+    assertEqual(w.header.bgColor.r, 1, "the color picker went with the dropdown")
     assertEqual(inst.NS.db.global.schemaVersion, 15)
 end)
 
@@ -1101,8 +1101,8 @@ test("Database: v12 -> v13 leaves a window that never stored the toggle alone", 
     assertEqual(w.header.show, true, "the shipped default arrived through the merge, not the step")
 end)
 
-test("Database: v12 -> v13 turns the control class-colour flags into modes", function()
-    -- The two booleans sat beside colour pickers while every other surface in this addon
+test("Database: v12 -> v13 turns the control class-color flags into modes", function()
+    -- The two booleans sat beside color pickers while every other surface in this addon
     -- expresses the same choice as a mode dropdown. A stored `true` becomes "class"; a stored
     -- `false` becomes "custom", which is what it already meant.
     -- red under: mapping false to nil, which leaves the row reading the schema default.
@@ -1128,7 +1128,7 @@ end)
 --
 -- migrations[1], [4] and [12] are the three steps the complexity register warns
 -- on, and a wave is going to take each of them apart into helpers. The cases
--- above pin the headline behaviour of each; the cases below pin the arms that
+-- above pin the headline behavior of each; the cases below pin the arms that
 -- headline never reaches — the fallbacks, the guards, and the "what if the key
 -- the step keys off is missing HERE and present THERE" shapes. Every one of them
 -- is a shape a real SavedVariables file can hold, and none of them is asserted
@@ -1144,7 +1144,7 @@ test("Database v2: the widening uses the window's OWN padding, not the template'
     -- The junk entry in `columns` is here on purpose too: the width loop skips a
     -- non-table entry (`type(col) == "table"`) but the ARITHMETIC counts the
     -- array's length, junk and all, so this window is sized for two columns. That
-    -- is today's behaviour rather than an opinion about it — a refactor that
+    -- is today's behavior rather than an opinion about it — a refactor that
     -- filters the array before measuring it is a deliberate change to the width a
     -- hand-edited profile lands on, and should have to come and edit this line.
     -- red under: `pad = defaultPad`, or measuring a filtered column list.
@@ -1175,7 +1175,7 @@ function()
     -- count: window 2 has no columns array at all, so it is sized for zero
     -- columns rather than inheriting window 1's arithmetic.
     -- red under: hoisting `needed` out of the window loop, or dropping the type
-    -- test in favour of `frame.width < needed` alone.
+    -- test in favor of `frame.width < needed` alone.
     local inst = preSeeded({
         profiles = { Default = { nextWindowId = 3, windows = {
             { id = 1, frame = { width = "480", padding = 6 },
@@ -1283,7 +1283,7 @@ test("Database: v12 -> v13 keeps the rest of an existing header block", function
     -- The `type(w.header) ~= "table"` arm builds a header when there is none; the
     -- other arm has to leave the one that is there alone apart from `show`. A step
     -- that assigned `w.header = { show = frame.titleBar }` would take every font,
-    -- colour and height the player set on their title bar with it.
+    -- color and height the player set on their title bar with it.
     -- red under: replacing the header table instead of writing one key into it.
     local inst = preSeeded({
         profiles = { Default = { nextWindowId = 3, windows = {
@@ -1305,7 +1305,7 @@ test("Database: v12 -> v13 keeps the rest of an existing header block", function
     assertNil(w2.frame.titleBar)
 end)
 
-test("Database: v12 -> v13 overwrites a control colour mode that was already there", function()
+test("Database: v12 -> v13 overwrites a control color mode that was already there", function()
     -- Deliberately NOT the `== nil` guard migrations[6] uses, and the difference is
     -- easy to lose in a refactor that folds the two boolean-to-mode steps into one
     -- shared helper. `controlColorMode` did not exist as a setting before v13, so

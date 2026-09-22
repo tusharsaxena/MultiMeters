@@ -551,7 +551,7 @@ Which events reach which handler, and what each becomes on the bus, is tabulated
 `docs/ARCHITECTURE.md` → [Event subscriptions](ARCHITECTURE.md#event-subscriptions). What that
 table does not say is why an edge cannot simply be dropped:
 
-**These edges are load-bearing, not an optimisation.** There is no fallback poll: `onUpdate` in
+**These edges are load-bearing, not an optimization.** There is no fallback poll: `onUpdate` in
 `modules/Window.lua` refreshes *data* and never re-asks `NS.ShouldShow`, so the show ladder is
 re-run only from a bus message a window subscribes to (`ROSTER_CHANGED`, `ZONE_CHANGED`,
 `ENTERING_WORLD`, `COMBAT_CHANGED`, `PLAYER_STATE_CHANGED`, `TEST_MODE_CHANGED`, `CONFIG_CHANGED`).

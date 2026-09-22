@@ -396,7 +396,7 @@ end
 ---
 --- WHAT THE PLAYER COLUMN'S HEADER MEANS. It used to toggle between `roster` and
 --- `value`, which is a reasonable thing for some header to do and not what that
---- one says: a column labelled "Player" sorts by player.
+--- one says: a column labeled "Player" sorts by player.
 ---
 --- Guarded exactly like orderByValue, and for the same reason: `name` is
 --- ConditionalSecret, `<` on a secret raises, and `tostring()` does not launder
@@ -940,7 +940,7 @@ end
 ---
 --- @param active any            the Feign module, or nil where the column is not counted
 --- @param traceJudge function|nil  the armed recorder from judgeTracer, or nil
---- @param src table             the provider source under judgement
+--- @param src table             the provider source under judgment
 --- @return boolean|nil          truthy only for a death the filter drops
 local function judgeDeath(active, traceJudge, src)
     local feigned = active and active.ShouldDropDeath

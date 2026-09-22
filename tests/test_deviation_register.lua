@@ -30,7 +30,7 @@ local ROOT = T.root or "."
 
 local ARCHITECTURE = "/docs/ARCHITECTURE.md"
 
---- docs/ARCHITECTURE.md with line endings normalised, or a failure.
+--- docs/ARCHITECTURE.md with line endings normalized, or a failure.
 local function architecture()
     local fh = io.open(ROOT .. ARCHITECTURE, "r")
     if not fh then fail("docs/ARCHITECTURE.md could not be opened") end

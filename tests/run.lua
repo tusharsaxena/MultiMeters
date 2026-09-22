@@ -234,6 +234,7 @@ local SUITES = {
     -- third time: it reads `.luacheckrc` as Lua and refuses the blanket `ignore` `M4c-06`
     -- removed, so a 0/0 lint stays a statement about the code.
     "test_lintconfig",
+    { name = "test_prose", dir = "tests/_kit/" },
     "test_constants",
     "test_secrets",
     "test_compat",

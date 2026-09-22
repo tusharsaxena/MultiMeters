@@ -152,10 +152,10 @@ StaticPopupDialogs["MULTIMETERS_RESET_METER_DATA"] = {
     end,
 }
 
---- Open the reset confirmation, CENTRED ON THE SCREEN.
+--- Open the reset confirmation, CENTERED ON THE SCREEN.
 ---
 --- WHY IT IS NOT LEFT WHERE BLIZZARD PUTS IT. A StaticPopup is anchored into the
---- popup STACK -- centred horizontally, pinned near the top of the screen -- so
+--- popup STACK -- centered horizontally, pinned near the top of the screen -- so
 --- the one dialog in this addon that asks before it destroys data appeared
 --- nowhere near where the player was looking when they clicked, which for a
 --- header control is the middle of the screen at most. Re-anchoring is the
@@ -217,10 +217,10 @@ local function Build(mainCategory)
         if tail then tail(c) end
     end
 
-    -- WHERE THESE COLOURS ARE ACTUALLY WORN, said on the tab rather than left to
+    -- WHERE THESE COLORS ARE ACTUALLY WORN, said on the tab rather than left to
     -- eight tooltips. A grid of swatches with no sentence over it reads as "the
-    -- colour of this statistic", full stop -- and a player who sets Damage to
-    -- green, looks at a class-coloured grid and sees nothing change has been
+    -- color of this statistic", full stop -- and a player who sets Damage to
+    -- green, looks at a class-colored grid and sees nothing change has been
     -- misled by the page, not by the setting.
     --
     -- BELOW the swatches, because afterGroup is the hook the library offers and
@@ -229,7 +229,7 @@ local function Build(mainCategory)
     --
     -- The tooltip clause is not padding. The all-statistics list is the one
     -- surface that wears the palette UNCONDITIONALLY -- it is the only place all
-    -- eight are on screen together, so the colour is doing the work of telling
+    -- eight are on screen together, so the color is doing the work of telling
     -- them apart rather than answering a mode -- and a note that said "only when
     -- Per-statistic is set" without it would be wrong.
     local function afterStatColors(c)

@@ -499,7 +499,7 @@ test("the build PUBLISHES which order actually took effect", function()
         "provider", "mid-pull the engine's order is what took effect, whatever was asked for")
 end)
 
-test("`provider` mode honours the direction OUT of combat too", function()
+test("`provider` mode honors the direction OUT of combat too", function()
     -- The same defect one rung up. `orderByProvider` is the fallback every mode
     -- degrades to AND a mode a player can select outright, and it discarded
     -- `sortAscending` in both roles — so a window on `provider` mode had a

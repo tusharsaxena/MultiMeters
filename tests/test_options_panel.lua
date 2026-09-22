@@ -956,7 +956,7 @@ function()
     local L = inst.NS.L
     local ctx = showPage(inst, "frame")
 
-    local function labelled(name)
+    local function labeled(name)
         for _, w in ipairs(ctx.scroll and ctx.scroll.children or {}) do
             for _, child in ipairs(w.children or {}) do
                 if child.labelText == name then return true end
@@ -965,11 +965,11 @@ function()
         return false
     end
 
-    assertTrue(labelled(L["Lock window"]), "the Frame page did not open on General")
+    assertTrue(labeled(L["Lock window"]), "the Frame page did not open on General")
     ctx.__tabKids[2]:__fire("OnClick")
     assertEqual(ctx.activeTab, L["Size and position"])
-    assertTrue(labelled(L["Width"]), "the Size and position tab did not render")
-    assertFalse(labelled(L["Lock window"]), "the previous tab's widgets were left behind")
+    assertTrue(labeled(L["Width"]), "the Size and position tab did not render")
+    assertFalse(labeled(L["Lock window"]), "the previous tab's widgets were left behind")
 end)
 
 test("Panel: the Master controls tab draws four pairs, Test mode beside Minimap button",
@@ -1043,10 +1043,10 @@ test("Panel: the Master controls tab closes with the composer's two reset button
         "the explanatory paragraph under the pair was removed; nothing should restore it")
 end)
 
-test("Panel: the Statistic colors tab says where its colours are actually worn", function()
-    -- A grid of eight swatches with no sentence over it reads as "the colour of
+test("Panel: the Statistic colors tab says where its colors are actually worn", function()
+    -- A grid of eight swatches with no sentence over it reads as "the color of
     -- this statistic", full stop -- and a player who sets Damage to green, looks
-    -- at a class-coloured grid and sees nothing change has been misled by the
+    -- at a class-colored grid and sees nothing change has been misled by the
     -- page rather than by the setting. The note is drawn through the same
     -- afterGroup hook the General tab's two buttons use.
     -- red under: dropping the note, or keying it to the wrong tab, which would
@@ -1057,7 +1057,7 @@ test("Panel: the Statistic colors tab says where its colours are actually worn",
 
     -- `SetLabel` and `SetText` are two different setters on an AceGUI widget and
     -- land in two different fields: every schema row uses the first, and TextRow
-    -- -- which is a Label, not a labelled control -- uses the second. Reading only
+    -- -- which is a Label, not a labeled control -- uses the second. Reading only
     -- one of them is how this case passes for the wrong reason.
     local function textOnPage()
         local out = {}
@@ -1082,7 +1082,7 @@ test("Panel: the Statistic colors tab says where its colours are actually worn",
     ctx.__tabKids[3]:__fire("OnClick")
     assertEqual(ctx.activeTab, L["Statistic colors"])
     assertTrue(textOnPage():find(note, 1, true) ~= nil,
-        "the Statistic colors tab drew no note saying where its colours are worn")
+        "the Statistic colors tab drew no note saying where its colors are worn")
 end)
 
 test("Panel: every window sub-page banners the active window, and Windows has no second picker",

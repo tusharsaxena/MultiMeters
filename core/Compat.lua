@@ -252,7 +252,7 @@ end
 -- client one patch behind has none of it, and a PTR build can carry it without
 -- one of its functions — so the namespace and the member are guarded separately.
 -- Every call is additionally wrapped: the client refuses an id it does not
--- recognise by RAISING, and a raise reaching the render path would take a
+-- recognize by RAISING, and a raise reaching the render path would take a
 -- tooltip down mid-hover.
 --
 -- WHAT THESE MAY NOT DO. An event carries `amount`, `overkill` and `currentHP`,
@@ -441,8 +441,8 @@ end
 
 --- Every recap reader the CLIENT will answer to, from BOTH searches.
 ---
---- `how` is a finding rather than bookkeeping. A reader labelled `walk` means
---- round one's empty result was the client speaking; one labelled `named` means
+--- `how` is a finding rather than bookkeeping. A reader labeled `walk` means
+--- round one's empty result was the client speaking; one labeled `named` means
 --- it was the search, and that single word decides whether issue #1 is a reader
 --- over `deathRecapID` or a combat-log capture of its own.
 ---
@@ -462,7 +462,7 @@ function Compat.RecapAPIs()
         found[#found + 1] = { ns = nsName, name = key, how = how }
     end
 
-    -- The walk goes first so a member both searches can see is labelled `walk`.
+    -- The walk goes first so a member both searches can see is labeled `walk`.
     for _, nsName in ipairs(RECAP_NAMESPACES) do
         local namespace = _G[nsName]
         if type(namespace) == "table" then
@@ -739,7 +739,7 @@ end
 --- Whether the player is on a skyriding mount or in a skyriding-capable form.
 ---
 --- CAPABILITY, not altitude. There is deliberately no IsFlying() term: the rule
---- this feeds is about having stopped fighting and started travelling, and that
+--- this feeds is about having stopped fighting and started traveling, and that
 --- is true from the moment the skyriding bar appears, which is on the ground.
 --- The capability flag also catches the flight forms that are not mounts at all
 --- — Druid, Dracthyr Soar, Haranir — which an IsMounted-shaped test misses.

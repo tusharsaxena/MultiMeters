@@ -420,7 +420,7 @@ end)
 test("The feign filter cannot run mid-pull, and does not pretend to", function()
     -- STRUCTURAL, not a defect. It joins a plain GUID against sourceGUID, and
     -- sourceGUID is secret for the whole of a pull — which is the entire reason
-    -- there is a second, GUID-free build. Pinned as behaviour so nobody "fixes"
+    -- there is a second, GUID-free build. Pinned as behavior so nobody "fixes"
     -- it by keying on something secret.
     local inst = loaded()
     install(inst, { src(ALPHA, 500, { class = "PALADIN", specIconID = 1 }) },

@@ -67,7 +67,7 @@ local MSG = Const.MSG
 --
 -- So an entry is only eligible for that exit once the client has actually been
 -- SEEN reporting the feign ("down"). A client that never reports one keeps the
--- entry until a confirmed death or a group change, which is the behaviour that
+-- entry until a confirmed death or a group change, which is the behavior that
 -- shipped before the exit existed.
 local feigned = {}
 

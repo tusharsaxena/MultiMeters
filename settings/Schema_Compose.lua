@@ -58,7 +58,7 @@ local function refreshVisibility()
     if V and V.Refresh then V:Refresh() end
 end
 
--- Every colour-mode dropdown in one window, in the order a player meets them.
+-- Every color-mode dropdown in one window, in the order a player meets them.
 -- The META ROW on the Frame page writes this whole list; each of them is also
 -- still its own row, and setting one individually afterwards is expected rather
 -- than an override to defend against.
@@ -69,7 +69,7 @@ end
 -- player having set all nine by hand. A fan-out that wrote the tree directly
 -- would be a second write seam, and the windows would not repaint.
 -- THE THREE OTHER THINGS EVERY SURFACE STATES SEPARATELY, and the meta rows that
--- set each of them everywhere at once. Same bargain as the colour mode below: the
+-- set each of them everywhere at once. Same bargain as the color mode below: the
 -- individual rows all still exist, the meta stores what it last broadcast, and
 -- nothing reads it back.
 --
@@ -100,14 +100,14 @@ local OUTLINE_PATHS = {
 --
 -- Both of them are drawn ON TOP OF a surface this list DOES broadcast to. Sending
 -- "per statistic" to the whole window therefore painted the Damage number in the
--- Damage colour over a Damage-coloured bar, and the tooltip's text in the sorted
--- stat's colour over bars carrying that same colour -- the one place where making
+-- Damage color over a Damage-colored bar, and the tooltip's text in the sorted
+-- stat's color over bars carrying that same color -- the one place where making
 -- every surface agree makes the text stop being readable at all.
 --
--- Foreground text is the surface whose colour has to CONTRAST with the broadcast,
+-- Foreground text is the surface whose color has to CONTRAST with the broadcast,
 -- not match it, so it stays an explicit choice. Both remain their own rows on
 -- their own pages, so a player who wants the match can still ask for it; what
--- they no longer get is it happening to them from a control labelled "all
+-- they no longer get is it happening to them from a control labeled "all
 -- surfaces".
 local COLOR_MODE_PATHS = {
     "window.bars.colorMode",
@@ -118,7 +118,7 @@ local COLOR_MODE_PATHS = {
     "window.tooltip.barBgColorMode",
 }
 
---- Broadcast one colour mode to every surface of the window.
+--- Broadcast one color mode to every surface of the window.
 ---
 --- THE META ROW IS A SHORTCUT, NOT A SOURCE OF TRUTH. It stores what was last
 --- broadcast and nothing reads it back: every surface keeps its own mode, and a
@@ -198,10 +198,10 @@ local BARCOLOR_SORT  = { "class", "stat", "custom" }
 
 -- The same three, plus an off switch. The background is decoration in a way the
 -- bar is not, so it is the one of the two that a player may want gone entirely.
--- The colour MODE every text surface offers, and the one the two header
+-- The color MODE every text surface offers, and the one the two header
 -- backgrounds offer too. Three entries rather than the bar background's four:
 -- `none` is a legal answer for a tint drawn behind something and never for the
--- writing itself, and a text surface set to "no colour" is one nobody can read.
+-- writing itself, and a text surface set to "no color" is one nobody can read.
 --
 -- WHAT `stat` MEANS DEPENDS ON THE SURFACE, and each reader names which it took.
 -- A CELL is about the statistic in its own column; a COLUMN HEADER about the
@@ -226,7 +226,7 @@ local BARBG_SORT = { "class", "stat", "custom", "none" }
 
 -- TWO modes, not the three every text surface offers. "Per-statistic" cannot say anything true
 -- about a header BUTTON: a close box does not belong to a statistic, so the option could only
--- ever paint it the sort column's colour -- which is a fact already on screen in that column's
+-- ever paint it the sort column's color -- which is a fact already on screen in that column's
 -- own header and in its arrow.
 local CONTROLCOLOR_VALUES = {
     class  = L["Class color"],
@@ -234,7 +234,7 @@ local CONTROLCOLOR_VALUES = {
 }
 local CONTROLCOLOR_SORT = { "class", "custom" }
 
--- The divider's three, and the extra one is the point. `skin` is not "a colour
+-- The divider's three, and the extra one is the point. `skin` is not "a color
 -- that happens to match the skin" -- it is *don't touch the texture*, so whatever
 -- LibKa0s-Core-1.0's ApplySkin just wrote stands. That is what keeps a re-skin
 -- landing on this window along with the debug console and the perf panel
@@ -243,7 +243,7 @@ local CONTROLCOLOR_SORT = { "class", "custom" }
 --
 -- NO `stat` MODE, for the reason the header's other surfaces do not have one: the
 -- divider is one line across the whole window, so "per statistic" could only ever
--- paint it the sort column's colour -- a fact already on screen twice over.
+-- paint it the sort column's color -- a fact already on screen twice over.
 local DIVIDERCOLOR_VALUES = {
     skin   = L["Ka0s skin"],
     class  = L["Class color"],
@@ -294,7 +294,7 @@ local NUMFMT_VALUES  = {
 }
 local NUMFMT_SORT    = { "abbreviated", "abbreviatedWhole", "abbreviatedTwo", "full" }
 
--- How a death is labelled. A third value, "time into the fight", was built and
+-- How a death is labeled. A third value, "time into the fight", was built and
 -- removed: nothing on the client can date a past death against the run it
 -- happened in. See the note on modules/Format.lua's DeathTime.
 local DEATHTIME_VALUES = {
@@ -529,9 +529,9 @@ local function dress(rows, byPath)
     return rows
 end
 
---- Put this addon's colour-MODE row where the composer's boolean companion was.
+--- Put this addon's color-MODE row where the composer's boolean companion was.
 ---
---- options-ui-§17 names a colour-mode dropdown whose value set includes `class` as
+--- options-ui-§17 names a color-mode dropdown whose value set includes `class` as
 --- the RICHER form of the same control, and forbids converting one back: this
 --- addon migrated its `classColor` booleans into three- and four-value modes on
 --- purpose (core/Database.lua's v10 and v13 steps), and `stat`, `skin` and `none`
@@ -585,7 +585,7 @@ local function expandBlocks(schema)
             local rows = entry.__block
             table.remove(schema, i)
             for k = #rows, 1, -1 do
-                -- `== nil` rather than a plain assignment: withMode's colour-mode
+                -- `== nil` rather than a plain assignment: withMode's color-mode
                 -- rows sit inside these blocks and have already said they are not
                 -- the library's.
                 if rows[k].composed == nil then rows[k].composed = true end
@@ -710,7 +710,7 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
 
 dress(MASTER_ROWS, {
     ["enabled"] = {
-        desc = L["Master switch for the addon. When off, the addon stops watching, stops drawing and stops writing \226\128\148 every event it registered is unregistered and every timer is cancelled, not merely ignored."],
+        desc = L["Master switch for the addon. When off, the addon stops watching, stops drawing and stops writing \226\128\148 every event it registered is unregistered and every timer is canceled, not merely ignored."],
         -- THE LATCH, not a repaint (slash-commands-\194\1677). This row used to call
         -- refreshVisibility, which is the DRAW GATE in one line: the frames went
         -- away and all twenty-one game-event registrations stayed live. The
@@ -811,7 +811,7 @@ NS.MasterControlsAfterGroup = MASTER_TAIL
 --
 -- THE MERGE STAYS. The fill inside the window and the edge around it spent a
 -- release split across "Size and position" and "Border style", and a player
--- looking for "what colour is my window" found it under neither. What
+-- looking for "what color is my window" found it under neither. What
 -- options-ui-§7 adds is the two headings that say where one stops and the next
 -- starts, not a second tab.
 local FRAME_BG_ROWS = compose("ColorPair", {
@@ -1308,8 +1308,8 @@ dress(COLHEAD_BG_ROWS, {
 })
 -- NO `bgColorMode` on the title bar's own background, but this strip keeps one: it
 -- labels the COLUMNS, so "per statistic" tints each label with its own column's
--- colour and means something, where the same mode on the title bar -- one strip
--- over the whole window -- could only ever mean the sort column's colour.
+-- color and means something, where the same mode on the title bar -- one strip
+-- over the whole window -- could only ever mean the sort column's color.
 withMode(COLHEAD_BG_ROWS, "window.columnHeader.bgColor", {
     path = "window.columnHeader.bgColorMode", type = "string", default = "custom",
     values = TEXTCOLOR_VALUES, sorting = TEXTCOLOR_SORT,

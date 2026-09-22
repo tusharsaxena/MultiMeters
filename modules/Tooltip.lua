@@ -167,7 +167,7 @@ end
 --- survive a pull. modules/Format.lua's ratio form asks core/Secrets.lua whether
 --- the two operands may be divided and answers an EMPTY STRING when they may
 --- not — so mid-pull the percentages simply are not there, and the amount beside
---- them is unaffected. That is the intended behaviour, not a degraded one: the
+--- them is unaffected. That is the intended behavior, not a degraded one: the
 --- alternative is approximating a number the client will not let us compute.
 ---
 --- The empty answer must never be read as "0%". It is returned as "" precisely so
@@ -244,15 +244,15 @@ local function displayName(row)
     return name
 end
 
---- The colour a tooltip's first line draws the player's name in.
+--- The color a tooltip's first line draws the player's name in.
 ---
 --- BY CLASS, ALWAYS, and not behind a setting. Every other name this addon draws
---- is class-coloured -- the Player column has been since the first build -- and
+--- is class-colored -- the Player column has been since the first build -- and
 --- the tooltip's own header was the one place a name came out white, so a hover
 --- read as belonging to nothing in particular. `classFilename` is NeverSecret,
 --- which is why this keeps working mid-pull when the numbers under it do not.
 ---
---- Three returns, for AddDoubleLine's first colour triple. A row with no class --
+--- Three returns, for AddDoubleLine's first color triple. A row with no class --
 --- an NPC, an enemy, a spell in a breakdown -- keeps white, which is the honest
 --- answer rather than a tenth palette entry.
 ---
@@ -313,7 +313,7 @@ local function tooltipConfig(window)
         -- because only the caller knows: a cell tooltip is about the column that
         -- was hovered, which is the whole of what it is showing. The window's sort
         -- column stood here first and was wrong for exactly that reason -- every
-        -- breakdown, of every column, came out in the sort column's colour, so a
+        -- breakdown, of every column, came out in the sort column's color, so a
         -- Healing tooltip was red.
         --
         -- The two tooltips that are NOT about one statistic -- the name tooltip,
@@ -434,7 +434,7 @@ end
 --
 -- WHERE THE TOOLTIP GOES, as the cell of a 3x3 grid drawn around the thing being
 -- hovered. "Top left" is the box above and to the LEFT of the cell; "Left" is the
--- box beside it, vertically centred; and so on around the eight. Every one of
+-- box beside it, vertically centered; and so on around the eight. Every one of
 -- them therefore names a direction the tooltip grows in as well as a corner it
 -- touches, which is what a player means by picking one.
 --
@@ -592,7 +592,7 @@ local function openTooltip(anchorFrame, config)
 
     -- TOP is the fallback for a stored anchor this build does not offer -- a
     -- profile that escaped the v9 -> v10 step still carrying "CURSOR", say. It is
-    -- the shipped default, so an unrecognised value lands on the same place a new
+    -- the shipped default, so an unrecognized value lands on the same place a new
     -- window does rather than somewhere nothing else uses.
     GameTooltip:SetOwner(anchorFrame, ANCHOR_TOKENS[config.anchor] or "ANCHOR_TOP",
         offset(config.offsetX), offset(config.offsetY))
@@ -891,11 +891,11 @@ local function applyLineFont(fontString, index, path, size, flags, shadowX, shad
     if not (fontString and fontString.SetFont) then return end
     fontString:SetFont(path, size, flags)
 
-    -- THE SPELL NAME IS TEXT INSIDE THE BAR, and the colour mode governs it. It
+    -- THE SPELL NAME IS TEXT INSIDE THE BAR, and the color mode governs it. It
     -- is the tooltip's OWN FontString rather than one of ours -- the name is
     -- added through AddLine so the icon escape renders -- so it used to keep
     -- AddLine's white while the amount and the share beside it took the player's
-    -- colour: one line, two colours, and the setting apparently working on half
+    -- color: one line, two colors, and the setting apparently working on half
     -- of it. Restored by restoreFonts with the face, for the same reason.
     if textColor and fontString.SetTextColor then
         fontString:SetTextColor(textColor[1], textColor[2], textColor[3])
@@ -1002,8 +1002,8 @@ local function restoreFonts()
         -- so ours would otherwise stay on a shared line and turn up under the
         -- next addon's item tooltip -- the same class of leak as a bar left Shown.
         if fontString.SetShadowOffset then fontString:SetShadowOffset(0, 0) end
-        -- And the colour, which a font OBJECT does not carry either. A line left
-        -- in a class colour turns up under the next addon's item tooltip exactly
+        -- And the color, which a font OBJECT does not carry either. A line left
+        -- in a class color turns up under the next addon's item tooltip exactly
         -- as a left-behind shadow does.
         if entry.recolored and fontString.SetTextColor then
             fontString:SetTextColor(1, 1, 1)

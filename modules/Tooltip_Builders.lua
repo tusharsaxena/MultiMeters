@@ -87,7 +87,7 @@ local deathLineLabel = I.deathLineLabel
 -- ---------------------------------------------------------------------------
 --
 -- One line per incoming event behind a death, drawn on the same carrier the
--- spell breakdown uses so fonts, borders, colours and the width machinery are
+-- spell breakdown uses so fonts, borders, colors and the width machinery are
 -- inherited rather than duplicated.
 --
 -- WHAT IS DIFFERENT FROM A SPELL LINE, and why each difference exists:
@@ -691,12 +691,12 @@ end
 -- Cell tooltip — the per-spell breakdown
 -- ---------------------------------------------------------------------------
 
---- The hovered player's class colour, or nil when the row carries no class.
+--- The hovered player's class color, or nil when the row carries no class.
 ---
 --- `classFilename` is NeverSecret, which is why this keeps answering mid-pull
---- when the bar LENGTHS cannot. A nil colour is a legitimate answer: it reaches
+--- when the bar LENGTHS cannot. A nil color is a legitimate answer: it reaches
 --- `lineStyle`, where `modeColor` with nothing to read leaves the CONFIGURED
---- colour standing.
+--- color standing.
 ---
 --- @param row table|nil
 --- @return table|nil
@@ -989,10 +989,10 @@ function Tooltip:SpellTooltip(row, anchorFrame, window)
     -- would render "Death 2" and nothing else — indistinguishable from a tooltip
     -- that failed to build.
     if row and row.isDeath then
-        -- The same class-colour resolution CellTooltip does. `classFilename` is
+        -- The same class-color resolution CellTooltip does. `classFilename` is
         -- NeverSecret, and a death row carries the drilled-into player's, so the
-        -- bars stay that player's colour for the whole trip. A nil colour is a
-        -- legitimate answer: drawLine falls back to grey.
+        -- bars stay that player's color for the whole trip. A nil color is a
+        -- legitimate answer: drawLine falls back to gray.
         local classes = _G.RAID_CLASS_COLORS
         local color = classes and row.classFilename and classes[row.classFilename] or nil
         addDeathBreakdown(row, lineStyle(config, color), numberStyleOf(window))

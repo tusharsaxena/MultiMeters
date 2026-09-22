@@ -11,7 +11,7 @@
 -- reveal -- three hundred lines into the one file least able to take them.
 --
 -- The boundary is clean because a control only ever touches three things: the
--- frame it anchors to, the header's font and colour, and the window's own
+-- frame it anchors to, the header's font and color, and the window's own
 -- config. It never touches a cell, a bar or a row. So the seam is three calls,
 -- and modules/Window.lua keeps its own geometry:
 --
@@ -73,7 +73,7 @@ NS.HeaderControls = HeaderControls
 local GAP = 4
 
 -- How much of a control's slot the art actually fills. The slot is the click
--- target and the layout pitch; the icon is drawn centred inside it.
+-- target and the layout pitch; the icon is drawn centered inside it.
 --
 -- WHY THE TWO ARE NOT THE SAME NUMBER. The art ships as a solid 64px glyph that
 -- reaches its own edges, so an icon drawn at the full slot has no breathing room
@@ -114,7 +114,7 @@ local CONTROLS = {
     -- OURS, AND IT DID NOT USE TO BE. This was LibKa0s' close button for as long
     -- as the window has had one, which meant one control in the strip ignored
     -- our art, ignored `controlSize` and drew a font-string multiplication sign
-    -- while its six neighbours drew shipped icons -- visibly the odd one out the
+    -- while its six neighbors drew shipped icons -- visibly the odd one out the
     -- moment the other six became art. It is a plain control now, on the same
     -- three-rung ladder as the rest. LibKa0s still closes the Export modal
     -- (modules/Export.lua); this is about a strip that has to look like a set.
@@ -148,9 +148,9 @@ local function enabled(frameCfg, control)
     return frameCfg[control.setting] ~= false
 end
 
---- A configured colour as three numbers, defaulted.
+--- A configured color as three numbers, defaulted.
 ---
---- Through `NS.RGBA` (LibKa0s' reader) because this collection persists colours
+--- Through `NS.RGBA` (LibKa0s' reader) because this collection persists colors
 --- in BOTH a keyed and a positional shape and neither can be retired without
 --- migrating everyone's SavedVariables. The hand-rolled branch under it is the
 --- degraded install, where the library is not there to ask.
@@ -217,7 +217,7 @@ end
 --- @param style table     { path, size, flags, r, g, b }
 --- BRIGHTNESS IS NOT A STATE SIGNAL, and it used to be. The "off" half of a
 --- two-state control was drawn at 0.45 alpha on every rung, which made the lock
---- visibly fainter than its six neighbours for the whole of the time a window was
+--- visibly fainter than its six neighbors for the whole of the time a window was
 --- unlocked -- and a window ships unlocked, so the strip read as having one
 --- half-broken icon in it by default. The state is carried by the GLYPH on the
 --- two rungs that have two glyphs (our art draws `lock` against `unlock`, the
@@ -235,8 +235,8 @@ local function drawIcon(button, control, art, style, dimmed, ascii)
     if shipped and Compat and Compat.FirstTexture then
         local path = Compat.FirstTexture(button.tex, shipped)
         if path then
-            -- Tinted rather than recoloured: the art ships WHITE precisely so a
-            -- multiply lands on whatever the header's text colour is, and the
+            -- Tinted rather than recolored: the art ships WHITE precisely so a
+            -- multiply lands on whatever the header's text color is, and the
             -- icons obey the same setting the rest of the header does.
             button.tex:SetVertexColor(style.r, style.g, style.b)
             button.tex:SetAlpha(1)
@@ -368,10 +368,10 @@ local ACTIONS = {
         -- and wipes what Blizzard's own meter is showing, not just ours. A
         -- second copy of that sentence is a second place for it to go stale,
         -- and the more dangerous the warning the worse that is.
-        -- Through settings/General.lua, which owns the dialog and centres it on
+        -- Through settings/General.lua, which owns the dialog and centers it on
         -- the screen. Resolved at call time because settings/ loads ahead of
         -- modules/; the bare StaticPopup_Show behind it is the degraded path,
-        -- where an uncentred confirmation still beats no confirmation.
+        -- where an uncenterd confirmation still beats no confirmation.
         if NS.ShowResetMeterData then
             NS.ShowResetMeterData()
         else
@@ -381,7 +381,7 @@ local ACTIONS = {
     end,
 
     export = function(window)
-        -- The WINDOW, not its config: Export.Open reads the instance to centre
+        -- The WINDOW, not its config: Export.Open reads the instance to center
         -- its modal on the window it was opened from.
         local E = NS.Export
         if E and E.Open then E:Open(window) end
@@ -399,7 +399,7 @@ local function onClick(frame)
     if not (window and control) then return end
     -- BEFORE the lookup, and unconditionally, because the if/elseif chain this
     -- table replaced read window.config.frame for EVERY name it was handed --
-    -- an unrecognised one included. Behind the lookup instead, a window with no
+    -- an unrecognized one included. Behind the lookup instead, a window with no
     -- config would raise only for the names that have a row.
     local frameCfg = window.config.frame or {}
 
@@ -422,7 +422,7 @@ function HeaderControls:Attach(window)
         local control = CONTROLS[i]
         local button = CreateFrame("Button", nil, frame)
 
-        -- CENTRED, NOT SetAllPoints. The art is inset inside its slot (ART_SCALE)
+        -- CENTERED, NOT SetAllPoints. The art is inset inside its slot (ART_SCALE)
         -- and the size that inset produces is only known at layout time, so the
         -- texture is anchored once here and sized in Apply.
         button.tex = button:CreateTexture(nil, "OVERLAY")
@@ -465,7 +465,7 @@ function HeaderControls:Apply(window)
     -- itself.
     local level = window.dragBar and (window.dragBar:GetFrameLevel() + 5) or nil
 
-    -- ONE CENTRE FOR THE WHOLE TITLE ROW. modules/Window.lua owns it, because the
+    -- ONE CENTER FOR THE WHOLE TITLE ROW. modules/Window.lua owns it, because the
     -- title and the session line are placed against the same number: the strip
     -- used to be pinned a pixel under the frame padding, which put it 3px below
     -- the text beside it and read as the icons hanging off the bottom of the bar.
@@ -496,7 +496,7 @@ function HeaderControls:Apply(window)
                 button:SetSize(size, size)
                 -- The art, inset inside the slot. Floored rather than rounded so
                 -- a texture can never come out a pixel wider than the box it is
-                -- centred in.
+                -- centered in.
                 local art = math.floor(size * ART_SCALE)
                 button.tex:SetSize(art, art)
                 used = used + size + GAP
@@ -506,8 +506,8 @@ function HeaderControls:Apply(window)
                 if button.SetHitRectInsets then button:SetHitRectInsets(-3, -3, -3, -3) end
 
                 local icon, dimmed, ascii = artFor(control, frameCfg)
-                -- WHICH RUNG TOOK, remembered: the hover highlight recolours a
-                -- control without redrawing it, and what may be recoloured
+                -- WHICH RUNG TOOK, remembered: the hover highlight recolors a
+                -- control without redrawing it, and what may be recolored
                 -- depends on whether it is our white art, a finished atlas icon
                 -- or a character.
                 button.mmRung = drawIcon(button, control, icon, style, dimmed, ascii)
@@ -518,19 +518,19 @@ function HeaderControls:Apply(window)
     HeaderControls.ApplyHoverAlpha(window)
 end
 
---- One control's colour, at rest or under the pointer.
+--- One control's color, at rest or under the pointer.
 ---
---- TWO COLOURS AND TWO COLOUR MODES, because they are two independent answers: a
---- player who wants their class colour under the pointer does not necessarily
+--- TWO COLORS AND TWO COLOR MODES, because they are two independent answers: a
+--- player who wants their class color under the pointer does not necessarily
 --- want the whole strip in it at rest, and one shared mode would make hover and
---- rest the same colour for anyone who chose class -- which is the one thing a
---- hover colour must never be.
+--- rest the same color for anyone who chose class -- which is the one thing a
+--- hover color must never be.
 ---
 --- The LOCAL player's class, like every other header surface: the strip is about
 --- the window rather than about any row in it, so yours is the only class it can
 --- sensibly mean (modules/Window.lua's headerColor says the same thing about the
 --- title and the session line). A player whose class cannot be read keeps the
---- configured colour, which is the honest answer rather than a fallback hue.
+--- configured color, which is the honest answer rather than a fallback hue.
 ---
 --- @param frameCfg table
 --- @param hovered boolean
@@ -561,7 +561,7 @@ local function controlColor(frameCfg, hovered)
     return r, g, b
 end
 
---- The font and colour every control draws with, resolved once per Apply.
+--- The font and color every control draws with, resolved once per Apply.
 ---
 --- Published so modules/Window.lua can hand over its own header font rather than
 --- this file growing a second opinion about what the header looks like.
@@ -570,10 +570,10 @@ function HeaderControls.Style(window)
     local style = resolve and resolve(window)
         or { path = nil, size = 12, flags = "", r = 1, g = 1, b = 1 }
 
-    -- THE FONT IS THE HEADER'S, THE COLOUR IS THE STRIP'S OWN. The ASCII rung is
+    -- THE FONT IS THE HEADER'S, THE COLOR IS THE STRIP'S OWN. The ASCII rung is
     -- text and has no business being on a different face from the title, but the
     -- controls are chrome rather than a line of the header: they carry two
-    -- colours, one at rest and one under the pointer, and neither is the colour
+    -- colors, one at rest and one under the pointer, and neither is the color
     -- the header text is drawn in.
     local frameCfg = (window.config or {}).frame or {}
     style.r, style.g, style.b = controlColor(frameCfg, false)
@@ -593,7 +593,7 @@ end
 -- about to click".
 --
 -- So the reveal IS the feedback now, and it is per control: the one under the
--- pointer comes up to full alpha and takes the hover colour, and the other six
+-- pointer comes up to full alpha and takes the hover color, and the other six
 -- stay exactly as they were. There is no highlight behind it, because a control
 -- that is the only bright thing in the strip needs nothing behind it to be
 -- found.
@@ -629,9 +629,9 @@ end
 ---
 --- `controlAlpha` IS THEREFORE READ ONLY WHILE THE REVEAL IS ON, and it is
 --- deliberately not disabled on the panel when it is off -- the same bargain
---- `bars.customColor` gets under a non-custom colour mode. A player setting the
+--- `bars.customColor` gets under a non-custom color mode. A player setting the
 --- faded level before switching fading on is the normal order of operations, and
---- a greyed-out slider makes that a two-visit job.
+--- a grayed-out slider makes that a two-visit job.
 ---
 --- @return number rest, number hover
 local function stripAlphas(window)
@@ -641,11 +641,11 @@ local function stripAlphas(window)
     return alphaOf(frameCfg.controlAlpha, 0.25), hover
 end
 
---- Colour one control for its current hover state.
+--- Color one control for its current hover state.
 ---
 --- WHICHEVER REGION DREW IT. Our art and an atlas icon are both textures and
---- take a vertex multiply; the ASCII rung is text and takes a text colour. The
---- rung is remembered at draw time (`button.mmRung`) so a hover can recolour a
+--- take a vertex multiply; the ASCII rung is text and takes a text color. The
+--- rung is remembered at draw time (`button.mmRung`) so a hover can recolor a
 --- control without walking the ladder again -- a hover fires far more often than
 --- a config change, and re-resolving a texture path on every pointer move is
 --- work nobody asked for.

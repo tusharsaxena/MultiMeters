@@ -348,7 +348,7 @@ end)
 -- `judge` is the one of the three boundaries that is not rare: it fires once per
 -- Deaths source on every refresh, for every death in the column, while `cast`
 -- fires once per feign. A ring that admits all three on equal terms therefore
--- fills with judgements on GUIDs nobody ever feigned, and the `cast` line the
+-- fills with judgments on GUIDs nobody ever feigned, and the `cast` line the
 -- report exists to show is the first thing pushed out of it. So `judge` is
 -- admitted only for a GUID a `cast` line has already named, and the refusals are
 -- counted rather than dropped in silence — the count is itself evidence that the
@@ -383,7 +383,7 @@ test("Diagnostics: a judge row for a GUID no cast line named is counted, not rec
 
     local text = feignReport(inst)
     assertTrue(text:find("guid=Player-1-000000FF", 1, true) == nil,
-        "the unnamed GUID's judgement was not recorded")
+        "the unnamed GUID's judgment was not recorded")
     assertTrue(text:find("1 judge", 1, true) ~= nil,
         "the refusal was counted and reported")
 end)
@@ -399,7 +399,7 @@ test("Diagnostics: a judge row for a GUID a cast line named is recorded", functi
     judge(inst, "Player-1-0000000B", false)
 
     local text = feignReport(inst)
-    assertTrue(text:find("judge", 1, true) ~= nil, "the judgement was recorded")
+    assertTrue(text:find("judge", 1, true) ~= nil, "the judgment was recorded")
     assertTrue(text:find("dropped=false", 1, true) ~= nil, "the verdict was recorded")
 end)
 

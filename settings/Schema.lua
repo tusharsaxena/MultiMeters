@@ -41,7 +41,7 @@
 --             holds, never repeats its tab's name, and must be CONTIGUOUS or its
 --             heading prints twice.
 --   startsLine  flush the pending line BEFORE this row, so a declared pair cannot
---             be split by an odd number of widgets above it. Every colour swatch
+--             be split by an odd number of widgets above it. Every color swatch
 --             carries it, which is what puts its mode beside it whatever precedes.
 --   classColorSource  "player" | "unit" -- WHICH class this surface's `class`
 --             mode means, DECLARED rather than inferred from the path
@@ -141,14 +141,14 @@ local function dropFrozenOrder()
     if NS.State and NS.State.WipeCache then NS.State.WipeCache("Aggregator") end
 end
 
--- What every colour swatch's tooltip says about the mode beside it. IN WORDS,
+-- What every color swatch's tooltip says about the mode beside it. IN WORDS,
 -- because the swatch is NEVER disabled (options-ui-§17, anti-patterns #74): it is
--- still read for its ALPHA under every mode -- no class colour and no palette
--- entry carries one -- so greying it out would tell the player something untrue,
--- and setting a colour before switching the mode to Custom is the normal order of
+-- still read for its ALPHA under every mode -- no class color and no palette
+-- entry carries one -- so graying it out would tell the player something untrue,
+-- and setting a color before switching the mode to Custom is the normal order of
 -- operations rather than a mistake to defend against.
 --
--- Appended to every non-palette colour row's `desc` in ONE pass below, rather than
+-- Appended to every non-palette color row's `desc` in ONE pass below, rather than
 -- written into fifteen sentences: a rule restated fifteen times is a rule fourteen
 -- of them can drift from.
 local SWATCH_NOTE = L["Not read while the color mode beside it is anything but Custom color, except for its opacity, which always applies."]
@@ -159,7 +159,7 @@ local SWATCH_NOTE = L["Not read while the color mode beside it is anything but C
 --
 -- Ordered: pages in the order the panel lists them, and rows in the order they
 -- render inside a page (the flow engine pairs consecutive rows two to a line, so
--- neighbours here are neighbours on screen).
+-- neighbors here are neighbors on screen).
 --
 -- Every default below is the SAME LITERAL defaults/Profile.lua ships. It is
 -- restated rather than read out of the template because the row's default is what
@@ -240,13 +240,13 @@ NS.Schema = {
     -- TWO OF THEM CARRY AN `LSM30_*` dialogControl and are NOT a font or bar
     -- group, so a grep for `LSM30_` under settings/ finds them outside any
     -- composer call site and that is correct. options-ui-§16 fixes the shape of a
-    -- GROUP: contiguous, over one surface, with a colour row and its companion. A
-    -- write-only setter over six surfaces has no size, no colour, no flags and
+    -- GROUP: contiguous, over one surface, with a color row and its companion. A
+    -- write-only setter over six surfaces has no size, no color, no flags and
     -- no second surface to be contiguous with, and a composer asked to emit one
     -- would have to emit five rows this addon must not store. The `All surfaces`
     -- subgroup heading is what stops a reader mistaking them for the real font
     -- group on the Header page. Recorded in docs/settings-panel.md under `The
-    -- composed blocks`; it is a judgement about scope, not a deviation.
+    -- composed blocks`; it is a judgment about scope, not a deviation.
     --
     -- `closeButton` and the rest
     -- of the header's own controls, and the column-header strip, are edited on
@@ -254,7 +254,7 @@ NS.Schema = {
     -- `window.frame.*` or `window.columnHeader.*` under the hood, unrenamed.
     {
         -- A META ROW: it sets six others rather than being read by anything.
-        -- Every surface in a window carries its own colour mode -- the bar and its
+        -- Every surface in a window carries its own color mode -- the bar and its
         -- background, both header strips and both of their backgrounds, and both
         -- of the tooltip's bars -- which is right when a player wants one of them
         -- different and tedious when they want them all the same, which is the
@@ -477,12 +477,12 @@ NS.Schema = {
         page = "header", group = L["Title bar"], subgroup = L["Layout"],
         label = L["Header height"], desc = L["Height of the header strip in pixels."],
     },
-    -- THE ONE SWATCH IN THIS ADDON WITH NO COLOUR MODE BESIDE IT, and the absence
+    -- THE ONE SWATCH IN THIS ADDON WITH NO COLOR MODE BESIDE IT, and the absence
     -- is argued rather than overlooked -- see the note on the column-header strip's
     -- own background on the Columns page, which keeps one for a reason this strip
     -- does not have. Neither of the two modes says anything true here: "per
     -- statistic" over ONE strip spanning the whole window could only ever mean the
-    -- sort column's colour, a fact already on screen twice, and the same argument
+    -- sort column's color, a fact already on screen twice, and the same argument
     -- took the mode off this strip's TEXT background. Recorded as a documented
     -- deviation against options-ui-§17 in docs/ARCHITECTURE.md.
     {
@@ -501,7 +501,7 @@ NS.Schema = {
     -- ON by default: it is what the window has always drawn, and a chrome
     -- element that disappears on upgrade is a bug report.
     --
-    -- THREE ROWS, NOT ONE, and the colour mode below is where the interesting
+    -- THREE ROWS, NOT ONE, and the color mode below is where the interesting
     -- part is. `NS.ApplySkin` tints `frame.divider` from LibKa0s-Core-1.0's shared
     -- SKIN; the mode's shipped value, `skin`, does not read that table and write
     -- it -- it writes NOTHING, leaving the library's tint standing. That is what
@@ -522,10 +522,10 @@ NS.Schema = {
         validate = isNumberIn(1, 8),
     },
     {
-        -- A MID GREY, and deliberately not the skin's own values. Seeding this
+        -- A MID GRAY, and deliberately not the skin's own values. Seeding this
         -- with SKIN.divider would be the copy standalone-windows forbids -- the
         -- one that drifts a hex digit at a time and then has to be migrated -- and
-        -- it would also be a lie about what the row is: this is the colour the
+        -- it would also be a lie about what the row is: this is the color the
         -- player CHOSE, and it is read only under `custom`, where the skin has
         -- already been declined.
         path = "window.header.dividerColor", type = "color",
@@ -548,7 +548,7 @@ NS.Schema = {
     -- TWO MODES, NOT THREE, and the half that is missing is the interesting half.
     --
     -- NO `stat`. Per-statistic could only ever paint this the SORT column's
-    -- colour -- a fact already on screen twice, in that column's own header and
+    -- color -- a fact already on screen twice, in that column's own header and
     -- in its arrow -- and the title bar is ONE strip over the whole window rather
     -- than a thing belonging to a column. That is the same argument that took the
     -- mode off the title bar's BACKGROUND, and it still holds, which is why this
@@ -557,13 +557,13 @@ NS.Schema = {
     -- CLASS DID NOT SURVIVE THE SAME ARGUMENT, and this note used to say it had:
     -- "class could only be the local player's, which the title bar is not about --
     -- it names the window". What settled it the other way is the rest of the
-    -- strip. The controls wear a class colour and so does the divider under them;
+    -- strip. The controls wear a class color and so does the divider under them;
     -- a title that alone could not was the odd one out rather than the principled
     -- one, and "this header is mine" is a perfectly good thing for a player to
     -- want a window to say. It is still the LOCAL player's class, because that is
     -- the only class a window-wide strip can mean.
     -- options-ui-§16's font block, composed rather than written out here -- see
-    -- HEADER_TEXT_ROWS above. The colour MODE sits where the composer's boolean
+    -- HEADER_TEXT_ROWS above. The color MODE sits where the composer's boolean
     -- companion would, immediately to the swatch's right.
     block(HEADER_TEXT_ROWS),
     -- ── The meter's controls (issue #6) ────────────────────────────────────
@@ -711,13 +711,13 @@ NS.Schema = {
     -- ── Button style ──────────────────────────────────────────────
     -- How every one of the eight controls above is drawn, not what any one of
     -- them does. THREE KINDS OF CONTROL, so three subsection headings
-    -- (options-ui-§7): how big the icons are and whether they fade, what colours
+    -- (options-ui-§7): how big the icons are and whether they fade, what colors
     -- them, and how opaque each state is.
     --
     -- THE PAIRING CHANGED, and it is options-ui-§17 that changed it. It used to
-    -- read ACROSS -- rest beside hover, down three lines of mode, colour, opacity
+    -- read ACROSS -- rest beside hover, down three lines of mode, color, opacity
     -- -- which put `controlColor` two rows away from the mode that governs it. A
-    -- colour swatch's companion goes IMMEDIATELY TO ITS RIGHT, so each state is now
+    -- color swatch's companion goes IMMEDIATELY TO ITS RIGHT, so each state is now
     -- one line of its own (swatch, then mode) and rest against hover is read down
     -- the two lines rather than across one. The opacity pair is unaffected and
     -- still reads across, which is what it always did.
@@ -733,9 +733,9 @@ NS.Schema = {
         label = L["Control size"], desc = L["How large each header control is drawn, in pixels."],
     },
     -- Two modes rather than one, because rest and hover are two independent answers: a player who
-    -- wants their class colour under the pointer has not asked for the whole strip in it at rest,
-    -- and a shared mode would make hover and rest the same colour for anyone who chose class --
-    -- the one thing a hover colour must never be.
+    -- wants their class color under the pointer has not asked for the whole strip in it at rest,
+    -- and a shared mode would make hover and rest the same color for anyone who chose class --
+    -- the one thing a hover color must never be.
     --
     -- CLASS IS THE LOCAL PLAYER'S on both: a header control belongs to the WINDOW
     -- and not to any row in it, which is the same call modules/Window.lua's
@@ -780,8 +780,8 @@ NS.Schema = {
     -- `controlAlpha` IS READ ONLY WHILE THE REVEAL IS ON -- with fading off there
     -- is no faded state to have an opacity -- and it is deliberately NOT disabled
     -- on the panel when it is off, which is the same bargain `bars.customColor`
-    -- gets under a non-custom colour mode: setting the faded level before
-    -- switching fading on is the normal order of operations, and a greyed-out
+    -- gets under a non-custom color mode: setting the faded level before
+    -- switching fading on is the normal order of operations, and a grayed-out
     -- slider makes that a two-visit job. See modules/HeaderControls.lua's
     -- stripAlphas.
     {
@@ -810,13 +810,13 @@ NS.Schema = {
     -- edge (Border), what the cell says (Text content, then Text style), and the
     -- row icon (Icons). "Background" and "Border" say bar without spelling it --
     -- every tab on this page is about the bar, so the word carried nothing. Row
-    -- layout and row behaviour moved to the Frame page -- they shape the grid
+    -- layout and row behavior moved to the Frame page -- they shape the grid
     -- every bar here is drawn in, not the bar itself.
     -- THE BAR, WHAT SITS BEHIND IT AND ITS EDGE, in that order and one composed
     -- block each (options-ui-§16) -- see BARS_BAR_ROWS, BARS_BG_ROWS and
     -- BARS_BORDER_ROWS above. `fillDirection` is a legitimate extra and is appended
     -- AFTER the mandated four rather than interleaved with them; the background is
-    -- a backdrop with no fill texture, so it is a colour pair and not a bar group.
+    -- a backdrop with no fill texture, so it is a color pair and not a bar group.
     block(BARS_BAR_ROWS),
     -- ── Background ──────────────────────────────────────────────────
     block(BARS_BG_ROWS),
@@ -855,7 +855,7 @@ NS.Schema = {
         values = DEATHTIME_VALUES, sorting = DEATHTIME_SORT,
         page = "bars", group = L["Text content"],
         label = L["Death timestamps"],
-        desc = L["How a death is labelled in the Deaths tooltip and the death list."],
+        desc = L["How a death is labeled in the Deaths tooltip and the death list."],
     },
     {
         -- 15 rather than WoW's 12-character player-name limit: a group meter also
@@ -1181,7 +1181,7 @@ NS.Schema = {
     -- The column-header STRIP that labels those columns is styled here, though,
     -- and used to sit on the Header page as a third group beside the title
     -- strip -- three clicks from the page where the columns it labels are chosen.
-    -- It used to borrow the font and size from `text` and the outline and colour
+    -- It used to borrow the font and size from `text` and the outline and color
     -- from `header`, which meant changing the cell font silently restyled it too;
     -- every default here is the value that arrangement already produced. The
     -- PATHS stay `window.columnHeader.*` -- a row's page is where it is edited,
@@ -1377,13 +1377,13 @@ end
 -- composer was involved.
 expandBlocks(NS.Schema)
 
--- TWO: every colour swatch is told, in words, what the mode beside it does to it.
--- options-ui-§17 forbids `disabledIf` on a colour row -- the swatch is still read
--- for its ALPHA under every mode, so greying it out would be a lie -- and this is
--- the sentence that replaces the greying.
+-- TWO: every color swatch is told, in words, what the mode beside it does to it.
+-- options-ui-§17 forbids `disabledIf` on a color row -- the swatch is still read
+-- for its ALPHA under every mode, so graying it out would be a lie -- and this is
+-- the sentence that replaces the graying.
 --
 -- THE PALETTE IS EXEMPT and is the only exemption the rule has: `statColors.*` is
--- one colour per STATISTIC, identifying a column rather than a player, so there is
+-- one color per STATISTIC, identifying a column rather than a player, so there is
 -- no class for it to take and no mode beside it to warn about.
 for _, row in ipairs(NS.Schema) do
     if row.type == "color" and row.path:sub(1, 11) ~= "statColors." then

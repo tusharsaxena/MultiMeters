@@ -161,7 +161,7 @@ function NS:OnEnable()
     -- "the game said something" becomes "the addon knows". None of these carries
     -- state onto the bus, because the rules read their inputs live.
     --
-    -- THESE EDGES ARE LOAD-BEARING, NOT AN OPTIMISATION, and the first cut of
+    -- THESE EDGES ARE LOAD-BEARING, NOT AN OPTIMIZATION, and the first cut of
     -- the player-state rules shipped believing otherwise. There is no fallback
     -- poll: modules/Window.lua's onUpdate refreshes DATA and never re-asks
     -- NS.ShouldShow, so a rule whose edge nothing announces takes effect on the
@@ -277,7 +277,7 @@ end
 ---
 --- core/LifecycleSetup.lua's stand-down cancels the addon's AceTimers, and this
 --- flag is the one piece of state that CancelAllTimers cannot reach. Left true,
---- it would be true forever: the callback that clears it has been cancelled, so
+--- it would be true forever: the callback that clears it has been canceled, so
 --- the first player-state edge after the addon stands back up would see a
 --- booking that will never arrive and never book another. The settle pass would
 --- be silently dead for the rest of the session.
@@ -357,7 +357,7 @@ end
 ---
 --- A SECRET SPELL ID IS NOT COMPARED. `spellID == 5384` raises on one, and the
 --- honest answer when the comparison is refused is to record nothing: that
---- counts the feign as a death, which is exactly the behaviour that shipped
+--- counts the feign as a death, which is exactly the behavior that shipped
 --- before the filter existed and the safe direction to fail in.
 --- CHAT_MSG_SYSTEM -> modules/Export.lua, and NOTHING onto the bus.
 ---

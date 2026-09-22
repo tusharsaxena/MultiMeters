@@ -442,7 +442,7 @@ test("The font survives a UI skin that re-fonts every line on show", function()
     -- hooking OnShow and re-applying its own face at its own size. Setting the
     -- font before Show is therefore not enough, however correct it looks.
     --
-    -- The skin is modelled with a real OnShow hook so the ORDERING is the real
+    -- The skin is modeled with a real OnShow hook so the ORDERING is the real
     -- one: Show fires the hook, the hook restyles, and our second pass runs after
     -- Show returns. A test that just called SetFont twice would prove nothing.
     -- red under: applying the font only inside drawLine.

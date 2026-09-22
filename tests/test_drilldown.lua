@@ -454,7 +454,7 @@ end)
 --
 -- The Deaths click becomes a ladder rather than a replacement. The deaths view
 -- first; Blizzard's own frame second, so a client without C_DeathRecap keeps
--- exactly the behaviour it has today; the ordinary breakdown last, so the cell
+-- exactly the behavior it has today; the ordinary breakdown last, so the cell
 -- is never dead.
 
 --- A grid row for a player who died `n` times, ids descending as the API gives
@@ -554,7 +554,7 @@ test("A death whose recap the client has dropped still gets a row", function()
         "a row with no recap still needs something in the cell")
 end)
 
-test("A Deaths click on a player with no deaths array keeps today's behaviour", function()
+test("A Deaths click on a player with no deaths array keeps today's behavior", function()
     -- The second rung. A client without C_DeathRecap, or a row built before this
     -- feature existed, still reaches Blizzard's own frame rather than a view
     -- with nothing in it.
@@ -601,7 +601,7 @@ test("The deaths view never asks the provider for a spell breakdown", function()
 end)
 
 test("A death row is flagged as a drill-down row", function()
-    -- modules/Row.lua keys three behaviours off it: the realm strip, the class
+    -- modules/Row.lua keys three behaviors off it: the realm strip, the class
     -- icon ladder, and giving the mouse to the row rather than the cell — which
     -- is the only way the tooltip is reachable at all.
     local inst, cfg = bench()

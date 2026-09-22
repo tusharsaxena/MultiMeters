@@ -497,15 +497,15 @@ test("Cell text takes the ROW's class color when asked", function()
     -- column has always had and the one `bars.colorMode == "class"` has. The
     -- header surfaces answer the same setting with the LOCAL player's class
     -- instead, because they have no row to ask about.
-    -- red under: colouring cell text from NS.PlayerClassRGB, or from a layout
+    -- red under: coloring cell text from NS.PlayerClassRGB, or from a layout
     -- pass that has no entry to read.
     local inst, _, row = bench(function(cfg)
         cfg.text.colorMode = "class"
         cfg.text.color = { r = 1, g = 1, b = 1, a = 1 }
     end)
 
-    -- The mock ships every class the same colour, which would let "took SOME
-    -- class colour" pass for "took THIS row's". One class is given its own.
+    -- The mock ships every class the same color, which would let "took SOME
+    -- class color" pass for "took THIS row's". One class is given its own.
     inst.mocks.RAID_CLASS_COLORS.MAGE = { r = 0.41, g = 0.8, b = 0.94 }
 
     row:Update(entry({ DamageDone = { total = 100, maxAmount = 100 } },
@@ -543,8 +543,8 @@ end)
 
 test("With no class to read, cell text keeps its configured color", function()
     -- An unknown class means "no class information", and the honest answer is the
-    -- colour the player chose -- never a tenth palette entry invented here.
-    -- red under: falling back to white, or leaving the slot uncoloured.
+    -- color the player chose -- never a tenth palette entry invented here.
+    -- red under: falling back to white, or leaving the slot uncolored.
     local _, _, row = bench(function(cfg)
         cfg.text.colorMode = "class"
         cfg.text.color = { r = 0.2, g = 0.4, b = 0.6, a = 1 }
@@ -575,9 +575,9 @@ test("Text opacity fades the TEXT, and leaves the bar alone", function()
     assertEqual(cell.frame:GetAlpha(), 1, "the bar is not text")
 end)
 
-test("The bar border takes the player's thickness and colour", function()
+test("The bar border takes the player's thickness and color", function()
     -- Both used to be constants: one pixel, in the library skin's own edge
-    -- colour, which no setting could reach — so "Bar border" was a switch with no
+    -- color, which no setting could reach — so "Bar border" was a switch with no
     -- dial and no swatch beside it.
     -- red under: restoring the hard-coded 1px skin edge.
     local _, _, row = bench(function(cfg)
@@ -590,11 +590,11 @@ test("The bar border takes the player's thickness and colour", function()
     assertTrue(edges ~= nil, "no border was drawn at all")
     assertEqual(edges.top:GetHeight(), 3)
     assertEqual(edges.left:GetWidth(), 3)
-    assertEqual(edges.top.__colorTexture[1], 1, "the border ignored its colour")
+    assertEqual(edges.top.__colorTexture[1], 1, "the border ignored its color")
     assertEqual(edges.top.__colorTexture[2], 0)
 end)
 
-test("The bar border answers a colour mode, and its class is the ROW'S player", function()
+test("The bar border answers a color mode, and its class is the ROW'S player", function()
     -- options-ui-§17: every swatch has a companion, and which class it means is the
     -- class of the unit the SURFACE describes. An outline around a cell belongs to
     -- the player whose cell it is -- the same reading the fill inside it takes --
@@ -620,7 +620,7 @@ test("The bar border answers a colour mode, and its class is the ROW'S player", 
 end)
 
 test("The bar border's shipped mode is Custom, so an upgraded window looks the same", function()
-    -- red under: a default of "class", which would recolour every existing
+    -- red under: a default of "class", which would recolor every existing
     -- window's cell outlines on upgrade.
     local inst, _, row = bench(function(cfg)
         cfg.bars.border      = true
@@ -762,7 +762,7 @@ test("Each of the four sides is anchored to its own two corners", function()
     -- the cell with TWO anchors and takes its thickness on the ONE axis that is
     -- not spanned -- top and bottom get a height, left and right a width. Swap a
     -- pair (BOTTOMLEFT for TOPLEFT on `left`, say) and the outline still draws,
-    -- still colours, still measures the same in every existing case, and is
+    -- still colors, still measures the same in every existing case, and is
     -- simply in the wrong place; swap the axis and a side vanishes at width 0.
     -- Nothing else in this suite looks at where a border texture is.
     -- red under: any transcription slip in a data table of anchor pairs.
@@ -854,13 +854,13 @@ test("A thickness under one pixel is clamped to one, on both paths", function()
     assertEqual(cell.frame.__backdrop.edgeSize, 1, "the art path skipped the clamp")
 end)
 
-test("The art path takes the edge FILE and the swatch's colour", function()
-    -- The nine-slice reaches the backdrop as `edgeFile`, and the colour beside it
+test("The art path takes the edge FILE and the swatch's color", function()
+    -- The nine-slice reaches the backdrop as `edgeFile`, and the color beside it
     -- reaches SetBackdropBorderColor -- the art path's answer to the flat path's
     -- SetColorTexture. Both are cellBorderColor's, so the two paths cannot end up
     -- reading different swatches for the same setting.
     -- red under: an art path that draws the library's edge tint over the
-    -- player's, which is what "no colour call at all" looks like on screen.
+    -- player's, which is what "no color call at all" looks like on screen.
     local inst, window, row = bench(function(c)
         c.bars.border      = true
         c.bars.borderColor = { r = 1, g = 0, b = 0, a = 0.5 }
@@ -878,7 +878,7 @@ test("The art path takes the edge FILE and the swatch's colour", function()
     assertEqual(c[4], 0.5, "the swatch's alpha did not survive the art path")
 end)
 
-test("The art path answers the colour mode too, and it is the ROW'S class", function()
+test("The art path answers the color mode too, and it is the ROW'S class", function()
     -- The same reading the flat outline takes, and it has to be the same reading:
     -- a player who switches from the flat border to an LSM edge is changing how
     -- the outline is DRAWN, not who it is about.
@@ -931,11 +931,11 @@ test("Switching from the flat outline to art takes ALL FOUR sides down", functio
     end
 end)
 
-test("Per-statistic cell text is the colour of the column the cell is in", function()
-    -- PER STATISTIC IS PER COLUMN in a cell: the number takes the colour of the
+test("Per-statistic cell text is the color of the column the cell is in", function()
+    -- PER STATISTIC IS PER COLUMN in a cell: the number takes the color of the
     -- column it sits in, which is the same palette the bar behind it uses in
     -- `bars.colorMode == "stat"`.
-    -- red under: resolving one colour for every cell in the row.
+    -- red under: resolving one color for every cell in the row.
     local inst, _, row = bench(function(cfg) cfg.text.colorMode = "stat" end)
     local Const = inst.NS.Constants
     row:Update(entry({
@@ -947,7 +947,7 @@ test("Per-statistic cell text is the colour of the column the cell is in", funct
         local want = Const.STAT_COLORS[key]
         if want then
             assertEqual(row.cells[key].left.__textColor[1], want[1],
-                key .. "'s number is not in its own column's colour")
+                key .. "'s number is not in its own column's color")
         end
     end
 
@@ -958,7 +958,7 @@ end)
 
 test("The statistic palette is a SETTING, and every surface reads it through one seam", function()
     -- General -> Statistic colors. The bar and the cell text both take their
-    -- per-statistic colour through NS.StatColor, which reads the profile and
+    -- per-statistic color through NS.StatColor, which reads the profile and
     -- falls back to the shipped constant -- so changing the setting has to move
     -- both without either file being told about it.
     -- red under: a private Const.STAT_COLORS lookup left in modules/Row.lua,
@@ -977,11 +977,11 @@ test("The statistic palette is a SETTING, and every surface reads it through one
     assertEqual(cell.frame.__barColor[1], 0.1, "the bar ignored the setting")
 end)
 
-test("A statistic the profile has never coloured keeps the shipped palette", function()
+test("A statistic the profile has never colored keeps the shipped palette", function()
     -- The constant is the FALLBACK, not the dead letter: it answers for a key
     -- nothing has stored, for a stat added to the catalog after the profile was
     -- written, and for a degraded install with no database to read at all.
-    -- red under: retiring Const.STAT_COLORS in favour of the stored table.
+    -- red under: retiring Const.STAT_COLORS in favor of the stored table.
     local inst, _, row = bench(function(cfg) cfg.text.colorMode = "stat" end)
     local want = inst.NS.Constants.STAT_COLORS.Interrupts
 
@@ -991,9 +991,9 @@ test("A statistic the profile has never coloured keeps the shipped palette", fun
     assertEqual(row.cells.Interrupts.left.__textColor[1], want[1])
 end)
 
-test("Text opacity reaches the NAME and the numbers alike, class colour or not", function()
+test("Text opacity reaches the NAME and the numbers alike, class color or not", function()
     -- IT REACHED ONLY THE NAME in the client, with Use class color on: the
-    -- per-row colour passes wrote their own alpha through SetTextColor after
+    -- per-row color passes wrote their own alpha through SetTextColor after
     -- ApplyTextStyle had set the opacity through SetAlpha, and the numbers came
     -- back to full while the names stayed faded. One setting working on half the
     -- grid.
@@ -1008,15 +1008,15 @@ test("Text opacity reaches the NAME and the numbers alike, class colour or not",
 
         local name = row.nameCell.left.__textColor
         local stat = row.cells.DamageDone.left.__textColor
-        local why  = " (colour mode " .. mode .. ")"
+        local why  = " (color mode " .. mode .. ")"
         assertEqual(name[4], 0.25, "the name ignored Text opacity" .. why)
         assertEqual(stat[4], 0.25, "the numbers ignored Text opacity" .. why)
     end
 end)
 
-test("Text opacity and the colour's own alpha multiply, rather than one winning", function()
+test("Text opacity and the color's own alpha multiply, rather than one winning", function()
     -- They are two different questions -- "how transparent is this text" and
-    -- "what colour is it" -- and a player who has answered both means both.
+    -- "what color is it" -- and a player who has answered both means both.
     local _, _, row = bench(function(cfg)
         cfg.text.alpha = 0.5
         cfg.text.color = { r = 1, g = 1, b = 1, a = 0.5 }
@@ -1029,7 +1029,7 @@ test("Bar opacity fades the FILL, and nothing else in the cell", function()
     -- The StatusBar is the CELL: it parents the fill, the backdrop behind it,
     -- both text slots and the name column's icon. `bars.alpha` was set on it, so
     -- dropping "Bar opacity" to 10% faded the entire grid — numbers, names and
-    -- icons — when what the setting names is the coloured fill alone.
+    -- icons — when what the setting names is the colored fill alone.
     -- red under: bar:SetAlpha(bars.alpha).
     local _, _, row = bench(function(cfg)
         cfg.bars.alpha = 0.5
@@ -1323,7 +1323,7 @@ end)
 
 test("On the GRID a cell still owns its own tooltip", function()
     -- Each column asks a different question there, so per-cell is correct rather
-    -- than a bug — the row-level behaviour must not leak out of the breakdown.
+    -- than a bug — the row-level behavior must not leak out of the breakdown.
     -- red under: giving every row the spell tooltip.
     local inst, _, row = bench()
     local seen

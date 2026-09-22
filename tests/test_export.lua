@@ -198,7 +198,7 @@ test("Export.HeaderName turns a catalog key into snake_case", function()
     assertEqual(HeaderName("AvoidableDamageTaken"), "avoidable_damage_taken")
     -- Not a catalog key and not a CSV field — `EnemyDamageTaken` is read, never
     -- a column (issue #2). The RULE still has to hold for it, because the rule is
-    -- a gsub over CamelCase and knows nothing about what is catalogued.
+    -- a gsub over CamelCase and knows nothing about what is cataloged.
     assertEqual(HeaderName("EnemyDamageTaken"), "enemy_damage_taken")
 end)
 

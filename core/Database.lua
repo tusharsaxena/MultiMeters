@@ -39,14 +39,14 @@ NS.Database = Database
 -- v4 retires the export channel "AUTO".
 -- v5 lifts mergePets and throttle from per-window to addon-wide.
 -- v6 prunes the two row-background keys nothing ever read.
--- v7 turns four class-colour booleans into three-way colour modes.
+-- v7 turns four class-color booleans into three-way color modes.
 -- v8 prunes the four header keys that said what was already on screen.
--- v9 takes the colour mode off the title bar's background.
+-- v9 takes the color mode off the title bar's background.
 -- v10 retires the "At cursor" tooltip anchor.
--- v11 takes the colour mode off the title bar's text.
+-- v11 takes the color mode off the title bar's text.
 -- v12 turns the column array from a chosen subset into the full catalog, ticked.
 -- v13 moves the title-bar toggle onto the header and turns the two control
---     class-colour flags into modes.
+--     class-color flags into modes.
 -- v14 carries the addon-wide `master.locked` onto every window's own lock and
 --     prunes it.
 -- v15 moves LibDBIcon's `minimap` table from the profile to the global store.
@@ -360,7 +360,7 @@ end
 --- The old keys are REMOVED rather than left to rot. AceDB merges defaults into
 --- a stored profile but never prunes what the defaults stopped naming, so three
 --- dead booleans would sit in every saved profile forever, and the next reader
---- of the file would have to work out which of the four keys the code honours.
+--- of the file would have to work out which of the four keys the code honors.
 migrations[2] = function(db)
     for _, profile in ipairs(allProfiles(db)) do
         for _, w in ipairs(type(profile.windows) == "table" and profile.windows or {}) do
@@ -505,7 +505,7 @@ end
 --- Removed rather than left to rot, for the reason the v2 -> v3 icon step gives:
 --- AceDB merges defaults into a stored profile and never prunes what the defaults
 --- stopped naming, so without this they sit in every saved window forever and the
---- next reader has to work out which of two keys the code honours. Neither had a
+--- next reader has to work out which of two keys the code honors. Neither had a
 --- reader, which is exactly why nobody would guess.
 migrations[5] = function(db)
     for _, profile in ipairs(allProfiles(db)) do
@@ -520,11 +520,11 @@ migrations[5] = function(db)
     db.global.schemaVersion = 6
 end
 
---- v6 -> v7: FOUR CLASS-COLOUR BOOLEANS BECOME COLOUR MODES.
+--- v6 -> v7: FOUR CLASS-COLOR BOOLEANS BECOME COLOR MODES.
 ---
 --- Every text surface -- the cells, the title bar, the column labels and the
 --- tooltip -- carried a `classColor` checkbox, which could only ever answer two
---- thirds of the question a player was asking: class, the statistic's own colour,
+--- thirds of the question a player was asking: class, the statistic's own color,
 --- or the one they picked. `colorMode` answers all three, and the two header
 --- BACKGROUNDS gained the same three, which they had none of before.
 ---
@@ -532,7 +532,7 @@ end
 --- boolean meant. The key is REMOVED afterwards for the reason the v2 -> v3 icon
 --- step gives: AceDB merges defaults in and never prunes what they stopped
 --- naming, so a stale `classColor` would sit beside the live `colorMode` in every
---- saved profile with nothing to say which the addon honours.
+--- saved profile with nothing to say which the addon honors.
 ---
 --- The tooltip's key is in the same group as its `fontOutline` and `fontShadow`
 --- siblings rather than under `text`, which is why this walks a list of GROUPS
@@ -594,14 +594,14 @@ migrations[7] = function(db)
     db.global.schemaVersion = 8
 end
 
---- v8 -> v9: THE TITLE BAR'S BACKGROUND LOSES ITS COLOUR MODE.
+--- v8 -> v9: THE TITLE BAR'S BACKGROUND LOSES ITS COLOR MODE.
 ---
 --- `header.bgColorMode` and `columnHeader.bgColorMode` looked like a matched pair
 --- and are not. The column strip labels the COLUMNS, so "per statistic" tints
---- each label with its own column's colour and means something. The title bar is
+--- each label with its own column's color and means something. The title bar is
 --- ONE strip over the whole window, so the same mode could only ever paint it one
---- colour -- the sort column's -- which is a fact already on screen twice over.
---- It keeps its colour picker, which is what the setting was before the mode was
+--- color -- the sort column's -- which is a fact already on screen twice over.
+--- It keeps its color picker, which is what the setting was before the mode was
 --- added to it.
 ---
 --- Pruned rather than left, for the reason every step here gives: AceDB merges
@@ -641,7 +641,7 @@ migrations[9] = function(db)
     db.global.schemaVersion = 10
 end
 
---- v10 -> v11: THE TITLE BAR'S TEXT LOSES ITS THREE-MODE COLOUR SETTING.
+--- v10 -> v11: THE TITLE BAR'S TEXT LOSES ITS THREE-MODE COLOR SETTING.
 ---
 --- WHAT THIS STEP CLEARED, AND WHY IT STILL RUNS. At the time it removed the row
 --- outright: the title bar is ONE strip over the whole window, and neither mode
@@ -726,7 +726,7 @@ migrations[11] = function(db)
     db.global.schemaVersion = 12
 end
 
--- v13's two control-colour pairs: the stored boolean, and the mode key it
+-- v13's two control-color pairs: the stored boolean, and the mode key it
 -- becomes. File scope, built once — never rebuilt per window.
 local V13_CONTROL_COLOR_KEYS = {
     { flag = "controlClassColor",      mode = "controlColorMode"      },
@@ -739,7 +739,7 @@ local V13_CONTROL_COLOR_KEYS = {
 --- changed from the default" — writing one here would freeze today's default
 --- into every stored profile and the default could never move again.
 ---
---- The header block is MUTATED IN PLACE, never replaced: the fonts, colours and
+--- The header block is MUTATED IN PLACE, never replaced: the fonts, colors and
 --- heights already stored on it must survive. A present `titleBar` OVERWRITES
 --- whatever `header.show` held, since it is the value the player last set.
 local function v13MoveTitleBarToHeader(w, frame)
@@ -749,7 +749,7 @@ local function v13MoveTitleBarToHeader(w, frame)
     frame.titleBar = nil
 end
 
---- Turn the two control class-colour booleans into mode strings: `true` ->
+--- Turn the two control class-color booleans into mode strings: `true` ->
 --- "class", `false` -> "custom", which is what `false` already meant. Mapping
 --- it to nil instead would leave the row reading the schema default, the same
 --- value today but not necessarily tomorrow.
@@ -769,7 +769,7 @@ local function v13LiftControlColorModes(frame)
 end
 
 --- v12 -> v13: THE TITLE-BAR TOGGLE MOVES ONTO THE HEADER, AND THE HEADER CONTROLS' TWO
---- CLASS-COLOUR FLAGS BECOME MODES.
+--- CLASS-COLOR FLAGS BECOME MODES.
 ---
 --- `Show title bar` was on the Frame page, under "Frame behavior", switching a surface the
 --- Header page owns -- so it sat three clicks from every control that styles the thing it turns
@@ -783,7 +783,7 @@ end
 --- default could never move again.
 ---
 --- The two `controlClassColor` / `controlHoverClassColor` booleans get the same redesign every
---- other colourable surface already has: a mode dropdown. A stored `true` becomes "class"; a
+--- other colorable surface already has: a mode dropdown. A stored `true` becomes "class"; a
 --- stored `false` becomes "custom", which is what it already meant -- mapping it to nil instead
 --- would leave the row reading the schema default, which happens to be the same value today but
 --- need not be tomorrow.

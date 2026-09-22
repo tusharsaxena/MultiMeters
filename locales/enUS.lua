@@ -278,7 +278,7 @@ L["Button style"] = "Button style"
 
 L["Text color mode"] = "Text color mode"
 L["Background color mode"] = "Background color mode"
--- The three colour modes options-ui-§17 asked this addon to add beside swatches
+-- The three color modes options-ui-§17 asked this addon to add beside swatches
 -- that had none. Two values each, class and custom, because a border and a window
 -- backdrop are the surfaces "per statistic" cannot say anything true about.
 L["Border color mode"] = "Border color mode"
@@ -320,7 +320,7 @@ L["Set the font outline for the cell text, both header strips and the tooltip at
     "Set the font outline for the cell text, both header strips and the tooltip at once. Each of them is still its own setting."
 
 -- The header's own Title box and its three "show this too" checkboxes are gone
--- with the strings that labelled them: each said something already on screen.
+-- with the strings that labeled them: each said something already on screen.
 -- The header draws the window's name now.
 L["Header height"] = "Header height"
 L["Height of the header strip in pixels."] = "Height of the header strip in pixels."
@@ -727,8 +727,8 @@ L["Opacity multiplier for every window, multiplied into each window's own Opacit
 L["Lock frame"] = "Lock frame"
 L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Frame page, or the lock button in its header) still locks it on its own."] =
     "Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Frame page, or the lock button in its header) still locks it on its own."
--- Said once, appended to every non-palette colour swatch's tooltip
--- (settings/Schema.lua's SWATCH_NOTE). options-ui-§17 forbids greying a swatch
+-- Said once, appended to every non-palette color swatch's tooltip
+-- (settings/Schema.lua's SWATCH_NOTE). options-ui-§17 forbids graying a swatch
 -- out under a non-custom mode, because its ALPHA is still read.
 L["Not read while the color mode beside it is anything but Custom color, except for its opacity, which always applies."] =
     "Not read while the color mode beside it is anything but Custom color, except for its opacity, which always applies."
@@ -786,7 +786,7 @@ L["Waiting for combat data..."] = "Waiting for combat data..."
 -- Printed for the ONE header still refused mid-pull: the Player column. Ordering
 -- by name compares a ConditionalSecret, which raises, and unlike a stat column
 -- there is no engine ranking behind it to fall back on. Picking a stat column
--- and reversing the grid are both honoured during a pull and print nothing.
+-- and reversing the grid are both honored during a pull and print nothing.
 L["Sorting is not possible while the game restricts combat data."] =
     "Sorting is not possible while the game restricts combat data."
 L["restricted"] = "restricted"
@@ -987,4 +987,4 @@ L["Heal"] = "Heal"
 L["Time of day"] = "Time of day"
 L["How long ago"] = "How long ago"
 L["Death timestamps"] = "Death timestamps"
-L["How a death is labelled in the Deaths tooltip and the death list."] = "How a death is labelled in the Deaths tooltip and the death list."
+L["How a death is labeled in the Deaths tooltip and the death list."] = "How a death is labeled in the Deaths tooltip and the death list."

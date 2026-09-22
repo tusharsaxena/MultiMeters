@@ -1223,7 +1223,7 @@ test("The judge verdict is recorded per death source, after the prune", function
         if rec.kind == "judge" then judged[#judged + 1] = rec.fields end
     end
     assertEqual(table.concat(kinds, ","), "cast,prune,judge,judge",
-        "the pass records one prune, then one judgement per death source")
+        "the pass records one prune, then one judgment per death source")
 
     assertEqual(judged[1].guid, ALPHA)
     assertEqual(judged[1].recap, 9)
@@ -1235,9 +1235,9 @@ test("The judge verdict is recorded per death source, after the prune", function
         "the field order is the report's column order")
 end)
 
-test("A column that is not counted records no judgement at all", function()
+test("A column that is not counted records no judgment at all", function()
     -- The tracer is resolved from the Feign module, and that module is only
-    -- reached for a counted column — so a damage refresh costs no judgement, no
+    -- reached for a counted column — so a damage refresh costs no judgment, no
     -- fields table and no ring slot, armed or not. That is the whole point of
     -- resolving it once per column instead of once per source.
     -- red under: resolving the tracer for every column and testing `isCount`
@@ -1245,11 +1245,11 @@ test("A column that is not counted records no judgement at all", function()
     local inst = loaded()
     local D = inst.NS.Diagnostics
     D.ArmFeignTrace(true)
-    local judgements = 0
-    D.TraceFeign = function(kind) if kind == "judge" then judgements = judgements + 1 end end
+    local judgments = 0
+    D.TraceFeign = function(kind) if kind == "judge" then judgments = judgments + 1 end end
 
     install(inst, { src(ALPHA, 100), src(BETA, 50) },
         { statKey = "DamageDone", maxAmount = 100 })
     inst.NS.Aggregator.Build(makeWindow{ columns = { "DamageDone" } })
-    assertEqual(judgements, 0, "a damage refresh recorded a feign judgement")
+    assertEqual(judgments, 0, "a damage refresh recorded a feign judgment")
 end)

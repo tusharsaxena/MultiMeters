@@ -571,7 +571,7 @@ local function printFixture()
 end
 
 test("Print to Chat re-checks the restriction at the click, not at the open", function()
-    -- The greyed-out button is a HINT rather than a guarantee: the modal may have
+    -- The grayed-out button is a HINT rather than a guarantee: the modal may have
     -- been opened out of combat and pressed ten seconds into a pull. The click
     -- says the reason and repaints, so the modal that just refused is also the
     -- modal that now explains itself.

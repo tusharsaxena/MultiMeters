@@ -1065,7 +1065,7 @@ test("Provider.GetRecap hands back the events and the denominator together", fun
 end)
 
 test("Provider.GetRecap is MEMOIZED — a past death never changes", function()
-    -- Not an optimisation. The drill-down needs one read PER DEATH just to label
+    -- Not an optimization. The drill-down needs one read PER DEATH just to label
     -- its rows with a wall-clock time, and the render path runs four times a
     -- second: without a memo that is forty client calls a second for a list that
     -- cannot change.
@@ -1319,7 +1319,7 @@ test("The projection's field list and collectSource cannot drift apart", functio
     -- The absent-field report is only as truthful as the list it checks
     -- against, and a list restated beside the projection is a list that goes
     -- stale the first time a field is added to one and not the other. Scanned
-    -- out of the source, because a drift would fail no behavioural test — it
+    -- out of the source, because a drift would fail no behavioral test — it
     -- would just quietly under-report.
     -- Rooted through T.root, like codeLines at the top of this file. A bare
     -- relative path resolves against the runner's cwd, so this scan worked
@@ -1328,7 +1328,7 @@ test("The projection's field list and collectSource cannot drift apart", functio
     -- died on the assert, reporting a missing file as a drift.
     local relPath = "modules/Provider.lua"
     local fh = assert(io.open(T.root .. "/" .. relPath, "r"))
-    -- Normalised, because this scan is about the source, not about how the
+    -- Normalized, because this scan is about the source, not about how the
     -- line ends. The pattern below anchors on "\nend\n"; against a correctly
     -- checked-out CRLF working tree that never matches, the body comes back
     -- nil, and the case fails claiming a drift that is not there. The EOL

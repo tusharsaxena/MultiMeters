@@ -41,7 +41,7 @@
 -- and the lock (a cover, nothing drawn, writes refused until combat ends) is
 -- the library's, inline in SetRenderer, so a page that hand-rolls its own copy
 -- has a lock that drifts from the other eight the first time the library's
--- wording or behaviour moves.
+-- wording or behavior moves.
 --
 -- SetRenderer's contract is "draw once, and again when the library says you are
 -- dirty", and that is one draw short here: the widget tree belongs to

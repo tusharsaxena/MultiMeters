@@ -249,30 +249,30 @@ test("A bar clears the icon rather than running underneath it", function()
     assertEqual(left.x, 14, "the track does not begin at the icon's right edge")
 end)
 
-test("The player's name is class-coloured on every tooltip that names one", function()
-    -- Every other name this addon draws is class-coloured -- the Player column
+test("The player's name is class-colored on every tooltip that names one", function()
+    -- Every other name this addon draws is class-colored -- the Player column
     -- has been since the first build -- and the tooltip header was the one place
     -- a name came out white, so a hover read as belonging to nothing.
-    -- red under: passing 1, 1, 1 to AddDoubleLine's first colour triple.
+    -- red under: passing 1, 1, 1 to AddDoubleLine's first color triple.
     local inst, cfg, anchor = bench()
     local want = inst.mocks.RAID_CLASS_COLORS.MAGE
-    assertTrue(want ~= nil, "the mock has no MAGE colour to compare against")
+    assertTrue(want ~= nil, "the mock has no MAGE color to compare against")
 
     -- The cell tooltip's header is a DOUBLE line -- name on the left, statistic
-    -- on the right -- so its colours are the pair recorded for each side.
+    -- on the right -- so its colors are the pair recorded for each side.
     inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
     local first = inst.mocks.GameTooltip.__lines[1]
-    assertEqual(first.leftColor[1], want.r, "the cell tooltip's name is not class-coloured")
+    assertEqual(first.leftColor[1], want.r, "the cell tooltip's name is not class-colored")
     assertEqual(first.leftColor[3], want.b)
     assertEqual(first.rightColor[1], 1, "the statistic beside it lost its gold")
 
     -- The name tooltip's is a single line.
     inst.NS.Tooltip:NameTooltip(makeRow(), anchor, cfg)
     first = inst.mocks.GameTooltip.__lines[1]
-    assertEqual(first.r, want.r, "the name tooltip's name is not class-coloured")
+    assertEqual(first.r, want.r, "the name tooltip's name is not class-colored")
 end)
 
-test("A row with no class keeps a white name rather than an invented colour", function()
+test("A row with no class keeps a white name rather than an invented color", function()
     local inst, cfg, anchor = bench()
     local r = makeRow()
     r.classFilename = nil
@@ -304,7 +304,7 @@ test("A nonsense scale is bounded rather than handed to the client", function()
     end
 end)
 
-test("The bar's fill and its backdrop each take their own colour and opacity", function()
+test("The bar's fill and its backdrop each take their own color and opacity", function()
     -- The fill used to be the hovered player's class and nothing else, with no
     -- setting reaching it; the backdrop was a hard-coded black at 0.35 set once
     -- at creation, which no setting reached and which a POOLED line carried from
@@ -322,15 +322,15 @@ test("The bar's fill and its backdrop each take their own colour and opacity", f
 
     local b = tooltipBars(inst)[1]
     assertTrue(b ~= nil, "no bar was drawn")
-    assertEqual(b.__barColor[1], 1, "the fill ignored its colour")
+    assertEqual(b.__barColor[1], 1, "the fill ignored its color")
     assertEqual(b.__barColor[4], 0.5, "the fill ignored its opacity")
-    assertEqual(b.bg.__colorTexture[3], 1, "the backdrop ignored its colour")
+    assertEqual(b.bg.__colorTexture[3], 1, "the backdrop ignored its color")
     assertEqual(b.bg.__colorTexture[4], 0.25, "the backdrop ignored its opacity")
 end)
 
-test("Per-statistic mode is the HOVERED column's colour, not the sort column's", function()
+test("Per-statistic mode is the HOVERED column's color, not the sort column's", function()
     -- THE BUG: it resolved to the window's sort column, so every breakdown of
-    -- every column came out in the sort column's colour -- a Healing tooltip in
+    -- every column came out in the sort column's color -- a Healing tooltip in
     -- Damage red. This tooltip IS the breakdown of one statistic, and that
     -- statistic is the one whose cell the pointer is on.
     -- red under: reading window.data.sortColumn in lineStyle.
@@ -342,12 +342,12 @@ test("Per-statistic mode is the HOVERED column's colour, not the sort column's",
     local want = Const.STAT_COLORS.HealingDone
     local sorted = Const.STAT_COLORS.DamageDone
     assertTrue(want ~= nil and sorted ~= nil, "the palette has no pair to tell apart")
-    assertTrue(want[1] ~= sorted[1], "the two colours are identical; the case proves nothing")
+    assertTrue(want[1] ~= sorted[1], "the two colors are identical; the case proves nothing")
 
     inst.NS.Tooltip:CellTooltip(makeRow(), "HealingDone", anchor, cfg)
     local b = tooltipBars(inst)[1]
     assertTrue(b ~= nil, "no bar was drawn")
-    assertEqual(b.__barColor[1], want[1], "a Healing breakdown took the sort column's colour")
+    assertEqual(b.__barColor[1], want[1], "a Healing breakdown took the sort column's color")
 end)
 
 test("The text mode follows the hovered column too", function()
@@ -363,7 +363,7 @@ test("The text mode follows the hovered column too", function()
     local b = tooltipBars(inst)[1]
     local carrier = b.__parent
     assertEqual(carrier.amount.__textColor[1], want[1],
-        "the amount took a different statistic's colour from its own bar")
+        "the amount took a different statistic's color from its own bar")
 end)
 
 test("Class mode paints the bar with the hovered player's class", function()
@@ -397,7 +397,7 @@ test("The bar border is drawn on the BAR, where it can be seen", function()
     assertNil(b.__parent.__backdrop, "the carrier kept a backdrop nobody can see")
 end)
 
-test("The bar border answers a colour mode, and its class is the HOVERED player's", function()
+test("The bar border answers a color mode, and its class is the HOVERED player's", function()
     -- options-ui-§17. A tooltip is opened over ONE row and is about that row, so
     -- `class` here is the player being hovered -- the same class the fill it
     -- surrounds takes, and not the local player's, which is what the window's own
@@ -416,14 +416,14 @@ test("The bar border answers a colour mode, and its class is the HOVERED player'
 
     local b = tooltipBars(inst)[1]
     local edge = b.__backdropBorderColor
-    assertTrue(edge ~= nil, "the border was never coloured")
+    assertTrue(edge ~= nil, "the border was never colored")
     assertEqual(edge[1], want.r, "the outline did not take the hovered player's class")
     assertEqual(edge[3], want.b)
     assertEqual(edge[4], 0.6, "the swatch's alpha did not survive the mode")
 end)
 
 test("The bar border's shipped mode is Custom, so it still reads the swatch", function()
-    -- red under: a default of "class", which would recolour every existing
+    -- red under: a default of "class", which would recolor every existing
     -- tooltip's spell-bar outline on upgrade.
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.barBorderStyle = "Ka0s Edge"
@@ -582,8 +582,8 @@ end)
 
 test("Both number slots are white by default, not two kinds of number", function()
     -- The amount used to be gold and the share white. They are one row's two
-    -- figures, and colouring them differently made the line read as two.
-    -- red under: reinstating either hardcoded colour.
+    -- figures, and coloring them differently made the line read as two.
+    -- red under: reinstating either hardcoded color.
     local inst, cfg, anchor = bench()
     inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
@@ -596,10 +596,10 @@ test("Both number slots are white by default, not two kinds of number", function
     end
 end)
 
-test("The tooltip text colour is configurable, and reaches every slot", function()
+test("The tooltip text color is configurable, and reaches every slot", function()
     -- Including the target label, which lives on the carrier rather than in the
     -- tooltip's own line and would otherwise keep the default silently.
-    -- red under: colouring only the amount, or reading the colour once at
+    -- red under: coloring only the amount, or reading the color once at
     -- widget-creation time rather than on every draw.
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.textColor = { r = 1, g = 0, b = 0, a = 1 }
@@ -609,8 +609,8 @@ test("The tooltip text colour is configurable, and reaches every slot", function
     local carrier = spellLines(inst)[1]
     for _, slot in ipairs({ "amount", "share", "label" }) do
         local c = carrier[slot].__textColor
-        assertEqual(c[1], 1, slot .. " did not take the configured colour")
-        assertEqual(c[2], 0, slot .. " did not take the configured colour")
+        assertEqual(c[1], 1, slot .. " did not take the configured color")
+        assertEqual(c[2], 0, slot .. " did not take the configured color")
     end
 end)
 
@@ -689,14 +689,14 @@ end)
 test("Tooltip text takes the HOVERED player's class color when asked", function()
     -- A tooltip is about ONE player, which is what makes the question answerable
     -- here where the window header has to fall back to the local player's class
-    -- instead. The bars have always worn this colour; the text can now too.
-    -- red under: colouring the tooltip from NS.PlayerClassRGB, or ignoring the
+    -- instead. The bars have always worn this color; the text can now too.
+    -- red under: coloring the tooltip from NS.PlayerClassRGB, or ignoring the
     -- setting.
     local inst, cfg, anchorFrame = bench{ configure = function(c)
         c.tooltip.colorMode = "class"
         c.tooltip.textColor  = { r = 1, g = 1, b = 1, a = 1 }
     end }
-    -- The mock ships every class the same colour, so one is given its own.
+    -- The mock ships every class the same color, so one is given its own.
     inst.mocks.RAID_CLASS_COLORS.MAGE = { r = 0.41, g = 0.8, b = 0.94 }
 
     inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
@@ -708,8 +708,8 @@ test("Tooltip text takes the HOVERED player's class color when asked", function(
         "both number slots, or one line carries two kinds of number")
 end)
 
-test("With the class colour off, the tooltip keeps its configured text colour", function()
-    -- red under: the class colour applying whether or not it was asked for.
+test("With the class color off, the tooltip keeps its configured text color", function()
+    -- red under: the class color applying whether or not it was asked for.
     local inst, cfg, anchorFrame = bench{ configure = function(c)
         c.tooltip.colorMode = "custom"
         c.tooltip.textColor  = { r = 0.2, g = 0.4, b = 0.6, a = 1 }

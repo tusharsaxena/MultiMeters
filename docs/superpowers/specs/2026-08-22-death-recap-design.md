@@ -7,7 +7,7 @@ against the run it happened in. See §11.
  Drafted, approved and built the same day; the sections below were amended where the build disagreed with the draft, and each amendment says so. Implements
 [#1 "A death-recap window for the run"](https://github.com/tusharsaxena/MythicMeters/issues/1),
 **re-shaped in the same conversation** from the issue's two-pane window to a drill-down. The
-issue's target behaviour is unchanged; only the surface it lands on is.
+issue's target behavior is unchanged; only the surface it lands on is.
 
 The whole feature rests on one API the issue did not know existed — `C_DeathRecap` — and on a
 probe that took three rounds to find it. §1 records what was measured, because every decision
@@ -110,7 +110,7 @@ C_DeathRecap  ->  core/Compat.lua   (the only namer of the namespace)
 holds unchanged: Provider copies, never inspects, and every field travels onward as an opaque
 handle.
 
-**The memo is not an optimisation, it is a correctness requirement.** A death that has already
+**The memo is not an optimization, it is a correctness requirement.** A death that has already
 happened never changes, and the drill-down needs one `GetRecapEvents` call **per death** merely to
 label the rows — see §5. Without a memo that cost is paid on every refresh pass, four times a
 second. The memo is keyed on `recapID` and dropped on `METER_RESET` and `ENTERING_WORLD`,
@@ -153,7 +153,7 @@ issue's note about `-1` on Overall is therefore closed rather than worked around
   their list will not appear in it until the list is left and re-entered. Recorded in
   `docs/ARCHITECTURE.md` → Known limitations.
 * **A death whose recap is empty still draws.** `HasRecapEvents` false, or an empty array, gives
-  a row labelled `Death N` with `—` in place of a time. Its tooltip says there is nothing behind
+  a row labeled `Death N` with `—` in place of a time. Its tooltip says there is nothing behind
   it. A missing recap must not remove a death that the count includes, or the drill-down and the
   cell above it disagree about how many times somebody died.
 
@@ -165,7 +165,7 @@ game's frame is the third level, and it is better than one of ours would be.
 
 Hovering a death row calls `Tooltip:SpellTooltip`, which gains a death branch. Rendering goes
 through the existing `drawLine(lineIndex, amount, share, value, max, style, label)` — the same
-carrier the spell breakdown uses, so fonts, borders, colours and the width machinery are
+carrier the spell breakdown uses, so fonts, borders, colors and the width machinery are
 inherited rather than duplicated.
 
 ```
@@ -212,10 +212,10 @@ The text percentage is rendered only on the plain path; on the secret path the s
 empty and the bar carries the information alone.
 
 **The fields were measured plain in combat**, so in practice the plain path runs and the
-percentage shows mid-pull — which is the behaviour we want. The design still carries the secret
+percentage shows mid-pull — which is the behavior we want. The design still carries the secret
 path, because "plain today" is an observation about one build and the cost of being wrong is a
 Lua error in the middle of a pull, in the one place a player cannot see it. The same code
-produces the observed behaviour either way.
+produces the observed behavior either way.
 
 ## 7. Feign deaths
 
@@ -258,7 +258,7 @@ can never meet a secret.
 
 ## 8. Degradation
 
-| Condition | Behaviour |
+| Condition | Behavior |
 |---|---|
 | No `C_DeathRecap` on the client | Deaths click falls through to the ordinary breakdown, exactly as today. |
 | `HasRecapEvents` false for one death | Row drawn, time shown as `—`, tooltip says no recap is stored. |

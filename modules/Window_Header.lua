@@ -18,7 +18,7 @@
 -- two files to follow one frame. What is here answers to nothing in it: the band
 -- is computed from config and read back from nothing at all.
 --
--- modules/HeaderControls.lua is both the precedent and the neighbour. The gear,
+-- modules/HeaderControls.lua is both the precedent and the neighbor. The gear,
 -- the padlock and the export button came out of the same band for the same
 -- reason, and `HeaderControls.Style` reads `NS.HeaderStyle`, which is published
 -- below.
@@ -30,7 +30,7 @@
 -- The methods below hang on the SAME `WindowProto` modules/Window.lua builds —
 -- there is one window prototype, not two — so that file publishes it as
 -- `NS.WindowProto` for this file and for modules/Window_Placement.lua, and for
--- nothing else. The font reader, the surface-colour reader and the collaborator
+-- nothing else. The font reader, the surface-color reader and the collaborator
 -- resolver come across the same way. All four are resolved at FILE SCOPE, so this
 -- file MUST load after modules/Window.lua; the TOC says so at its line.
 
@@ -62,7 +62,7 @@ end
 
 -- How far up from the bottom of the tinted title band the divider hairline is
 -- drawn. Named because two things depend on it agreeing: the divider itself, and
--- `TitleRowTop`, which centres the whole title row in the space ABOVE it.
+-- `TitleRowTop`, which centers the whole title row in the space ABOVE it.
 local DIVIDER_INSET = 2
 
 -- How much of the header the session line is allowed to run across, right to
@@ -118,9 +118,9 @@ local SORT_ASCII_UP   = "^"
 -- both, and flipping one of a matched pair would draw an inverted glyph that
 -- looks right today and stops looking right the moment the art is redrawn.
 --
--- Tinted with the HEADER colour rather than shipped gold, exactly as
+-- Tinted with the HEADER color rather than shipped gold, exactly as
 -- BankLedger's LedgerTable.lua tints the same two marks: the art is near-white
--- by contract, and near-white beside a gold label reads as a second colour
+-- by contract, and near-white beside a gold label reads as a second color
 -- inside one string rather than as one control.
 local SORT_MARK_DOWN = "sort-down"
 local SORT_MARK_UP   = "sort-up"
@@ -161,7 +161,7 @@ local function headerFont(header)
 end
 
 --- Which statistic the WINDOW is about, for the two header surfaces that answer
---- "per statistic" with one colour rather than one per column: the sort column.
+--- "per statistic" with one color rather than one per column: the sort column.
 ---
 --- Read off the config rather than off `self.sortColumn`, so this is callable
 --- from NS.HeaderStyle with a bare window and gives the same answer either way.
@@ -173,7 +173,7 @@ end
 --- The header's text color, defaulting to the gold WoW uses for its own headers.
 ---
 --- TWO MODES, NOT THREE, AND NO STATISTIC. "Per statistic" could only ever paint
---- this the SORT column's colour -- a fact already on screen twice, in that
+--- this the SORT column's color -- a fact already on screen twice, in that
 --- column's own header and in its arrow -- and the title bar is one strip over
 --- the whole window rather than a thing that belongs to a column. That refusal
 --- stands and is why the mode list here is the CONTROLS' pair (class/custom)
@@ -182,14 +182,14 @@ end
 --- CLASS DID NOT SURVIVE THE SAME ARGUMENT, and the note here used to say it had:
 --- that "class could only be the local player's, which the title bar is not about
 --- -- it names the window". What settled it the other way is that the rest of the
---- strip already wears it. The controls take a class colour, and so does the
+--- strip already wears it. The controls take a class color, and so does the
 --- divider under them; a title that alone could not was the odd one out, and
 --- "the header is yours" is a perfectly good thing for a player to want a window
 --- to say. It is still the LOCAL player's class, because that is the only class a
 --- window-wide strip can mean.
 ---
 --- The configured ALPHA survives the mode, the same rule every other surface in
---- this addon keeps: a class colour carries none of its own, so taking the
+--- this addon keeps: a class color carries none of its own, so taking the
 --- swatch's is what stops a mode change from silently altering the opacity.
 ---
 --- @return number r, number g, number b, number a
@@ -197,7 +197,7 @@ local function headerColor(header)
     local r, g, b, a = RGBA(header.color, 1, 0.82, 0, 1)
     if header.colorMode == "class" then
         local cr, cg, cb = PlayerClassRGB()
-        -- An unknown class keeps the configured colour rather than falling back
+        -- An unknown class keeps the configured color rather than falling back
         -- to a tenth hue invented here -- the same answer every other mode reader
         -- in this addon gives.
         if cr then return cr, cg, cb, a end
@@ -220,13 +220,13 @@ local function shadowOffset(on)
     return 1, -1
 end
 
---- The header's font and colour, in the one shape modules/HeaderControls.lua
+--- The header's font and color, in the one shape modules/HeaderControls.lua
 --- asks for it.
 ---
 --- THE SEAM EXISTED BEFORE ANYTHING FILLED IT. `HeaderControls.Style` has always
 --- read `NS.HeaderStyle` and always fallen through to a white 12px fallback,
 --- because nothing published the function — so every comment saying the controls
---- take the header's colour described something that had never run. Published
+--- take the header's color described something that had never run. Published
 --- here rather than computed there for the reason `headerFont` is one reader for
 --- three lines: a second opinion about what the header looks like is how the
 --- title and the strip below it end up on different fonts.
@@ -251,21 +251,21 @@ local function columnHeaderFont(colHeader)
     return fontPath(colHeader.font), colHeader.size or 11, flags
 end
 
---- Where something `h` pixels tall sits so it is CENTRED in the title bar.
+--- Where something `h` pixels tall sits so it is CENTERED in the title bar.
 ---
 --- WHY EVERY LINE OF THE TITLE BAR ASKS THIS. The title and the session line were
 --- pinned 5px below the frame's top edge — a constant that predates the title bar
 --- having a configurable height and had nothing to do with the band it draws in.
 --- Nobody noticed until the header grew a strip of icons and the two disagreed.
---- One centre for the text, the session line and the controls means the row
+--- One center for the text, the session line and the controls means the row
 --- cannot drift again when the bar's height, the font size or the control size
 --- changes.
 ---
---- WHICH BAND IT CENTRES IN, AND WHY IT IS NOT THE TITLE BAR'S OWN. What a player
+--- WHICH BAND IT CENTERS IN, AND WHY IT IS NOT THE TITLE BAR'S OWN. What a player
 --- sees as the title bar runs from the frame's TOP EDGE down to the divider — the
 --- padding above it is not a margin to anyone looking at the window, because the
---- backdrop is drawn behind it and there is no seam. Centring in the tinted band
---- alone (`padding` .. `padding + titleHeight`) is arithmetically centred and
+--- backdrop is drawn behind it and there is no seam. Centering in the tinted band
+--- alone (`padding` .. `padding + titleHeight`) is arithmetically centered and
 --- optically wrong: it leaves the padding as dead space above the row and lands
 --- the text hard against the divider, which is exactly what "everything is
 --- anchored to the bottom" meant when it was reported.
@@ -343,13 +343,13 @@ function WindowProto:ApplyTitle()
     frame.title:SetText(title)
     frame.title:SetShown((cfg.header or {}).show ~= false)
 
-    -- THE TITLE IS HEADER TEXT, and it now takes the header's colour like the
+    -- THE TITLE IS HEADER TEXT, and it now takes the header's color like the
     -- session line beside it. It used to be left to ApplySkin -- frame.title is
     -- one of the two members the library tints -- which meant the Header text
-    -- group's colour and its class-colour checkbox styled every part of the
+    -- group's color and its class-color checkbox styled every part of the
     -- header strip EXCEPT the one word a player thinks of as the header. The
     -- font, size, outline and shadow above always came from that group; only the
-    -- colour did not, and the inconsistency read as a bug because it was one.
+    -- color did not, and the inconsistency read as a bug because it was one.
     --
     -- After ApplySkin, not instead of it: ApplyConfig re-runs the skin and then
     -- calls ApplyHeader, so the library still owns the backdrop and the accents
@@ -368,13 +368,13 @@ function WindowProto:ApplyHeaderStrip()
     -- the column labels — on the reading that "the header" is the whole block a
     -- player points at. That was wrong twice over: the column strip has its OWN
     -- background setting (`columnHeader.bgColor`), so a player who set both got
-    -- one drawn over the other with no way to see the lower one, and a colour
+    -- one drawn over the other with no way to see the lower one, and a color
     -- picked for the title bar silently restyled the grid's column labels too.
     -- Two strips, two settings, two rectangles.
-    -- A PLAIN COLOUR, with no mode of its own. The column strip below has one
-    -- because "per statistic" tints each label with its own column's colour; this
+    -- A PLAIN COLOR, with no mode of its own. The column strip below has one
+    -- because "per statistic" tints each label with its own column's color; this
     -- is one strip over the whole window, so the same mode could only paint it the
-    -- sort column's colour -- a fact already on screen twice over.
+    -- sort column's color -- a fact already on screen twice over.
     local ar, ag, ab, aa = RGBA(header.bgColor, 0, 0, 0, 0.5)
     self.headerBG:ClearAllPoints()
     self.headerBG:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -pad)
@@ -394,11 +394,11 @@ function WindowProto:ApplyHeaderStrip()
     -- across the window for nothing when the title bar's own background already
     -- separates them.
     --
-    -- ITS COLOUR IS THE SKIN'S UNTIL THE PLAYER SAYS OTHERWISE, and `skin` is the
-    -- shipped mode. That mode does not resolve a colour and then write it -- it
+    -- ITS COLOR IS THE SKIN'S UNTIL THE PLAYER SAYS OTHERWISE, and `skin` is the
+    -- shipped mode. That mode does not resolve a color and then write it -- it
     -- writes NOTHING, leaving whatever `NS.ApplySkin` put on the texture a few
     -- lines earlier in ApplyConfig. That is the whole of how standalone-windows
-    -- is honoured here: the shared value is never copied into this file, never
+    -- is honored here: the shared value is never copied into this file, never
     -- stored in a profile and never migrated, so a re-skin lands on this window
     -- along with the debug console and the perf panel exactly as before.
     --
@@ -406,7 +406,7 @@ function WindowProto:ApplyHeaderStrip()
     -- ApplySkin owns the accent, and a setting that claims to govern it writes
     -- after the library rather than instead of it.
     --
-    -- The TITLE ROW DOES NOT MOVE when it is switched off. `TitleRowTop` centres
+    -- The TITLE ROW DOES NOT MOVE when it is switched off. `TitleRowTop` centers
     -- the row in the space above DIVIDER_INSET, which is a constant and not a
     -- measurement of this texture -- so hiding the line leaves every other thing
     -- in the header exactly where it was, which is what a player toggling it
@@ -419,14 +419,14 @@ function WindowProto:ApplyHeaderStrip()
         frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, dy)
 
         -- ONE read of the swatch, and the ALPHA comes off it in both override
-        -- modes. A class colour has no alpha of its own, and inventing one here
+        -- modes. A class color has no alpha of its own, and inventing one here
         -- would mean the opacity silently changed when the mode did -- the same
-        -- rule modules/Row.lua's text colours keep: the configured alpha survives
+        -- rule modules/Row.lua's text colors keep: the configured alpha survives
         -- every mode.
         local mode = header.dividerColorMode or "skin"
         local dr, dg, db, da = RGBA(header.dividerColor, 0.5, 0.5, 0.5, 0.85)
         if mode == "class" then
-            -- An unknown class is NOT a tenth colour and not a guess: it leaves
+            -- An unknown class is NOT a tenth color and not a guess: it leaves
             -- the skin's tint standing, which is what `skin` mode does and the
             -- only other answer this row has.
             local cr, cg, cb = PlayerClassRGB()
@@ -486,7 +486,7 @@ end
 
 --- One column header widget, built. Called on the FIRST pass for an index and
 --- never again: dressing is a separate step below, so a settings change
---- re-points and re-colours what is already there and costs no frames.
+--- re-points and re-colors what is already there and costs no frames.
 ---
 --- @param parent Frame  the header strip
 --- @param window table  the window instance, stashed for onColumnClick
@@ -527,10 +527,10 @@ local headerDress = {}
 --- assets, then the one atlas arrow flipped, then an ASCII character -- and
 --- exactly one of `arrow` / `arrowTex` is left shown by any of them.
 ---
---- THE COLOUR IS PASSED IN rather than re-resolved, because the arrow wears the
---- same colour as its label and once did not: sorting by name puts the arrow on
---- the Player header, where it was drawn in the sort column's stat colour over a
---- label that is no longer that colour.
+--- THE COLOR IS PASSED IN rather than re-resolved, because the arrow wears the
+--- same color as its label and once did not: sorting by name puts the arrow on
+--- the Player header, where it was drawn in the sort column's stat color over a
+--- label that is no longer that color.
 ---
 --- @param button table  the header button
 --- @param d table  the dress context
@@ -582,7 +582,7 @@ local function dressSortArrow(button, d, tr, tg, tb, ta)
 end
 
 --- Everything about one column header that a settings change can move: font,
---- colour, label, the background mode, and the sort arrow. Re-run on every pass
+--- color, label, the background mode, and the sort arrow. Re-run on every pass
 --- over a button newHeaderButton built once.
 ---
 --- @param button table  the header button
@@ -600,22 +600,22 @@ local function dressHeaderButton(button, key, label, width, d)
     button.text:SetFont(d.font, d.size, d.flags)
     button.text:SetShadowOffset(d.shadowX, d.shadowY)
     -- PER COLUMN, and only here. `stat` mode on every other surface resolves
-    -- to one colour for the whole surface; this strip is the one place where
-    -- "per statistic" is literally per column, so each label takes the colour
+    -- to one color for the whole surface; this strip is the one place where
+    -- "per statistic" is literally per column, so each label takes the color
     -- of the column it labels.
     --
     -- THE NAME COLUMN IS NOT A STATISTIC AND MUST NOT BORROW ONE. It used to
     -- fall through to `hr, hg, hb`, but that fallback is itself resolved
     -- through windowStat() -- the SORT column -- so "Player" came out in the
-    -- sorted stat's colour: red on a damage-sorted window, and a different
-    -- colour every time the sort moved. White is what it says instead, the
-    -- one colour on this strip that claims no statistic. Only in `stat` mode:
-    -- every other mode's fallback is a colour the player actually chose.
+    -- sorted stat's color: red on a damage-sorted window, and a different
+    -- color every time the sort moved. White is what it says instead, the
+    -- one color on this strip that claims no statistic. Only in `stat` mode:
+    -- every other mode's fallback is a color the player actually chose.
     --
     -- Resolved into locals rather than applied inline because THE SORT ARROW
-    -- WEARS THE SAME COLOUR and had the same bug. Sorting by name puts the
+    -- WEARS THE SAME COLOR and had the same bug. Sorting by name puts the
     -- arrow on the Player header, where it was drawn in the sort column's
-    -- stat colour over a label that is no longer that colour.
+    -- stat color over a label that is no longer that color.
     local tr, tg, tb, ta = d.hr, d.hg, d.hb, d.ha
     if d.colorMode == "stat" then
         if key == "name" then
@@ -655,11 +655,11 @@ function WindowProto:ApplyColumnHeaders()
     local colHeader = cfg.columnHeader or {}
     local colFont, colSize, flags = columnHeaderFont(colHeader)
     local shadowX, shadowY = shadowOffset(colHeader.shadow)
-    -- The STRIP labels the grid rather than any row in it, so its class colour is
+    -- The STRIP labels the grid rather than any row in it, so its class color is
     -- the local player's -- the same reading the title bar takes, and for the
-    -- same reason. Its `stat` colour is NOT the same, though, and that is the
+    -- same reason. Its `stat` color is NOT the same, though, and that is the
     -- point of resolving it per column below: this is the one surface where "per
-    -- statistic" is literally per column, so each label can take the colour of
+    -- statistic" is literally per column, so each label can take the color of
     -- the column it labels. The values here are the fallback the name column and
     -- any unresolvable stat land on.
     local hr, hg, hb, ha = surfaceColor(colHeader.colorMode, colHeader.color,
@@ -674,7 +674,7 @@ function WindowProto:ApplyColumnHeaders()
 
     -- PER STATISTIC IS PER COLUMN HERE, so `stat` mode paints each header button
     -- rather than the strip: one rectangle behind each label, in that column's
-    -- own colour. Every other mode is one colour for the whole strip and stays on
+    -- own color. Every other mode is one color for the whole strip and stays on
     -- the single texture, which is both cheaper and the only way "class" could be
     -- drawn at all -- a class is not a property of a column.
     local perColumnBG = (colHeader.bgColorMode == "stat")
@@ -867,7 +867,7 @@ function WindowProto:SortByColumn(key)
 
     -- THE PLAYER COLUMN SORTS BY PLAYER. It used to toggle between `roster` and
     -- `value`, which is a reasonable thing for some header to do and not what a
-    -- header labelled "Player" says. Ascending first, because A-Z is what a
+    -- header labeled "Player" says. Ascending first, because A-Z is what a
     -- player means by "sort by name"; clicking again reverses it, exactly like a
     -- stat column.
     --

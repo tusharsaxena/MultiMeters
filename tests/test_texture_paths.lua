@@ -120,7 +120,7 @@ local function pathsIn(body)
     return found
 end
 
---- The whole of a repo-relative file, newline-normalised, or nil.
+--- The whole of a repo-relative file, newline-normalized, or nil.
 local function slurp(path)
     local fh = io.open(ROOT .. "/" .. path, "r")
     if not fh then return nil end
@@ -257,7 +257,7 @@ test("texturepaths: the deviation register carries the row the ColumnBlocks site
 function()
     -- The one site in this addon where the catalog HAS the mark and the addon declines it, so the
     -- one row whose disposition is a promise about another table rather than an argument in
-    -- itself. If that row is ever retired -- ConsumableMaster adopts the catalog, or the colour
+    -- itself. If that row is ever retired -- ConsumableMaster adopts the catalog, or the color
     -- and degraded-install arguments are answered upstream -- this is what says so out loud
     -- instead of leaving "Register row above" pointing at nothing.
     local ratified = false

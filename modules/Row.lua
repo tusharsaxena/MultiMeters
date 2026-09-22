@@ -434,7 +434,7 @@ end
 --- clicks and their mouseover highlight; they just stop touching the tooltip.
 ---
 --- The grid is deliberately unchanged: there each column asks a different
---- question, so a per-cell tooltip is the correct behaviour rather than a bug.
+--- question, so a per-cell tooltip is the correct behavior rather than a bug.
 local function rowOnEnter(frame)
     local row = frame.mmRow
     local entry = row and row.entry
@@ -488,7 +488,7 @@ local function rowOnMouseUp(frame, button)
         D:OnRowClick(row.window.config, row.entry, button)
         return
     end
-    -- The pre-OnRowClick behaviour, kept as the fallback so a partially loaded
+    -- The pre-OnRowClick behavior, kept as the fallback so a partially loaded
     -- namespace still has a way out of a breakdown.
     if button == "RightButton" and D.Exit then D:Exit(row.window.config) end
 end
@@ -613,7 +613,7 @@ local BORDER_ANCHOR = {
     right  = { "TOPRIGHT",   "BOTTOMRIGHT", "SetWidth"  },
 }
 
---- The outline's colour for one cell, per the window's `bars.borderColorMode`.
+--- The outline's color for one cell, per the window's `bars.borderColorMode`.
 ---
 --- TWO MODES, `class` and `custom`, and `class` is THIS ROW'S PLAYER -- an outline
 --- around a cell belongs to the player whose cell it is, exactly as the fill it
@@ -621,8 +621,8 @@ local BORDER_ANCHOR = {
 --- the window's own edge is a different swatch on a different page and answers
 --- that question its own way (modules/Window.lua's ApplyBorder).
 ---
---- The skin's edge is still the FALLBACK for a profile that never picked a colour,
---- and the CONFIGURED ALPHA survives the mode, so a class-coloured outline is as
+--- The skin's edge is still the FALLBACK for a profile that never picked a color,
+--- and the CONFIGURED ALPHA survives the mode, so a class-colored outline is as
 --- opaque as the swatch beside it says.
 ---
 --- @param bars table|nil   the window's `bars` config group
@@ -699,10 +699,10 @@ local function applyArtBorder(cell, bars, edge)
     hideFlatBorder(cell.border)
 end
 
---- The FLAT path: colour, clamp and place the four edge textures, one per side.
+--- The FLAT path: color, clamp and place the four edge textures, one per side.
 ---
---- THE PLAYER'S COLOUR AND THE PLAYER'S THICKNESS. Both used to be constants:
---- one pixel, in the library skin's own edge colour, which no setting could
+--- THE PLAYER'S COLOR AND THE PLAYER'S THICKNESS. Both used to be constants:
+--- one pixel, in the library skin's own edge color, which no setting could
 --- reach -- so "Bar border" was a switch with no dial and no swatch beside it.
 --- The skin's edge is still the FALLBACK, so a window that never touches
 --- either keeps exactly the border it had.
@@ -804,12 +804,12 @@ function Cell:ApplyBarSkin(bars)
     -- bar:SetAlpha, and the StatusBar is the CELL: it parents the fill, the
     -- backdrop behind it, both text slots and the name column's icon. Dropping
     -- "Bar opacity" to 10% therefore faded the whole grid to 10% -- numbers,
-    -- names and icons included -- when what the setting names is the coloured
+    -- names and icons included -- when what the setting names is the colored
     -- fill alone.
     --
     -- The compounding a reader might expect still happens where it should: the
     -- text carries `text.alpha` on its own FontStrings (ApplyTextStyle), and the
-    -- backdrop carries `bars.bgAlpha` in its own colour. Three settings, three
+    -- backdrop carries `bars.bgAlpha` in its own color. Three settings, three
     -- surfaces, none of them able to cancel another.
     local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
     if fill and fill.SetAlpha then fill:SetAlpha((bars and bars.alpha) or 1) end
@@ -862,19 +862,19 @@ end
 --- entirely rather than shortening it.
 ---
 --- The alpha every piece of cell text is drawn at: "Text opacity" and the
---- colour's own alpha channel, multiplied.
+--- color's own alpha channel, multiplied.
 ---
---- ONE READER, AND IT IS FOLDED INTO THE COLOUR, because the two mechanisms are
+--- ONE READER, AND IT IS FOLDED INTO THE COLOR, because the two mechanisms are
 --- not equally reliable here. `text.alpha` used to be applied only as
---- FontString:SetAlpha, while the per-ROW colour passes (ApplyEntryTextColor for
+--- FontString:SetAlpha, while the per-ROW color passes (ApplyEntryTextColor for
 --- a stat cell, ApplyNameColor for the name) each wrote their own alpha through
 --- SetTextColor afterwards -- and in the client the numbers came back to full
 --- opacity while the names stayed faded, which is one setting appearing to work
 --- on half the grid.
 ---
---- Folding it in means every colour write carries the opacity, so a later write
---- cannot undo it whichever of the two the client is honouring. The SetAlpha in
---- ApplyTextStyle stays as well: a slot that no per-row pass ever recolours --
+--- Folding it in means every color write carries the opacity, so a later write
+--- cannot undo it whichever of the two the client is honoring. The SetAlpha in
+--- ApplyTextStyle stays as well: a slot that no per-row pass ever recolors --
 --- the right-hand one, on a cell whose class is unknown -- still needs it.
 ---
 --- @param text table  the window's `text` config group
@@ -917,7 +917,7 @@ end
 --- change re-runs the layout.
 ---
 --- The ALPHA stays the player's. RAID_CLASS_COLORS carries no alpha, and a class
---- color that silently reset Text opacity would be one setting quietly cancelling
+--- color that silently reset Text opacity would be one setting quietly canceling
 --- another.
 ---
 --- @param entry table|nil  the aggregated row this cell is drawing
@@ -927,9 +927,9 @@ function Cell:ApplyEntryTextColor(entry)
     local mode = text.colorMode
     if mode ~= "class" and mode ~= "stat" then return end
 
-    -- The configured colour is the fallback for BOTH modes, and it is resolved
+    -- The configured color is the fallback for BOTH modes, and it is resolved
     -- first: an unknown class and a statistic with no palette entry are both "no
-    -- colour information", which is honestly answered by the colour the player
+    -- color information", which is honestly answered by the color the player
     -- picked rather than by an invented hue.
     local r, g, b = RGBA(text.color, 1, 1, 1, 1)
 
@@ -938,7 +938,7 @@ function Cell:ApplyEntryTextColor(entry)
         if cr then r, g, b = cr, cg, cb end
     else
         -- PER STATISTIC IS PER COLUMN in a cell: `self.key` is the stat this cell
-        -- draws, so the number takes the colour of the column it is in — the same
+        -- draws, so the number takes the color of the column it is in — the same
         -- palette `bars.colorMode == "stat"` paints the bar behind it with.
         local sr, sg, sb = StatColor(self.key)
         if sr then r, g, b = sr, sg, sb end
@@ -954,12 +954,12 @@ end
 --- SAME SHAPE AND SAME REASON AS ApplyEntryTextColor above: ApplyBorder runs on a
 --- LAYOUT and a layout has no entry, so the one mode that depends on the row has
 --- to be re-applied per row. It re-tints rather than rebuilding -- the textures and
---- the backdrop are already there and only their colour is in question.
+--- the backdrop are already there and only their color is in question.
 ---
 --- A NO-OP UNLESS THE PLAYER ASKED FOR IT: with the mode anything but `class` this
 --- is two table reads and a return, so the default costs nothing on a refresh tick,
---- and the colour ApplyBorder painted stands. Turning the mode back off restores it
---- the same way the text colour is restored -- a settings change re-runs the layout.
+--- and the color ApplyBorder painted stands. Turning the mode back off restores it
+--- the same way the text color is restored -- a settings change re-runs the layout.
 ---
 --- @param entry table|nil  the aggregated row this cell is drawing
 function Cell:ApplyEntryBorderColor(entry)

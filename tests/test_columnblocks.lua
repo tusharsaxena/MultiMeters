@@ -400,8 +400,8 @@ test("Blocks: an empty item list still builds and finishes a controller", functi
     -- `items` absent is not the same refusal as a bad spec: the member falls through to an empty
     -- walk and still hands the library a list, because the ctx must end the render owning a LIVE
     -- controller -- it is what the next repaint calls Cancel on. A version that returned early on
-    -- `count == 0` would leave the previous render's controller parked and cancelled twice, and the
-    -- one after that never cancelled at all.
+    -- `count == 0` would leave the previous render's controller parked and canceled twice, and the
+    -- one after that never canceled at all.
     -- red under: an early return for the empty case.
     local inst = T.load()
     local ctx = inst.NS.Helpers.CreatePanel("MultiMetersBlockEmptyPanel", "Blocks", {})
@@ -483,8 +483,8 @@ test("Blocks: no rule is drawn when there is no divide to mark, at either end", 
         "a list with nothing shown has no boundary to mark either")
 end)
 
-test("Blocks: the label is gold when the column is shown and grey when it is not", function()
-    -- Greyed rather than hidden, and the exact pair is the contract: a label you cannot read is a
+test("Blocks: the label is gold when the column is shown and gray when it is not", function()
+    -- Grayed rather than hidden, and the exact pair is the contract: a label you cannot read is a
     -- block you cannot aim at, and aiming at it is how you turn the column back on. The gold is the
     -- collection's 1, 0.82, 0.
     -- red under: hiding the label for a disabled column, or dimming it by alpha on the block --
@@ -498,13 +498,13 @@ test("Blocks: the label is gold when the column is shown and grey when it is not
     end
     assertEqual(color(blocks[1]), "1.00,0.82,0.00", "a shown column's label must be gold")
     assertEqual(color(blocks[3]), "1.00,0.82,0.00")
-    assertEqual(color(blocks[4]), "0.50,0.50,0.50", "a hidden column's label must be grey")
+    assertEqual(color(blocks[4]), "0.50,0.50,0.50", "a hidden column's label must be gray")
     assertTrue(blocks[4].mmLabel:IsShown(), "a hidden column's label is dimmed, never hidden")
 end)
 
 test("Blocks: the carried copy says the same thing the row does", function()
     -- The ghost is drawn by the library out of what this file put on the row descriptor, and it is
-    -- the only part of a drag the player reads while the drag is in flight. Text, icon and colour
+    -- the only part of a drag the player reads while the drag is in flight. Text, icon and color
     -- all come off the SAME item the block was applied from -- a ghost that named a different row
     -- than the one under the cursor is a drag you cannot trust.
     -- red under: a split that builds the row descriptor from `items[i]` while the block was applied
@@ -518,7 +518,7 @@ test("Blocks: the carried copy says the same thing the row does", function()
         assertEqual(rows[i].ghostIcon, blocks[i].mmGlyphTexture,
             "row " .. i .. "'s ghost wears a different glyph than the block does")
         local c = rows[i].ghostTextColor
-        assertTrue(c ~= nil, "row " .. i .. " got no ghost colour")
+        assertTrue(c ~= nil, "row " .. i .. " got no ghost color")
         assertEqual(c[1], item.enabled and 1 or 0.5)
         assertEqual(c[2], item.enabled and 0.82 or 0.5)
         assertEqual(c[3], item.enabled and 0 or 0.5)
@@ -567,7 +567,7 @@ function()
     end
 end)
 
-test("Blocks: the handle offers the localized drag tooltip, and the catalogued icon", function()
+test("Blocks: the handle offers the localized drag tooltip, and the cataloged icon", function()
     -- Both are passed once, on the descriptor, and neither is visible anywhere else: a split that
     -- dropped `handleTooltip` leaves a control with no explanation, and one that dropped
     -- `handleIcon` falls back to the library's own art and quietly leaves this list wearing
@@ -649,7 +649,7 @@ test("Blocks: CancelReorder survives a page that never rendered a list", functio
     assertEqual(ctx.mmReorder, nil)
 end)
 
-test("Blocks: cancelling twice releases the blocks once", function()
+test("Blocks: canceling twice releases the blocks once", function()
     -- The parked list is emptied as it is walked, so the second Cancel finds nothing. It matters
     -- because Cancel runs at the top of every render AND from the page's own teardown: a release
     -- that ran twice would push each block into the free list twice and hand the same frame to two

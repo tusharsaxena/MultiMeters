@@ -411,7 +411,7 @@ test("A pet link is remembered too, and a secret one never reaches SavedVariable
     -- Both halves matter. The link is what keeps a pet row alive after the group
     -- is gone (there is no `party1pet` once you have left the party), and the
     -- refusal is the follower-dungeon bug in its most expensive form: a secret
-    -- used as a key in a table that is then SERIALISED at logout.
+    -- used as a key in a table that is then SERIALIZED at logout.
     local inst = T.load()
     inst.mocks.setGroup(PARTY)
     inst.mocks.setPet("player", "Pet-0-1111")

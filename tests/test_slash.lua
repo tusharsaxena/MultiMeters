@@ -203,7 +203,7 @@ test("Slash: they hold no state of their own", function()
     assertFalse(NSi.GetSetting(row.path))
 end)
 
-test("Slash: the acknowledgement is slash-commands-§5's `path = value` line", function()
+test("Slash: the acknowledgment is slash-commands-§5's `path = value` line", function()
     local inst = T.load()
     -- The library's shared formatter, re-read after the write. A verb that answered in its own
     -- words would be untidy rather than broken, which is why this is the house shape and not a
@@ -560,7 +560,7 @@ end)
 -- A bare `/mm` (slash-commands-§4, standard v2.50.0)
 -- ---------------------------------------------------------------------------
 
---- Chat text with WoW colour escapes removed, so a verb reads as `/mm help`
+--- Chat text with WoW color escapes removed, so a verb reads as `/mm help`
 --- whether or not the renderer painted it.
 local function plain(text)
     return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
@@ -810,7 +810,7 @@ test("Slash: EVERY tooltip-channel line is behind the flag, not just some", func
     -- exactly like a whole one from the console.
     --
     -- Asserted over the SOURCE rather than by driving three widgets, because the
-    -- property is "no call site was missed" and a behavioural test can only ever
+    -- property is "no call site was missed" and a behavioral test can only ever
     -- cover the call sites somebody remembered to drive.
     local missed = {}
     for _, rel in ipairs({ "modules/Row.lua", "modules/Tooltip_Builders.lua" }) do
@@ -1036,7 +1036,7 @@ test("Slash: a word the ladder does not know toggles the console, as a bare `deb
     local D = inst.NS.DebugLog
     local shownBefore = D:IsShown()
     say(inst, "debug wibble")
-    assertTrue(D:IsShown() ~= shownBefore, "an unrecognised word toggles the window")
+    assertTrue(D:IsShown() ~= shownBefore, "an unrecognized word toggles the window")
     assertTrue(not inst.NS.State.debug, "and does not touch the logging flag")
 end)
 

@@ -83,7 +83,7 @@ requirements implicitly include this section.
   be clean (0 failures / 0 warnings / 0 errors).
 - **Never bump the version.** Not in the TOC, not in the README, not anywhere.
 - Files are CRLF (`.gitattributes`). A test asserts it. If you write a file with
-  a tool that normalises line endings, repair it with
+  a tool that normalizes line endings, repair it with
   `rm <path> && git checkout -- <path>` before re-applying your edit, or convert
   back to CRLF explicitly.
 - If a change would deviate from the standard, STOP and flag it rather than
@@ -96,7 +96,7 @@ State these back if asked to add them; do not build them.
 - **An inspect service.** `GetInspectSpecialization(unit)` is read for whatever
   the client already holds, and nothing more. Task 1's probe measures how often
   that is populated; if the answer is "rarely", a passive inspect service is a
-  *separate plan*, modelled on `Scoot/core/inspect.lua`.
+  *separate plan*, modeled on `Scoot/core/inspect.lua`.
 - **Any change to the blanking rule.** A collided key still blanks every
   secondary cell. This plan resolves display identity only, never a figure.
 - **`row.guid` mid-pull.** Rows built by identity keep their `rank_N` /
@@ -779,7 +779,7 @@ Seam.identityMap = identityMap
 --- GUARDED ON THE GUID BEING A LEGAL KEY rather than on the restriction, because
 --- that is the property actually required: a secret GUID cannot be stored and a
 --- `rank_N` placeholder is not a GUID at all. Mid-pull every source fails this
---- test, which is what keeps the map an out-of-combat artefact without this
+--- test, which is what keeps the map an out-of-combat artifact without this
 --- function having to know which build is running.
 local function noteIdentity(guid, src)
     if not Secrets.IsSafeKey(guid) then return end
@@ -1268,7 +1268,7 @@ In `core/Diagnostics_Identity.lua`, add this function immediately above
 --- How many rows recovered a real name and icon, and why the rest did not.
 ---
 --- `byMap` is the mechanism working. `collided` and `stale` are it REFUSING,
---- which is the behaviour to want. `unknown` is a key the out-of-combat map never
+--- which is the behavior to want. `unknown` is a key the out-of-combat map never
 --- saw at all — a player who joined after the last unrestricted refresh — and a
 --- large figure there says the map is being rebuilt too rarely rather than that
 --- anything is wrong.

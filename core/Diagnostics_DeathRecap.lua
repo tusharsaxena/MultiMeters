@@ -72,7 +72,7 @@ local RECAP_DUMP_LIMIT = 12
 
 -- The four ids worth calling, in the order they are chosen. The labels are the
 -- open questions restated as slots: anything that answers `local/newest` and
--- refuses the other three is Blizzard's frame behaviour, and that answer sinks
+-- refuses the other three is Blizzard's frame behavior, and that answer sinks
 -- the design as written.
 local RECAP_SLOTS = { "local/newest", "local/older", "other/newest", "other/older" }
 
@@ -464,7 +464,7 @@ local function reportRecapVerdict(apis, answered, probed)
         out("  confirms it hardest, but nothing here refused.")
     else
         out("  |cffffd100some slots answered and some did not|r. A reader that answers")
-        out("  local/newest alone is Blizzard's own frame behaviour, and sinks the")
+        out("  local/newest alone is Blizzard's own frame behavior, and sinks the")
         out("  window as designed; the left pane is made of past deaths and the")
         out("  column covers the whole group.")
     end

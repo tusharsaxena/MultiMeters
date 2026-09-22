@@ -1050,7 +1050,7 @@ end)
 --
 -- `eventColumns`, `drawDeathEvents` and `Tooltip:CellTooltip` are all above the
 -- complexity ceiling and are queued for a split — collect / measure / draw, in
--- drawDeathEvents' case. Everything below pins behaviour that has never been
+-- drawDeathEvents' case. Everything below pins behavior that has never been
 -- asserted anywhere and that a seam cut through the middle of these functions
 -- could take with it: the arms of the naming chain nothing reached, the four
 -- refusals, the collect ceiling, and the all-or-nothing measurement rule the
