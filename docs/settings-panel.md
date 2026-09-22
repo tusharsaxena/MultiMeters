@@ -132,14 +132,14 @@ Four things about how this addon calls them are worth knowing before editing a b
   a schema CLI.
 - **Two `LSM30_*` pickers survive outside a composer call, and they are not a group.**
   `grep -rn 'LSM30_Font\|LSM30_Border\|LSM30_Statusbar' settings/` returns two DECLARATIONS —
-  `settings/Schema.lua:283` (`window.barTexture`) and `:291` (`window.font`) — and neither is
+  `settings/Schema.lua:281` (`window.barTexture`) and `:289` (`window.font`) — and neither is
   composer-able. The other hits are prose: two lines of the comment above
   `settings/OptionsSetup.lua`'s `lib.__PatchLSM30Border()` call, which names `LSM30_Border` because
   that is the widget it argues about. No `dialogControl` there, and nothing for this bullet to
   account for. They are two of the
   four **broadcast meta rows** on Frame → General, under the *All surfaces* heading: each one *writes*
   a value into every surface that has a setting of that kind and is then read by nothing, which is
-  what the note above them at `settings/Schema.lua:237-250` says at length. `options-ui-§16` fixes
+  what the note above them at `settings/Schema.lua:236-250` says at length. `options-ui-§16` fixes
   the shape of a **group** — a contiguous font block, a border block, a bar block, each over one
   surface, each with a colour row and a companion. A single write-only setter over six surfaces has
   none of that shape: there is no size, no colour, no flags and no second surface to be contiguous

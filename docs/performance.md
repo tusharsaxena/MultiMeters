@@ -82,11 +82,11 @@ overlap, and **a parent must never be summed with its children**.
 
 | Bucket | Inside | What it brackets | Call sites |
 |---|---|---|---|
-| `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:382`, `:392`, `:400` |
-| `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1106`, `:1116`, `:1139`, `:1146` (every exit) |
+| `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:422`, `:432`, `:440` |
+| `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1107`, `:1117`, `:1140`, `:1147` (every exit) |
 | `providerRead` | — (observed: `aggregate`, `targets`) | one `C_DamageMeter` column read | `modules/Provider.lua:357` |
 | `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1258`, `modules/DrillDown.lua:700`, `:732` |
-| `render` | `refresh` | the window's draw | `modules/Window.lua:1251` |
+| `render` | `refresh` | the window's draw | `modules/Window.lua:1252` |
 | `renderRow` | `render` | one row's cells | `modules/Row.lua:1387` |
 | `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:925`, `:943`, `:1004`, `:1018`, `:1032` |
 | `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:396`, `:404`, `:418` |
