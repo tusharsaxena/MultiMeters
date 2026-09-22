@@ -241,7 +241,7 @@ NS.Schema = {
     -- group, so a grep for `LSM30_` under settings/ finds them outside any
     -- composer call site and that is correct. options-ui-§16 fixes the shape of a
     -- GROUP: contiguous, over one surface, with a colour row and its companion. A
-    -- write-only setter over seven surfaces has no size, no colour, no flags and
+    -- write-only setter over six surfaces has no size, no colour, no flags and
     -- no second surface to be contiguous with, and a composer asked to emit one
     -- would have to emit five rows this addon must not store. The `All surfaces`
     -- subgroup heading is what stops a reader mistaking them for the real font
@@ -253,7 +253,7 @@ NS.Schema = {
     -- the Header and Columns pages now -- every one of them is still
     -- `window.frame.*` or `window.columnHeader.*` under the hood, unrenamed.
     {
-        -- A META ROW: it sets seven others rather than being read by anything.
+        -- A META ROW: it sets six others rather than being read by anything.
         -- Every surface in a window carries its own colour mode -- the bar and its
         -- background, both header strips and both of their backgrounds, and both
         -- of the tooltip's bars -- which is right when a player wants one of them

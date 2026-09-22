@@ -54,13 +54,13 @@ the shipped v1 shape to v15. Each is one line of the header block at the top of
 | v3 → v4 | the export channel `AUTO` is retired |
 | v4 → v5 | `mergePets` and `throttle` lift from per-window to addon-wide |
 | v5 → v6 | the two row-background keys nothing ever read are pruned |
-| v6 → v7 | four class-colour booleans become three-way colour modes |
+| v6 → v7 | four class-color booleans become three-way color modes |
 | v7 → v8 | the four header keys that restated what was on screen are pruned |
-| v8 → v9 | the colour mode comes off the title bar's background |
+| v8 → v9 | the color mode comes off the title bar's background |
 | v9 → v10 | the `CURSOR` tooltip anchor is retired |
-| v10 → v11 | the colour mode comes off the title bar's text |
+| v10 → v11 | the color mode comes off the title bar's text |
 | v11 → v12 | the column array stops being a chosen subset and becomes the full catalog, ticked |
-| v12 → v13 | the title-bar toggle moves onto the header, and the two control colour booleans become modes |
+| v12 → v13 | the title-bar toggle moves onto the header, and the two control color booleans become modes |
 | v13 → v14 | the addon-wide `master.locked` is carried onto every window's own `frame.locked` (a stored `true` locks every window) and pruned from every profile; see [`master`](#master--the-addon-wide-master-controls) |
 | v14 → v15 | LibDBIcon's `minimap` table moves from the profile to the global store, carrying `hide` **and** `minimapPos` so an adopted button keeps the angle the player dragged it to; the profile key is pruned. See [`minimap`](#minimap--and-it-lives-under-global) |
 
@@ -238,7 +238,7 @@ it as its own — it reads `hide` and **writes** `minimapPos` (and a lock / free
 player drags the button off the minimap). The addon must never enumerate the table or normalize keys
 out of it, or a dragged button snaps back on the next login.
 
-**The scope is `launcher-§3`'s decision, not an accident of where the neighbours live.** A minimap
+**The scope is `launcher-§3`'s decision, not an accident of where the neighbors live.** A minimap
 button belongs to the INSTALLATION: a profile is how a player configures what the addon *draws*,
 while the ring of buttons around the minimap is furniture they arranged once, and profile-scoped it
 would appear and vanish on a switch made for an unrelated reason. `core/Database.lua`'s v15 step
@@ -424,7 +424,7 @@ Those ten group names are also `modules/WindowManager.lua`'s `COPY_GROUPS` and t
 `window.colorMode`, `window.barTexture`, `window.font` and `window.fontOutline` (which ships as
 `NONE`, matching the two text surfaces that ship without an outline) are rows on the
 **Frame** page that set the others rather than being read by anything. Each fans out to the surfaces
-that have a setting of its kind: the colour mode to six, the bar texture to two (the grid and the
+that have a setting of its kind: the color mode to six, the bar texture to two (the grid and the
 tooltip), and the font and its outline to four each (the cells, both header strips and the tooltip).
 The tooltip's keys carry a `font` prefix of their own — `fontOutline`, not `outline` — which is why
 each fan-out is a list of **paths** rather than a group list and a suffix assumed to be shared.
@@ -437,12 +437,12 @@ one control for all of them is right when a player wants them to agree, which is
 
 **The two text surfaces are deliberately left out** — `text.colorMode`, the numbers in the grid, and
 `tooltip.colorMode`, the tooltip's own text. Both are drawn *on top of* a surface this list does
-broadcast to, so sending "per statistic" everywhere painted the Damage number in the Damage colour
-over a Damage-coloured bar. Foreground text has to contrast with the broadcast, not match it, so it
+broadcast to, so sending "per statistic" everywhere painted the Damage number in the Damage color
+over a Damage-colored bar. Foreground text has to contrast with the broadcast, not match it, so it
 stays an explicit choice. `header.colorMode` is out for its own reason — the title bar is one strip
-spanning the whole window, so per-statistic there could only ever mean the sort column's colour.
+spanning the whole window, so per-statistic there could only ever mean the sort column's color.
 
-All four behave the same way, so what follows about the colour mode is true of every one of them.
+All four behave the same way, so what follows about the color mode is true of every one of them.
 
 **It stores what was last broadcast and nothing reads it back.** A player who then changes one
 surface individually has changed one surface; the meta does not fight them for it and does not claim
@@ -464,10 +464,10 @@ is the one thing a per-page reset must not do.
 
 Four groups draw text — `text` (the cells), `header` (the title bar), `columnHeader` (the label
 strip) and `tooltip` — and each of them offers the **same five controls**: an LSM **font** picker, an
-**outline** dropdown over one shared value set, a **shadow** checkbox, a **colour** picker and a
-**`colorMode`** dropdown. They did not always: only `text` had a shadow, none had a class colour, and
+**outline** dropdown over one shared value set, a **shadow** checkbox, a **color** picker and a
+**`colorMode`** dropdown. They did not always: only `text` had a shadow, none had a class color, and
 a player styling a window had to discover which surface had grown which control.
-`tests/test_schema.lua`'s *every text surface offers face, outline, shadow and colour* is the
+`tests/test_schema.lua`'s *every text surface offers face, outline, shadow and color* is the
 contract — a fifth surface, or a sixth control, is a row added to that table and then made to pass.
 
 **`class` means a different class on different surfaces, and the difference is not an
@@ -479,20 +479,20 @@ player's. The two header strips are about the **window** rather than about any r
 `NS.ClassRGB(classFilename)` and `NS.PlayerClassRGB()` in `core/Namespace.lua`, so the header and a
 row of the grid can never disagree about what a warlock looks like.
 
-`stat` is resolved the same way — see [the table above](#the-four-text-surfaces-and-their-colour-modes)
+`stat` is resolved the same way — see [the table above](#the-four-text-surfaces-and-their-color-modes)
 — and `modules/Window.lua`'s `NS.SurfaceColor` is the one reader for both header strips and both of
 their backgrounds.
 
 The configured **alpha survives** every mode on every surface. `RAID_CLASS_COLORS` carries none, and
 `NS.StatColor` deliberately answers three numbers rather than four even though a stored
-`statColors.*` swatch has an alpha of its own — so taking one from either would make a colour mode
+`statColors.*` swatch has an alpha of its own — so taking one from either would make a color mode
 silently cancel Text opacity, which is one setting overruling another. A class or statistic that cannot be read keeps the
-configured colour rather than falling back to a hue invented for the occasion.
+configured color rather than falling back to a hue invented for the occasion.
 
 **Text opacity is folded INTO that alpha**, in `modules/Row.lua`'s `textAlpha`, rather than living
-only on `FontString:SetAlpha`. The per-row colour passes write their own alpha through
+only on `FontString:SetAlpha`. The per-row color passes write their own alpha through
 `SetTextColor` after the style pass has run, and in the client the numbers came back to full opacity
-while the names stayed faded — one setting working on half the grid. Folding it in means every colour
+while the names stayed faded — one setting working on half the grid. Folding it in means every color
 write carries the opacity and a later write cannot undo it.
 
 Every one of the new keys ships **off**: `header.shadow`, `columnHeader.shadow`,
@@ -569,7 +569,7 @@ empty mid-pull. It is blank the rest of the time.
 
 **`bgColor` paints the TITLE BAR and stops there.** It used to cover both header rows, on the reading
 that "the header" is the whole block a player points at — which meant `columnHeader.bgColor` was
-drawn underneath it and could not be seen, and a colour picked for the title bar restyled the grid's
+drawn underneath it and could not be seen, and a color picked for the title bar restyled the grid's
 column labels too. Two strips, two settings, two rectangles.
 
 `show`, `align`, `height` and `bgColor` are edited on the Header page's **Title bar** tab — the strip's
@@ -578,12 +578,12 @@ on it. The two used to be one group ("Header text" and "Header background" befor
 `align` and `height` — both properties of the text — under a heading that said background); splitting
 shape from face is what makes each tab's rows a single answerable question rather than a mix of two.
 
-### The four text surfaces and their colour modes
+### The four text surfaces and their color modes
 
 `text`, `header`, `columnHeader` and `tooltip` each carry the same five controls — face, outline,
-shadow, colour, and a **`colorMode`** of `class` / `stat` / `custom`. The COLUMN strip carries a `bgColorMode` over the same three; the
+shadow, color, and a **`colorMode`** of `class` / `stat` / `custom`. The COLUMN strip carries a `bgColorMode` over the same three; the
 title bar's background deliberately does not, because it is one strip over the whole window and "per
-statistic" could only paint it the sort column's colour — a fact on screen twice already. `schemaVersion` 7 migrates the `classColor` boolean each of them
+statistic" could only paint it the sort column's color — a fact on screen twice already. `schemaVersion` 7 migrates the `classColor` boolean each of them
 used to have: `true` → `"class"`, `false` → `"custom"`, which is exactly what it meant, and the dead
 key is pruned.
 
@@ -598,17 +598,17 @@ statistic is this text about?") answered by whichever statistic the surface actu
 | `tooltip` | the class of the player being hovered | **the hovered column** — a cell tooltip is the breakdown of one statistic. The name tooltip and the death recap, which are about no single one, fall back to the sort column |
 
 `none` is deliberately **not** offered. It is a legal answer for a tint drawn behind something and
-never for the writing itself, and a text surface set to "no colour" is one nobody can read.
+never for the writing itself, and a text surface set to "no color" is one nobody can read.
 
 The configured **alpha survives every mode**: neither `RAID_CLASS_COLORS` nor `Constants.STAT_COLORS`
 carries one, and a mode that silently reset transparency would be one setting cancelling another.
-That matters most for the two backgrounds, where the alpha is what makes a colour a tint rather than
-a slab. A colour that cannot be resolved — an unknown class, a stat with no palette entry — falls
+That matters most for the two backgrounds, where the alpha is what makes a color a tint rather than
+a slab. A color that cannot be resolved — an unknown class, a stat with no palette entry — falls
 back to the configured one.
 
 `columnHeader.bgColorMode == "stat"` is the only mode that paints **per column**: it puts a texture
 behind each label rather than one across the strip, because a class is not a property of a column and
-every other mode has exactly one colour to draw.
+every other mode has exactly one color to draw.
 
 ### `columnHeader` — the "Player | Damage | Healing" strip
 
@@ -616,8 +616,8 @@ every other mode has exactly one colour to draw.
 `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "custom"` · `bgColor = { r=0, g=0, b=0, a=0 }` ·
 `bgColorMode = "custom"`.
 
-**Separate from both neighbours, and it was not before.** The strip used to take its font path and
-size from `text` and its outline and colour from `header`, so changing the cell font silently
+**Separate from both neighbors, and it was not before.** The strip used to take its font path and
+size from `text` and its outline and color from `header`, so changing the cell font silently
 restyled the headers and no setting could make the strip differ from the numbers beneath it. Every
 default above is the value that arrangement already resolved to, so an existing window is
 pixel-identical after the upgrade — what changed is that the settings exist and are independent.
@@ -655,7 +655,7 @@ and leaves with them. Changing a default does not change a stored value: an exis
 either switched on keeps it, and only a profile that never touched the key follows the new default.
 
 **`alternatingBackground` lives here and is EDITED on the Bars page**, beside `bars.bgColorMode` —
-the two of them decide what colour sits behind a row, and choosing between them meant reading two
+the two of them decide what color sits behind a row, and choosing between them meant reading two
 pages. It stays a row-level key because it is a row-level fact: `RowProto:Update` draws it, not the
 cells.
 
@@ -697,8 +697,8 @@ dropping "Bar opacity" to 10% faded the whole grid. Three settings paint three s
 fill, `bgAlpha` the backdrop, `text.alpha` the two FontStrings) and none can cancel another.
 
 `borderThickness` and `borderColor` were constants until they were settings: one pixel, in the
-library skin's own edge colour, which no setting could reach. The skin's edge is still the fallback
-for the colour, so a window that never touched either keeps the border it had.
+library skin's own edge color, which no setting could reach. The skin's edge is still the fallback
+for the color, so a window that never touched either keeps the border it had.
 
 `colorMode` is `class` / `stat` / `custom`. **`class` is the default because `classFilename` is
 `NeverSecret`** — a class-colored bar is still correct at the height of a pull, when every number on
@@ -707,9 +707,9 @@ bar grows rightward (`SetReverseFill(false)`).
 
 ### The header's controls
 
-The whole title row — name, session line and controls — is centred on one line through
+The whole title row — name, session line and controls — is centered on one line through
 `Window:TitleRowTop`, computed from the padding, `header.height` and each item's own configured size.
-The band it centres in runs from the frame's **top edge** down to the divider, not the tinted band
+The band it centers in runs from the frame's **top edge** down to the divider, not the tinted band
 alone: the padding above is not a margin to anyone looking at the window, so centring in the band
 leaves it as dead space above the row and lands the text against the divider. Nothing in the title
 bar is anchored to a hand-picked offset any more.
@@ -717,34 +717,34 @@ bar is anchored to a hand-picked offset any more.
 `divider = true` · `dividerThickness = 1` · `dividerColorMode = "skin"` ·
 `dividerColor = { r=0.5, g=0.5, b=0.5, a=0.85 }` — the hairline between the title bar and the column
 labels, and the one piece of the window's chrome a player can switch off outright. Hiding it moves
-nothing else: `TitleRowTop` centres the title row against the `DIVIDER_INSET` constant rather than
+nothing else: `TitleRowTop` centers the title row against the `DIVIDER_INSET` constant rather than
 against the texture.
 
 **`skin` is the shipped mode, and it writes nothing.** It does not resolve `SKIN.divider` and apply
 it — it leaves the texture exactly as `NS.ApplySkin` painted it a few lines earlier in `ApplyConfig`.
-That is how a per-window colour picker coexists with `standalone-windows`: the shared value is never
+That is how a per-window color picker coexists with `standalone-windows`: the shared value is never
 copied into this repo, never stored in a profile, and never has to be migrated when it changes, so a
 re-skin still reaches this window along with the debug console and the perf panel. The two override
 modes — `class` (yours) and `custom` — follow `frame.title`'s precedent one screen up: `ApplySkin`
 owns the accent, and a setting that claims to govern it writes *after* the library rather than
-instead of it. An unknown class leaves the skin's tint standing rather than inventing a colour.
+instead of it. An unknown class leaves the skin's tint standing rather than inventing a color.
 
-The **custom swatch is a mid grey, deliberately not `SKIN.divider`'s values** — seeding it from there
+The **custom swatch is a mid gray, deliberately not `SKIN.divider`'s values** — seeding it from there
 would be exactly the copy the rule forbids, and it would misdescribe the row besides: it is only ever
 read under `custom`, where the skin has already been declined. The configured **alpha survives the
-mode**, the same rule the cell text keeps: a class colour carries none of its own and takes the
+mode**, the same rule the cell text keeps: a class color carries none of its own and takes the
 swatch's, so changing the mode never silently changes the opacity.
 
 There is deliberately **no `stat` mode**, for the reason the header's other surfaces have none: the
 divider is one line across the whole window, so "per statistic" could only paint it the sort column's
-colour — a fact already on screen twice over.
+color — a fact already on screen twice over.
 
 `showMinimise` · `showLock` · `showSettings` · `showSegment` · `showReset` · `showExport` — all
 `true`. Six of the seven controls; `closeButton` is the seventh and deliberately keeps its older
 name, because renaming it to `showClose` for symmetry would migrate every stored profile in exchange
 for a consistency nobody can see. All seven sit on the Header page, on one tab —
 **Controls** — window-acting first (close, minimise, lock, settings), then meter-acting (segment
-picker, reset, export). Their size, hover reveal and colours sit in the tab below it, **Button
+picker, reset, export). Their size, hover reveal and colors sit in the tab below it, **Button
 style**.
 
 **There is no `resizeGrip` key.** There was, and it was read once while the frame was being built —
@@ -760,29 +760,29 @@ neither is drawn exactly as before. **`controlAlpha` is read only while the reve
 fading off there is no faded state, and every control sits at the hover value, which is what a
 player who has just switched fading off means by "how visible are these". It is deliberately not
 disabled on the panel in that state, the same bargain `bars.customColor` gets under a non-custom
-colour mode. Both are clamped to 0..1 on read: they come from a file a player can hand-edit, and an
+color mode. Both are clamped to 0..1 on read: they come from a file a player can hand-edit, and an
 out-of-range alpha is not an error, it is a control drawn at the nearest legal value, which reads as
 the setting not working. `minimised = false`
 collapses the window to that bar — the stored `frame.height` is untouched, so expanding restores it
 exactly. `controlColor = { r=1, g=1, b=1, a=1 }` and `controlHoverColor = { r=1, g=0.82, b=0, a=1 }` — two
-colours, because hover is the only feedback a control gives, each now paired with its own
+colors, because hover is the only feedback a control gives, each now paired with its own
 **`controlColorMode`** / **`controlHoverColorMode`** dropdown (`class` / `custom`, both default
 `"custom"`) rather than the `controlClassColor` / `controlHoverClassColor` booleans they replaced at
 `schemaVersion` 12 → 13. Two modes rather than one, because rest and hover are two independent
-answers: a player who wants their class colour under the pointer has not asked for the whole strip in
-it, and a shared mode would make hover and rest the same colour for anyone who chose class — the one
-thing a hover colour must never be. `migrations[12]` reads each stored boolean and writes `"class"` or
+answers: a player who wants their class color under the pointer has not asked for the whole strip in
+it, and a shared mode would make hover and rest the same color for anyone who chose class — the one
+thing a hover color must never be. `migrations[12]` reads each stored boolean and writes `"class"` or
 `"custom"` in its place. The art ships white and is tinted by a
-**multiply**, so the shipped `controlColor` is the identity rather than a recolour: the icons read as
+**multiply**, so the shipped `controlColor` is the identity rather than a recolor: the icons read as
 chrome, and the pointer turns exactly one of them the gold the rest of the header uses. Both are
 pickers rather than a "match the header text" switch — one of the two states being unconfigurable was
 the complaint that produced them. (The tint had never run at all before: `HeaderControls.Style` read
 `NS.HeaderStyle`, which nothing published, so it fell through to a white fallback every time.
 `modules/Window_Header.lua` publishes it now, and the controls take the header's **font** from it
-while carrying their own colours.)
+while carrying their own colors.)
 
 `controlSize = 16` is the *slot* each control occupies — its click target and the strip's layout
-pitch. The art is drawn centred inside that slot at 72% of it, so a 64px icon lands at 11px in a 16px
+pitch. The art is drawn centered inside that slot at 72% of it, so a 64px icon lands at 11px in a 16px
 box, on the same line as a 12px title; a glyph that reaches its own edges reads much heavier than the
 header text beside it when it fills the slot outright.
 
@@ -896,7 +896,7 @@ other: `barTexture = "Blizzard Raid Bar"` · `barSpacing = 1` · `scale = 1.0` �
 `barBorderSize = 1` · `barBorderColor = { r = 0, g = 0, b = 0, a = 1 }` ·
 `barBorderColorMode = "custom"` ·
 `font = "Friz Quadrata TT"` · `fontSize = 12` · `fontOutline = "NONE"` ·
-`textColor = { r = 1, g = 1, b = 1, a = 1 }`. One colour for **both** number slots: the amount used
+`textColor = { r = 1, g = 1, b = 1, a = 1 }`. One color for **both** number slots: the amount used
 to be hardcoded gold and the share hardcoded white, which read as two kinds of number when they are
 one line's two figures.
 
@@ -935,7 +935,7 @@ grows in as well as a corner it touches, which is what a player means by picking
 game does, which is exactly what was wrong with it here: over a *grid* it lands wherever the pointer
 happens to be inside a cell, so the same hover puts the tooltip somewhere different every time and
 reads as jitter rather than as a choice. `TOP` is the deliberate version of the same thing, and is
-the default. `schemaVersion` 10 rewrites a stored `CURSOR`, and an unrecognised anchor falls back to
+the default. `schemaVersion` 10 rewrites a stored `CURSOR`, and an unrecognized anchor falls back to
 `TOP` for the same reason — it is where a new window puts it.
 
 **Blizzard's tokens cannot say that**: `ANCHOR_TOPLEFT` and `ANCHOR_TOPRIGHT` are both directly above
@@ -1045,7 +1045,7 @@ from — and a page with no add button needs every statistic already present to 
 (`BuildLayout` divides the frame width evenly across the visible columns and never read `col.width`),
 and the bar is unconditional.
 
-`EnemyDamageTaken` is not offered as a column at all — it is read, never catalogued (issue #2) — and
+`EnemyDamageTaken` is not offered as a column at all — it is read, never cataloged (issue #2) — and
 a stored column naming it is now **dropped** by the normalizer rather than listed, because there is
 no longer a remove button to act on it with. `Dps` and `Hps` are absent from the catalog entirely and
 never queried: `amountPerSecond` ships on the same source row as `totalAmount`, so one `DamageDone`
@@ -1234,7 +1234,7 @@ label, desc  displayed strings, localized at declaration through NS.L. The flow
              clears the composer's English `tooltip` as it writes one.
 startsLine   flush the pending line BEFORE this row, so a declared pair cannot be
              split across two lines by an odd number of widgets above it. Carried
-             by every colour swatch, which is what makes "the mode is immediately
+             by every color swatch, which is what makes "the mode is immediately
              to its right" a property of the declaration rather than of parity.
 classColorSource   "player" | "unit" -- WHICH class this surface's `class` mode
              means, DECLARED rather than inferred (options-ui-§17). The path does
@@ -1272,7 +1272,7 @@ is declared out of. What they add around the composers is three things:
   slider bounds, the `%d px` suffix, the validator, the stored value set behind a dropdown, and this
   addon's own sentence in each tooltip.
 - **`withMode(rows, after, modeRow)`**, which swaps the composer's boolean `Use class color`
-  companion for this addon's colour-**mode** dropdown — the richer form `options-ui-§17` names and
+  companion for this addon's color-**mode** dropdown — the richer form `options-ui-§17` names and
   forbids converting back — splicing it immediately after the swatch.
 
 See [settings-panel.md](settings-panel.md#the-composed-blocks) for which block is used where, and
@@ -1288,7 +1288,7 @@ library's rather than this addon's.
 resolved by the carve-out rather than by `resolveRoot`.
 
 **Its boolean says SHOWN while LibDBIcon's key says HIDDEN**, so the read seam and `putWrite`
-invert. A checkbox labelled with a negative is the settings-panel double-negative everyone
+invert. A checkbox labeled with a negative is the settings-panel double-negative everyone
 mis-clicks once, and the alternative — a second `minimap.show` key beside the library's own — would
 be two records of one state, free to disagree the first time the player used LibDBIcon's own menu
 (**anti-pattern #81**). The row's `default` is therefore what a user would have **clicked** (`true`,

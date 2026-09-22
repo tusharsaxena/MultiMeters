@@ -27,7 +27,7 @@ can be reproduced first and the log read afterwards.
 when something looks wrong, and requiring them to open a window first is one more step between a bug
 and its report. `feign` is the only one that reads an argument, because it is the only one that is
 not a read: a feign is over before a player finishes typing, so the trace is armed before the run and
-printed after it. A word `feign` does not recognise is named and refused rather than falling through
+printed after it. A word `feign` does not recognize is named and refused rather than falling through
 to the report — `/mm debug feign of`, typed by somebody who meant `off`, used to print an empty
 recording and leave the trace armed with no line saying so.
 
@@ -72,7 +72,7 @@ The three that dominate a live capture are `Aggregator` (one summary line per re
 `Render` (one per window per pass) and `Roster` (one per rebuild).
 
 A pass whose summary line is **unchanged** from the previous pass is not logged; a change is never
-delayed and never dropped, and a repeat is collapsed to a heartbeat carrying `(xN)`. That behaviour
+delayed and never dropped, and a repeat is collapsed to a heartbeat carrying `(xN)`. That behavior
 is a documented deviation from `debug-logging-§8` — see `## Documented deviations` in
 [ARCHITECTURE.md](ARCHITECTURE.md) — and it exists because four passes a second into a capped buffer
 otherwise leaves a console holding forty seconds of one repeated string.
@@ -148,5 +148,5 @@ defect tally (issue #48).
 ## Related
 
 - [testing.md](testing.md) — the harness, the lint, the green commit gate
-- [midnight-quirks.md](midnight-quirks.md) — the client behaviours the probes were written to measure
+- [midnight-quirks.md](midnight-quirks.md) — the client behaviors the probes were written to measure
 - [ARCHITECTURE.md](ARCHITECTURE.md) — the slash surface in full, and the deviation register

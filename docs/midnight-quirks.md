@@ -58,7 +58,7 @@ refuses to open the modal at all; and `Export.CSV` / `Export.ChatLines`, back in
 `modules/Export.lua`, refuse again at their own first line for a caller that reached them anyway.
 The modal asks three more times after it is open — once in its refresh, and once inside each of the
 two action-button handlers — because a dialog opened out of combat can be clicked ten seconds into a
-pull, and a greyed-out button is a hint rather than a guarantee. Underneath all of them, and
+pull, and a grayed-out button is a hint rather than a guarantee. Underneath all of them, and
 independent of them, every field passes `Secrets.CanAccess` on its way into a cell and yields `""`
 when it fails — so a race between the check and the walk can produce a blank cell, and can never
 raise.
@@ -66,7 +66,7 @@ raise.
 The other half of `modules/Export.lua`'s discipline is what it does **not** do. An export wants
 every stat for every player, which is exactly the loop `modules/Provider.lua` already writes — so
 writing it again would put a second caller on `C_DamageMeter` and break R1. Instead
-`Export.SessionConfig` builds a synthetic window config naming every catalogued stat, pointed at the
+`Export.SessionConfig` builds a synthetic window config naming every cataloged stat, pointed at the
 invoking window's segment, and hands it to `Aggregator.Build`. The aggregator neither knows nor
 cares that no frame will draw the result, and the ranking a chat dump needs happens there, under the
 aggregator's own guards, rather than in a sort of the exporter's own.

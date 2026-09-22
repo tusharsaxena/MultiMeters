@@ -65,7 +65,7 @@ AddOns in game, and the slash command. `/mm` (or `/multimeters`) on its own open
 
 Blizzard's meter already tracks all of these and exposes them through an in-game API. Multi Meters asks it for the figures and lays them out as a grid, so what you read here is what the built-in meter would have told you. Nothing chews through the combat log a second time.
 
-The one odd behaviour falls out of that. Midnight hands addons combat numbers as secret values — an addon can draw bars for a number without being able to read it — and the tag identifying which row a number belongs to is sealed with it. So the grid is built two ways. Out of combat, by identity. In combat, rows come from the game's own live ranking of the sort column, and everything else is matched onto them by class and spec. Two players sharing both cannot be separated, so their cells stay empty. The header says as much in gray.
+The one odd behavior falls out of that. Midnight hands addons combat numbers as secret values — an addon can draw bars for a number without being able to read it — and the tag identifying which row a number belongs to is sealed with it. So the grid is built two ways. Out of combat, by identity. In combat, rows come from the game's own live ranking of the sort column, and everything else is matched onto them by class and spec. Two players sharing both cannot be separated, so their cells stay empty. The header says as much in gray.
 
 ## FAQ
 

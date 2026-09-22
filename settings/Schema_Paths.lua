@@ -269,6 +269,8 @@ end
 --- three would inevitably miss.
 ---
 --- @param rows table  array of rows
+--- TEST-ONLY TODAY: no in-addon caller; the seam is exercised by
+--- tests/test_schema_defaults.lua:244,:293 and tests/test_options_panel.lua:776.
 function NS.RegisterSchemaRows(rows)
     if type(rows) ~= "table" then return end
     for _, row in ipairs(rows) do

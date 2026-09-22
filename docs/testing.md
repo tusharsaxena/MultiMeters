@@ -146,7 +146,7 @@ stack trace rather than something a reviewer has to notice.
 `tests/test_row_namecell.lua` covers the one cell in the row that never holds a figure. Because it
 holds no meter value it stays **out** of the secret set, its geometry stays readable through a
 restricted pull, and that is why its icon and truncation cases can assert on widths at all; the value
-cell and the shared colour, media and mouse parts stay in `tests/test_row.lua`.
+cell and the shared color, media and mouse parts stay in `tests/test_row.lua`.
 
 `modules/Tooltip.lua` is the bent seam — two modules, three suites. `tests/test_tooltip_lines.lua`
 covers one pooled line as a widget, including the minimum width, which is **computed** from character
@@ -303,7 +303,7 @@ reports a drift between the projection and `SOURCE_FIELDS` that is not there.
 
 **None of the seven introduced it.** `origin/master` at `02aff8c`, the commit this branch was cut
 from, fails the same case with the same message at 1495 passed / 1 failed. The condition is
-inherited, and it is invisible on a working tree that has been mis-normalised to LF — which is why
+inherited, and it is invisible on a working tree that has been mis-normalized to LF — which is why
 every figure published before the line-ending sweep was measured green.
 
 `8eef4b8` (M4-10) closes it, by stripping CRLF before the match: 1507 passed, 0 failed. Every commit

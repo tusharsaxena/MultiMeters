@@ -17,7 +17,7 @@ Companion docs: [testing.md](testing.md) for the headless harness,
 §1 and the settings-panel steps in §3 and §4 — page names, tab names, control names and the
 lock/Test-mode relationship — were re-checked against `settings/Schema.lua` and the current page
 files as part of documenting that branch's tab redesign. The rest of §1, and all of §2 and §5 through
-§26, was **not** re-audited in that pass and may still describe older behaviour; treat any step
+§26, was **not** re-audited in that pass and may still describe older behavior; treat any step
 outside those specific bullets as unverified against the current branch until it has been walked
 in-client.
 
@@ -44,7 +44,7 @@ in-client.
   under `tests/`, or to docs does not reach the client, and `luacheck .` at 0/0 plus
   `lua tests/run.lua` green is its whole verification. `M4c-06` is the case this bullet was written
   for: it removed the blanket lint suppression, renamed the unread `addonName` in thirty-three
-  bootstrap headers to `_` — a local nothing reads, in files whose behaviour is otherwise byte for
+  bootstrap headers to `_` — a local nothing reads, in files whose behavior is otherwise byte for
   byte what it was — and added `tests/test_lintconfig.lua`. Recorded here rather than left to be
   re-derived the next time the same shape lands.
 
@@ -74,7 +74,7 @@ in-client.
 | 20 | Names | [Realm strip and truncation](#20-realm-strip-and-truncation) |
 | 21 | **Segments** | [**The header segment selector**](#21-the-header-segment-selector) |
 | 22 | Migration | [v1 → v2 uniform column widths](#22-v1--v2-uniform-column-widths) |
-| 23 | Migration | [v12 → v13 title bar and control-colour migration](#23-v12--v13-title-bar-and-control-colour-migration) |
+| 23 | Migration | [v12 → v13 title bar and control-color migration](#23-v12--v13-title-bar-and-control-color-migration) |
 | 24 | Tooltip styling | [Tooltip appearance, anchor and offsets](#24-tooltip-appearance-anchor-and-offsets) |
 | 25 | **Targets** | [**The Targets section, and its absence mid-pull**](#25-the-targets-section-and-its-absence-mid-pull) |
 | 26 | **Export** | [**The export modal, the CSV and the chat dump**](#26-the-export-modal-the-csv-and-the-chat-dump) |
@@ -100,21 +100,21 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
 
 **Pass.**
 - **Seven controls, right to left:** close, minimise, lock, settings, segment, reset, export. They
-  are drawn from this addon's own art — white glyphs that take the header's text colour. A control
+  are drawn from this addon's own art — white glyphs that take the header's text color. A control
   that is a plain letter (`*`, `#`, `>`) means the art AND the atlas both failed: the ladder is
   working, but say so, because it means a texture did not load.
 - **The close button is ours too**, drawn from `libs/LibKa0s/media/icons/close.tga` at the same size and
-  weight as its six neighbours. A thin grey multiplication sign there is LibKa0s' close button —
+  weight as its six neighbors. A thin gray multiplication sign there is LibKa0s' close button —
   which is what the strip used to end in, and what the art replaced.
 - **The icons sit inside their slots.** Each is drawn at 72% of `Control size`, so there is visible
-  air between two neighbours and the strip does not read heavier than the title beside it. Icons
+  air between two neighbors and the strip does not read heavier than the title beside it. Icons
   touching each other means the inset was lost and the art is filling its whole click target.
 - **Turning one off closes the gap.** Hide the lock and everything to its left moves right by
   exactly one slot; nothing to its right moves. A hole where a control was is the indexed layout
   failing, and it is the whole point of the rewrite.
 - **The title never runs under a control**, at any `Control size` from 10 to 32 and with any
   combination hidden.
-- **The strip is centred in the title bar**, on the same line as the window name and the session
+- **The strip is centered in the title bar**, on the same line as the window name and the session
   line beside it, with the gap above the row matching the gap below it down to the divider. All three
   are placed from `Window:TitleRowTop`, so check it again after changing **Header → Height**,
   **Header → Size** and **Control size**: any of those moving one of the three off the shared line
@@ -126,17 +126,17 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
   already moved. **Sweep along the strip**: the bright one must follow the pointer control by
   control, without a flicker in the gaps and without the whole set coming up as you cross the title
   bar. **Check this on a LOCKED window too**: locking used to disable the title bar's mouse.
-- **The colours are both settings.** Header → Button style → **Control color** (white by default)
+- **The colors are both settings.** Header → Button style → **Control color** (white by default)
   and **Control hover color** (gold). Change either and the strip must follow immediately, at rest
   and under the pointer.
-- **Each colour has its OWN color-mode dropdown.** Set **Control color mode** to **Class color**: the
-  strip goes to your class colour at rest and the **hover colour is unchanged**. Set **Control hover
-  color mode** to Class color instead: the resting colour is unchanged and the control under the
+- **Each color has its OWN color-mode dropdown.** Set **Control color mode** to **Class color**: the
+  strip goes to your class color at rest and the **hover color is unchanged**. Set **Control hover
+  color mode** to Class color instead: the resting color is unchanged and the control under the
   pointer takes your class. Both set to Class color is legal and makes hover indistinguishable from
   rest — that is the player's choice to make, but one dropdown driving both would force it, which is
   why there are two. (These were booleans, `controlClassColor` / `controlHoverClassColor`, migrated
   to `controlColorMode` / `controlHoverColorMode` at schemaVersion 12 → 13.)
-- **`Reveal controls on hover` OFF keeps every control at full alpha** — and the hover **colour**
+- **`Reveal controls on hover` OFF keeps every control at full alpha** — and the hover **color**
   must still say which one the pointer is on, because it is the only channel left.
 - **Minimise collapses to the title bar** and the plus/minus flips. The column headers, the rows,
   the "Waiting for combat data…" notice and the resize grip all go — anything still drawn over a
@@ -272,23 +272,23 @@ second edge to catch.
   suspect — it is `pcall`'d and the tooltip should fall back to roughly the right place rather than
   failing to open, so a tooltip that opens in the WRONG box mid-pull and the right box out of combat
   is that fallback doing its job. Every **target line carries an icon** now, in the
-  column where the spell lines put theirs. The **player's name is class-coloured** on every tooltip
+  column where the spell lines put theirs. The **player's name is class-colored** on every tooltip
   that names one. **Text color mode reaches the spell name as well as the numbers** — all the text on
-  a bar, not two thirds of it. The **fill and the backdrop** each have their own colour, mode and
+  a bar, not two thirds of it. The **fill and the backdrop** each have their own color, mode and
   opacity. And **Border draws something**: it is on the bar rather than under it now, so a style
   and a thickness are visible at last.
 - **The five text controls, on all four surfaces.** Bars → Text style, Header → Title text, Columns →
   Header text, and Tooltip → Text each carry a **font** picker, a **font outline** dropdown, a **text
-  shadow** checkbox, a **text colour** picker and a **Text color mode** dropdown of Class /
+  shadow** checkbox, a **text color** picker and a **Text color mode** dropdown of Class /
   Per-statistic / Custom. **Per-statistic means a different statistic on each**: the cell takes its
-  own column's colour, the title bar takes the **sort column's** (change the sort and watch it follow), the tooltip
-  takes **the column you hovered** — a Healing tooltip is Healing-coloured whatever the grid is
+  own column's color, the title bar takes the **sort column's** (change the sort and watch it follow), the tooltip
+  takes **the column you hovered** — a Healing tooltip is Healing-colored whatever the grid is
   sorted by, and each **column label takes its own column's** — that last one is the check
   that catches the strip being resolved once and painted uniformly. Columns → **Header background**
   also carries a **Background color mode** over the same three, where Per-statistic paints one
   rectangle behind each label rather than one across the strip. The **Title bar's** own background
-  (Header → Title bar) is a plain colour picker with no mode: it is one strip over the whole window,
-  so per-statistic could only ever paint it the sort column's colour. **The configured opacity survives
+  (Header → Title bar) is a plain color picker with no mode: it is one strip over the whole window,
+  so per-statistic could only ever paint it the sort column's color. **The configured opacity survives
   every mode** — a class or statistic background must arrive as a tint, not a slab. Walk all four on each page and watch the
   right thing change: the cells, the title bar and session line, the "Player | Damage | Healing"
   strip, and a hovered tooltip. A control that moves the wrong surface means two groups are sharing a
@@ -318,16 +318,16 @@ second edge to catch.
 
   Not yet run — no client has been available since the change.
 - **"Text color mode" set to Class means the right class on each surface.** On Bars → **Text style** the cells take
-  **each row's** class, so a grid of mixed classes goes multi-coloured — not all one colour. On
+  **each row's** class, so a grid of mixed classes goes multi-colored — not all one color. On
   Tooltip → **Text** the text takes the class of the player you are **hovering**; hover two different
-  players and the colour follows. On Header → **Title text** and Columns → **Header text** it takes
+  players and the color follows. On Header → **Title text** and Columns → **Header text** it takes
   **your own** class, because those strips are about the window rather than any row. Also set **Text
-  opacity** to 50% with the colour mode set to Class: the text must stay half-transparent — a class
-  colour that resets it is one setting cancelling another.
+  opacity** to 50% with the color mode set to Class: the text must stay half-transparent — a class
+  color that resets it is one setting cancelling another.
 - **Reset all settings starts the profile over.** With **two or more** windows open, change something
   visible on each (font size, width, a column added or removed), rename them, select **one** in the
   window picker, then General → **Reset all settings**. You must come back with exactly **one** window
-  called *Meter* at the screen centre wearing the shipped defaults — the extras **deleted**, not
+  called *Meter* at the screen center wearing the shipped defaults — the extras **deleted**, not
   restyled. That is the point: it is a profile reset, the same act as Profiles → **Reset Profile**,
   and the popup warns about the deletion before it happens. Confirm the two paths give the identical
   result, and that **`/mm resetall`** opens the same popup and, accepted, does too.
@@ -341,9 +341,9 @@ second edge to catch.
 - **The four meta rows.** Frame → **General** carries **Color mode**, **Bar texture**, **Font**
   and **Font outline**, each marked *(all surfaces)*, below the lock and keep-on-screen toggles. Each sets every surface that has a setting of
   its kind — the bar texture reaches the grid and the tooltip, the font and its outline reach the
-  cells, both header strips and the tooltip. The check below is written for the colour mode and is
+  cells, both header strips and the tooltip. The check below is written for the color mode and is
   the same for all four.
-- **The meta colour mode.** Frame → **General** → **Color mode (all surfaces)**. Set it to
+- **The meta color mode.** Frame → **General** → **Color mode (all surfaces)**. Set it to
   Per-statistic and check all **six** of the individual dropdowns followed — Bars → *Bar*, Bars →
   *Background*, Columns → *Header text*, Columns → *Header background*, Tooltip → *Bar* and
   Tooltip → *Bar background*. The three **text** modes must **not** move: Bars → *Text style*,
@@ -355,8 +355,8 @@ second edge to catch.
   page's own Defaults resets the **whole page**, every tab, not just the visible one.
 - **The Frame page's shape.** Four tabs, in order: *General* (lock, keep on screen, and the four
   meta rows above), *Size and position* (width, height, scale, opacity, strata, padding),
-  *Background and border* (border style and thickness, then the window's own fill colour and its
-  edge colour), and *Row* (max rows, row height, spacing, growth direction, then always-show-self,
+  *Background and border* (border style and thickness, then the window's own fill color and its
+  edge color), and *Row* (max rows, row height, spacing, growth direction, then always-show-self,
   highlight-self, mouseover highlight and the alternating background). The page **opens on
   General**, and *Font outline (all surfaces)* there shows **None** on a fresh profile. Each tab label appears **once**; a heading printed twice means a row is
   filed under a tab the page has already left. There is **no** *Header controls* tab here — those
@@ -372,9 +372,9 @@ second edge to catch.
   tab now, not on Bars.
 - **The Header page's shape.** Four tabs, top to bottom in the order the strips are drawn: *Title
   bar* — the strip's own shape: whether it draws, its background, alignment, height, and the divider
-  under it (on/off, thickness and colour) — then *Title text* — the face drawn on it, and the
+  under it (on/off, thickness and color) — then *Title text* — the face drawn on it, and the
   window's own name — then *Controls*, and *Button style* (the reveal beside the size, then rest and
-  hover paired down three lines: mode, colour, opacity). `showClose` and the rest are still **stored** at
+  hover paired down three lines: mode, color, opacity). `showClose` and the rest are still **stored** at
   `window.frame.*` (`/mm get window.frame.showClose` answers), which is deliberate: a row's page is
   where it is edited, its path is where it is stored. There is **no** *Column headers* tab here any
   more — that strip's rows moved to the **Columns** page, which is the page that labels it.
@@ -391,7 +391,7 @@ second edge to catch.
 - **The divider under the title bar.** Header → *Title bar* → **Show divider** ships **on**. Turn it
   off and the hairline between the title strip and the column labels goes, and **nothing else moves**
   — the window title, the session line and the control strip stay exactly where they were, because
-  the title row is centred against a constant rather than measured off the line. **Divider
+  the title row is centered against a constant rather than measured off the line. **Divider
   thickness** grows it downward, into the gap above the column labels. **Divider color mode** ships
   as **Ka0s skin**, which means the line is left exactly as the shared skin painted it — check that
   first, then switch to **Class color** and confirm it takes yours, and to **Custom color** and
@@ -404,8 +404,8 @@ second edge to catch.
   it moves only its end. Finally set **Control opacity** near zero and turn **Reveal controls on
   hover** OFF: the strip must come back to the *hover* value, not vanish — with fading off there is
   no faded state, so the rest slider is not read at all.
-- **The lock icon is the same weight as its neighbours in both states.** Unlock a window and compare
-  the padlock against the six controls beside it — same brightness, same colour; only the glyph
+- **The lock icon is the same weight as its neighbors in both states.** Unlock a window and compare
+  the padlock against the six controls beside it — same brightness, same color; only the glyph
   changes, from a closed padlock to an open one. It used to be drawn at 45% while unlocked, which is
   the state a fresh window ships in, so the strip read as having one half-broken icon in it.
 - **The tab strips all fit one row at default UI scale.** Frame's four tabs, Bars' six, Tooltip's
@@ -417,8 +417,8 @@ second edge to catch.
   `LibKa0s/OptionsWidgets.lua` edit plus a minor version bump, not a MultiMeters change.
 - **The header background stops at the title bar.** Header → Title bar → **Header background** to
   something loud, and Columns → Header background → **Background color** to something else: two
-  distinct bands, the second starting exactly where the first ends. One colour covering both rows is
-  the old behaviour, in which the column strip's own setting was invisible underneath and a colour
+  distinct bands, the second starting exactly where the first ends. One color covering both rows is
+  the old behavior, in which the column strip's own setting was invisible underneath and a color
   picked for the title bar restyled the grid's labels too.
 - **Scale scales the whole window.** Frame → Scale to 0.5, then 2.0. The window's **outline** grows
   and shrinks with its contents. A box that stays exactly the size it was while the grid inside it
@@ -475,14 +475,14 @@ second edge to catch.
   second "Preview mode"/"Debug console" checkbox or a second *Debug* heading is the duplicate this
   redesign removed coming back.
 - **The statistic palette is editable, and every surface follows it.** General → **Statistic
-  colors** carries one swatch per statistic, shipped in the catalog's own colours, and a note under
+  colors** carries one swatch per statistic, shipped in the catalog's own colors, and a note under
   the grid saying where they are worn — read it and check it is true, because it is the only thing on
-  that tab explaining why setting a colour can appear to do nothing. Change
+  that tab explaining why setting a color can appear to do nothing. Change
   **Damage**'s to something unmistakable, then check all four surfaces that wear the palette move
   together: a Bars → *Bar* → Bar color mode of **Per-statistic**, a Bars → *Text style* → Text color
   mode of **Per-statistic**, the Columns → *Header text* / *Header background* modes, and — with no
   mode set anywhere — the **Damage** line of a name tooltip, which wears the palette always. Then
-  press the General page's **Defaults** and confirm the shipped colours come back.
+  press the General page's **Defaults** and confirm the shipped colors come back.
 - **The two death-line switches.** Hover a **Deaths** cell for somebody who has died: on a fresh
   profile each line reads *Death 3 | <who>* — **Name the killer** ships on and **Name the killing
   blow** ships off, because the spell is the longest thing on the line and the half most often
@@ -490,7 +490,7 @@ second edge to catch.
   off and the caster half goes with no separator left behind; turn the spell back off and it goes the
   same way. A fall or a fire has no caster to name and a melee swing reads
   **Melee** — neither is a bug, and neither may take the numbered line down with it. **Check this
-  mid-pull too**: a restricted client can hand either name back secret, and the correct behaviour is
+  mid-pull too**: a restricted client can hand either name back secret, and the correct behavior is
   the same as "not available" — the half is simply absent.
 - **The number formats.** Bars → *Text content* → **Number format** offers four: *Abbreviated
   (12.4M)*, *Abbreviated, no decimals (12M)*, *Abbreviated, two decimals (12.40M)* and *Full
@@ -503,9 +503,9 @@ second edge to catch.
   and the rest. *Smart value (Absolute | Per Second)* shows both with a bar between them on the
   columns that have both, and the absolute **alone** on a counting column: an Interrupts cell reading
   `9 | 3` is the failure to look for. Check both **mid-pull**, when every figure is secret.
-- **The window name takes the header's colour.** Header → *Title text* → **Text color**: the title in
+- **The window name takes the header's color.** Header → *Title text* → **Text color**: the title in
   the window's title bar follows it, along with the font, size, outline and shadow it already
-  followed. Set **Text color mode** to **Class color** and the title takes your class colour, exactly
+  followed. Set **Text color mode** to **Class color** and the title takes your class color, exactly
   as the session line beside it does — the two are one header and must never differ. Drop the
   swatch's opacity and switch between the two modes: the opacity must **not** change with the mode.
   There is deliberately no per-statistic option — one strip over the whole window could only ever
@@ -661,7 +661,7 @@ Mythic+ dungeon vehicle encounter).
 - An ordinary **scenario or follower dungeon** → shown, reported as `resolved=scenario`.
 - Entering a vehicle hides the window; leaving shows it again — **immediately**, on the vehicle
   event itself. If it only hides after you next change zone, `UNIT_ENTERED_VEHICLE` is not reaching
-  the fan-out; that was the 0.1.0 behaviour and it is the shape every visibility rule fails in.
+  the fan-out; that was the 0.1.0 behavior and it is the shape every visibility rule fails in.
 
 ### 7b. Hide rules and combat
 
@@ -690,7 +690,7 @@ die · pull a target dummy.
 - After every one of these, `/mm debug diag` names the rule that decided in its `ShouldShow` line.
 - **Master enable off** (`/mm set enabled false`, or General → Enable Multi Meters) **stands the
   addon down** — every window hidden immediately, every game event unregistered, every timer
-  cancelled, nothing read from the meter. `/mm toggle`, `/mm lock`, `/mm test`, `/mm window`,
+  canceled, nothing read from the meter. `/mm toggle`, `/mm lock`, `/mm test`, `/mm window`,
   `/mm reset-positions` and `/mm export` each answer one line naming `/mm enable` and do nothing
   else, and a LEFT-click on the minimap button answers the same line; `/mm` still opens the settings
   panel, the whole schema CLI still reads and writes, and a RIGHT-click still opens the panel. See
@@ -870,7 +870,7 @@ a raider most wants to know what killed them is the moment they are still fighti
   into the second, and two labellings would make one list look like two. A third style, "time into
   the fight", was built and removed; see Known limitations before adding one back.
 - **Deaths cell tooltip**: it lists **that player's deaths, one line each, newest first**, each
-  labelled `Death N` with the wall-clock time in the right-hand column. It must NOT say "Spell
+  labeled `Death N` with the wall-clock time in the right-hand column. It must NOT say "Spell
   breakdown" and must NOT say "No data yet" — a Deaths source carries no spell list, and running the
   spell path there is the dead end this feature replaced. The list is the index into the drill-down:
   hover then click, and the same deaths appear in the same order.
@@ -1331,24 +1331,24 @@ Needs a profile written by v0.1.0, so do this before wiping SavedVariables.
 
 ---
 
-### 23. v12 → v13 title bar and control-colour migration
+### 23. v12 → v13 title bar and control-color migration
 
 Needs a profile written before this branch (`schemaVersion` 12 or earlier), so do this before wiping
 SavedVariables — same constraint as §22.
 
 1. Log in with an existing `MultiMeters.lua` SavedVariables file from before this branch, on a window
-   that had its title bar **turned off** and at least one of *Control class colour* / *Control hover
-   class colour* **ticked**.
-2. The window opens with its title bar **still off** and its control colours **exactly as they were**
+   that had its title bar **turned off** and at least one of *Control class color* / *Control hover
+   class color* **ticked**.
+2. The window opens with its title bar **still off** and its control colors **exactly as they were**
    — the migration carries the stored value across; it does not re-default it. A title bar that comes
-   back ON, or control colours that reset to Custom, is the migration writing a default instead of
+   back ON, or control colors that reset to Custom, is the migration writing a default instead of
    carrying the stored value.
 3. Header → **Title bar** shows the toggle unticked, matching what §2 showed on the window itself; the
    old Frame → *Frame behavior* location is gone.
-4. Frame → **General** (or wherever the control colour dropdowns now live) shows **Class** for
+4. Frame → **General** (or wherever the control color dropdowns now live) shows **Class** for
    whichever of the two flags was ticked before, not Custom.
 5. `/reload` and confirm nothing moves again: the step is idempotent and `schemaVersion` is now 13.
-6. Check a **second profile** you had not activated this session; its title bar and control colours
+6. Check a **second profile** you had not activated this session; its title bar and control colors
    are carried across too.
 
 ---
@@ -1443,7 +1443,7 @@ odd-looking cells mid-pull" would be a much worse outcome than "it said no".
 **Steps.** Look at the header strip, right to left, and hover the export control.
 
 **Pass.**
-- **It is the leftmost of the seven**, at the same size, the same centre line and the same colour as
+- **It is the leftmost of the seven**, at the same size, the same center line and the same color as
   the six beside it. The whole strip is covered by *The header's controls (issues #6, #7)* near the
   top of this file — what is checked here is only the export end of it.
 - **It draws the collection's own art** (`libs/LibKa0s/media/icons/export.tga`). A plain `>` means BOTH our
@@ -1504,7 +1504,7 @@ its export glyph.
   `Button` that consumed the press — and, registering `LeftButtonUp` only, swallowed
   a right-click entirely — so dismissing cost a click that did nothing else.)*
 - Pick a different metric. The menu closes, the button reads `Metric: <that one>`.
-- Repeat for **Channel** and **Lines**. Same skin, same behaviour, in all three.
+- Repeat for **Channel** and **Lines**. Same skin, same behavior, in all three.
 - **Open Metric, then click Channel without picking anything.** The Metric menu **closes** as the
   Channel menu drops: exactly one menu on screen, never two stacked. There is one popup frame in the
   whole client — `LibKa0s-Widgets-1.0`'s menu is a process-wide singleton shared by every dropdown
@@ -1544,7 +1544,7 @@ its export glyph.
 
 **Pass.**
 - **The name box exists only while Channel is Whisper.** Every other channel hides it outright — it
-  is hidden rather than greyed, because a disabled name box on a Raid export is a control asking to
+  is hidden rather than grayed, because a disabled name box on a Raid export is a control asking to
   be filled in for no reason.
 - Set **Channel: Whisper**. A fourth row appears below Lines, in the same flat
   box as the three above it, reading `Whisper to: ` in gold with an editable
@@ -1593,12 +1593,12 @@ a descriptor this addon passes, and the six steps below are the adoption check. 
 meant to change; a difference between the two lists is the bug.
 
 1. `/mm` → open a meter window → Export → **Export to CSV**.
-2. The copy window opens **centred on the meter window**, above the modal, with the CSV **already
+2. The copy window opens **centered on the meter window**, above the modal, with the CSV **already
    selected**.
 3. Ctrl+C, paste into a text editor: the whole CSV, with its line breaks.
 4. Esc closes the copy window and leaves the modal open.
 5. Drag the meter window somewhere else, export again: the copy window follows it.
-6. `/reload`, export again: still one window, still centred.
+6. `/reload`, export again: still one window, still centered.
 
 **Now check the file itself**, in a text editor or by pasting into a spreadsheet:
 
@@ -1774,11 +1774,11 @@ addon restriction, and the restriction is the entire subject.
 - **One line is printed, and it is the sentence itself:** *"Export is not available while the game
   restricts combat data."* — banner and all. A click that went silently nowhere would read as a
   broken button.
-- **The modal repaints on that click**: both action buttons grey out, and the same sentence appears
+- **The modal repaints on that click**: both action buttons gray out, and the same sentence appears
   in red across the middle of the modal. This is the visible half of the refusal, and it is why the
   check is repeated **inside** each click handler rather than only at open — the modal was opened out
   of combat, when the answer was yes.
-- **The glyph does not grey and ungrey through the fight.** It is deliberately not wired to the
+- **The glyph does not gray and ungray through the fight.** It is deliberately not wired to the
   restriction: a header icon flickering four times a second is worse to look at than a modal that
   opens and says plainly why it cannot export.
 - **The export glyph mid-pull opens nothing** and prints the same sentence. So does `/mm export`.
@@ -1787,7 +1787,7 @@ addon restriction, and the restriction is the entire subject.
   — the whole point of the refusal is that it cannot.
 - **After the pull, both action buttons come back live on their own, with no interaction** — the
   warning line clears at the same moment. The modal takes a private bus target when it is built and
-  repaints on `RESTRICTION_CHANGED`, so this is the case to watch: buttons that stay grey until you
+  repaints on `RESTRICTION_CHANGED`, so this is the case to watch: buttons that stay gray until you
   click something mean that subscription is not landing. Confirm the export then works normally.
   (On a degraded load with no AceEvent there is no bus target and no repaint; closing and re-opening
   the modal is the fallback there.)
@@ -1962,11 +1962,11 @@ five, so run two.
 - `/mm perf start` with no label, then `cancel`.
 
 **Pass.**
-- Every tab labelled and selected correctly on all three passes, on every page, and no band that
+- Every tab labeled and selected correctly on all three passes, on every page, and no band that
   grows or shrinks. A label carried over from the previously-dressed tab, a highlight on the wrong
   button, a body drawn under the wrong tab, or a strip whose height moves between passes is the pool
   handing back a frame it did not finish dressing.
-- The unlabelled start line, its report header and the cancel line read **`unlabeled`** and
+- The unlabeled start line, its report header and the cancel line read **`unlabeled`** and
   **`perf run CANCELED`**. A double-L in either is a copy of the string that did not come from the
   vendored payload.
 - No Lua errors at any point.
@@ -2034,7 +2034,7 @@ Then, with the panel open, `/mm debug` so the console sits beside it.
   inset from the same corner it has always been at. Two stacked there means a `decorate` hook came
   back and the library's arm ran as well; none at all means the arm did not run.
 - It is **this collection's close mark** — the same art the debug console beside it wears, and the
-  same the meter window's title bar ends in (§1). A thin grey multiplication sign is the library
+  same the meter window's title bar ends in (§1). A thin gray multiplication sign is the library
   falling back because it was not told which addon folder to build the path from, and is the exact
   regression the explicit `addonName` exists to prevent.
 - Clicking it closes the panel, and `/mm perf` reopens it.

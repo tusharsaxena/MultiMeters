@@ -24,7 +24,7 @@ Retail only · English only.
 
 ## In scope
 
-- **Eight statistics**, catalogued in `core/Constants.lua`: Damage, Healing, Absorbs, Interrupts,
+- **Eight statistics**, cataloged in `core/Constants.lua`: Damage, Healing, Absorbs, Interrupts,
   Dispels, Damage Taken, Avoidable Damage, Deaths. Six are enabled on a new window; adding a ninth is
   one row in that catalog and nothing else. `EnemyDamageTaken` is deliberately **not** among them —
   it describes an enemy rather than a group member, so it needs a window type whose rows are enemies
@@ -65,12 +65,12 @@ Retail only · English only.
 
 **The catalog is one table, and there are two lookups over it.**
 
-Eight statistics are catalogued in `core/Constants.lua`; six ship enabled on a new window (Damage,
+Eight statistics are cataloged in `core/Constants.lua`; six ship enabled on a new window (Damage,
 Healing, Interrupts, Dispels, Avoidable Damage, Deaths). Adding a ninth is one row in that catalog —
 the column editor, the defaults, the aggregator's read loop, the sort-column dropdown and the tooltip
 header all read the same table.
 
-`EnemyDamageTaken` is **read but not catalogued**. The meter offers it and `modules/Targets.lua`
+`EnemyDamageTaken` is **read but not cataloged**. The meter offers it and `modules/Targets.lua`
 walks it to build "which enemies this player hit", but it is not a column: every catalog row answers
 a question about a group member, and that one answers a question about an enemy, so offering it as a
 column asked a single grid row to be both a player and a mob. `Constants.STAT_BY_KEY` is therefore
@@ -316,7 +316,7 @@ default to total and rate.
   `None` source is now admitted **only when its `classFilename` is a class `RAID_CLASS_COLORS`
   recognizes**. That table is the oracle rather than a list of our own because the class filename is
   already what the grid draws a row from, in two files: `modules/Row.lua`'s `barColor` takes the
-  bar's colour out of `RAID_CLASS_COLORS` itself (through `NS.ClassRGB`), and
+  bar's color out of `RAID_CLASS_COLORS` itself (through `NS.ClassRGB`), and
   `modules/Row_NameCell.lua` keys the class icon on the same filename in `CLASS_ICON_TCOORDS`. What
   this refuses could only ever have drawn as an uncolored, iconless row. A mob would have to report
   `None` *and* carry a genuine class filename to slip through, and `/mm debug diag` prints the enemy
