@@ -548,7 +548,7 @@ end)
 -- Every bus receiver that is not an AceAddon module owns a private target from
 -- `NS.NewBusTarget()`, and the record behind that factory is what lets step 3 take
 -- those registrations down and step 9 put them back. Written BEFORE the record moved
--- onto LibKa0s-Bus-1.0 (LibKa0s v1.55.0, docs/revendor/2026-09-23/) and green against
+-- onto LibKa0s-Bus-1.0 (LibKa0s v1.55.0, docs/revendor/2026-09-23-v1.55.0/) and green against
 -- the hand-written one it replaced: what a receiver can observe is whether a message
 -- reaches it, so that is what these assert -- not the record's internals.
 

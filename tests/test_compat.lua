@@ -131,7 +131,7 @@ end)
 -- ── the readers and guards LibKa0s-Compat-1.0 now answers ───────────────────
 --
 -- Written BEFORE the four readers and the secret trio moved onto the library (the
--- v1.55.0 re-vendor, docs/revendor/2026-09-23/), and green against the host bodies
+-- v1.55.0 re-vendor, docs/revendor/2026-09-23-v1.55.0/), and green against the host bodies
 -- they replaced. They pin what a caller can observe, which is values AND the count of
 -- them: `Tooltip_Builders.lua` spreads GetSpellTexture's answer into an `and ... or`
 -- and the drill-down reads GetSpellInfo positionally, so a stray second value is a
