@@ -540,3 +540,108 @@ test("Disabled 10: the perf hold is session-only and the disabled hold is stored
         .. table.concat(stored, ", "))
     assertEqual(NS.GetSetting("enabled"), false, "the disabled hold IS the stored setting")
 end)
+
+-- ---------------------------------------------------------------------------
+-- 11. The bus record
+-- ---------------------------------------------------------------------------
+--
+-- Every bus receiver that is not an AceAddon module owns a private target from
+-- `NS.NewBusTarget()`, and the record behind that factory is what lets step 3 take
+-- those registrations down and step 9 put them back. Written BEFORE the record moved
+-- onto LibKa0s-Bus-1.0 (LibKa0s v1.55.0, docs/revendor/2026-09-23/) and green against
+-- the hand-written one it replaced: what a receiver can observe is whether a message
+-- reaches it, so that is what these assert -- not the record's internals.
+
+--- A probe receiver on the addon's own factory, counting deliveries of `message`.
+local function probe(NS, message)
+    local seen = { n = 0 }
+    seen.target = NS.NewBusTarget()
+    seen.target:RegisterMessage(message, function() seen.n = seen.n + 1 end)
+    return seen
+end
+
+test("Disabled 11: a bus receiver goes down with the addon and comes back with it", function()
+    -- red under: a stand-down that skips the bus record (the receiver still hears
+    -- the message while disabled), or a stand-up that forgets to replay it.
+    local _, NS = scene()
+    local MSG = NS.Constants.MSG
+    local seen = probe(NS, MSG.ZONE_CHANGED)
+
+    NS:SendMessage(MSG.ZONE_CHANGED)
+    assertEqual(seen.n, 1, "the probe never heard the message while enabled")
+
+    assertTrue(NS.SetByPath("enabled", false))
+    NS:SendMessage(MSG.ZONE_CHANGED)
+    assertEqual(seen.n, 1, "a disabled addon's bus receiver still heard the message")
+
+    assertTrue(NS.SetByPath("enabled", true))
+    NS:SendMessage(MSG.ZONE_CHANGED)
+    assertEqual(seen.n, 2, "the receiver was not put back when the addon came back")
+end)
+
+test("Disabled 11: a receiver its owner retired stays retired across the round trip", function()
+    -- `WindowProto:UnregisterBus` on a destroyed window is the real caller: a stand-up
+    -- that resurrected what its owner dropped would wake a window nobody can see.
+    -- red under: a record that the Unregister* wrappers do not clear.
+    local _, NS = scene()
+    local MSG = NS.Constants.MSG
+    local all = probe(NS, MSG.ZONE_CHANGED)
+    local one = probe(NS, MSG.ZONE_CHANGED)
+    all.target:UnregisterAllMessages()
+    one.target:UnregisterMessage(MSG.ZONE_CHANGED)
+
+    assertTrue(NS.SetByPath("enabled", false))
+    assertTrue(NS.SetByPath("enabled", true))
+    NS:SendMessage(MSG.ZONE_CHANGED)
+    assertEqual(all.n, 0, "UnregisterAllMessages was undone by the stand-up")
+    assertEqual(one.n, 0, "UnregisterMessage was undone by the stand-up")
+end)
+
+test("Disabled 11: a receiver that subscribes while disabled hears the bus once enabled", function()
+    -- The settings panel and a window created while the addon is off both do this.
+    -- red under: a stand-up that replays only what was recorded before the stand-down.
+    local _, NS = scene()
+    local MSG = NS.Constants.MSG
+    assertTrue(NS.SetByPath("enabled", false))
+    local late = probe(NS, MSG.ZONE_CHANGED)
+    assertTrue(NS.SetByPath("enabled", true))
+    NS:SendMessage(MSG.ZONE_CHANGED)
+    assertEqual(late.n, 1, "a subscription made while disabled never went live")
+end)
+
+test("Disabled 11: a subscription made while disabled is recorded, not made", function()
+    -- LibKa0s-Bus-1.0's while-down rule: a registration on a tracked target while the
+    -- bus is down goes into the record and goes live at StandUp. So a stood-down addon
+    -- registers NOTHING, structurally, rather than by each receiver remembering to ask
+    -- the latch first. The hand-written record this replaced made it live at once.
+    -- red under: a bus that makes the raw registration while down.
+    local inst, NS = scene()
+    local MSG = NS.Constants.MSG
+    assertTrue(NS.SetByPath("enabled", false))
+    local late = probe(NS, MSG.ZONE_CHANGED)
+    NS:SendMessage(MSG.ZONE_CHANGED)
+    assertEqual(late.n, 0, "a receiver subscribed while disabled heard the bus while disabled")
+    assertEqual(select(2, regSet(inst)), 0, "the late subscription reached the registry")
+    assertTrue(NS.SetByPath("enabled", true))
+    NS:SendMessage(MSG.ZONE_CHANGED)
+    assertEqual(late.n, 1)
+end)
+
+test("Disabled 11: standUp brings the bus up FIRST, before any module re-enables", function()
+    -- The order is what makes the rule above safe: a module's OnEnable, or a window
+    -- WindowManager:Resume builds, registers on a bus that is already up, so it is live
+    -- at once and anything published later in the stand-up reaches it.
+    -- red under: `NS.BusStandUp()` anywhere below `NS:OnEnable()` in standUp.
+    local _, NS = scene()
+    local order = {}
+    for _, key in ipairs({ "BusStandUp", "OnEnable" }) do
+        local original = NS[key]
+        NS[key] = function(...)
+            order[#order + 1] = key
+            return original(...)
+        end
+    end
+    assertTrue(NS.SetByPath("enabled", false))
+    assertTrue(NS.SetByPath("enabled", true))
+    assertEqual(table.concat(order, ","), "BusStandUp,OnEnable")
+end)

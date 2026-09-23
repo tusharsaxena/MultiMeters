@@ -406,6 +406,12 @@ default to total and rate.
   [ARCHITECTURE.md](ARCHITECTURE.md#documented-deviations). Note the console's **Clear** button does not reset the comparison (the library offers the
   host no hook), so a freshly cleared console can sit silent until the next change or heartbeat.
 - No automated in-client tests: headless suites plus manual in-game smoke tests.
+- **With `libs/LibKa0s` missing, a disable leaves bus-target registrations live.** The stand-down
+  record is `LibKa0s-Bus-1.0`'s. Without it, `NS.NewBusTarget()` falls back to the untracked-target
+  stub (`options-ui-§1`), which still gives each receiver its own target but records nothing for
+  `NS.BusStandDown()` to take down. The game events are still unregistered at their one listener, so
+  little reaches those targets. The same install has also lost the settings panel, the slash
+  dispatcher and the latch, and it announces that in chat. `tests/test_degraded.lua` pins the stub.
 - Published on CurseForge (`X-Curse-Project-ID: 1690082`). `X-Wago-ID` remains absent.
 
 **The tooltip is the one thing this addon positions itself.** Everything else is laid out from config

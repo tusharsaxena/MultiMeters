@@ -51,6 +51,9 @@ local SEAMS = {
     -- soft-optional lookup for the file that owns the readers.
     { major = "LibKa0s-Compat-1.0",   file = "core/Compat.lua" },
     { major = "LibKa0s-Compat-1.0",   file = "core/Secrets.lua" },
+    -- The bus record (core/Namespace.lua) and the strict catalog (core/Constants.lua).
+    { major = "LibKa0s-Bus-1.0",      file = "core/Namespace.lua" },
+    { major = "LibKa0s-Bus-1.0",      file = "core/Constants.lua" },
 }
 
 --- The whole addon loaded with libs/LibKa0s NOT in the load list. The lifecycle
@@ -690,4 +693,24 @@ test("Degraded: the addon still enables end to end with no library", function()
     inst.mocks.__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
     inst.mocks.__fireEvent("GROUP_ROSTER_UPDATE")
     inst.mocks.__flushTimers()
+end)
+
+test("Degraded: the bus stub still hands every receiver a target, untracked", function()
+    -- options-ui-§1's untracked-target stub. The receiver rule holds (each receiver
+    -- gets its own AceEvent target and hears the bus), and the record is what is lost:
+    -- the stand-down answers 0 because nothing was recorded, so on this install a
+    -- disable leaves bus registrations live -- docs/ARCHITECTURE.md's Known
+    -- limitations says so. A stub answering nil here would leave every window deaf.
+    -- red under: a NewTarget stub that answers nil while AceEvent-3.0 is present.
+    local inst = degradedInstance()
+    local NS = inst.NS
+    local MSG = NS.Constants.MSG
+    local target = NS.NewBusTarget()
+    assertTrue(type(target) == "table", "the degraded factory handed out no target")
+    local n = 0
+    target:RegisterMessage(MSG.ZONE_CHANGED, function() n = n + 1 end)
+    NS:SendMessage(MSG.ZONE_CHANGED)
+    assertEqual(n, 1, "a degraded receiver does not hear the bus")
+    assertEqual(NS.BusStandDown(), 0, "the stub recorded something")
+    assertEqual(NS.BusStandUp(), 0)
 end)

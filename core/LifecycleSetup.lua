@@ -148,6 +148,13 @@ end
 --- fixed set, and `WindowManager:Resume` calls `Init` first so a window created
 --- while down is built before anything is resumed.
 local function standUp()
+    -- The bus FIRST. LibKa0s-Bus-1.0 records a registration made while the bus is
+    -- down without making it, so a receiver a module's OnEnable (re)subscribes, or
+    -- a window WindowManager:Resume builds, would sit deaf until the replay -- and
+    -- anything published before that point would reach no one. Up first, every
+    -- later step registers live and publishes to receivers that are listening.
+    if NS.BusStandUp then NS.BusStandUp() end
+
     if NS.OnEnable then NS:OnEnable() end
 
     if NS.IterateModules then
@@ -155,8 +162,6 @@ local function standUp()
             if m.OnEnable then m:OnEnable() end
         end
     end
-
-    if NS.BusStandUp then NS.BusStandUp() end
 
     local provider = mod("Provider")
     if provider and provider.Resume then provider:Resume() end

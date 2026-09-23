@@ -133,9 +133,16 @@ through the seam by window id; the pin's none is `NO_SEGMENT` (0) ([schema.md](s
 ## Message bus
 
 Fourteen `AceEvent` messages are the only inter-module communication channel — modules never call each
-other across boundaries. Every name is declared once in `core/Constants.lua`'s `MSG` catalog, so a
-typo in a subscriber is a nil-index at load rather than a callback that silently never fires.
+other across boundaries. Every name is declared once in `core/Constants.lua`'s `MSG` catalog.
 **One sender each**; a second sender is a bug, not a convenience.
+
+The catalog goes through **`LibKa0s-Bus-1.0`'s `Catalog`** (LibKa0s v1.55.0). It checks the table at
+load: SCREAMING_SNAKE keys, and wire strings of the form `Ka0s_MultiMeters_<PascalCase>`, as in
+`METER_UPDATED` → `Ka0s_MultiMeters_MeterUpdated`. It hands back a **strict** table, so a mistyped
+key raises at the call site, for a sender as well as a subscriber. The wire strings used the keys'
+SCREAMING_SNAKE spelling until that adoption, and every sender and subscriber reads the constant, so
+the rename moved nothing else. With no LibKa0s the plain table is the catalog, and a mistyped key is
+a subscriber's nil-index again. The table below names messages by key.
 
 | Message | Sender | Consumers | Payload |
 |---|---|---|---|
@@ -170,6 +177,13 @@ addon is unusually exposed — every window subscribes to the same refresh messa
 many windows. AceAddon modules are their own targets; each `Window` instance, `modules/Format.lua`,
 `modules/Targets.lua`, the export modal in `modules/Export_Modal.lua` and `settings/Profiles.lua`'s
 page own a private target from `NS.NewBusTarget()`. Nothing registers on the shared addon object.
+
+**The stand-down record is `LibKa0s-Bus-1.0`'s** (hand-written here until LibKa0s v1.55.0).
+`NS.busRecord` (`core/Namespace.lua`) tracks every target from `NS.NewBusTarget()`, and
+`NS.BusStandDown()` takes all their registrations down while keeping the record. `NS.BusStandUp()`,
+called first in `standUp`, replays the record as it is now. While the bus is down, a registration
+is recorded but not made, and a target its owner has emptied is never replayed. The stand-down it serves
+is in [disabled-state.md](disabled-state.md), and `tests/test_disabled.lua` pins it.
 
 ## Slash commands
 
@@ -400,6 +414,11 @@ thing is in it before opening it:
 - **Deliberate ceilings.** English only, Retail only, a 40-row export cap, no in-window column drag
   editor (rule R3), wheel-only scrolling, a sticky roster, a drill-down list that is a snapshot, and
   session-only debug logging.
+- **A bus with no library.** On an install missing `libs/LibKa0s`, `NS.NewBusTarget()` still hands
+  every receiver a private target, but through the untracked-target stub (`options-ui-§1`), which
+  records nothing. A disable there leaves bus-target registrations live. The game events are still
+  unregistered at their one listener, so little is ever sent to them. The same install has already
+  lost the options toolkit, the slash dispatcher and the latch, and says so in chat.
 
 **The tooltip is the one thing this addon positions itself**, and that one `SetPoint` onto a cell
 with secret geometry is the only call in the addon that could raise inside Blizzard's own code while

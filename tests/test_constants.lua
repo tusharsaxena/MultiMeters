@@ -278,6 +278,39 @@ test("Constants: every bus message is uniquely named under the addon's prefix", 
     assertTrue(n >= 10, "the bus catalog shrank unexpectedly (" .. n .. " messages)")
 end)
 
+test("Constants: every wire string is Ka0s_MultiMeters_<PascalCase>", function()
+    -- naming-cheatsheet: `<Event>` is PascalCase (MUST) and the SCREAMING_SNAKE casing
+    -- belongs to the KEY alone. This addon let the key leak into the wire string until
+    -- LibKa0s v1.55.0, and LibKa0s-Bus-1.0's Catalog refuses that spelling at load.
+    -- The same two checks the Catalog runs, so the rule still holds on a load with no
+    -- library to run them.
+    -- red under: any wire string written `Ka0s_MultiMeters_SOME_EVENT`.
+    for key, name in pairs(Const.MSG) do
+        assertTrue(key:match("^%u[%u%d_]*$") ~= nil, "MSG." .. key .. " is not SCREAMING_SNAKE")
+        local suffix = name:match("^Ka0s_MultiMeters_(.+)$")
+        assertTrue(suffix ~= nil, "MSG." .. key .. " is not prefixed: " .. name)
+        assertTrue(suffix:match("^%u[%a%d]*$") ~= nil and suffix:find("%l") ~= nil,
+            "MSG." .. key .. "'s event is not PascalCase: " .. name)
+    end
+end)
+
+test("Constants: the bus catalog is strict, so a mistyped key fails at the call site", function()
+    -- A PUBLISHER's typo is otherwise silent: `SendMessage(nil)` returns quietly in
+    -- CallbackHandler. LibKa0s-Bus-1.0's Catalog makes the read itself raise.
+    -- red under: `Constants.MSG = MSG` with the Catalog wrap dropped.
+    local ok, err = pcall(function() return Const.MSG.METER_UPDATE end)
+    assertTrue(not ok, "reading an undeclared bus key did not raise")
+    assertTrue(tostring(err):find("METER_UPDATE", 1, true) ~= nil,
+        "the error does not name the key: " .. tostring(err))
+    assertEqual(Const.MSG.METER_UPDATED, "Ka0s_MultiMeters_MeterUpdated")
+
+    -- The library absent: the plain table is the catalog, and the typo is a nil.
+    local plain = T.load{ libFiles = {} }.NS.Constants.MSG
+    assertNil(plain.METER_UPDATE)
+    assertEqual(plain.METER_UPDATED, Const.MSG.METER_UPDATED,
+        "the degraded catalog declares different wire strings")
+end)
+
 test("Constants: every declared bus message is sent somewhere in the addon", function()
     -- A declared-but-unsent message is a subscriber that can never fire, and the
     -- catalog is the only place the name exists — so nothing else would catch it.

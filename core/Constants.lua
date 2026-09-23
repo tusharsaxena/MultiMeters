@@ -20,7 +20,7 @@
 -- defaults, the aggregator's per-stat read loop and the tooltip's header all
 -- read the same table.
 
-local _, NS = ...
+local addonName, NS = ...
 
 local Constants = {}
 NS.Constants = Constants
@@ -506,23 +506,36 @@ end
 -- Modules talk to each other through AceEvent messages named
 -- "Ka0s_MultiMeters_<Event>" and never by reaching into another module's table
 -- (architecture-§4). Every name is declared here so the catalog in
--- docs/ARCHITECTURE.md has one place to be checked against, and so a typo in a
--- subscriber is a nil-index at load rather than a callback that silently never
--- fires.
+-- docs/ARCHITECTURE.md has one place to be checked against.
+--
+-- `<Event>` IS PascalCase (naming-cheatsheet, MUST) and the KEY is
+-- SCREAMING_SNAKE. Until LibKa0s v1.55.0 this addon let the key's casing leak
+-- into the wire string ("Ka0s_MultiMeters_METER_UPDATED"); the wire strings were
+-- renamed when the catalog below was adopted, which refuses the old spelling.
+-- Every sender and subscriber reads the constant, never the literal, so the
+-- rename moved nothing but these fourteen strings.
+--
+-- STRICT, through LibKa0s-Bus-1.0's `Catalog` (LibKa0s/docs/api/Bus/version-1-docs.md):
+-- the table is validated once here, at load, and what comes back raises on a
+-- read of a key that was never declared -- so a typo fails at the call site for a
+-- PUBLISHER as well as a subscriber. Without it `SendMessage(MSG.TYPO)` is a
+-- silent nil send, because CallbackHandler returns quietly on an event nobody
+-- registered. On an install with no LibKa0s the plain table below is the catalog,
+-- and the typo is a subscriber's nil-index again.
 --
 -- ONE SENDER EACH. The owner is named in the comment beside each constant; a
 -- second sender is a bug, not a convenience.
-Constants.MSG = {
+local MSG = {
     -- core/MultiMeters.lua fans the raw game events onto the bus. Nothing else
     -- registers DAMAGE_METER_* / GROUP_ROSTER_UPDATE / ... directly, so there is
     -- one place where "the game said something" becomes "the addon knows".
-    METER_UPDATED       = "Ka0s_MultiMeters_METER_UPDATED",       -- current session ticked
-    METER_SESSION       = "Ka0s_MultiMeters_METER_SESSION",       -- { type, sessionID }
-    METER_RESET         = "Ka0s_MultiMeters_METER_RESET",         -- sessions wiped
-    ROSTER_CHANGED      = "Ka0s_MultiMeters_ROSTER_CHANGED",      -- group composition moved
-    ZONE_CHANGED        = "Ka0s_MultiMeters_ZONE_CHANGED",        -- instance context moved
-    ENTERING_WORLD      = "Ka0s_MultiMeters_ENTERING_WORLD",      -- login / reload / zone-in
-    RESTRICTION_CHANGED = "Ka0s_MultiMeters_RESTRICTION_CHANGED", -- { type, state }
+    METER_UPDATED       = "Ka0s_MultiMeters_MeterUpdated",       -- current session ticked
+    METER_SESSION       = "Ka0s_MultiMeters_MeterSession",       -- { type, sessionID }
+    METER_RESET         = "Ka0s_MultiMeters_MeterReset",         -- sessions wiped
+    ROSTER_CHANGED      = "Ka0s_MultiMeters_RosterChanged",      -- group composition moved
+    ZONE_CHANGED        = "Ka0s_MultiMeters_ZoneChanged",        -- instance context moved
+    ENTERING_WORLD      = "Ka0s_MultiMeters_EnteringWorld",      -- login / reload / zone-in
+    RESTRICTION_CHANGED = "Ka0s_MultiMeters_RestrictionChanged", -- { type, state }
 
     -- The player's own state, for modules/Visibility.lua's rules. Two messages
     -- rather than one because they are two different kinds of transition:
@@ -532,32 +545,35 @@ Constants.MSG = {
     -- opening a pet battle and dying. Neither carries the state itself: the
     -- rules read it live at the moment they are asked, so a payload here would
     -- be a second answer that can disagree with the first.
-    COMBAT_CHANGED      = "Ka0s_MultiMeters_COMBAT_CHANGED",      -- entered or left combat
-    PLAYER_STATE_CHANGED = "Ka0s_MultiMeters_PLAYER_STATE_CHANGED", -- mount / glide / taxi / ...
+    COMBAT_CHANGED      = "Ka0s_MultiMeters_CombatChanged",      -- entered or left combat
+    PLAYER_STATE_CHANGED = "Ka0s_MultiMeters_PlayerStateChanged", -- mount / glide / taxi / ...
 
     -- core/Database.lua, on an AceDB profile swap / copy / reset.
-    PROFILE_CHANGED     = "Ka0s_MultiMeters_PROFILE_CHANGED",     -- { newProfileKey }
+    PROFILE_CHANGED     = "Ka0s_MultiMeters_ProfileChanged",     -- { newProfileKey }
 
     -- settings/ — the single write seam (NS.SetByPath) announces, nobody else.
-    CONFIG_CHANGED      = "Ka0s_MultiMeters_CONFIG_CHANGED",      -- { section, windowId }
+    CONFIG_CHANGED      = "Ka0s_MultiMeters_ConfigChanged",      -- { section, windowId }
 
     -- modules/WindowManager.lua, when the window REGISTRY changes shape (a
     -- window created, deleted, renamed or duplicated). Distinct from
     -- CONFIG_CHANGED, which is a setting moving inside a window that already
     -- exists: the registry message forces a rebuild, the config message a
     -- refresh.
-    WINDOWS_CHANGED     = "Ka0s_MultiMeters_WINDOWS_CHANGED",     -- { windowId, action }
+    WINDOWS_CHANGED     = "Ka0s_MultiMeters_WindowsChanged",     -- { windowId, action }
 
     -- core/State.lua, when preview mode is toggled by the unlock state or by
     -- `/mm test`.
-    TEST_MODE_CHANGED     = "Ka0s_MultiMeters_PREVIEW_CHANGED",     -- { enabled }
+    TEST_MODE_CHANGED     = "Ka0s_MultiMeters_PreviewChanged",     -- { enabled }
 
     -- modules/DrillDown.lua, when a window enters or leaves a per-source
     -- breakdown. Declared here rather than spelled out at the two use sites: a
     -- hand-written wire string in the sender and another in the subscriber is
     -- exactly the pair this catalog exists to make impossible to mistype.
-    DRILLDOWN_CHANGED   = "Ka0s_MultiMeters_DRILLDOWN_CHANGED",   -- { windowId, active }
+    DRILLDOWN_CHANGED   = "Ka0s_MultiMeters_DrillDownChanged",   -- { windowId, active }
 }
+
+local BusLib = LibStub and LibStub("LibKa0s-Bus-1.0", true)
+Constants.MSG = BusLib and BusLib.Catalog(addonName, MSG) or MSG
 
 --- How long to wait before asking the player-state rules a second time, in
 --- seconds.

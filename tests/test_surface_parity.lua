@@ -149,3 +149,18 @@ test("parity: NS.Compat and NS.Secrets carry every LibKa0s-Compat-1.0 member bet
         T.assertSurfaceParity(inst.NS.Secrets, "LibKa0s-Compat-1.0", COMPAT_READERS)
     end
 end)
+
+-- ── LibKa0s-Bus-1.0 ─────────────────────────────────────────────────────────────────────────────
+
+test("parity: the bus stub carries the LibKa0s-Bus-1.0 surface, and its record the instance's", function()
+    -- Two layers, because core/Namespace.lua's stub stands in for both: the library table
+    -- (`New`, `Catalog`) and what `New` answers (`NewTarget`, `StandDown`, `StandUp`, `name`).
+    -- The first by name through the runner's surface source; the second as two tables, the
+    -- live NS.busRecord against the degraded one, since an instance has no name to look up.
+    -- red under: a stub missing `Catalog`, or a stub record missing `StandUp`.
+    local live, degraded = T.load{}, T.load{ libFiles = {} }
+    assertEqual(type(degraded.NS.BusLib), "table", "the degraded load published no bus stub")
+    assertEqual(degraded.mocks.LibStub("LibKa0s-Bus-1.0", true), nil, "the library is not absent")
+    T.assertSurfaceParity(degraded.NS.BusLib, "LibKa0s-Bus-1.0")
+    T.assertSurfaceParity(live.NS.busRecord, degraded.NS.busRecord, "NS.busRecord")
+end)
