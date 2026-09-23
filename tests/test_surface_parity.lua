@@ -51,6 +51,12 @@
 --   * Widgets — `modules/Export.lua` reaches the library table directly and degrades by REFUSING to
 --     open, not by standing in for a surface. There is no stub to check.
 
+-- COMPAT IS HERE TOO (LibKa0s v1.55.0), as the two calls its API document prescribes for the two
+-- hosts that split its members across two tables. NS.Compat carries the readers and NS.Secrets the
+-- three guards, so each call ignores what the other table carries plus what this host does not wire
+-- at all. A member the major gains later is ignored by NEITHER call, so it goes red here until this
+-- addon decides where it lives -- which is the pressure the gate exists to apply.
+
 local T = _G.MULTIMETERS_TEST
 local test, assertEqual = T.test, T.assertEqual
 
@@ -113,4 +119,33 @@ test("parity: the Options stub carries every public member of the live Helpers s
         -- AceGUI on the degraded path — that is the condition under test, not a divergence.
         "AceGUI",
     })
+end)
+
+-- ── LibKa0s-Compat-1.0 ──────────────────────────────────────────────────────────────────────────
+
+--- The six readers the major publishes, all of which live on NS.Compat when they are wired at all.
+local COMPAT_READERS = {
+    "GetSpellInfo", "GetSpellName", "GetSpellTexture", "GetSpellCooldown",
+    "GetSpecialization", "GetSpecializationInfo",
+}
+
+--- What NS.Compat deliberately does not carry: the guard trio (it lives on NS.Secrets) and the two
+--- readers this addon has no caller for. `grep -rn 'GetSpellName\|GetSpellCooldown' core modules
+--- settings` answers nothing: the meter hands over spellIDs and the tooltip wants a name AND an
+--- icon, which is GetSpellInfo's pair, and nothing here draws a cooldown.
+local COMPAT_NOT_ON_NS_COMPAT = {
+    "IsSecret", "CanAccess", "IsSafeKey",
+    "GetSpellName", "GetSpellCooldown",
+}
+
+test("parity: NS.Compat and NS.Secrets carry every LibKa0s-Compat-1.0 member between them", function()
+    -- Both loads, because the two tables are built differently on each: bound to the library on a
+    -- full load, and to the reader arm and the guard arm on a degraded one. A member missing from
+    -- either arm raises on exactly the load it exists for.
+    -- red under: dropping any `Compat.X = CompatLib and ... or absent` line from core/Compat.lua, or
+    -- any guard assignment from core/Secrets.lua.
+    for _, inst in ipairs({ T.load{}, T.load{ libFiles = {} } }) do
+        T.assertSurfaceParity(inst.NS.Compat, "LibKa0s-Compat-1.0", COMPAT_NOT_ON_NS_COMPAT)
+        T.assertSurfaceParity(inst.NS.Secrets, "LibKa0s-Compat-1.0", COMPAT_READERS)
+    end
 end)

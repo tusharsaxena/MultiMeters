@@ -337,10 +337,15 @@ local SUITES = {
 -- Set BEFORE Kit.expose, which is what makes it stick: expose registers a source only when none is
 -- registered yet, precisely so a runner like this one keeps its own.
 --
--- Only Options is named. The other five seams are not compared by name, and
+-- Options and Compat are named. The other five seams are not compared by name, and
 -- tests/test_surface_parity.lua's header gives the reason for each.
 Kit.setSurfaceSource{
     ["LibKa0s-Options-1.0"] = shared.NS.Helpers,
+    -- A LIBRARY table, unlike the row above, and named here only because a table map
+    -- switches Kit.expose's auto-wiring off for every name: without this row the
+    -- by-name parity call in tests/test_surface_parity.lua raises "the surface source
+    -- answers nil" (LibKa0s docs/api/Compat/version-1-docs.md, "The gate").
+    ["LibKa0s-Compat-1.0"]  = shared.mocks.LibStub("LibKa0s-Compat-1.0", true),
 }
 
 _G.MULTIMETERS_TEST = Kit.expose{

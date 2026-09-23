@@ -37,7 +37,7 @@ local test, assertEqual, assertTrue, assertFalse, assertNil =
 
 local ROOT = T.root or "."
 
--- The five majors, and the file that reaches for each.
+-- The majors, and the file that reaches for each.
 local SEAMS = {
     { major = "LibKa0s-Core-1.0",     file = "core/CoreSetup.lua" },
     { major = "LibKa0s-Perf-1.0",     file = "core/PerfSetup.lua" },
@@ -45,6 +45,12 @@ local SEAMS = {
     { major = "LibKa0s-Slash-1.0",    file = "settings/Slash.lua" },
     { major = "LibKa0s-Options-1.0",  file = "settings/OptionsSetup.lua" },
     { major = "LibKa0s-Widgets-1.0",  file = "modules/Export_Modal.lua" },
+    -- The spell and spec readers and the secret guards (LibKa0s v1.55.0). Two files
+    -- reach for it -- core/Secrets.lua wires the guards -- and both are checked by
+    -- tests/test_compat.lua's degraded cases; this row holds the premise and the
+    -- soft-optional lookup for the file that owns the readers.
+    { major = "LibKa0s-Compat-1.0",   file = "core/Compat.lua" },
+    { major = "LibKa0s-Compat-1.0",   file = "core/Secrets.lua" },
 }
 
 --- The whole addon loaded with libs/LibKa0s NOT in the load list. The lifecycle
