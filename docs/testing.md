@@ -330,28 +330,30 @@ follow-up.
 
 ### The 1500-line cap gate
 
-`tests/test_layout_cap.lua` compares two things: every authored `.lua` git tracks, and the census
-under *Files over the 1500-line cap* in [ARCHITECTURE.md](ARCHITECTURE.md). It reads them in both
-directions, so a file that crosses the cap unremarked and a row left behind for a file that has
+`tests/_kit/test_layout_cap.lua` compares two things: every authored `.lua` git tracks, and the
+census under *Files over the 1500-line cap* in [ARCHITECTURE.md](ARCHITECTURE.md). It reads them in
+both directions, so a file that crosses the cap unremarked and a row left behind for a file that has
 stopped breaching are each a red.
 
-**Since 2026-09-09 there is no census to read, and that is the passing state.** The last of fifteen
-breaches was peeled that day and the table came out of the hub with them, because `layout-§1`'s
-terminal state for a repository with nothing over the cap is nothing over the cap *and* no census —
-a heading standing over an empty table is the graveyard the rule warns about rather than evidence of
-anything. The gate was amended in the same change to tell the two absences apart: the census reader
-now reports whether it found the heading instead of failing on the spot, so a breach with no census
-to name it is red (and the message says the heading has to come back with the row), while a row that
-outlives its breach is red the other way. Before that it failed in **both** directions at once —
-which is the shape a gate takes when it was written for a repository that had never reached the state
-it was driving toward, and neither this suite nor the register gate below had ever been run in one.
+**The gate is the kit's, not this repository's.** It arrived with test-kit revision 25 (LibKa0s
+v1.55.0) and is declared in `tests/run.lua` as `{ name = "test_layout_cap", dir = "tests/_kit/" }`,
+the pair form `testing-§9` requires for a kit suite. The hand-written `tests/test_layout_cap.lua`
+this repository kept until then was deleted in the same commit, because a local file of the same
+basename would collide with the kit's. `tests/run.lua` sets no `Kit.layoutCap`: the hub is the
+default `docs/ARCHITECTURE.md`, and nothing tracked here is generated data.
+
+**Nothing is over the cap today, and the census says so in words.** The last of fifteen breaches was
+peeled on 2026-09-09. The heading stays with that sentence under it, because `layout-§1` treats an
+empty census as a result, and the gate reddens on a heading that stands with nothing beneath it as
+well as on a missing one.
 
 `layout-§1` binds **every authored file the repository tracks**, `tests/` included; vendored code
 (`libs/`, `tests/_kit/`) is the only carve-out that reaches this repo. A red is cleared by giving
 the file one of the three terminal states the rule allows — peel it, open an issue naming the seam a
 peel would follow, or ratify a register row with a re-check trigger — and then adding its row to the
-census. It is not cleared by raising `CAP`, and it must not be cleared by dropping the suite from
-`SUITES`: the inventory gate reddens on that too, which is the point of having one.
+census. It is not cleared by editing the kit's `CAP`, which is vendored and read-only here, and it
+must not be cleared by dropping the suite from `SUITES`: the inventory gate reddens on that too,
+which is the point of having one.
 
 The line figures in the census are dated measurements and nothing asserts them, so an ordinary edit
 to a large file does not redden this gate. Membership is the invariant, not the numbers.

@@ -20,7 +20,7 @@
 -- exists.
 --
 -- It is the fourth register gate in this suite and strikes the same bargain as the other three
--- (tests/test_layout_cap.lua, tests/test_complexity_register.lua, tests/test_texture_paths.lua): it
+-- (tests/_kit/test_layout_cap.lua, tests/test_complexity_register.lua, tests/test_texture_paths.lua): it
 -- reads a table out of docs/ARCHITECTURE.md, checks membership rather than the measurements beside
 -- it, and FAILS rather than passes when it cannot look. A missing file, a missing heading or a table
 -- that parses to nothing is red, not a skip — a gate that goes quiet when it is blind reports

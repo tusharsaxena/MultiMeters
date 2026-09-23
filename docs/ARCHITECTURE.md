@@ -572,17 +572,16 @@ Three things read like deviations and are not, recorded here so the same questio
 
 ### Files over the 1500-line cap
 
-None. On 2026-09-09 the last of fifteen breaches was peeled, and the census table that used to stand
-here is gone with them — `layout-§1`'s terminal state for a repository with nothing over the cap is
-nothing over the cap *and* no census, because a heading standing over an empty table is the graveyard
-the rule warns about rather than evidence of anything.
+Nothing is over the cap today. On 2026-09-09 the last of fifteen breaches was peeled, and the census
+table that used to stand here went with them. The heading stays and carries this sentence, because
+`layout-§1` treats an empty census as a **result**: a heading with nothing under it cannot be told
+apart from a census nobody wrote.
 
-`tests/test_layout_cap.lua` is what keeps that honest, and it reads the absence deliberately: a file
-that crosses 1500 lines again turns the suite red naming the heading that has to come back with it,
-and a table that outlives its last breach turns it red the other way. The gate was amended on
-2026-09-09 to tell those two states apart; before that it failed in both directions at once, which is
-the shape a gate takes when it was written for a repository that had never reached the state it was
-driving toward.
+`tests/_kit/test_layout_cap.lua` is what keeps that honest. It is the kit's gate (test-kit revision
+25, vendored with LibKa0s v1.55.0), and it replaced the hand-written `tests/test_layout_cap.lua` this
+repository carried until then. A file that crosses 1500 lines turns it red until a row naming the
+file and its terminal state is added here, a row that outlives its breach turns it red the other way,
+and this section going blank or losing its heading is red as well.
 
 What was peeled, and along which seam, is in the git history of that day — each of the seven source
 files took the seam its own issue had already named, and the eight suites followed the modules they

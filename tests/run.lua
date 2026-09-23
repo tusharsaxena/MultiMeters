@@ -217,7 +217,12 @@ local SUITES = {
     -- disposition rather than the figures beside them, and neither runs the tool that
     -- produced the measurement -- `wc` in one case, `lizard` in the other. A suite that
     -- ran lizard would be the commit-time complexity gate performance-§10 forbids.
-    "test_layout_cap",
+    -- The cap gate is the KIT's since revision 25 (layout-§1); the hand-written
+    -- tests/test_layout_cap.lua it replaced was retired in the same commit. Declared by
+    -- the pair (basename, directory), so a bare name can no longer shadow it. It takes
+    -- no Kit.layoutCap: the hub is the default docs/ARCHITECTURE.md and nothing tracked
+    -- here is generated data.
+    { name = "test_layout_cap", dir = "tests/_kit/" },
     "test_complexity_register",
     "test_deviation_register",
     -- The third register, and the same bargain a third time: it reads the
@@ -308,7 +313,7 @@ local SUITES = {
     -- rest of the kit lives rather than being re-typed into nine repositories, so it
     -- is declared with its own `dir`. Kit.assertSuiteInventory fails the run until it
     -- is declared, so it cannot arrive with a re-vendor and then quietly run nothing.
-    { name = "test_eol", dir = root .. "/tests/_kit/" },
+    { name = "test_eol", dir = "tests/_kit/" },
 }
 
 -- ---------------------------------------------------------------------------

@@ -32,8 +32,9 @@
 --
 -- IT FAILS RATHER THAN PASSES WHEN IT CANNOT LOOK. No io.popen, no git, no ARCHITECTURE.md, no
 -- census heading -- every one of those is a failure, not a skip. A gate that goes quiet when it is
--- blind reports success, which is worse than not existing. Same bargain tests/test_layout_cap.lua
--- strikes, and this file is deliberately built to its shape.
+-- blind reports success, which is worse than not existing. Same bargain the layout cap gate strikes
+-- (tests/_kit/test_layout_cap.lua since kit revision 25; this file was built to the shape of the
+-- hand-written copy it replaced).
 
 local T = _G.MULTIMETERS_TEST
 local test, fail = T.test, T.fail
