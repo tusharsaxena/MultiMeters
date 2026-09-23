@@ -592,6 +592,25 @@ test("The player's role falls back to their specialization; another unit's canno
     assertEqual(group[2].role, "NONE", "a party member has no such call and stays NONE")
 end)
 
+test("The player's spec is read through NS.Compat, never the deprecated global", function()
+    -- modules/Roster.lua used to read `_G.GetSpecialization` itself: a feature module
+    -- naming a deprecated global, the one thing `compat` forbids. It asks
+    -- NS.Compat.GetSpecialization now -- LibKa0s-Compat-1.0's ladder, which takes
+    -- C_SpecializationInfo first -- so a client whose deprecated global has already
+    -- gone still answers the fallback role.
+    -- red under: restoring the direct `_G.GetSpecialization` read.
+    local inst = T.load{ mutate = function(m)
+        m.GetSpecialization = function() return nil end   -- the deprecated rung: gone
+    end }
+    inst.mocks.setGroup{
+        { guid = "Player-1-0000000A", name = "Tankadin", class = "PALADIN", role = "NONE" },
+    }
+    inst.mocks.setSpecRole("TANK")
+    inst.NS.Roster.Refresh()
+    assertEqual(inst.NS.Roster.GetGroup()[1].role, "TANK",
+        "the spec came from C_SpecializationInfo, through the Compat seam")
+end)
+
 test("An assigned role beats the specialization fallback", function()
     -- The order is load-bearing: the group's assignment is what the raid is
     -- actually playing to, and a tank in a DPS spec doing a tank's job would

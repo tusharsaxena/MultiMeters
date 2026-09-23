@@ -29,55 +29,33 @@ local Compat = {}
 NS.Compat = Compat
 
 -- ---------------------------------------------------------------------------
--- Spell APIs
+-- Spell and specialization readers: LibKa0s-Compat-1.0
 -- ---------------------------------------------------------------------------
 --
 -- The meter hands us spellIDs on every DamageMeterCombatSpell row; the tooltip
 -- and the drill-down turn them into a name and an icon. Both readers moved
--- behind C_Spell in 10.x, so the bare globals are the fallback only.
-
---- Basic spell info, flattened to the pre-C_Spell multi-return so call sites
---- read the same on either client.
----
---- @param spellID number
---- @return name, iconID, castTime, minRange, maxRange, spellID
-function Compat.GetSpellInfo(spellID)
-    if _G.C_Spell and _G.C_Spell.GetSpellInfo then
-        local info = _G.C_Spell.GetSpellInfo(spellID)
-        if info then
-            return info.name, info.iconID, info.castTime,
-                   info.minRange, info.maxRange, info.spellID
-        end
-        return nil
-    end
-    if _G.GetSpellInfo then
-        return _G.GetSpellInfo(spellID)
-    end
-    return nil
-end
-
---- File ID of a spell's icon texture, for the tooltip's spell rows.
---- @param spellID number
---- @return number|nil  fileID suitable for Texture:SetTexture()
-function Compat.GetSpellTexture(spellID)
-    if _G.C_Spell and _G.C_Spell.GetSpellTexture then
-        return _G.C_Spell.GetSpellTexture(spellID)
-    end
-    if _G.GetSpellTexture then
-        return _G.GetSpellTexture(spellID)
-    end
-    return nil
-end
-
--- ---------------------------------------------------------------------------
--- Specialization APIs
--- ---------------------------------------------------------------------------
+-- behind C_Spell in 10.x, and 12.0 (Midnight) moved the specialization query
+-- behind C_SpecializationInfo. The four ladders are the LIBRARY's now
+-- (LibKa0s v1.55.0, `LibKa0s-Compat-1.0`): the same ladders several Ka0s addons
+-- wrote by hand, one of which -- this file's -- read the deprecated global's
+-- RANK as the icon. The call surface does not move: every caller still says
+-- `NS.Compat.GetSpellInfo(...)`, and only what that name is bound to changed.
 --
--- 12.0 (Midnight) moved the specialization query behind C_SpecializationInfo;
--- the bare GetSpecialization / GetSpecializationInfo globals are the deprecated
--- pre-11.x seam. Signatures are preserved: GetSpecialization returns the active
--- spec INDEX, GetSpecializationInfo(index) returns
--- (id, localizedName, description, iconID, role, ...).
+-- The contract is the library's, and LibKa0s/docs/api/Compat/version-1-docs.md
+-- is its source of truth:
+--
+--   GetSpellInfo(id)          name, iconID, castTime, minRange, maxRange, spellID
+--                             (exactly six), or one nil
+--   GetSpellTexture(id)       fileID or nil, exactly one value
+--   GetSpecialization()       the active spec INDEX or nil, exactly one value
+--   GetSpecializationInfo(i)  the client's own returns, passed through
+--                             (id, localizedName, description, iconID, role, ...)
+--
+-- With the library ABSENT each reader answers the documented absent value, nil,
+-- and reads nothing itself: the "reader arm" options-ui-§1 names. A stub that
+-- re-implemented the top rung would be the duplication the major removes. The
+-- callers already draw a spell row with no icon and a role-less player on nil,
+-- because nil is also what a client without the API answers.
 --
 -- The meter was believed to ship specIconID on EVERY source row, so the row
 -- icons do NOT go through here. That is true in a dungeon and measured false in
@@ -92,24 +70,15 @@ end
 -- LOCAL player's spec when the group APIs have not caught up yet (the first
 -- frame after a zone-in).
 
---- Active specialization index (or nil when unavailable).
---- @return number|nil
-function Compat.GetSpecialization()
-    if _G.C_SpecializationInfo and _G.C_SpecializationInfo.GetSpecialization then
-        return _G.C_SpecializationInfo.GetSpecialization()
-    end
-    return _G.GetSpecialization and _G.GetSpecialization()
-end
+local CompatLib = LibStub and LibStub("LibKa0s-Compat-1.0", true)
 
---- Spec info for a spec index. Multi-return passthrough of the underlying API.
---- @param index number
-function Compat.GetSpecializationInfo(index)
-    if _G.C_SpecializationInfo and _G.C_SpecializationInfo.GetSpecializationInfo then
-        return _G.C_SpecializationInfo.GetSpecializationInfo(index)
-    end
-    if _G.GetSpecializationInfo then return _G.GetSpecializationInfo(index) end
-    return nil
-end
+--- The reader arm: the absent-table answer, one nil, and nothing read.
+local function absent() return nil end
+
+Compat.GetSpellInfo          = CompatLib and CompatLib.GetSpellInfo          or absent
+Compat.GetSpellTexture       = CompatLib and CompatLib.GetSpellTexture       or absent
+Compat.GetSpecialization     = CompatLib and CompatLib.GetSpecialization     or absent
+Compat.GetSpecializationInfo = CompatLib and CompatLib.GetSpecializationInfo or absent
 
 -- ---------------------------------------------------------------------------
 -- C_DamageMeter — the addon's entire data source

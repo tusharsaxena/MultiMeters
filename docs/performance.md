@@ -209,7 +209,8 @@ lua tests/perf.lua --out /tmp/mm.json --label wip    # also emit a record
 
 **Outside the green gate.** `lua tests/run.lua` does not invoke it and no commit depends on it. The
 vendored runner drives it as its `perf` suite and keeps the output in the run bundle; that suite is
-recorded, never gating (see [testing.md](testing.md)).
+recorded: it never fails a run and never gates a commit, and the release (the tag) is gated on it,
+evaluated by `/wow-addon:bump-version` from the run's `manifest.json` (see [testing.md](testing.md)).
 
 It asserts on the **deterministic** half only — API calls, column reads, refresh counts, unit-API
 walks and bytes allocated per iteration, isolated by a full collect either side of the measured loop

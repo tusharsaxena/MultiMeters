@@ -16,8 +16,9 @@ two things it is:
 
 1. **An accepted deviation** — this addon intentionally differs; record it as a row in
    `docs/ARCHITECTURE.md` -> `## Documented deviations`, shaped
-   `| Rule | What differs | Why | Decided | Re-check trigger |`. That register is the single home:
-   a deviation not in it is not ratified.
+   `| Rule | What differs | Why | Decided | Re-check trigger |`, where Rule is the `filename-§N`
+   reference. That register is the single home: the reasoning may live in the issue-audit GitHub
+   issue or an audit bundle and the row cites it, but a deviation not in the register is not ratified.
 2. **A change to the standard itself** — the standard's definition should evolve; the update
    belongs upstream in the WowAddonStandards repo, after which this addon conforms to the new rule.
 
@@ -49,4 +50,4 @@ Start here, then read the docs:
 Green gate before every commit: `lua tests/run.lua` and `luacheck .` (0/0). Never auto-stage/commit/
 push and never bump the version without an explicit instruction.
 
-Bundles [LibKa0s](https://github.com/tusharsaxena/LibKa0s) v1.54.2 (MIT).
+Bundles [LibKa0s](https://github.com/tusharsaxena/LibKa0s) v1.55.0 (MIT).

@@ -18,8 +18,8 @@ without one of its members.
 
 | Group | Shims | Answers with, where the API is absent |
 |---|---|---|
-| Spell | `GetSpellInfo`, `GetSpellTexture` | `nil` |
-| Specialization | `GetSpecialization`, `GetSpecializationInfo` | `nil` |
+| Spell | `GetSpellInfo`, `GetSpellTexture` (bound to `LibKa0s-Compat-1.0`) | `nil`, which is also the reader arm's answer when the library is absent |
+| Specialization | `GetSpecialization`, `GetSpecializationInfo` (bound to `LibKa0s-Compat-1.0`) | `nil`, which is also the reader arm's answer when the library is absent |
 | `C_DamageMeter` | `IsDamageMeterAvailable`, `GetCombatSessionFromType`, `GetCombatSessionFromID`, `GetCombatSessionSourceFromType`, `GetCombatSessionSourceFromID`, `GetAvailableCombatSessions`, `GetSessionDurationSeconds`, `ResetAllCombatSessions` | `nil`, except as noted below |
 | `C_DeathRecap` | `HasDeathRecap`, `HasRecapEvents`, `GetRecapEvents`, `GetRecapMaxHealth` | `false` / `nil` |
 | Recap discovery | `RecapMembers`, `RecapAPIs`, `CallRecap` | an empty finding, never an error |
@@ -37,7 +37,36 @@ recap-discovery probe), `modules/DrillDown.lua` and `modules/Tooltip_Lines.lua`
 has), `modules/Format.lua` (the formatters), and `modules/Row.lua` (`BarInterpolation`, from `Cell:SetValue`). `modules/Tooltip.lua` and `modules/Window.lua`
 themselves name nothing in this file any more: the CCN peel took the spell shims across to the
 tooltip's builder and line files, and the header art and the menu across to
-`modules/Window_Header.lua`.
+`modules/Window_Header.lua`. `modules/Roster.lua` reaches `Compat.GetSpecialization` for the local
+player's fallback role. It read the deprecated global directly until LibKa0s v1.55.0.
+
+## What `LibKa0s-Compat-1.0` answers
+
+Since LibKa0s v1.55.0, four of the twenty-nine are the library's:
+
+- `GetSpellInfo`
+- `GetSpellTexture`
+- `GetSpecialization`
+- `GetSpecializationInfo`
+
+`core/Compat.lua` binds each name to the library member, and every caller still says
+`NS.Compat.X`. The ladders, the return counts and the absent answers are the library's contract, in
+`LibKa0s/docs/api/Compat/version-1-docs.md`. That contract is the source of truth, so it is not
+restated here. One correction arrived with it: where only the deprecated `GetSpellInfo` global
+exists, its rank is dropped rather than passed along as the icon.
+
+With the library absent, the four answer `nil` and read nothing. That is the **reader arm**
+`options-ui-§1` names. A degraded install draws spell rows with no name or icon, and the player
+with no spec role, the same as a client without the API.
+
+`core/Secrets.lua`'s three guards, `IsSecret`, `CanAccess` and `IsSafeKey`, are the same major's.
+They take the other arm, the **guard arm**, which re-implements each one-rung body when the library
+is absent. A guard that answered "nothing is secret" only because the library was missing would
+hand a secret to a comparison mid-pull.
+
+Two members of the major are not wired, because nothing here calls them: `GetSpellName` and
+`GetSpellCooldown`. `tests/test_surface_parity.lua` names both, so a member the major adds later
+fails that gate until this addon decides where it lives.
 
 ## The rule this file exists to keep
 
@@ -177,8 +206,10 @@ fails to open must not put an error in front of the player mid-pull.
 
 ## What is deliberately not here
 
-- **Shims `LibKa0s` supplies are not counted against this file's trigger and are not restated here.**
-  TOC metadata is `LibKa0s-Env-1.0`'s, reached through `core/EnvSetup.lua` — which is also why the
+- **Shims `LibKa0s` supplies are not counted against this file's trigger and are not restated here**,
+  unless this file publishes them on its own `Compat` table. The four `LibKa0s-Compat-1.0` readers
+  above are entry points on `NS.Compat`, so they stay in the count. TOC metadata is
+  `LibKa0s-Env-1.0`'s, reached through `core/EnvSetup.lua` — which is also why the
   `Compat.GetAddOnMetadata` its header names is a historical reference rather than a member of this
   file.
 - **`C_DeathRecap.GetRecapLink`** is left unshimmed until something wants a chat link (spec §10).

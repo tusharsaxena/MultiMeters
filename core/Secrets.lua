@@ -140,6 +140,24 @@ end
 -- ---------------------------------------------------------------------------
 -- Per-value inspection
 -- ---------------------------------------------------------------------------
+--
+-- THE THREE GUARDS ARE LibKa0s-Compat-1.0's (LibKa0s v1.55.0): IsSecret,
+-- CanAccess and IsSafeKey below are bound to the library's members when it is
+-- loaded, and every caller keeps asking `NS.Secrets.X`. The library's bodies are
+-- the ones this file used to own, and AuraMaster's copy was the same shape;
+-- LibKa0s/docs/api/Compat/version-1-docs.md is their contract now.
+--
+-- THE GUARD ARM. With the library absent, each guard falls back to the
+-- one-rung body below. That is a DELIBERATE, documented duplication, and it
+-- is not optional: for a guard, "the library is missing" is not "the client has
+-- no secrets system", and a stub answering IsSecret -> false on a 12.x client
+-- would send a secret into a comparison mid-pull, on exactly the degraded path
+-- the stub exists to survive. See LibKa0s docs/api/Compat/version-1-docs.md,
+-- "Degradation" -> "Guards: the stub re-implements the body", and
+-- options-ui-§1's guard arm. tests/test_compat.lua pins the arm to the
+-- library's own answers under one fixture.
+
+local CompatLib = LibStub and LibStub("LibKa0s-Compat-1.0", true)
 
 --- Whether `v` is a secret value.
 ---
@@ -148,11 +166,12 @@ end
 ---
 --- @param v any
 --- @return boolean
-function Secrets.IsSecret(v)
+local function isSecretGuard(v)
     local fn = _G.issecretvalue
     if not fn then return false end
     return fn(v) and true or false
 end
+Secrets.IsSecret = CompatLib and CompatLib.IsSecret or isSecretGuard
 
 --- Whether the current execution context may access `v`.
 ---
@@ -163,12 +182,13 @@ end
 ---
 --- @param v any
 --- @return boolean
-function Secrets.CanAccess(v)
+local function canAccessGuard(v)
     local fn = _G.canaccessvalue
     if fn then return fn(v) and true or false end
     -- No canaccessvalue: fall back to "accessible unless known secret".
     return not Secrets.IsSecret(v)
 end
+Secrets.CanAccess = CompatLib and CompatLib.CanAccess or canAccessGuard
 
 --- Whether ORDERING on `v` is legal right now.
 ---
@@ -221,10 +241,11 @@ end
 ---
 --- @param v any
 --- @return boolean
-function Secrets.IsSafeKey(v)
+local function isSafeKeyGuard(v)
     if v == nil then return false end
     return not Secrets.IsSecret(v)
 end
+Secrets.IsSafeKey = CompatLib and CompatLib.IsSafeKey or isSafeKeyGuard
 
 -- ---------------------------------------------------------------------------
 -- Table inspection

@@ -30,6 +30,9 @@ local test, assertEqual, assertTrue, assertFalse, assertNil =
 local Compat = NS.Compat
 local Const  = NS.Constants
 
+--- The number of values a call answered, with the values themselves.
+local function pack(...) return select("#", ...), { ... } end
+
 --- A fresh instance whose simulated client is missing the named namespaces.
 local function loadWithout(...)
     local names = { ... }
@@ -72,12 +75,23 @@ test("Compat: GetSpellInfo answers nil for an unknown spell rather than raising"
 end)
 
 test("Compat: GetSpellInfo and GetSpellTexture fall back to the bare globals", function()
+    -- The fixture is the deprecated global's REAL shape, rank second:
+    -- `name, rank, icon, castTime, minRange, maxRange, spellID`. It used to read
+    -- `"Old " .. id, 7, 0, 0, 40, id` -- the rank slot missing, so the icon sat
+    -- second -- and this file's own ladder passed that through raw, which is the
+    -- rank-as-icon defect LibKa0s-Compat-1.0 corrects. The remap is pinned now:
+    -- the answer is the modern six-value shape whichever rung produced it.
+    -- red under: a legacy rung that forwards the global's returns unmapped.
     local inst = T.load{ mutate = function(m)
         m.C_Spell = nil
-        m.GetSpellInfo    = function(id) return "Old " .. id, 7, 0, 0, 40, id end
+        m.GetSpellInfo    = function(id) return "Old " .. id, "Rank 1", 7, 0, 0, 40, id end
         m.GetSpellTexture = function(id) return 500 + id end
     end }
-    assertEqual((inst.NS.Compat.GetSpellInfo(3)), "Old 3")
+    local n, v = pack(inst.NS.Compat.GetSpellInfo(3))
+    assertEqual(n, 6, "the legacy rung answers the same six values as the modern one")
+    assertEqual(v[1], "Old 3")
+    assertEqual(v[2], 7, "the icon, never the rank, is the second value")
+    assertEqual(v[5] .. "|" .. v[6], "40|3")
     assertEqual(inst.NS.Compat.GetSpellTexture(3), 503)
 end)
 
@@ -112,6 +126,131 @@ test("Compat: the spec shims answer nil with no API at all", function()
     local inst = loadWithout("C_SpecializationInfo", "GetSpecialization", "GetSpecializationInfo")
     assertNil(inst.NS.Compat.GetSpecialization())
     assertNil(inst.NS.Compat.GetSpecializationInfo(1))
+end)
+
+-- ── the readers and guards LibKa0s-Compat-1.0 now answers ───────────────────
+--
+-- Written BEFORE the four readers and the secret trio moved onto the library (the
+-- v1.55.0 re-vendor, docs/revendor/2026-09-23-v1.55.0/), and green against the host bodies
+-- they replaced. They pin what a caller can observe, which is values AND the count of
+-- them: `Tooltip_Builders.lua` spreads GetSpellTexture's answer into an `and ... or`
+-- and the drill-down reads GetSpellInfo positionally, so a stray second value is a
+-- behavior change even when every value is right.
+
+test("Compat: the moved readers answer the same values in the same count", function()
+    -- red under: a reader that forwards the client's extra returns, or one that drops
+    -- a position the tooltip or the drill-down reads.
+    local n, v = pack(Compat.GetSpellInfo(4321))
+    assertEqual(n, 6, "GetSpellInfo on a hit answers exactly six values")
+    assertEqual(v[2], 130000 + 4321, "and the icon is the SECOND of them")
+
+    local inst = T.load{ mutate = function(m)
+        m.C_Spell.GetSpellInfo = function() return nil end
+    end }
+    n = pack(inst.NS.Compat.GetSpellInfo(1))
+    assertEqual(n, 1, "a GetSpellInfo miss is one nil, not an empty tuple")
+
+    n, v = pack(Compat.GetSpellTexture(4321))
+    assertEqual(n, 1, "GetSpellTexture answers exactly one value")
+    assertEqual(v[1], 130000 + 4321)
+
+    n, v = pack(Compat.GetSpecialization())
+    assertEqual(n, 1, "GetSpecialization answers exactly one value")
+    assertEqual(v[1], 1)
+
+    n, v = pack(Compat.GetSpecializationInfo(1))
+    assertEqual(n, 5, "GetSpecializationInfo passes the client's own returns through")
+    assertEqual(v[1] .. "|" .. v[2] .. "|" .. v[5], "250|Blood|TANK")
+end)
+
+--- The secret trio's answers over one fixed set of inputs, as one string a diff can
+--- be read from: `label:IsSecret,CanAccess,IsSafeKey` per input, `T`/`F` per answer.
+local function trioTable(S, m)
+    local inputs = {
+        { "num", 5 }, { "secret", m.secret(5) }, { "nil", nil },
+        { "str", "Player-1-0000000A" }, { "bool", true },
+    }
+    local function b(x) return x and "T" or "F" end
+    local out = {}
+    for i, row in ipairs(inputs) do
+        local v = row[2]
+        out[i] = ("%s:%s,%s,%s"):format(row[1], b(S.IsSecret(v)), b(S.CanAccess(v)), b(S.IsSafeKey(v)))
+    end
+    return table.concat(out, " ")
+end
+
+test("Secrets: IsSecret, CanAccess and IsSafeKey answer the same table as before the move",
+function()
+    -- The three guards every comparison and every GUID key in this addon asks first.
+    -- The truth table is the contract, so it is pinned whole: with the Activating
+    -- edge closed (a secret is not accessible) and open (a secret is still readable).
+    -- red under: IsSafeKey asking CanAccess instead of IsSecret (the `secret` cell's
+    -- third answer moves on the open edge), or CanAccess losing its secret fallback.
+    local inst = T.load{}
+    local S, m = inst.NS.Secrets, inst.mocks
+    assertEqual(trioTable(S, m),
+        "num:F,T,T secret:T,F,F nil:F,T,F str:F,T,T bool:F,T,T")
+    m.setSecretsAccessible(true)
+    assertEqual(trioTable(S, m),
+        "num:F,T,T secret:T,T,F nil:F,T,F str:F,T,T bool:F,T,T")
+end)
+
+test("Compat: with the library loaded, each wired member IS LibKa0s-Compat-1.0's", function()
+    -- Identity, not a matching answer: a host body that happened to agree on every
+    -- fixture above would pass them all and still be the second copy the major
+    -- exists to remove.
+    -- red under: a re-vendor that drops Compat.lua from LibKa0s.xml (every member
+    -- silently takes its degradation arm), or a host body left in place.
+    local lib = T.mocks.LibStub("LibKa0s-Compat-1.0", true)
+    assertTrue(lib ~= nil, "LibKa0s-Compat-1.0 is not registered on the shared instance")
+    for _, name in ipairs({ "GetSpellInfo", "GetSpellTexture", "GetSpecialization",
+                            "GetSpecializationInfo" }) do
+        assertTrue(NS.Compat[name] == lib[name], "NS.Compat." .. name .. " is not the library's")
+    end
+    for _, name in ipairs({ "IsSecret", "CanAccess", "IsSafeKey" }) do
+        assertTrue(NS.Secrets[name] == lib[name], "NS.Secrets." .. name .. " is not the library's")
+    end
+end)
+
+-- ── the library absent: the reader arm and the guard arm ───────────────────
+--
+-- A REAL LOAD with libs/LibKa0s out of the load list (testing-§8), never the member
+-- stubbed by hand. The two arms answer different questions, and the API document's
+-- "Degradation" section is the reason each answers what it does.
+
+test("Compat degraded: the four readers answer the absent table, one nil each", function()
+    -- The READER ARM: nil, and nothing read -- even though this simulated client
+    -- HAS C_Spell and C_SpecializationInfo. Answering from the client here would be a
+    -- host copy of the library's top rung, which is the duplication the major removed.
+    -- red under: a reader arm that re-implements the ladder, or one answering `{}`.
+    local inst = T.load{ libFiles = {} }
+    assertNil(inst.mocks.LibStub("LibKa0s-Compat-1.0", true), "the library is not absent")
+    local C = inst.NS.Compat
+    for _, call in ipairs({
+        { "GetSpellInfo", 774 }, { "GetSpellTexture", 774 },
+        { "GetSpecialization" }, { "GetSpecializationInfo", 1 },
+    }) do
+        local n, v = pack(C[call[1]](call[2]))
+        assertEqual(n, 1, call[1] .. " answered " .. n .. " values on the degraded load")
+        assertNil(v[1], call[1] .. " read the client on the degraded load")
+    end
+end)
+
+test("Compat degraded: the three guards answer what the live library answers", function()
+    -- The GUARD ARM: the one-rung body, re-implemented on purpose. A guard answering
+    -- "nothing is secret" because the LIBRARY is missing would hand a secret to a
+    -- comparison on a 12.x client, mid-pull. Pinned against the library itself under
+    -- the same simulated issecretvalue / canaccessvalue, on both edges.
+    -- red under: a guard arm that answers the absent-client value (IsSecret -> false).
+    local live, degraded = T.load{}, T.load{ libFiles = {} }
+    local lib = live.mocks.LibStub("LibKa0s-Compat-1.0", true)
+    for _, open in ipairs({ false, true }) do
+        live.mocks.setSecretsAccessible(open)
+        degraded.mocks.setSecretsAccessible(open)
+        assertEqual(trioTable(degraded.NS.Secrets, degraded.mocks), trioTable(lib, live.mocks),
+            "the guard arm and the library disagree with the Activating edge "
+            .. (open and "open" or "closed"))
+    end
 end)
 
 -- ── C_DamageMeter: the addon's entire data source ───────────────────────────

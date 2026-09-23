@@ -52,7 +52,7 @@ NS.Database = Database
 -- v15 moves LibDBIcon's `minimap` table from the profile to the global store.
 local CURRENT_DB_VERSION = 15
 
--- The ONE Ka0s_MultiMeters_PROFILE_CHANGED emitter (architecture-§4: one sender
+-- The ONE Ka0s_MultiMeters_ProfileChanged emitter (architecture-§4: one sender
 -- per message). Every path that makes the active profile a different thing — a
 -- swap, a copy, a reset — routes here rather than writing its own SendMessage,
 -- so the bus catalog in docs/ARCHITECTURE.md names one site and stays true.

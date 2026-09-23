@@ -553,12 +553,14 @@ the list; if it is not on the list, it is a feature.
 comment beside it and the payload shape after it.
 
 ```lua
-SESSION_PICKED = "Ka0s_MultiMeters_SESSION_PICKED",   -- { windowId, sessionID }
+SESSION_PICKED = "Ka0s_MultiMeters_SessionPicked",   -- { windowId, sessionID }
 ```
 
-Every name is declared here so the catalog in `ARCHITECTURE.md` has one place to be checked against,
-and so a typo in a subscriber is a nil index at load rather than a callback that silently never
-fires.
+The key is SCREAMING_SNAKE, and the wire string is `Ka0s_MultiMeters_` followed by a **PascalCase**
+event (naming-cheatsheet). `LibKa0s-Bus-1.0`'s `Catalog` validates the table at load and refuses
+anything else, naming the key it refused. Every name is declared here so that the catalog in
+`ARCHITECTURE.md` has one place to be checked against. Because `Catalog` hands back a strict table,
+a mistyped key raises at the call site, and that holds for a sender as well as a subscriber.
 
 **2. Send it from exactly one place**, and say so in that file's header. The existing owners:
 
@@ -581,9 +583,10 @@ sessions that no longer exist.
 Anything else — a window instance, `modules/Format.lua` — takes a private target from
 `NS.NewBusTarget()`.
 
-**4. Name it from the catalog and only the catalog.** Never `Const.MSG.X or "Ka0s_MultiMeters_X"`.
+**4. Name it from the catalog and only the catalog.** Never write `Const.MSG.X or "Ka0s_MultiMeters_X"`.
 A hand-spelled fallback defeats the exact protection the catalog exists to give: a misspelled or
-removed key must fail loudly at load, not quietly ship a name no subscriber is listening on.
+removed key must fail loudly, not quietly ship a name no subscriber is listening on. Under the strict
+catalog the probe itself raises, which is the point.
 
 **Gotchas.**
 - Distinguish *shape* from *value*. `WINDOWS_CHANGED` means the registry changed shape and forces a

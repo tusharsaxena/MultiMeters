@@ -32,7 +32,7 @@
 --
 -- IT FAILS RATHER THAN PASSES WHEN IT CANNOT LOOK. A missing ARCHITECTURE.md, a missing heading, a
 -- missing tally line and an empty table are each a failure, not a skip — the same bargain
--- tests/test_layout_cap.lua and tests/_kit/test_eol.lua strike.
+-- tests/_kit/test_layout_cap.lua and tests/_kit/test_eol.lua strike.
 
 local T = _G.MULTIMETERS_TEST
 local test, fail = T.test, T.fail

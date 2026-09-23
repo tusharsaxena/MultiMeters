@@ -184,9 +184,14 @@ local function unitRole(unit)
     if role == "TANK" or role == "HEALER" or role == "DAMAGER" then return role end
 
     if unit == "player" then
-        local getSpec     = _G.GetSpecialization
+        -- The spec INDEX goes through core/Compat.lua, which is LibKa0s-Compat-1.0's
+        -- ladder: C_SpecializationInfo first, the deprecated global only where the
+        -- namespace is missing. The role read beside it stays direct: no Ka0s addon
+        -- but this one reads it, so it has no shim in the library, and it is
+        -- recorded as this file's one remaining compat read rather than hidden.
+        local compat      = NS.Compat
         local getSpecRole = _G.GetSpecializationRole
-        local spec = getSpec and getSpec()
+        local spec = compat and compat.GetSpecialization and compat.GetSpecialization()
         local specRole = spec and getSpecRole and getSpecRole(spec)
         if specRole == "TANK" or specRole == "HEALER" or specRole == "DAMAGER" then
             return specRole

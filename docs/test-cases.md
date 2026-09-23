@@ -17,11 +17,21 @@ badge and any count quoted in the docs must agree with it.
 - loadorder: the LibKa0s seams load in the order their headers pin
 - loadorder: core/MultiMeters.lua loads after every core/ setup file
 
-### test_layout_cap.lua (3)
+### test_layout_cap.lua (13)
 
-- layoutcap: every authored file over 1500 lines is named in the ARCHITECTURE.md census
+- layoutcap: every authored file over the 1500-line cap is named in the census
 - layoutcap: no census row outlives the breach it records
-- layoutcap: every census row carries a disposition that can be followed
+- layoutcap: every over-cap census row carries one of layout-1's three terminal states
+- layoutcap: the census and the exempt set agree about which paths were exempted
+- layoutcap: an empty census is written as a result rather than left standing empty
+- layoutcap self-test: the parser reads the census nested under the register, and stops there
+- layoutcap self-test: a census outside its register, or at the wrong level, is not read
+- layoutcap self-test: an over-cap file missing from the census is reported, and an exempt one is not
+- layoutcap self-test: a census row that outlives its breach is reported
+- layoutcap self-test: an over-cap row that names no terminal state is reported
+- layoutcap self-test: the census and the exempt set are held to naming the same paths
+- layoutcap self-test: a census that states nothing is told apart from one that states none
+- layoutcap self-test: the exempt set takes folders as well as paths
 
 ### test_complexity_register.lua (4)
 
@@ -61,12 +71,25 @@ badge and any count quoted in the docs must agree with it.
 - lintconfig: every files[...] ignore is narrowed to a file or a name
 - lintconfig: no source file carries a bare inline luacheck ignore
 
-### test_prose.lua (2)
+### test_prose.lua (15)
 
 - prose: no authored file carries a British spelling from localization-5's published list
 - prose: the gate carries localization-5's two lists whole, and nothing of its own
+- prose self-test: the carve-out suppresses the named generated folder, and only it
+- prose self-test: a path the carve-out does not name is not covered by one that looks like it
+- prose self-test: a carve-out that is not a set of path strings is a failure, not a silence
+- prose self-test: a TOC's file lines are read as paths, and its directives and comments are not
+- prose self-test: a .pkgmeta's ignore block is read, and the keys around it are not
+- prose self-test: an ignore entry covers a path exactly, by folder, and by wildcard
+- prose self-test: the carve-out admits a generated dump and refuses a file the TOC loads
+- prose self-test: a waiver-file exclusion meets the same two refusals as the carve-out
+- prose self-test: each list is refused on the matching rule its own scan uses
+- prose self-test: the scan and the refusals read the added exclusions through one reader
+- prose self-test: a narrowing is refused by what it suppresses, not by how it is written
+- prose self-test: the disclosure names what each entry suppressed, and says when it is bounded
+- prose self-test: a malformed waived is a failure, not a silence
 
-### test_constants.lua (23)
+### test_constants.lua (25)
 
 - Constants: NS.Const and NS.Constants are the same table
 - Constants: the chat prefix is the cyan [MM] tag and closes its color code
@@ -88,6 +111,8 @@ badge and any count quoted in the docs must agree with it.
 - Constants: the hardcoded fallbacks equal the live enum values
 - Constants: Dps and Hps are deliberately absent from STAT_TYPE
 - Constants: every bus message is uniquely named under the addon's prefix
+- Constants: every wire string is Ka0s_MultiMeters_<PascalCase>
+- Constants: the bus catalog is strict, so a mistyped key fails at the call site
 - Constants: every declared bus message is sent somewhere in the addon
 - Constants: the throttle window is a real range around the shipped default
 - Constants: the row cap covers a full raid and the pool step covers a party
@@ -133,7 +158,7 @@ badge and any count quoted in the docs must agree with it.
 - Secrets degraded: canaccessvalue alone missing still refuses a known secret
 - Secrets degraded: canaccesstable alone missing still refuses a secret table
 
-### test_compat.lua (34)
+### test_compat.lua (39)
 
 - Compat: GetSpellInfo flattens C_Spell's struct to the old multi-return
 - Compat: GetSpellInfo answers nil for an unknown spell rather than raising
@@ -141,6 +166,11 @@ badge and any count quoted in the docs must agree with it.
 - Compat: the spell shims answer nil with no API at all
 - Compat: the spec shims prefer C_SpecializationInfo and fall back to the globals
 - Compat: the spec shims answer nil with no API at all
+- Compat: the moved readers answer the same values in the same count
+- Secrets: IsSecret, CanAccess and IsSafeKey answer the same table as before the move
+- Compat: with the library loaded, each wired member IS LibKa0s-Compat-1.0's
+- Compat degraded: the four readers answer the absent table, one nil each
+- Compat degraded: the three guards answer what the live library answers
 - Compat: IsDamageMeterAvailable forwards Blizzard's own failure reason verbatim
 - Compat: with no C_DamageMeter, IsDamageMeterAvailable is false and the addon still loads
 - Compat: every session shim answers nil with no C_DamageMeter
@@ -739,7 +769,7 @@ badge and any count quoted in the docs must agree with it.
 - Distinct PLAIN values are counted, so a constant field reads as one
 - A SECRET value is never compared or keyed on to count distinctness
 
-### test_roster.lua (41)
+### test_roster.lua (42)
 
 - Roster.GetGroup is player-first, then party order
 - Roster.GetGroup carries name, class and role off the unit API
@@ -773,6 +803,7 @@ badge and any count quoted in the docs must agree with it.
 - A partial build is still STORED, so the lookups have something to answer from
 - Roster.LocalGUID reads the player's GUID off the built map
 - The player's role falls back to their specialization; another unit's cannot
+- The player's spec is read through NS.Compat, never the deprecated global
 - An assigned role beats the specialization fallback
 - Test mode replaces the pet map and writes nothing to SavedVariables
 - The test-mode map is cached whole, never marked partial
@@ -1951,7 +1982,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: nothing refuses on an install whose store has not been built
 - Slash: `set window.name` keeps every word of a multi-word name
 
-### test_disabled.lua (13)
+### test_disabled.lua (18)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -1966,6 +1997,11 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 9: the rebuild reflects a setting changed WHILE disabled
 - Disabled 10: releasing one hold does not resurrect an addon the other holds down
 - Disabled 10: the perf hold is session-only and the disabled hold is stored
+- Disabled 11: a bus receiver goes down with the addon and comes back with it
+- Disabled 11: a receiver its owner retired stays retired across the round trip
+- Disabled 11: a receiver that subscribes while disabled hears the bus once enabled
+- Disabled 11: a subscription made while disabled is recorded, not made
+- Disabled 11: standUp brings the bus up FIRST, before any module re-enables
 
 ### test_options_panel.lua (43)
 
@@ -2065,7 +2101,7 @@ badge and any count quoted in the docs must agree with it.
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
 
-### test_degraded.lua (30)
+### test_degraded.lua (31)
 
 - Degraded: the library really is absent, so every case below is measuring a stub
 - Degraded: every seam soft-optionals its major, so a missing library is not a load error
@@ -2097,31 +2133,35 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: every NS.Perf member the addon actually reaches exists on the stub
 - Degraded: the export modal refuses to open with no dropdown widget
 - Degraded: the addon still enables end to end with no library
+- Degraded: the bus stub still hands every receiver a target, untracked
 
-### test_surface_parity.lua (1)
+### test_surface_parity.lua (3)
 
 - parity: the Options stub carries every public member of the live Helpers surface
+- parity: NS.Compat and NS.Secrets carry every LibKa0s-Compat-1.0 member between them
+- parity: the bus stub carries the LibKa0s-Bus-1.0 surface, and its record the instance's
 
-### test_eol.lua (1)
+### test_eol.lua (2)
 
 - eol: every tracked file carries the terminator .gitattributes declares for it
+- eol: .gitattributes is line-endings-5's canonical body for this repo kind
 
 ## Totals
 
 | Suite | Cases |
 |-------|------:|
 | test_loadorder.lua | 8 |
-| test_layout_cap.lua | 3 |
+| test_layout_cap.lua | 13 |
 | test_complexity_register.lua | 4 |
 | test_deviation_register.lua | 1 |
 | test_texture_paths.lua | 5 |
 | test_docmap.lua | 1 |
 | test_doc_structure.lua | 5 |
 | test_lintconfig.lua | 4 |
-| test_prose.lua | 2 |
-| test_constants.lua | 23 |
+| test_prose.lua | 15 |
+| test_constants.lua | 25 |
 | test_secrets.lua | 38 |
-| test_compat.lua | 34 |
+| test_compat.lua | 39 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 76 |
@@ -2140,7 +2180,7 @@ badge and any count quoted in the docs must agree with it.
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
 | test_provider.lua | 78 |
-| test_roster.lua | 41 |
+| test_roster.lua | 42 |
 | test_feign.lua | 27 |
 | test_aggregator.lua | 61 |
 | test_aggregator_identity.lua | 27 |
@@ -2167,11 +2207,11 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 18 |
 | test_slash.lua | 73 |
-| test_disabled.lua | 13 |
+| test_disabled.lua | 18 |
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
-| test_degraded.lua | 30 |
-| test_surface_parity.lua | 1 |
-| test_eol.lua | 1 |
-| **Total** | **1908** |
+| test_degraded.lua | 31 |
+| test_surface_parity.lua | 3 |
+| test_eol.lua | 2 |
+| **Total** | **1948** |

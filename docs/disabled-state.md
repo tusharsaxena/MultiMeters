@@ -34,7 +34,7 @@ second was written.
 | `NS:UnregisterAllEvents()` | all twenty-one game events — `core/MultiMeters.lua` is the only file that owns one |
 | `NS:CancelAllTimers()` + `NS.ResetStatePending()` | the player-state settle pass, and the flag that would otherwise never re-book one |
 | every AceAddon child's `UnregisterAllMessages()` | each module is its own AceEvent target, so the addon object's own call reaches none of them |
-| `NS.BusStandDown()` | every anonymous bus target `NS.NewBusTarget` has made — windows, `Format`, `Targets`, the export modal, the Profiles page |
+| `NS.BusStandDown()` | every event and message registration on every bus target `NS.NewBusTarget` has made — windows, `Format`, `Targets`, the export modal, the Profiles page — through `LibKa0s-Bus-1.0`'s record, which keeps what it took down |
 | `WindowManager:Suspend()` | every window's OnUpdate, then one visibility pass so what is on screen acts on the decision now |
 | `Provider:Suspend()` | stops the addon ASKING the meter for anything |
 | `Export.CancelSend()` | a staggered chat dump already queued — `C_Timer.After` has no handle, so the generation is bumped instead |
@@ -44,6 +44,13 @@ so nothing — a combat transition, a target swap, a settings write — can re-s
 switch's back. A frame hidden imperatively comes back. `standUp` rebuilds from **current state**,
 never from a snapshot: a window created or a column toggled while the addon was off comes back as it
 is now.
+
+`standUp` brings the bus up **first**, before `NS:OnEnable`, and the order matters. While the bus is
+down, `LibKa0s-Bus-1.0` records a registration on a bus target without making it, so a disabled
+addon registers nothing even when a receiver subscribes. `NS.BusStandUp()` then replays the record
+as it stands. Any later step registers straight onto a live bus and publishes to receivers that are
+already listening. On an install with no LibKa0s, the stub hands out untracked targets, so this one
+row does nothing there ([Known limitations](./ARCHITECTURE.md#known-limitations)).
 
 **What survives, because it is SETUP and not a feature:** the chat command registration, the
 dispatcher and `NS.COMMANDS`; the settings-category registration and the panel body; the AceDB
