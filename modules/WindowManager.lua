@@ -166,6 +166,16 @@ local function defaultName()
     return NS.Database.WindowName(n)
 end
 
+--- The error for a window key that resolved to nothing. A nil key is the
+--- settings panel with nothing picked; any other key is a name or index the
+--- caller typed, and the answer names it back rather than blaming the panel.
+--- @param key any
+--- @return string
+local function unknownWindow(key)
+    if key == nil then return L["No window is selected."] end
+    return L["No window named '%s'."]:format(tostring(key))
+end
+
 --- A name no existing window is using, derived from `base`.
 --- An empty base is not an error: it is the caller asking for the default,
 --- which is what settings/Windows.lua's "New window" button and `/mm window
@@ -269,7 +279,7 @@ end
 --- @return boolean ok, string|nil err
 function M:Delete(key)
     local cfg, index = M.Resolve(key)
-    if not cfg then return false, L["No window is selected."] end
+    if not cfg then return false, unknownWindow(key) end
 
     local list = windows()
     if #list <= 1 then return false, L["The last window cannot be deleted."] end
@@ -304,9 +314,9 @@ end
 --- @return boolean ok, string|nil err
 function M:Rename(key, newName)
     local cfg = M.Resolve(key)
-    if not cfg then return false, L["No window is selected."] end
+    if not cfg then return false, unknownWindow(key) end
     newName = tostring(newName or ""):match("^%s*(.-)%s*$")
-    if newName == "" then return false, L["Window name"] end
+    if newName == "" then return false, L["A window name cannot be empty."] end
 
     local ok, err = NS.SetByPath("window.name", uniqueName(newName), cfg.id)
     if not ok then return false, err end
@@ -321,7 +331,7 @@ end
 --- @return boolean ok, string|nil err
 function M:Duplicate(key)
     local src = M.Resolve(key)
-    if not src then return false, L["No window is selected."] end
+    if not src then return false, unknownWindow(key) end
 
     local id = NS.Database.NextWindowId()
     local cfg = deepcopy(src)
@@ -468,8 +478,8 @@ end
 function M:CopyFrom(source, target, groups)
     local src = M.Resolve(source)
     local dst = M.Resolve(target)
-    if not src then return false, L["No window is selected."] end
-    if not dst then return false, L["No window is selected."] end
+    if not src then return false, unknownWindow(source) end
+    if not dst then return false, unknownWindow(target) end
     if src == dst then return true end
 
     local wanted = requestedGroups(groups)
@@ -710,7 +720,7 @@ function M:Toggle(name)
 
     local inst = M.Get(name)
     if not inst then
-        return false, (L["Setting not found: %s"]):format(tostring(name))
+        return false, unknownWindow(name)
     end
     if inst:IsShown() then inst:Hide("toggled") else inst:Show() end
     return true

@@ -141,6 +141,8 @@ L["Which window the settings on every other page apply to. Each window is config
     "Which window the settings on every other page apply to. Each window is configured independently."
 L["Window"] = "Window"
 L["Window name"] = "Window name"
+-- A rename to a blank (or all-whitespace) name, answered by WindowManager:Rename.
+L["A window name cannot be empty."] = "A window name cannot be empty."
 L["Name shown in this picker and, optionally, in the window's own header."] =
     "Name shown in this picker and, optionally, in the window's own header."
 L["New window"] = "New window"

@@ -1756,7 +1756,7 @@ badge and any count quoted in the docs must agree with it.
 - A visibility field that is not a table reads as `no rules`, not as hide
 - The master enable, test mode and perf suspend are NOT read here
 
-### test_windowmanager.lua (44)
+### test_windowmanager.lua (47)
 
 - WindowManager is published under the flat name every caller uses
 - Init builds one live instance per stored config, and is idempotent
@@ -1802,6 +1802,9 @@ badge and any count quoted in the docs must agree with it.
 - CopyFrom goes through each row's validate, and stores nothing on a refusal
 - CopyFrom sends the sort through the seam, carries the pin, and never the position
 - SetLocked writes each window through the seam, tagged with its own id
+- Toggle of an unknown window names the window, not a setting
+- Delete, Duplicate and CopyFrom of an unknown window name it too
+- Rename to an empty name answers a sentence, not the row's label
 
 ### test_schema.lua (40)
 
@@ -2220,7 +2223,7 @@ badge and any count quoted in the docs must agree with it.
 | test_export.lua | 89 |
 | test_export_modal.lua | 31 |
 | test_visibility.lua | 41 |
-| test_windowmanager.lua | 44 |
+| test_windowmanager.lua | 47 |
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 18 |
@@ -2232,4 +2235,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 33 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1966** |
+| **Total** | **1969** |

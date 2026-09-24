@@ -786,3 +786,47 @@ test("SetLocked writes each window through the seam, tagged with its own id", fu
     assertEqual(inst.NS.State.activeWindowId, windows[1].id)
     assertEqual(M:IsLocked(), true)
 end)
+
+-- ---------------------------------------------------------------------------
+-- Error text: the command names the window it could not find (MultiMeters-R-10)
+-- ---------------------------------------------------------------------------
+
+test("Toggle of an unknown window names the window, not a setting", function()
+    -- red under: Toggle answering L["Setting not found: %s"] for a window name.
+    local _, M = loaded()
+    local ok, err = M:Toggle("nope")
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'nope'.")
+end)
+
+test("Delete, Duplicate and CopyFrom of an unknown window name it too", function()
+    -- red under: each answering L["No window is selected."] for a key the
+    -- caller DID pass. That sentence stays only for a nil key (nothing picked).
+    local _, M = loaded()
+    local ok, err = M:Delete("nope")
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'nope'.")
+    ok, err = M:Duplicate("nope")
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'nope'.")
+    ok, err = M:CopyFrom("nope", 1)
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'nope'.")
+    ok, err = M:CopyFrom(1, "gone")
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'gone'.")
+    ok, err = M:Rename("nope", "x")
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'nope'.")
+    ok, err = M:Delete(nil)
+    assertEqual(ok, false)
+    assertEqual(err, "No window is selected.")
+end)
+
+test("Rename to an empty name answers a sentence, not the row's label", function()
+    -- red under: Rename answering L["Window name"] for a blank name.
+    local _, M = loaded()
+    local ok, err = M:Rename(1, "   ")
+    assertEqual(ok, false)
+    assertEqual(err, "A window name cannot be empty.")
+end)
