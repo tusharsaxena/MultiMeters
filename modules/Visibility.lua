@@ -387,7 +387,7 @@ end
 --- current zone for one frame.
 ---
 --- RUNS ONLY UNDER DEBUG. Nothing but the debug line and `/mm debug diag` reads
---- what this pass computes, and modules/Window.lua already runs each window's
+--- what this pass computes, and modules/Window_Lifecycle.lua already runs each window's
 --- ladder off the same edges, so a debug-off pass would evaluate every window's
 --- rules a second time per edge for no reader (MultiMeters-R-09). Every caller
 --- ignores the return, so the early 0 is safe.
@@ -472,7 +472,7 @@ function Visibility:OnEnable()
     self:RegisterMessage(MSG.ROSTER_CHANGED,   "OnContextChanged")
     -- The player-state edges. This module's own subscription exists for the
     -- debug-gated Evaluate pass (its debug line and `/mm debug diag`) ONLY — it is not what makes a window
-    -- react. modules/Window.lua subscribes to the same two messages and re-runs
+    -- react. modules/Window_Lifecycle.lua subscribes to the same two messages and re-runs
     -- the show ladder there, because this module publishes nothing and a window
     -- has no other reason to ask again.
     self:RegisterMessage(MSG.COMBAT_CHANGED,       "OnContextChanged")

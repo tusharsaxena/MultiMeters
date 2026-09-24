@@ -408,7 +408,7 @@ assert_(restricted.bytesPerIter <= RESTRICTED_BYTES_CEILING,
 --
 -- The single most important performance property in the addon: N meter events
 -- inside one throttle window must produce exactly ONE refresh. Every message
--- handler in modules/Window.lua does nothing but set `dirty`, and the OnUpdate
+-- handler in modules/Window_Lifecycle.lua does nothing but set `dirty`, and the OnUpdate
 -- tick is the only clock.
 
 local BURST = 200
