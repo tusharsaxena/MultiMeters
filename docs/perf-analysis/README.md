@@ -140,11 +140,13 @@ addon now passes it:
 
 | Bucket | Declared within | Call sites | Parent passed |
 |---|---|---|---|
-| `meterEvent` | — | `core/MultiMeters.lua:382`, `:392`, `:400` | — |
-| `refresh` | — | `modules/Window.lua:1106`, `:1116`, `:1139`, `:1146` | — |
+| `meterEvent` | — | `core/MultiMeters.lua:460`, `:470`, `:478` | — |
+| `spellEvent` | — | `core/MultiMeters.lua:425` | — |
+| `systemEvent` | — | `core/MultiMeters.lua:416` | — |
+| `refresh` | — | `modules/Window.lua:1107`, `:1117`, `:1140`, `:1147` | — |
 | `providerRead` | — (more than one real parent) | `modules/Provider.lua:357` | Its caller's: `"aggregate"` from `modules/Aggregator.lua:1035` and `modules/Aggregator_Identity.lua:216`, `"targets"` from `modules/Targets.lua:277`, none from `core/Diagnostics.lua` or `core/Diagnostics_DeathRecap.lua` |
 | `aggregate` | `refresh` | `modules/Aggregator.lua:1258`, `modules/DrillDown.lua:700`, `:732` | Its caller's at `modules/Aggregator.lua:1258`; `"refresh"` at both `DrillDown` sites |
-| `render` | `refresh` | `modules/Window.lua:1251` | `"refresh"` |
+| `render` | `refresh` | `modules/Window.lua:1282` | `"refresh"` |
 | `renderRow` | `render` | `modules/Row.lua:1387` | `"render"` |
 | `tooltip` | — | `modules/Tooltip_Builders.lua:788`, `:925`, `:943`, `:1004`, `:1018`, `:1032` | — |
 | `targets` | `tooltip` | `modules/Targets.lua:396`, `:404`, `:418` | `"tooltip"` |
@@ -159,6 +161,11 @@ row printed the *declared, not observed* form, because at the time no bracket pa
 Read that capture's tree as unverified, and never subtract a declared child from its declared parent
 in it as though the overlap were confirmed. That capture is also where `providerRead` was found to
 have more than one real parent, which is why it declares none today.
+
+[`20260924-133043/`](20260924-133043/ANALYSIS.md) is the first capture whose every nest printed
+*observed*: `providerRead` inside `aggregate`, `aggregate` and `render` inside `refresh`, `renderRow`
+inside `render`. It did not exercise the tooltip path, so `providerRead` has not yet been observed
+inside `targets`.
 
 One bucket is genuinely **not** nested and should not be read as though it were: `meterEvent`
 brackets the bus fan-out at event rate, while `refresh` brackets the coalesced pass on the window's
@@ -209,8 +216,11 @@ beside this file.
 | Bundle | Addon version | Label | What it measured |
 |---|---|---|---|
 | [`20260909-014604`](20260909-014604/ANALYSIS.md) | 0.1.0 | `2026-09-09 01:41` | Solo, one window, 8 columns, 5 rows; 68.3 s active / 74.2 s suspended in Silvermoon City. Baseline: 5.409 ms/s accounted, `refresh` 4.511 ms/s. Frame-time delta +0.5003 ms/frame — at the floor, **unresolved**. `tooltip` and `targets` never fired. |
+| [`20260924-133043`](20260924-133043/ANALYSIS.md) | 1.0.0 | `2026-09-24 13:27 mm20-before` | MM-20 (SM-07) **BEFORE** capture at `4182f4a`. Solo, Cleave Training Dummy, Silvermoon City — Falconwing Square, one window, 8 columns, 1 row; 69.0 s active / 66.8 s suspended. 1.832 ms/s accounted, `refresh` 1.710 ms/s. MM-20 gate: `render` 0.21696 ms/call; `renderRow` 0.13380 ms/row. Delta −0.6051 ms/frame, **backwards** (environment moved). First capture with every nest observed. `systemEvent`, `tooltip` and `targets` never fired. |
 
-**Comparability warning.** The one capture on record is **solo**, and this addon's cost scales with
-group size × open windows × columns per window. It is a baseline for a solo, eight-column, one-window
-fixture and for nothing else. There is no group capture, and no capture that exercises the tooltip
-path — which `core/PerfSetup.lua` names as the expensive one.
+**Comparability warning.** Both captures on record are **solo**, and this addon's cost scales with
+group size × open windows × columns per window × rows drawn. Both are baselines for a solo,
+eight-column, one-window fixture and for nothing else, and they are not like-for-like with each other:
+different code (0.1.0 vs 1.0.0), a different subzone, and 5 rows drawn per pass vs 1. There is no
+group capture, and no capture that exercises the tooltip path — which `core/PerfSetup.lua` names as
+the expensive one.
