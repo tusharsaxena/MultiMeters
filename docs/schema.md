@@ -1141,6 +1141,7 @@ supplies what is this addon's own:
 | `announce` / `announceBatch` | one `CONFIG_CHANGED { section, windowId }` plus the panel's in-place scalar re-sync — per write, or **once** per batch |
 | `debug` / `format` | `NS.Debug`, resolved at call time; the value handed through untouched so `NS.Debug`'s deferred, secret-safe formatting renders it (the column array logs `N shown`) |
 | `resetExempt` | `{ ["global.minimap.hide"] = true }` — the sweep veto `launcher-§3` asks for |
+| `writeThrough` | `{ "enabled" }` — `options-ui-§1` route (a). On a load without LibKa0s-Options-1.0 (the library absent, or a partial payload) the composed Master-controls `enabled` row does not exist; the seam then stores the path raw at `db.profile.enabled` and `announce` pulls the latch (`NS.SyncEnabledHold`), the row's absent `onChange`. On a full load the row claims the path and the list does nothing. It is the only composed row a host verb writes: `/mm lock` writes each window's hand-written `window.frame.locked`, and `/mm test` goes through `modules/WindowManager.lua` |
 | `L` | this addon's own refusal wording |
 
 The public names every caller used stay, as thin shims over the instance, so no call site moved:
@@ -1500,7 +1501,8 @@ modeled on BankLedger's and trimmed to what this addon calls: the lib-level `Spl
 `Write` and `SameValue`, and `New` answering `FindRow`, `AddRows`, `Get`, `Set`, `SetMany`,
 `ApplyDefault`, `BulkBegin`, `BulkEnd` and `BulkRun`. It is **write-completing and log-silent**:
 reads, writes, `validate`, `normalize`, `onChange`, `announce`/`announceBatch`, the all-or-nothing
-batch and the bracket depth the sweep veto reads are real; the `[Set]` line and the bracket's tally
+batch, `writeThrough` (the listed `enabled` stored raw; every other row-less path still refused) and
+the bracket depth the sweep veto reads are real; the `[Set]` line and the bracket's tally
 are not (the degraded DebugLog stub would discard them anyway). The header controls, the window
 placement, copy-from, the lock sweep and the degraded Reset All all keep writing through it.
 

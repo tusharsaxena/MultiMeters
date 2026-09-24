@@ -1235,6 +1235,9 @@ switch back to Default → copy from Test → reset.
   library. `/mm perf` says performance measurement is unavailable.
 - **The host verbs still work**: `/mm lock`, `/mm test`, `/mm toggle`, `/mm window list`,
   `/mm reset-positions`. They never went to the library.
+- **`/mm disable` and `/mm enable` still work.** `/mm disable` prints `enabled = false` and the
+  windows go away; `/mm enable` prints `enabled = true` and they come back. Neither says anything is
+  unavailable.
 - **`/mm resetall` still works.** It opens the same popup, and accepting resets the profile. The
   user whose panel will not open is exactly the user who needs "reset everything", and the schema
   loaded fine.

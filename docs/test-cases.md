@@ -2158,7 +2158,7 @@ badge and any count quoted in the docs must agree with it.
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
 
-### test_degraded.lua (34)
+### test_degraded.lua (38)
 
 - Degraded: the library really is absent, so every case below is measuring a stub
 - Degraded: every seam soft-optionals its major, so a missing library is not a load error
@@ -2194,6 +2194,10 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: the bus stub still hands every receiver a target, untracked
 - Degraded: with only LibKa0s-Slash missing, a disabled left click prints the refusal and raises nothing
 - Degraded: the stub's disabled-line format is the library's, byte for byte
+- Degraded: /mm disable stores enabled=false and stands the addon down with no library
+- Degraded: /mm enable after /mm disable restores the registrations with no library
+- Degraded: with only the Options majors missing, /mm disable and /mm enable still work
+- Degraded: the stub refuses a row-less path it was not told to write through
 
 ### test_surface_parity.lua (4)
 
@@ -2275,7 +2279,7 @@ badge and any count quoted in the docs must agree with it.
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
-| test_degraded.lua | 34 |
+| test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2000** |
+| **Total** | **2004** |

@@ -939,6 +939,9 @@ L["Windows are unlocked."] = "Windows are unlocked."
 L["Windows are suspended while a performance capture runs."] =
     "Windows are suspended while a performance capture runs."
 L["No window is selected."] = "No window is selected."
+-- `/mm enable` / `/mm disable`'s acknowledgment when the composed `enabled` row is absent
+-- (settings/Slash.lua doEnabled). The live CliSet's echo is the library's own formatter.
+L["enabled = %s"] = "enabled = %s"
 
 -- NO ENTRY FOR THE DISABLED REFUSAL LINE, and its absence is the rule rather
 -- than an omission (slash-commands-§7). That line is exactly one shape

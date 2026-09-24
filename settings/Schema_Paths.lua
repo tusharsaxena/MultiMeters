@@ -92,7 +92,7 @@ if not SchemaLib then
     -- controls, the window placement, the copy-from, the lock sweep and the degraded Reset All in
     -- settings/OptionsSetup.lua all go through this seam, and slash-commands-§1 says the host verbs
     -- keep working without the library. So reads, writes, `validate`, `normalize`, the row's
-    -- `onChange`, the announce, the batch and the sweep veto are real here.
+    -- `onChange`, the announce, the batch, the sweep veto and `writeThrough` are real here.
     --
     -- LOG-SILENT, on purpose: no [Set] line and no bracket tally. The degraded DebugLog stub
     -- (core/DebugLogSetup.lua) discards every line anyway.
@@ -149,6 +149,14 @@ if not SchemaLib then
     function stub.New(_, d)   -- colon-called, as the library's New is
         local R, depth, rows = {}, 0, d.rows
         local function words(key, path) return (d.L[key]):format(tostring(path)) end
+        -- writeThrough, as the library reads it: once, here, one synthetic row per listed path,
+        -- handed out by identity. A listed path with no row is stored raw (no validate, no
+        -- normalize, no onChange) and announced with that row; every other row-less path is
+        -- still refused, and FindRow never answers one.
+        local through = {}
+        for _, p in ipairs(type(d.writeThrough) == "table" and d.writeThrough or {}) do
+            if type(p) == "string" and p ~= "" then through[p] = { path = p, writeThrough = true } end
+        end
 
         function R.FindRow(path)
             if type(path) ~= "string" then return nil end
@@ -186,7 +194,7 @@ if not SchemaLib then
         -- Everything the seam checks before it stores, shared by Set and SetMany: a plan, or
         -- nil and the refusal. A missing root is refused after a bad value, as the library does.
         local function prepare(path, value, id)
-            local row = R.FindRow(path)
+            local row = R.FindRow(path) or (type(path) == "string" and through[path] or nil)
             if not row then return nil, words("NOT_FOUND", path) end
             local stored = type(row.set) ~= "function" and not row.sessionOnly
             local parts, root, first, rid, reason = nil, nil, nil, id, nil
@@ -341,6 +349,20 @@ local MINIMAP_PATH = "global.minimap.hide"
 NS.MINIMAP_PATH = MINIMAP_PATH
 
 -- ---------------------------------------------------------------------------
+-- The enabled path, written through
+-- ---------------------------------------------------------------------------
+--
+-- `enabled` is a composed Master-controls row: LibKa0s-Options-1.0's MasterControls declares
+-- it (settings/Schema_Compose.lua), so a load without that major has no row, and options-ui-§1
+-- forbids a host copy of the composer. `/mm enable` and `/mm disable` still have to work there.
+-- Route (a): the descriptor below names the path in `writeThrough`, as data, and the seam (the
+-- library or the stub above) stores it raw when no row claims it. On a full load the composed
+-- row claims it and nothing here applies. It is the ONLY composed row a host verb writes:
+-- `/mm lock` writes each window's hand-written `window.frame.locked`, and `/mm test` goes
+-- through modules/WindowManager.lua.
+local ENABLED_PATH = "enabled"
+
+-- ---------------------------------------------------------------------------
 -- The announce
 -- ---------------------------------------------------------------------------
 
@@ -376,7 +398,18 @@ local function announceWrite(page, windowId)
 end
 
 --- The runtime's `announce`, after a single write's onChange.
+---
+--- A WRITTEN-THROUGH `enabled` IS THE ONE WRITE THAT REACTS HERE. On a load without
+--- LibKa0s-Options-1.0 (the library absent, or a partial payload) the composed
+--- `enabled` row does not exist, so its onChange -- the latch -- is not there either;
+--- the seam stores the path raw through `writeThrough` (options-ui-§1 route (a)) and
+--- hands this function a synthetic row flagged `writeThrough`. The latch is pulled
+--- here instead, in the same place the row's onChange would have run: after the
+--- store, before the message.
 local function announceOne(row, path, _, rid)
+    if row.writeThrough and path == ENABLED_PATH and NS.SyncEnabledHold then
+        NS.SyncEnabledHold()
+    end
     announceWrite(row.page, windowOf(path, rid))
 end
 
@@ -385,10 +418,14 @@ end
 --- a section must not skip part of a change. The same for the window.
 local function announceMany(writes)
     local page, id = writes[1].row.page, windowOf(writes[1].path, writes[1].rid)
+    local latch = false
     for _, w in ipairs(writes) do
+        latch = latch or (w.row.writeThrough and w.path == ENABLED_PATH)
         if w.row.page ~= page then page = nil end
         if windowOf(w.path, w.rid) ~= id then id = nil end
     end
+    -- The batch half of announceOne's latch: a written-through `enabled` among the writes.
+    if latch and NS.SyncEnabledHold then NS.SyncEnabledHold() end
     announceWrite(page, id)
 end
 
@@ -551,6 +588,7 @@ local S = SchemaLib:New({
     debug         = debugSink,
     format        = formatValue,
     resetExempt   = { [MINIMAP_PATH] = true },
+    writeThrough  = { ENABLED_PATH },
     L = {
         NOT_FOUND = L["Setting not found: %s"],
         INVALID   = L["Invalid value for %s"],

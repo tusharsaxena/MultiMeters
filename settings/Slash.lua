@@ -168,7 +168,12 @@ NS.COMMANDS = {
 -- forbids, so a degraded help row renders plainly and says so.
 local SlashLib = LibStub and LibStub("LibKa0s-Slash-1.0", true)
 
+-- Set only in the stub branch below. doEnabled reads it: the stub's CliSet names the missing
+-- library, so `/mm enable` and `/mm disable` write through the seam directly instead.
+local degraded = false
+
 if not SlashLib then
+    degraded = true
     -- The cause half is core/CoreSetup.lua's shared clause (NS.LIBKA0S_MISSING);
     -- only the consequence is this seam's. This is the one of the five whose
     -- consequence comes FIRST — the verb has to lead, or "/mm list" is buried
@@ -442,9 +447,23 @@ end
 --- reached unwrapped; a gate over it would BE the one-way switch the clause above exists to
 --- prevent, which is why the live list is data rather than a judgment made per verb.
 ---
+--- WITHOUT THE COMPOSED ROW, OR WITHOUT THE SLASH MAJOR, CliSet cannot carry the write: the
+--- stub's CliSet names the missing library, and the live one finds no `enabled` row to parse
+--- against on a load where LibKa0s-Options-1.0 (whose MasterControls composes it) is absent.
+--- options-ui-§1 route (a): the pair then writes NS.SetByPath directly, which stores the path
+--- through the Schema seam's `writeThrough` list and pulls the latch in its announce
+--- (settings/Schema_Paths.lua). Same `path = value` acknowledgment, or the seam's refusal.
+--- It never raises.
+---
 --- @param want boolean
 function doEnabled(want)
-    cli:CliSet("enabled " .. tostring(want))
+    if not degraded and NS.FindSchemaRow and NS.FindSchemaRow("enabled") then
+        cli:CliSet("enabled " .. tostring(want))
+        return
+    end
+    local ok, err = false, NS.LIBKA0S_MISSING
+    if NS.SetByPath then ok, err = NS.SetByPath("enabled", want) end
+    out(ok and L["enabled = %s"]:format(tostring(want)) or tostring(err))
 end
 
 function doLock(rest)
