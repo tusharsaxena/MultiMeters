@@ -668,8 +668,10 @@ end
 test("Disabled 10: unticking Test mode while disabled re-shows nothing", function()
     -- The manual test-mode exit keeps windows on screen through WindowProto:Show,
     -- which skips the ladder. Standing down is not a reason to keep anything up.
-    -- red under: reverting WindowProto:Show's latch guard, or the SetTestMode
-    --            keepShown check back to the perf-only `NS.Perf.suspended`.
+    -- red under: reverting BOTH WindowProto:Show's latch guard and the SetTestMode
+    --            keepShown check back to the perf-only `NS.Perf.suspended`. The two
+    --            cover for each other on this path, so either alone stays green here;
+    --            the Show() guard on its own is pinned by the test below.
     local _, NS = scene()
     assertTrue(NS.SetByPath("enabled", false))
     assertFalse(anyWindowShown(NS), "the fixture needs the stand-down to hide")
@@ -679,6 +681,36 @@ test("Disabled 10: unticking Test mode while disabled re-shows nothing", functio
     for _, w in ipairs(NS.WindowManager.All()) do
         assertFalse(w.frame:IsShown(), "a window re-showed while disabled: " .. tostring(w.id))
     end
+end)
+
+test("Disabled 10: an explicit WindowProto:Show while stood down refuses and shows nothing",
+function()
+    -- The Show() guard pinned directly. Disabled 10 reaches it only through
+    -- SetTestMode, whose own keepShown check covers for it, and `/mm toggle` refuses
+    -- before it ever calls Show, so neither of those notices the guard going.
+    -- red under: deleting WindowProto:Show's IsStoodDown guard.
+    local _, NS = scene()
+    local M = NS.WindowManager
+    assertTrue(#M.All() >= 1, "the fixture needs a window")
+
+    local function assertRefused(label)
+        for _, w in ipairs(M.All()) do
+            w.forcedShow = nil   -- the fixture's own shows may have set it; measure only Show()'s
+            assertFalse(w:Show(), label .. ": Show() did not refuse on window " .. tostring(w.id))
+            assertFalse(w.frame and w.frame:IsShown() or false,
+                label .. ": Show() put window " .. tostring(w.id) .. " on screen")
+            assertTrue(w.forcedShow == nil,
+                label .. ": Show() recorded a forced show on window " .. tostring(w.id))
+        end
+    end
+
+    assertTrue(NS.SetByPath("enabled", false))
+    assertRefused("disabled")
+    assertTrue(NS.SetByPath("enabled", true))
+
+    NS.Perf.Suspend()
+    assertRefused("perf suspend")
+    NS.Perf.Resume()
 end)
 
 test("Disabled 11: /mm toggle under a perf suspend shows nothing and says why", function()
