@@ -219,7 +219,7 @@ test("ShouldShow's ladder reads master enable, then test mode, then context", fu
     local cfg = NS.Database.GetWindows()[1]
 
     -- Through the write seam: the ladder reads the LATCH now, and only the seam's
-    -- onChange takes the `disabled` hold (slash-commands-\194\1677).
+    -- onChange takes the `disabled` hold (slash-commands-§7).
     assertTrue(NS.SetByPath("enabled", false))
     assertEqual(select(2, NS.ShouldShow(cfg)), "disabled")
     assertTrue(NS.SetByPath("enabled", true))

@@ -73,7 +73,7 @@ function NS:OnInitialize()
     self:InitDB()
 
     -- THE `disabled` HOLD, re-taken from the stored path the moment there is a
-    -- store to read it from (slash-commands-\194\1677). Surviving a /reload is the
+    -- store to read it from (slash-commands-§7). Surviving a /reload is the
     -- entire point of that setting, and this is where it does: before OnEnable,
     -- so an addon the player switched off never registers anything in the first
     -- place rather than registering and being torn down a frame later.
@@ -195,7 +195,7 @@ local EVENTS = {
 }
 
 function NS:OnEnable()
-    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-\194\1677).
+    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-§7).
     -- AceAddon runs this cascade at load whether or not the player has the addon
     -- switched off, so without this the stand-down taken in OnInitialize would be
     -- undone one function call later. It is NOT a gate on a handler: no handler
@@ -203,7 +203,7 @@ function NS:OnEnable()
     -- registered for one to be called from. core/LifecycleSetup.lua's `standUp`
     -- calls this function again, and the latch is already up by then -- the hold
     -- set is mutated before the callback runs -- so the rebuild reads `false`
-    -- here and registers from the settings AS THEY ARE NOW (performance-\194\1676).
+    -- here and registers from the settings AS THEY ARE NOW (performance-§6).
     if NS.IsStoodDown and NS.IsStoodDown() then return end
 
     -- Target stays `self`, so every entry is an AceEvent registration on the

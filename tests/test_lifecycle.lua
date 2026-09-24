@@ -304,7 +304,7 @@ test("Lifecycle: combat ending test mode during a perf suspend re-shows no windo
     for _, w in ipairs(M.All()) do assertFalse(w:IsShown(), "the fixture needs suspend to hide") end
 
     -- AND THE COMBAT EVENT NO LONGER ARRIVES AT ALL, which is the stand-down
-    -- rather than a weaker version of this case (slash-commands-\194\1677). A suspended
+    -- rather than a weaker version of this case (slash-commands-§7). A suspended
     -- addon has actually UNREGISTERED PLAYER_REGEN_DISABLED, so the client would
     -- never dispatch it -- and `__fire` fires at the LIVE registration set only,
     -- so it reaches nobody here either. Test mode is therefore untouched, and no
@@ -604,7 +604,7 @@ end)
 
 test("ShouldShow: the master enable refuses every window", function()
     -- THROUGH THE WRITE SEAM, never by poking `db.profile.enabled`. The stored
-    -- key is no longer read by the ladder at all (slash-commands-\194\1677): what the
+    -- key is no longer read by the ladder at all (slash-commands-§7): what the
     -- ladder reads is the latch, and only the seam's onChange takes the hold. A
     -- fixture that writes the raw key is testing a draw gate that no longer
     -- exists, and would go on passing over an addon that never stood down.

@@ -604,7 +604,7 @@ test("PerfSetup: the descriptor hands over the latch and keeps no teardown of it
     -- or `resume`. Leaving those two here would be two live copies of this
     -- addon's own teardown -- the perf arm's and the disable arm's -- which is
     -- exactly how the two drift apart on the first module added after the second
-    -- was written (anti-pattern #85, slash-commands-\194\1677).
+    -- was written (anti-pattern #85, slash-commands-§7).
     -- red under: putting `suspend = function() ... end` back on the descriptor.
     local inst = T.load{ enable = true }
     assertTrue(inst.NS.lifecycle ~= nil, "the addon must own a latch")

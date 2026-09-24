@@ -600,7 +600,7 @@ test("SetByPath: a global row ignores the window id", function()
     local NS = inst.NS
     local seen = heardConfig(NS)
     -- `master.scale` rather than `enabled`, and the swap is the stand-down
-    -- (slash-commands-\194\1677). `enabled` is still a global row, but writing it false
+    -- (slash-commands-§7). `enabled` is still a global row, but writing it false
     -- now takes the addon DOWN inside this very call -- every bus subscription
     -- unregistered, this fixture's listener included -- so the CONFIG_CHANGED that
     -- follows reaches nobody. That is the addon behaving correctly and the wrong

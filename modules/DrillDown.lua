@@ -824,7 +824,7 @@ end
 -- GUID; WINDOWS_CHANGED can delete the window a view belongs to.
 
 function DrillDown:OnEnable()
-    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-\194\1677).
+    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-§7).
     -- AceAddon runs this cascade at load whether or not the player has the addon
     -- switched off, so without this the stand-down taken in OnInitialize would be
     -- undone one function call later. It is NOT a gate on a handler: no handler
@@ -832,7 +832,7 @@ function DrillDown:OnEnable()
     -- registered for one to be called from. core/LifecycleSetup.lua's `standUp`
     -- calls this function again, and the latch is already up by then -- the hold
     -- set is mutated before the callback runs -- so the rebuild reads `false`
-    -- here and registers from the settings AS THEY ARE NOW (performance-\194\1676).
+    -- here and registers from the settings AS THEY ARE NOW (performance-§6).
     if NS.IsStoodDown and NS.IsStoodDown() then return end
     local MSG = Const.MSG
     self:RegisterMessage(MSG.METER_RESET,     "OnMeterReset")

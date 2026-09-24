@@ -45,7 +45,7 @@ local REGISTER_HEADING = "## Documented deviations"
 
 -- The rule the two ColumnBlocks rows defer to. Spelled as the register writes it, so a row
 -- retired by deletion cannot leave the reference dangling quietly.
-local COLUMNBLOCKS_RULE = "library-stack §8"
+local COLUMNBLOCKS_RULE = "library-stack-§8"
 
 -- The site that row argues about, and the pair it declines the catalog for. Spelled here in the
 -- de-escaped form `pathsIn` answers in, so both spellings a Lua source may use are matched by one

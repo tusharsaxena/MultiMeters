@@ -945,7 +945,7 @@ L["No window is selected."] = "No window is selected."
 L["enabled = %s"] = "enabled = %s"
 
 -- The host verbs' acknowledgments (settings/Slash.lua). Whole sentences with placeholders
--- (localization-\194\1671); the reset-positions count is two keys, one per plural form, rather
+-- (localization-§1); the reset-positions count is two keys, one per plural form, rather
 -- than a noun spliced into a sentence.
 L["test mode on \226\128\148 showing placeholder rows"] =
     "test mode on \226\128\148 showing placeholder rows"

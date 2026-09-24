@@ -809,7 +809,7 @@ end
 --- Bumping the generation is the only cancel available -- the queued callbacks
 --- still fire and each returns without sending -- and an addon the player has
 --- switched off finishing a whisper dump into a raid is exactly the kind of thing
---- slash-commands-7 means by "not running".
+--- slash-commands-§7 means by "not running".
 function Export.CancelSend()
     cancelQueue()
 end

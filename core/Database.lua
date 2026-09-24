@@ -1052,7 +1052,7 @@ local function debugOn() return NS.State and NS.State.debug end
 --- direct call from here (architecture-§4).
 --- Re-take or release the `disabled` hold for the profile now active.
 ---
---- slash-commands-\194\1677 names this explicitly: `enabled` is a stored setting like any
+--- slash-commands-§7 names this explicitly: `enabled` is a stored setting like any
 --- other and A PROFILE SWITCH CAN FLIP IT, with no verb and no checkbox touched.
 --- A player switching to a profile where the addon is enabled expects it to come
 --- up, so the latch has to be re-evaluated on all three AceDB callbacks -- which

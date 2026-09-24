@@ -213,7 +213,7 @@ NS.Launcher = Launcher:New({
         if wm and wm.Toggle then wm:Toggle() end
     end,
 
-    -- THE LEFT-CLICK GATE (launcher-\194\1672, slash-commands-\194\1677). This is a rung-(a) left
+    -- THE LEFT-CLICK GATE (launcher-§2, slash-commands-§7). This is a rung-(a) left
     -- click, so what it drives is a primary window, and a window is a feature: refused, it prints
     -- the ONE refusal line and DOES NOTHING ELSE. In particular it writes no SavedVariables, which
     -- is what a minimap button with no disabled gate does for an addon the player switched off

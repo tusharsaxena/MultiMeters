@@ -257,7 +257,7 @@ test("Slash: NOTHING reads the raw `enabled` key any more", function()
     -- in exactly one place, and it is not on any path that could reach the dispatcher.
     --
     -- THE EXPECTED ANSWER IS NOW *NOTHING AT ALL*, and the move is the stand-down (slash-commands
-    -- \194\1677). `NS.ShouldShow` used to read `db.profile.enabled` directly as one rung of its
+    -- §7). `NS.ShouldShow` used to read `db.profile.enabled` directly as one rung of its
     -- show ladder -- which was this addon's draw gate, and anti-pattern #85. The one reader left is
     -- core/LifecycleSetup.lua's NS.SyncEnabledHold, and it goes through NS.GetSetting, the read
     -- seam, exactly as the checkbox and `/mm get enabled` do. What this case forbids is any reader
@@ -1205,10 +1205,10 @@ local LIVE_WHILE_DISABLED = {
 
 --- The rendered refusal, READ OUT OF THE LOCALE TABLE rather than retyped, so a reworded line
 --- moves the case with it instead of quietly making it match nothing.
--- slash-commands-\194\1677's ONE refusal line, collection-wide, built from the library's own format
+-- slash-commands-§7's ONE refusal line, collection-wide, built from the library's own format
 -- string rather than re-typed here: the wording is not this addon's to spell, and a literal in the
 -- suite would be a second copy free to drift from the one the dispatcher prints. The brand name is
--- the plain-text `Ka0s <Name>` the LDB object also wears (launcher-\194\1671).
+-- the plain-text `Ka0s <Name>` the LDB object also wears (launcher-§1).
 local REFUSAL = T.load().mocks.LibStub("LibKa0s-Slash-1.0").DISABLED_LINE_FORMAT
     :format(NS.L["Ka0s Multi Meters"], "/mm enable")
 

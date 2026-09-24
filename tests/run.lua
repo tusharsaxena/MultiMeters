@@ -301,10 +301,10 @@ local SUITES = {
     "test_schema_defaults",
     "test_slash",
     "test_slash_refusal",
-    -- slash-commands-\194\1677's conformance suite: the disabled state is TOTAL. It asserts on
+    -- slash-commands-§7's conformance suite: the disabled state is TOTAL. It asserts on
     -- the REGISTRATION SET rather than on a handler's return value, because an early
     -- return is what a draw gate does and a suite written that way certifies the shape
-    -- it exists to catch (testing-\194\16712).
+    -- it exists to catch (testing-§12).
     "test_disabled",
     "test_options_panel",
     "test_columnblocks",

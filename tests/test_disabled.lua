@@ -1,4 +1,4 @@
--- tests/test_disabled.lua -- the conformance suite for slash-commands-7, `The
+-- tests/test_disabled.lua -- the conformance suite for slash-commands-§7, `The
 -- disabled state is total`.
 --
 -- WHAT THIS SUITE IS FOR, and why it asserts where it does. Eleven addons in this
@@ -13,7 +13,7 @@
 -- set, the SavedVariables writes and the printed lines, taken from the kit's
 -- recording mock. NOT ONE of them is "call a handler and assert it returned
 -- early": an early return is what a draw gate does, so a suite written that way
--- certifies the very thing it exists to catch (testing-12).
+-- certifies the very thing it exists to catch (testing-§12).
 --
 -- The mock has to REMOVE on unregister for any of this to be falsifiable, which
 -- kit revision 22's `__registrations()` does -- a registry that only ever grew
@@ -24,7 +24,7 @@ local T = _G.MULTIMETERS_TEST
 local test, assertEqual, assertTrue, assertFalse =
     T.test, T.assertEqual, T.assertTrue, T.assertFalse
 
--- slash-commands-2's twelve reserved verbs: the whole live set while disabled.
+-- slash-commands-§2's twelve reserved verbs: the whole live set while disabled.
 -- Spelled out rather than read off the library so a narrowing there is caught
 -- here rather than ratified by it.
 local RESERVED = {
@@ -379,11 +379,11 @@ test("Disabled 7: every reserved verb and the bare command answer normally", fun
 end)
 
 test("Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam", function()
-    -- This addon TAKES slash-commands-2's SHOULD, and the suite pins that choice
+    -- This addon TAKES slash-commands-§2's SHOULD, and the suite pins that choice
     -- so it cannot drift silently: an addon that declined it would assert its
     -- feature verbs act normally instead, and either is conformant.
     --
-    -- `lock` is on this list under slash-commands-8's own ruling -- unlocking a
+    -- `lock` is on this list under slash-commands-§8's own ruling -- unlocking a
     -- frame that is not drawn is not a coherent request -- and that says nothing
     -- about what `lock` MEANS in this addon, which is its ratified deviation.
     -- red under: naming a feature verb in a `liveVerbs` array.
@@ -442,7 +442,7 @@ function()
 
     -- RIGHT-CLICK IS UNCHANGED, in either state: the ruling narrows the SLASH
     -- surface, and a mouse click is not a slash command. It is also one of the two
-    -- routes slash-commands-7 nominates to the panel while the addon is off.
+    -- routes slash-commands-§7 nominates to the panel while the addon is off.
     local opened = 0
     NS.OpenOptionsPanel = function() opened = opened + 1 end
     obj.OnClick(obj, "RightButton")
@@ -468,7 +468,7 @@ test("Disabled 9: re-enabling restores the registration set it had", function()
 end)
 
 test("Disabled 9: the rebuild reflects a setting changed WHILE disabled", function()
-    -- performance-6's restore-from-current-state rule, and the case that tells a
+    -- performance-§6's restore-from-current-state rule, and the case that tells a
     -- replay from a rebuild: a window created while the addon was off must come
     -- back with the others, not be forgotten because it was not in the snapshot.
     -- red under: `WindowManager:Resume` skipping its `Init()`.
@@ -733,7 +733,7 @@ end)
 
 test("Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it",
 function()
-    -- slash-commands-7: every OnUpdate is cleared, and none is armed for the rest
+    -- slash-commands-§7: every OnUpdate is cleared, and none is armed for the rest
     -- of the run. Create is reachable from the settings panel while disabled.
     -- red under: Window.New arming the OnUpdate unconditionally.
     local _, NS = scene()

@@ -38,11 +38,11 @@ local Sl = NS.Slash
 -- schema seam this file's adapters call. Everything else is resolved through NS
 -- at call time, so nothing further binds.
 
--- EVERY USER-FACING LINE HERE IS A WHOLE-SENTENCE KEY (localization-\194\1671): the verbs'
+-- EVERY USER-FACING LINE HERE IS A WHOLE-SENTENCE KEY (localization-§1): the verbs'
 -- acknowledgments, the degradation stub's lines and the usage text all read through `L` with
 -- `%s`/`%d` placeholders, and a count's plural is two keys rather than a noun concatenated into
 -- a sentence, which no translation could reorder. The one string NOT routed is the stub's copy
--- of the library's DISABLED_LINE_FORMAT, whose wording is the collection's (slash-commands-\194\1677).
+-- of the library's DISABLED_LINE_FORMAT, whose wording is the collection's (slash-commands-§7).
 --
 -- The fallback is for a load with no locale at all: locales/ loads first in the TOC, so NS.L is
 -- always here in the client, but the degradation stub below must still speak plain English on a
@@ -197,7 +197,7 @@ if not SlashLib then
     SlashLib.ParseBool  = function() return nil end
     -- THE ONE LIBRARY STRING THIS STUB CARRIES (LibKa0s docs/api/Slash/version-15-docs.md, "The
     -- degradation stub"): a byte copy of the live `lib.DISABLED_LINE_FORMAT`, so a degraded build
-    -- refuses in the collection's words (slash-commands-\194\1677). tests/test_degraded.lua pins
+    -- refuses in the collection's words (slash-commands-§7). tests/test_degraded.lua pins
     -- it against the library through `NS.Slash.__stubFormat`, a debug seam set only here.
     SlashLib.DISABLED_LINE_FORMAT = "%s is disabled \226\128\148 enable it with |cFFFFFF00%s|r"
     Sl.__stubFormat = SlashLib.DISABLED_LINE_FORMAT
@@ -282,8 +282,8 @@ cli = SlashLib:New({
     isEnabled = function() return not (NS.IsDisabled and NS.IsDisabled()) end,
 
     -- THE BRAND NAME IN PLAIN TEXT -- `Ka0s <Name>` -- and the SAME string
-    -- core/LauncherSetup.lua hands the LDB object as its `label` (launcher-\194\1671).
-    -- Reusing it is not an aesthetic choice: launcher-\194\1671 already forbids escape
+    -- core/LauncherSetup.lua hands the LDB object as its `label` (launcher-§1).
+    -- Reusing it is not an aesthetic choice: launcher-§1 already forbids escape
     -- sequences in that field, which is what makes it safe to drop into a colored
     -- line, and it means this addon has one brand spelling rather than a second one
     -- invented for this message. NEVER the TOC `Title`, which MAY carry color
@@ -806,11 +806,11 @@ end
 
 function Sl:OnSlash(msg)  return cli:OnSlash(msg)  end
 
---- slash-commands-\194\1677's one refusal line, built by the library from `brandName`
+--- slash-commands-§7's one refusal line, built by the library from `brandName`
 --- and the collection's own format string.
 ---
 --- Published because core/LauncherSetup.lua needs the SAME line for a refused
---- left-click, and launcher-\194\1672 says to call this rather than write the line
+--- left-click, and launcher-§2 says to call this rather than write the line
 --- again: the wording is the collection's, it MUST NOT be re-spelled per call
 --- site, and a second copy here is how eleven addons ended up with eleven
 --- wordings. The degradation stub above answers it too, for the same reason it
