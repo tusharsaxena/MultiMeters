@@ -305,13 +305,27 @@ cli = SlashLib:New({
         if not NS.GetSetting then return nil end
         return NS.GetSetting(path)
     end,
-    set          = function(path, v) if NS.SetByPath then NS.SetByPath(path, v) end end,
+    -- THE REFUSAL IS RETURNED, NOT SWALLOWED (Slash minor 15). NS.SetByPath answers
+    -- `false, reason` when a row's validate rejects the value or no window is
+    -- selected, and stores nothing. CliSet echoes the re-read value after a write;
+    -- handed nothing back, it printed the OLD value as though the write had landed.
+    -- Returning the seam's answer makes CliSet print the INVALID line and the
+    -- reason instead. A missing seam is a refusal too, named by the shared clause.
+    set          = function(path, v)
+        if not NS.SetByPath then return false, NS.LIBKA0S_MISSING end
+        return NS.SetByPath(path, v)
+    end,
     findRow      = function(path) return NS.FindSchemaRow and NS.FindSchemaRow(path) or nil end,
     allRows      = function() return NS.Schema or {} end,
     -- Handed the ROW, not the path: NS.ApplyDefault owns the deep copy a table
     -- default needs, so two profiles resetting to the same color default do not
-    -- end up sharing one table.
-    applyDefault = function(row) if NS.ApplyDefault then NS.ApplyDefault(row) end end,
+    -- end up sharing one table. Its answer is returned for the same reason `set`'s
+    -- is: exactly false (a row with no default) makes CliReset print the library's
+    -- NO_DEFAULT line instead of echoing the value it left alone.
+    applyDefault = function(row)
+        if not NS.ApplyDefault then return false end
+        return NS.ApplyDefault(row)
+    end,
 
     -- The bulk bracket (Slash minor 8), the same pair settings/OptionsSetup.lua hands
     -- the Options major. No verb here reaches CliResetAll any more -- `resetall` is

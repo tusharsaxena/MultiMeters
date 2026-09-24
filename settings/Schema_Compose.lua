@@ -661,9 +661,12 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     -- path is taken VERBATIM, like the console's, and it is the one `/mm set
     -- state.testMode` has always used. The default is handed in because the
     -- composer emits none, and a session row with no default is one Reset all
-    -- settings walks straight past, leaving the mode running.
+    -- settings walks straight past, leaving the mode running. The console is handed
+    -- one for the same reason: NS.ApplyDefault restores nothing for a row with no
+    -- default (it answers false, which `/mm reset` prints as NO_DEFAULT), and Reset
+    -- all settings has always closed the console -- it used to by writing nil.
     testModePath     = "state.testMode",
-    defaults         = { testMode = false },
+    defaults         = { testMode = false, debugConsole = false },
     -- The four new addon-wide settings live under `master.` rather than at the
     -- profile root, which is where every other grouped answer in this addon lives
     -- (`data.`, `minimap.`, `export.`) and what keeps `master.scale` from reading

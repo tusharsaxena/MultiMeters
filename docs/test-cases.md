@@ -2006,6 +2006,11 @@ badge and any count quoted in the docs must agree with it.
 - Slash: nothing refuses on an install whose store has not been built
 - Slash: `set window.name` keeps every word of a multi-word name
 
+### test_slash_refusal.lua (2)
+
+- Slash refusal: `set` a value the row's validate refuses prints the refusal, not the old value
+- Slash refusal: `reset` on a row with no default prints NO_DEFAULT and keeps the value
+
 ### test_disabled.lua (22)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
@@ -2238,6 +2243,7 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 18 |
 | test_slash.lua | 74 |
+| test_slash_refusal.lua | 2 |
 | test_disabled.lua | 22 |
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
@@ -2245,4 +2251,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 34 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1979** |
+| **Total** | **1981** |

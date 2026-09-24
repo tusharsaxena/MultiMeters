@@ -805,9 +805,17 @@ end
 --- seam: two profiles restored to the same color default must not end up holding
 --- one table between them.
 ---
+--- A row with no `default` is NOT written: storing nil would erase the value
+--- rather than restore anything. It answers exactly false, which is what
+--- LibKa0s-Slash-1.0 (minor 15) reads to print its NO_DEFAULT line, the same
+--- contract LibKa0s-Schema-1.0's S.ApplyDefault keeps.
+---
 --- @param row table
+--- @return boolean|nil  false when there is nothing to restore; true once restored; nil, err
+---                       when the write seam refused (not false: that would read as NO_DEFAULT)
 function NS.ApplyDefault(row)
-    if type(row) ~= "table" or row.path == nil then return end
+    if type(row) ~= "table" or row.path == nil then return false end
+    if row.default == nil then return false end
     -- A RESTORE IS NOT A CLICK, and one row cares: the Frame page's meta color
     -- mode broadcasts to ten rows on three other pages when it is SET, which is
     -- the point of it -- and must not when the page's own Defaults button walks
@@ -819,8 +827,10 @@ function NS.ApplyDefault(row)
     -- `default` is what a user would have clicked, which for every row but one is also the
     -- stored value. The minimap row is the exception -- its default is SHOWN and what it stores
     -- is `hide` -- and the seam inverts it on the way in, so nothing is owed here.
-    NS.SetByPath(row.path, copy(row.default))
+    local ok, err = NS.SetByPath(row.path, copy(row.default))
     NS.__restoring = was
+    if ok then return true end
+    return nil, err
 end
 
 -- ---------------------------------------------------------------------------

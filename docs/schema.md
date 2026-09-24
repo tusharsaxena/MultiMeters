@@ -1314,6 +1314,12 @@ the CLI cannot reach. Their own `get` / `set` **are** the whole storage; `NS.Get
 `row.get()` directly rather than `and`-ing it through, because a session row answering `false` is a
 real answer and `row.get() or nil` would turn every "off" into "no such setting".
 
+A row with no `default` is **not restored**: `NS.ApplyDefault` writes nothing and answers exactly
+`false`, the contract `LibKa0s-Schema-1.0`'s `S.ApplyDefault` keeps, and `/mm reset <path>` prints
+`LibKa0s-Slash-1.0`'s `NO_DEFAULT` line for it (Slash minor 15). That is why both session rows are
+handed a `false` default through the composer's `defaults`: without one, Reset all settings would
+walk past a running test mode or an open console.
+
 ### `onChange` — the exception, not the rule
 
 The default refresh for every row is the `CONFIG_CHANGED` message `NS.SetByPath` sends, and
