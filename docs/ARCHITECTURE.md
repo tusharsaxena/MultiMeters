@@ -57,7 +57,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm debug diag` and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
 | `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret. |
-| `modules/` display | `WindowManager`, `Window` (+ `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window, one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
+| `modules/` display | `WindowManager`, `Window` (+ `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window, one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
 | `settings/` | `Schema_Compose` → `Schema` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 9 pages | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, and the path and write seams. `ColumnBlocks` is the Columns page's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
 
@@ -543,7 +543,7 @@ per-file reasoning in [module-map.md](module-map.md#load-order). The binding con
 9. `defaults/Profile.lua` after `core/Constants.lua`, whose stat catalog it captures at load.
 10. `modules/Format.lua` first in the module block; `modules/Row.lua` resolves `Tooltip` and
    `DrillDown` at *call* time because both load after it. `modules/Targets.lua` loads before
-   `modules/Tooltip.lua`, its only caller. **Each of the eight `modules/` peels follows the parent it
+   `modules/Tooltip.lua`, its only caller. **Each of the nine `modules/` peels follows the parent it
    was cut from, and every one of those positions is load-bearing**: each resolves at *file scope*
    something its parent publishes, so a peel loading first captures nil and stays nil for the
    session. `modules/Export.lua` was the one file in the block whose position carried no constraint
