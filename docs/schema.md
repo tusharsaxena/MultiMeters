@@ -1565,24 +1565,10 @@ swap, and after every `CopyFrom` and `Duplicate` — which is exactly where
 
 ## Profile lifecycle
 
-`core/Database.lua` registers one callback for all three AceDB profile events:
-
-```lua
-db.RegisterCallback(Database, "OnProfileChanged", "OnProfileChanged")
-db.RegisterCallback(Database, "OnProfileCopied",  "OnProfileChanged")
-db.RegisterCallback(Database, "OnProfileReset",   "OnProfileChanged")
-```
-
-Each one runs `NS:RunMigrations()` (the newly-active profile may be a copy authored at an older
-version, or a reset back to an empty registry), clears `NS.State.activeWindowId`, wipes every
-session cache, and fires **one** `PROFILE_CHANGED` message. `fireProfileChanged` is the single
-emitter — every path that makes the active profile a different thing routes through it, so the bus
-catalog names one site and stays true.
-
-`AceDB:New("MultiMetersDB", NS.defaults, true)` passes `true` as the third argument, which AceDB
-expands to the shared `"Default"` profile. Omitting it falls back to a **per-character** profile,
-which contradicts the documentation and is the source of every "each new character lands on its own
-settings" report in the collection. Players who want per-character opt in through the Profiles page.
+A profile switch, copy or reset runs the migrations, clears the active-window pointer and the session
+caches, and fires one `PROFILE_CHANGED`. The addon uses one shared `"Default"` profile unless the
+player opts into per-character ones. The handlers, the fan-out and what a profile never holds are in
+[profiles.md](profiles.md).
 
 ---
 

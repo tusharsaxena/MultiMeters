@@ -438,7 +438,8 @@ visibly different from every other AceGUI widget on the player's screen, and onl
 
 `H.SetRenderer(ctx, fn)` hands both problems to the library, which owns **when** a page draws: on
 first show, and again after a refresh marked it dirty while it was hidden. Every page file in this
-addon uses it, the Profiles page included — see below for the one thing it needs on top.
+addon uses it, the Profiles page included — [profiles.md](profiles.md#the-profiles-page--the-one-place-aceconfigdialog-is-permitted)
+has the one thing it needs on top.
 
 ### Why the Defaults button is lazy for reason two only
 
@@ -677,32 +678,9 @@ row's accessors dressed back on.
 
 ## Profiles — the one place AceConfigDialog is permitted
 
-Every other page is drawn by `LibKa0s-Options-1.0` from `NS.Schema`, and AceConfig is not in the
-picture at all. This page is the documented exception for one reason: **the options table is not
-ours.** AceDBOptions generates it — every scope dropdown, every confirmation, every profile-list
-refresh — and re-expressing that as schema rows would mean maintaining a copy of AceDB's own profile
-model that goes stale the first time AceDB adds a scope.
-
-The exception is scoped to **content**. The canvas, the header, the breadcrumb and the registration
-are still `Helpers.CreatePanel`, so this page looks like the other eight rather than like a bolted-on
-Ace window. An AceGUI `SimpleGroup` is parented to `ctx.body` and `AceConfigDialog:Open` targets it,
-which lands the widgets inside this canvas instead of opening a second floating window over the
-settings panel.
-
-**It draws through `SetRenderer`, like every other page.** That is where its combat lock comes
-from: the Blizzard AddOns sidebar reaches a canvas without going through `NS.OpenOptionsPanel`, and a
-page carrying its own copy of the lock has one that drifts from the other eight the moment the
-library's moves. This page hand-rolled that copy until the `CX03` sweep, and paid for it by being the
-one page the library did not draw.
-
-`SetRenderer` is one draw short here, though, and the shortfall is real: the widget tree belongs to
-AceConfigDialog, which re-reads the active profile only when the dialog is fed again, so "draw once,
-and again when the library says you are dirty" would show a profile switch made from the slash
-command as a stale profile list. The page therefore takes a private bus target and calls
-`H.RefreshPanel(ctx, true)` on `PROFILE_CHANGED` — the library's own seam for a page that repaints
-off its host's message bus. Shown, it redraws now; hidden, it is marked dirty and redraws on its next
-show. Changes made *on* the page need nothing: AceConfigDialog re-`Open`s the container itself after
-every control it activates.
+The ninth page hosts AceDBOptions-3.0's own tree, rendered by AceConfigDialog into this addon's canvas.
+It draws through `SetRenderer` like every other page and repaints on `PROFILE_CHANGED`. Why it is the
+exception, and how it stays fresh: [profiles.md](profiles.md#the-profiles-page--the-one-place-aceconfigdialog-is-permitted).
 
 ---
 

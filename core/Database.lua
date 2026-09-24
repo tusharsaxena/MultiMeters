@@ -64,7 +64,7 @@ NS.SCHEMA_VERSION = CURRENT_DB_VERSION
 -- The ONE Ka0s_MultiMeters_ProfileChanged emitter (architecture-§4: one sender
 -- per message). Every path that makes the active profile a different thing — a
 -- swap, a copy, a reset — routes here rather than writing its own SendMessage,
--- so the bus catalog in docs/ARCHITECTURE.md names one site and stays true.
+-- so the bus catalog in docs/message-bus.md names one site and stays true.
 local function fireProfileChanged(key)
     if NS.SendMessage then
         NS:SendMessage(NS.Constants.MSG.PROFILE_CHANGED, { newProfileKey = key })

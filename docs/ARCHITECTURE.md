@@ -103,8 +103,8 @@ twenty-two rows keep absolute paths against `db.profile`, so moving one integer 
 rows ([schema.md](schema.md#the-window-relative-path-model) lists both sets).
 
 Profiles carries **zero** rows: AceDBOptions' own tree, the one place `AceConfigDialog` is permitted,
-and vetoed from reset-all. Columns carries eight `window.columnHeader.*` rows beside its block
-editor, whose array is a hidden 170th row, [`window.columns`](schema.md#the-columns-row).
+and vetoed from reset-all ([profiles.md](profiles.md)). Columns carries eight
+`window.columnHeader.*` rows beside its block editor, whose array is a hidden 170th row, [`window.columns`](schema.md#the-columns-row).
 
 **The window registry has one writer** (`architecture-§5`), since no row can name a window's
 existence. Its storage keys are `db.profile.windows` (entries carry their `id` and unique `name`) and
@@ -133,116 +133,25 @@ through the seam by window id; the pin's none is `NO_SEGMENT` (0) ([schema.md](s
 
 ## Message bus
 
-Fourteen `AceEvent` messages are the only inter-module communication channel — modules never call each
-other across boundaries. Every name is declared once in `core/Constants.lua`'s `MSG` catalog.
-**One sender each**; a second sender is a bug, not a convenience.
-
-The catalog goes through **`LibKa0s-Bus-1.0`'s `Catalog`** (LibKa0s v1.55.0). It checks the table at
-load: SCREAMING_SNAKE keys, and wire strings of the form `Ka0s_MultiMeters_<PascalCase>`, as in
-`METER_UPDATED` → `Ka0s_MultiMeters_MeterUpdated`. It hands back a **strict** table, so a mistyped
-key raises at the call site, for a sender as well as a subscriber. The wire strings used the keys'
-SCREAMING_SNAKE spelling until that adoption, and every sender and subscriber reads the constant, so
-the rename moved nothing else. With no LibKa0s the plain table is the catalog, and a mistyped key is
-a subscriber's nil-index again. The table below names messages by key.
-
-| Message | Sender | Consumers | Payload |
-|---|---|---|---|
-| `METER_UPDATED` | `core/MultiMeters.lua` | `Targets`, every `Window` | — |
-| `METER_SESSION` | `core/MultiMeters.lua` | `Provider`, `Targets`, every `Window` | `{ type, sessionID }` |
-| `METER_RESET` | `core/MultiMeters.lua`, and `Provider.Reset` for the manual path | `Provider`, `Roster`, `Feign`, `Aggregator`, `Targets`, `DrillDown`, every `Window` | — |
-| `ROSTER_CHANGED` | `core/MultiMeters.lua` | `Roster`, `Feign`, `Visibility`, every `Window` | — |
-| `ZONE_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
-| `ENTERING_WORLD` | `core/MultiMeters.lua` | `Provider`, `Roster`, `Feign`, `Visibility`, every `Window` | `{ isLogin, isReload }` |
-| `RESTRICTION_CHANGED` | `core/MultiMeters.lua` | every `Window`, the export modal (`modules/Export_Modal.lua`) | `{ type, state }` |
-| `COMBAT_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
-| `PLAYER_STATE_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
-| `PROFILE_CHANGED` | `core/Database.lua` (`fireProfileChanged`) | `Format`, `Roster`, `Aggregator`, `Targets`, `WindowManager`, `DrillDown`, `Visibility`, `settings/Profiles.lua` | `{ newProfileKey }` |
-| `CONFIG_CHANGED` | `settings/Schema_Paths.lua` (`NS.SetByPath`, and once per batch from `NS.SetByPaths`) | `Format`, every `Window` | `{ section, windowId }` |
-| `WINDOWS_CHANGED` | `modules/WindowManager.lua` (`announce`) | `DrillDown`; the settings panel repaints on the same registry actions through `NS.RefreshOptionsPanel`, by direct call rather than by subscription | `{ windowId, action }` |
-| `TEST_MODE_CHANGED` | `core/State.lua` (`State.SetTestMode`) | `Roster`, every `Window` | `{ enabled }` |
-| `DRILLDOWN_CHANGED` | `modules/DrillDown.lua` (`announce`) | the addressed `Window` | `{ windowId, active }` |
-
-`METER_RESET` has two dispatch paths on purpose: the game fires `DAMAGE_METER_RESET` and
-`Provider.Reset` also announces, so a manual reset does not depend on the event arriving. Every
-handler on it is idempotent, and a duplicate wipe is a far smaller problem than a window still
-drawing rows for sessions that no longer exist.
-
-`CONFIG_CHANGED` and `WINDOWS_CHANGED` are deliberately distinct: the first is a setting moving
-inside a window that already exists (re-apply and refresh), the second is the registry changing
-*shape* (rebuild, and the panel re-draws its picker). Both carry `windowId`, so a twenty-window
-profile does not re-apply nineteen windows for one edit.
-
-**Bus-target discipline.** CallbackHandler keys callbacks by `(message, target)`, so two receivers of
-one message on the same object silently clobber each other and only the last registrant fires. This
-addon is unusually exposed — every window subscribes to the same refresh messages and there can be
-many windows. AceAddon modules are their own targets; each `Window` instance, `modules/Format.lua`,
-`modules/Targets.lua`, the export modal in `modules/Export_Modal.lua` and `settings/Profiles.lua`'s
-page own a private target from `NS.NewBusTarget()`. Nothing registers on the shared addon object.
-
-**The stand-down record is `LibKa0s-Bus-1.0`'s** (hand-written here until LibKa0s v1.55.0).
-`NS.busRecord` (`core/Namespace.lua`) tracks every target from `NS.NewBusTarget()`, and
-`NS.BusStandDown()` takes all their registrations down while keeping the record. `NS.BusStandUp()`,
-called first in `standUp`, replays the record as it is now. While the bus is down, a registration
-is recorded but not made, and a target its owner has emptied is never replayed. The stand-down it serves
-is in [disabled-state.md](disabled-state.md), and `tests/test_disabled.lua` pins it.
+Fourteen `AceEvent` messages, declared once in `core/Constants.lua`'s `MSG` catalog through
+`LibKa0s-Bus-1.0`'s `Catalog`, are the only channel between modules. Each has **one sender**, and every
+receiver that is not an AceAddon module owns a private target from `NS.NewBusTarget()`. The catalog
+with sender, consumers and payload, the two `METER_RESET` paths and the stand-down record:
+**[message-bus.md](message-bus.md)**.
 
 ## Slash commands
 
-`/mm` and `/multimeters` are aliases, registered through AceConsole (never a raw `SLASH_*` global).
-A bare `/mm` (empty, or whitespace only) runs the `config` verb with `""` and opens the settings
-panel on its landing page; `/mm help` prints the index (`slash-commands-§4`, LibKa0s-Slash minor 11).
-The library-absent stub in `settings/Slash.lua` mirrors the rule, so there `config` answers that the
-panel is unavailable.
-`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **18 verbs**, the
-twelve reserved ones first in the order the standard fixes, then this addon's six. The dispatcher, the
-help renderer and the schema CLI are LibKa0s-Slash-1.0's; the verb table stays this addon's and is
-passed *in*, because the settings landing page renders the same rows and library ownership would make
-that a load-time cycle between two majors.
-
-| Command | What it does |
-|---|---|
-| `help` | Show the command index |
-| `config` | Open the settings panel on its landing page (`options` is accepted as an alias). A bare `/mm` runs this verb |
-| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgment is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: nothing unregisters the chat command, tears down `NS.COMMANDS` or drops the dispatcher, so every reserved verb — and the bare `/mm`, which opens the panel — still works with the addon off, and the pair is never one-way. `disable` **stands the addon down** rather than hiding its windows; what that means, and what the six feature verbs answer instead, is [disabled-state.md](disabled-state.md). **On a library-absent or partial load they keep working, by `options-ui-§1` route (a)**: the `enabled` row is composed by LibKa0s-Options-1.0's MasterControls, so with that major missing there is no row for `CliSet` to parse against (and with the Slash major missing `CliSet` is the stub's). The pair then calls `NS.SetByPath("enabled", want)` directly; the Schema seam, live or stub, stores the path through its `writeThrough` list and pulls the latch in its `announce` ([schema.md](schema.md#the-degradation-stub)). The reply is `enabled = <value>`, or the seam's refusal |
-| `list` | List every setting and its current value |
-| `get <path>` | Read one setting |
-| `set <path> <value>` | Write one setting |
-| `reset <path>` | Reset one setting to its default |
-| `resetall` | Reset the active profile to the shipped defaults, **after a confirmation**. It opens the General page's "Reset all settings?" popup (`MULTIMETERS_RESET_ALL`, through `NS.ShowResetAll`, the opener the button calls), and only accepting resets; No or Escape changes nothing. The reset is a **profile reset**, so it is the equivalent of a new profile: extra windows are deleted and one fresh window is left. The same act as Profiles → Reset Profile; other profiles are never touched. Until 2026-09-12 it went to the library's `CliResetAll`, which reset only the active window's rows, and then, until the owner's decision the same day, it reset without asking. See [settings-panel.md](settings-panel.md#reset-all-settings-vs-reset-profile) |
-| `debug` | Toggle the console window; `on` / `off` set session logging; **`tooltip`** toggles the tooltip log channel, off by default because a tooltip is rebuilt on every mouse-over and would evict the buffer; **`diag`** prints the diagnostic report; **`recap`** prints the death-recap probe alone; **`identity`** prints the mid-pull identity-correlation capture (issue #22); **`feign on`** / **`feign off`** arm and disarm the feign-death recording and **`feign`** prints it (issue #25) |
-| `perf` | Performance capture — `/mm perf help` for the run's own verbs |
-| `version` | Print the addon version, read from the TOC manifest |
-| `lock` | Lock or unlock every window for dragging. It governs movement and nothing else: unlocking no longer switches Test mode on. General → Master controls' **Lock frame** box is the same switch |
-| `test` | Toggle test mode — placeholder rows, for positioning. The General page's Test mode box is the same switch. Combat starting ends it, and a start during combat is refused |
-| `toggle` | Show or hide one window by name, or all of them |
-| `window` | `list` · `new <name>` · `delete <name>` · `copy <source> <target>` |
-| `reset-positions` | Move every window back to the center of the screen |
-| `export` | Open the export modal for one window's segment: `/mm export [window]` |
-
-The six host verbs act on **windows** — instances the registry owns — rather than on schema rows, so
-they are untouched by the library's absence and route straight into `modules/WindowManager.lua`
-rather than duplicating its rules. Window keys accept either an id or a name: a number is an id, a
-string is a name, matched case-insensitively but stored exactly as typed.
-
-`export` is the one of the six that ends somewhere other than the registry: it resolves a window the
-same way `/mm toggle` does, then hands the **config** — not the live instance — to `NS.Export:Open`. A window in the registry that has never been built still points at a segment, and
-its numbers are as exportable as a drawn one's. Named with no argument it means the window the
-settings panel is pointed at, falling back to the first in the registry, because the CLI has no
-picker and `/mm export` on a fresh login has to mean something. Whether an export may run at all is
-asked once, of `NS.Export.Available()`, and is never re-decided here — see [Taint notes](#taint-notes).
+`/mm` and `/multimeters` dispatch `NS.COMMANDS` (`settings/Slash.lua`) through LibKa0s-Slash-1.0:
+**18 verbs**, the twelve reserved ones then this addon's six, plus the `window` sub-tree. A bare `/mm`
+opens the settings panel. The verb table, the sub-tree, the `debug` words, the degraded behavior and
+every refusal line: **[slash-dispatch.md](slash-dispatch.md)**.
 
 ### Disabled — total, and the slash surface is not
 
-`slash-commands-§7`. **Disabled means the addon is not running.** Every game event unregistered,
-every module and bus subscription dropped, every timer canceled, every window hidden at the source,
-nothing written from a game event. It is one `LibKa0s-Lifecycle-1.0` latch with two named holds —
-`disabled` from the stored `enabled` path, `perf` from the capture harness — and releasing one never
-stands up an addon the other still holds down. It replaced a draw gate.
-
-**The command surface is deliberately unchanged.** All twelve reserved verbs answer, and the bare
-`/mm` opens the settings panel; only this addon's own six feature verbs refuse, on one line naming
-`/mm enable`. Full detail, the teardown table and the launcher's refused left-click:
-[disabled-state.md](disabled-state.md).
+`slash-commands-§7`. Disabled means the addon is not running, and the command surface stays: all
+twelve reserved verbs answer and only the six feature verbs refuse, on one line naming `/mm enable`.
+The gate and its live list: [slash-dispatch.md](slash-dispatch.md#disabled--total-and-the-slash-surface-is-not);
+the teardown: [disabled-state.md](disabled-state.md).
 
 ## Event subscriptions
 
@@ -470,9 +379,9 @@ issue needs a picture, and expect it to empty itself again.
 ### Conditional (documentation-§3, Tier 2)
 
 Each trigger was measured against the source, not assumed, and the measurement stays on the row
-whichever way it came out — so a later audit can re-run it rather than re-argue it. **Four of the
-seven ship**; the three that do not carry the count that decided it, and the number is what a
-re-check reads, not the verdict beside it.
+whichever way it came out — so a later audit can re-run it rather than re-argue it. **All seven
+ship**, and each row carries the count that decided it, so the number is what a re-check reads, not
+the verdict beside it.
 
 | Doc | Status | Trigger, as measured |
 |---|---|---|
@@ -480,9 +389,9 @@ re-check reads, not the verdict beside it.
 | `compat-layer.md` | Present | **`core/Compat.lua` is 770 lines and 30 shims** (4 of them the spell and spec readers bound to `LibKa0s-Compat-1.0` since LibKa0s v1.55.0, 8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap` the bar-animation read `BarInterpolation` and the chat sender `ChatSender`), each a guarded namespace check around one passthrough, with no feature decisions, no state, and nothing there inspecting a meter value. The row read *re-measure — the trigger now fires* from the day this addon's Compat passed KickCD's, which ships the doc: 389 lines and 18 shims when the row was last written, 777 and 29 at the v1.55.0 adoption, 746 and 29 after it (`wc -l core/Compat.lua`; the four readers kept their names), and 770 and 30 once `ChatSender` took the chat export off the deprecated global. `documentation-§3` has since given the trigger a number — **three or more** addon-specific shims, counted over this file alone — which settles it at any reading. Written, and registered on this row. |
 | `midnight-quirks.md` | Present | **At least one client-version workaround of the addon's own** — the trigger as §3 states it, and this addon carries four: the isolated event registrations (the newest, `PLAYER_IS_GLIDING_CHANGED`, the likeliest refused), `ADDON_RESTRICTION_STATE_CHANGED` registered against a namespace a client may not have, the settle pass over client state that lags its own event, and the secret-value model itself. It was read as Not applicable on the argument that a third copy of the secret-value rules would be the one that drifts — which was an argument against DUPLICATING them, not against the doc. The detail was MOVED here rather than copied: [Taint notes](#taint-notes) keeps the constraint, the operation lists and R1–R3, and nothing is stated twice. |
 | `debug.md` | Present | The console is `LibKa0s-DebugLog-1.0`'s window; this addon's own surface is the four probe verbs, the `tooltip` channel flag and the eighteen `NS.Debug` channels. **Written 2026-09-09, when this row's own re-check trigger fired.** It had read "Not applicable — print statements with no state and no options for a doc to describe", which was true until `/mm debug tooltip` added a session flag on `NS.State`. The trigger was recorded on the row and the doc followed in the same changeset. |
-| `slash-dispatch.md` | Not applicable | **18 verbs in `NS.COMMANDS`.** Twelve are the standard's reserved set, implemented entirely by LibKa0s-Slash-1.0 and documented by the standard. This addon's own surface is 6 verbs and one 4-entry sub-verb tree (`window`: list/new/delete/copy); `debug` takes 7 words, one of which (`feign`) takes an argument of its own and one of which (`tooltip`) is a session flag; `perf` delegates its whole sub-surface to the library, and `export` takes one optional window name. The [Slash commands](#slash-commands) section carries all of it in a screen. |
-| `message-bus.md` | Not applicable | **14 distinct messages**, all declared in one catalog (`core/Constants.lua` `MSG`) with the owning sender named beside each. Every payload is a flat table of one to two plain fields; none carries a handle, a curve object or a per-unit filter needing prose. The [Message bus](#message-bus) section carries sender, consumers and payload for all fourteen in one table. |
-| `profiles.md` | Not applicable | `settings/Profiles.lua` is 133 lines hosting **AceDBOptions-3.0's own tree** unchanged. The addon adds no profile semantics beyond the `PROFILE_CHANGED` fan-out already tabulated above and the reset-all veto already stated under [Settings schema](#settings-schema); the persisted shape is [schema.md](schema.md)'s. |
+| `slash-dispatch.md` | Present | **18 verbs in `NS.COMMANDS` and a sub-command tree**, against a trigger of eight or more commands or any sub-command tree. Twelve verbs are the standard's reserved set; this addon's own six include `window` with its four sub-verbs (list/new/delete/copy), `debug` takes seven words, and `export` an optional window name. The row used to waive it as "carried in a screen", which the trigger does not accept; the hub's `## Slash commands` section was MOVED into the doc (2026-09-24, MultiMeters-A-03) and a summary and link left behind. |
+| `message-bus.md` | Present | **14 distinct messages**, against a trigger of more than ten. All are declared in one catalog (`core/Constants.lua` `MSG`) with one sender each. The row used to waive it as "one table carries it", which the trigger does not accept; the hub's `## Message bus` section was MOVED into the doc (2026-09-24, MultiMeters-A-03) and a summary and link left behind. |
+| `profiles.md` | Present | **User-visible profiles**: `settings/Profiles.lua` registers AceDBOptions-3.0's tree as a settings page. The row used to waive it as "no profile semantics of its own"; the trigger is the visible profiles, not the semantics. The Profiles page moved in from settings-panel.md and the lifecycle from schema.md (2026-09-24, MultiMeters-A-03), with the `PROFILE_CHANGED` fan-out, the reset-all veto, the global-vs-profile split and the migration runner's every-profile rule beside them. |
 
 ### Verification and record (documentation-§3)
 

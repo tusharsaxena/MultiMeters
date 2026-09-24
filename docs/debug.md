@@ -149,4 +149,5 @@ defect tally (issue #48).
 
 - [testing.md](testing.md) — the harness, the lint, the green commit gate
 - [midnight-quirks.md](midnight-quirks.md) — the client behaviors the probes were written to measure
-- [ARCHITECTURE.md](ARCHITECTURE.md) — the slash surface in full, and the deviation register
+- [slash-dispatch.md](slash-dispatch.md) — the slash surface in full
+- [ARCHITECTURE.md](ARCHITECTURE.md) — the deviation register

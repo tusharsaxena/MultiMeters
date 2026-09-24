@@ -2,7 +2,8 @@
 
 > Ka0s Multi Meters. Part of the doc set mapped in
 > [ARCHITECTURE.md](ARCHITECTURE.md#documentation-map). The hub's summary is
-> [Disabled — total, and the slash surface is not](ARCHITECTURE.md#disabled--total-and-the-slash-surface-is-not).
+> [Disabled — total, and the slash surface is not](ARCHITECTURE.md#disabled--total-and-the-slash-surface-is-not);
+> the slash gate itself is in [slash-dispatch.md](slash-dispatch.md#disabled--total-and-the-slash-surface-is-not).
 
 ## The disabled state is total
 
