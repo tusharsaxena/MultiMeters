@@ -62,3 +62,80 @@ test("Slash refusal: `reset` on a row with no default prints NO_DEFAULT and keep
     assertEqual(NSi.GetSetting("window.frame.noDefaultProbe"), 5,
         "a row with no default is left alone, not written to nil")
 end)
+
+-- ── every acknowledgment reads the locale (MultiMeters-R-11) ───────────────
+--
+-- The feature verbs' acknowledgments used to be raw English, and the
+-- reset-positions count built its plural by concatenating "1 window" or
+-- "N windows" into a sentence, which no translation can reorder. Each is now a
+-- whole-sentence key read through NS.L, with the plural as two distinct keys
+-- (localization-§1). A spy on NS.L's reads is what shows a line came through
+-- the locale rather than merely printing the same English: the fallback answers
+-- every key with itself, so the chat text alone cannot tell the two apart.
+
+--- Record every key read from `inst.NS.L` from now on. The declared entries are
+--- moved into a shadow table so that every read, declared or not, reaches the
+--- recording `__index`; the table's identity is kept, because settings/Slash.lua
+--- captured it at load.
+local function spyLocale(inst)
+    local L = inst.NS.L
+    local store, reads = {}, {}
+    for k, v in pairs(L) do store[k] = v end
+    for k in pairs(store) do L[k] = nil end
+    setmetatable(L, { __index = function(_, k)
+        reads[k] = (reads[k] or 0) + 1
+        local v = store[k]
+        if v == nil then return k end
+        return v
+    end })
+    return reads
+end
+
+local ACK_KEYS = {
+    { "lock on",    "Windows are locked." },
+    { "lock off",   "Windows are unlocked \226\128\148 drag them into place." },
+    { "test on",    "test mode on \226\128\148 showing placeholder rows" },
+    { "test off",   "test mode off" },
+    { "debug feign on",  "feign trace ON \226\128\148 run the dungeon, then `/mm debug feign`." },
+    { "debug feign off", "feign trace off." },
+    { "debug feign of",
+      "unknown feign argument '%s' \226\128\148 `/mm debug feign on|off`, or `/mm debug feign` to print the recording." },
+}
+
+test("Slash locale: every feature-verb acknowledgment reads its whole-sentence key", function()
+    for _, case in ipairs(ACK_KEYS) do
+        local inst = T.load()
+        local reads = spyLocale(inst)
+        local shown = joined(say(inst, case[1]))
+        assertTrue((reads[case[2]] or 0) > 0,
+            ("`/mm %s` must read L[%q], printed: %s"):format(case[1], case[2], shown))
+    end
+end)
+
+test("Slash locale: `debug tooltip` reads the key for the state it landed in", function()
+    local inst = T.load()
+    local reads = spyLocale(inst)
+    say(inst, "debug tooltip")
+    assertTrue((reads["tooltip logging ON \226\128\148 mouse over a row and read the console."] or 0) > 0,
+        "turning tooltip logging on reads its key")
+    say(inst, "debug tooltip")
+    assertTrue((reads["tooltip logging off."] or 0) > 0, "turning it off reads its key")
+end)
+
+test("Slash locale: reset-positions says its plural through two distinct keys", function()
+    local ONE, MANY = "Moved 1 window back to the center.", "Moved %d windows back to the center."
+    local inst = T.load()
+    local reads = spyLocale(inst)
+    assertEqual(#inst.NS.Database.GetWindows(), 1, "precondition: a fresh profile holds one window")
+    local shown = joined(say(inst, "reset-positions"))
+    assertTrue((reads[ONE] or 0) > 0 and not reads[MANY], "one window reads the singular key, got: " .. shown)
+    assertTrue(has(shown, ONE), "and prints it: " .. shown)
+
+    inst = T.load()
+    say(inst, "window new Second")
+    say(inst, "window new Third")
+    reads = spyLocale(inst)
+    shown = joined(say(inst, "reset-positions"))
+    assertTrue((reads[MANY] or 0) > 0 and not reads[ONE], "three windows read the plural key, got: " .. shown)
+    assertTrue(has(shown, MANY:format(3)), "and print the count: " .. shown)
+end)

@@ -2038,10 +2038,13 @@ badge and any count quoted in the docs must agree with it.
 - Slash: nothing refuses on an install whose store has not been built
 - Slash: `set window.name` keeps every word of a multi-word name
 
-### test_slash_refusal.lua (2)
+### test_slash_refusal.lua (5)
 
 - Slash refusal: `set` a value the row's validate refuses prints the refusal, not the old value
 - Slash refusal: `reset` on a row with no default prints NO_DEFAULT and keeps the value
+- Slash locale: every feature-verb acknowledgment reads its whole-sentence key
+- Slash locale: `debug tooltip` reads the key for the state it landed in
+- Slash locale: reset-positions says its plural through two distinct keys
 
 ### test_disabled.lua (22)
 
@@ -2286,7 +2289,7 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
 | test_slash.lua | 75 |
-| test_slash_refusal.lua | 2 |
+| test_slash_refusal.lua | 5 |
 | test_disabled.lua | 22 |
 | test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
@@ -2294,4 +2297,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2016** |
+| **Total** | **2019** |

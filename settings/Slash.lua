@@ -38,7 +38,16 @@ local Sl = NS.Slash
 -- schema seam this file's adapters call. Everything else is resolved through NS
 -- at call time, so nothing further binds.
 
-local L = NS.L
+-- EVERY USER-FACING LINE HERE IS A WHOLE-SENTENCE KEY (localization-\194\1671): the verbs'
+-- acknowledgments, the degradation stub's lines and the usage text all read through `L` with
+-- `%s`/`%d` placeholders, and a count's plural is two keys rather than a noun concatenated into
+-- a sentence, which no translation could reorder. The one string NOT routed is the stub's copy
+-- of the library's DISABLED_LINE_FORMAT, whose wording is the collection's (slash-commands-\194\1677).
+--
+-- The fallback is for a load with no locale at all: locales/ loads first in the TOC, so NS.L is
+-- always here in the client, but the degradation stub below must still speak plain English on a
+-- load that never ran locales/enUS.lua rather than raise indexing nil.
+local L = NS.L or setmetatable({}, { __index = function(_, k) return k end })
 
 local function out(line)
     if NS.Print then NS.Print(line) end
@@ -178,7 +187,7 @@ if not SlashLib then
     -- only the consequence is this seam's. This is the one of the five whose
     -- consequence comes FIRST — the verb has to lead, or "/mm list" is buried
     -- mid-sentence — so it reads "<verb> is unavailable. <cause>."
-    local missing = " is unavailable. " .. NS.LIBKA0S_MISSING .. "."
+    local MISSING = L["%s is unavailable. %s."]
 
     SlashLib = {}
     SlashLib.ParseValue = function() return nil, "the LibKa0s library is missing" end
@@ -196,7 +205,7 @@ if not SlashLib then
     function SlashLib:New(d)
         local stub = { SetRowAnnotator = function() end }
         local function absent(verb)
-            return function() out(d.slash .. " " .. verb .. missing) end
+            return function() out(MISSING:format(d.slash .. " " .. verb, NS.LIBKA0S_MISSING)) end
         end
         for _, verb in ipairs({ "List", "Get", "Set", "Reset", "ResetAll" }) do
             stub["Cli" .. verb] = absent(verb:lower())
@@ -208,7 +217,8 @@ if not SlashLib then
             return SlashLib.DISABLED_LINE_FORMAT:format(tostring(d.brandName or d.slash),
                 d.slash .. " enable")
         end
-        stub.CliVersion = function() out("v" .. tostring(d.version and d.version() or "?")) end
+        local function version() return tostring(d.version and d.version() or "?") end
+        stub.CliVersion = function() out(L["v%s"]:format(version())) end
         stub.LandingRows = function()
             local rows = {}
             for _, e in ipairs(d.commands or {}) do
@@ -222,7 +232,7 @@ if not SlashLib then
             return rows
         end
         stub.PrintHelp = function()
-            out("v" .. tostring(d.version and d.version() or "?") .. " slash commands")
+            out(L["v%s slash commands"]:format(version()))
             for _, r in ipairs(stub.HelpRows()) do out(r) end
         end
         local function findVerb(name)
@@ -247,7 +257,7 @@ if not SlashLib then
             verb = (d.aliases or {})[verb] or verb
             local entry = findVerb(verb)
             if entry then return entry[3](rest or "") end
-            out("unknown command '" .. verb .. "'")
+            out(L["unknown command '%s'"]:format(verb))
             stub.PrintHelp()
         end
         return stub
@@ -360,7 +370,7 @@ cli = SlashLib:New({
         if row and row.path == "window.columns" and type(value) == "table" then
             local shown = 0
             for _, c in ipairs(value) do if type(c) == "table" and c.enabled then shown = shown + 1 end end
-            return ("%d shown"):format(shown)
+            return L["%d shown"]:format(shown)
         end
         return SlashLib.FormatValue and SlashLib.FormatValue(row, value) or tostring(value)
     end,
@@ -410,7 +420,7 @@ end
 local function wm()
     local m = NS.WindowManager
     if m then return m end
-    out("window management is unavailable \226\128\148 modules/WindowManager.lua did not load.")
+    out(L["window management is unavailable \226\128\148 modules/WindowManager.lua did not load."])
     return nil
 end
 
@@ -472,7 +482,7 @@ function doLock(rest)
     local want = boolArg(rest)
     if want == nil then want = not (M.IsLocked and M:IsLocked()) end
     M:SetLocked(want)
-    out("windows " .. (want and "locked" or "unlocked \226\128\148 drag them into place"))
+    out(want and L["Windows are locked."] or L["Windows are unlocked \226\128\148 drag them into place."])
 end
 
 function doTest(rest)
@@ -485,7 +495,7 @@ function doTest(rest)
     -- the box follows, and refuses a start during combat, printing its own line
     -- (modules/WindowManager.lua) -- so a refusal prints nothing more here.
     if not M:SetTestMode(want) then return end
-    out("test mode " .. (want and "on \226\128\148 showing placeholder rows" or "off"))
+    out(want and L["test mode on \226\128\148 showing placeholder rows"] or L["test mode off"])
 end
 
 --- `/mm toggle` flips every window; `/mm toggle <name>` flips one. The name keeps
@@ -502,17 +512,22 @@ end
 function doResetPositions()
     local M = wm()
     if not (M and M.ResetPositions) then return end
-    local moved = M:ResetPositions()
-    out(("moved %s back to the center of the screen"):format(
-        tonumber(moved) == 1 and "1 window" or tostring(moved or 0) .. " windows"))
+    -- Two keys, not "1 window" / "N windows" spliced into one sentence: a language whose
+    -- plural moves the count, or inflects more than the noun, cannot translate a fragment.
+    local moved = tonumber(M:ResetPositions()) or 0
+    if moved == 1 then
+        out(L["Moved 1 window back to the center."])
+    else
+        out(L["Moved %d windows back to the center."]:format(moved))
+    end
 end
 
 --- `/mm window <verb> [args]` — the four registry actions, each routed straight
 --- through. The sub-verb is lowercased because it is an identifier; the remainder
 --- is left exactly as typed because it is a window name.
-local WINDOW_USAGE = "Usage: |cFFFFFF00/mm window list|r, "
-    .. "|cFFFFFF00new <name>|r, |cFFFFFF00delete <name>|r, "
-    .. "|cFFFFFF00copy <source> <target>|r"
+local function yellow(s) return "|cFFFFFF00" .. s .. "|r" end
+local WINDOW_USAGE = L["Usage: %s, %s, %s, %s"]:format(yellow("/mm window list"),
+    yellow(L["new <name>"]), yellow(L["delete <name>"]), yellow(L["copy <source> <target>"]))
 
 -- The sub-verb table, built ONCE at file scope. slash-commands names an
 -- `if verb == "x" then ... elseif` sub-dispatcher as an anti-pattern for the
@@ -613,13 +628,13 @@ end
 function doExport(rest)
     local E = NS.Export
     if not (E and E.Open) then
-        out("export is unavailable \226\128\148 modules/Export.lua did not load.")
+        out(L["export is unavailable \226\128\148 modules/Export.lua did not load."])
         return
     end
 
     local ok, reason = E.Available()
     if not ok then
-        out(reason or "export is not available right now.")
+        out(reason or L["export is not available right now."])
         return
     end
 
@@ -631,13 +646,13 @@ function doExport(rest)
     if name ~= "" then
         cfg = M.Resolve(name)
         if not cfg then
-            out(NS.L["No window named '%s'."]:format(name))
+            out(L["No window named '%s'."]:format(name))
             return
         end
     else
         cfg = defaultWindow(M)
         if not cfg then
-            out("there is no window to export.")
+            out(L["there is no window to export."])
             return
         end
     end
@@ -689,8 +704,8 @@ local function doDebugFeign(rest)
     elseif arg == "on" or arg == "off" then
         local on = D.ArmFeignTrace and D.ArmFeignTrace(arg == "on") or false
         local line = on
-            and "feign trace ON — run the dungeon, then `/mm debug feign`."
-            or  "feign trace off."
+            and L["feign trace ON \226\128\148 run the dungeon, then `/mm debug feign`."]
+            or  L["feign trace off."]
         if NS.Print then NS.Print(line) end
     else
         -- NAMED AND REFUSED, following the dispatcher's own unknown-verb
@@ -700,8 +715,8 @@ local function doDebugFeign(rest)
         -- trace armed for the rest of the session with no line saying so. A
         -- typo in a diagnostic verb must cost the typo and nothing else.
         if NS.Print then
-            NS.Print("unknown feign argument '" .. arg ..
-                "' — `/mm debug feign on|off`, or `/mm debug feign` to print the recording.")
+            local refusal = L["unknown feign argument '%s' \226\128\148 `/mm debug feign on|off`, or `/mm debug feign` to print the recording."]
+            NS.Print(refusal:format(arg))
         end
     end
 end
@@ -753,8 +768,8 @@ function doDebug(rest)
             S.debugTooltip = not S.debugTooltip
             if NS.Print then
                 NS.Print(S.debugTooltip
-                    and "tooltip logging ON — mouse over a row and read the console."
-                    or  "tooltip logging off.")
+                    and L["tooltip logging ON \226\128\148 mouse over a row and read the console."]
+                    or  L["tooltip logging off."])
             end
         end
         return

@@ -935,13 +935,51 @@ L["Setting not found: %s"] = "Setting not found: %s"
 L["Invalid value for %s"] = "Invalid value for %s"
 L["Allowed values: %s"] = "Allowed values: %s"
 L["Windows are locked."] = "Windows are locked."
-L["Windows are unlocked."] = "Windows are unlocked."
+L["Windows are unlocked \226\128\148 drag them into place."] =
+    "Windows are unlocked \226\128\148 drag them into place."
 L["Windows are suspended while a performance capture runs."] =
     "Windows are suspended while a performance capture runs."
 L["No window is selected."] = "No window is selected."
 -- `/mm enable` / `/mm disable`'s acknowledgment when the composed `enabled` row is absent
 -- (settings/Slash.lua doEnabled). The live CliSet's echo is the library's own formatter.
 L["enabled = %s"] = "enabled = %s"
+
+-- The host verbs' acknowledgments (settings/Slash.lua). Whole sentences with placeholders
+-- (localization-\194\1671); the reset-positions count is two keys, one per plural form, rather
+-- than a noun spliced into a sentence.
+L["test mode on \226\128\148 showing placeholder rows"] =
+    "test mode on \226\128\148 showing placeholder rows"
+L["test mode off"] = "test mode off"
+L["Moved 1 window back to the center."] = "Moved 1 window back to the center."
+L["Moved %d windows back to the center."] = "Moved %d windows back to the center."
+L["%d shown"] = "%d shown"
+L["Usage: %s, %s, %s, %s"] = "Usage: %s, %s, %s, %s"
+L["new <name>"] = "new <name>"
+L["delete <name>"] = "delete <name>"
+L["copy <source> <target>"] = "copy <source> <target>"
+L["window management is unavailable \226\128\148 modules/WindowManager.lua did not load."] =
+    "window management is unavailable \226\128\148 modules/WindowManager.lua did not load."
+L["export is unavailable \226\128\148 modules/Export.lua did not load."] =
+    "export is unavailable \226\128\148 modules/Export.lua did not load."
+L["export is not available right now."] = "export is not available right now."
+L["there is no window to export."] = "there is no window to export."
+
+-- The two debug channels' acknowledgments (`/mm debug feign`, `/mm debug tooltip`).
+L["feign trace ON \226\128\148 run the dungeon, then `/mm debug feign`."] =
+    "feign trace ON \226\128\148 run the dungeon, then `/mm debug feign`."
+L["feign trace off."] = "feign trace off."
+L["unknown feign argument '%s' \226\128\148 `/mm debug feign on|off`, or `/mm debug feign` to print the recording."] =
+    "unknown feign argument '%s' \226\128\148 `/mm debug feign on|off`, or `/mm debug feign` to print the recording."
+L["tooltip logging ON \226\128\148 mouse over a row and read the console."] =
+    "tooltip logging ON \226\128\148 mouse over a row and read the console."
+L["tooltip logging off."] = "tooltip logging off."
+
+-- The degradation stub's own lines (settings/Slash.lua, LibKa0s-Slash-1.0 absent). The first
+-- `%s` is the verb (`/mm list`), the second core/CoreSetup.lua's shared cause clause.
+L["%s is unavailable. %s."] = "%s is unavailable. %s."
+L["v%s"] = "v%s"
+L["v%s slash commands"] = "v%s slash commands"
+L["unknown command '%s'"] = "unknown command '%s'"
 
 -- NO ENTRY FOR THE DISABLED REFUSAL LINE, and its absence is the rule rather
 -- than an omission (slash-commands-§7). That line is exactly one shape
