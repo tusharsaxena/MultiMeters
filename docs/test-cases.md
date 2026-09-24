@@ -59,13 +59,14 @@ badge and any count quoted in the docs must agree with it.
 
 - doc map: every Tier 2 row agrees with what docs/ holds
 
-### test_doc_structure.lua (5)
+### test_doc_structure.lua (6)
 
 - docs/ARCHITECTURE.md carries the ten sections documentation-§3 names
 - every mandated hub section that has a topic doc has spilled into it
 - every anchor pointing into docs/ARCHITECTURE.md resolves to a heading
 - the player-facing history has the ONE home documentation-§1 allows, and no second
 - README.md's top-level sections are the ones documentation-§1 names, in its order
+- the hub's file count matches git ls-files
 
 ### test_lintconfig.lua (4)
 
@@ -2245,7 +2246,7 @@ badge and any count quoted in the docs must agree with it.
 | test_deviation_register.lua | 1 |
 | test_texture_paths.lua | 6 |
 | test_docmap.lua | 1 |
-| test_doc_structure.lua | 5 |
+| test_doc_structure.lua | 6 |
 | test_lintconfig.lua | 4 |
 | test_prose.lua | 15 |
 | test_constants.lua | 25 |
@@ -2308,4 +2309,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2022** |
+| **Total** | **2023** |

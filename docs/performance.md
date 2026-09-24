@@ -297,6 +297,9 @@ tolerance rather than demanding equality, because two measurements of an identic
 harness land within a byte of each other. On the run that closed this, both arms measured 71224.1
 bytes/iter exactly, against 77944.1 and 71224.1 before the fix.
 
+Re-measured 2026-09-24 with `tests/perf.lua`: `feignTraceAbsent` and `feignTraceOff` both 71544.1
+bytes/iter; the arms are still equal. The figures above are the closing run's and stay as recorded.
+
 ### The zero-overhead pair
 
 `performance-§9` requires this scenario by name, and it carries four assertions:
