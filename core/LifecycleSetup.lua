@@ -274,10 +274,11 @@ end
 
 --- Is the addon DISABLED specifically -- the player's switch, not the harness's.
 ---
---- The slash gate and the launcher click ask this one rather than `IsStoodDown`,
---- because the refusal line names `/mm enable` and that is the wrong advice to
---- give someone whose addon is merely mid-capture. slash-commands-7 keeps `perf`
---- on the live list for the same reason.
+--- The slash gate asks this one rather than `IsStoodDown`, because the refusal
+--- line names `/mm enable` and that is the wrong advice to give someone whose
+--- addon is merely mid-capture. slash-commands-7 keeps `perf` on the live list
+--- for the same reason. The launcher click gates on `IsStoodDown` and asks this
+--- one only to choose which refusal line it prints.
 --- @return boolean
 function NS.IsDisabled()
     local lc = NS.lifecycle
