@@ -408,6 +408,7 @@ end
 -- below. The bracket covers the whole body, early returns included: the early
 -- return is what nearly every cast in a raid takes, and it is the cost in question.
 
+--- CHAT_MSG_SYSTEM(message). The body and its reasons are offerSystemMessage above.
 function NS:OnSystemMessage(_, message)
     local Perf = NS.Perf
     local t0 = Perf and Perf.on and debugprofilestop()
@@ -415,6 +416,8 @@ function NS:OnSystemMessage(_, message)
     if t0 then Perf.Note("systemEvent", debugprofilestop() - t0) end
 end
 
+--- UNIT_SPELLCAST_SUCCEEDED(unit, castGUID, spellID). The body and its reasons are
+--- noteFeignCast above.
 function NS:OnSpellSucceeded(_, unit, _castGUID, spellID)
     local Perf = NS.Perf
     local t0 = Perf and Perf.on and debugprofilestop()
@@ -491,11 +494,6 @@ end
 -- ladder runs on context transitions (zone-in, roster change, settings change),
 -- not per frame, so the lookup is not in a measured path.
 
---- Whether `window` should be on screen right now.
----
---- @param window table  a window config from the profile
---- @return boolean show, string reason  the reason names the step that decided,
----   which is what `/mm debug diag` prints and what a test asserts on.
 --- Is the player fighting?
 ---
 --- UnitAffectingCombat and never InCombatLockdown -- modules/Visibility.lua's rule,
@@ -531,6 +529,11 @@ local function masterVisibilityAllows()
     return true
 end
 
+--- Whether `window` should be on screen right now.
+---
+--- @param window table  a window config from the profile
+--- @return boolean show, string reason  the reason names the step that decided,
+---   which is what `/mm debug diag` prints and what a test asserts on.
 function NS.ShouldShow(window)
     -- STEP 0 — THE LATCH, and it now answers for BOTH reasons this addon can be
     -- inert: the player's master switch and a perf capture's suspended arm
@@ -554,7 +557,7 @@ function NS.ShouldShow(window)
 
     if type(window) ~= "table" then return false, "no window" end
 
-    -- STEP 2 — test mode. A window in test mode shows regardless of context: the
+    -- STEP 1 — test mode. A window in test mode shows regardless of context: the
     -- whole point is to lay a layout out wherever the player happens to be
     -- standing, which is rarely a place the visibility rules would allow.
     --
@@ -565,19 +568,19 @@ function NS.ShouldShow(window)
     -- and "hide this window" the same keystroke.
     if NS.State and NS.State.testMode then return true, "test" end
 
-    -- STEP 3 — General visibility, the ADDON-WIDE context answer, ahead of the
+    -- STEP 2 — General visibility, the ADDON-WIDE context answer, ahead of the
     -- per-window rules because it is the wider statement of the same thing.
     --
     -- BELOW TEST MODE, which is what keeps test mode usable: a player laying a
     -- window out at a target dummy under "Only in combat" would otherwise be
-    -- looking at nothing, and step 2's one-way force is the documented way that is
+    -- looking at nothing, and step 1's one-way force is the documented way that is
     -- avoided for every other rule too. `never` is still not something an explicit
     -- `/mm toggle` may overrule -- see modules/Window.lua's UNFORCEABLE, which
     -- names its reason.
     local allowed, why = masterVisibilityAllows()
     if not allowed then return false, why end
 
-    -- STEP 4 — context. modules/Visibility.lua owns the instance / solo /
+    -- STEP 3 — context. modules/Visibility.lua owns the instance / solo /
     -- vehicle rules; it is consulted rather than reimplemented, and its absence
     -- (a partial install) fails OPEN so a broken module cannot make the addon
     -- look uninstalled.

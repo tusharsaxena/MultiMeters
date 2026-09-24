@@ -513,7 +513,7 @@ end)
 
 test("PerfSetup: the show decision refuses every window while suspended, above the master enable",
 function()
-    -- STEP 0 of the ladder, and it is step 0 rather than step 2 because nothing
+    -- STEP 0 of the ladder, and it is step 0 rather than below test mode's step 1 because nothing
     -- — a combat transition, a zone-in, a settings change — may re-show a window
     -- behind suspend's back. Visibility is NOT enforced by hiding frames from
     -- the descriptor (performance-§6); it is refused at the source.

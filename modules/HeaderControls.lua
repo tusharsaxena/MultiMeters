@@ -303,7 +303,7 @@ end
 --- `window.<key>` rather than `windows[n].frame.<key>`: NS.SetByPath resolves a
 --- `window.` prefix against whichever window the panel has selected, and the
 --- window a control was clicked on is by definition the one in front of the
---- player. Resolved at CALL time because settings/ loads ahead of modules/.
+--- player. Resolved at CALL time because settings/ loads after modules/.
 local function write(window, key, value)
     local set = NS.SetByPath
     if not set then return end
@@ -373,7 +373,7 @@ local ACTIONS = {
         -- second copy of that sentence is a second place for it to go stale,
         -- and the more dangerous the warning the worse that is.
         -- Through settings/General.lua, which owns the dialog and centers it on
-        -- the screen. Resolved at call time because settings/ loads ahead of
+        -- the screen. Resolved at call time because settings/ loads after
         -- modules/; the bare StaticPopup_Show behind it is the degraded path,
         -- where an uncenterd confirmation still beats no confirmation.
         if NS.ShowResetMeterData then

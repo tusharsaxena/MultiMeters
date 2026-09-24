@@ -193,14 +193,14 @@ end
 --- the ladder exists specifically to forbid ("a suspended capture must be inert:
 --- nothing may re-show a window behind suspend's back", performance-§6).
 ---
---- The reasons below are steps 0 and 1, which are the addon-wide answers. Matched
+--- The reasons below are steps 0 and 2, which are the addon-wide answers. Matched
 --- on the REASON rather than re-asking each source, because the ladder already
 --- names the step that decided and a second reading of NS.Perf.suspended here is
 --- a second place for the two to disagree.
 local UNFORCEABLE = {
     ["suspended"] = true,   -- step 0: a suspended capture must be inert
-    ["disabled"]  = true,   -- step 1: the master switch is not a context rule
-    -- step 1b: General visibility set to Never. The same statement the master
+    ["disabled"]  = true,   -- step 0: the master switch is not a context rule
+    -- step 2: General visibility set to Never. The same statement the master
     -- switch makes, made on the same tab -- so an explicit "show this window" must
     -- not overrule it either. The dropdown's two COMBAT answers are deliberately
     -- absent: those ARE context rules and behave like the per-window pair.

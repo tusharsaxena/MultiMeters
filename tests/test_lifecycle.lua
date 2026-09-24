@@ -671,7 +671,7 @@ function()
     -- Test mode is one-way and forces a window ON, which is the documented way
     -- every other rule is stepped past while a player lays columns out at a target
     -- dummy. A combat answer above it would make that impossible out of combat.
-    -- red under: moving the master visibility check above step 2.
+    -- red under: moving the master visibility check above step 1 (test mode).
     local inst = T.load{ enable = true }
     inst.mocks.setInstance("party")
     inst.mocks.setGroup({ {}, {}, {}, {}, {} })

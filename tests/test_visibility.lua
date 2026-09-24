@@ -941,7 +941,7 @@ test("The master enable, test mode and perf suspend are NOT read here", function
     assertEqual(show, true, "a per-window predicate must not read the addon-wide flags")
     assertEqual(reason, "dungeon")
 
-    -- And test mode's one-way force belongs to step 2 as well: it can show a
+    -- And test mode's one-way force belongs to step 1 as well: it can show a
     -- window the rules would hide, but it does that in the ladder, above this
     -- function, and never by making this function lie about the rules.
     local rules = defaultRules()
