@@ -644,7 +644,10 @@ The Rows page is gone; the paths did not move with it.
 `mouseoverHighlight = true`.
 
 `alwaysShowSelf` spends the last visible slot on the local player rather than growing the list, so
-the row count stays exactly at the cap (`Aggregator.ApplyRowLimit`).
+the row count stays exactly at the cap (`Aggregator.ApplyRowLimit`). The slot that reaches the screen
+is the window's: `WindowProto:Render` asks `Aggregator.SelfPinIndex` about the rows it actually
+draws (`layout.maxRows` of them from the scroll offset), so the pin holds on the shipped
+`maxRows = 0`, where the height decides, and stands down once scrolling brings your own row into view.
 
 **The two row decorations ship OFF, and the other two on that tab ship ON**, which is one
 distinction rather than four decisions. A meter's job is telling rows apart by their numbers;

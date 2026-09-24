@@ -1313,6 +1313,40 @@ function Aggregator.ApplyRowLimit(rows, rowsConfig)
     return rows
 end
 
+--- Where the window's own "always show yourself" pin should come from.
+---
+--- ApplyRowLimit pins against ITS cap, which is the 40-row ceiling whenever
+--- `rows.maxRows` is 0 (the shipped default) — but the window draws only what
+--- fits its height, from wherever the scroll offset puts it. So the pin that
+--- reaches the screen is this one, asked about the slice the window actually
+--- draws: `entries[first .. first + visible - 1]`. ApplyRowLimit keeps its own
+--- pin for the explicit-cap case, where the two agree.
+---
+--- Pure and allocation-free: WindowProto:Render calls it on every draw.
+---
+--- @param entries table  the ordered rows the window is about to draw
+--- @param first number  index of the first drawn row (1 + scroll offset)
+--- @param visible number  how many rows the window draws (`layout.maxRows`)
+--- @param rowsConfig table|nil  the window's `rows` config group
+--- @return number|nil  the player's index when it lies outside the slice and
+---   the flag is on; nil otherwise
+function Aggregator.SelfPinIndex(entries, first, visible, rowsConfig)
+    if not (rowsConfig and rowsConfig.alwaysShowSelf) then return nil end
+    if (visible or 0) < 1 then return nil end
+    local n = #entries
+    local last = first + visible - 1
+    if last > n then last = n end
+    for i = first, last do
+        local e = entries[i]
+        if e and e.isPlayer then return nil end
+    end
+    for i = 1, n do
+        local e = entries[i]
+        if e and e.isPlayer then return i end
+    end
+    return nil
+end
+
 -- ---------------------------------------------------------------------------
 -- Test rows — peeled to modules/Aggregator_Preview.lua
 -- ---------------------------------------------------------------------------

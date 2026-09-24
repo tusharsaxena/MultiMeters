@@ -1147,6 +1147,32 @@ function WindowProto:Refresh()
     if t0 then Perf.Note("refresh", debugprofilestop() - t0) end
 end
 
+--- The entry for the row at list index `i`: the player's when `i` is the last
+--- drawn slot and there is a pin, the natural one otherwise. A helper so the
+--- pin costs Render no branch of its own.
+local function slotEntry(entries, i, pin, lastIndex)
+    if pin and i == lastIndex then return entries[pin] end
+    return entries[i]
+end
+
+--- The list index of the player to pin into the last drawn slot, or nil.
+---
+--- "Always show yourself" asked of the rows this window DRAWS — `layout.maxRows`
+--- of them from `1 + offset` — rather than of the aggregator's 40-row ceiling,
+--- which on the shipped `maxRows = 0` never bit. A breakdown's rows are spells,
+--- so there is no player to pin.
+---
+--- @param entries table
+--- @param offset number  the clamped scroll offset
+--- @param isDrill boolean|nil
+--- @return number|nil
+function WindowProto:SelfPin(entries, offset, isDrill)
+    local Aggregator = mod("Aggregator")
+    if isDrill or not Aggregator then return nil end
+    return Aggregator.SelfPinIndex(entries, 1 + offset, self.layout.maxRows,
+        (self.config or {}).rows)
+end
+
 --- Put the aggregator's answer on screen.
 ---
 --- The percent text slot used to cost a second full session read per column per
@@ -1202,10 +1228,14 @@ function WindowProto:Render(entries, preview, isDrill, drillTitle)
     if offset < 0 then offset = 0 end
     self.scrollOffset = offset
 
+    -- "Always show yourself", against the slice actually drawn (see SelfPin).
+    local pin = self:SelfPin(entries, offset, isDrill)
+    local lastIndex = offset + layout.maxRows
+
     local drawn = 0
     for i = 1 + offset, #entries do
         if drawn >= layout.maxRows then break end
-        local entry = entries[i]
+        local entry = slotEntry(entries, i, pin, lastIndex)
         if entry then
             drawn = drawn + 1
             local row = self:Acquire()

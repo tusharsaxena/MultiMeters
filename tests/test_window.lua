@@ -740,6 +740,66 @@ test("A list that fits entirely cannot be scrolled", function()
     assertEqual(#drawnNames(window), 3, "and it still drew every row it had")
 end)
 
+-- ---------------------------------------------------------------------------
+-- "Always show yourself" against the rows the window actually draws
+-- ---------------------------------------------------------------------------
+--
+-- modules/Aggregator.lua's ApplyRowLimit pins the player against its own cap,
+-- which is MAX_ROWS (40) whenever `rows.maxRows` is 0 — the shipped default. The
+-- window then draws only what fits (10 rows at the shipped 220px), so a player at
+-- rank 15 was never on screen. The pin that counts is the one Render makes
+-- against `layout.maxRows` and the scroll offset (review F-001).
+
+--- The shipped window (maxRows = 0, so the height decides) and `total` entries
+--- with the player at rank `me`.
+local function selfScene(total, me, alwaysShowSelf)
+    local inst, window, cfg = scene{ configure = function(c)
+        c.rows.maxRows = 0
+        c.rows.alwaysShowSelf = alwaysShowSelf
+    end }
+    local rows = {}
+    for i = 1, total do
+        rows[i] = { guid = string.format("Player-1-%08X", i), name = "Mock" .. i,
+                    classFilename = "MAGE", values = {}, cells = {},
+                    isPlayer = (i == me) }
+    end
+    return inst, window, cfg, rows
+end
+
+test("alwaysShowSelf pins the player into the last row the default window draws", function()
+    -- red under: pinning only in ApplyRowLimit, against the 40-row ceiling.
+    local _, window, _, rows = selfScene(20, 15, true)
+    assertEqual(window.layout.maxRows, 10, "the shipped window no longer fits ten rows")
+    window:Render(rows, false)
+
+    local names = drawnNames(window)
+    assertEqual(#names, 10, "the pin changed how many rows are drawn")
+    assertEqual(names[9], "Mock9", "the rows above the pin moved")
+    assertEqual(names[10], "Mock15", "self-in-view=false: the player is not in the last slot")
+    assertEqual(window.pool.active[10].index, 10,
+        "the pinned row keeps its slot's stripe parity")
+end)
+
+test("alwaysShowSelf pins nothing once the scroll puts the player in view", function()
+    -- red under: a pin that ignores the scroll offset, which would draw the
+    -- player twice.
+    local _, window, _, rows = selfScene(20, 15, true)
+    window:ScrollBy(6)
+    window:Render(rows, false)
+
+    local names = drawnNames(window)
+    assertEqual(names[1], "Mock7", "the fixture did not scroll")
+    assertEqual(names[9], "Mock15", "the player is not in their natural place")
+    assertEqual(names[10], "Mock16", "the last slot was spent on a player already in view")
+end)
+
+test("alwaysShowSelf off leaves the last slot to its own rank", function()
+    -- red under: a pin that does not read the flag.
+    local _, window, _, rows = selfScene(20, 15, false)
+    window:Render(rows, false)
+    assertEqual(drawnNames(window)[10], "Mock10")
+end)
+
 test("The body takes the wheel, or the handler is never called in game", function()
     -- A live OnMouseWheel script on a frame that never called EnableMouseWheel
     -- runs perfectly in a harness and does nothing in the client.

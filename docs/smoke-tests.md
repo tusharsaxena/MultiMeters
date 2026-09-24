@@ -793,8 +793,15 @@ class AND spec** — that second run is the whole point of this case.
 1. Between packs, note the row order top to bottom.
 2. Pull. Watch the order, and watch the columns other than Damage, for the whole fight.
 3. Kill the pack. Watch again.
+4. **SM-04.** In a raid, on the shipped window (**Max rows** 0, so the height decides how many rows
+   show), with **Always show yourself** on, be ranked below the last visible row. Then scroll the
+   window with the wheel until your natural row is in view.
 
 **Pass.**
+- **SM-04: your row sits in the last slot.** Ranked below the visible rows, the last row drawn is you,
+  and the rows above it are the top of the list in order. Scrolled so your natural row is in view,
+  the last slot goes back to its own rank and you appear exactly once. Untick **Always show
+  yourself** and the last slot is its own rank throughout.
 - **Rows keep coming, and they re-rank live.** `sourceGUID` is secret for the whole of a pull, so the
   grid is built by identity correlation and its order is the game's own ranking of the sort column.
   Someone overtaking someone else moves up *during* the fight.

@@ -846,7 +846,7 @@ badge and any count quoted in the docs must agree with it.
 - Feign: with no Roster at all every entry is evicted
 - Feign: the set stops being walked once the last entry goes
 
-### test_aggregator.lua (61)
+### test_aggregator.lua (62)
 
 - Aggregator joins columns on the GUID, which is the only legal key
 - Aggregator's result table IS the row array, and cells aliases values
@@ -870,6 +870,7 @@ badge and any count quoted in the docs must agree with it.
 - ApplyRowLimit treats 0 and an over-large cap as the hard ceiling
 - alwaysShowSelf spends the last visible slot on the player
 - alwaysShowSelf does nothing when the player is already visible
+- SelfPinIndex answers the player's index only when they are outside the slice
 - Aggregator applies the cap before dividing, not after
 - A meter reset drops this module's cache
 - A pet gets its OWN row by default, with its own name
@@ -974,7 +975,7 @@ badge and any count quoted in the docs must agree with it.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (59)
+### test_window.lua (62)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - BuildLayout computes every coordinate from config alone
@@ -1009,6 +1010,9 @@ badge and any count quoted in the docs must agree with it.
 - A list that shrinks under a stationary offset re-clamps on the next draw
 - Scrolling up stops at the top
 - A list that fits entirely cannot be scrolled
+- alwaysShowSelf pins the player into the last row the default window draws
+- alwaysShowSelf pins nothing once the scroll puts the player in view
+- alwaysShowSelf off leaves the last slot to its own rank
 - The body takes the wheel, or the handler is never called in game
 - The wheel scrolls up on a positive delta
 - Entering or leaving a breakdown puts the view back at the top
@@ -2190,11 +2194,11 @@ badge and any count quoted in the docs must agree with it.
 | test_provider.lua | 78 |
 | test_roster.lua | 42 |
 | test_feign.lua | 27 |
-| test_aggregator.lua | 61 |
+| test_aggregator.lua | 62 |
 | test_aggregator_identity.lua | 27 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 59 |
+| test_window.lua | 62 |
 | test_window_header.lua | 73 |
 | test_window_placement.lua | 33 |
 | test_window_segment.lua | 10 |
@@ -2222,4 +2226,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 33 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1956** |
+| **Total** | **1960** |
