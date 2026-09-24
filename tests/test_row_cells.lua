@@ -1,7 +1,7 @@
 -- tests/test_row_cells.lua — modules/Row_Cells.lua: which of a row's cells are
 -- LIVE, and giving the row back to the pool.
 --
--- Peeled beside tests/test_row.lua, which sits at the layout-§1 cap, along the
+-- Peeled beside tests/test_row.lua, which then sat at the layout-§1 cap, along the
 -- seam modules/Row.lua was peeled on. A cell is never destroyed: a column toggled
 -- off keeps its widget, hidden and blank, for when it comes back. So `self.cells`
 -- holds every cell the row has EVER had, and the refresh must not walk it. It

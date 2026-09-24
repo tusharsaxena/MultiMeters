@@ -12,8 +12,9 @@
 -- somebody has to notice.
 --
 -- modules/Window.lua was peeled four ways, and so was this suite. The header
--- band — the title strip, the column-header buttons and the sort hand-off, the
--- segment selector — is proved in tests/test_window_header.lua; position, size,
+-- band — the title strip, the column-header buttons, the segment selector — is
+-- proved in tests/test_window_header.lua, and the sort hand-off in
+-- tests/test_window_header_sort.lua; position, size,
 -- the lock and the show ladder in tests/test_window_placement.lua; the bus
 -- wiring, Suspend / Resume, SetConfig and Destroy in
 -- tests/test_window_lifecycle.lua. What stays here is the refresh chain the

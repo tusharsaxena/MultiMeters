@@ -1,13 +1,14 @@
 -- tests/test_window_header.lua — modules/Window_Header.lua: the title strip,
--- the column headers and the sort hand-off, and the segment selector.
+-- the column headers, and the segment selector (the sort is in
+-- tests/test_window_header_sort.lua).
 --
 -- Peeled out of tests/test_window.lua alongside the module it mirrors. This is
 -- the band across the top of a window and everything the player clicks in it:
 -- the padlock and the gear, the title text and its two color modes, the
 -- hairline divider, the header LINE that says which fight is on screen, the
--- per-column header buttons and the arrow that marks the sort, the segment
--- picker, the notice text, and the minimize collapse that takes the whole body
--- away and leaves this strip behind.
+-- per-column header buttons (the arrow that marks the sort is proved in the
+-- sort file), the segment picker, the notice text, and the minimize collapse
+-- that takes the whole body away and leaves this strip behind.
 --
 -- The sort itself — which header wears the arrow, what a header click does to
 -- the order, and the three rungs of the arrow ladder — was peeled into

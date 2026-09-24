@@ -11,7 +11,8 @@
 -- bus away without touching what the player configured.
 --
 -- THE FIXTURE IS DUPLICATED, DELIBERATELY, as it is in tests/test_window.lua,
--- tests/test_window_header.lua and tests/test_window_placement.lua. Copies stay
+-- tests/test_window_header.lua, tests/test_window_header_sort.lua and
+-- tests/test_window_placement.lua. Copies stay
 -- copies: if one drifts, the case that depended on the drift is the one that goes
 -- red.
 
