@@ -167,12 +167,16 @@ local function defaultName()
 end
 
 --- The error for a window key that resolved to nothing. A nil key is the
---- settings panel with nothing picked; any other key is a name or index the
---- caller typed, and the answer names it back rather than blaming the panel.
+--- settings panel with nothing picked, and a blank one is `/mm window delete`
+--- with no name typed (doWindow's tail is "", not nil): both answer "nothing
+--- is selected". Any other key is a name or index the caller typed, and the
+--- answer names it back rather than blaming the panel.
 --- @param key any
 --- @return string
 local function unknownWindow(key)
-    if key == nil then return L["No window is selected."] end
+    if key == nil or tostring(key):match("^%s*$") then
+        return L["No window is selected."]
+    end
     return L["No window named '%s'."]:format(tostring(key))
 end
 

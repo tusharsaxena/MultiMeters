@@ -735,6 +735,16 @@ test("Slash: `window new` and `window delete` act on the registry", function()
     assertEqual(#NSi.Database.GetWindows(), 1)
 end)
 
+test("Slash: a bare `window delete` says nothing is selected, not a blank name", function()
+    -- red under: WINDOW_VERBS.delete passing doWindow's "" tail to Delete, and
+    -- unknownWindow formatting it into "No window named ''." (MM-06 review).
+    local inst = T.load()
+    local text = joined(say(inst, "window delete"))
+    assertTrue(text:find("No window is selected.", 1, true) ~= nil, text)
+    assertTrue(text:find("No window named", 1, true) == nil, text)
+    assertEqual(#inst.NS.Database.GetWindows(), 1, "and nothing was deleted")
+end)
+
 test("Slash: `window list` prints one line per window", function()
     local inst = T.load()
     say(inst, "window new Second")

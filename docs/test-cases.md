@@ -1921,7 +1921,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: answers 0 when there is no profile tree to compare against
 - ValidateSchema: counts every failure, in schema order, with nothing listening
 
-### test_slash.lua (73)
+### test_slash.lua (74)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1963,6 +1963,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `test` sets and toggles through the registry
 - Slash: `lock` moves the lock and NOTHING else
 - Slash: `window new` and `window delete` act on the registry
+- Slash: a bare `window delete` says nothing is selected, not a blank name
 - Slash: `window list` prints one line per window
 - Slash: `window` with an unknown sub-verb prints the usage
 - Slash: `toggle` reaches the registry and reports its refusal
@@ -2227,7 +2228,7 @@ badge and any count quoted in the docs must agree with it.
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 18 |
-| test_slash.lua | 73 |
+| test_slash.lua | 74 |
 | test_disabled.lua | 22 |
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
@@ -2235,4 +2236,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 33 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1969** |
+| **Total** | **1970** |

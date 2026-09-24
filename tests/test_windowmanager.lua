@@ -821,6 +821,13 @@ test("Delete, Duplicate and CopyFrom of an unknown window name it too", function
     ok, err = M:Delete(nil)
     assertEqual(ok, false)
     assertEqual(err, "No window is selected.")
+    -- A blank key is nothing picked too, not a window named "" or "   ".
+    ok, err = M:Delete("")
+    assertEqual(ok, false)
+    assertEqual(err, "No window is selected.")
+    ok, err = M:Delete("   ")
+    assertEqual(ok, false)
+    assertEqual(err, "No window is selected.")
 end)
 
 test("Rename to an empty name answers a sentence, not the row's label", function()
