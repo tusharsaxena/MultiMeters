@@ -297,21 +297,119 @@ end)
 -- The tooltip
 -- ---------------------------------------------------------------------------
 
-test("Launcher: the tooltip states BOTH clicks and the version", function()
-    local inst = T.load()
+-- THE TOOLTIP IS THE LIBRARY'S (Launcher minor 3, launcher-§1 at v2.66.0). It draws one shape in
+-- all eleven addons, including while the addon is disabled; this addon's descriptor only answers
+-- its questions. So these cases pin the ANSWERS: the version from the TOC, the rung-(a) label, and
+-- the two states this addon really has (every window locked, test mode). They also pin that
+-- nothing of the host's is appended, because a host hook drawing a title or a click hint would
+-- draw a second copy of the library's (anti-pattern #89).
 
+--- The tooltip's lines on one show, with the status colors stripped: the words are the contract,
+--- and the one color (green or red around a status value) is the library's to test.
+local function tooltipLines(inst)
     local lines = {}
     local tt = {
-        AddLine = function(_, text) lines[#lines + 1] = text end,
-        AddDoubleLine = function(_, left, right) lines[#lines + 1] = left .. " " .. right end,
+        AddLine = function(_, text) lines[#lines + 1] = (tostring(text):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end,
+        AddDoubleLine = function(_, left, right) lines[#lines + 1] = "DOUBLE " .. tostring(left) .. " " .. tostring(right) end,
     }
     broker(inst).OnTooltipShow(tt)
+    return lines
+end
 
-    local text = table.concat(lines, "\n")
-    assertTrue(text:find("Left%-click") ~= nil)
-    -- The right-click is stated rather than left to be discovered.
-    assertTrue(text:find("Right%-click") ~= nil)
-    assertTrue(text:find(tostring(inst.NS.version), 1, true) ~= nil)
+test("Launcher tooltip: the full block, enabled, with nothing of the host's appended", function()
+    local inst = T.load{ enable = true, mutate = function(m) m.__toc.Version = "9.8.7" end }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    NS.WindowManager:SetLocked(false)
+    NS.State.SetTestMode(false)
+
+    -- EXACTLY six lines, in this order. A seventh would be a host line, and this addon has none of
+    -- its own to add: the old hook drew only a title, a version and the two click hints, which are
+    -- all the library's now.
+    local lines = tooltipLines(inst)
+    assertEqual(table.concat(lines, "\n"), table.concat({
+        "Ka0s Multi Meters  v9.8.7",
+        "Enabled: Yes",
+        "Locked: No",
+        "Test mode: Off",
+        "Left-click: " .. NS.L["Toggle windows"],
+        "Right-click: Open settings",
+    }, "\n"))
+end)
+
+test("Launcher tooltip: the version is the TOC's, not the hardcoded fallback", function()
+    -- red under: `version = NS.version`, which is core/Namespace.lua's resolution at file scope,
+    -- or a literal. Only a manifest version neither carries tells the paths apart.
+    local inst = T.load{ mutate = function(m) m.__toc.Version = "4.3.2-tt" end }
+    inst.NS.Launcher:Register()
+    assertEqual(tooltipLines(inst)[1], "Ka0s Multi Meters  v4.3.2-tt")
+end)
+
+test("Launcher tooltip: Locked follows every window's own lock, read on every show", function()
+    -- The same accessor the Master-controls *Lock frame* row reads (WindowManager:IsLocked):
+    -- ticked only while EVERY window is locked. Asked on each show, never cached.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+
+    NS.WindowManager:SetLocked(true)
+    assertEqual(tooltipLines(inst)[3], "Locked: Yes")
+    NS.WindowManager:SetLocked(false)
+    assertEqual(tooltipLines(inst)[3], "Locked: No")
+    assertEqual(NS.GetSetting("master.locked"), false, "the row and the tooltip read one accessor")
+end)
+
+test("Launcher tooltip: Test mode follows the session flag, read on every show", function()
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+
+    NS.State.SetTestMode(true)
+    assertEqual(tooltipLines(inst)[4], "Test mode: On")
+    NS.State.SetTestMode(false)
+    assertEqual(tooltipLines(inst)[4], "Test mode: Off")
+end)
+
+test("Launcher tooltip: while disabled it still shows, and the left hint names /mm enable", function()
+    -- THE OWNER'S RULING: the button always answers a hover, disabled included, since that is when
+    -- a player most needs to ask. The left hint mirrors the refused click; the right one is
+    -- unchanged, because right-click is never gated.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    assertTrue(NS.SetByPath("enabled", false))
+
+    local lines = tooltipLines(inst)
+    assertEqual(#lines, 6)
+    assertEqual(lines[2], "Enabled: No")
+    assertEqual(lines[5], "Left-click: disabled \226\128\148 /mm enable")
+    assertEqual(lines[6], "Right-click: Open settings")
+end)
+
+test("Launcher tooltip: under a perf suspend it reads Enabled: No and a bare disabled hint", function()
+    -- isEnabled asks NS.IsStoodDown, so the suspend refuses the click as the disabled hold does.
+    -- The suspend's own line names no `/mm enable` (that would be the wrong advice mid-capture),
+    -- so the library draws the bare hint rather than inventing a command.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    NS.Perf.Suspend()
+    local lines = tooltipLines(inst)
+    NS.Perf.Resume()
+
+    assertEqual(lines[2], "Enabled: No")
+    assertEqual(lines[5], "Left-click: disabled")
+end)
+
+test("Launcher tooltip: the rung-(a) label comes from this addon's locale", function()
+    -- Not the library's `Toggle` default: ADDONS.md puts this addon on rung (a), its windows, and
+    -- the hint says what the left button does here. Driven by overriding the locale entry: a label
+    -- that ignored NS.L would not follow it.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    rawset(NS.L, "Toggle windows", "Fenster umschalten")
+    assertEqual(tooltipLines(inst)[5], "Left-click: Fenster umschalten")
 end)
 
 test("Launcher: the tooltip callback never shows or clears the tooltip itself", function()

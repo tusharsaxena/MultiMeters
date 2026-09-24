@@ -739,9 +739,7 @@ L["Color for this statistic wherever it identifies a column: bars set to Per-sta
     "Color for this statistic wherever it identifies a column: bars set to Per-statistic, the column header, and the tooltip's all-statistics list."
 L["Show this addon's button on the minimap. Left-click it to show or hide the meter windows, right-click it to open these settings. Shared by every profile, because the button belongs to the installation rather than to one character's layout."] =
     "Show this addon's button on the minimap. Left-click it to show or hide the meter windows, right-click it to open these settings. Shared by every profile, because the button belongs to the installation rather than to one character's layout."
-L["Left-click to show or hide the meter windows."] =
-    "Left-click to show or hide the meter windows."
-L["Right-click to open the settings."] = "Right-click to open the settings."
+L["Toggle windows"] = "Toggle windows"
 L["Test mode"] = "Test mode"
 L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."] =
     "Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."

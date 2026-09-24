@@ -59,7 +59,8 @@ Retail only · English only.
   unlock/drag cycle, so a window can be laid out anywhere between pulls.
 - **A launcher** — one LibDataBroker object drawn as a minimap button and in any broker display,
   from `LibKa0s-Launcher-1.0`. Left-click toggles the windows (`launcher-§2` rung (a)), right-click
-  opens the settings. Its visibility is the Master-controls **Minimap button** row, stored in the
+  opens the settings. Hovering it shows the library's status tooltip (version, Enabled, Locked,
+  Test mode, both click hints), disabled or not. Its visibility is the Master-controls **Minimap button** row, stored in the
   global store so a profile switch does not move it.
 - **A perf harness** (`/mm perf`) and an on-screen debug console (`/mm debug`), both LibKa0s's.
 

@@ -582,7 +582,7 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
-### test_launchersetup.lua (40)
+### test_launchersetup.lua (46)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -598,7 +598,13 @@ badge and any count quoted in the docs must agree with it.
 - Launcher: a click on a build with no window manager does not raise
 - launcher: a left click under a perf suspend shows nothing and prints the suspend line
 - launcher: a left click while disabled prints the Slash DisabledLine once and calls no Toggle
-- Launcher: the tooltip states BOTH clicks and the version
+- Launcher tooltip: the full block, enabled, with nothing of the host's appended
+- Launcher tooltip: the version is the TOC's, not the hardcoded fallback
+- Launcher tooltip: Locked follows every window's own lock, read on every show
+- Launcher tooltip: Test mode follows the session flag, read on every show
+- Launcher tooltip: while disabled it still shows, and the left hint names /mm enable
+- Launcher tooltip: under a perf suspend it reads Enabled: No and a bare disabled hint
+- Launcher tooltip: the rung-(a) label comes from this addon's locale
 - Launcher: the tooltip callback never shows or clears the tooltip itself
 - Launcher: the tooltip callback tolerates an object it cannot write to
 - Minimap row: it is COMPOSED, stored, and named for what it shows
@@ -2294,7 +2300,7 @@ badge and any count quoted in the docs must agree with it.
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 12 |
-| test_launchersetup.lua | 40 |
+| test_launchersetup.lua | 46 |
 | test_lifecycle.lua | 38 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
@@ -2341,4 +2347,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2035** |
+| **Total** | **2041** |

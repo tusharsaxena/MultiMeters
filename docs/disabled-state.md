@@ -106,7 +106,10 @@ running. This addon is on rung **(a)**, so its left-click drives a primary windo
 feature: while disabled it prints the one refusal line and does nothing else, and in particular
 writes no SavedVariables. Rung (c)'s carve-out does not apply here. **Right-click still opens the
 settings panel, in either state** — the ruling narrows the slash surface, and a mouse click is not a
-slash command.
+slash command. **The hover still answers**: the library's status tooltip (Launcher minor 3) reads
+*Enabled: No* and *Left-click: disabled — /mm enable*, read out of the same `disabledLine`, so the
+hint says what the click will do before it is clicked. During a capture's suspended arm the line names
+no `/mm enable`, and the hint reads the bare *Left-click: disabled*.
 
 The gate is LibKa0s-Launcher minor 2's, not a hand check in `onClick`: the descriptor passes
 `isEnabled`, which asks `NS.IsStoodDown()` so the perf hold refuses a left click too, and

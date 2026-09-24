@@ -199,6 +199,16 @@ exemption is one clause on the options descriptor's `applyDefault` (`settings/Op
 see [schema.md → `minimap`](schema.md#minimap--and-it-lives-under-global). Nothing else on the page
 changes, and `/mm reset global.minimap.shown` still resets the row.
 
+**The button the row shows answers a hover with the library's status tooltip**, including while the
+addon is disabled (`launcher-§1`, standard v2.66.0; `LibKa0s-Launcher-1.0` minor 3). The library draws
+it and `core/LauncherSetup.lua` only answers its questions: the title is *Ka0s Multi Meters* and the
+TOC's version; **Enabled** reads the same gate the left click asks; **Locked** reads this page's
+*Lock frame* accessor (`WindowManager:IsLocked()`, so Yes only while every window is locked);
+**Test mode** reads the *Test mode* row's `state.testMode`; then *Left-click: Toggle windows* (rung
+(a), from the locale), or *Left-click: disabled — /mm enable* while disabled; then *Right-click: Open
+settings*. The addon adds no lines of its own. Every value is read on each show, so the tooltip and
+this page cannot disagree.
+
 **The `master.*` rows are ADDON-WIDE, and none of them is a promoted per-window row.** A window
 here is an instance (design §6), and its own **Lock window**, **Scale** and **Opacity** stay on the
 Frame page where the banner says which window they mean — promoting one would give the General page,

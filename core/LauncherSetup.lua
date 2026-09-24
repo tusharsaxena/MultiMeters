@@ -9,7 +9,7 @@ local addonName, NS = ...
 -- identical in every Ka0s addon, written once per addon in its own spelling. That is exactly the
 -- shape `launcher-§1` names as anti-pattern #81, and the library exists to make it impossible.
 -- What is left here is what is genuinely this addon's: its folder name, its logo, what its LEFT
--- button does, how its settings panel opens, and what its tooltip says.
+-- button does, how its settings panel opens, and the answers its status tooltip reads.
 --
 -- ── ONE OBJECT, REGISTERED TWICE ─────────────────────────────────────────────────────────────
 --
@@ -135,22 +135,53 @@ end
 -- ---------------------------------------------------------------------------
 -- The tooltip
 -- ---------------------------------------------------------------------------
+--
+-- THE LIBRARY DRAWS IT, and this file only answers its questions (Launcher minor 3, launcher-§1
+-- at standard v2.66.0). The block is the same in all eleven addons and it shows while the addon is
+-- disabled:
+--
+--     Ka0s Multi Meters  v<version>      label + `version`, the TOC's
+--     Enabled: Yes|No                    `isEnabled`, the same gate the left click asks
+--     Locked: Yes|No                     `isLocked`, every window's own lock
+--     Test mode: On|Off                  `isTestMode`, the session flag
+--     Left-click: Toggle windows         `leftClickLabel`; disabled: `disabled — /mm enable`
+--     Right-click: Open settings
+--
+-- NO `onTooltipShow`. Through Launcher minor 2 this file drew the whole tooltip: the title, a
+-- Version line and both click hints. All four are the library's now, and a hook that drew them
+-- again would draw a second copy of each (anti-pattern #89). This addon has no line of its own to
+-- add below the status block, so it passes no hook at all rather than an empty one.
+--
+-- BOTH STATES ARE ONES THIS ADDON REALLY HAS, and each is read through the accessor its
+-- Master-controls row reads, so the tooltip and the General page cannot disagree:
+--
+--   Locked is `WindowManager:IsLocked()`, which is true only while EVERY window's own
+--   `frame.locked` is on. That is the *Lock frame* row's `get` (settings/Schema_Compose.lua),
+--   a view over the per-window locks rather than a lock of its own.
+--   Test mode is `NS.State.testMode`, the `state.testMode` row's store and the flag `/mm test`
+--   toggles.
+--
+-- All three accessors are resolved at CALL time and read on every show: modules/ loads after core/,
+-- and a cached answer would go stale the moment the player clicked the lock in a window's header.
 
---- LibDataBroker hands the tooltip object itself, already anchored and cleared, so this adds lines
---- and nothing more — no Show(), no ClearLines(), and no GameTooltip lookup. Calling Show() here
---- is the classic way to get a tooltip that will not go away when the cursor leaves the button.
----
---- Guarded on `AddLine` rather than trusted: a broker display may hand a minimal object, and a
---- hover must not break because one of them carries fewer members than GameTooltip.
-local function onTooltipShow(tt)
-    if not (tt and tt.AddLine) then return end
-    tt:AddLine(L["Ka0s Multi Meters"])
-    if tt.AddDoubleLine then
-        tt:AddDoubleLine(L["Version"], tostring(NS.version), 1, 1, 1, 0.6, 0.6, 0.6)
-    end
-    tt:AddLine(" ")
-    tt:AddLine(L["Left-click to show or hide the meter windows."], 0.6, 0.6, 0.6)
-    tt:AddLine(L["Right-click to open the settings."], 0.6, 0.6, 0.6)
+--- Whether every window is locked. False on a build with no window manager, as the row answers.
+--- @return boolean
+local function isLocked()
+    local M = NS.WindowManager
+    return M ~= nil and M.IsLocked ~= nil and M:IsLocked() or false
+end
+
+--- Whether test mode is on.
+--- @return boolean
+local function isTestMode()
+    return NS.State ~= nil and NS.State.testMode == true
+end
+
+--- The version from the TOC metadata, through the one reader `/mm version` and the options header
+--- use (core/EnvSetup.lua). Never NS.version alone: that is the hardcoded fallback.
+--- @return string|nil
+local function version()
+    return NS.Version and NS.Version() or nil
 end
 
 -- ---------------------------------------------------------------------------
@@ -247,7 +278,12 @@ NS.Launcher = Launcher:New({
         return L["Windows are suspended while a performance capture runs."]
     end,
 
-    onTooltipShow = onTooltipShow,
+    -- THE STATUS TOOLTIP'S ANSWERS (Launcher minor 3) -- see "The tooltip" above. The rung-(a)
+    -- label is this addon's own words, through its locale; the library falls back to `Toggle`.
+    version        = version,
+    isLocked       = isLocked,
+    isTestMode     = isTestMode,
+    leftClickLabel = function() return L["Toggle windows"] end,
 
     -- Both resolved at CALL time rather than captured, so this file's correctness does not depend
     -- on a TOC line staying where it is (anti-patterns #36).
