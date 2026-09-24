@@ -6,7 +6,7 @@ badge and any count quoted in the docs must agree with it.
 
 **Generated — do not hand-edit.** Regenerate with `lua tests/run.lua --list > docs/test-cases.md`.
 
-### test_loadorder.lua (8)
+### test_loadorder.lua (10)
 
 - loadorder: every file the TOC names exists on disk
 - loadorder: AceGUI-3.0 loads before AceConfig-3.0
@@ -16,6 +16,8 @@ badge and any count quoted in the docs must agree with it.
 - loadorder: locales/ loads ahead of every file that captures NS.L
 - loadorder: the LibKa0s seams load in the order their headers pin
 - loadorder: core/MultiMeters.lua loads after every core/ setup file
+- loadorder: the file-scope readers of CoreSetup, EnvSetup and OptionsSetup load after them
+- loadorder: each load-bearing seam line carries a LOAD-BEARING comment at the line
 
 ### test_layout_cap.lua (13)
 
@@ -2236,7 +2238,7 @@ badge and any count quoted in the docs must agree with it.
 
 | Suite | Cases |
 |-------|------:|
-| test_loadorder.lua | 8 |
+| test_loadorder.lua | 10 |
 | test_layout_cap.lua | 13 |
 | test_complexity_register.lua | 4 |
 | test_deviation_register.lua | 1 |
@@ -2305,4 +2307,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2019** |
+| **Total** | **2021** |

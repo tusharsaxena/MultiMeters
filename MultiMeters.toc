@@ -33,6 +33,10 @@ libs\LibDBIcon-1.0\lib.xml
 locales\enUS.lua
 
 # Core
+# Conventional order within this group for core\Compat.lua, core\PoolSetup.lua, core\State.lua,
+# core\Secrets.lua and core\Database.lua: no other core\ file resolves them at FILE SCOPE, so they may
+# move within the group. Every other line is pinned by a LOAD-BEARING note, its own or one naming it.
+# core\MultiMeters.lua also reads NS.Constants.MSG at FILE SCOPE, so it stays below core\Constants.lua.
 core\Compat.lua
 # The LibKa0s-Env seam. LOAD-BEARING POSITION, and not merely "after Compat, whose metadata
 # shim it replaced": core\Namespace.lua resolves the version at FILE SCOPE, so the seam has to
@@ -48,6 +52,9 @@ core\Constants.lua
 core\Namespace.lua
 core\State.lua
 core\Secrets.lua
+# LOAD-BEARING POSITION: defines NS.LIBKA0S_MISSING, which core\DebugLogSetup.lua and
+# core\LauncherSetup.lua read at FILE SCOPE, so it precedes both -- and publishes NS.Util,
+# whose print core\MultiMeters.lua reads at FILE SCOPE for its AceConsole reclaim.
 core\CoreSetup.lua
 # The LibKa0s-Lifecycle-1.0 seam: the ONE latch both `disabled` and `perf` hold
 # (slash-commands-§7). LOAD-BEARING POSITION: core\PerfSetup.lua's descriptor takes
@@ -55,6 +62,9 @@ core\CoreSetup.lua
 # first would take the addon down at load. Everything its two callbacks reach -- the
 # module layer, the window registry, the bus registry -- is resolved at CALL time.
 core\LifecycleSetup.lua
+# LOAD-BEARING POSITION: its descriptor calls NS.Version() at FILE SCOPE (core\EnvSetup.lua
+# must precede it, and core\Namespace.lua, whose NS.version is that call's fallback) and takes
+# lifecycle from core\LifecycleSetup.lua above.
 core\PerfSetup.lua
 core\DebugLogSetup.lua
 # The LibKa0s-Launcher-1.0 seam: the ONE LibDataBroker object, registered twice (launcher-§1).
@@ -79,10 +89,14 @@ core\Diagnostics_Feign.lua
 defaults\Profile.lua
 
 # Modules
+# Conventional order within this group for every line with no LOAD-BEARING note above it and none
+# naming it: those modules reach the other modules at CALL time. They load after core\ and defaults\,
+# whose publications they capture at FILE SCOPE, so the group itself stays where it is.
 modules\Format.lua
 modules\Provider.lua
 modules\Roster.lua
 modules\Feign.lua
+# LOAD-BEARING POSITION: captures NS.Provider and NS.Roster at FILE SCOPE, so it follows both.
 modules\Aggregator.lua
 # The identity build and the preview data, peeled out of Aggregator under layout-§1 (issue #30).
 # LOAD-BEARING POSITION for both: each resolves the module table, and Aggregator_Identity.lua the
@@ -131,6 +145,8 @@ settings\Schema.lua
 # settings\OptionsSetup.lua, which point their seams at it.
 settings\Schema_Paths.lua
 settings\Slash.lua
+# LOAD-BEARING POSITION: publishes NS.Helpers, which every page file below (settings\General.lua:61
+# onward) captures at FILE SCOPE, or reaches through the page-registration seam at load.
 settings\OptionsSetup.lua
 # General FIRST, above Windows. It is the only page that is not about one
 # window, and the page order IS the registration order (LibKa0s-Options-1.0
