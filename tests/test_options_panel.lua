@@ -1182,3 +1182,29 @@ test("Panel: Reset all settings' tooltip says it is the same act as Profiles -> 
     assertEqual(#lines, 1, "one tooltip body line")
     assertEqual(lines[1], RESET_ALL_TIP)
 end)
+
+-- The color picker's drag throttle and the slider's live commit run through the
+-- descriptor's scheduleTimer. From LibKa0s-Options-1.0 24.31.x (OptionsWidgets
+-- minor 31) the library keeps its own armed flag and never reads the return, so a
+-- plain C_Timer.After wrapper is the whole contract. The library's throttle is
+-- pinned by LibKa0s's own test_options_throttle and is not repeated (testing-§8).
+test("scheduleTimer schedules once through C_Timer.After with the given delay", function()
+    -- red under: a scheduleTimer that switches to NewTimer, schedules twice, drops
+    -- the delay, or starts returning a handle some future edit expects to be used.
+    local inst = T.load()
+    local calls, handle = {}, {}
+    local saved = inst.mocks.C_Timer.After
+    inst.mocks.C_Timer.After = function(delay, fn)
+        calls[#calls + 1] = { delay = delay, fn = fn }
+        return handle
+    end
+    local fn = function() end
+    local ok, ret = pcall(inst.NS.OptionsDescriptor.scheduleTimer, fn, 0.05)
+    inst.mocks.C_Timer.After = saved
+    assertTrue(ok, tostring(ret))
+    assertEqual(#calls, 1, "one C_Timer.After call per scheduleTimer")
+    assertEqual(calls[1].delay, 0.05)
+    assertTrue(calls[1].fn == fn, "the callback is handed through unwrapped")
+    assertEqual(ret, nil, "the return is unused by the library (OptionsWidgets minor 31); "
+        .. "nothing here may start depending on a handle")
+end)

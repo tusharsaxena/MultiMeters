@@ -267,6 +267,14 @@ local descriptor = {
     -- than an AceTimer embed, because embedding would be the library's second
     -- dependency-budget breach. Without it a drag commits every frame — and this
     -- addon has a color row per column, so the omission would be felt.
+    -- The return is deliberately nil. From LibKa0s-Options-1.0 24.31.x
+    -- (OptionsWidgets minor 31; libs/LibKa0s docs/api/Options/
+    -- version-24.31.4.7.4-docs.md, "The drag throttles keep their own armed
+    -- flag") the library arms its own flag around this call and never reads
+    -- what it returns, so the 50 ms slider/color throttle holds with this
+    -- nil-returning wrapper. Through minor 30 it read the return as "armed", and
+    -- a nil defeated the throttle. C_Timer.NewTimer would buy nothing now and
+    -- allocate a cancelable object per drag frame, so it stays After.
     scheduleTimer = function(fn, delay)
         if C_Timer and C_Timer.After then C_Timer.After(delay, fn) end
     end,

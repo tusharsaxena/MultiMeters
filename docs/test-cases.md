@@ -2066,7 +2066,7 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 11: /mm toggle under a perf suspend shows nothing and says why
 - Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it
 
-### test_options_panel.lua (43)
+### test_options_panel.lua (44)
 
 - Options: General is the FIRST page, above Windows
 - Options: every window page is marked as nested, and the two that are not are not
@@ -2111,6 +2111,7 @@ badge and any count quoted in the docs must agree with it.
 - Panel: every window sub-page banners the active window, and Windows has no second picker
 - Panel: choosing a window in the banner retargets every page and keeps the tab
 - Panel: Reset all settings' tooltip says it is the same act as Profiles -> Reset Profile
+- scheduleTimer schedules once through C_Timer.After with the given delay
 
 ### test_columnblocks.lua (35)
 
@@ -2282,10 +2283,10 @@ badge and any count quoted in the docs must agree with it.
 | test_slash.lua | 75 |
 | test_slash_refusal.lua | 2 |
 | test_disabled.lua | 22 |
-| test_options_panel.lua | 43 |
+| test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2010** |
+| **Total** | **2011** |
