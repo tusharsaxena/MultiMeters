@@ -348,7 +348,7 @@ test("Rows come from a POOL: no CreateFrame on a second refresh", function()
     assertEqual(#inst.mocks.__frames, framesBefore,
         "WoW never truly frees a frame; a reshuffling raid must not churn them")
     assertEqual(#window.pool.all, Const.POOL_GROW_STEP)
-    assertEqual(#window.pool.active, 2, "released and re-acquired, not recreated")
+    assertEqual(#window.pool.active, 2, "kept bound in their slots, not recreated")
 end)
 
 test("HideAll returns every active row to the free list", function()
@@ -1297,4 +1297,91 @@ test("BuildLayout survives a config with the sub-tables missing, on the shipped 
     assertEqual(layout.nameColumn.width, Const.NAME_COLUMN_WIDTH,
         "no cap means the shipped name column")
     assertTrue(layout.maxRows > 1, "and the shipped height fits more than one row")
+end)
+
+-- ---------------------------------------------------------------------------
+-- Rows stay BOUND across passes (review F-007 / MultiMeters-R-07)
+-- ---------------------------------------------------------------------------
+--
+-- Render used to release every row and re-acquire, re-anchor and refill it four
+-- times a second in combat. A drawn row now stays in its slot from one pass to
+-- the next: the pool is asked only when the list grows, only the surplus past
+-- `drawn` goes back, and a row is re-anchored only when the layout moved.
+
+--- A window that fits ten rows, and `n` grid-shaped entries to draw into it.
+local function boundScene(n)
+    local _, window, cfg = scene{ configure = function(c)
+        c.frame.height = 600
+        c.rows.maxRows = 10
+    end }
+    local entries = {}
+    for i = 1, n do
+        entries[i] = { guid = string.format("Player-1-%08X", i), name = "Mock" .. i,
+                       classFilename = "MAGE", values = {}, cells = {} }
+    end
+    return window, cfg, entries
+end
+
+test("Two passes over the same ten entries ask the pool for nothing the second time", function()
+    -- red under: a Render that opens with HideAll, which empties the active set
+    -- and re-acquires every row, every pass.
+    local window, _, entries = boundScene(10)
+    window:Render(entries)
+    assertEqual(#window.pool.active, 10)
+
+    local real, calls = window.Acquire, 0
+    window.Acquire = function(self) calls = calls + 1; return real(self) end
+    window:Render(entries)
+    window.Acquire = nil
+
+    assertEqual(calls, 0, "every slot was already bound, so the pool is not asked")
+    assertEqual(#window.pool.active, 10)
+end)
+
+test("A pass with fewer entries releases exactly the surplus, and keeps the rest bound", function()
+    -- red under: a Render that releases everything and re-acquires what it needs.
+    local window, _, entries = boundScene(10)
+    window:Render(entries)
+    local before = {}
+    for i, row in ipairs(window.pool.active) do before[i] = row end
+
+    local released = {}
+    for _, row in ipairs(window.pool.all) do
+        local real = row.Release
+        row.Release = function(self) released[#released + 1] = self; return real(self) end
+    end
+
+    local fewer = {}
+    for i = 1, 6 do fewer[i] = entries[i] end
+    window:Render(fewer)
+
+    assertEqual(#released, 4, "only the four rows past `drawn` go back")
+    for _, row in ipairs(released) do
+        assertEqual(row.frame:IsShown(), false)
+        assertNil(row.entry, "a released row holds no reference to the player it drew")
+    end
+    assertEqual(#window.pool.active, 6)
+    for i = 1, 6 do
+        assertTrue(window.pool.active[i] == before[i], "rank " .. i .. " kept its widget")
+    end
+    assertEqual(#window.pool.free + #window.pool.active, #window.pool.all)
+end)
+
+test("A second pass re-anchors nothing until ApplyConfig moves the layout", function()
+    -- red under: a Render that ClearAllPoints/SetPoints every row every pass.
+    local window, _, entries = boundScene(10)
+    window:Render(entries)
+
+    local anchors = 0
+    for _, row in ipairs(window.pool.all) do
+        local real = row.frame.SetPoint
+        row.frame.SetPoint = function(...) anchors = anchors + 1; return real(...) end
+    end
+
+    window:Render(entries)
+    assertEqual(anchors, 0, "the layout did not move, so no row was re-anchored")
+
+    window:ApplyConfig()
+    window:Render(entries)
+    assertEqual(anchors, 10, "ApplyConfig bumped layoutVersion, so every drawn row re-anchored once")
 end)

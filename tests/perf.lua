@@ -544,6 +544,15 @@ end)
 -- is itself the regression. Same path, brackets dormant versus armed — evidence,
 -- not a comment.
 
+-- ONE UNMEASURED PASS FIRST. The applyConfig scenario above bumped the window's
+-- layoutVersion, so the next Refresh re-anchors every bound row once (review
+-- F-007) -- and the mock's SetPoint allocates where the client's does not. Left
+-- in, that one-time ~3 KB lands in whichever arm runs first and reads as the
+-- dormant bracket costing more than the armed one. Both arms measure the steady
+-- state instead.
+inst.dirty = true
+inst:Refresh()
+
 local probeOff = measure("probeOverheadOff", ITERS, function()
     inst.dirty = true
     inst:Refresh()

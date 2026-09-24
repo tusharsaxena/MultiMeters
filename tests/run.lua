@@ -284,6 +284,7 @@ local SUITES = {
     "test_headercontrols",
     "test_row",
     "test_row_namecell",
+    "test_row_cells",
     "test_targets",
     "test_tooltip",
     "test_tooltip_lines",

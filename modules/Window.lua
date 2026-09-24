@@ -410,6 +410,8 @@ function WindowProto:RefreshUpvalues()
     -- anything (docs/ARCHITECTURE.md, Documented deviations).
     self.locked      = (cfg.frame or {}).locked and true or false
     self.layout      = self:BuildLayout()
+    -- A new layout may move a row, so every bound row re-anchors on its next draw.
+    self.layoutVersion = (self.layoutVersion or 0) + 1
 end
 
 -- ---------------------------------------------------------------------------
@@ -862,7 +864,7 @@ NS.SurfaceColor = surfaceColor
 -- Ten or more dynamic frames means a pool rather than create-and-destroy: a
 -- 40-player raid that reshuffles every quarter second would otherwise churn
 -- hundreds of frames a minute, and WoW never truly frees one. Rows are acquired
--- for a refresh, released at the end of it, and kept forever.
+-- once, stay bound to their slots across refreshes, and are kept forever.
 
 --- A row pool: the library's two arrays, plus the host's third.
 ---
@@ -911,6 +913,42 @@ end
 --- tests/test_window.lua still pins it.
 function WindowProto:HideAll()
     NS.Pool.ReleaseAll(self.pool, function(row) row:Release() end)
+end
+
+--- Release only the rows past `keep`, leaving ranks 1..keep bound in their slots.
+---
+--- Render's per-pass counterpart to HideAll (review F-007): the active array IS
+--- the slot array, so a row drawn last pass is drawn again without a trip through
+--- the pool. LibKa0s-Pool-1.0 has no single-object release, so this parks by hand
+--- under the library's own contract: BACKWARD, so the next Acquire hands rank
+--- keep+1 the widget it had.
+function WindowProto:ReleaseSurplus(keep)
+    local active, free = self.pool.active, self.pool.free
+    for i = #active, keep + 1, -1 do
+        local row = active[i]
+        row:Release()
+        row:Hide()
+        free[#free + 1] = row
+        active[i] = nil
+    end
+end
+
+--- Anchor `row` at `slot`, unless it already sits there under this layout.
+--- A layout is config arithmetic, so a row whose slot and layoutVersion both
+--- match is exactly where this would put it again.
+function WindowProto:PlaceRow(row, slot)
+    local version = self.layoutVersion
+    if row.__anchoredVersion == version and row.__anchoredSlot == slot then return end
+    row.__anchoredVersion, row.__anchoredSlot = version, slot
+
+    local layout = self.layout
+    local y = NS.Row.OffsetFor(layout, slot)
+    row.frame:ClearAllPoints()
+    if layout.growUp then
+        row.frame:SetPoint("BOTTOMLEFT", self.body, "BOTTOMLEFT", 0, y)
+    else
+        row.frame:SetPoint("TOPLEFT", self.body, "TOPLEFT", 0, -y)
+    end
 end
 
 -- ---------------------------------------------------------------------------
@@ -1191,7 +1229,8 @@ function WindowProto:Render(entries, preview, isDrill, drillTitle)
     local t0 = Perf.on and debugprofilestop()
 
     self.notice:Hide()
-    self:HideAll()
+    -- NO HideAll: rows stay bound across passes. Slot i reuses pool.active[i],
+    -- the pool is asked only past it, and ReleaseSurplus returns the rest.
 
     local layout = self.layout
     entries = entries or {}
@@ -1238,17 +1277,12 @@ function WindowProto:Render(entries, preview, isDrill, drillTitle)
         local entry = slotEntry(entries, i, pin, lastIndex)
         if entry then
             drawn = drawn + 1
-            local row = self:Acquire()
-            local y = NS.Row.OffsetFor(layout, drawn)
-            row.frame:ClearAllPoints()
-            if layout.growUp then
-                row.frame:SetPoint("BOTTOMLEFT", self.body, "BOTTOMLEFT", 0, y)
-            else
-                row.frame:SetPoint("TOPLEFT", self.body, "TOPLEFT", 0, -y)
-            end
+            local row = self.pool.active[drawn] or self:Acquire()
+            self:PlaceRow(row, drawn)
             row:Update(entry, drawn)
         end
     end
+    self:ReleaseSurplus(drawn)
 
     -- An empty grid with no explanation reads as a broken addon. The meter is
     -- available (Refresh established that above), there is simply nothing in the

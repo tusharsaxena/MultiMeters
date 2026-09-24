@@ -1009,7 +1009,7 @@ badge and any count quoted in the docs must agree with it.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (62)
+### test_window.lua (65)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - BuildLayout computes every coordinate from config alone
@@ -1073,6 +1073,9 @@ badge and any count quoted in the docs must agree with it.
 - A window too short for even one row still asks the pool for one
 - A maxRows cap LARGER than the frame holds does not win
 - BuildLayout survives a config with the sub-tables missing, on the shipped numbers
+- Two passes over the same ten entries ask the pool for nothing the second time
+- A pass with fewer entries releases exactly the surplus, and keeps the rest bound
+- A second pass re-anchors nothing until ApplyConfig moves the layout
 
 ### test_window_header.lua (73)
 
@@ -1380,6 +1383,10 @@ badge and any count quoted in the docs must agree with it.
 - A narrow name column still leaves the string a width of at least one
 - A window config with no icons group at all draws a name and does not raise
 - Re-laying the icons out does not stack anchors on the texture or the name
+
+### test_row_cells.lua (1)
+
+- Update never touches a cell the layout hid, and the live list is reused in place
 
 ### test_targets.lua (24)
 
@@ -2282,13 +2289,14 @@ badge and any count quoted in the docs must agree with it.
 | test_aggregator_identity.lua | 27 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 62 |
+| test_window.lua | 65 |
 | test_window_header.lua | 73 |
 | test_window_placement.lua | 33 |
 | test_window_segment.lua | 10 |
 | test_headercontrols.lua | 66 |
 | test_row.lua | 77 |
 | test_row_namecell.lua | 30 |
+| test_row_cells.lua | 1 |
 | test_targets.lua | 24 |
 | test_tooltip.lua | 20 |
 | test_tooltip_lines.lua | 37 |
@@ -2312,4 +2320,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2026** |
+| **Total** | **2030** |

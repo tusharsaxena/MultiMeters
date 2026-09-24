@@ -3,7 +3,7 @@
 Where each responsibility lives, what each file publishes, and what it consumes. `MultiMeters.toc`
 is the source of truth for load order — check this map against it before editing.
 
-Fifty-eight non-vendored source files: 1 locale, 19 `core/`, 1 `defaults/`, 22 `modules/`,
+Fifty-nine non-vendored source files: 1 locale, 19 `core/`, 1 `defaults/`, 23 `modules/`,
 15 `settings/`.
 
 Thirteen of those arrived on one day, 2026-09-09, and **not one of them is a new module.** They are
@@ -170,6 +170,8 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                     the bar colors, the text styling, the mouse hand-off, and
 │   │                     the CELL DESCRIPTOR Tooltip.lua and DrillDown.lua read.
 │   │                     Nothing here looks at a number
+│   ├── Row_Cells.lua   — which of a row's cells are LIVE (the ordered liveCells
+│   │                     array Update walks), and Release back to the pool
 │   ├── Row_NameCell.lua — the LEADING column's cell alone: the icon strip, the name
 │   │                     string, and the two decisions that keep them clear of each
 │   │                     other. Two more methods on the same Cell prototype — the
@@ -305,7 +307,8 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 | `Window_Header.lua` | — | The header **band**: the sort art and its ladder, the title bar, the session line, the column labels above the grid, the sort a click on one of those labels performs, the segment dropdown, the session label, the restricted notice and the unavailable notice. The band is computed from config and read back from nothing at all, which is why it separates from the loop cleanly | `NS.HeaderStyle(window)` (the header's font and color, read by `modules/HeaderControls.lua` at call time), and the band's `WindowProto` methods — `ApplyHeader`, `ApplyTitle`, `ApplyHeaderStrip`, `ApplySessionLine`, `ApplyColumnHeaders`, `ApplyMinimized`, `SortByColumn`, `SetSegment`, `SetSessionType`, `OpenSegmentMenu`, `UpdateHeaderText`, `ShowNotice`, and `TitleRowTop(h)` — the one center line the title, the session line and the control strip are all placed against | `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor`, `NS.WindowModule`, `NS.Constants`, `NS.L`, `NS.PlayerClassRGB`, `NS.RGBA` — the first four **at file scope**, which is what makes its TOC position load-bearing |
 | `Window_Placement.lua` | — | Where a window sits, how big it is, whether it is locked, and whether it is on screen at all — everything the player's hands and the visibility ladder do to the frame, as against what the loop draws inside it. **R3 did not weaken on this side of the seam**: `SavePosition` and `SaveSize` ask `inst.anchor`, the bare frame that has never held a meter value, and never `inst.frame` | the placement `WindowProto` methods — `ApplyPosition`, `SavePosition`, `SaveSize`, `ApplyResizeBounds`, `ApplyLock`, `RefreshVisibility`, `Show`, `ClearForcedShow`, `Hide`, `IsShown` | `NS.WindowProto`, **at file scope** |
 | `HeaderControls.lua` | plain table | The window's own control strip: which controls exist, where each sits (right-to-left, indexed, a hidden one yields its slot), what art each draws from (our TGA -> Blizzard atlas -> ASCII) and when the set fades | `NS.HeaderControls` — `Attach`, `Apply`, `HookHover`, `WidthUsed` | `NS.Compat.FirstTexture` / `FirstAtlas`, `NS.SetByPath`, `NS.HeaderStyle`, `NS.ShowResetMeterData`. Every control in the strip is built here, close included, so the strip is the same seven controls with or without LibKa0s. Owns no state and registers no event |
-| `Row.lua` | plain table + prototype | Row and cell widgets, **the cell descriptor** — the contract `modules/Tooltip.lua` and `modules/DrillDown.lua` both read, documented once here so neither the peel nor they restate it — the bar skin and border, the four color rules, the text style, `SetValue`, and the mouse hand-off | `NS.Row.New(window)`, `NS.Row.OffsetFor(layout, index)`, and `NS.RowInternals` (`Cell`, `cellBackground`, `CLASS_TEXTURE`) for the file below | `NS.Constants`, `NS.RGBA`, `NS.Format` / `NS.NumberFormat`, and `NS.Tooltip` / `NS.DrillDown` resolved at call time |
+| `Row.lua` | plain table + prototype | Row and cell widgets, **the cell descriptor** — the contract `modules/Tooltip.lua` and `modules/DrillDown.lua` both read, documented once here so neither the peel nor they restate it — the bar skin and border, the four color rules, the text style, `SetValue`, and the mouse hand-off | `NS.Row.New(window)`, `NS.Row.OffsetFor(layout, index)`, and `NS.RowInternals` (`Cell`, `cellBackground`, `CLASS_TEXTURE`, `newCell`, `RowProto`) for the two files below | `NS.Constants`, `NS.RGBA`, `NS.Format` / `NS.NumberFormat`, and `NS.Tooltip` / `NS.DrillDown` resolved at call time |
+| `Row_Cells.lua` | — | Which of a row's cells are live, and handing the row back. `BindLiveCells` grows the cell set to the layout's columns and rebuilds `row.liveCells` **in place** — cleared with a numeric loop, never reallocated — hiding and blanking the cells the layout dropped; `RowProto:Update` walks that array rather than every cell the row ever had (review F-007). `Release` blanks every cell when a row leaves the screen | `RowProto:BindLiveCells`, `RowProto:Release` | `NS.RowInternals.RowProto` and `.newCell` **at file scope** — the reason its TOC line sits right after `modules\Row.lua` |
 | `Row_NameCell.lua` | — | The leading column's cell alone: the icon strip, the name string, and the two decisions that keep them clear of each other. A sibling rather than a new widget — it hangs two more methods on the **same** `Cell` prototype — and the block that grows, since every identity, spec-icon and pet-fold change lands in it. `Row.lua`'s rules bind unchanged: no arithmetic on a meter value, and no `GetWidth` / `GetLeft` / `GetPoint` anywhere (R3) | `Cell:ApplyIcons`, `Cell:SetPlayer`, `NS.ICON_TEXT_GAP` | `NS.RowInternals`' three members **at file scope** — the reason its TOC line sits after `modules\Row.lua` — and `NS.Secrets`, for exactly one question: may this GUID be looked at |
 | `Targets.lua` | plain table | The enemy cross-reference. One walk over every `EnemyDamageTaken` source's spells builds **every** player's target list at once, keyed on `combatSpellDetails.unitName` and cached per session. **All-or-nothing**: one unreadable amount abandons the whole build | `NS.Targets` — `ForPlayer`, `Total`, `Invalidate` | `NS.Provider.GetColumn` / `GetSourceDetail`, `NS.Secrets`, `NS.State.Cache("Targets")`. Subscribes `METER_RESET`, `METER_SESSION`, `METER_UPDATED`, `PROFILE_CHANGED` on a private bus target |
 | `Tooltip.lua` | AceAddon | The **primitives** every hover is built out of, and the teardown: the secret-safe wrappers (`unreadable`, `plainWord`, `plainTruth`), the display name and its color, the resolved config, font and placement, the spell collection and its legal-only sort, the shared line pool's font handling, and `Tooltip:Hide` (which restores the SHARED line FontStrings). This is the half that must not be touched casually, which is why it is the half that stayed | `NS.Tooltip` — `Hide` — and `NS.TooltipInternals`, the private table the other two files of the peel resolve at file scope | `NS.Provider`, `NS.Secrets`, `NS.Numbers`, `NS.Compat.GetSpellInfo`, `NS.WINDOW_TEMPLATE`, `NS.Database.FindWindow` |
@@ -399,11 +402,11 @@ for the same "a flat path model has no vocabulary for this shape" reason.
 5. **`modules/`** — `Format` first (nothing reads another module, and `Row` and `Tooltip` both format
    on their first render), then `Provider` → `Roster` → `Feign` → `Aggregator` →
    **`Aggregator_Identity` → `Aggregator_Preview`** → `WindowManager` → `Window` →
-   **`Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_NameCell`** →
+   **`Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_Cells`** → **`Row_NameCell`** →
    `Targets` → `Tooltip` → **`Tooltip_Lines` → `Tooltip_Builders`** → `DrillDown` → `Export` →
    **`Export_Modal`** → `Visibility`.
 
-   The eight in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
+   The nine in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
    for the same reason: each resolves something its parent publishes at *file scope*, so a peel
    ahead of its parent captures nil and stays nil for the session.
    `modules/Aggregator_Identity.lua` takes the five row-assembly helpers off `Aggregator._identity`;
@@ -415,7 +418,8 @@ for the same "a flat path model has no vocabulary for this shape" reason.
    `HeaderControls.lua`, which reads the `NS.HeaderStyle` it publishes; that read is at *call* time,
    so this half is order by intent rather than a load-time requirement, and the TOC says which is
    which.
-   `Row_NameCell.lua` resolves `NS.RowInternals`' three members after `modules/Row.lua`.
+   `Row_Cells.lua` resolves `NS.RowInternals.RowProto` and `.newCell`, and `Row_NameCell.lua`
+   `NS.RowInternals`' other three members, both after `modules/Row.lua`.
    `Tooltip_Lines.lua` resolves `NS.TooltipInternals` after `modules/Tooltip.lua`, and
    `Tooltip_Builders.lua` must follow **both**, because the second half of that table is not filled
    until `Tooltip_Lines.lua` has run. `Export_Modal.lua` resolves `Export.__EM_DASH`, `__cfgOf` and

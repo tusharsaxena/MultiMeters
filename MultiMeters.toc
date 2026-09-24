@@ -115,6 +115,9 @@ modules\Window_Header.lua
 modules\Window_Placement.lua
 modules\HeaderControls.lua
 modules\Row.lua
+# The live-cell set and Release, peeled out of Row.lua (layout-§1). LOAD-BEARING POSITION: it
+# resolves RowProto and newCell off NS.RowInternals at FILE SCOPE, so it must follow it.
+modules\Row_Cells.lua
 # The name cell, peeled out of Row.lua (layout-§1). LOAD-BEARING POSITION: it resolves the
 # Cell prototype and two of Row.lua's file-locals at FILE SCOPE, so it must follow it.
 modules\Row_NameCell.lua
