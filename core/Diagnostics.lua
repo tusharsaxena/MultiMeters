@@ -195,6 +195,25 @@ end
 -- Sections
 -- ---------------------------------------------------------------------------
 
+--- The event names the client refused at the last enable (events-frames-taint-§1).
+---
+--- core/MultiMeters.lua registers every game event through NS.SafeRegisterEvent,
+--- which isolates each name and records the ones the client did not know in
+--- NS.State.rejectedEvents. That record is only useful if a player can reach it,
+--- and this report is what a player is asked to paste. The names are the addon's
+--- own constants, never a meter value, so they are printed as they are.
+local function reportEvents()
+    out("|cff00ff00-- events --|r")
+    local rejected = NS.State and NS.State.rejectedEvents
+    if type(rejected) ~= "table" then
+        out("  rejected events: not recorded (the addon has not enabled)")
+    elseif #rejected == 0 then
+        out("  rejected events: none")
+    else
+        out("  rejected events: " .. table.concat(rejected, ", "))
+    end
+end
+
 local function reportAtlases()
     out("|cff00ff00-- atlases --|r")
     local api = _G.C_Texture
@@ -792,7 +811,7 @@ function Diagnostics.Report()
     -- in core/Diagnostics_DeathRecap.lua; every other section is still a local
     -- here. The list is built at CALL time, so the lookup costs nothing extra.
     for _, section in ipairs({
-        reportAtlases, reportFormatter, reportVisibility, reportHeader,
+        reportEvents, reportAtlases, reportFormatter, reportVisibility, reportHeader,
         reportNameColumn, reportCells, reportTooltipFont, reportTooltipWidth,
         reportTargets, reportProviderOrder, Diagnostics.reportDeathRecap,
     }) do

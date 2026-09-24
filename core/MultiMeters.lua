@@ -114,22 +114,85 @@ function NS:OnInitialize()
     end
 end
 
---- Register `event` only if this client has heard of it.
----
---- C_EventUtils.IsEventValid is the cheap ask; where even that is missing the
---- registration is attempted under pcall, because the failure mode being avoided
---- is a hard error at load on a client one patch behind, not a wrong answer.
----
---- @return boolean  whether the registration took
-local function registerIfValid(target, event, handler)
-    local utils = _G.C_EventUtils
-    if utils and utils.IsEventValid then
-        if not utils.IsEventValid(event) then return false end
-        target:RegisterEvent(event, handler)
-        return true
-    end
-    return pcall(target.RegisterEvent, target, event, handler)
-end
+-- EVERY GAME EVENT THIS ADDON LISTENS TO, as `{ event, handler }` pairs, in
+-- registration order. One array rather than a block of RegisterEvent calls
+-- because each entry is registered through NS.SafeRegisterEvent
+-- (core/CoreSetup.lua, events-frames-taint-§1): an unknown event name RAISES on
+-- the client, and a bare block loses every line after the one that raised —
+-- here that is the meter events, which come last. Each entry now costs only
+-- itself, and a refused name lands in NS.State.rejectedEvents, which
+-- `/mm debug diag` prints.
+local EVENTS = {
+    -- Lifecycle and context. PLAYER_ENTERING_WORLD covers login, /reload and
+    -- every zone-in; ZONE_CHANGED_NEW_AREA covers the sub-zone moves that change
+    -- an instance's visibility answer without a loading screen.
+    { "PLAYER_ENTERING_WORLD",  "OnEnteringWorld" },
+    { "GROUP_ROSTER_UPDATE",    "OnRosterUpdate" },
+    { "ZONE_CHANGED_NEW_AREA",  "OnZoneChanged" },
+
+    -- The secret-value transition signal. Registered even on a client without
+    -- C_RestrictedActions rather than behind a version check that would have to
+    -- be kept in step with the one in core/Secrets.lua. That is safe only
+    -- because the registration is pcalled: an unknown name RAISES, it does not
+    -- cost nothing, and on such a client the name is refused and recorded.
+    { "ADDON_RESTRICTION_STATE_CHANGED", "OnRestrictionChanged" },
+
+    -- The player's own state, for modules/Visibility.lua's rules. Registering
+    -- them here rather than in that module is architecture-§4: one place where
+    -- "the game said something" becomes "the addon knows". None of these carries
+    -- state onto the bus, because the rules read their inputs live.
+    --
+    -- THESE EDGES ARE LOAD-BEARING, NOT AN OPTIMIZATION, and the first cut of
+    -- the player-state rules shipped believing otherwise. There is no fallback
+    -- poll: modules/Window.lua's onUpdate refreshes DATA and never re-asks
+    -- NS.ShouldShow, so a rule whose edge nothing announces takes effect on the
+    -- next zone change, group change or settings write and never on its own. A
+    -- missed edge here is a rule that looks broken.
+    { "PLAYER_REGEN_DISABLED", "OnCombatChanged" },
+    { "PLAYER_REGEN_ENABLED",  "OnCombatChanged" },
+
+    { "PLAYER_MOUNT_DISPLAY_CHANGED", "OnPlayerStateChanged" },
+    -- The vehicle pair. These arrived with the rest of the player-state block
+    -- rather than with `hideInVehicle` itself, which shipped in 0.1.0 with no
+    -- edge at all: the rule only ever took effect if a zone change happened to
+    -- follow the player into the turret. They fire for EVERY unit, so the
+    -- handler filters to the player.
+    { "UNIT_ENTERED_VEHICLE",         "OnPlayerStateChanged" },
+    { "UNIT_EXITED_VEHICLE",          "OnPlayerStateChanged" },
+    { "UPDATE_SHAPESHIFT_FORM",       "OnPlayerStateChanged" },
+    { "PLAYER_CAN_GLIDE_CHANGED",     "OnPlayerStateChanged" },
+    { "PET_BATTLE_OPENING_START",     "OnPlayerStateChanged" },
+    { "PET_BATTLE_CLOSE",             "OnPlayerStateChanged" },
+    { "PLAYER_DEAD",                  "OnPlayerStateChanged" },
+    { "PLAYER_ALIVE",                 "OnPlayerStateChanged" },
+    { "PLAYER_UNGHOST",               "OnPlayerStateChanged" },
+
+    -- Taking off and landing while staying mounted is its own edge, and the
+    -- newest of the set: a client that does not have it raises on
+    -- RegisterEvent. Losing it is survivable where losing the whole block is
+    -- not: PLAYER_CAN_GLIDE_CHANGED still fires when the mount itself changes,
+    -- which is the edge the skyriding rule actually turns on. It used to be the
+    -- one PROBED entry; every entry is probed now.
+    { "PLAYER_IS_GLIDING_CHANGED",    "OnPlayerStateChanged" },
+
+    -- Feign Death, and nothing else on this event. It is the busiest thing this
+    -- addon listens to — every cast by every unit in a raid — and it is
+    -- registered because the meter reports a feign as a real death and there is
+    -- no other edge that tells us it was one. See modules/Feign.lua.
+    { "UNIT_SPELLCAST_SUCCEEDED", "OnSpellSucceeded" },
+
+    -- System chat, for one line of it: the server's answer to a whisper aimed at
+    -- a name nobody is playing. modules/Export.lua sends a chat dump one line at
+    -- a time, so a mistyped whisper target is that error repeated once per line
+    -- with no way to stop it — and the client is the last to know the name is
+    -- bad, because only the server can say. See OnSystemMessage.
+    { "CHAT_MSG_SYSTEM", "OnSystemMessage" },
+
+    -- The meter itself.
+    { "DAMAGE_METER_CURRENT_SESSION_UPDATED", "OnMeterUpdated" },
+    { "DAMAGE_METER_COMBAT_SESSION_UPDATED",  "OnMeterSession" },
+    { "DAMAGE_METER_RESET",                   "OnMeterReset" },
+}
 
 function NS:OnEnable()
     -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-\194\1677).
@@ -143,74 +206,19 @@ function NS:OnEnable()
     -- here and registers from the settings AS THEY ARE NOW (performance-\194\1676).
     if NS.IsStoodDown and NS.IsStoodDown() then return end
 
-    -- Lifecycle and context. PLAYER_ENTERING_WORLD covers login, /reload and
-    -- every zone-in; ZONE_CHANGED_NEW_AREA covers the sub-zone moves that change
-    -- an instance's visibility answer without a loading screen.
-    self:RegisterEvent("PLAYER_ENTERING_WORLD",  "OnEnteringWorld")
-    self:RegisterEvent("GROUP_ROSTER_UPDATE",    "OnRosterUpdate")
-    self:RegisterEvent("ZONE_CHANGED_NEW_AREA",  "OnZoneChanged")
-
-    -- The secret-value transition signal. Registered even on a client without
-    -- C_RestrictedActions: an event that never fires costs nothing, and the
-    -- alternative is a version check that would have to be kept in step with the
-    -- one in core/Secrets.lua.
-    self:RegisterEvent("ADDON_RESTRICTION_STATE_CHANGED", "OnRestrictionChanged")
-
-    -- The player's own state, for modules/Visibility.lua's rules. Registering
-    -- them here rather than in that module is architecture-§4: one place where
-    -- "the game said something" becomes "the addon knows". None of these carries
-    -- state onto the bus, because the rules read their inputs live.
-    --
-    -- THESE EDGES ARE LOAD-BEARING, NOT AN OPTIMIZATION, and the first cut of
-    -- the player-state rules shipped believing otherwise. There is no fallback
-    -- poll: modules/Window.lua's onUpdate refreshes DATA and never re-asks
-    -- NS.ShouldShow, so a rule whose edge nothing announces takes effect on the
-    -- next zone change, group change or settings write and never on its own. A
-    -- missed edge here is a rule that looks broken.
-    self:RegisterEvent("PLAYER_REGEN_DISABLED", "OnCombatChanged")
-    self:RegisterEvent("PLAYER_REGEN_ENABLED",  "OnCombatChanged")
-
-    self:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED", "OnPlayerStateChanged")
-    -- The vehicle pair. These arrived with the rest of the player-state block
-    -- rather than with `hideInVehicle` itself, which shipped in 0.1.0 with no
-    -- edge at all: the rule only ever took effect if a zone change happened to
-    -- follow the player into the turret. They fire for EVERY unit, so the
-    -- handler filters to the player.
-    self:RegisterEvent("UNIT_ENTERED_VEHICLE",         "OnPlayerStateChanged")
-    self:RegisterEvent("UNIT_EXITED_VEHICLE",          "OnPlayerStateChanged")
-    self:RegisterEvent("UPDATE_SHAPESHIFT_FORM",       "OnPlayerStateChanged")
-    self:RegisterEvent("PLAYER_CAN_GLIDE_CHANGED",     "OnPlayerStateChanged")
-    self:RegisterEvent("PET_BATTLE_OPENING_START",     "OnPlayerStateChanged")
-    self:RegisterEvent("PET_BATTLE_CLOSE",             "OnPlayerStateChanged")
-    self:RegisterEvent("PLAYER_DEAD",                  "OnPlayerStateChanged")
-    self:RegisterEvent("PLAYER_ALIVE",                 "OnPlayerStateChanged")
-    self:RegisterEvent("PLAYER_UNGHOST",               "OnPlayerStateChanged")
-
-    -- Taking off and landing while staying mounted is its own edge, and it is
-    -- PROBED rather than registered outright: it is newer than the rest and a
-    -- client that does not have it raises on RegisterEvent. Losing it is
-    -- survivable where losing the whole block is not: PLAYER_CAN_GLIDE_CHANGED
-    -- still fires when the mount itself changes, which is the edge the skyriding
-    -- rule actually turns on.
-    registerIfValid(self, "PLAYER_IS_GLIDING_CHANGED", "OnPlayerStateChanged")
-
-    -- Feign Death, and nothing else on this event. It is the busiest thing this
-    -- addon listens to — every cast by every unit in a raid — and it is
-    -- registered because the meter reports a feign as a real death and there is
-    -- no other edge that tells us it was one. See modules/Feign.lua.
-    self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED", "OnSpellSucceeded")
-
-    -- System chat, for one line of it: the server's answer to a whisper aimed at
-    -- a name nobody is playing. modules/Export.lua sends a chat dump one line at
-    -- a time, so a mistyped whisper target is that error repeated once per line
-    -- with no way to stop it — and the client is the last to know the name is
-    -- bad, because only the server can say. See OnSystemMessage.
-    self:RegisterEvent("CHAT_MSG_SYSTEM", "OnSystemMessage")
-
-    -- The meter itself.
-    self:RegisterEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED", "OnMeterUpdated")
-    self:RegisterEvent("DAMAGE_METER_COMBAT_SESSION_UPDATED",  "OnMeterSession")
-    self:RegisterEvent("DAMAGE_METER_RESET",                   "OnMeterReset")
+    -- Target stays `self`, so every entry is an AceEvent registration on the
+    -- addon object and the stand-down's UnregisterAllEvents takes it down. The
+    -- list is REPLACED rather than appended to, so a disable/enable cycle
+    -- reports what this enable refused and nothing older.
+    local rejected = {}
+    if NS.State then NS.State.rejectedEvents = rejected end
+    local register = NS.SafeRegisterEvent
+    for i = 1, #EVENTS do
+        register(self, EVENTS[i][1], EVENTS[i][2], rejected)
+    end
+    if #rejected > 0 and NS.Debug then
+        NS.Debug("Init", "rejected events: %s", table.concat(rejected, ", "))
+    end
 
     -- Seed the restriction mirror from the live state rather than assuming
     -- "inactive". A /reload taken mid-pull re-enables the addon inside an active

@@ -87,10 +87,21 @@ The events themselves are tabulated in `docs/ARCHITECTURE.md` →
 [Event subscriptions](ARCHITECTURE.md#event-subscriptions). What follows is the part of that wiring
 that exists because of what a particular client does or does not have.
 
-`PLAYER_IS_GLIDING_CHANGED` is **probed** through `C_EventUtils.IsEventValid` rather than registered
-outright: it is the newest of the set and a client that has not got it raises on `RegisterEvent`.
-Losing that one edge is survivable where losing the block is not — `PLAYER_CAN_GLIDE_CHANGED` still
-fires when the mount changes, which is the transition the skyriding rule turns on.
+**An unknown event name raises, so every registration is isolated.** The client answers
+`RegisterEvent` for a name it does not know with `Attempt to register unknown event "<NAME>"`, and a
+block of bare calls loses every line after the one that raised — here that was the three
+`DAMAGE_METER_*` events, which are registered last. `OnEnable` now walks the `EVENTS` array in
+`core/MultiMeters.lua` through `NS.SafeRegisterEvent` (LibKa0s-Core minor 8: the
+`C_EventUtils.IsEventValid` front gate, a probe frame, then a `pcall`; the no-library stub keeps the
+`pcall` alone). A refused name costs only itself and is recorded in `NS.State.rejectedEvents`, which
+is replaced on every enable. Read it with `/mm debug diag` (the `events` section says
+`rejected events: none` on a healthy client), or with the debug log on, where `[Init]` carries one
+`rejected events:` line when the list is not empty.
+
+`PLAYER_IS_GLIDING_CHANGED` is the name most likely to be refused: it is the newest of the set and a
+client that has not got it raises on `RegisterEvent`. Losing that one edge is survivable where losing
+the block is not — `PLAYER_CAN_GLIDE_CHANGED` still fires when the mount changes, which is the
+transition the skyriding rule turns on.
 `UNIT_ENTERED_VEHICLE` / `UNIT_EXITED_VEHICLE` fire for every unit, so `OnPlayerStateChanged`
 filters those two to `"player"`; that check is a filter, not a decision.
 
@@ -107,8 +118,8 @@ the edge alone, a lagging input answers with the state the player just left, and
 window has no `OnUpdate` running, that stale answer stands until the next zone change. One settle
 pass is booked per burst, not per event — mounting fires several at once.
 
-`ADDON_RESTRICTION_STATE_CHANGED` is registered even on a client without `C_RestrictedActions` — an
-event that never fires costs nothing, and the alternative is a version check to keep in step with
-`core/Secrets.lua`'s. `OnEnable` also **seeds** `NS.State.restricted` from `Secrets.IsRestricted()`,
+`ADDON_RESTRICTION_STATE_CHANGED` is registered even on a client without `C_RestrictedActions`
+rather than behind a version check to keep in step with `core/Secrets.lua`'s. That is safe because
+the registration is isolated: on such a client the name is refused and recorded, not raised. `OnEnable` also **seeds** `NS.State.restricted` from `Secrets.IsRestricted()`,
 because a `/reload` taken mid-pull re-enables the addon inside an already-active restriction and
 there is no second edge to catch.

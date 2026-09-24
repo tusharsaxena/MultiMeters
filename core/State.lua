@@ -63,12 +63,19 @@ local _, NS = ...
 -- against this id (design §8). Session-only on purpose: which window you were
 -- last editing is not a preference, and persisting it would make a deleted
 -- window's id outlive the window.
+--
+-- `rejectedEvents` is the list of game-event names the client refused at the
+-- last enable (events-frames-taint-§1). core/MultiMeters.lua's OnEnable is its
+-- only writer: it REPLACES the list with a fresh one on every enable and hands it
+-- to NS.SafeRegisterEvent, which appends each refused name once. nil until the
+-- first enable. `/mm debug diag` is where a player reads it.
 local State = {
     debug          = false,
     debugTooltip   = false,
     restricted     = false,
     testMode       = false,
     activeWindowId = nil,
+    rejectedEvents = nil,
 }
 NS.State = State
 

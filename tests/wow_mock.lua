@@ -973,13 +973,18 @@ local function build()
         return group.delve or group.delveSignal == "delvesui"
     end
 
-    -- Event-name validation, which core/MultiMeters.lua asks before registering
-    -- PLAYER_IS_GLIDING_CHANGED. Everything is valid unless a case says
-    -- otherwise, so the probe's failure path has to be opted into.
+    -- Event-name validation, the front gate NS.SafeRegisterEvent asks before
+    -- every registration core/MultiMeters.lua makes. Everything is valid unless a
+    -- case says otherwise, so the refusal path has to be opted into. A name in the
+    -- kit's `M.__badEvents` (the one the registration RAISES for) is invalid
+    -- here too, read at call time as the kit reads it, because the client's
+    -- answer and the client's raise never disagree.
     M.__invalidEvents = {}
     function M.setEventInvalid(name) M.__invalidEvents[name] = true end
     M.C_EventUtils = M.C_EventUtils or {}
     M.C_EventUtils.IsEventValid = function(name)
+        local bad = M.__badEvents
+        if type(bad) == "table" and bad[name] then return false end
         return not M.__invalidEvents[name]
     end
     M.IsLoggedIn          = function() return true end

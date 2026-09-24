@@ -314,11 +314,12 @@ badge and any count quoted in the docs must agree with it.
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 
-### test_diagnostics.lua (21)
+### test_diagnostics.lua (22)
 
 - Diagnostics: the report is published and reachable
 - Diagnostics: `/mm debug diag` reaches it without the debug log
 - Diagnostics: every section appears
+- Diagnostics: the rejected event names are printed, or `none`
 - Diagnostics: it reports what the CLIENT has, not what the addon wants
 - Diagnostics: a number that misses the ladder is FLAGGED, not just printed
 - Diagnostics: one broken section cannot take the report down
@@ -602,7 +603,7 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: with LibKa0s absent the stub still answers from the STORE
 - Degraded: core/LauncherSetup.lua passes the silent flag to LibStub
 
-### test_lifecycle.lua (34)
+### test_lifecycle.lua (38)
 
 - Lifecycle: NS IS the AceAddon object, promoted in place
 - Lifecycle: every module registers, and the enable cascade runs them all
@@ -621,6 +622,10 @@ badge and any count quoted in the docs must agree with it.
 - Lifecycle: a MANUAL turn-off still keeps the window its rules would hide
 - Lifecycle: every player-state edge fans out as PLAYER_STATE_CHANGED
 - Lifecycle: a client with no PLAYER_IS_GLIDING_CHANGED still enables
+- Lifecycle: one unknown event name costs only itself, and is recorded
+- Lifecycle: with no C_EventUtils the refused name is still isolated and recorded
+- Lifecycle: a disable/enable cycle resets the rejected list rather than growing it
+- Lifecycle: a clean client records no rejected events
 - Lifecycle: PLAYER_ENTERING_WORLD is republished with its login/reload flags
 - Lifecycle: the roster cache is dropped BEFORE ROSTER_CHANGED goes out
 - Lifecycle: a meter reset wipes EVERY cache before publishing
@@ -2121,7 +2126,7 @@ badge and any count quoted in the docs must agree with it.
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
 
-### test_degraded.lua (33)
+### test_degraded.lua (34)
 
 - Degraded: the library really is absent, so every case below is measuring a stub
 - Degraded: every seam soft-optionals its major, so a missing library is not a load error
@@ -2153,6 +2158,7 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: every NS.Perf member the addon actually reaches exists on the stub
 - Degraded: the export modal refuses to open with no dropdown widget
 - Degraded: the addon still enables end to end with no library
+- Degraded: a refused event name costs only itself with no library, and is recorded
 - Degraded: the bus stub still hands every receiver a target, untracked
 - Degraded: with only LibKa0s-Slash missing, a disabled left click prints the refusal and raises nothing
 - Degraded: the stub's disabled-line format is the library's, byte for byte
@@ -2187,7 +2193,7 @@ badge and any count quoted in the docs must agree with it.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 76 |
-| test_diagnostics.lua | 21 |
+| test_diagnostics.lua | 22 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
@@ -2198,7 +2204,7 @@ badge and any count quoted in the docs must agree with it.
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
 | test_launchersetup.lua | 40 |
-| test_lifecycle.lua | 34 |
+| test_lifecycle.lua | 38 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
 | test_provider.lua | 78 |
@@ -2233,7 +2239,7 @@ badge and any count quoted in the docs must agree with it.
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
-| test_degraded.lua | 33 |
+| test_degraded.lua | 34 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1970** |
+| **Total** | **1976** |

@@ -74,6 +74,21 @@ test("Diagnostics: every section appears", function()
     end
 end)
 
+test("Diagnostics: the rejected event names are printed, or `none`", function()
+    -- events-frames-taint-§1: the record of refused names has to be reachable by
+    -- the player, and this report is what a player is asked to paste.
+    -- red under: a report with no events section.
+    local clean = report(T.load{ enable = true })
+    assertTrue(clean:find("rejected events: none", 1, true) ~= nil, "no rejected-events line")
+
+    local inst = T.load{ enable = true, mutate = function(m)
+        m.__badEvents = { UNIT_SPELLCAST_SUCCEEDED = true }
+    end }
+    local text = report(inst)
+    assertTrue(text:find("rejected events: UNIT_SPELLCAST_SUCCEEDED", 1, true) ~= nil,
+        "the refused name is not in the report")
+end)
+
 test("Diagnostics: it reports what the CLIENT has, not what the addon wants", function()
     -- The whole point. Importing the addon's own candidate list would report on
     -- our opinion instead of on the client's, and reporting on our own opinion is

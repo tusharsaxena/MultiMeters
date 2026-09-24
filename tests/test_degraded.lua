@@ -624,6 +624,7 @@ function()
     local degraded = degradedInstance().NS
     for _, name in ipairs({ "Print", "Format", "IsConcatSafe", "SafeToString", "RGBA",
                             "ApplySkin", "MakeCloseButton", "Debug",
+                            "SafeRegisterEvent", "SafeRegisterUnitEvent", "SafeRegisterEvents",
                             "RegisterOptionsPage", "RefreshOptionsPanel",
                             "CreateOptionsPanel", "OpenOptionsPanel" }) do
         assertEqual(type(degraded[name]), type(full[name]),
@@ -696,6 +697,21 @@ test("Degraded: the addon still enables end to end with no library", function()
     inst.mocks.__fireEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
     inst.mocks.__fireEvent("GROUP_ROSTER_UPDATE")
     inst.mocks.__flushTimers()
+end)
+
+test("Degraded: a refused event name costs only itself with no library, and is recorded",
+function()
+    -- The Core stub's one-rung SafeRegisterEvent: the pcall and the append, no
+    -- front gate. It is what keeps a retired name from taking the enable path
+    -- down on exactly the install that has no library to lean on.
+    -- red under: a stub that returns without publishing NS.SafeRegisterEvent.
+    local inst = T.load{ libFiles = {}, enable = true, mutate = function(m)
+        m.__badEvents = { UNIT_SPELLCAST_SUCCEEDED = true }
+    end }
+    assertEqual(inst.NS.__events["DAMAGE_METER_RESET"], "OnMeterReset",
+        "the meter events were lost to an earlier refused name")
+    assertEqual(table.concat(inst.NS.State.rejectedEvents, ","), "UNIT_SPELLCAST_SUCCEEDED")
+    assertTrue(inst.NS:GetModule("WindowManager", true) ~= nil, "the cascade did not finish")
 end)
 
 test("Degraded: the bus stub still hands every receiver a target, untracked", function()

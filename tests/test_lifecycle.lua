@@ -400,6 +400,72 @@ test("Lifecycle: a client with no PLAYER_IS_GLIDING_CHANGED still enables", func
         "the rest of the set must still be registered")
 end)
 
+-- ── registration isolation (events-frames-taint-§1) ─────────────────────────
+--
+-- An unknown event name RAISES on the client, and a block of bare RegisterEvent
+-- calls loses every line after the one that raised. The three meter events are
+-- registered LAST, so a single retired name anywhere above them used to take
+-- every number this addon draws with it. Each registration now costs only itself,
+-- and the names the client refused are kept where `/mm debug diag` can read them.
+
+--- The events live on `inst.NS` as AceEvent registrations, read off the kit's survey.
+local function liveEvents(inst)
+    local out = {}
+    for _, r in ipairs(inst.mocks.__registrations()) do
+        if r.kind == "event" and r.target == inst.NS then out[r.event] = true end
+    end
+    return out
+end
+
+local METER_EVENTS = {
+    "DAMAGE_METER_CURRENT_SESSION_UPDATED", "DAMAGE_METER_COMBAT_SESSION_UPDATED",
+    "DAMAGE_METER_RESET",
+}
+
+test("Lifecycle: one unknown event name costs only itself, and is recorded", function()
+    -- red under: a bare self:RegisterEvent anywhere in the block, which raises
+    -- at UNIT_SPELLCAST_SUCCEEDED and never reaches the meter events below it.
+    local inst = T.load{ enable = true, mutate = function(m)
+        m.__badEvents = { UNIT_SPELLCAST_SUCCEEDED = true }
+    end }
+    local live = liveEvents(inst)
+    for _, event in ipairs(METER_EVENTS) do
+        assertTrue(live[event], event .. " was lost to an earlier refused name")
+    end
+    assertEqual(table.concat(inst.NS.State.rejectedEvents, ","), "UNIT_SPELLCAST_SUCCEEDED")
+end)
+
+test("Lifecycle: with no C_EventUtils the refused name is still isolated and recorded", function()
+    -- An older client has no front gate, so the pcall rung is what decides.
+    local inst = T.load{ enable = true, mutate = function(m)
+        m.__badEvents = { UNIT_SPELLCAST_SUCCEEDED = true }
+        m.C_EventUtils = nil
+    end }
+    local live = liveEvents(inst)
+    for _, event in ipairs(METER_EVENTS) do
+        assertTrue(live[event], event .. " was lost to an earlier refused name")
+    end
+    assertEqual(table.concat(inst.NS.State.rejectedEvents, ","), "UNIT_SPELLCAST_SUCCEEDED")
+end)
+
+test("Lifecycle: a disable/enable cycle resets the rejected list rather than growing it", function()
+    -- red under: an OnEnable that appends to the list it found instead of
+    -- starting a fresh one.
+    local inst = T.load{ enable = true, mutate = function(m)
+        m.__badEvents = { UNIT_SPELLCAST_SUCCEEDED = true }
+    end }
+    local first = inst.NS.State.rejectedEvents
+    assertTrue(inst.NS.SetByPath("enabled", false))
+    assertTrue(inst.NS.SetByPath("enabled", true))
+    assertTrue(inst.NS.State.rejectedEvents ~= first, "the list was not replaced on enable")
+    assertEqual(table.concat(inst.NS.State.rejectedEvents, ","), "UNIT_SPELLCAST_SUCCEEDED")
+end)
+
+test("Lifecycle: a clean client records no rejected events", function()
+    local inst = T.load{ enable = true }
+    assertEqual(#inst.NS.State.rejectedEvents, 0)
+end)
+
 test("Lifecycle: PLAYER_ENTERING_WORLD is republished with its login/reload flags", function()
     local inst = T.load{ enable = true }
     local seen = watch(inst, MSG.ENTERING_WORLD)
