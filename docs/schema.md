@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 15,    -- CURRENT_DB_VERSION in core/Database.lua
+    schemaVersion = 15,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -42,6 +42,15 @@ The version is **addon-wide rather than per-profile** (`savedvariables-§1`), so
 once per account instead of once per profile. `NS:RunMigrations()` walks it forward one step at a
 time out of the `migrations` table in `core/Database.lua`, and is called from `NS:InitDB()` and
 again from every AceDB profile callback (changed / copied / reset).
+
+**The runner owns the stamp** (`savedvariables-§1`). The defaults declare `schemaVersion = 0`,
+meaning unstamped, and never the current version: AceDB's logout strip removes a stored value equal
+to its default, and its defaults merge backfills a declared default onto a legacy account that stored
+none, so a current-version default would erase the stamp at every logout and make a legacy account
+read as migrated. An account reading 0 is a fresh install or a legacy one, and walks from v1, which is
+safe because every step is idempotent against a fresh default profile. A step never writes the stamp;
+the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
+stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
 **Fourteen steps are wired today**, `migrations[1]` through `migrations[14]`, walking an account from
 the shipped v1 shape to v15. Each is one line of the header block at the top of
@@ -81,9 +90,10 @@ absorbs the profile-level ones and `Database.EnsureWindowShape` absorbs the per-
 profile swap. It does not ask "is this account older than v2"; it asks "is this key missing".
 
 That is not belt-and-braces, it is the only question with a reliable answer. AceDB's defaults merge
-backfills `db.global.schemaVersion` to the current value the moment `db.global` is first touched —
-so an account that has never seen a migration reads as already-current, and a version-gated step
-would be skipped entirely, silently, on exactly the profile that needed it.
+backfills the declared `db.global.schemaVersion` default onto an account that stored none, so the
+version says only "unstamped" and nothing about which keys a stored window already has; and a window
+also arrives from a copy, a reset or a hand edit whatever the stamp claims. A version-gated fill would
+be skipped, silently, on exactly the window that needed it.
 
 ---
 

@@ -179,7 +179,7 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
   `NS.ValidateSchema` runs from the options descriptor at panel creation; a line here means a schema
   row's path does not resolve against `defaults/Profile.lua`, or its default disagrees with the tree.
 - After `/reload`, `MultiMetersDB` exists on disk with `profileKeys`, `profiles.Default`,
-  `global.schemaVersion = 1`, a one-entry `profile.windows` array whose window has `id = 1`, and
+  `global.schemaVersion = 15` (the runner's target; the declared default is 0), a one-entry `profile.windows` array whose window has `id = 1`, and
   `profile.nextWindowId = 2`.
 
 ### 2. `/reload` integrity

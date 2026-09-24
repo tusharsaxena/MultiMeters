@@ -247,6 +247,7 @@ local SUITES = {
     "test_locale",
     -- database and defaults
     "test_database",
+    "test_migrations",
     "test_diagnostics",
     "test_diagnostics_deathrecap",
     "test_diagnostics_identity",

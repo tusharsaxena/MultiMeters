@@ -716,7 +716,15 @@ end
 
 --- The AceDB defaults table. `global.schemaVersion` is addon-wide rather than
 --- per-profile so a migration runs once per ACCOUNT (savedvariables-§1); see
---- core/Database.lua's migration runner.
+--- core/Database.lua's migration runner, which owns the stamp.
+---
+--- Its default is 0, meaning UNSTAMPED, and never the current version. AceDB's
+--- logout strip removes a stored value equal to its default, so a current-version
+--- default would erase the stamp at every logout; and AceDB's defaults merge
+--- backfills a declared default onto a legacy account that stored no stamp, so a
+--- current-version default would make that account read as already migrated. A 0
+--- has neither problem: a stamp the runner advanced past it differs from it and
+--- persists, and an account with no stamp reads 0 and walks every step.
 ---
 --- `profile.windows` is deliberately EMPTY here and seeded with exactly one
 --- window by NS:InitDB(). It cannot be a default: AceDB's defaults merge would
@@ -815,7 +823,7 @@ NS.defaults = {
         },
     },
     global = {
-        schemaVersion = 1,
+        schemaVersion = 0,   -- unstamped; never the current version (see above)
 
         -- The minimap / DataBroker button. LibDBIcon-1.0 OWNS THE SHAPE of this
         -- table -- `hide` is its key, not ours, and it also writes `minimapPos`

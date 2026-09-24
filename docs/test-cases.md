@@ -314,6 +314,14 @@ badge and any count quoted in the docs must agree with it.
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 
+### test_migrations.lua (5)
+
+- migrations: the defaults declare schemaVersion 0, never the current version
+- migrations: a fresh install runs every step and lands on the default profile
+- migrations: a step that raises leaves the stamp at its from value
+- migrations: the stamp is stored raw and survives AceDB's logout strip
+- migrations: a legacy unstamped account migrates every stored profile
+
 ### test_diagnostics.lua (23)
 
 - Diagnostics: the report is published and reachable
@@ -2202,6 +2210,7 @@ badge and any count quoted in the docs must agree with it.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 76 |
+| test_migrations.lua | 5 |
 | test_diagnostics.lua | 23 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
@@ -2252,4 +2261,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 34 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1982** |
+| **Total** | **1987** |
