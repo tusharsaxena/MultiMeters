@@ -273,7 +273,9 @@ not know costs only itself and lands in `NS.State.rejectedEvents`, which `/mm de
 The three `DAMAGE_METER_*` handlers carry the `meterEvent` perf bracket. It measures the **fan-out**,
 not the redraw: `SendMessage` walks every subscribed window's callback synchronously, which is the
 cost that scales with window count at raid event rate. What a window then does on its own throttle
-tick is the separate `refresh` bucket.
+tick is the separate `refresh` bucket. `OnSpellSucceeded` and `OnSystemMessage` carry their own
+top-level buckets, `spellEvent` and `systemEvent`: measurement only, so a capture can say whether
+their all-session registration is worth narrowing (MultiMeters-R-17).
 
 The player-state block exists for `modules/Visibility.lua`'s rules and carries **no payload**,
 because those rules read their inputs live at the moment they are asked.
@@ -288,8 +290,9 @@ the settle pass over client state that lags its own event — are in
 Everything else is a bus subscription. Registration by module is tabulated in
 [module-map.md](module-map.md#what-each-file-publishes-and-consumes).
 
-Perf buckets, declared in `core/PerfSetup.lua` with their nesting: `meterEvent` · `refresh`
-(→ `aggregate` → `providerRead`, `render` → `renderRow`) · `tooltip` (→ `targets` → `providerRead`).
+Perf buckets, declared in `core/PerfSetup.lua` with their nesting: `meterEvent` · `spellEvent` ·
+`systemEvent` · `refresh` (→ `aggregate` → `providerRead`, `render` → `renderRow`) · `tooltip`
+(→ `targets` → `providerRead`).
 `providerRead` has two parents, so it declares none, and every nested bracket passes the parent it
 ran inside, so a capture reports the tree as observed. A parent is never summed with its children.
 Detail in [performance.md](performance.md) and

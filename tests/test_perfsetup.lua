@@ -252,6 +252,44 @@ test("PerfSetup: every bracket in the addon names a bucket the descriptor declar
     end
 end)
 
+-- ── the two narrow listeners (MultiMeters-R-17) ─────────────────────────────
+--
+-- UNIT_SPELLCAST_SUCCEEDED and CHAT_MSG_SYSTEM stay registered all session for
+-- one narrow use each — the feign check and the whisper-to-nobody check. Whether
+-- that registration is worth what it costs is a decision for a capture to make,
+-- so each handler carries its own bucket. Driven through the event dispatch, not
+-- by calling the method, so the case also proves the registration reaches the
+-- bracketed handler. The spell is NOT Feign Death: the early return every other
+-- cast in a raid takes is the path whose cost is in question, and it must record.
+
+test("PerfSetup: one UNIT_SPELLCAST_SUCCEEDED records one spellEvent sample", function()
+    -- red under: deleting the spellEvent Perf.Note from OnSpellSucceeded.
+    local inst = T.load{ enable = true }
+    local P = inst.NS.Perf
+    P.Reset()
+    P.on = true
+    inst.mocks.__fireEvent("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", 116)
+    P.on = false
+    local bucket = P.__buckets().spellEvent
+    assertTrue(bucket ~= nil, "the spellEvent bucket was never reached")
+    assertEqual(bucket.calls, 1, "one cast must record exactly one spellEvent sample")
+    assertNil(P.__buckets().systemEvent, "a cast must not reach the system-message bucket")
+end)
+
+test("PerfSetup: one CHAT_MSG_SYSTEM records one systemEvent sample", function()
+    -- red under: deleting the systemEvent Perf.Note from OnSystemMessage.
+    local inst = T.load{ enable = true }
+    local P = inst.NS.Perf
+    P.Reset()
+    P.on = true
+    inst.mocks.__fireEvent("CHAT_MSG_SYSTEM", "You are now Away.")
+    P.on = false
+    local bucket = P.__buckets().systemEvent
+    assertTrue(bucket ~= nil, "the systemEvent bucket was never reached")
+    assertEqual(bucket.calls, 1, "one system line must record exactly one systemEvent sample")
+    assertNil(P.__buckets().spellEvent, "a system line must not reach the spell bucket")
+end)
+
 test("PerfSetup: the bucket nesting is declared, so a reader never sums a parent with a child",
 function()
     -- A reader comparing two captures months apart cannot be expected to know
@@ -295,6 +333,7 @@ function()
     -- red under: any two-argument Perf.Note at a nested site.
     local EXPECT = {
         refresh = false, meterEvent = false, tooltip = false,           -- top level
+        spellEvent = false, systemEvent = false,                        -- top level (R-17)
         render = '"refresh"', renderRow = '"render"', targets = '"tooltip"',
         aggregate = true, providerRead = true,          -- a parent threaded from the caller
     }
@@ -378,7 +417,7 @@ test("PerfSetup: every instrumented module takes the probe as a file-scope upval
     -- path is the ungated-instrumentation smell.
     --
     -- core/MultiMeters.lua is the documented exception and is NOT in this list:
-    -- its three brackets are event handlers rather than per-frame work, and it
+    -- its five brackets are event handlers rather than per-frame work, and it
     -- reads NS.Perf at call time on purpose so a degraded or test install that
     -- re-publishes the seam later is not frozen out. That exception is stated in
     -- its own header; every module below is on the per-frame path and has no

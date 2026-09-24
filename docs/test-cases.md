@@ -488,7 +488,7 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: NS.LIBKA0S_MISSING is set on BOTH paths, not only the degraded one
 - CoreSetup: all six seams append to the shared clause rather than re-spelling it
 
-### test_perfsetup.lua (24)
+### test_perfsetup.lua (26)
 
 - PerfSetup: NS.Perf is the library instance, with the gate as a plain boolean field
 - PerfSetup: the capture ring is a SECOND SavedVariables global, outside the AceDB tree
@@ -498,6 +498,8 @@ badge and any count quoted in the docs must agree with it.
 - PerfSetup: the descriptor names the FOLDER and leaves the close control to the library
 - PerfSetup: every declared bucket is reached by a real bracket in the addon's source
 - PerfSetup: every bracket in the addon names a bucket the descriptor declares
+- PerfSetup: one UNIT_SPELLCAST_SUCCEEDED records one spellEvent sample
+- PerfSetup: one CHAT_MSG_SYSTEM records one systemEvent sample
 - PerfSetup: the bucket nesting is declared, so a reader never sums a parent with a child
 - PerfSetup: every bracket passes the parent it runs inside, and a top-level one passes none (#47)
 - PerfSetup: a capture OBSERVES the tree, and a column read reached two ways is mixed (#47)
@@ -2247,7 +2249,7 @@ badge and any count quoted in the docs must agree with it.
 | test_diagnostics_feign.lua | 19 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
-| test_perfsetup.lua | 24 |
+| test_perfsetup.lua | 26 |
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 12 |
@@ -2292,4 +2294,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2014** |
+| **Total** | **2016** |

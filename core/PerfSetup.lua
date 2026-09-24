@@ -101,6 +101,13 @@ NS.Perf = lib:New({
     -- failure mode this list exists to prevent.
     buckets = {
         { key = "meterEvent" },                          -- a DAMAGE_METER_* event handler
+        -- The two narrow listeners, each top-level and each its own bucket so a
+        -- capture can say which one costs what (MultiMeters-R-17). Both events stay
+        -- registered all session for one use apiece; these are MEASUREMENT ONLY,
+        -- and whether either registration should narrow is decided from the numbers
+        -- they produce, not here.
+        { key = "spellEvent" },                          -- UNIT_SPELLCAST_SUCCEEDED: the feign check
+        { key = "systemEvent" },                         -- CHAT_MSG_SYSTEM: the whisper-to-nobody check
         { key = "refresh" },                             -- one coalesced window refresh pass
         -- NO `within`, and that is the finding rather than an omission (issue
         -- #47). A column read runs inside `aggregate` on a refresh, inside

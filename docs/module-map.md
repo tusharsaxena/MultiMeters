@@ -71,7 +71,7 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │                         TEARDOWN. standDown / standUp, the `disabled` hold taken
 │                         from the stored enable path, NS.IsStoodDown / NS.IsDisabled.
 │                         BEFORE PerfSetup.lua, which raises without a lifecycle
-│   ├── PerfSetup.lua   — LibKa0s-Perf-1.0 seam: NS.Perf, the 8 buckets, and the
+│   ├── PerfSetup.lua   — LibKa0s-Perf-1.0 seam: NS.Perf, the 10 buckets, and the
 │                         latch — the `perf` hold is the second reason to be inert
 │   ├── DebugLogSetup.lua — LibKa0s-DebugLog-1.0 seam: NS.DebugLog, the bare
 │                         NS.Debug(tag, fmt, …) sink, and NS.DebugSteady — the

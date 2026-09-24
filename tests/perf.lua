@@ -748,6 +748,46 @@ do
     inst:ApplyConfig()
 end
 
+-- ── 7. THE TWO NARROW LISTENERS, DORMANT (MultiMeters-R-17) ────────────────
+--
+-- UNIT_SPELLCAST_SUCCEEDED and CHAT_MSG_SYSTEM carry the `spellEvent` and
+-- `systemEvent` brackets so an in-game capture can price their all-session
+-- registration. The bracket itself must be free while nobody is measuring, and
+-- the path it wraps is the one nearly every cast in a raid takes: a spell that is
+-- not Feign Death, answered by an early return. That path allocates NOTHING --
+-- no fields table, no closure, no string -- so the dormant arm is held to zero
+-- bytes exactly, not to a ceiling. The armed arm is printed for the ratio only;
+-- the first armed Note creates the bucket, which is why it is not held to zero.
+--
+-- Called as the method, not through the mock's event dispatch, so the figure is
+-- the handler's cost and not the harness's.
+
+do
+    local NOT_FEIGN = 116
+    local handler = NS.OnSpellSucceeded
+    assert(handler, "core/MultiMeters.lua did not publish OnSpellSucceeded -- this "
+        .. "scenario would be measuring its own absence")
+    NS.Perf.on = false
+    handler(NS, "UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", NOT_FEIGN)   -- prime
+
+    local spellOff = measure("spellEventOff", ITERS, function()
+        handler(NS, "UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", NOT_FEIGN)
+    end)
+
+    NS.Perf.on = true
+    local spellOn = measure("spellEventOn", ITERS, function()
+        handler(NS, "UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", NOT_FEIGN)
+    end)
+    NS.Perf.on = false
+
+    assert_(spellOff.bytesPerIter == 0,
+        ("a dormant spellEvent bracket allocated %.1f bytes/iter -- a disarmed "
+         .. "UNIT_SPELLCAST_SUCCEEDED must cost nothing but its early return (performance-§2)")
+            :format(spellOff.bytesPerIter))
+    assert_(spellOff.apiPerIter == 0 and spellOn.apiPerIter == 0,
+        "a cast reached the meter API -- the feign check must never read C_DamageMeter")
+end
+
 -- ── report ──────────────────────────────────────────────────────────────────
 
 print(("Ka0s Multi Meters \226\128\148 offline perf  (v%s, label '%s')")

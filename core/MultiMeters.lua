@@ -367,22 +367,11 @@ end
 --- honest answer when the comparison is refused is to record nothing: that
 --- counts the feign as a death, which is exactly the behavior that shipped
 --- before the filter existed and the safe direction to fail in.
---- CHAT_MSG_SYSTEM -> modules/Export.lua, and NOTHING onto the bus.
 ---
---- The second handler in this file that does not republish, and it is here for
---- the same reason OnSpellSucceeded is: the event is chatty, exactly one file
---- cares, and the filter is a string match that belongs with the thing holding
---- the queue it cancels. Export answers a bare `false` when no chat dump is in
---- flight, which is every system message but a handful.
----
---- @param message string|nil
-function NS:OnSystemMessage(_, message)
-    local E = NS.Export
-    if not (E and E.NoteSystemMessage) then return end
-    E.NoteSystemMessage(message)
-end
-
-function NS:OnSpellSucceeded(_, unit, _castGUID, spellID)
+--- The body is a file-local rather than the method itself so the handler below
+--- can bracket it with ONE entry and ONE exit: six early returns each carrying
+--- their own `Perf.Note` would be six places for the next edit to miss one.
+local function noteFeignCast(unit, spellID)
     if unit == nil or spellID == nil then return end
     if not (NS.Secrets and NS.Secrets.CanCompare(spellID)) then return end
     if spellID ~= FEIGN_DEATH_SPELL then return end
@@ -393,6 +382,44 @@ function NS:OnSpellSucceeded(_, unit, _castGUID, spellID)
     local getGUID = _G.UnitGUID
     if not getGUID then return end
     F.Note(getGUID(unit), unit)
+end
+
+--- CHAT_MSG_SYSTEM -> modules/Export.lua, and NOTHING onto the bus.
+---
+--- The second handler in this file that does not republish, and it is here for
+--- the same reason OnSpellSucceeded is: the event is chatty, exactly one file
+--- cares, and the filter is a string match that belongs with the thing holding
+--- the queue it cancels. Export answers a bare `false` when no chat dump is in
+--- flight, which is every system message but a handful.
+---
+--- @param message string|nil
+local function offerSystemMessage(message)
+    local E = NS.Export
+    if not (E and E.NoteSystemMessage) then return end
+    E.NoteSystemMessage(message)
+end
+
+-- BOTH HANDLERS ARE MEASURED, AND ONLY MEASURED (MultiMeters-R-17). Each event
+-- stays registered all session for one narrow use, and UNIT_SPELLCAST_SUCCEEDED
+-- is the busiest thing this addon listens to. Whether either registration is
+-- worth narrowing is a decision for a capture's numbers, so each carries its own
+-- top-level bucket — `spellEvent` and `systemEvent` in core/PerfSetup.lua — with
+-- the same call-time NS.Perf lookup and gated shape as the meterEvent brackets
+-- below. The bracket covers the whole body, early returns included: the early
+-- return is what nearly every cast in a raid takes, and it is the cost in question.
+
+function NS:OnSystemMessage(_, message)
+    local Perf = NS.Perf
+    local t0 = Perf and Perf.on and debugprofilestop()
+    offerSystemMessage(message)
+    if t0 then Perf.Note("systemEvent", debugprofilestop() - t0) end
+end
+
+function NS:OnSpellSucceeded(_, unit, _castGUID, spellID)
+    local Perf = NS.Perf
+    local t0 = Perf and Perf.on and debugprofilestop()
+    noteFeignCast(unit, spellID)
+    if t0 then Perf.Note("spellEvent", debugprofilestop() - t0) end
 end
 
 --- ADDON_RESTRICTION_STATE_CHANGED(type, state).

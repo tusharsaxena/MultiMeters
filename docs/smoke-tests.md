@@ -1291,7 +1291,8 @@ Then complete a pull, watch the log, and run a capture:
 - The A/B run makes the addon **inert** during its B window without a `/reload`: the provider stops
   reading, the coalescing timers stop, and every window is refused at the source. **Nothing** — a
   combat transition, a roster change, a settings write — may bring a window back while suspended.
-- After `finish`, the report names the declared buckets: `meterEvent`, `refresh` with `aggregate`
+- After `finish`, the report names the declared buckets: `meterEvent`, `spellEvent` and
+  `systemEvent` (each with calls and ms after a raid pull), `refresh` with `aggregate`
   and `render` under it, `renderRow` under `render`, and `tooltip` with `targets` under it, plus
   `providerRead`. The nesting note says **observed inside** for every nested bucket, never
   *declares itself within X — not observed* (issue #47).
