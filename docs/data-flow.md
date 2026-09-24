@@ -703,6 +703,50 @@ A refusal is never stored, and could not pin the section shut even if it were: a
 re-derived on the next call, because the cache lookup answers nil for "no key" and "key present, map
 nil" alike.
 
+## The segment selector
+
+The **segment control** in the header strip — the three horizontal lines — opens a context menu of
+every session the client is still holding — name and duration, newest first as the API returns them — then a divider, then the
+two synthetic entries `Current` and `Overall`. The menu anchors to the header's session line, which
+is where it has always come out; that line used to be a 220px Button and opened the menu itself,
+which put an invisible click target across the middle of the title bar and was removed.
+
+The choice is stored in `window.data.sessionID`, which **overrides `sessionType` when it pins a
+segment** and holds `Constants.NO_SEGMENT` (0) when none is pinned. It is a hidden schema row: the
+menu is its control, and it writes the pin through `NS.SetByPath` addressed to its own window. Every
+consumer reads it through `Database.PinnedSegment`, which answers nil for the sentinel.
+
+Threading it took one optional trailing argument rather than a new shape. `Provider.GetColumn`,
+`GetSourceDetail` and `GetSessionDuration` each accept a trailing `sessionID`; nil routes to the
+`…FromType` shim exactly as before, and a number routes to the `…FromID` shim. `modules/Provider.lua`
+therefore remains the only caller of `C_DamageMeter`, and every existing call site was unchanged.
+`Compat.GetCombatSessionFromID` and `Compat.GetAvailableCombatSessions` had shipped unused since v0.1.0
+for precisely this.
+
+Every read path honors the pin, and that matters more than it looks: a tooltip or a drill-down still
+reading the live pull while the grid under it showed a fight from ten minutes ago would be describing
+a different encounter than the row the cursor is on.
+
+**Staleness is handled by forgetting, at the top of the refresh.** `WindowProto:DropStaleSegment`
+asks `Provider.HasSession` and clears a pin the client no longer holds. A stale id does not raise —
+it silently reads an empty session, which is indistinguishable from a broken addon. Session ids are
+never reused, so nothing is lost by forgetting one. With no provider module at all the pin is left
+alone: that is a broken install, not a stale segment, and rewriting the player's setting because of
+our own load order would be the worse failure.
+
+`Compat.OpenContextMenu` wraps `MenuUtil.CreateContextMenu` and is the only Blizzard menu API
+wired. The pre-11.0 alternatives are deliberately absent — they do not exist on any client this
+addon supports, and a fallback nobody can run is a fallback nobody has tested.
+
+**It is no longer the only menu in the addon, and this control is deliberately the one that keeps
+it.** The export modal's three selectors are `LibKa0s-Widgets-1.0` dropdowns — a flat-skinned button
+that drops the library's own popup, shared process-wide with every other Ka0s addon's dropdowns.
+This control is not converted: it is a mark in a header strip rather than a labeled selector in a
+form, its list is built from live client state and carries a divider, and a dropdown button wide
+enough to show a session name would take back the title bar the removed 220px Button already cost.
+The two mechanisms coexist on purpose — see `modules/Export_Modal.lua`'s "The modal's three selectors"
+comment, which argues the same split from the other side.
+
 ## Where the guards live
 
 If you are adding to the data path, these are the only files that may know anything about a value:

@@ -407,16 +407,19 @@ in the hub for the same reason it did the first time.
 
 `tests/test_texture_paths.lua` is the third register, and the same bargain a third time. It reads
 every hard-coded `Interface\` path out of the `.lua` this repository authors and the table under
-*Hard-coded texture paths* in [ARCHITECTURE.md](ARCHITECTURE.md), and compares them in both
+*The census* in [texture-paths.md](texture-paths.md#the-census), and compares them in both
 directions: a new path nobody argued for is a red, and so is a row for a path that has gone.
 
 `library-stack-§8` makes LibKa0s-Media's catalog the addon's vocabulary for marks, so a red is
 cleared one of two ways — use `NS.Icon`, or add the row saying why the catalog cannot answer at that
-site. Twelve rows say why today; two of them — the pair in `settings/ColumnBlocks.lua` — defer to a single
-deviation-register row rather than arguing in place, and two further cases hold that pointer honest — a fourth asserting the
-register row is still there, so *"register row above"* cannot quietly become a phrase, and a
-fifth asserting the row's `settings/ColumnBlocks.lua:72-73` citation still names the lines the
-two declarations are on.
+site. Twelve rows say why today. Five of them decline a mark the catalog does carry and defer to
+deviation-register rows in [ARCHITECTURE.md](ARCHITECTURE.md#documented-deviations) rather than
+arguing in place: the pair in `settings/ColumnBlocks.lua`, the tooltip's TARGET glyph and the
+window's size-grabber pair. Three further cases hold those pointers honest: a fourth asserting the
+ColumnBlocks register row is still there, so *"register row"* cannot quietly become a phrase, a fifth
+asserting that row's `settings/ColumnBlocks.lua:72-73` citation still names the lines the two
+declarations are on, and a sixth asserting the same of the `modules/Tooltip.lua` and
+`modules/Window.lua` rows, each with a Decided date and a re-check trigger.
 
 **The quote is part of the pattern.** An occurrence counts when it opens a string, in either form
 Lua has — `"Interface\\…"` or the long-bracket `[[Interface\…]]` — and not otherwise, because a

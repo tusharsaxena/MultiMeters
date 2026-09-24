@@ -638,7 +638,7 @@ function WindowProto:BuildFrame()
         -- is -Up plus -Highlight, the two-state chrome a player already reads in
         -- every chat window, and the catalog publishes no hover variant of
         -- anything (library-stack-§8). Both paths are carried in
-        -- docs/ARCHITECTURE.md's "Hard-coded texture paths" census.
+        -- docs/texture-paths.md's census, ratified by an ARCHITECTURE.md register row.
         local grip = CreateFrame("Button", nil, frame)
         grip:SetSize(12, 12)
         grip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)

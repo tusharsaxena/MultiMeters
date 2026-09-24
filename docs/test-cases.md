@@ -46,13 +46,14 @@ badge and any count quoted in the docs must agree with it.
 
 - every deviation id the register cites is assigned by a bundle in docs/audits/
 
-### test_texture_paths.lua (5)
+### test_texture_paths.lua (6)
 
-- texturepaths: every hard-coded path in authored source is named in the ARCHITECTURE.md census
+- texturepaths: every hard-coded path in authored source is named in the texture-paths.md census
 - texturepaths: no census row outlives the path it records
 - texturepaths: every census row carries a disposition that can be followed
 - texturepaths: the deviation register carries the row the ColumnBlocks sites point at
 - texturepaths: the register row's ColumnBlocks citation names the lines the pair is on
+- texturepaths: the register carries a library-stack-§8 row for the Tooltip and Window declines
 
 ### test_docmap.lua (1)
 
@@ -2242,7 +2243,7 @@ badge and any count quoted in the docs must agree with it.
 | test_layout_cap.lua | 13 |
 | test_complexity_register.lua | 4 |
 | test_deviation_register.lua | 1 |
-| test_texture_paths.lua | 5 |
+| test_texture_paths.lua | 6 |
 | test_docmap.lua | 1 |
 | test_doc_structure.lua | 5 |
 | test_lintconfig.lua | 4 |
@@ -2307,4 +2308,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2021** |
+| **Total** | **2022** |

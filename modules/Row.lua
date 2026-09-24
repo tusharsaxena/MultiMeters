@@ -248,7 +248,7 @@ local ROLE_COLORS = {
 -- no class art and library-stack-§8 says a mark it lacks is added UPSTREAM rather
 -- than drawn locally -- but twelve class circles are the game's own data, not a
 -- Ka0s glyph, and they change when the game's classes do. Recorded in
--- docs/ARCHITECTURE.md's "Hard-coded texture paths" census.
+-- docs/texture-paths.md's "Hard-coded texture paths" census.
 local CLASS_TEXTURE = [[Interface\TargetingFrame\UI-Classes-Circles]]
 
 --- The bar color for one cell, per the window's `bars.colorMode`.
@@ -339,8 +339,8 @@ end
 --- reach LSM through core/MediaSetup.lua's RegisterLSM, so the only load that
 --- gets here with nothing is one where the payload is absent -- and on that load
 --- no catalog texture reached LSM either. A fallback that needs the thing that is
---- missing is not a fallback (library-stack-§8; docs/ARCHITECTURE.md's
---- "Hard-coded texture paths").
+--- missing is not a fallback (library-stack-§8; docs/texture-paths.md's
+--- "Hard-coded texture paths" census).
 local function barTexture(name)
     local media = lsm()
     local path = media and name and media:Fetch("statusbar", name, true)
