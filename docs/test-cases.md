@@ -711,7 +711,7 @@ badge and any count quoted in the docs must agree with it.
 - A floored rung whose floor did not take is not accepted on the K probe alone (#26)
 - The client's defaults under a floor that did not take are not accepted either (#26)
 
-### test_provider.lua (78)
+### test_provider.lua (41)
 
 - Provider: core/Compat.lua is the only file that names C_DamageMeter
 - Provider: modules/Provider.lua is the only caller of the meter shims
@@ -754,6 +754,9 @@ badge and any count quoted in the docs must agree with it.
 - Provider.ProbeSourceLookup skips a source that carries no GUID
 - Provider: an NPC source with no GUID is KEPT, on its creature ID
 - Provider: a source with NEITHER identifier is still dropped
+
+### test_provider_recap.lua (26)
+
 - Provider: with no recap namespace the probe finds nothing, and says so
 - Provider: it reports the readers the CLIENT has, not a list we wrote
 - Provider: a non-function member is not a reader
@@ -780,6 +783,9 @@ badge and any count quoted in the docs must agree with it.
 - Provider.GetRecap is inert while the perf harness has it suspended
 - Provider.GetRecap answers a PREVIEW recap in test mode
 - Provider.GetRecap in test mode does not poison the live memo
+
+### test_provider_fields.lua (11)
+
 - Provider describes the RAW source row, not the projection it keeps
 - The probe DESCRIBES a secret field and never carries its value
 - The probe answers an empty list rather than raising on no session
@@ -2260,7 +2266,9 @@ badge and any count quoted in the docs must agree with it.
 | test_lifecycle.lua | 38 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
-| test_provider.lua | 78 |
+| test_provider.lua | 41 |
+| test_provider_recap.lua | 26 |
+| test_provider_fields.lua | 11 |
 | test_roster.lua | 42 |
 | test_feign.lua | 27 |
 | test_aggregator.lua | 62 |

@@ -268,6 +268,8 @@ local SUITES = {
     -- the data path
     "test_format",
     "test_provider",
+    "test_provider_recap",
+    "test_provider_fields",
     "test_roster",
     "test_feign",
     "test_aggregator",

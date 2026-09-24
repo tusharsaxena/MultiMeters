@@ -615,9 +615,10 @@ files took the seam its own issue had already named, and the eight suites follow
 mirror.
 
 What remains worth knowing is the **1000–1500 on-notice band**, which is busier than it has ever
-been: 20 files, nine of them source, because a peel lands a file wherever its seam falls and a seam
-chosen for what a reader can hold does not aim at a line count. The tightest is `tests/test_provider.lua`
-at exactly the cap, and the one to watch is `modules/Row.lua` at 1469 — source, on the refresh
+been: 24 files, eleven of them outside `tests/`, because a peel lands a file wherever its seam falls
+and a seam chosen for what a reader can hold does not aim at a line count. The tightest is
+`tests/test_window_header.lua` at 1494 (`tests/test_provider.lua`, which sat at exactly the cap, was
+peeled into `_recap` and `_fields` on 2026-09-24), and the one to watch is `modules/Row.lua` at 1469 — source, on the refresh
 path, and the file every identity, spec-icon and pet-fold change has historically landed in.
 
 **The band is tabulated in [automated-tests/RESULTS.md](automated-tests/RESULTS.md#files-by-layout-1-band), not here.**
