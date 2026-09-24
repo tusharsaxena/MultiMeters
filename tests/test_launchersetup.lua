@@ -3,18 +3,17 @@
 --
 -- REPLACED tests/test_minimap.lua, which covered the hand-rolled version of the same feature. What
 -- the cases assert has deliberately NOT changed much — the object is named for the addon folder,
--- it is registered against the live table, both libraries stay optional, left toggles the windows
--- and right opens the panel — because those are the promises the player sees and the adoption must
--- keep them. What HAS changed is where each promise is kept: the wiring is the library's now, and
+-- it is registered against the live table, both libraries stay optional — because those are the
+-- promises the player sees and the adoption must keep them. (The buttons changed at Launcher minor
+-- 4: left opens the panel, right opens the options menu, launcher-§2 at standard v2.67.0.) What HAS changed is where each promise is kept: the wiring is the library's now, and
 -- this file's job is to prove the descriptor this addon hands it is right, not to re-test the
 -- library.
 --
 -- THE FOUR THINGS ONLY THIS FILE CAN SEE:
 --
---   THE RUNG. `ADDONS.md` puts this addon on **(a) its windows**, and the rung IS the presence of
---   `onClick`. A left-click that opened the settings panel would look like a design choice and
---   would in fact be a skipped rule, since the panel is already on the right button — so the case
---   drives the real WindowManager seam rather than asserting a handler exists.
+--   THE MENU ENTRIES. `ADDONS.md` records this addon's as Enabled · Locked · Test mode · Show
+--   window, and each entry must call the SAME handler its slash verb runs, so the cases drive the
+--   real verbs through the menu rather than asserting a function exists.
 --
 --   THE INVERSION. The row says SHOWN and LibDBIcon's key says HIDDEN, so the get/set at the
 --   single write seam invert. A sign error there is invisible in a settings panel screenshot and
@@ -190,34 +189,50 @@ test("Launcher: OnInitialize registers it, after the database exists", function(
 end)
 
 -- ---------------------------------------------------------------------------
--- The rung: (a) its windows
+-- The buttons (Launcher minor 4, launcher-§2 at standard v2.67.0)
 -- ---------------------------------------------------------------------------
+--
+-- LEFT-CLICK OPENS THE SETTINGS PANEL, on every addon and in either state: the rungs are retired,
+-- and so is minor 2's disabled left-click refusal, because the panel is setup and is where a
+-- disabled addon is turned back on. What the left button used to do here (toggle the windows) is
+-- the menu's *Show window* entry now. Both are the library's; these cases pin that this addon's
+-- `openSettings` reaches the one seam the `config` verb uses.
 
-test("Launcher: LEFT-click toggles the windows, through WindowManager's own seam", function()
-    local inst = T.load{ enable = true }
+local function chatSince(inst, n)
+    local lines = {}
+    for i = n + 1, #inst.mocks.__chat do lines[#lines + 1] = inst.mocks.__chat[i] end
+    return lines
+end
 
-    local toggles = 0
-    inst.NS.WindowManager.Toggle = function() toggles = toggles + 1 end
-
-    broker(inst).OnClick(nil, "LeftButton")
-    -- THE RUNG, driven rather than asserted: ADDONS.md records this addon as (a) its windows, and
-    -- the seam is the one `/mm toggle` uses. A left-click that opened the settings panel instead
-    -- would be a skipped rule wearing the look of a choice, since the panel is on the other button.
-    assertEqual(toggles, 1)
-end)
-
-test("Launcher: RIGHT-click opens the settings, through OpenOptionsPanel", function()
+test("Launcher: LEFT-click opens the settings panel, and toggles nothing", function()
     local inst = T.load{ enable = true }
 
     local opens, toggles = 0, 0
     inst.NS.OpenOptionsPanel = function() opens = opens + 1 end
     inst.NS.WindowManager.Toggle = function() toggles = toggles + 1 end
 
-    broker(inst).OnClick(nil, "RightButton")
+    broker(inst).OnClick(nil, "LeftButton")
     -- OpenOptionsPanel carries the combat refusal — the options canvas is a protected frame — so a
     -- private path from this button would be the one way to reach the panel without that guard.
     assertEqual(opens, 1)
-    assertEqual(toggles, 0, "and a right-click does not also toggle")
+    assertEqual(toggles, 0, "the retired rung-(a) left click still toggled the windows")
+end)
+
+test("Launcher: a LEFT-click while disabled still opens the panel, and says nothing", function()
+    -- red under: a host that kept a disabled gate of its own around openSettings. The library
+    -- retired the refusal (minor 4): the panel is where the addon is re-enabled.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    assertTrue(NS.SetByPath("enabled", false))
+
+    local opens = 0
+    NS.OpenOptionsPanel = function() opens = opens + 1 end
+    local n = #inst.mocks.__chat
+    broker(inst).OnClick(nil, "LeftButton")
+
+    assertEqual(opens, 1, "a disabled left click did not open the panel")
+    assertEqual(#chatSince(inst, n), 0, "a left click printed a line")
 end)
 
 test("Launcher: a click on a build with no window manager does not raise", function()
@@ -226,71 +241,13 @@ test("Launcher: a click on a build with no window manager does not raise", funct
     inst.NS.WindowManager = nil
     inst.NS.GetModule = nil
 
-    local ok = pcall(broker(inst).OnClick, nil, "LeftButton")
+    local okLeft = pcall(broker(inst).OnClick, nil, "LeftButton")
+    local okRight = pcall(broker(inst).OnClick, nil, "RightButton")
     inst.NS.WindowManager = saved
     -- The library pcalls the handler too, so this is belt and braces: a raising handler inside the
     -- client's click dispatch is a red error box over the player's minimap.
-    assertTrue(ok)
-end)
-
--- THE LEFT-CLICK GATE IS THE LIBRARY'S (Launcher minor 2): the descriptor passes `isEnabled`, which
--- asks NS.IsStoodDown so the perf hold refuses as well as the disabled one, and `disabledLine`,
--- which answers the refusal in the words that fit the hold.
-
-local function chatSince(inst, n)
-    local lines = {}
-    for i = n + 1, #inst.mocks.__chat do lines[#lines + 1] = inst.mocks.__chat[i] end
-    return lines
-end
-
-local function anyWindowShown(NS)
-    for _, w in ipairs(NS.WindowManager.All()) do
-        if w.frame and w.frame:IsShown() then return true end
-    end
-    return false
-end
-
-test("launcher: a left click under a perf suspend shows nothing and prints the suspend line",
-function()
-    -- A perf-suspended addon is stood down and NOT disabled, so a gate that asked only
-    -- NS.IsDisabled let this click through to Toggle, which refuses with an err nobody printed.
-    -- red under: an `isEnabled` that asks NS.IsDisabled instead of NS.IsStoodDown.
-    local inst = T.load{ enable = true }
-    local NS = inst.NS
-    NS.Launcher:Register()
-    NS.Perf.Suspend()
-    assertFalse(anyWindowShown(NS), "the fixture needs suspend to hide")
-
-    local n = #inst.mocks.__chat
-    broker(inst).OnClick(nil, "LeftButton")
-    local lines = chatSince(inst, n)
-    local shown = anyWindowShown(NS)
-    NS.Perf.Resume()
-
-    assertFalse(shown, "a suspended left click showed a window")
-    assertEqual(#lines, 1, "the refused click said " .. #lines .. " lines")
-    local want = NS.L["Windows are suspended while a performance capture runs."]
-    assertTrue(lines[1]:find(want, 1, true) ~= nil, "not the suspend line: " .. tostring(lines[1]))
-end)
-
-test("launcher: a left click while disabled prints the Slash DisabledLine once and calls no Toggle",
-function()
-    -- red under: dropping `isEnabled` from the descriptor with the hand check already gone.
-    local inst = T.load{ enable = true }
-    local NS = inst.NS
-    NS.Launcher:Register()
-    assertTrue(NS.SetByPath("enabled", false))
-
-    local toggles = 0
-    NS.WindowManager.Toggle = function() toggles = toggles + 1 end
-    local n = #inst.mocks.__chat
-    broker(inst).OnClick(nil, "LeftButton")
-    local lines = chatSince(inst, n)
-
-    assertEqual(toggles, 0, "a disabled left click reached WindowManager:Toggle")
-    assertEqual(#lines, 1, "the refused click said " .. #lines .. " lines")
-    assertTrue(lines[1]:find(NS.Slash:DisabledLine(), 1, true) ~= nil,
-        "not the dispatcher's refusal line: " .. tostring(lines[1]))
+    assertTrue(okLeft)
+    assertTrue(okRight)
 end)
 
 -- ---------------------------------------------------------------------------
@@ -299,8 +256,9 @@ end)
 
 -- THE TOOLTIP IS THE LIBRARY'S (Launcher minor 3, launcher-§1 at v2.66.0). It draws one shape in
 -- all eleven addons, including while the addon is disabled; this addon's descriptor only answers
--- its questions. So these cases pin the ANSWERS: the version from the TOC, the rung-(a) label, and
--- the two states this addon really has (every window locked, test mode). They also pin that
+-- its questions. So these cases pin the ANSWERS: the version from the TOC and the two states this
+-- addon really has (every window locked, test mode). The click hints are fixed since minor 4
+-- (`Open settings` / `Options menu`) and pinned here only as lines of the block. They also pin that
 -- nothing of the host's is appended, because a host hook drawing a title or a click hint would
 -- draw a second copy of the library's (anti-pattern #89).
 
@@ -332,8 +290,8 @@ test("Launcher tooltip: the full block, enabled, with nothing of the host's appe
         "Enabled: Yes",
         "Locked: No",
         "Test mode: Off",
-        "Left-click: " .. NS.L["Toggle windows"],
-        "Right-click: Open settings",
+        "Left-click: Open settings",
+        "Right-click: Options menu",
     }, "\n"))
 end)
 
@@ -370,10 +328,10 @@ test("Launcher tooltip: Test mode follows the session flag, read on every show",
     assertEqual(tooltipLines(inst)[4], "Test mode: Off")
 end)
 
-test("Launcher tooltip: while disabled it still shows, and the left hint names /mm enable", function()
+test("Launcher tooltip: while disabled it still shows, with the same two hints", function()
     -- THE OWNER'S RULING: the button always answers a hover, disabled included, since that is when
-    -- a player most needs to ask. The left hint mirrors the refused click; the right one is
-    -- unchanged, because right-click is never gated.
+    -- a player most needs to ask. Neither button is refused any more (minor 4), so the hints do not
+    -- change with the state.
     local inst = T.load{ enable = true }
     local NS = inst.NS
     NS.Launcher:Register()
@@ -382,34 +340,8 @@ test("Launcher tooltip: while disabled it still shows, and the left hint names /
     local lines = tooltipLines(inst)
     assertEqual(#lines, 6)
     assertEqual(lines[2], "Enabled: No")
-    assertEqual(lines[5], "Left-click: disabled \226\128\148 /mm enable")
-    assertEqual(lines[6], "Right-click: Open settings")
-end)
-
-test("Launcher tooltip: under a perf suspend it reads Enabled: No and a bare disabled hint", function()
-    -- isEnabled asks NS.IsStoodDown, so the suspend refuses the click as the disabled hold does.
-    -- The suspend's own line names no `/mm enable` (that would be the wrong advice mid-capture),
-    -- so the library draws the bare hint rather than inventing a command.
-    local inst = T.load{ enable = true }
-    local NS = inst.NS
-    NS.Launcher:Register()
-    NS.Perf.Suspend()
-    local lines = tooltipLines(inst)
-    NS.Perf.Resume()
-
-    assertEqual(lines[2], "Enabled: No")
-    assertEqual(lines[5], "Left-click: disabled")
-end)
-
-test("Launcher tooltip: the rung-(a) label comes from this addon's locale", function()
-    -- Not the library's `Toggle` default: ADDONS.md puts this addon on rung (a), its windows, and
-    -- the hint says what the left button does here. Driven by overriding the locale entry: a label
-    -- that ignored NS.L would not follow it.
-    local inst = T.load{ enable = true }
-    local NS = inst.NS
-    NS.Launcher:Register()
-    rawset(NS.L, "Toggle windows", "Fenster umschalten")
-    assertEqual(tooltipLines(inst)[5], "Left-click: Fenster umschalten")
+    assertEqual(lines[5], "Left-click: Open settings")
+    assertEqual(lines[6], "Right-click: Options menu")
 end)
 
 test("Launcher: the tooltip callback never shows or clears the tooltip itself", function()

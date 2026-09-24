@@ -753,12 +753,13 @@ local function snapshot(v, seen)
     return "{" .. table.concat(parts, ",") .. "}"
 end
 
-test("Degraded: with only LibKa0s-Slash missing, a disabled left click prints the refusal "
+test("Degraded: with only LibKa0s-Slash missing, a disabled left click opens the panel "
     .. "and raises nothing", function()
-    -- The one install where the Launcher major loads and the Slash one does not. The launcher's
-    -- refusal asks NS.Slash:DisabledLine, so the Slash stub has to answer it.
-    -- red under: a stub with no DisabledLine (the wrapper raised 'attempt to call method
-    -- DisabledLine'), or a Sl:DisabledLine wrapper published without checking cli.DisabledLine.
+    -- The one install where the Launcher major loads and the Slash one does not. Through Launcher
+    -- minor 3 the left click's refusal asked NS.Slash:DisabledLine, which the Slash stub had to
+    -- answer; minor 4 retired the refusal, and the click only reaches openSettings now. The case
+    -- stays because the install is still the odd one: a click there must raise nothing and write
+    -- nothing.
     local libFiles = {}
     for _, path in ipairs(T.libFiles) do
         if not path:match("/Slash%.lua$") then libFiles[#libFiles + 1] = path end
@@ -774,17 +775,16 @@ test("Degraded: with only LibKa0s-Slash missing, a disabled left click prints th
 
     local obj = NS.Launcher:Object()
     assertTrue(obj ~= nil and type(obj.OnClick) == "function", "no LDB object to click")
+    local opened = 0
+    NS.OpenOptionsPanel = function() opened = opened + 1 end
     local before = snapshot(NS.db.profile)
     local n = #inst.mocks.__chat
     local ok, err = pcall(obj.OnClick, obj, "LeftButton")
 
-    assertTrue(ok, "the refused click raised: " .. tostring(err))
-    local lines = {}
-    for i = n + 1, #inst.mocks.__chat do lines[#lines + 1] = inst.mocks.__chat[i] end
-    assertEqual(#lines, 1, "the refused click said " .. #lines .. " lines")
-    assertTrue(lines[1]:find(NS.Slash:DisabledLine(), 1, true) ~= nil,
-        "not the stub's refusal line: " .. tostring(lines[1]))
-    assertEqual(snapshot(NS.db.profile), before, "a refused click wrote SavedVariables")
+    assertTrue(ok, "the click raised: " .. tostring(err))
+    assertEqual(opened, 1, "the left click did not open the panel")
+    assertEqual(#inst.mocks.__chat, n, "the left click printed a line")
+    assertEqual(snapshot(NS.db.profile), before, "a left click wrote SavedVariables")
 end)
 
 test("Degraded: the stub's disabled-line format is the library's, byte for byte", function()

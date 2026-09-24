@@ -417,36 +417,31 @@ end)
 -- 8. The launcher
 -- ---------------------------------------------------------------------------
 
-test("Disabled 8: left-click refuses and writes nothing; right-click still opens the panel",
+test("Disabled 8: left-click opens the panel and writes nothing, in either state",
 function()
     -- The audit found a minimap button with NO disabled gate at all, so clicking
-    -- it wrote the stored tree of an addon the player had switched off. This
-    -- addon's rung-(a) left click drives `WindowManager:Toggle`, which writes each
-    -- window's stored `shown`, so it was exactly that bug.
-    -- red under: dropping `isEnabled` from core/LauncherSetup.lua's descriptor.
+    -- it wrote the stored tree of an addon the player had switched off: this
+    -- addon's old rung-(a) left click drove `WindowManager:Toggle`, which writes
+    -- each window's stored `shown`. Launcher minor 4 (launcher-§2, v2.67.0)
+    -- removes that path: the left button only opens the settings panel, which is
+    -- setup and where the addon is re-enabled, so it needs no gate.
+    -- red under: an `openSettings` that reached WindowManager:Toggle again.
     local inst, NS = scene()
     assertTrue(NS.SetByPath("enabled", false))
 
     local obj = NS.Launcher.Object and NS.Launcher:Object()
     assertTrue(obj ~= nil and type(obj.OnClick) == "function", "no LDB object to click")
 
+    local opened = 0
+    NS.OpenOptionsPanel = function() opened = opened + 1 end
     inst.mocks.__resetSvWrites()
     local chatN = #inst.mocks.__chat
     obj.OnClick(obj, "LeftButton")
 
-    local printed = chatSince(inst, chatN)
-    assertEqual(#printed, 1, "the refused click said " .. #printed .. " lines")
-    assertTrue(printed[1]:find(refusalLine(inst), 1, true) ~= nil, printed[1])
-    assertEqual(#inst.mocks.__svWrites(), 0, "a refused click wrote SavedVariables")
-    assertEqual(#shownFrames(inst), 0, "a refused click showed a window")
-
-    -- RIGHT-CLICK IS UNCHANGED, in either state: the ruling narrows the SLASH
-    -- surface, and a mouse click is not a slash command. It is also one of the two
-    -- routes slash-commands-§7 nominates to the panel while the addon is off.
-    local opened = 0
-    NS.OpenOptionsPanel = function() opened = opened + 1 end
-    obj.OnClick(obj, "RightButton")
-    assertEqual(opened, 1, "right-click must still open the settings panel")
+    assertEqual(opened, 1, "a disabled left click must open the settings panel")
+    assertEqual(#chatSince(inst, chatN), 0, "the left click printed a line")
+    assertEqual(#inst.mocks.__svWrites(), 0, "a disabled left click wrote SavedVariables")
+    assertEqual(#shownFrames(inst), 0, "a disabled left click showed a window")
 end)
 
 -- ---------------------------------------------------------------------------

@@ -582,7 +582,7 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
-### test_launchersetup.lua (46)
+### test_launchersetup.lua (42)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -593,18 +593,14 @@ badge and any count quoted in the docs must agree with it.
 - Launcher: Register is idempotent
 - Launcher: IsRegistered and Object report what Register actually did
 - Launcher: OnInitialize registers it, after the database exists
-- Launcher: LEFT-click toggles the windows, through WindowManager's own seam
-- Launcher: RIGHT-click opens the settings, through OpenOptionsPanel
+- Launcher: LEFT-click opens the settings panel, and toggles nothing
+- Launcher: a LEFT-click while disabled still opens the panel, and says nothing
 - Launcher: a click on a build with no window manager does not raise
-- launcher: a left click under a perf suspend shows nothing and prints the suspend line
-- launcher: a left click while disabled prints the Slash DisabledLine once and calls no Toggle
 - Launcher tooltip: the full block, enabled, with nothing of the host's appended
 - Launcher tooltip: the version is the TOC's, not the hardcoded fallback
 - Launcher tooltip: Locked follows every window's own lock, read on every show
 - Launcher tooltip: Test mode follows the session flag, read on every show
-- Launcher tooltip: while disabled it still shows, and the left hint names /mm enable
-- Launcher tooltip: under a perf suspend it reads Enabled: No and a bare disabled hint
-- Launcher tooltip: the rung-(a) label comes from this addon's locale
+- Launcher tooltip: while disabled it still shows, with the same two hints
 - Launcher: the tooltip callback never shows or clears the tooltip itself
 - Launcher: the tooltip callback tolerates an object it cannot write to
 - Minimap row: it is COMPOSED, stored, and named for what it shows
@@ -2099,7 +2095,7 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 6: every event fired anyway writes nothing, prints nothing, shows nothing
 - Disabled 7: every reserved verb and the bare command answer normally
 - Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam
-- Disabled 8: left-click refuses and writes nothing; right-click still opens the panel
+- Disabled 8: left-click opens the panel and writes nothing, in either state
 - Disabled 9: re-enabling restores the registration set it had
 - Disabled 9: the rebuild reflects a setting changed WHILE disabled
 - Disabled 10: releasing one hold does not resurrect an addon the other holds down
@@ -2250,7 +2246,7 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: the addon still enables end to end with no library
 - Degraded: a refused event name costs only itself with no library, and is recorded
 - Degraded: the bus stub still hands every receiver a target, untracked
-- Degraded: with only LibKa0s-Slash missing, a disabled left click prints the refusal and raises nothing
+- Degraded: with only LibKa0s-Slash missing, a disabled left click opens the panel and raises nothing
 - Degraded: the stub's disabled-line format is the library's, byte for byte
 - Degraded: /mm disable stores enabled=false and stands the addon down with no library
 - Degraded: /mm enable after /mm disable restores the registrations with no library
@@ -2300,7 +2296,7 @@ badge and any count quoted in the docs must agree with it.
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 12 |
-| test_launchersetup.lua | 46 |
+| test_launchersetup.lua | 42 |
 | test_lifecycle.lua | 38 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
@@ -2347,4 +2343,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2041** |
+| **Total** | **2037** |
