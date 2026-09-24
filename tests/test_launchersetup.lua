@@ -233,6 +233,66 @@ test("Launcher: a click on a build with no window manager does not raise", funct
     assertTrue(ok)
 end)
 
+-- THE LEFT-CLICK GATE IS THE LIBRARY'S (Launcher minor 2): the descriptor passes `isEnabled`, which
+-- asks NS.IsStoodDown so the perf hold refuses as well as the disabled one, and `disabledLine`,
+-- which answers the refusal in the words that fit the hold.
+
+local function chatSince(inst, n)
+    local lines = {}
+    for i = n + 1, #inst.mocks.__chat do lines[#lines + 1] = inst.mocks.__chat[i] end
+    return lines
+end
+
+local function anyWindowShown(NS)
+    for _, w in ipairs(NS.WindowManager.All()) do
+        if w.frame and w.frame:IsShown() then return true end
+    end
+    return false
+end
+
+test("launcher: a left click under a perf suspend shows nothing and prints the suspend line",
+function()
+    -- A perf-suspended addon is stood down and NOT disabled, so a gate that asked only
+    -- NS.IsDisabled let this click through to Toggle, which refuses with an err nobody printed.
+    -- red under: an `isEnabled` that asks NS.IsDisabled instead of NS.IsStoodDown.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    NS.Perf.Suspend()
+    assertFalse(anyWindowShown(NS), "the fixture needs suspend to hide")
+
+    local n = #inst.mocks.__chat
+    broker(inst).OnClick(nil, "LeftButton")
+    local lines = chatSince(inst, n)
+    local shown = anyWindowShown(NS)
+    NS.Perf.Resume()
+
+    assertFalse(shown, "a suspended left click showed a window")
+    assertEqual(#lines, 1, "the refused click said " .. #lines .. " lines")
+    local want = NS.L["Windows are suspended while a performance capture runs."]
+    assertTrue(lines[1]:find(want, 1, true) ~= nil, "not the suspend line: " .. tostring(lines[1]))
+end)
+
+test("launcher: a left click while disabled prints the Slash DisabledLine once and calls no Toggle",
+function()
+    -- red under: dropping `isEnabled` from the descriptor with the hand check already gone.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    assertTrue(NS.SetByPath("enabled", false))
+
+    local toggles = 0
+    NS.WindowManager.Toggle = function() toggles = toggles + 1 end
+    local n = #inst.mocks.__chat
+    broker(inst).OnClick(nil, "LeftButton")
+    local lines = chatSince(inst, n)
+
+    assertEqual(toggles, 0, "a disabled left click reached WindowManager:Toggle")
+    assertEqual(#lines, 1, "the refused click said " .. #lines .. " lines")
+    assertTrue(lines[1]:find(NS.Slash:DisabledLine(), 1, true) ~= nil,
+        "not the dispatcher's refusal line: " .. tostring(lines[1]))
+end)
+
 -- ---------------------------------------------------------------------------
 -- The tooltip
 -- ---------------------------------------------------------------------------

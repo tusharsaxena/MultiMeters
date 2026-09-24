@@ -1126,6 +1126,17 @@ is why the popup exists. Every open drill-down closes and this module's caches a
   settings landing page; a verb that disappeared from either while the addon was off would be a
   second way to lose it.
 
+**Then the minimap button, disabled and mid-capture (SM-11, and SM-02's launcher half).**
+The left-click gate is LibKa0s-Launcher minor 2's, fed by this addon's `isEnabled` and
+`disabledLine`.
+
+- **SM-11.** `/mm disable`, then left-click the minimap button. Chat prints **one** refusal line,
+  the same words `/mm toggle` prints, and no window appears. Right-click still opens the settings
+  panel.
+- **SM-02 (launcher half).** `/mm enable`, then `/mm perf start`, and during the suspended arm
+  left-click the minimap button. Chat prints *Windows are suspended while a performance capture
+  runs.* and no window appears. Right-click still opens the settings panel.
+
 ### 15. Profiles
 
 **Steps.** Profiles page → create "Test" → switch to it → change several settings and add a window →

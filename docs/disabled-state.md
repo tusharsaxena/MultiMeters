@@ -107,3 +107,10 @@ writes no SavedVariables. Rung (c)'s carve-out does not apply here. **Right-clic
 settings panel, in either state** — the ruling narrows the slash surface, and a mouse click is not a
 slash command.
 
+The gate is LibKa0s-Launcher minor 2's, not a hand check in `onClick`: the descriptor passes
+`isEnabled`, which asks `NS.IsStoodDown()` so the perf hold refuses a left click too, and
+`disabledLine`, which answers `NS.Slash:DisabledLine()` while disabled and *Windows are suspended
+while a performance capture runs.* during a capture's suspended arm. On a build where only
+LibKa0s-Slash is missing, the Slash degradation stub answers `DisabledLine` from a byte copy of the
+library's `DISABLED_LINE_FORMAT`, so the refusal reads the same and nothing raises.
+

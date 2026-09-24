@@ -181,6 +181,12 @@ if not SlashLib then
     -- own "not a boolean word" signal, so `/mm lock on` degrades to a toggle
     -- rather than to a Lua error — see doLock.
     SlashLib.ParseBool  = function() return nil end
+    -- THE ONE LIBRARY STRING THIS STUB CARRIES (LibKa0s docs/api/Slash/version-15-docs.md, "The
+    -- degradation stub"): a byte copy of the live `lib.DISABLED_LINE_FORMAT`, so a degraded build
+    -- refuses in the collection's words (slash-commands-\194\1677). tests/test_degraded.lua pins
+    -- it against the library through `NS.Slash.__stubFormat`, a debug seam set only here.
+    SlashLib.DISABLED_LINE_FORMAT = "%s is disabled \226\128\148 enable it with |cFFFFFF00%s|r"
+    Sl.__stubFormat = SlashLib.DISABLED_LINE_FORMAT
 
     function SlashLib:New(d)
         local stub = { SetRowAnnotator = function() end }
@@ -189,6 +195,13 @@ if not SlashLib then
         end
         for _, verb in ipairs({ "List", "Get", "Set", "Reset", "ResetAll" }) do
             stub["Cli" .. verb] = absent(verb:lower())
+        end
+        -- Formatted the way the live `cli:DisabledLine()` does: the plain-text brand, then
+        -- `<slash> enable`. core/LauncherSetup.lua's refused left click reaches it through
+        -- Sl:DisabledLine, so a stub without it raised there (MultiMeters-R-06).
+        stub.DisabledLine = function()
+            return SlashLib.DISABLED_LINE_FORMAT:format(tostring(d.brandName or d.slash),
+                d.slash .. " enable")
         end
         stub.CliVersion = function() out("v" .. tostring(d.version and d.version() or "?")) end
         stub.LandingRows = function()
@@ -738,9 +751,15 @@ function Sl:OnSlash(msg)  return cli:OnSlash(msg)  end
 --- left-click, and launcher-\194\1672 says to call this rather than write the line
 --- again: the wording is the collection's, it MUST NOT be re-spelled per call
 --- site, and a second copy here is how eleven addons ended up with eleven
---- wordings. The stub below answers it too, for the same reason it answers every
---- other member the addon reaches.
-function Sl:DisabledLine() return cli:DisabledLine() end
+--- wordings. The degradation stub above answers it too, for the same reason it
+--- answers every other member the addon reaches.
+---
+--- Published ONLY when the dispatcher has the member (MultiMeters-R-06). The
+--- launcher guards on `Sl.DisabledLine` before calling it, so a wrapper that
+--- always existed let a stub without the member raise through it.
+if cli.DisabledLine then
+    function Sl:DisabledLine() return cli:DisabledLine() end
+end
 function Sl:PrintHelp()   return cli:PrintHelp()   end
 function Sl:HelpRows()    return cli:HelpRows()    end
 

@@ -558,7 +558,7 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
-### test_launchersetup.lua (38)
+### test_launchersetup.lua (40)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -572,6 +572,8 @@ badge and any count quoted in the docs must agree with it.
 - Launcher: LEFT-click toggles the windows, through WindowManager's own seam
 - Launcher: RIGHT-click opens the settings, through OpenOptionsPanel
 - Launcher: a click on a build with no window manager does not raise
+- launcher: a left click under a perf suspend shows nothing and prints the suspend line
+- launcher: a left click while disabled prints the Slash DisabledLine once and calls no Toggle
 - Launcher: the tooltip states BOTH clicks and the version
 - Launcher: the tooltip callback never shows or clears the tooltip itself
 - Launcher: the tooltip callback tolerates an object it cannot write to
@@ -1982,7 +1984,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: nothing refuses on an install whose store has not been built
 - Slash: `set window.name` keeps every word of a multi-word name
 
-### test_disabled.lua (21)
+### test_disabled.lua (22)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -2003,6 +2005,7 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 11: a subscription made while disabled is recorded, not made
 - Disabled 11: standUp brings the bus up FIRST, before any module re-enables
 - Disabled 10: unticking Test mode while disabled re-shows nothing
+- Disabled 10: an explicit WindowProto:Show while stood down refuses and shows nothing
 - Disabled 11: /mm toggle under a perf suspend shows nothing and says why
 - Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it
 
@@ -2104,7 +2107,7 @@ badge and any count quoted in the docs must agree with it.
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
 
-### test_degraded.lua (31)
+### test_degraded.lua (33)
 
 - Degraded: the library really is absent, so every case below is measuring a stub
 - Degraded: every seam soft-optionals its major, so a missing library is not a load error
@@ -2137,6 +2140,8 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: the export modal refuses to open with no dropdown widget
 - Degraded: the addon still enables end to end with no library
 - Degraded: the bus stub still hands every receiver a target, untracked
+- Degraded: with only LibKa0s-Slash missing, a disabled left click prints the refusal and raises nothing
+- Degraded: the stub's disabled-line format is the library's, byte for byte
 
 ### test_surface_parity.lua (3)
 
@@ -2178,7 +2183,7 @@ badge and any count quoted in the docs must agree with it.
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 11 |
-| test_launchersetup.lua | 38 |
+| test_launchersetup.lua | 40 |
 | test_lifecycle.lua | 34 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
@@ -2210,11 +2215,11 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 18 |
 | test_slash.lua | 73 |
-| test_disabled.lua | 21 |
+| test_disabled.lua | 22 |
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
-| test_degraded.lua | 31 |
+| test_degraded.lua | 33 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1951** |
+| **Total** | **1956** |

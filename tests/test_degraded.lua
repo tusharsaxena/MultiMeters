@@ -717,3 +717,64 @@ test("Degraded: the bus stub still hands every receiver a target, untracked", fu
     assertEqual(NS.BusStandDown(), 0, "the stub recorded something")
     assertEqual(NS.BusStandUp(), 0)
 end)
+
+-- ── the launcher's refusal with only the Slash major gone ──────────────────
+
+--- A stable text form of a table, keys sorted, for a before/after comparison.
+local function snapshot(v, seen)
+    if type(v) ~= "table" then return type(v) .. ":" .. tostring(v) end
+    seen = seen or {}
+    if seen[v] then return "<cycle>" end
+    seen[v] = true
+    local keys = {}
+    for k in pairs(v) do keys[#keys + 1] = k end
+    table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+    local parts = {}
+    for _, k in ipairs(keys) do
+        parts[#parts + 1] = tostring(k) .. "=" .. snapshot(v[k], seen)
+    end
+    seen[v] = nil
+    return "{" .. table.concat(parts, ",") .. "}"
+end
+
+test("Degraded: with only LibKa0s-Slash missing, a disabled left click prints the refusal "
+    .. "and raises nothing", function()
+    -- The one install where the Launcher major loads and the Slash one does not. The launcher's
+    -- refusal asks NS.Slash:DisabledLine, so the Slash stub has to answer it.
+    -- red under: a stub with no DisabledLine (the wrapper raised 'attempt to call method
+    -- DisabledLine'), or a Sl:DisabledLine wrapper published without checking cli.DisabledLine.
+    local libFiles = {}
+    for _, path in ipairs(T.libFiles) do
+        if not path:match("/Slash%.lua$") then libFiles[#libFiles + 1] = path end
+    end
+    assertEqual(#libFiles, #T.libFiles - 1, "the load list names no Slash.lua to drop")
+
+    local inst = T.load{ libFiles = libFiles, enable = true }
+    local NS = inst.NS
+    assertNil(inst.mocks.LibStub("LibKa0s-Slash-1.0", true), "the Slash major still loaded")
+    assertTrue(inst.mocks.LibStub("LibKa0s-Launcher-1.0", true) ~= nil, "the Launcher major is gone")
+    NS.Launcher:Register()
+    assertTrue(NS.SetByPath("enabled", false))
+
+    local obj = NS.Launcher:Object()
+    assertTrue(obj ~= nil and type(obj.OnClick) == "function", "no LDB object to click")
+    local before = snapshot(NS.db.profile)
+    local n = #inst.mocks.__chat
+    local ok, err = pcall(obj.OnClick, obj, "LeftButton")
+
+    assertTrue(ok, "the refused click raised: " .. tostring(err))
+    local lines = {}
+    for i = n + 1, #inst.mocks.__chat do lines[#lines + 1] = inst.mocks.__chat[i] end
+    assertEqual(#lines, 1, "the refused click said " .. #lines .. " lines")
+    assertTrue(lines[1]:find(NS.Slash:DisabledLine(), 1, true) ~= nil,
+        "not the stub's refusal line: " .. tostring(lines[1]))
+    assertEqual(snapshot(NS.db.profile), before, "a refused click wrote SavedVariables")
+end)
+
+test("Degraded: the stub's disabled-line format is the library's, byte for byte", function()
+    -- The one library string the Slash stub may carry (LibKa0s Slash version-15, "The
+    -- degradation stub"), pinned against the live library so a reworded refusal goes red here.
+    local degraded = degradedInstance()
+    T.assertLibraryConstant(degraded.NS.Slash.__stubFormat, "LibKa0s-Slash-1.0",
+        "DISABLED_LINE_FORMAT")
+end)

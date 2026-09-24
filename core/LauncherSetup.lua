@@ -205,35 +205,46 @@ NS.Launcher = Launcher:New({
     -- because modules/ loads after core/. `GetModule` is the Ace fallback for a build where the
     -- namespace publication has not run; a build with neither does nothing rather than raising.
     --
-    -- REFUSED WHILE THE ADDON IS DISABLED (launcher-\194\1672, slash-commands-\194\1677). This is
-    -- a rung-(a) left click, so what it drives is a primary window, and a window
-    -- is a feature: it prints the ONE refusal line and DOES NOTHING ELSE -- in
-    -- particular it must not write SavedVariables, which is what a minimap button
-    -- with no disabled gate does every time it is clicked, for an addon the player
-    -- switched off. `WindowManager:Toggle` writes each window's stored `shown`, so
-    -- this button was exactly that bug.
-    --
-    -- RUNG (c)'S CARVE-OUT DOES NOT APPLY HERE and is named so a reader does not
-    -- wonder: a rung-(c) left click opens the settings panel, which survives the
-    -- disabled state, so refusing it would decline one button for doing precisely
-    -- what the right button beside it is required to keep doing. This addon is on
-    -- rung (a), where there is no such contradiction.
-    --
-    -- RIGHT-CLICK IS UNCHANGED, in either state: the ruling narrows the SLASH
-    -- surface and a mouse click is not a slash command. `openSettings` above
-    -- carries no gate for that reason.
-    --
-    -- THE LINE IS THE DISPATCHER'S, through NS.Slash:DisabledLine, never written
-    -- again here: one shape, collection-wide, and a second copy in this file is
-    -- how it drifts. Resolved at CALL time because settings/ loads after core/.
+    -- NO GATE IN HERE. The refusal is the library's (Launcher minor 2): `isEnabled` below answers
+    -- false and the left click prints `disabledLine()` and never reaches this function. So this
+    -- body is the toggle and nothing else.
     onClick = function()
-        if NS.IsDisabled and NS.IsDisabled() then
-            local Sl = NS.Slash
-            if Sl and Sl.DisabledLine and NS.Print then NS.Print(Sl:DisabledLine()) end
-            return
-        end
         local wm = NS.WindowManager or (NS.GetModule and NS:GetModule("WindowManager", true))
         if wm and wm.Toggle then wm:Toggle() end
+    end,
+
+    -- THE LEFT-CLICK GATE (launcher-\194\1672, slash-commands-\194\1677). This is a rung-(a) left
+    -- click, so what it drives is a primary window, and a window is a feature: refused, it prints
+    -- the ONE refusal line and DOES NOTHING ELSE. In particular it writes no SavedVariables, which
+    -- is what a minimap button with no disabled gate does for an addon the player switched off
+    -- (anti-pattern #85).
+    --
+    -- IT ASKS `NS.IsStoodDown`, NOT the disabled flag alone, so it includes the perf latch: a click during
+    -- a capture's suspended arm is refused too, where a disabled-only gate let it through to a
+    -- Toggle that refuses with an err nobody printed (MultiMeters-R-04). Resolved at CALL time,
+    -- because the seam is published after this file loads.
+    --
+    -- RUNG (c)'S CARVE-OUT DOES NOT APPLY HERE and is named so a reader does not wonder: a rung-(c)
+    -- left click opens the settings panel, which survives the disabled state, so refusing it would
+    -- decline one button for doing precisely what the right button beside it is required to keep
+    -- doing. This addon is on rung (a), where there is no such contradiction; the library never
+    -- gates rung (c) either way.
+    --
+    -- RIGHT-CLICK IS UNCHANGED, in either state: the ruling narrows the SLASH surface and a mouse
+    -- click is not a slash command. The library never gates `openSettings`.
+    isEnabled = function() return not (NS.IsStoodDown and NS.IsStoodDown()) end,
+
+    -- THE LINE, per hold. Disabled: the dispatcher's, through NS.Slash:DisabledLine, never written
+    -- again here -- one shape, collection-wide, and a second copy in this file is how it drifts.
+    -- Resolved at CALL time because settings/ loads after core/. A nil answer prints nothing,
+    -- which only a build with no Slash seam at all can reach. Perf-suspended: the same line
+    -- `/mm toggle` prints, since `/mm enable` is the wrong advice mid-capture.
+    disabledLine = function()
+        if NS.IsDisabled and NS.IsDisabled() then
+            local Sl = NS.Slash
+            return Sl and Sl.DisabledLine and Sl:DisabledLine() or nil
+        end
+        return L["Windows are suspended while a performance capture runs."]
     end,
 
     onTooltipShow = onTooltipShow,

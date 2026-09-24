@@ -423,7 +423,7 @@ function()
     -- it wrote the stored tree of an addon the player had switched off. This
     -- addon's rung-(a) left click drives `WindowManager:Toggle`, which writes each
     -- window's stored `shown`, so it was exactly that bug.
-    -- red under: removing the NS.IsDisabled branch from core/LauncherSetup.lua.
+    -- red under: dropping `isEnabled` from core/LauncherSetup.lua's descriptor.
     local inst, NS = scene()
     assertTrue(NS.SetByPath("enabled", false))
 
