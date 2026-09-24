@@ -802,7 +802,7 @@ badge and any count quoted in the docs must agree with it.
 - Distinct PLAIN values are counted, so a constant field reads as one
 - A SECRET value is never compared or keyed on to count distinctness
 
-### test_roster.lua (42)
+### test_roster.lua (45)
 
 - Roster.GetGroup is player-first, then party order
 - Roster.GetGroup carries name, class and role off the unit API
@@ -846,6 +846,9 @@ badge and any count quoted in the docs must agree with it.
 - A short build says so, and does not also claim it built the group
 - Roster.Forget traces what it forgot, in one line
 - A meter reset forgets the remembered roster, through the bus
+- The remembered roster is bounded at 4 x MAX_ROWS, and every live member survives
+- A partial build never prunes, so a member the unit API has not reached survives
+- While disabled, no game event writes to db.global.roster
 
 ### test_feign.lua (27)
 
@@ -2273,7 +2276,7 @@ badge and any count quoted in the docs must agree with it.
 | test_provider.lua | 41 |
 | test_provider_recap.lua | 26 |
 | test_provider_fields.lua | 11 |
-| test_roster.lua | 42 |
+| test_roster.lua | 45 |
 | test_feign.lua | 27 |
 | test_aggregator.lua | 62 |
 | test_aggregator_identity.lua | 27 |
@@ -2309,4 +2312,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2023** |
+| **Total** | **2026** |

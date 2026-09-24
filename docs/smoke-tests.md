@@ -194,6 +194,18 @@ without errors — `NS:OnEnable` seeds `NS.State.restricted` from `Secrets.IsRes
 assuming "inactive", because `ADDON_RESTRICTION_STATE_CHANGED` has already fired and there is no
 second edge to catch.
 
+- **SM-06.** Fight (a target dummy will do), then `/logout` fully, log back in and look at the meter.
+
+**Pass.**
+- **SM-06: the meter's data survives a fresh login, and so do the people in it.** Observed
+  2026-09-24: after a fight, a full logout and a fresh login, window #1 still showed the previous
+  data, the same two Cleave Training Dummy segments (1:09 with 128.8K damage, and 1:13). That
+  observation chose the bound on `db.global.roster` (`modules/Roster.lua`'s header): a prune above
+  `4 * MAX_ROWS` remembered members, not a forget at login. So a `/reload` keeps the roster, a fresh
+  login keeps it too, and a player who left the group still has their row on data from before the
+  logout. If a fresh login ever shows an EMPTY meter, the observation has changed and the bound
+  should be revisited.
+
 ### 3. Lock, drag, resize, Test mode
 
 **Steps.**

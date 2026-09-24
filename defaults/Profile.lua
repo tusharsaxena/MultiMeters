@@ -859,7 +859,9 @@ NS.defaults = {
         -- Global rather than per-profile: it describes the CLIENT's meter data,
         -- which one AceDB profile does not own and a profile swap does not
         -- change. Cleared when C_DamageMeter resets, which is the moment the
-        -- numbers those GUIDs belonged to stop existing.
+        -- numbers those GUIDs belonged to stop existing, and pruned to the live
+        -- group past 4 * MAX_ROWS members (modules/Roster.lua). Its `count` is
+        -- deliberately NOT declared here: see remembered() there.
         roster = { byGuid = {}, pets = {} },
     },
 }

@@ -783,3 +783,122 @@ test("A meter reset forgets the remembered roster, through the bus", function()
     assertNil(NS.db.global.roster.byGuid["Player-1-0000000B"],
         "a stranger from before the reset is still remembered")
 end)
+
+-- ---------------------------------------------------------------------------
+-- Bounding the remembered map (SM-06, branch B)
+-- ---------------------------------------------------------------------------
+--
+-- SM-06 settled which way this goes: the meter's data SURVIVES a full logout and
+-- a fresh login, so forgetting the map at login would throw away a session the
+-- window still shows. The bound is a prune instead. Above 4 x MAX_ROWS
+-- remembered members, build() drops every remembered member who is not in the
+-- live group, and every pet link to one of them.
+
+--- A five-member group whose GUIDs are unique to `batch`.
+local function batchGroup(batch)
+    local spec = {}
+    for i = 1, 5 do
+        spec[i] = { guid = ("Player-1-%08X"):format(0x1000 + batch * 5 + i),
+                    name = "Member" .. (batch * 5 + i), class = "MAGE", role = "DAMAGER" }
+    end
+    return spec
+end
+
+local function members(inst)
+    local n = 0
+    for _ in pairs(inst.NS.db.global.roster.byGuid) do n = n + 1 end
+    return n
+end
+
+test("The remembered roster is bounded at 4 x MAX_ROWS, and every live member survives", function()
+    -- red under: a build() that records with no bound, which is what let the map
+    -- grow for the life of an account between meter resets (MultiMeters-R-08).
+    local inst = T.load()
+    local R, cap = inst.NS.Roster, 4 * inst.NS.Constants.MAX_ROWS
+    local batches = (cap + 5) / 5
+
+    for b = 0, batches - 1 do
+        inst.mocks.setGroup(batchGroup(b))
+        if b == 0 then inst.mocks.setPet("party1", "Pet-0-EARLY") end
+        if b == batches - 1 then inst.mocks.setPet("player", "Pet-0-LIVE") end
+        R.Refresh()
+        R.GetGroup()
+        if b == batches - 2 then
+            -- AT the bound nothing is pruned: the cap is a ceiling, not a target.
+            assertEqual(members(inst), cap, "the map was pruned before it passed the bound")
+        end
+    end
+
+    local stored = inst.NS.db.global.roster
+    local n = members(inst)
+    assertTrue(n <= cap + 5, "the map holds " .. n .. " members, past the bound")
+    assertEqual(stored.count, n, "the counter beside the map must match what it holds")
+    for _, m in ipairs(batchGroup(batches - 1)) do
+        assertTrue(stored.byGuid[m.guid] ~= nil, "a live member was pruned: " .. m.guid)
+        assertTrue(R.IsGroupMember(m.guid))
+    end
+    assertNil(stored.byGuid[batchGroup(0)[2].guid], "a stranger from the first group survived")
+    assertNil(stored.pets["Pet-0-EARLY"], "a pruned member's pet link must go with them")
+    assertEqual(stored.pets["Pet-0-LIVE"], batchGroup(batches - 1)[1].guid,
+        "a live member's pet link must survive the prune")
+end)
+
+test("A partial build never prunes, so a member the unit API has not reached survives", function()
+    -- A short build's live map is missing members who are still in the group; a
+    -- prune taken from it would forget them. The retry on the next read is what
+    -- completes the map, and the prune waits for it.
+    local inst = T.load()
+    local R, cap = inst.NS.Roster, 4 * inst.NS.Constants.MAX_ROWS
+    for b = 0, cap / 5 - 1 do
+        inst.mocks.setGroup(batchGroup(b))
+        R.Refresh()
+        R.GetGroup()
+    end
+    -- A group of four new members and one remembered one, whose unit token has
+    -- not resolved yet: the build is short, and past the bound.
+    local spec = batchGroup(cap / 5)
+    spec[5] = batchGroup(0)[3]
+    local absent = spec[5].guid
+    inst.mocks.setGroup(spec)
+    inst.mocks.setUnit("party4", nil)
+    R.Refresh()
+    R.GetGroup()
+    assertTrue(inst.NS.State.Cache("Roster").partial, "the fixture needs a partial build")
+    assertTrue(inst.NS.db.global.roster.byGuid[absent] ~= nil,
+        "a partial build pruned the remembered map")
+end)
+
+test("While disabled, no game event writes to db.global.roster", function()
+    -- Either branch of SM-06 had to keep this: the roster's handlers live on the
+    -- bus, which the stand-down tears down, so a roster change, a zone-in (login
+    -- included) and a meter reset all reach nothing.
+    -- red under: a Roster that registers a game event of its own, or a bus
+    -- subscription that survives the stand-down.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    inst.mocks.setGroup(PARTY)
+    NS.Roster.Refresh()
+    NS.Roster.GetGroup()
+    local before = members(inst)
+    assertTrue(before == 3, "the fixture needs a remembered party")
+
+    assertTrue(NS.SetByPath("enabled", false))
+    inst.mocks.__resetSvWrites()
+
+    inst.mocks.setGroup({ { guid = "Player-1-0000000A", name = "Tankadin", class = "PALADIN" },
+                          { guid = "Player-1-0000DEAD", name = "Stranger", class = "MAGE" } })
+    inst.mocks.__fireEvent("GROUP_ROSTER_UPDATE")
+    inst.mocks.__fireEvent("PLAYER_ENTERING_WORLD", true, false)
+    inst.mocks.__fireEvent("DAMAGE_METER_RESET")
+    inst.mocks.__fireTimers()
+
+    local wrote = {}
+    for _, w in ipairs(inst.mocks.__svWrites()) do
+        if tostring(w.path):find("roster", 1, true) then wrote[#wrote + 1] = w.path end
+    end
+    assertEqual(#wrote, 0, "wrote: " .. table.concat(wrote, ", "))
+    assertEqual(members(inst), before, "a remembered member was added or forgotten while disabled")
+    assertTrue(NS.db.global.roster.byGuid["Player-1-0000000B"] ~= nil,
+        "a meter reset while disabled forgot the map")
+    assertNil(NS.db.global.roster.byGuid["Player-1-0000DEAD"])
+end)

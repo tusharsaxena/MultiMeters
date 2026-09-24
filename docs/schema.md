@@ -24,7 +24,7 @@ Everything below is about `MultiMetersDB`.
 ```lua
 db.global = {
     schemaVersion = 16,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
-    roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data
+    roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data (+ count, stored)
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
 ```
@@ -37,6 +37,14 @@ their numbers. The player authors none of it. Its one owner is `modules/Roster.l
 clears it on `METER_RESET` with one traced line (`debug-logging-§8`). `remembered()` only creates the
 empty containers on first read, and the AceDB defaults ship them. It is account-wide because it
 describes the client's meter data, which no one profile owns.
+
+**It is bounded** (MultiMeters-R-08). `count` is the number of remembered members, kept beside
+`byGuid` so the bound never walks the map or applies `#` to a hash; when a COMPLETE build leaves it
+above `4 * Const.MAX_ROWS` (160), the build drops every member not in the live group and every pet
+link to one of them, and recounts. `count` is deliberately not in the AceDB defaults: a declared `0`
+would be backfilled over a populated legacy map, so `remembered()` counts a map stored without one
+once, by walk. The bound is a prune rather than a forget at login because the meter's data survives a
+full logout (SM-06, [smoke-tests.md](smoke-tests.md) §2).
 
 The version is **addon-wide rather than per-profile** (`savedvariables-§1`), so a migration runs
 once per account instead of once per profile. `NS:RunMigrations()` walks it forward one step at a
