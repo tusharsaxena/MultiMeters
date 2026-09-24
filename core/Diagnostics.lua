@@ -315,6 +315,26 @@ local function reportNameColumn()
     end
 end
 
+--- One line per window: what modules/Visibility.lua's Evaluate pass last
+--- answered for it. That pass runs only under debug (MultiMeters-R-09), so a
+--- window it never reached says so instead of printing a stale or guessed answer.
+local function reportLastPass(V)
+    local Database = NS.Database
+    local windows = Database and Database.GetWindows and Database.GetWindows()
+    if type(windows) ~= "table" then return end
+    for i = 1, #windows do
+        local id = (type(windows[i]) == "table" and windows[i].id) or i
+        local show, reason
+        if V and V.LastResult then show, reason = V.LastResult(id) end
+        if show == nil then
+            out(string.format("  last pass #%s: not evaluated (debug was off)", tostring(id)))
+        else
+            out(string.format("  last pass #%s: %s (%s)", tostring(id),
+                show and "shown" or "hidden", tostring(reason)))
+        end
+    end
+end
+
 --- Why the window is or is not on screen — the show ladder's own answer.
 ---
 --- Added because "changing a setting closes my window" turned out to be the
@@ -357,6 +377,8 @@ local function reportVisibility()
     out(string.format("  ShouldShow -> %s (%s)   shown=%s forcedShow=%s",
         tostring(show), tostring(reason),
         tostring(inst:IsShown()), tostring(inst.forcedShow)))
+
+    reportLastPass(V)
 end
 
 local function reportHeader()

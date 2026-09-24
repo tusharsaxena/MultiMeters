@@ -314,7 +314,7 @@ badge and any count quoted in the docs must agree with it.
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 
-### test_diagnostics.lua (22)
+### test_diagnostics.lua (23)
 
 - Diagnostics: the report is published and reachable
 - Diagnostics: `/mm debug diag` reaches it without the debug log
@@ -324,6 +324,7 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: a number that misses the ladder is FLAGGED, not just printed
 - Diagnostics: one broken section cannot take the report down
 - Diagnostics: it never renders a meter value
+- Diagnostics: one visibility line per window, from the debug pass's last answer
 - Diagnostics: with no window it says so rather than erroring
 - Diagnostics: the report lands in the debug console, not in chat
 - Diagnostics: the console is OPENED, so the report is not written out of sight
@@ -1717,7 +1718,7 @@ badge and any count quoted in the docs must agree with it.
 - Reopening with the metric unchanged writes nothing and announces nothing
 - A metric the seam refuses is not stored around it
 
-### test_visibility.lua (41)
+### test_visibility.lua (43)
 
 - GetContext translates Blizzard's instance token to the setting's name
 - A delve reads as `delve`, not as the scenario it reports itself to be
@@ -1745,6 +1746,8 @@ badge and any count quoted in the docs must agree with it.
 - Refresh is Evaluate under the name a caller thinks in
 - Evaluate publishes NOTHING
 - Forget drops every remembered answer
+- Evaluate runs no ladder on a ZONE edge while debug is off
+- Evaluate runs the ladder on a ZONE edge under debug, and LastResult answers
 - Evaluate copes with a database that is not up yet
 - A window that should not show never reaches the provider at all
 - The refusal lifts the moment the context does
@@ -2193,7 +2196,7 @@ badge and any count quoted in the docs must agree with it.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 76 |
-| test_diagnostics.lua | 22 |
+| test_diagnostics.lua | 23 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
@@ -2229,7 +2232,7 @@ badge and any count quoted in the docs must agree with it.
 | test_drilldown.lua | 60 |
 | test_export.lua | 89 |
 | test_export_modal.lua | 31 |
-| test_visibility.lua | 41 |
+| test_visibility.lua | 43 |
 | test_windowmanager.lua | 47 |
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
@@ -2242,4 +2245,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 34 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1976** |
+| **Total** | **1979** |

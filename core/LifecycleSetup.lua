@@ -99,8 +99,12 @@ local function standDownExport()
     if export and export.CancelSend then export.CancelSend() end
 end
 
--- 7. Act on the ladder NOW rather than at the next event: the windows already
---    on screen have to go, and this is the pass that asks them to.
+-- 7. Re-run the visibility pass so its debug line and `/mm debug diag` record
+--    the stood-down answer now rather than at the next edge. It hides NOTHING:
+--    Evaluate publishes nothing, touches no frame and runs only under debug.
+--    The windows already on screen go in step 4: WindowManager:Suspend re-runs
+--    each window's own RefreshVisibility, which NS.ShouldShow's latch step now
+--    refuses, and that same step keeps them down.
 local function standDownVisibility()
     local vis = mod("Visibility")
     if vis and vis.Refresh then vis:Refresh() end

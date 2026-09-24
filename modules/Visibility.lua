@@ -365,8 +365,9 @@ local function describeResult(id, show, reason)
 end
 
 --- The last answer computed for a window id, or nil if it has never been
---- evaluated. Exists for `/mm debug diag` and the tests; the render path uses the
---- predicate directly and never this.
+--- evaluated. Read by `/mm debug diag` (core/Diagnostics.lua) and the tests; the
+--- render path uses the predicate directly and never this. Only a debug-on pass
+--- writes it (see Evaluate), so nil also means "debug was off".
 ---
 --- @param windowId number|nil
 --- @return boolean|nil show, string|nil reason
@@ -385,8 +386,16 @@ end
 --- path to the same decision and would let two windows disagree about the
 --- current zone for one frame.
 ---
+--- RUNS ONLY UNDER DEBUG. Nothing but the debug line and `/mm debug diag` reads
+--- what this pass computes, and modules/Window.lua already runs each window's
+--- ladder off the same edges, so a debug-off pass would evaluate every window's
+--- rules a second time per edge for no reader (MultiMeters-R-09). Every caller
+--- ignores the return, so the early 0 is safe.
+---
 --- @return number  how many windows changed their answer
 function Visibility:Evaluate()
+    if not (State and State.debug) then return 0 end
+
     local Database = NS.Database
     local windows = Database and Database.GetWindows and Database.GetWindows()
     if type(windows) ~= "table" then return 0 end
@@ -403,10 +412,10 @@ function Visibility:Evaluate()
             changed = changed + 1
         end
 
-        -- ONE line per pass, not one per window, and the string that builds it
-        -- lives entirely inside the gate so a debug-off session pays nothing for
-        -- the concatenation (debug-logging-§4).
-        if State.debug and Debug then
+        -- ONE line per pass, not one per window. The whole pass sits behind the
+        -- debug gate at the top, so a debug-off session pays nothing for the
+        -- concatenation (debug-logging-§4).
+        if Debug then
             summary = (summary and (summary .. " ") or "") .. describeResult(id, show, reason)
         end
     end
@@ -462,7 +471,7 @@ function Visibility:OnEnable()
     self:RegisterMessage(MSG.ENTERING_WORLD,   "OnContextChanged")
     self:RegisterMessage(MSG.ROSTER_CHANGED,   "OnContextChanged")
     -- The player-state edges. This module's own subscription exists for the
-    -- Evaluate pass and its debug line ONLY — it is not what makes a window
+    -- debug-gated Evaluate pass (its debug line and `/mm debug diag`) ONLY — it is not what makes a window
     -- react. modules/Window.lua subscribes to the same two messages and re-runs
     -- the show ladder there, because this module publishes nothing and a window
     -- has no other reason to ask again.

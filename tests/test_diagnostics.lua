@@ -140,6 +140,35 @@ test("Diagnostics: it never renders a meter value", function()
     assertTrue(ok, "the report inspected a secret: " .. tostring(err))
 end)
 
+test("Diagnostics: one visibility line per window, from the debug pass's last answer", function()
+    -- Visibility.LastResult is filled only by the debug-gated Evaluate pass
+    -- (MultiMeters-R-09), and this report is its reader. With debug off the line
+    -- says the pass never ran instead of guessing; with debug on it prints the
+    -- answer the pass remembered.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    local windows = NS.Database.GetWindows()
+
+    NS.State.debug = false
+    local _, lines = report(inst)
+    local seen = 0
+    for _, line in ipairs(lines) do
+        if line:find("last pass #", 1, true) then
+            seen = seen + 1
+            assertTrue(line:find("not evaluated (debug was off)", 1, true) ~= nil, line)
+        end
+    end
+    assertEqual(seen, #windows, "one visibility line per window")
+
+    NS.State.debug = true
+    NS.Visibility:Evaluate()
+    local _, reason = NS.Visibility.LastResult(windows[1].id)
+    local text = report(inst)
+    assertTrue(text:find("last pass #" .. tostring(windows[1].id) .. ": ", 1, true) ~= nil)
+    assertTrue(text:find("(" .. reason .. ")", 1, true) ~= nil,
+        "the line must carry the ladder's reason")
+end)
+
 test("Diagnostics: with no window it says so rather than erroring", function()
     local inst = T.load{}
     local text = report(inst)
