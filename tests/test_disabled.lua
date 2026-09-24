@@ -645,3 +645,78 @@ test("Disabled 11: standUp brings the bus up FIRST, before any module re-enables
     assertTrue(NS.SetByPath("enabled", true))
     assertEqual(table.concat(order, ","), "BusStandUp,OnEnable")
 end)
+
+-- ---------------------------------------------------------------------------
+-- 12. Every show path holds the latch
+-- ---------------------------------------------------------------------------
+--
+-- NS.ShouldShow reads the latch as step 0, but three paths put a window on screen
+-- WITHOUT asking the ladder: WindowProto:Show (the test-mode exit and `/mm
+-- toggle`), and Window.New arming the refresh clock. Each is asserted on the
+-- window frames that path touches, never on a global shown count: kit 26's
+-- CreateFrame starts a frame shown.
+
+--- Is any window frame on screen? The window's own frame, from the manager's
+--- registry, so a survivor is one the path under test actually touched.
+local function anyWindowShown(NS)
+    for _, w in ipairs(NS.WindowManager.All()) do
+        if w.frame and w.frame:IsShown() then return true end
+    end
+    return false
+end
+
+test("Disabled 10: unticking Test mode while disabled re-shows nothing", function()
+    -- The manual test-mode exit keeps windows on screen through WindowProto:Show,
+    -- which skips the ladder. Standing down is not a reason to keep anything up.
+    -- red under: reverting WindowProto:Show's latch guard, or the SetTestMode
+    --            keepShown check back to the perf-only `NS.Perf.suspended`.
+    local _, NS = scene()
+    assertTrue(NS.SetByPath("enabled", false))
+    assertFalse(anyWindowShown(NS), "the fixture needs the stand-down to hide")
+
+    NS.WindowManager:SetTestMode(true)
+    NS.WindowManager:SetTestMode(false)
+    for _, w in ipairs(NS.WindowManager.All()) do
+        assertFalse(w.frame:IsShown(), "a window re-showed while disabled: " .. tostring(w.id))
+    end
+end)
+
+test("Disabled 11: /mm toggle under a perf suspend shows nothing and says why", function()
+    -- The slash gate refuses feature verbs only while DISABLED (its line names
+    -- `/mm enable`, wrong advice mid-capture), so `/mm toggle` reaches the
+    -- manager under the perf hold. It must refuse there, on its own line.
+    -- red under: dropping M:Toggle's IsStoodDown refusal.
+    local inst, NS = scene()
+    NS.Perf.Suspend()
+    assertFalse(anyWindowShown(NS), "the fixture needs suspend to hide")
+
+    local lines = say(inst, "toggle")
+    assertFalse(anyWindowShown(NS), "/mm toggle showed a window during a perf suspend")
+    assertTrue(#lines >= 1, "/mm toggle printed nothing")
+    local want = NS.L["Windows are suspended while a performance capture runs."]
+    assertTrue(lines[#lines]:find(want, 1, true) ~= nil,
+        "the last line is not the suspend line: " .. tostring(lines[#lines]))
+    NS.Perf.Resume()
+end)
+
+test("Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it",
+function()
+    -- slash-commands-7: every OnUpdate is cleared, and none is armed for the rest
+    -- of the run. Create is reachable from the settings panel while disabled.
+    -- red under: Window.New arming the OnUpdate unconditionally.
+    local _, NS = scene()
+    local M = NS.WindowManager
+    assertTrue(NS.SetByPath("enabled", false))
+    local before = #M.All()
+    assertTrue(M:Create("Stood Down"))
+    local all = M.All()
+    assertEqual(#all, before + 1)
+    assertTrue(all[#all].frame:GetScript("OnUpdate") == nil,
+        "a window created while disabled was armed with an OnUpdate")
+
+    assertTrue(NS.SetByPath("enabled", true))
+    for _, w in ipairs(M.All()) do
+        assertTrue(w.frame:GetScript("OnUpdate") ~= nil,
+            "enable left a window without its OnUpdate: " .. tostring(w.id))
+    end
+end)

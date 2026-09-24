@@ -45,6 +45,15 @@ switch's back. A frame hidden imperatively comes back. `standUp` rebuilds from *
 never from a snapshot: a window created or a column toggled while the addon was off comes back as it
 is now.
 
+The paths that show a window **without** asking the ladder ask the latch themselves, through
+`NS.IsStoodDown()`, which covers the `disabled` and `perf` holds both. `WindowProto:Show` (the
+manual Test mode turn-off and `/mm toggle`) returns `false` and shows nothing while stood down.
+`WindowManager:Toggle` refuses first, with *Windows are suspended while a performance capture
+runs.*; the disabled case never reaches it, because the slash gate refuses before it does, so that
+line only answers the perf hold. `Window.New` arms no OnUpdate while stood down, and
+`WindowManager:Resume` arms every instance at stand-up, including one created while the addon was
+off.
+
 `standUp` brings the bus up **first**, before `NS:OnEnable`, and the order matters. While the bus is
 down, `LibKa0s-Bus-1.0` records a registration on a bus target without making it, so a disabled
 addon registers nothing even when a receiver subscribes. `NS.BusStandUp()` then replays the record

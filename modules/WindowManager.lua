@@ -645,8 +645,10 @@ end
 --- ordinary visibility rules hid a window the player was looking at — so
 --- `/mm test` read as a close button with a confusing name. Whatever was on
 --- screen for test stays on screen for real data, and `/mm toggle` is how you
---- close it. NOT during a perf suspend: Show skips the ladder, and a suspended
---- capture must be inert (performance-§6).
+--- close it. NOT while stood down, disabled or perf-suspended: Show skips the
+--- ladder, and a stood-down addon must be inert (slash-commands-§7,
+--- performance-§6). WindowProto:Show refuses on its own too; this keeps the
+--- intent visible at the call site.
 ---
 --- @param enabled boolean
 --- @return boolean applied  false when the start was refused
@@ -656,7 +658,7 @@ function M:SetTestMode(enabled)
         if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
         return false
     end
-    applyTestMode(enabled, not enabled and not (NS.Perf and NS.Perf.suspended))
+    applyTestMode(enabled, not enabled and not (NS.IsStoodDown and NS.IsStoodDown()))
     return true
 end
 
@@ -685,9 +687,16 @@ end
 --- put it back at the next zone change. That is what a player who typed
 --- `/mm toggle` in the middle of a pull wants.
 ---
+--- NOTHING SHOWS WHILE STOOD DOWN. The disabled case never gets here -- the slash
+--- gate and the launcher refuse first, naming `/mm enable` -- so the caller this
+--- refusal answers is the perf hold, and its line says so (performance-§6).
+---
 --- @param name string|nil
 --- @return boolean ok, string|nil err
 function M:Toggle(name)
+    if NS.IsStoodDown and NS.IsStoodDown() then
+        return false, L["Windows are suspended while a performance capture runs."]
+    end
     if name == nil then
         local anyShown = false
         for _, inst in ipairs(M.All()) do

@@ -206,8 +206,19 @@ second edge to catch.
 - Turn Test mode on again and start a fight (a target dummy will do). Repeat with the window's
   **hide in combat** rule ticked on its Visibility page.
 - While still in combat, tick the Test mode box, then type `/mm test`.
+- **SM-01.** `/mm disable`, then on **General → Master controls** tick and untick **Test mode**.
+- **SM-02.** `/mm perf start`, and during the suspended arm type `/mm toggle`.
+- **SM-03.** `/mm disable`, create a window from the **Windows** page, then `/mm enable`.
 
 **Pass.**
+- **SM-01: nothing comes back while disabled.** Unticking Test mode on a disabled addon puts no
+  window on screen. The manual turn-off keeps windows up through an explicit show, and that show
+  asks the stand-down latch first.
+- **SM-02: `/mm toggle` refuses during a capture's suspended arm.** No window appears, and chat
+  prints one line: *Windows are suspended while a performance capture runs.*
+- **SM-03: a window made while disabled comes up live.** After `/mm enable` the new window refreshes
+  like the others (in Test mode or in a fight its rows move), so its refresh clock was armed at
+  stand-up rather than at creation.
 - **Locking and Test mode are independent — not coupled.** `WindowManager:SetLocked` used to also
   switch Test mode on, on the theory that someone positioning a window wants a full grid to aim at;
   that coupling is gone. `/mm lock off` no longer fills the window with placeholder rows on its own,

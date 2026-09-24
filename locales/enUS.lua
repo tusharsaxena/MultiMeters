@@ -930,6 +930,8 @@ L["Invalid value for %s"] = "Invalid value for %s"
 L["Allowed values: %s"] = "Allowed values: %s"
 L["Windows are locked."] = "Windows are locked."
 L["Windows are unlocked."] = "Windows are unlocked."
+L["Windows are suspended while a performance capture runs."] =
+    "Windows are suspended while a performance capture runs."
 L["No window is selected."] = "No window is selected."
 
 -- NO ENTRY FOR THE DISABLED REFUSAL LINE, and its absence is the rule rather

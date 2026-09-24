@@ -1379,7 +1379,9 @@ function Window.New(config)
 
     inst:ApplyConfig()
     inst:RegisterBus()
-    inst.frame:SetScript("OnUpdate", onUpdate)
+    -- No clock while stood down (slash-commands-§7): WindowManager:Resume arms
+    -- every instance, this one included, at stand-up.
+    if not (NS.IsStoodDown and NS.IsStoodDown()) then inst.frame:SetScript("OnUpdate", onUpdate) end
     inst:RefreshVisibility()
 
     return inst

@@ -229,6 +229,11 @@ function WindowProto:RefreshVisibility()
 end
 
 function WindowProto:Show()
+    -- AN EXPLICIT SHOW NEVER OVERRIDES THE LATCH. This path shows the frame
+    -- itself rather than asking NS.ShouldShow, so it has to ask the latch on its
+    -- own: a disabled or perf-suspended addon puts nothing on screen, whoever
+    -- asks (slash-commands-§7, performance-§6).
+    if NS.IsStoodDown and NS.IsStoodDown() then return false end
     self:BuildFrame()
     -- An explicit request. See RefreshVisibility for why it is remembered.
     self.forcedShow = true
@@ -251,6 +256,7 @@ function WindowProto:Show()
     -- wait is neither fixed nor short. The window appeared to assemble itself in
     -- two stages.
     self.elapsed = self.throttle   -- draw on the next tick, not in 0.25s
+    return true
 end
 
 --- Forget an explicit show request. Called on a real context change, which is

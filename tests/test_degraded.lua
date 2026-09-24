@@ -665,7 +665,10 @@ test("Degraded: every NS.Perf member the addon actually reaches exists on the st
             "NS.Perf." .. name .. " (reached from " .. rel .. ") is "
             .. type(full.Perf[name]) .. " live and " .. type(degraded.Perf[name]) .. " degraded")
     end
-    assertTrue(n >= 4, "the Perf member scan found only " .. n .. " members — it drifted")
+    -- Was 4 until modules/WindowManager.lua's test-mode exit stopped reading
+    -- `Perf.suspended` and asked NS.IsStoodDown instead (MM-01): the addon now
+    -- reaches `on`, `Note` and `OnCommand`, and nothing else.
+    assertTrue(n >= 3, "the Perf member scan found only " .. n .. " members — it drifted")
 end)
 
 -- ── the sixth seam: modules/Export.lua ──────────────────────────────────────

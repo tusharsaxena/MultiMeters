@@ -21,7 +21,7 @@ badge and any count quoted in the docs must agree with it.
 
 - layoutcap: every authored file over the 1500-line cap is named in the census
 - layoutcap: no census row outlives the breach it records
-- layoutcap: every over-cap census row carries one of layout-1's three terminal states
+- layoutcap: every over-cap census row carries one of layout-§1's three terminal states
 - layoutcap: the census and the exempt set agree about which paths were exempted
 - layoutcap: an empty census is written as a result rather than left standing empty
 - layoutcap self-test: the parser reads the census nested under the register, and stops there
@@ -73,8 +73,8 @@ badge and any count quoted in the docs must agree with it.
 
 ### test_prose.lua (15)
 
-- prose: no authored file carries a British spelling from localization-5's published list
-- prose: the gate carries localization-5's two lists whole, and nothing of its own
+- prose: no authored file carries a British spelling from localization-§5's published list
+- prose: the gate carries localization-§5's two lists whole, and nothing of its own
 - prose self-test: the carve-out suppresses the named generated folder, and only it
 - prose self-test: a path the carve-out does not name is not covered by one that looks like it
 - prose self-test: a carve-out that is not a set of path strings is a failure, not a silence
@@ -1982,7 +1982,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: nothing refuses on an install whose store has not been built
 - Slash: `set window.name` keeps every word of a multi-word name
 
-### test_disabled.lua (18)
+### test_disabled.lua (21)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -2002,6 +2002,9 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 11: a receiver that subscribes while disabled hears the bus once enabled
 - Disabled 11: a subscription made while disabled is recorded, not made
 - Disabled 11: standUp brings the bus up FIRST, before any module re-enables
+- Disabled 10: unticking Test mode while disabled re-shows nothing
+- Disabled 11: /mm toggle under a perf suspend shows nothing and says why
+- Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it
 
 ### test_options_panel.lua (43)
 
@@ -2144,7 +2147,7 @@ badge and any count quoted in the docs must agree with it.
 ### test_eol.lua (2)
 
 - eol: every tracked file carries the terminator .gitattributes declares for it
-- eol: .gitattributes is line-endings-5's canonical body for this repo kind
+- eol: .gitattributes is line-endings-§5's canonical body for this repo kind
 
 ## Totals
 
@@ -2207,11 +2210,11 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_paths.lua | 48 |
 | test_schema_defaults.lua | 18 |
 | test_slash.lua | 73 |
-| test_disabled.lua | 18 |
+| test_disabled.lua | 21 |
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 31 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1948** |
+| **Total** | **1951** |
