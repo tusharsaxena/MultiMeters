@@ -639,6 +639,81 @@ test("Each window owns a PRIVATE bus target, so two windows cannot clobber each 
     assertEqual(second.dirty, true, "both windows heard it")
 end)
 
+--- The messages WindowProto:RegisterBus subscribes, and nothing else.
+local BUS_MESSAGES = {
+    "METER_UPDATED", "METER_SESSION", "METER_RESET", "RESTRICTION_CHANGED",
+    "ROSTER_CHANGED", "ZONE_CHANGED", "ENTERING_WORLD", "PLAYER_STATE_CHANGED",
+    "COMBAT_CHANGED", "TEST_MODE_CHANGED", "DRILLDOWN_CHANGED", "CONFIG_CHANGED",
+}
+
+--- Every message the window's private target is registered for, as a set.
+local function busSubscriptions(inst, window)
+    local out, n = {}, 0
+    for message, targets in pairs(inst.mocks.__msgRegistry) do
+        if targets[window.bus] ~= nil then out[message], n = true, n + 1 end
+    end
+    return out, n
+end
+
+test("RegisterBus subscribes exactly the twelve messages a window answers", function()
+    -- red under: dropping, or adding, any RegisterMessage in WindowProto:RegisterBus.
+    local inst, window = scene()
+    local MSG = inst.NS.Constants.MSG
+    local seen, n = busSubscriptions(inst, window)
+    for _, key in ipairs(BUS_MESSAGES) do
+        assertTrue(seen[MSG[key]] ~= nil, "the window must listen on " .. key)
+    end
+    assertEqual(n, #BUS_MESSAGES, "a subscription nobody wrote down")
+end)
+
+test("Every data message marks the window dirty", function()
+    -- red under: any data handler in RegisterBus that forgets MarkDirty.
+    local inst, window = scene()
+    local MSG = inst.NS.Constants.MSG
+    for _, key in ipairs{ "METER_UPDATED", "METER_SESSION", "METER_RESET",
+                          "RESTRICTION_CHANGED", "ROSTER_CHANGED", "TEST_MODE_CHANGED" } do
+        window.dirty = false
+        inst.NS:SendMessage(MSG[key])
+        assertEqual(window.dirty, true, key .. " did not mark the window dirty")
+    end
+end)
+
+test("CONFIG_CHANGED for ANOTHER window leaves this one alone", function()
+    -- red under: dropping the windowId filter from the CONFIG_CHANGED handler.
+    local inst, window = scene()
+    local MSG = inst.NS.Constants.MSG
+    window.dirty = false
+    inst.NS:SendMessage(MSG.CONFIG_CHANGED, { windowId = window.id + 1000 })
+    assertEqual(window.dirty, false, "a twenty-window profile would re-apply nineteen for nothing")
+    inst.NS:SendMessage(MSG.CONFIG_CHANGED, { windowId = window.id })
+    assertEqual(window.dirty, true)
+end)
+
+test("Destroy takes the window off EVERY message, not just the meter", function()
+    -- red under: an UnregisterBus that drops one message rather than all of them.
+    local inst, window = scene()
+    window:Destroy()
+    local _, n = busSubscriptions(inst, window)
+    assertEqual(n, 0, "a destroyed window still hears the bus")
+end)
+
+test("SetConfig re-points the window at a new config without rebuilding it", function()
+    -- red under: a SetConfig that keeps the old id, or that forgets MarkDirty.
+    local _, window, cfg = scene()
+    local frame, bus = window.frame, window.bus
+    local copy = {}
+    for k, v in pairs(cfg) do copy[k] = v end
+    copy.id = cfg.id + 7
+    window.dirty = false
+
+    window:SetConfig(copy)
+
+    assertEqual(window.config, copy)
+    assertEqual(window.id, cfg.id + 7)
+    assertEqual(window.dirty, true)
+    assertTrue(window.frame == frame and window.bus == bus, "a settings change must not rebuild")
+end)
+
 -- ---------------------------------------------------------------------------
 -- Scrolling
 -- ---------------------------------------------------------------------------
