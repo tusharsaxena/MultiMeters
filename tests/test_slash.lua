@@ -256,9 +256,9 @@ test("Slash: NOTHING reads the raw `enabled` key any more", function()
     -- What makes the case above structural rather than a lucky observation: the STORED PATH is read
     -- in exactly one place, and it is not on any path that could reach the dispatcher.
     --
-    -- THE EXPECTED ANSWER IS NOW *NOTHING AT ALL*, and the move is the stand-down (slash-commands
-    -- §7). `NS.ShouldShow` used to read `db.profile.enabled` directly as one rung of its
-    -- show ladder -- which was this addon's draw gate, and anti-pattern #85. The one reader left is
+    -- THE EXPECTED ANSWER IS NOW *NOTHING AT ALL*, and the move is the stand-down
+    -- (slash-commands-§7). `NS.ShouldShow` used to read `db.profile.enabled` directly as one rung
+    -- of its show ladder -- which was this addon's draw gate, and anti-pattern #85. The one reader left is
     -- core/LifecycleSetup.lua's NS.SyncEnabledHold, and it goes through NS.GetSetting, the read
     -- seam, exactly as the checkbox and `/mm get enabled` do. What this case forbids is any reader
     -- of the RAW profile key -- a place the addon can decide for itself what "off" means without
