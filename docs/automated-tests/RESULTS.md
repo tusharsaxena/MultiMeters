@@ -32,6 +32,7 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 | Run | Commit | Tree | Version | Lint w/e | Files | Tests | Perf | NLOC | Funcs | Avg NLOC | Avg CCN | Max CCN | CCN warn | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| [`20260924-163600`](20260924-163600/) | `a77688a` | clean | 1.0.0 | 0/0 | 137 | 2035/0/2035 | pass | 42513 | 4319 | 8.2 | 2.4 | 15 | 0 | **green** |
 | [`20260924-143604`](20260924-143604/) | `ace15be` | clean | 1.0.0 | 0/0 | 132 | 2030/0/2030 | pass | 42299 | 4307 | 8.2 | 2.4 | 15 | 0 | **green** |
 | [`20260916-184449`](20260916-184449/) | unknown | unknown | 1.0.0 | 0/0 | 123 | 1884/0/1884 | pass | 39769 | 4040 | 8.2 | 2.4 | 19 | 1 | **green** |
 | [`20260916-094247`](20260916-094247/) | unknown | unknown | 1.0.0 | 0/0 | 123 | 1848/0/1848 | pass | 39238 | 3984 | 8.2 | 2.4 | 15 | 0 | **green** |
@@ -45,18 +46,18 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 ## Test suite
 
-**2030 cases** — 2030 passed, 0 failed, 0 skipped. The generated inventory
-[`20260924-143604/test-cases.md`](20260924-143604/test-cases.md) is the authority on which cases existed at this run;
+**2035 cases** — 2035 passed, 0 failed, 0 skipped. The generated inventory
+[`20260924-163600/test-cases.md`](20260924-163600/test-cases.md) is the authority on which cases existed at this run;
 `docs/test-cases.md` is that same list at HEAD.
 
-Moved **1884 → 2030** since the previous run.
+Moved **2030 → 2035** since the previous run.
 
 No case reported a `skip`, so passed and total agree and nothing in this row claims coverage
 that was not exercised.
 
 ## Lint
 
-**0 warnings / 0 errors over 132 files** (`luacheck .`).
+**0 warnings / 0 errors over 137 files** (`luacheck .`).
 
 Read that figure with its scope attached: `.luacheckrc` excludes 5 path(s) from it — `libs/`, `tests/_kit/`, `docs/audits/`, `docs/reviews/`, `_dev/` —
 so nothing under them is in the count above. A `0/0` that never moves is partly a statement about
@@ -66,25 +67,25 @@ to whoever thinks to open `.luacheckrc`.
 ## Perf
 
 **17 scenarios** from `tests/perf.lua`; the measurements are in
-[`20260924-143604/perf.json`](20260924-143604/perf.json).
+[`20260924-163600/perf.json`](20260924-163600/perf.json).
 
 | `scenario` | `iters` | `ms/iter` | `api/iter` | `bytes/iter` |
 |---|---|---|---|---|
-| `refresh20x7` | 300 | 0.78952 | 8.00 | 297237.4 |
-| `refresh20x7Restricted` | 300 | 0.93760 | 8.00 | 406173.3 |
-| `throttleBurst` | 1 | 15.33400 | 8.00 | 317269.0 |
-| `throttleIdle` | 300 | 0.00061 | 0.00 | 0.0 |
-| `drillOpenClose` | 300 | 0.02615 | 1.00 | 12746.2 |
-| `refreshWhileDrilled` | 300 | 0.05048 | 1.00 | 16170.1 |
-| `rosterRebuild` | 300 | 0.64547 | 8.00 | 315144.1 |
-| `rosterBurst` | 1 | 6.09500 | 8.00 | 316951.0 |
-| `rosterCached` | 300 | 0.58532 | 8.00 | 297216.1 |
-| `applyConfig` | 300 | 0.15621 | 0.00 | 46232.3 |
-| `probeOverheadOff` | 300 | 0.59725 | 8.00 | 297216.1 |
-| `probeOverheadOn` | 300 | 0.60100 | 8.00 | 297220.9 |
-| `suspended` | 300 | 0.00012 | 0.00 | 0.0 |
-| `feignTraceAbsent` | 300 | 0.15995 | 2.00 | 65344.1 |
-| `feignTraceOff` | 300 | 0.15906 | 2.00 | 65344.1 |
+| `refresh20x7` | 300 | 0.89803 | 8.00 | 297237.4 |
+| `refresh20x7Restricted` | 300 | 1.05665 | 8.00 | 406173.3 |
+| `throttleBurst` | 1 | 16.94200 | 8.00 | 317269.0 |
+| `throttleIdle` | 300 | 0.00060 | 0.00 | 0.0 |
+| `drillOpenClose` | 300 | 0.02979 | 1.00 | 12746.2 |
+| `refreshWhileDrilled` | 300 | 0.05616 | 1.00 | 16170.1 |
+| `rosterRebuild` | 300 | 0.73411 | 8.00 | 315144.1 |
+| `rosterBurst` | 1 | 12.60600 | 8.00 | 316951.0 |
+| `rosterCached` | 300 | 0.72617 | 8.00 | 297216.1 |
+| `applyConfig` | 300 | 0.14430 | 0.00 | 46232.3 |
+| `probeOverheadOff` | 300 | 0.67961 | 8.00 | 297216.1 |
+| `probeOverheadOn` | 300 | 0.72314 | 8.00 | 297220.9 |
+| `suspended` | 300 | 0.00013 | 0.00 | 0.0 |
+| `feignTraceAbsent` | 300 | 0.15936 | 2.00 | 65344.1 |
+| `feignTraceOff` | 300 | 0.19255 | 2.00 | 65344.1 |
 | `spellEventOff` | 300 | 0.00020 | 0.00 | 0.0 |
 | `spellEventOn` | 300 | 0.00038 | 0.00 | 0.7 |
 
@@ -93,8 +94,8 @@ thresholded (`performance-§9`). It does gate the **tag** (`automated-tests-§3`
 
 ## Complexity watch list
 
-Current as of [`20260924-143604`](20260924-143604/) — **this run's measurement, not its diff.** Max CCN **15** across 4307
-functions, **0** of them warned on; 24 file(s) in the 1000–1500 band and 0 over the 1500 cap
+Current as of [`20260924-163600`](20260924-163600/) — **this run's measurement, not its diff.** Max CCN **15** across 4319
+functions, **0** of them warned on; 23 file(s) in the 1000–1500 band and 0 over the 1500 cap
 (`layout-§1`).
 
 Every row below is generated from this run's own `lizard` output. **The `Disposition` column is
@@ -118,22 +119,21 @@ cell is this file saying something crossed and nobody has ruled on it yet.
 | 1000–1500 (on notice) | `modules/Row.lua` | 1446 | **On notice — the one to watch.** 1829 → 1442 after the name cell left for `Row_NameCell.lua`, and 58 lines of headroom is the tightest of any source file. It is on the refresh path and it is where every identity, spec-icon and pet-fold change has historically landed. The next seam is the value cell, which is already the largest block in it. Re-check at 1470, or on the next change that touches the cell. |
 | 1000–1500 (on notice) | `modules/Tooltip.lua` | 1167 | **On notice, post-peel residue.** 2774 → 1167; the four builders and the line drawing left for `Tooltip_Builders.lua` / `Tooltip_Lines.lua`. What remains is the secret-safe primitives, which is the half that must not be touched casually — 333 lines of headroom is ample for a file nothing routinely adds to. Re-check at 1400. |
 | 1000–1500 (on notice) | `modules/Tooltip_Builders.lua` | 1033 | **On notice at birth**, which a peel makes ordinary: it landed at 1030 because the seam was drawn for what a reader can hold, not at a line count. It is the half a feature adds to, so it is the likelier of the pair to grow. Re-check at 1400. |
-| 1000–1500 (on notice) | `modules/Window.lua` | 1490 | **On notice at 1490, past its 1470 re-check, and ruled: the next change that adds lines here peels first.** 1423 at the previous run's commit (`2d38bbd`), 1490 now: MM-03 pinned the player into the drawn rows (+30) and MM-20 kept rows bound across renders (+34, review F-007), with the row-side half of that change already sent to `modules/Row_Cells.lua`. Ten lines of headroom is the tightest source file in the repository. The causal chain issue #29 forbids cutting (refresh contract, R3, cached config, frame construction, row pool, refresh) still stands, so the peel is **outside** it: the `Bus wiring` and `Lifecycle` sections at the file's tail (about 170 lines) move to a sibling hung on `NS.WindowProto`, loaded after this file as `Window_Header.lua` and `Window_Placement.lua` are. Not yet a tracked issue; the MM-DOCS bundle `20260924-143604` names it as new. Re-check on the next change to the file. |
+| 1000–1500 (on notice) | `modules/Window.lua` | 1321 | **On notice, peeled.** 1490 → 1321 in `c650485`, per the ruling this cell carried: the `Bus wiring` and `Lifecycle` tail (`RegisterBus`, `UnregisterBus`, `Window.New`, `SetConfig`, `Destroy`, `Suspend`, `Resume`) left whole for `modules/Window_Lifecycle.lua` (205 lines), which re-opens `NS.Window` / `NS.WindowProto` and loads right after this file on a LOAD-BEARING TOC line; five characterization cases pinned it first (`d4c76aa`). What remains is issue #29's causal chain (refresh contract, R3, cached config, frame construction, row pool, refresh), which still must not be cut inside. 179 lines of headroom. The next seam outside that chain, if it needs one, is the `Applying config to the frames` section (`WindowProto:ApplyConfig`, about 200 lines). Re-check at 1450. |
 | 1000–1500 (on notice) | `modules/Window_Header.lua` | 1227 | **On notice at birth.** 1184 from the peel. It has an obvious further seam if it ever needs one — the column-header buttons and the sort-arrow ladder are a coherent ~500 lines — so this file has an answer ready rather than a problem. Re-check at 1400. |
 | 1000–1500 (on notice) | `settings/Schema.lua` | 1392 | **On notice, post-peel residue.** 3080 → 1350 across three files. This is the row array alone, and it is the part that grows: a page gains rows every time a setting is added. It is the band entry most likely to cross by ordinary work. The next cut is a page boundary, which the peel deliberately left available by not splitting one. Re-check at 1450. |
 | 1000–1500 (on notice) | `settings/Schema_Compose.lua` | 1410 | **On notice, past its 1400 re-check by growth.** 1375 → 1410: the minimap row's own get/set moved in from `Schema_Paths.lua` with the `LibKa0s-Schema-1.0` adoption (MM-14), plus the refusal wording MM-09 routes back to Slash and the MM-16 rename. It still grows with new *kinds* of control rather than with new settings, and the `dress()` table is its seam if it needs one. Re-check at 1470. |
 | 1000–1500 (on notice) | `tests/test_aggregator.lua` | 1279 | **On notice.** 1840 → 1255 behind its module's peel. It was in the band before the peel too. Re-check at 1450. |
-| 1000–1500 (on notice) | `tests/test_database.lua` | 1470 | **On notice, and that is the compliant state** under `layout-§1` — a band entry is not a breach. Four lines over the line. It mirrors `core/Database.lua`, which is under the cap, so it has no seam waiting on anything. Re-check at 1200. |
 | 1000–1500 (on notice) | `tests/test_export.lua` | 1325 | **On notice.** 1892 → 1275 behind the modal peel, and in the band before it as well. Re-check at 1450. |
 | 1000–1500 (on notice) | `tests/test_headercontrols.lua` | 1177 | **On notice, and untouched by this cycle** — 1159, no peel, no growth. It mirrors `modules/HeaderControls.lua`, which is under the cap. Named here so the band reads as measured rather than as a list of things the peel produced. Re-check at 1400. |
 | 1000–1500 (on notice) | `tests/test_options_panel.lua` | 1210 | **On notice, newly crossed by growth.** 928 → 1095 as the Test mode row and the Lock-as-a-view descriptor were composed; +167 lines of cases against +70 in `settings/OptionsSetup.lua`, which is 475 lines and nowhere near the cap. A suite growing four lines for each line of module is what wiring coverage costs here, and it is the intended trade. Re-check at 1400. |
-| 1000–1500 (on notice) | `tests/test_row.lua` | 1490 | **On notice.** 1960 → 1456 behind the name-cell peel — 44 lines of headroom, second-tightest in the repo, and it mirrors the source file with the tightest. The two will cross together, and they peel together when they do. Re-check at 1470. |
+| 1000–1500 (on notice) | `tests/test_row.lua` | 1223 | **On notice, peeled.** 1490 → 1223 in `f382f23`: the mouse hand-off and inside-a-breakdown cases (15) moved to `tests/test_row_mouse.lua` (324 lines), mirroring `modules/Row.lua`'s mouse-handler section; a pure move, case names unchanged. 277 lines of headroom. It no longer has to peel in lockstep with `modules/Row.lua` (1446), whose own seam is still the value cell. Re-check at 1400. |
 | 1000–1500 (on notice) | `tests/test_schema.lua` | 1354 | **On notice.** 1573 → 1098 behind the path-machinery peel; the only suite this cycle took *out* of breach and well clear now. Re-check at 1400. |
 | 1000–1500 (on notice) | `tests/test_schema_paths.lua` | 1001 | **On notice, newly crossed by growth.** 991 → 1001 as the settings seam moved onto `LibKa0s-Schema-1.0` minor 2 (MM-14, issue #52) and the minimap row's CLI path was renamed (MM-16). It mirrors `settings/Schema_Paths.lua`, which went *down* (982 → 863) in the same work, because the machinery the suite used to pin is the library's now. Re-check at 1300. |
 | 1000–1500 (on notice) | `tests/test_slash.lua` | 1373 | **On notice, newly crossed by growth.** 787 → 1009 behind the bare-`/mm` change and the pinned multi-word `window.name`; +234 lines of cases against +75 in `settings/Slash.lua`, which is 636 lines. The dispatcher, help renderer and value parser are LibKa0s-Slash-1.0's and tested there, so what is growing here is verb-table and adapter assertion, which is the half worth having. Re-check at 1400. |
 | 1000–1500 (on notice) | `tests/test_tooltip_deaths.lua` | 1391 | **On notice at birth.** 1391, the largest of the four files `tests/test_tooltip.lua` became, and deliberately so: the death-event block is one coherent subject (issue #1) and splitting it further would stop mirroring the module. Re-check at 1470. |
-| 1000–1500 (on notice) | `tests/test_window.lua` | 1387 | **On notice.** 3159 → 1240 across three suites, the largest single reduction in the repository. Re-check at 1450. |
-| 1000–1500 (on notice) | `tests/test_window_header.lua` | 1494 | **On notice at birth.** 1421 — the biggest of the three files `tests/test_window.lua` became, because the header band is where most of that suite's cases were. It has the same further seam its module has (the sort-arrow ladder) if it needs one. Re-check at 1470. |
+| 1000–1500 (on notice) | `tests/test_window.lua` | 1349 | **On notice.** 3159 → 1240 across three suites, the largest single reduction in the repository. Re-check at 1450. |
+| 1000–1500 (on notice) | `tests/test_window_header.lua` | 1177 | **On notice, peeled.** 1494 → 1177 in `f382f23`, along the seam this cell named: the sort cases and the sort-arrow ladder (16) moved to `tests/test_window_header_sort.lua` (410 lines); a pure move, case names unchanged. What is left is the header band proper. Re-check at 1400. |
 | 1000–1500 (on notice) | `tests/wow_mock.lua` | 1393 | **On notice — tightest in the repository at 34 lines.** 2270 → 1466 with the secret simulator and the frame model out to `mock_secrets.lua` / `mock_frame.lua`. It is not a suite; every one of the 60 suites runs against it, so it is also the file where a mistake is a whole-repo red. The peel left it as the builder the kit's README describes, and the next thing added to it should probably go to a third sibling instead. Re-check at 1480. |
 
 `lizard` counts every `and`/`or` short-circuit as a decision, so in Lua a run of
