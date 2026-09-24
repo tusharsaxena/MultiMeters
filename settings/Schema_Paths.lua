@@ -28,7 +28,7 @@
 -- session's ACTIVE window — NS.State.activeWindowId, which the panel's window
 -- picker moves and which defaults to the first window in the registry. Global
 -- rows keep absolute paths (`enabled`, `master.scale`), resolved against
--- db.profile -- except `global.minimap.hide`, whose row stores itself (see "The
+-- db.profile -- except `global.minimap.shown`, whose row stores itself (see "The
 -- minimap row").
 --
 -- What that buys: ONE schema, ONE write seam, and `/mm set window.frame.width 300`
@@ -339,9 +339,17 @@ end
 -- live in the row's own get/set pair, declared with the row in settings/Schema_Compose.lua: the
 -- runtime hands a row carrying `set` its value and stores nothing itself, so `/mm set`, the
 -- checkbox and `/mm reset` all reach the inversion (and the button's immediate show or hide) by
--- one route. The path is spelled with its store in it only so the CLI name says where it lives.
+-- one route.
+--
+-- THE PATH READS IN THE ROW'S OWN SENSE, `global.minimap.shown` (launcher-§3, standard v2.65.0):
+-- the CLI name says what the checkbox says, and `/mm set global.minimap.shown false` hides the
+-- button. `global.` is kept so the CLI name says where it lives. The PATH IS NOT A STORAGE KEY:
+-- what is stored is still LibDBIcon's own `db.global.minimap.hide`, so a player's choice saved
+-- under the old `global.minimap.hide` path carries over with no SavedVariables step, and no
+-- `shown` key is ever written (a second record of one state is anti-pattern #81). The old path
+-- is simply an unknown setting now.
 
-local MINIMAP_PATH = "global.minimap.hide"
+local MINIMAP_PATH = "global.minimap.shown"
 
 --- PUBLISHED, because more files have to name this row. settings/OptionsSetup.lua exempts
 --- exactly this path from the settings panel's two resets (launcher-§3's survival property), and

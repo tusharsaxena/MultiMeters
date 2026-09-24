@@ -39,7 +39,7 @@ local assertFalse = T.assertFalse
 local assertNil   = T.assertNil
 
 local ADDON = "MultiMeters"
-local PATH  = "global.minimap.hide"
+local PATH  = "global.minimap.shown"
 
 local function ldb(inst)  return inst.mocks.__libs["LibDataBroker-1.1"] end
 local function icon(inst) return inst.mocks.__libs["LibDBIcon-1.0"] end

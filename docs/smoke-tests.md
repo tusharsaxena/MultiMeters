@@ -659,7 +659,7 @@ are holding secret values is precisely what must not happen.
   picker moves to it), and the picker stays on window 1.
 - A copy-from redraws the target **once** and logs **one** `[Set] copy from '<src>' to '<dst>': N
   rows` line in the console, never a line per row.
-- The Minimap button checkbox hides and shows the button immediately; `/mm get global.minimap.hide`
+- The Minimap button checkbox hides and shows the button immediately; `/mm get global.minimap.shown`
   reads `true` while it is shown, and `/mm list` shows `window.columns = N shown`.
 
 ### 7. Visibility matrix

@@ -347,7 +347,7 @@ local MASTER_ROWS = {
     -- column 1; the other way round, an addon with no test mode draws a hole in the first
     -- column with a lone control to its right. The path names its STORE because
     -- launcher-§3 puts LibDBIcon's table in the global one.
-    { "global.minimap.hide", "Minimap button"     },
+    { "global.minimap.shown", "Minimap button"     },
     { "state.testMode",     "Test mode"           },
 }
 
@@ -436,7 +436,7 @@ function()
     assertTrue(at ~= nil, "no state.testMode row")
     local row = rows[at]
 
-    assertEqual(rows[at - 1].path, "global.minimap.hide",
+    assertEqual(rows[at - 1].path, "global.minimap.shown",
         "Minimap button opens the line Test mode pairs into")
     assertEqual(rows[at - 2].path, "state.debugConsole", "and the console closes the line above")
     assertEqual(row.composed, true, "the row must come from the composer, not the schema's own text")

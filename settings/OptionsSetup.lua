@@ -142,7 +142,7 @@ end
 -- reset the library grows next. `skipRestoreAll` cannot do the job -- `RestoreDefaults` never asks
 -- it -- and a clause per page would be a clause to forget.
 --
--- `/mm reset global.minimap.hide` IS NOT A RESET IN THIS SENSE and stays live. It reaches
+-- `/mm reset global.minimap.shown` IS NOT A RESET IN THIS SENSE and stays live. It reaches
 -- NS.ApplyDefault through the SLASH descriptor (settings/Slash.lua), which this clause does not
 -- sit on, and it is a player naming this one row on purpose -- the opposite of a sweep that
 -- reached it on the way past. So is the checkbox, and so is `/mm set`.

@@ -644,7 +644,8 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     -- optional one pairs beside it.
     --
     -- THE PATH IS VERBATIM AND IT NAMES ITS STORE, which no other path in this schema
-    -- does. LibDBIcon's `minimap` table lives in the GLOBAL store, outside the block's
+    -- does -- and it reads in the row's own SHOWN sense (`global.minimap.shown`,
+    -- launcher-§3 v2.65.0) while the stored key stays LibDBIcon's `hide`. LibDBIcon's `minimap` table lives in the GLOBAL store, outside the block's
     -- profile prefix, because a minimap button belongs to the INSTALLATION: a profile
     -- switch must not move the player's buttons. That no RESET may move them either is a
     -- separate PROPERTY of the setting rather than a consequence of the store, and its one
@@ -655,7 +656,7 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     -- pair (its decor, below), which the single write seam hands every write, so `/mm set`
     -- reaches them too. This row used to be hand-written here with a `refreshMinimap` reactor
     -- that called LibDBIcon directly; the composer owns the row now and its `set` owns the act.
-    minimapPath      = "global.minimap.hide",
+    minimapPath      = "global.minimap.shown",
     -- Test mode (options-ui-§15, preview-mode, standard v2.47.0): the composer's
     -- own session-only row, directly after the console on a line of its own. The
     -- path is taken VERBATIM, like the console's, and it is the one `/mm set
@@ -778,7 +779,9 @@ dress(MASTER_ROWS, {
         end,
     },
     -- THE ONLY ROW IN THIS SCHEMA WHOSE STORE IS NOT THE PROFILE, and the only one whose
-    -- boolean is the negation of what it stores. Both facts are this row's own get/set pair
+    -- boolean is the negation of what it stores. Its PATH says `shown`, in the row's own sense;
+    -- the key it stores is LibDBIcon's `db.global.minimap.hide`, which never moved, so the path
+    -- names no storage key and no `shown` key is ever written. Both facts are this row's own get/set pair
     -- (settings/Schema_Paths.lua, "The minimap row"): the settings runtime hands a row that
     -- carries `set` its value and stores nothing itself, so `/mm set`, the checkbox and
     -- `/mm reset` all reach the inversion by this one route.
@@ -796,7 +799,7 @@ dress(MASTER_ROWS, {
     --   THE BUTTON MOVES NOW. `set` also calls NS.Launcher:SetShown, so the button follows the
     --   checkbox immediately rather than at the next reload. Answering `false` is the normal
     --   state of a build with no broker library, so nothing reads the result.
-    ["global.minimap.hide"] = {
+    ["global.minimap.shown"] = {
         desc = L["Show this addon's button on the minimap. Left-click it to show or hide the meter windows, right-click it to open these settings. Shared by every profile, because the button belongs to the installation rather than to one character's layout."],
         get = function()
             local t = NS.db and NS.db.global and NS.db.global.minimap

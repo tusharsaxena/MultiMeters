@@ -262,7 +262,7 @@ derivation — *Reset all settings is a profile reset, the table is global, ther
 reached* — only ever spoke about **one** of this addon's two resets. Both are covered now, and they
 were not in the same state:
 
-| Reset | Reached `global.minimap.hide`? | Why |
+| Reset | Reached `global.minimap.shown`? | Why |
 |---|---|---|
 | **Reset all settings** (`Helpers.RestoreAllDefaults`) | **No**, and never did | The library narrows its row walk to `sessionOnly` rows and `skipRestoreAll` vetoes this one besides; the act itself is `db:ResetProfile()`, and AceDB leaves `db.global` alone. `schemaVersion` is global too, so the migration runner that follows a reset is a no-op and cannot carry a fresh profile's table back over the global one |
 | **Defaults** on General | **Yes, until this change** | The row is a Master-controls row on General, and `LibKa0s-Options-1.0`'s `RestoreDefaults` walks every row of the page it is handed — it consults no veto at all, by design, because a page button resets its page. A player who hid the button and later pressed Defaults on General to reset something else got the button back, at the library's default angle |
@@ -270,7 +270,7 @@ were not in the same state:
 The exemption is **one clause**, on the *options* descriptor's `applyDefault`
 (`settings/OptionsSetup.lua`) — the single seam both library walks put a default through, so it
 covers the page button, the global reset and whatever reset the library grows next.
-`/mm reset global.minimap.hide` is deliberately **not** affected: it reaches `NS.ApplyDefault`
+`/mm reset global.minimap.shown` is deliberately **not** affected: it reaches `NS.ApplyDefault`
 through the *slash* descriptor, and a player naming this one row is the opposite of a sweep that
 reached it on the way past.
 
@@ -278,7 +278,7 @@ reached it on the way past.
 owner is `core/LauncherSetup.lua`, whose descriptor hands `LibKa0s-Launcher-1.0` a **closure**
 answering the live table rather than the table itself — `db.global.minimap` does not exist when
 core/ loads, and a table captured then is one AceDB replaces. The one writer is LibDBIcon, on a drag
-of the button. The addon's only write into the table is the `global.minimap.hide` row, through the
+of the button. The addon's only write into the table is the `global.minimap.shown` row, through the
 row's own [get/set pair](#the-minimap-row--exactly-one-inverted-row).
 
 ### `master` — the addon-wide master controls
@@ -1140,7 +1140,7 @@ supplies what is this addon's own:
 | `resolveRoot(parts, windowId)` | the window-relative model below: the window id handed in, else the active window, else `db.profile` for a global path; `nil, "No window is selected."` when there is nowhere |
 | `announce` / `announceBatch` | one `CONFIG_CHANGED { section, windowId }` plus the panel's in-place scalar re-sync — per write, or **once** per batch |
 | `debug` / `format` | `NS.Debug`, resolved at call time; the value handed through untouched so `NS.Debug`'s deferred, secret-safe formatting renders it (the column array logs `N shown`) |
-| `resetExempt` | `{ ["global.minimap.hide"] = true }` — the sweep veto `launcher-§3` asks for |
+| `resetExempt` | `{ ["global.minimap.shown"] = true }` — the sweep veto `launcher-§3` asks for |
 | `writeThrough` | `{ "enabled" }` — `options-ui-§1` route (a). On a load without LibKa0s-Options-1.0 (the library absent, or a partial payload) the composed Master-controls `enabled` row does not exist; the seam then stores the path raw at `db.profile.enabled` and `announce` pulls the latch (`NS.SyncEnabledHold`), the row's absent `onChange`. On a full load the row claims the path and the list does nothing. It is the only composed row a host verb writes: `/mm lock` writes each window's hand-written `window.frame.locked`, and `/mm test` goes through `modules/WindowManager.lua` |
 | `L` | this addon's own refusal wording |
 
@@ -1174,9 +1174,9 @@ A window row's path is **relative to a window** and is spelled with a `window.` 
 The runtime's `resolveRoot` resolves that prefix against the window id a caller names, or, with
 none, against the session's **active window** — `NS.State.activeWindowId`, which the settings
 panel's window picker moves. Global rows keep absolute paths and resolve against `db.profile` — all
-but one: `global.minimap.hide` names its store because `launcher-§3` puts LibDBIcon's table in the
+but one: `global.minimap.shown` names its store because `launcher-§3` puts LibDBIcon's table in the
 global one, and its own get/set pair reaches it. There are twenty-two of them:
-`enabled`, `global.minimap.hide`, the four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
+`enabled`, `global.minimap.shown`, the four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
 the session-only view over every window's own `frame.locked`), `data.mergePets`, `data.throttle`,
 the four `export.*` preferences, the eight `statColors.*` swatches, and the two composed
 `sessionOnly` rows `state.testMode` and `state.debugConsole`. Those two and `master.locked` are the
@@ -1324,7 +1324,7 @@ See [settings-panel.md](settings-panel.md#the-composed-blocks) for which block i
 
 ### The minimap row — exactly one inverted row
 
-`global.minimap.hide` is the one stored row that carries its own `get`/`set` pair (declared with the
+`global.minimap.shown` is the one stored row that carries its own `get`/`set` pair (declared with the
 row's decor in `settings/Schema_Compose.lua`), and two things about it are the library's rather than
 this addon's. The runtime hands a row carrying `set` its value and stores nothing itself, so every
 route — `/mm set`, the checkbox, `/mm reset` — reaches both through the pair.
@@ -1332,6 +1332,13 @@ route — `/mm set`, the checkbox, `/mm reset` — reaches both through the pair
 **Its store is `db.global`**, not the profile — `launcher-§3`, for the reasons under
 [`minimap`](#minimap--and-it-lives-under-global) — so the path is spelled with its store in it, and
 the pair resolves `NS.db.global.minimap` at call time rather than through `resolveRoot`.
+
+**Its path reads in its own sense, and names no storage key.** The path is `global.minimap.shown`
+(`launcher-§3`, standard v2.65.0), so the CLI name says what the checkbox says. What is stored is
+still LibDBIcon's `db.global.minimap.hide` — the key the v15 migration moved to the global store —
+so a player's choice made under the old `global.minimap.hide` path carries over untouched, with no
+SavedVariables step and no `schemaVersion` bump, and no `shown` key is ever written. The old path is
+now an unknown setting (`/mm get global.minimap.hide` answers *Setting not found*).
 
 **Its boolean says SHOWN while LibDBIcon's key says HIDDEN**, so `get` answers `not hide` and `set`
 stores `hide = not v`. A checkbox labeled with a negative is the settings-panel double-negative everyone
@@ -1342,7 +1349,7 @@ shown) while the defaults tree ships `hide = false`; `NS.ValidateSchema` compare
 opposites, and `NS.ApplyDefault` needs no round trip because `set` inverts on the way in.
 
 The `set` also calls `NS.Launcher:SetShown`, so the button follows the checkbox immediately rather
-than at the next reload — and so `/mm set global.minimap.hide false` and the checkbox do the
+than at the next reload — and so `/mm set global.minimap.shown false` and the checkbox do the
 identical thing. This replaced a generic `row.invert` flag that exactly one row ever carried; a
 two-line facility with one user reads as a facility, and named for what it is, the next reader knows
 there is no second inverted row to find.

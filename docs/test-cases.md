@@ -1921,7 +1921,7 @@ badge and any count quoted in the docs must agree with it.
 - Picking Current or Overall writes the session type through the seam (issue #50)
 - The sort and segment batches log one [Set] line per row they write
 
-### test_schema_batch.lua (7)
+### test_schema_batch.lua (13)
 
 - SetByPaths (a): one refused entry stores NO entry, and answers false with a reason
 - SetByPaths (b): a three-row batch sends exactly ONE CONFIG_CHANGED
@@ -1930,6 +1930,12 @@ badge and any count quoted in the docs must agree with it.
 - SetByPaths (e): window.columns is written whole, normalized and copied; a path into it is refused
 - SetByPaths (f): the minimap row reads SHOWN and stores hide, inverted
 - SetByPaths (g): every entry is stored before the first row reacts
+- Minimap path (a): `/mm get global.minimap.shown` answers true while hide is false
+- Minimap path (b): `/mm set global.minimap.shown false` stores hide = true and hides the button
+- Minimap path (c): the old `global.minimap.hide` path is an unknown setting
+- Minimap path (d): no `shown` key is ever stored, raw, after a set
+- Minimap path (e): a legacy global store carries over, button hidden, position untouched
+- Minimap path (f): a pre-v15 profile-scoped store, migrated, reads shown = false
 
 ### test_schema_defaults.lua (18)
 
@@ -2271,7 +2277,7 @@ badge and any count quoted in the docs must agree with it.
 | test_windowmanager.lua | 47 |
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
-| test_schema_batch.lua | 7 |
+| test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
 | test_slash.lua | 75 |
 | test_slash_refusal.lua | 2 |
@@ -2282,4 +2288,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2004** |
+| **Total** | **2010** |

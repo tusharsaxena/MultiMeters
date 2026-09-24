@@ -833,7 +833,8 @@ NS.defaults = {
         -- button snaps back on the next login. `minimapPos` is named non-setting
         -- state in docs/ARCHITECTURE.md (architecture-§5: a vendored library's own
         -- writes), and this declaration is what MATERIALIZES the table the
-        -- `global.minimap.hide` row addresses.
+        -- `global.minimap.shown` row reads and writes (inverted: the row says
+        -- shown, this key says hidden, and no `shown` key is ever stored).
         --
         -- GLOBAL RATHER THAN PROFILE, and that is launcher-§3's decision rather
         -- than where the neighboring settings happen to live. A minimap button

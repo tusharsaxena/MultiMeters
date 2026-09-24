@@ -163,7 +163,7 @@ how do I make it smaller, how do I put it back — is in the same place under th
 | Enable Multi Meters (`enabled`) | General visibility (`master.visibility`) |
 | Master scale (`master.scale`) | Master alpha (`master.alpha`) |
 | Lock frame (`master.locked`, session-only: every window's own lock) | Debug console (`state.debugConsole`, session-only) |
-| Minimap button (`global.minimap.hide`, the GLOBAL store, [inverted](schema.md#the-minimap-row--exactly-one-inverted-row)) | Test mode (`state.testMode`, session-only) |
+| Minimap button (`global.minimap.shown`, the GLOBAL store, [inverted](schema.md#the-minimap-row--exactly-one-inverted-row)) | Test mode (`state.testMode`, session-only) |
 | Reset position | Reset all settings |
 
 **This tab is now EXACTLY the canonical set, and this addon has no rows of its own on it.** All
@@ -197,7 +197,7 @@ and consults no veto at all, so until this exemption landed, pressing it to rese
 General put a deliberately hidden button back on the minimap at the library's default angle. The
 exemption is one clause on the options descriptor's `applyDefault` (`settings/OptionsSetup.lua`) —
 see [schema.md → `minimap`](schema.md#minimap--and-it-lives-under-global). Nothing else on the page
-changes, and `/mm reset global.minimap.hide` still resets the row.
+changes, and `/mm reset global.minimap.shown` still resets the row.
 
 **The `master.*` rows are ADDON-WIDE, and none of them is a promoted per-window row.** A window
 here is an instance (design §6), and its own **Lock window**, **Scale** and **Opacity** stay on the

@@ -16,6 +16,9 @@
 --       is refused;
 --   (f) the minimap row reads SHOWN and stores LibDBIcon's `hide`, inverted;
 --   (g) every entry is stored before any row reacts, so an onChange sees the whole batch.
+--   Minimap path (a)-(f): the row's CLI path is `global.minimap.shown` (launcher-§3 v2.65.0), the
+--       old `global.minimap.hide` path is unknown, and a stored `hide` carries over with no
+--       SavedVariables step and no `shown` key ever written.
 --
 -- tests/test_schema_paths.lua covers the single write in depth; this file is the batch's.
 
@@ -182,4 +185,117 @@ test("SetByPaths (g): every entry is stored before the first row reacts", functi
 
     assertTrue(ok)
     assertEqual(sawDungeon, not before, "the first onChange ran before the second entry was stored")
+end)
+
+-- ---------------------------------------------------------------------------
+-- The minimap row's CLI path reads in its own SHOWN sense (launcher-§3, standard v2.65.0)
+-- ---------------------------------------------------------------------------
+--
+-- The path is `global.minimap.shown`: the CLI name says what the checkbox says. The STORE did not
+-- move and did not change sense -- it is LibDBIcon's `db.global.minimap.hide`, and a stored
+-- `shown` key beside it would be two records of one state (anti-pattern #81). So the rename is a
+-- CLI and schema rename only, with no SavedVariables step and no schema-version bump, and the
+-- cases below pin both halves: the new name answers, the old one does not, and an existing
+-- player's stored choice reads through the new name unchanged.
+
+local SHOWN_PATH = "global.minimap.shown"
+local OLD_PATH   = "global.minimap.hide"
+
+local function say(inst, msg)
+    local n = #inst.mocks.__chat
+    inst.NS.Slash:OnSlash(msg)
+    local out = {}
+    for i = n + 1, #inst.mocks.__chat do out[#out + 1] = inst.mocks.__chat[i] end
+    return table.concat(out, "\n")
+end
+
+--- A load driven the way the client drives one, against `saved` as the SavedVariables global:
+--- InitDB, the migration runner, then the launcher registration and the panel.
+local function loadWith(saved)
+    local inst = T.load{ initDB = false, options = false }
+    _G.MultiMetersDB = saved
+    inst.NS:InitDB()
+    inst.NS:RunMigrations()
+    inst.NS.Launcher:Register()
+    inst.NS.CreateOptionsPanel()
+    return inst
+end
+
+--- Every key in the RAW SavedVariables minimap table, and whether any profile still holds one.
+local function rawMinimap()
+    local sv = _G.MultiMetersDB
+    return sv and rawget(sv, "global") and rawget(sv.global, "minimap")
+end
+
+test("Minimap path (a): `/mm get global.minimap.shown` answers true while hide is false", function()
+    local inst = T.load()
+    inst.NS.db.global.minimap.hide = false
+    local out = say(inst, "get " .. SHOWN_PATH)
+    assertTrue(out:find("true", 1, true) ~= nil, out)
+    assertEqual(out:find("false", 1, true), nil, out)
+end)
+
+test("Minimap path (b): `/mm set global.minimap.shown false` stores hide = true and hides the button", function()
+    local inst = T.load()
+    assertTrue(inst.NS.Launcher:IsShown(), "the button ships shown")
+    say(inst, "set " .. SHOWN_PATH .. " false")
+    assertEqual(inst.NS.db.global.minimap.hide, true, "display false stores LibDBIcon's hide = true")
+    assertFalse(inst.NS.Launcher:IsShown(), "and the button went away now, not at the next reload")
+    say(inst, "set " .. SHOWN_PATH .. " true")
+    assertEqual(inst.NS.db.global.minimap.hide, false)
+    assertTrue(inst.NS.Launcher:IsShown())
+end)
+
+test("Minimap path (c): the old `global.minimap.hide` path is an unknown setting", function()
+    local inst = T.load()
+    assertEqual(inst.NS.FindSchemaRow(OLD_PATH), nil, "no row answers to the retired path")
+    local out = say(inst, "get " .. OLD_PATH)
+    assertTrue(out:find("Setting not found", 1, true) ~= nil, out)
+    say(inst, "set " .. OLD_PATH .. " true")
+    assertEqual(inst.NS.db.global.minimap.hide, false, "the retired path wrote nothing")
+end)
+
+test("Minimap path (d): no `shown` key is ever stored, raw, after a set", function()
+    local inst = T.load()
+    say(inst, "set " .. SHOWN_PATH .. " false")
+    local raw = rawMinimap()
+    assertTrue(raw ~= nil, "the global minimap table is in the raw SavedVariables")
+    assertEqual(rawget(raw, "shown"), nil, "a stored `shown` key is anti-pattern #81")
+    assertEqual(rawget(raw, "hide"), true)
+    assertEqual(inst.NS.db.global.minimap.shown, nil)
+end)
+
+test("Minimap path (e): a legacy global store carries over, button hidden, position untouched", function()
+    -- An account saved before the rename: LibDBIcon's own table, hidden, dragged to 200 degrees.
+    local inst = loadWith({
+        global = { schemaVersion = 16, minimap = { hide = true, minimapPos = 200 } },
+    })
+    local out = say(inst, "get " .. SHOWN_PATH)
+    assertTrue(out:find("false", 1, true) ~= nil, out)
+    assertFalse(inst.NS.Launcher:IsShown(), "the button stays hidden after load")
+    assertEqual(inst.NS.db.global.minimap.minimapPos, 200, "the dragged angle is untouched")
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION,
+        "the rename adds no migration step")
+
+    say(inst, "set " .. SHOWN_PATH .. " false")
+    local raw = rawMinimap()
+    assertEqual(rawget(raw, "shown"), nil, "no `shown` key after a set")
+    assertEqual(rawget(raw, "hide"), true)
+    assertEqual(rawget(raw, "minimapPos"), 200)
+end)
+
+test("Minimap path (f): a pre-v15 profile-scoped store, migrated, reads shown = false", function()
+    local inst = loadWith({
+        global   = { schemaVersion = 14 },
+        profileKeys = {},
+        profiles = { Default = { minimap = { hide = true, minimapPos = 75 } } },
+    })
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
+    assertEqual(inst.NS.GetSetting(SHOWN_PATH), false)
+    assertTrue(say(inst, "get " .. SHOWN_PATH):find("false", 1, true) ~= nil)
+    assertFalse(inst.NS.Launcher:IsShown())
+    local raw = rawMinimap()
+    assertEqual(rawget(raw, "shown"), nil, "no `shown` key in the raw SavedVariables")
+    assertEqual(rawget(raw, "hide"), true)
+    assertEqual(rawget(raw, "minimapPos"), 75)
 end)

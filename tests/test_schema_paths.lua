@@ -118,9 +118,9 @@ test("Schema: the minimap carve-out resolves the GLOBAL store and inverts the se
     -- LibDBIcon's table in the global one. And LibDBIcon's key says HIDDEN while the
     -- checkbox says "Minimap button", so the seam inverts rather than letting the row keep a
     -- private get/set pair the CLI would then have to know about separately.
-    assertTrue(NS.SetByPath("global.minimap.hide", false))
+    assertTrue(NS.SetByPath("global.minimap.shown", false))
     assertEqual(NS.db.global.minimap.hide, true, "display false stores hide = true")
-    assertEqual(NS.GetSetting("global.minimap.hide"), false, "and reads back in display terms")
+    assertEqual(NS.GetSetting("global.minimap.shown"), false, "and reads back in display terms")
     assertNil(NS.db.profile.minimap, "and nothing lands under the profile on the way past")
 end)
 
@@ -272,9 +272,9 @@ end)
 test("ApplyDefault: round-trips the minimap row back to its SHIPPED stored value", function()
     local inst = T.load()
     local NS = inst.NS
-    assertTrue(NS.SetByPath("global.minimap.hide", false))   -- display false -> stored true
+    assertTrue(NS.SetByPath("global.minimap.shown", false))   -- display false -> stored true
     assertEqual(NS.db.global.minimap.hide, true)
-    NS.ApplyDefault(NS.FindSchemaRow("global.minimap.hide"))
+    NS.ApplyDefault(NS.FindSchemaRow("global.minimap.shown"))
     -- `default` is what a user would have CLICKED -- shown -- and the seam inverts it on the
     -- way in. Getting the round trip backwards would make the Defaults button hide the button.
     assertEqual(NS.db.global.minimap.hide, false)
