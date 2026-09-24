@@ -62,19 +62,28 @@ end
 --- by the OnUpdate that first sees the button released, not by a separate
 --- OnDragStop -- which is the whole reason the widget stopped using
 --- RegisterForDrag.
+---
+--- THE POLL IS THE LIBRARY'S DRAG GHOST, not the block. From LibKa0s-Widgets-1.0
+--- minor 10 the OnUpdate lives on the carried copy (`__DragGhost`, the internal
+--- the library publishes for exactly this), because setting it on the host's row
+--- frame wiped any OnUpdate the host had put there. Firing the block's OnUpdate
+--- now drives nothing, and a drag driven that way lands nowhere.
 local function drag(inst, blocks, from, rows)
     local block  = blocks[from]
     local handle = block.mmHandle
+    local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0", true)
 
     inst.mocks.setMouseDown("LeftButton", true)
     inst.mocks.setCursor(0, 1000)
     handle:_run("OnMouseDown")
+    local ghost = W and W.__DragGhost
+    assertTrue(ghost ~= nil, "the press built no drag ghost to carry the poll")
 
     inst.mocks.setCursor(0, 1000 - rows * inst.NS.BLOCK_STRIDE)
-    block:_run("OnUpdate", 0.1)
+    ghost:_run("OnUpdate", 0.1)
 
     inst.mocks.setMouseDown("LeftButton", false)
-    block:_run("OnUpdate", 0.1)
+    ghost:_run("OnUpdate", 0.1)
 end
 
 test("Blocks: one block per item, each carrying its index and its label", function()
@@ -411,7 +420,11 @@ test("Blocks: an empty item list still builds and finishes a controller", functi
     assertTrue(ctx.mmReorder ~= nil, "an empty list still owns a controller")
     assertEqual(#ctx.mmReorder.rows, 0)
     assertEqual(ctx.mmReorder.boundary, 0)
-    assertTrue(ctx.mmReorder.line ~= nil, "Finish must run even with nothing to finish")
+    -- Finish NAMES the line's container and builds nothing (Widgets minor 10): the line is taken
+    -- per drag from the library's free list, so what proves Finish ran is the container it
+    -- recorded, and a line at rest would be one riding back into AceGUI's pool.
+    assertTrue(ctx.mmReorder.container ~= nil, "Finish must run even with nothing to finish")
+    assertEqual(ctx.mmReorder.line, nil, "no insertion line may be held while nothing is dragged")
 end)
 
 test("Blocks: the boundary is a COUNT of enabled items, never a scan for the first disabled",

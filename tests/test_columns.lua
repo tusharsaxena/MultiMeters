@@ -181,14 +181,19 @@ test("Columns: dragging a block reorders the stored array", function()
     local inst, _, blocks = openPage()
     local before = statKeys(inst)
 
+    -- The drag's poll is the library's ghost from LibKa0s-Widgets-1.0 minor 10, not the block:
+    -- see the drag() driver in tests/test_columnblocks.lua.
+    local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0", true)
     local block = blocks[1]
     inst.mocks.setMouseDown("LeftButton", true)
     inst.mocks.setCursor(0, 1000)
     block.mmHandle:_run("OnMouseDown")
+    local ghost = W and W.__DragGhost
+    assertTrue(ghost ~= nil, "the press built no drag ghost to carry the poll")
     inst.mocks.setCursor(0, 1000 - 2 * inst.NS.BLOCK_STRIDE)
-    block:_run("OnUpdate", 0.1)
+    ghost:_run("OnUpdate", 0.1)
     inst.mocks.setMouseDown("LeftButton", false)
-    block:_run("OnUpdate", 0.1)
+    ghost:_run("OnUpdate", 0.1)
 
     local after = statKeys(inst)
     assertEqual(after[3], before[1], "the dragged block did not land two rows down")
@@ -201,13 +206,16 @@ test("Columns: a drag that goes nowhere writes nothing", function()
     local before = table.concat(statKeys(inst), ",")
     local rendered = ctx._rendered
 
+    local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0", true)
     local block = blocks[2]
     inst.mocks.setMouseDown("LeftButton", true)
     inst.mocks.setCursor(0, 1000)
     block.mmHandle:_run("OnMouseDown")
-    block:_run("OnUpdate", 0.1)
+    local ghost = W and W.__DragGhost
+    assertTrue(ghost ~= nil, "the press built no drag ghost to carry the poll")
+    ghost:_run("OnUpdate", 0.1)
     inst.mocks.setMouseDown("LeftButton", false)
-    block:_run("OnUpdate", 0.1)
+    ghost:_run("OnUpdate", 0.1)
 
     assertEqual(table.concat(statKeys(inst), ","), before)
     assertTrue(rendered)

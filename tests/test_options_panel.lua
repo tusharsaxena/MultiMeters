@@ -1088,7 +1088,7 @@ end)
 test("Panel: every window sub-page banners the active window, and Windows has no second picker",
 function()
     -- The banner is the ONLY picker (options-ui-§14). A page that kept its own would be a
-    -- second writer of one piece of session state -- a synchronisation problem invented by the
+    -- second writer of one piece of session state -- a synchronization problem invented by the
     -- design, which would then have to be solved forever.
     -- red under: leaving the Active window dropdown on the Windows page, or bannering only some
     -- of the sub-pages.
