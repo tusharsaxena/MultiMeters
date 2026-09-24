@@ -143,11 +143,11 @@ addon now passes it:
 | `meterEvent` | — | `core/MultiMeters.lua:460`, `:470`, `:478` | — |
 | `spellEvent` | — | `core/MultiMeters.lua:425` | — |
 | `systemEvent` | — | `core/MultiMeters.lua:416` | — |
-| `refresh` | — | `modules/Window.lua:1107`, `:1117`, `:1140`, `:1147` | — |
+| `refresh` | — | `modules/Window.lua:1145`, `:1155`, `:1178`, `:1185` | — |
 | `providerRead` | — (more than one real parent) | `modules/Provider.lua:357` | Its caller's: `"aggregate"` from `modules/Aggregator.lua:1035` and `modules/Aggregator_Identity.lua:216`, `"targets"` from `modules/Targets.lua:277`, none from `core/Diagnostics.lua` or `core/Diagnostics_DeathRecap.lua` |
 | `aggregate` | `refresh` | `modules/Aggregator.lua:1258`, `modules/DrillDown.lua:700`, `:732` | Its caller's at `modules/Aggregator.lua:1258`; `"refresh"` at both `DrillDown` sites |
-| `render` | `refresh` | `modules/Window.lua:1282` | `"refresh"` |
-| `renderRow` | `render` | `modules/Row.lua:1387` | `"render"` |
+| `render` | `refresh` | `modules/Window.lua:1316` | `"refresh"` |
+| `renderRow` | `render` | `modules/Row.lua:1377` | `"render"` |
 | `tooltip` | — | `modules/Tooltip_Builders.lua:788`, `:925`, `:943`, `:1004`, `:1018`, `:1032` | — |
 | `targets` | `tooltip` | `modules/Targets.lua:396`, `:404`, `:418` | `"tooltip"` |
 
@@ -164,8 +164,8 @@ have more than one real parent, which is why it declares none today.
 
 [`20260924-133043/`](20260924-133043/ANALYSIS.md) is the first capture whose every nest printed
 *observed*: `providerRead` inside `aggregate`, `aggregate` and `render` inside `refresh`, `renderRow`
-inside `render`. It did not exercise the tooltip path, so `providerRead` has not yet been observed
-inside `targets`.
+inside `render`. [`20260924-141756/`](20260924-141756/ANALYSIS.md) printed the same. Neither exercised
+the tooltip path, so `providerRead` has not yet been observed inside `targets`.
 
 One bucket is genuinely **not** nested and should not be read as though it were: `meterEvent`
 brackets the bus fan-out at event rate, while `refresh` brackets the coalesced pass on the window's
@@ -217,10 +217,13 @@ beside this file.
 |---|---|---|---|
 | [`20260909-014604`](20260909-014604/ANALYSIS.md) | 0.1.0 | `2026-09-09 01:41` | Solo, one window, 8 columns, 5 rows; 68.3 s active / 74.2 s suspended in Silvermoon City. Baseline: 5.409 ms/s accounted, `refresh` 4.511 ms/s. Frame-time delta +0.5003 ms/frame — at the floor, **unresolved**. `tooltip` and `targets` never fired. |
 | [`20260924-133043`](20260924-133043/ANALYSIS.md) | 1.0.0 | `2026-09-24 13:27 mm20-before` | MM-20 (SM-07) **BEFORE** capture at `4182f4a`. Solo, Cleave Training Dummy, Silvermoon City — Falconwing Square, one window, 8 columns, 1 row; 69.0 s active / 66.8 s suspended. 1.832 ms/s accounted, `refresh` 1.710 ms/s. MM-20 gate: `render` 0.21696 ms/call; `renderRow` 0.13380 ms/row. Delta −0.6051 ms/frame, **backwards** (environment moved). First capture with every nest observed. `systemEvent`, `tooltip` and `targets` never fired. |
+| [`20260924-141756`](20260924-141756/ANALYSIS.md) | 1.0.0 | `2026-09-24 14:15` | MM-20 (SM-07, MM.12) **AFTER** capture on `mm20-candidate` (`f6904ee`); started without its `mm20-after` label, so identified by the owner's hand-off, and the log cannot prove the loaded build. Same fixture as the BEFORE capture: solo, Cleave Training Dummy, Silvermoon City — Falconwing Square, one window, 8 columns, 1 row; 73.9 s active / 67.4 s suspended. 1.626 ms/s accounted, `refresh` 1.509 ms/s. MM-20 gate: `render` 0.16682 ms/call against 0.21696, −23.1 %, **passes**; `renderRow` 0.13969 ms/row (flat); `render` outside the row loop 0.02713 ms/pass against 0.08414. Delta −0.0267 ms/frame, **unresolved**. `systemEvent`, `tooltip` and `targets` never fired. |
 
-**Comparability warning.** Both captures on record are **solo**, and this addon's cost scales with
-group size × open windows × columns per window × rows drawn. Both are baselines for a solo,
-eight-column, one-window fixture and for nothing else, and they are not like-for-like with each other:
-different code (0.1.0 vs 1.0.0), a different subzone, and 5 rows drawn per pass vs 1. There is no
-group capture, and no capture that exercises the tooltip path — which `core/PerfSetup.lua` names as
-the expensive one.
+**Comparability warning.** All three captures on record are **solo**, and this addon's cost scales
+with group size × open windows × columns per window × rows drawn. They are baselines for a solo,
+eight-column, one-window fixture and for nothing else. The first is not like-for-like with the other
+two: different code (0.1.0 vs 1.0.0), a different subzone, and 5 rows drawn per pass vs 1. The
+`20260924-133043` / `20260924-141756` pair is the MM-20 BEFORE / AFTER comparison on one fixture, one
+row drawn per pass, so it measures MM-20's per-pass saving and not how the saving scales with rows.
+There is no group capture, no multi-row capture of MM-20, and no capture that exercises the tooltip
+path — which `core/PerfSetup.lua` names as the expensive one.
