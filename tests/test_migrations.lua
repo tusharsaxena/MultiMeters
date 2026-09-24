@@ -160,3 +160,70 @@ test("migrations: a legacy unstamped account migrates every stored profile", fun
     end
     assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
+
+-- ---------------------------------------------------------------------------
+-- v15 -> v16: the window's minimize keys, spelled the US way (localization-§5)
+-- ---------------------------------------------------------------------------
+
+--- A v15-shaped profile: two windows, each carrying the two British-spelled frame keys.
+local function v15Profile(id)
+    local function window(n)
+        return { id = n, frame = { minimised = true, showMinimise = false } }
+    end
+    return { nextWindowId = id + 2, windows = { window(id), window(id + 1) } }
+end
+
+test("migrations: v16 moves both minimize keys onto the US spelling in every window of every profile", function()
+    -- A find-and-replace on the defaults alone would orphan every stored collapse and every hidden
+    -- minimize control: the old keys would sit in the savedvariables read by nothing.
+    -- red under: no v15 -> v16 step, or one that walks db.profile alone.
+    local inst = initWith({
+        profiles = { Default = v15Profile(1), Raid = v15Profile(4) },
+        global   = { schemaVersion = 15 },
+    })
+    assertEqual(inst.NS.SCHEMA_VERSION, 16, "the runner's target is v16")
+    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    for _, name in ipairs({ "Default", "Raid" }) do
+        local windows = inst.NS.db.sv.profiles[name].windows
+        assertEqual(#windows, 2, name .. " lost a window")
+        for i, w in ipairs(windows) do
+            local where = name .. " window " .. i
+            assertEqual(w.frame.minimized, true, where .. " lost its collapsed state")
+            assertEqual(w.frame.showMinimize, false, where .. " lost its hidden control")
+            assertEqual(rawget(w.frame, "minimised"), nil, where .. " kept the old collapse key")
+            assertEqual(rawget(w.frame, "showMinimise"), nil, where .. " kept the old control key")
+        end
+    end
+end)
+
+test("migrations: the v16 step run twice is a no-op, and never overwrites a US key", function()
+    -- Idempotent: a second run over a migrated account changes nothing. A frame that somehow holds
+    -- both spellings keeps the US one, which is the key the addon has been reading.
+    -- red under: an unconditional `w.frame.minimized = w.frame.minimised`.
+    local inst = initWith({
+        profiles = { Default = v15Profile(1) },
+        global   = { schemaVersion = 15 },
+    })
+    local step = inst.NS.Database.__migrations[15]
+    local before = diff(inst.NS.db.sv.profiles, {})
+    step(inst.NS.db)
+    local after = diff(inst.NS.db.sv.profiles, {})
+    assertEqual(table.concat(after, "; "), table.concat(before, "; "),
+        "a second run of the v16 step changed the account")
+
+    local frame = inst.NS.db.sv.profiles.Default.windows[1].frame
+    frame.minimised, frame.minimized = true, false
+    step(inst.NS.db)
+    assertEqual(frame.minimized, false, "the British key overwrote the US one")
+    assertEqual(frame.minimised, nil, "the British key survived beside the US one")
+end)
+
+test("migrations: a fresh install stores frame.minimized and no British key", function()
+    -- red under: defaults/Profile.lua still declaring `minimised` or `showMinimise`.
+    local inst = initWith({})
+    local frame = inst.NS.Database.GetWindows()[1].frame
+    assertEqual(frame.minimized, false)
+    assertEqual(frame.showMinimize, true)
+    assertEqual(frame.minimised, nil, "the fresh window carries the British collapse key")
+    assertEqual(frame.showMinimise, nil, "the fresh window carries the British control key")
+end)

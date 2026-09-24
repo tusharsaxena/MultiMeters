@@ -667,7 +667,7 @@ test("Diagnostics: the header section covers every control, by walking them", fu
     -- red under: naming fields instead of walking window.controls.
     local inst = T.load{ enable = true }
     local text = report(inst)
-    for _, key in ipairs({ "close", "minimise", "lock", "settings",
+    for _, key in ipairs({ "close", "minimize", "lock", "settings",
                            "segment", "reset", "export" }) do
         assertTrue(text:find(key, 1, true) ~= nil,
             "the header section never mentions " .. key)

@@ -856,7 +856,7 @@ function NS.SchemaForPage(pageKey, filter)   -- luacheck: ignore 212/filter
         -- through NS.SetByPath, listable through `/mm list` and comparable by the
         -- schema-vs-defaults validator, and only ever miss the panel. A row is
         -- hidden when it is per-window STATE that something else in the UI already
-        -- writes -- `frame.minimised` is the one -- rather than a preference.
+        -- writes -- `frame.minimized` is the one -- rather than a preference.
         if row.page == pageKey and not row.hidden then rows[#rows + 1] = row end
     end
     return rows

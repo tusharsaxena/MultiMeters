@@ -314,13 +314,16 @@ badge and any count quoted in the docs must agree with it.
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 
-### test_migrations.lua (5)
+### test_migrations.lua (8)
 
 - migrations: the defaults declare schemaVersion 0, never the current version
 - migrations: a fresh install runs every step and lands on the default profile
 - migrations: a step that raises leaves the stamp at its from value
 - migrations: the stamp is stored raw and survives AceDB's logout strip
 - migrations: a legacy unstamped account migrates every stored profile
+- migrations: v16 moves both minimize keys onto the US spelling in every window of every profile
+- migrations: the v16 step run twice is a no-op, and never overwrites a US key
+- migrations: a fresh install stores frame.minimized and no British key
 
 ### test_diagnostics.lua (23)
 
@@ -1109,9 +1112,9 @@ badge and any count quoted in the docs must agree with it.
 - Column headers have their own color and background
 - Per-statistic mode leaves the Player header white, not the sort column's color
 - The Player header's sort arrow is white too, in per-statistic mode
-- Minimise hides everything below the title bar
-- Minimise actually shrinks the window
-- Minimise leaves the STORED height alone, so expanding restores it
+- Minimize hides everything below the title bar
+- Minimize actually shrinks the window
+- Minimize leaves the STORED height alone, so expanding restores it
 - A collapsed window does not aggregate or render
 - A collapsed window keeps the notice hidden
 - Header shadow reaches every line of the strip
@@ -1122,7 +1125,7 @@ badge and any count quoted in the docs must agree with it.
 - The header color survives a sort change, having nothing to do with it
 - The window NAME takes the header's color
 - Column header class color is the local player's too
-- A profile written before minimise existed is not collapsed
+- A profile written before minimize existed is not collapsed
 - Header buttons are created ONCE per index and re-pointed, never rebuilt
 - A column that goes away HIDES its header; it does not destroy it
 - Every header sits exactly over the column it labels, from the same layout
@@ -1181,7 +1184,7 @@ badge and any count quoted in the docs must agree with it.
 - Segment: the labels and the export read the sentinel as no pin
 - Segment: Database.PinnedSegment answers nil for every spelling of no pin
 
-### test_headercontrols.lua (65)
+### test_headercontrols.lua (66)
 
 - HeaderControls: every control this addon builds is attached
 - HeaderControls: a control turned off is not placed at all
@@ -1203,11 +1206,12 @@ badge and any count quoted in the docs must agree with it.
 - HeaderControls: an atlas beats the ASCII rung
 - HeaderControls: an unlocked padlock is drawn at the same weight as its neighbors
 - HeaderControls: the padlock's two states do not draw the same
-- HeaderControls: minimise shows the opposite of the state it is in
+- HeaderControls: minimize shows the opposite of the state it is in
 - HeaderControls: a glyph is never given text before a font
 - HeaderControls: reset asks before it wipes anything
 - HeaderControls: the reset confirmation opens in the CENTER of the screen
-- HeaderControls: minimise writes through the settings seam
+- HeaderControls: minimize writes through the settings seam
+- HeaderControls: the minimize control writes frame.minimized and draws the library's own art
 - HeaderControls: the lock button toggles this window only
 - HeaderControls: only the control under the pointer is revealed
 - HeaderControls: the title bar itself reveals nothing
@@ -2210,7 +2214,7 @@ badge and any count quoted in the docs must agree with it.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 76 |
-| test_migrations.lua | 5 |
+| test_migrations.lua | 8 |
 | test_diagnostics.lua | 23 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
@@ -2236,7 +2240,7 @@ badge and any count quoted in the docs must agree with it.
 | test_window_header.lua | 73 |
 | test_window_placement.lua | 33 |
 | test_window_segment.lua | 10 |
-| test_headercontrols.lua | 65 |
+| test_headercontrols.lua | 66 |
 | test_row.lua | 77 |
 | test_row_namecell.lua | 30 |
 | test_targets.lua | 24 |
@@ -2261,4 +2265,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 34 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1987** |
+| **Total** | **1991** |

@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-1987%2F1987_passing-green)
+![Tests](https://img.shields.io/badge/Tests-1991%2F1991_passing-green)
 
 Most Damage meter addons show you one statistic at a time. This addon shows all of them in one grid — who kicked, who dispelled, who stood in the fire, who died. One row per player, one column per statistic.
 
@@ -47,8 +47,8 @@ which contexts it belongs in — dungeons and raids and nothing else, say — an
 should get out of the way for, and you can stop thinking about it. Ten hide rules ship. Solo,
 mounted, dead, on a flight path, and six more.
 
-Seven controls can sit in the title bar — close, minimise, lock, settings, segment, reset, export —
-and you pick which ones each window draws. The segment control is the three horizontal lines, and it
+The title bar has room for seven controls: close, minimize, lock, settings, segment, reset and
+export. Each window draws the ones you pick. The segment control is the three horizontal lines, and it
 is the one people miss. Open it for every fight the game still holds, by name and length, Current and
 Overall at the bottom; your pick sticks until you change it, reloads included.
 

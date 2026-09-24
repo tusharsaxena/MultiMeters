@@ -128,11 +128,11 @@ end
 --- ends up permanently undraggable until a reload.
 function WindowProto:ApplyLock()
     local locked = self.locked
-    -- MINIMISE IS THE GRIP'S OTHER AUTHOR, so this has to agree with it or
+    -- MINIMIZE IS THE GRIP'S OTHER AUTHOR, so this has to agree with it or
     -- `/mm lock off` resurrects a grip over a collapsed window. Whichever of the
     -- two runs last wins, so both ask the same question.
     if self.grip then
-        local down = (self.config.frame or {}).minimised and true or false
+        local down = (self.config.frame or {}).minimized and true or false
         self.grip:SetShown(not locked and not down)
     end
 

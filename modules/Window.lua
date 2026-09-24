@@ -631,7 +631,7 @@ function WindowProto:BuildFrame()
     -- checkbox read right here, and because BuildFrame runs ONCE per window,
     -- unticking it did nothing at all until a reload -- the reported bug. The
     -- grip's visibility is the LOCK's answer and only the lock's: ApplyLock and
-    -- ApplyMinimised are its two authors and both ask the same question.
+    -- ApplyMinimized are its two authors and both ask the same question.
     do
         -- THE GRIP ART IS A PAIR, and that is why it is not the catalog's.
         -- LibKa0s-Media carries `resize`, but it is one glyph in one state; this
@@ -727,7 +727,7 @@ function WindowProto:ApplyConfig()
     end
     self:ApplyResizeBounds()
     self:ApplyLock()
-    self:ApplyMinimised()
+    self:ApplyMinimized()
 end
 
 --- The window edge: `frame.borderStyle`, `borderSize` and `borderColor`.
@@ -989,10 +989,10 @@ function WindowProto:ShouldPoll()
     if not self.frame:IsShown() then return false end
     -- A COLLAPSED WINDOW HAS NOTHING TO DRAW INTO. This is a real clause and not
     -- an emergent one: `OnUpdate` is installed on `frame`, which stays SHOWN
-    -- while minimised -- only the body hides -- so without this the window goes
+    -- while minimized -- only the body hides -- so without this the window goes
     -- on aggregating every stat and rendering rows into a hidden body four times
     -- a second, forever.
-    if (self.config.frame or {}).minimised then return false end
+    if (self.config.frame or {}).minimized then return false end
     if self:IsTest() then return false end
     local inCombat = _G.InCombatLockdown and _G.InCombatLockdown()
     if inCombat then return true end
@@ -1097,7 +1097,7 @@ function WindowProto:Refresh()
     -- whole aggregate-and-render ran for a hidden body through an entire fight.
     -- It also stops ShowNotice putting the "waiting for combat data" line back
     -- over a window that has been collapsed.
-    if (self.config.frame or {}).minimised then return end
+    if (self.config.frame or {}).minimized then return end
 
     local t0 = Perf.on and debugprofilestop()
 

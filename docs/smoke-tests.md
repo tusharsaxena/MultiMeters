@@ -99,7 +99,7 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
 **Steps:** hover the title bar; click each control in turn; turn some off in Settings → Frame.
 
 **Pass.**
-- **Seven controls, right to left:** close, minimise, lock, settings, segment, reset, export. They
+- **Seven controls, right to left:** close, minimize, lock, settings, segment, reset, export. They
   are drawn from this addon's own art — white glyphs that take the header's text color. A control
   that is a plain letter (`*`, `#`, `>`) means the art AND the atlas both failed: the ladder is
   working, but say so, because it means a texture did not load.
@@ -138,7 +138,7 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
   to `controlColorMode` / `controlHoverColorMode` at schemaVersion 12 → 13.)
 - **`Reveal controls on hover` OFF keeps every control at full alpha** — and the hover **color**
   must still say which one the pointer is on, because it is the only channel left.
-- **Minimise collapses to the title bar** and the plus/minus flips. The column headers, the rows,
+- **Minimize collapses to the title bar** and the plus/minus flips. The column headers, the rows,
   the "Waiting for combat data…" notice and the resize grip all go — anything still drawn over a
   collapsed window is parented to the frame rather than the body.
 - **A collapsed window stops updating.** Verify during a pull: it must not tick. It is a real clause
@@ -179,7 +179,7 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
   `NS.ValidateSchema` runs from the options descriptor at panel creation; a line here means a schema
   row's path does not resolve against `defaults/Profile.lua`, or its default disagrees with the tree.
 - After `/reload`, `MultiMetersDB` exists on disk with `profileKeys`, `profiles.Default`,
-  `global.schemaVersion = 15` (the runner's target; the declared default is 0), a one-entry `profile.windows` array whose window has `id = 1`, and
+  `global.schemaVersion = 16` (the runner's target; the declared default is 0), a one-entry `profile.windows` array whose window has `id = 1`, and
   `profile.nextWindowId = 2`.
 
 ### 2. `/reload` integrity
@@ -372,8 +372,8 @@ second edge to catch.
   General**, and *Font outline (all surfaces)* there shows **None** on a fresh profile. Each tab label appears **once**; a heading printed twice means a row is
   filed under a tab the page has already left. There is **no** *Header controls* tab here — those
   rows are on **Header** — and **no** "Reset position" button, which is on **General**'s **Master
-  controls** tab. There is also **no** "Show resize grip" checkbox and **no** "Minimised" checkbox: the lock
-  governs the grip, and the header's own minimise button governs the collapse. Whether the title bar
+  controls** tab. There is also **no** "Show resize grip" checkbox and **no** "Minimized" checkbox: the lock
+  governs the grip, and the header's own minimize button governs the collapse. Whether the title bar
   draws at all (`window.header.show`) is a **Header** page setting now, on its **Title bar** tab, not
   a Frame row.
 - **The Bars page's shape.** Six tabs, outside in: *Bar*, *Background*, *Border*, *Text content*,
@@ -392,7 +392,7 @@ second edge to catch.
 - **The Controls tab reads like the header strip.** Every checkbox draws **the control's own icon**
   between the tick box and the words, and the rows run in the order the strip runs **left to right**:
   the segment line first (no icon — it is text, not a glyph), then export, reset, segment picker,
-  settings, lock, minimise, close. Check each icon against the one in the header above it; a missing
+  settings, lock, minimize, close. Check each icon against the one in the header above it; a missing
   icon means `NS.Icon` answered nil for that art name, which is a media-payload problem rather than a
   settings one, and the label falls back to its plain words.
 - **The Visibility page's shape.** Three tabs: *Where to show this window* (the seven context
@@ -526,9 +526,9 @@ second edge to catch.
   Width slider moves to 640 **without being reopened** (`RefreshScalars`). Conversely, move a slider
   and `/mm get window.frame.width` reports the new value.
 - `/mm list` groups every setting under the same page keys the panel uses. It lists
-  `window.frame.minimised`, which the **panel does not draw** — that row is `hidden`, because it is
-  state the header's own minimise button writes rather than a preference. `/mm set
-  window.frame.minimised true` must still collapse the window.
+  `window.frame.minimized`, which the **panel does not draw** — that row is `hidden`, because it is
+  state the header's own minimize button writes rather than a preference. `/mm set
+  window.frame.minimized true` must still collapse the window.
 - **An open page locks when combat starts.** With a tabbed page already open, enter combat (a dummy
   is fine). A cover falls over the **whole** page — banner and tab strip included — reading
   *Settings are locked during combat.* in gray, and one gray chat line says settings are locked. A

@@ -408,7 +408,7 @@ local function reportHeader()
         out("  header controls: none built")
         return
     end
-    for _, key in ipairs({ "close", "minimise", "lock", "settings",
+    for _, key in ipairs({ "close", "minimize", "lock", "settings",
                            "segment", "reset", "export" }) do
         local button = controls[key]
         if not button then

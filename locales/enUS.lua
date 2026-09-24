@@ -213,7 +213,7 @@ L["Draw the title strip along the top of the window."] =
 L["Show close button"] = "Show close button"
 L["Draw a close button in the title bar."] = "Draw a close button in the title bar."
 L["Show close"] = "Show close"
-L["Show minimise"] = "Show minimise"
+L["Show minimize"] = "Show minimize"
 L["Collapse the window to its title bar and back."] = "Collapse the window to its title bar and back."
 L["Show lock"] = "Show lock"
 L["Lock or unlock the window for dragging."] = "Lock or unlock the window for dragging."
@@ -230,7 +230,7 @@ L["Show export"] = "Show export"
 L["Export this window's segment to CSV or to chat."] = "Export this window's segment to CSV or to chat."
 L["Reveal controls on hover"] = "Reveal controls on hover"
 L["Fade every control except the one under the pointer. Off keeps them all visible."] = "Fade every control except the one under the pointer. Off keeps them all visible."
-L["Minimised"] = "Minimised"
+L["Minimized"] = "Minimized"
 L["Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."] = "Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."
 -- The four hidden rows the window's own header controls write (issue #50): the
 -- segment menu's Current / Overall entries, and a click on a column header.
@@ -305,7 +305,7 @@ L["What colors the tooltip's text. Class is the class of the player you are hove
 -- TWO tabs for the title bar now: "Title bar" for whether it shows, its
 -- alignment, its height and its background, and "Title text" for the face
 -- drawn on it. The column-label strip below it moved to its own page (the
--- Columns page it labels), and the meter's own controls (close, minimise,
+-- Columns page it labels), and the meter's own controls (close, minimize,
 -- segment picker...) sort into two further tabs of their own.
 L["Color mode (all surfaces)"] = "Color mode (all surfaces)"
 L["Set the color mode of every bar and header in this window at once. Text colors are left alone — they sit on top of these surfaces and have to contrast with them. Each surface is still its own setting, so you can change one afterwards without changing the rest."] =

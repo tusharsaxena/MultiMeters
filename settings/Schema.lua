@@ -575,7 +575,7 @@ NS.Schema = {
     -- see. A row's page is where it is EDITED; its path is where it is STORED.
     --
     -- ONE GROUP, not the two it was. They were split by what they act on --
-    -- "Window buttons" for close, minimise, lock and settings; "Meter buttons"
+    -- "Window buttons" for close, minimize, lock and settings; "Meter buttons"
     -- for the segment text, the segment picker, reset and export -- which is a
     -- true distinction and a useless one to click through: they are eight
     -- toggles for eight icons in one strip, and a player turning that strip down
@@ -588,7 +588,7 @@ NS.Schema = {
     -- why the two are deliberately not factored into one shared constant.
     --
     -- DECLARED IN THE ORDER THE STRIP READS, left to right: the segment line,
-    -- then export, reset, the segment picker, settings, lock, minimise and
+    -- then export, reset, the segment picker, settings, lock, minimize and
     -- close. modules/HeaderControls.lua's CONTROLS table is the same set written
     -- RIGHT to left -- index 0 sits against the frame's right edge -- so the two
     -- lists are deliberately mirror images and neither is the other's source.
@@ -631,32 +631,32 @@ NS.Schema = {
         label = controlLabel("lock", L["Show lock"]), desc = L["Lock or unlock the window for dragging."],
     },
     {
-        path = "window.frame.showMinimise", type = "bool", default = true,
+        path = "window.frame.showMinimize", type = "bool", default = true,
         page = "header", group = L["Controls"],
-        label = controlLabel("minimise", L["Show minimise"]), desc = L["Collapse the window to its title bar and back."],
+        label = controlLabel("minimise", L["Show minimize"]), desc = L["Collapse the window to its title bar and back."],
     },
     {
         path = "window.frame.closeButton", type = "bool", default = true,
         page = "header", group = L["Controls"],
         label = controlLabel("close", L["Show close"]), desc = L["Draw a close button in the title bar."],
     },
-    -- `frame.minimised` is a HIDDEN row: it exists so the path is writable and
+    -- `frame.minimized` is a HIDDEN row: it exists so the path is writable and
     -- listable, and it draws no control on the panel. It is STATE, not a
-    -- preference -- the header's minimise control writes it, and a window left
+    -- preference -- the header's minimize control writes it, and a window left
     -- collapsed comes back collapsed. As a checkbox it duplicated that control on
     -- a page you have to open to reach, and read as a setting when it is a
-    -- record of what you last did. `showMinimise` -- whether the control is
+    -- record of what you last did. `showMinimize` -- whether the control is
     -- drawn at all -- is the preference, and it stays a checkbox above. It cannot
     -- simply be DELETED the way `frame.position` is absent, and that is the
     -- whole reason `hidden` exists: NS.SetByPath refuses a path with no row, and
-    -- the minimise control writes through that seam rather than poking the
+    -- the minimize control writes through that seam rather than poking the
     -- config table, because SetByPath is what publishes CONFIG_CHANGED. Filed
     -- with the other controls, contiguous with them, because that is the group
     -- it would draw in if it drew at all.
     {
-        path = "window.frame.minimised", type = "bool", default = false, hidden = true,
+        path = "window.frame.minimized", type = "bool", default = false, hidden = true,
         page = "header", group = L["Controls"],
-        label = L["Minimised"], desc = L["Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."],
+        label = L["Minimized"], desc = L["Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."],
     },
     -- THE SORT AND THE SESSION TYPE ARE PREFERENCES, HIDDEN ONES (issue #50).
     -- A click on a column header CHOOSES the sort, and the segment menu's
@@ -667,7 +667,7 @@ NS.Schema = {
     -- because the click wrote around the seam and a CLI path beside it was a
     -- second writer. With the click on the seam there is one writer again, so
     -- the rows come back, hidden: the control that chooses each one is on the
-    -- window. Filed beside `frame.minimised`, the other state a header control
+    -- window. Filed beside `frame.minimized`, the other state a header control
     -- writes. `data.sessionID`, the pinned segment, is the fifth: the same menu
     -- chooses it, and its "none" is Constants.NO_SEGMENT (0) rather than nil, so
     -- a default can say it.

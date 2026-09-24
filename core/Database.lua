@@ -50,11 +50,12 @@ NS.Database = Database
 -- v14 carries the addon-wide `master.locked` onto every window's own lock and
 --     prunes it.
 -- v15 moves LibDBIcon's `minimap` table from the profile to the global store.
+-- v16 spells the window's minimize keys the US way.
 --
 -- The defaults declare `global.schemaVersion = 0`, which means UNSTAMPED: a fresh
 -- install or an account from before the runner stamped anything. It is never the
 -- current version (savedvariables-§1); see defaults/Profile.lua for why.
-local CURRENT_DB_VERSION = 15
+local CURRENT_DB_VERSION = 16
 
 --- The runner's target, published under the name savedvariables-§1 gives it.
 --- Raising it means registering the step that reaches it; the defaults' 0 never moves.
@@ -922,6 +923,48 @@ migrations[14] = function(db)
 
     for _, profile in ipairs(allProfiles(db)) do
         profile.minimap = nil
+    end
+end
+
+--- The two stored frame keys v16 renames, old spelling -> US spelling.
+---
+--- The old names are the player's SavedVariables, matched verbatim off disk: the
+--- step has to spell them the way the file on disk does or it reads nothing
+--- (localization-§5, waived per file and word in tests/prose_waivers.lua).
+local V16_FRAME_KEYS = {
+    { from = "minimised",    to = "minimized" },
+    { from = "showMinimise", to = "showMinimize" },
+}
+
+--- Move one window frame's keys onto their US spelling.
+---
+--- A US key already present WINS: it is the one the addon has been reading, so an
+--- old key beside it is a leftover, dropped rather than copied over it.
+local function v16RenameFrameKeys(frame)
+    if type(frame) ~= "table" then return end
+    for _, key in ipairs(V16_FRAME_KEYS) do
+        if frame[key.to] == nil then frame[key.to] = frame[key.from] end
+        frame[key.from] = nil
+    end
+end
+
+--- v15 -> v16: THE WINDOW'S MINIMIZE KEYS, SPELLED THE US WAY.
+---
+--- `window.frame.minimized` (the collapsed state the header's control writes) and
+--- `window.frame.showMinimize` (whether that control is drawn) were stored under
+--- their British spelling. Renaming only the defaults would orphan every stored
+--- value: a collapsed window would come back open and a hidden control would come
+--- back drawn, while the old keys sat in the file read by nothing.
+---
+--- Every window of every profile, for the reason allProfiles gives. Idempotent: a
+--- frame with no old key is left exactly as it was.
+migrations[15] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" then v16RenameFrameKeys(w.frame) end
+            end
+        end
     end
 end
 

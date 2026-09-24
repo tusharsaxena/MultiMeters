@@ -513,7 +513,7 @@ test("Minimap store: Reset all settings does not un-hide a button the player hid
     assertTrue(inst.NS.SetByPath(PATH, false))
     inst.NS.db:ResetProfile()
     assertEqual(inst.NS.db.global.minimap.hide, true)
-    assertEqual(inst.NS.db.global.schemaVersion, 15,
+    assertEqual(inst.NS.db.global.schemaVersion, 16,
         "the version lives in db.global, so the migrations that follow a reset are a no-op")
 end)
 
@@ -574,7 +574,7 @@ test("Database v15: the profile's minimap table moves to the global store, posit
 
     inst.NS:RunMigrations()
 
-    assertEqual(db.global.schemaVersion, 15)
+    assertEqual(db.global.schemaVersion, 16)
     assertEqual(db.global.minimap.hide, true, "the player's own answer is carried")
     -- minimapPos is the ANGLE they dragged the button to, written by LibDBIcon itself. Dropping it
     -- puts an adopted button back at the library's default position — a silent loss that reads as
@@ -607,7 +607,7 @@ test("Database v15: a profile that never placed a button leaves the shipped defa
 
     inst.NS:RunMigrations()
 
-    assertEqual(db.global.schemaVersion, 15)
+    assertEqual(db.global.schemaVersion, 16)
     assertEqual(db.global.minimap.hide, false)
 end)
 

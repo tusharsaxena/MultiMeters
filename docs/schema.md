@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 15,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
+    schemaVersion = 16,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -52,8 +52,8 @@ safe because every step is idempotent against a fresh default profile. A step ne
 the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
-**Fourteen steps are wired today**, `migrations[1]` through `migrations[14]`, walking an account from
-the shipped v1 shape to v15. Each is one line of the header block at the top of
+**Fifteen steps are wired today**, `migrations[1]` through `migrations[15]`, walking an account from
+the shipped v1 shape to v16. Each is one line of the header block at the top of
 `core/Database.lua`, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -72,12 +72,13 @@ the shipped v1 shape to v15. Each is one line of the header block at the top of
 | v12 → v13 | the title-bar toggle moves onto the header, and the two control color booleans become modes |
 | v13 → v14 | the addon-wide `master.locked` is carried onto every window's own `frame.locked` (a stored `true` locks every window) and pruned from every profile; see [`master`](#master--the-addon-wide-master-controls) |
 | v14 → v15 | LibDBIcon's `minimap` table moves from the profile to the global store, carrying `hide` **and** `minimapPos` so an adopted button keeps the angle the player dragged it to; the profile key is pruned. See [`minimap`](#minimap--and-it-lives-under-global) |
+| v15 → v16 | every window of every profile moves its two collapse keys onto the US spelling, `frame.minimized` and `frame.showMinimize`; a US key already stored wins, and the old keys are pruned |
 
-Adding a v16 is two edits and no bootstrap change:
+Adding a v17 is two edits and no bootstrap change:
 
 ```lua
-migrations[15] = function(db) ... end       -- the runner stamps the version
-local CURRENT_DB_VERSION = 16
+migrations[16] = function(db) ... end       -- the runner stamps the version
+local CURRENT_DB_VERSION = 17
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -530,7 +531,7 @@ either alone. `text.shadow` keeps its long-standing `true`.
 | `locked` | `false` | **not** coupled to Test mode — `WindowManager:SetLocked` used to also switch it on, which made unlocking a window fill it with placeholder rows and made unchecking Test mode a no-op while any window was unlocked. Locking is now about movement and nothing else; ask for a grid to aim at with `/mm test`. This is the window's only lock: General → Master controls' Lock frame reads and writes it for every window at once rather than adding a second one (v14 folded the old `master.locked` into it) |
 | `clampToScreen` | `true` | |
 | `closeButton` | `true` | a **header control**, grouped with the `show*` keys on the panel |
-| `minimised` | `false` | a **hidden** schema row: writable through `NS.SetByPath` and listed by `/mm list`, but drawn as no control. It is per-window state the header's own minimise button writes, not a preference |
+| `minimized` | `false` | a **hidden** schema row: writable through `NS.SetByPath` and listed by `/mm list`, but drawn as no control. It is per-window state the header's own minimize button writes, not a preference |
 | `position` | `{ point="CENTER", relativePoint="CENTER", x=0, y=0 }` | **not a schema row** — named non-setting state, see below |
 
 The chrome itself is `LibKa0s-Core-1.0`'s shared `SKIN` / `ApplySkin`, which tints `frame.title` and
@@ -752,11 +753,11 @@ There is deliberately **no `stat` mode**, for the reason the header's other surf
 divider is one line across the whole window, so "per statistic" could only paint it the sort column's
 color — a fact already on screen twice over.
 
-`showMinimise` · `showLock` · `showSettings` · `showSegment` · `showReset` · `showExport` — all
+`showMinimize` · `showLock` · `showSettings` · `showSegment` · `showReset` · `showExport` — all
 `true`. Six of the seven controls; `closeButton` is the seventh and deliberately keeps its older
 name, because renaming it to `showClose` for symmetry would migrate every stored profile in exchange
 for a consistency nobody can see. All seven sit on the Header page, on one tab —
-**Controls** — window-acting first (close, minimise, lock, settings), then meter-acting (segment
+**Controls** — window-acting first (close, minimize, lock, settings), then meter-acting (segment
 picker, reset, export). Their size, hover reveal and colors sit in the tab below it, **Button
 style**.
 
@@ -775,7 +776,7 @@ player who has just switched fading off means by "how visible are these". It is 
 disabled on the panel in that state, the same bargain `bars.customColor` gets under a non-custom
 color mode. Both are clamped to 0..1 on read: they come from a file a player can hand-edit, and an
 out-of-range alpha is not an error, it is a control drawn at the nearest legal value, which reads as
-the setting not working. `minimised = false`
+the setting not working. `minimized = false`
 collapses the window to that bar — the stored `frame.height` is untouched, so expanding restores it
 exactly. `controlColor = { r=1, g=1, b=1, a=1 }` and `controlHoverColor = { r=1, g=0.82, b=0, a=1 }` — two
 colors, because hover is the only feedback a control gives, each now paired with its own
@@ -1069,7 +1070,7 @@ read fills both halves of the column.
 `sessionType = Const.SESSION_TYPE.Overall` · `sessionID = Const.NO_SEGMENT` · `sortMode = "value"` ·
 `sortColumn = "DamageDone"` · `sortAscending = false`.
 
-**All five are hidden schema rows** (issue #50), filed on the Header page beside `frame.minimised`.
+**All five are hidden schema rows** (issue #50), filed on the Header page beside `frame.minimized`.
 Every one of them is chosen by a control on the window itself: the header's segment menu picks
 `sessionType` or pins a stored segment in `sessionID`, and one click on a column header writes the three sort fields
 (`modules/Window_Header.lua`'s `SortByColumn`). `architecture-§5` reads a control that chooses a

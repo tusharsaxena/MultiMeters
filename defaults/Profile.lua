@@ -127,7 +127,7 @@ local WINDOW_TEMPLATE = {
         -- for a consistency nobody can see. It sits here rather than up beside
         -- `header.show` because what it draws is a header control.
         closeButton     = true,
-        showMinimise    = true,
+        showMinimize    = true,
         showLock        = true,
         showSettings    = true,
         -- The header LINE naming the current fight, and the picker BUTTON that
@@ -143,9 +143,9 @@ local WINDOW_TEMPLATE = {
         -- fallback rather than a degraded one.
         hoverReveal     = true,
         -- STATE, not a preference, and deliberately not a settings row: the
-        -- header's minimise control writes it, and a window left collapsed comes
+        -- header's minimize control writes it, and a window left collapsed comes
         -- back collapsed. Persisted like every other window fact.
-        minimised       = false,
+        minimized       = false,
         -- TWO COLORS, BECAUSE HOVER IS THE ONLY FEEDBACK A CONTROL GIVES. The
         -- art ships white and is tinted by a multiply, so white is the identity
         -- and the icons read as chrome against any header color a player picks;

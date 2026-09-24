@@ -135,7 +135,7 @@ applied twice.
 
 `modules/Window.lua` split into the band across the top and the geometry underneath.
 `tests/test_window_header.lua` is the title strip, the column header buttons and the sort hand-off,
-the segment picker and the minimise collapse that takes the body away and leaves the strip behind;
+the segment picker and the minimize collapse that takes the body away and leaves the strip behind;
 its sort-arrow cases exist once per rung of the three-rung ladder, so an arrow assertion that fails
 on one rung may be perfectly correct on another and the first thing to read in a failure is which
 rung the case forced. `tests/test_window_placement.lua` is where a window sits, how big it is, and

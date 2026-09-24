@@ -6,7 +6,7 @@
 -- the padlock and the gear, the title text and its two color modes, the
 -- hairline divider, the header LINE that says which fight is on screen, the
 -- per-column header buttons and the arrow that marks the sort, the segment
--- picker, the notice text, and the minimise collapse that takes the whole body
+-- picker, the notice text, and the minimize collapse that takes the whole body
 -- away and leaves this strip behind.
 --
 -- Two things here are worth knowing before reading a failure. First, the sort
@@ -1001,22 +1001,22 @@ test("The Player header's sort arrow is white too, in per-statistic mode", funct
 end)
 
 -- ---------------------------------------------------------------------------
--- Minimise (issue #6)
+-- Minimize (issue #6)
 -- ---------------------------------------------------------------------------
 --
--- Review found this had ZERO behavioral coverage: ApplyMinimised could be made
+-- Review found this had ZERO behavioral coverage: ApplyMinimized could be made
 -- a no-op and the suite stayed green, on the headline addition of the change.
 -- Everything below is a property somebody would notice in game and nothing
 -- offline was checking.
 
-test("Minimise hides everything below the title bar", function()
+test("Minimize hides everything below the title bar", function()
     -- Four things hang there, not one. The body carries the rows, but the
     -- column-header strip, the notice and the grip are parented to the FRAME --
     -- so hiding the body alone leaves three of them drawn over a collapsed
     -- window.
     -- red under: hiding self.body and nothing else.
     local _, window, cfg = scene()
-    cfg.frame.minimised = true
+    cfg.frame.minimized = true
     window:ApplyConfig()
 
     assertEqual(window.body:IsShown(), false, "the rows are still there")
@@ -1026,7 +1026,7 @@ test("Minimise hides everything below the title bar", function()
     if window.grip then assertEqual(window.grip:IsShown(), false, "the grip is still there") end
 end)
 
-test("Minimise actually shrinks the window", function()
+test("Minimize actually shrinks the window", function()
     -- Hiding the children left a full-height empty frame sitting there, which is
     -- not what "collapse to the title bar" means to anyone looking at it.
     -- red under: hiding children without changing the frame's height.
@@ -1044,18 +1044,18 @@ test("Minimise actually shrinks the window", function()
     end
     assertTrue(pinnedToBottom(window.frame), "expanded, the frame spans the anchor")
 
-    cfg.frame.minimised = true
+    cfg.frame.minimized = true
     window:ApplyConfig()
     assertFalse(pinnedToBottom(window.frame),
         "collapsed, the frame must stop spanning the anchor")
     assertTrue((window.frame.__h or 0) > 0, "and take the title bar's height instead")
 
-    cfg.frame.minimised = false
+    cfg.frame.minimized = false
     window:ApplyConfig()
     assertTrue(pinnedToBottom(window.frame), "expanding re-pins it")
 end)
 
-test("Minimise leaves the STORED height alone, so expanding restores it", function()
+test("Minimize leaves the STORED height alone, so expanding restores it", function()
     -- The anchor is deliberately not resized: doing so fires onSizeChanged,
     -- which writes pendingWidth/pendingHeight, and SaveSize persists whatever is
     -- pending on the next resize-stop -- so a collapsed height would leak into
@@ -1064,11 +1064,11 @@ test("Minimise leaves the STORED height alone, so expanding restores it", functi
     local _, window, cfg = scene()
     local stored = cfg.frame.height
 
-    cfg.frame.minimised = true
+    cfg.frame.minimized = true
     window:ApplyConfig()
     assertEqual(cfg.frame.height, stored, "the collapse rewrote the stored height")
 
-    cfg.frame.minimised = false
+    cfg.frame.minimized = false
     window:ApplyConfig()
     assertEqual(cfg.frame.height, stored)
     assertEqual(window.body:IsShown(), true, "expanding did not bring the rows back")
@@ -1081,7 +1081,7 @@ test("A collapsed window does not aggregate or render", function()
     -- Refresh the whole aggregate-and-render ran for a hidden body all fight.
     -- red under: removing either clause.
     local inst, window, cfg = scene()
-    cfg.frame.minimised = true
+    cfg.frame.minimized = true
     window:ApplyConfig()
 
     local built = 0
@@ -1100,7 +1100,7 @@ test("A collapsed window keeps the notice hidden", function()
     -- Refresh puts the "waiting for combat data" line back whenever there is
     -- nothing to draw, so hiding it once at collapse time was not enough.
     local _, window, cfg = scene()
-    cfg.frame.minimised = true
+    cfg.frame.minimized = true
     window:ApplyConfig()
     window:Refresh()
     assertEqual(window.notice:IsShown(), false, "the notice came back over a collapsed window")
@@ -1255,12 +1255,12 @@ test("Column header class color is the local player's too", function()
     assertEqual(button.text.__textColor[1], 0.41)
 end)
 
-test("A profile written before minimise existed is not collapsed", function()
+test("A profile written before minimize existed is not collapsed", function()
     -- `~= false` would collapse every stored profile on upgrade, because none of
     -- them has the key at all.
-    -- red under: `local down = frameCfg.minimised ~= false`.
+    -- red under: `local down = frameCfg.minimized ~= false`.
     local _, window, cfg = scene()
-    cfg.frame.minimised = nil
+    cfg.frame.minimized = nil
     window:ApplyConfig()
     assertEqual(window.body:IsShown(), true, "an upgraded profile came back collapsed")
 end)
