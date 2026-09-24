@@ -753,7 +753,10 @@ test("Schema: no tab holds fewer than two controls", function()
     -- red under: a tab losing rows until one is left, or a new one-row section.
     local inst = T.load()
     local NS, L = inst.NS, inst.NS.L
-    local EXEMPT = { [L["Window"]] = true }
+    -- Columns' Columns tab is exempt for the same reason: its controls are the bespoke block
+    -- editor, and the one row filed under it is the hidden column array (window.columns) the
+    -- editor writes whole.
+    local EXEMPT = { [L["Window"]] = true, [L["Columns"]] = true }
 
     local counts, pageOf = {}, {}
     for _, row in ipairs(NS.Schema) do
@@ -787,8 +790,9 @@ test("Schema: a hidden row is filed under a tab that exists, and draws nothing",
                 row.path .. " is hidden but carries no page or group")
         end
     end
-    assertEqual(hidden, 10, "ten rows are hidden: frame.minimized, the four export choices "
-        .. "and the five the window's own header controls choose (issue #50)")
+    assertEqual(hidden, 11, "eleven rows are hidden: frame.minimized, the four export choices, "
+        .. "the five the window's own header controls choose (issue #50) and the column array "
+        .. "the Columns page draws itself (window.columns, issue #52)")
 
     -- And the other half: no tab the strip actually draws is empty.
     for _, page in ipairs({ "general", "windows", "frame", "header", "bars", "tooltip",

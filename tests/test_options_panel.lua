@@ -730,16 +730,20 @@ test("Options: a checkbox's set() routes through NS.SetByPath too", function()
     assertFalse(inst.NS.GetSetting("window.header.show"))
 end)
 
-test("Options: applyDefault routes through NS.SetByPath, not around it", function()
+test("Options: applyDefault routes through the write seam, not around it", function()
+    -- The seam is the settings runtime's Set (LibKa0s-Schema-1.0; NS.SetByPath is it too), and
+    -- its ApplyDefault writes through that member rather than through the host's name, so the
+    -- spy sits on the member.
     local inst = T.load()
+    local S = inst.NS.SchemaRuntime
     local seen = {}
-    local real = inst.NS.SetByPath
-    inst.NS.SetByPath = function(path, value)
+    local real = S.Set
+    S.Set = function(path, value, id)
         seen[#seen + 1] = path
-        return real(path, value)
+        return real(path, value, id)
     end
     inst.NS.Helpers.RestoreDefaults("frame", nil)
-    inst.NS.SetByPath = real
+    S.Set = real
 
     assertTrue(#seen > 0, "the page reset wrote nothing")
     for _, path in ipairs(seen) do
@@ -779,14 +783,16 @@ test("Options: skipRestoreAll vetoes the profiles page from a global reset", fun
           get = function() return false end, set = function() end },
     })
 
+    -- Spied on the runtime's Set, the member every reset writes through (see above).
+    local S = inst.NS.SchemaRuntime
     local seen = {}
-    local real = inst.NS.SetByPath
-    inst.NS.SetByPath = function(path, value)
+    local real = S.Set
+    S.Set = function(path, value, id)
         seen[path] = (seen[path] or 0) + 1
-        return real(path, value)
+        return real(path, value, id)
     end
     inst.NS.Helpers.RestoreAllDefaults()
-    inst.NS.SetByPath = real
+    S.Set = real
 
     assertEqual(seen["state.pretendProfileRow"], nil,
         "a profiles row was reset — the veto is not wired to the descriptor")

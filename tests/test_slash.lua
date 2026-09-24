@@ -456,6 +456,24 @@ test("Slash: `list` groups by the row's PAGE, the same key the panel pages use",
     assertTrue(text:lower():find("frame") ~= nil, text)
 end)
 
+test("Slash: the column array lists and reads as how many columns are shown", function()
+    -- `window.columns` is a row since issue #52 (hidden, written whole), so `/mm list` and
+    -- `/mm get` reach it. A table has no formatter of the library's own, and its generic
+    -- renderer masks anything it cannot concatenate, so without the descriptor's `format` the
+    -- listing printed the secret sentinel for a value that is not secret at all.
+    -- red under: no `format` on the Slash descriptor.
+    local inst = T.load()
+    local shown = 0
+    for _, c in ipairs(inst.NS.GetSetting("window.columns")) do
+        if c.enabled then shown = shown + 1 end
+    end
+    local want = ("%d shown"):format(shown)
+    local got = joined(say(inst, "get window.columns"))
+    assertTrue(got:find("window.columns", 1, true) ~= nil and got:find(want, 1, true) ~= nil, got)
+    local listed = joined(say(inst, "list"))
+    assertTrue(listed:find("window.columns|r = |cFFFFFFFF" .. want, 1, true) ~= nil, listed)
+end)
+
 -- ---------------------------------------------------------------------------
 -- perf: registered by the ADDON, never by the library
 -- ---------------------------------------------------------------------------

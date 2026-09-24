@@ -58,7 +58,7 @@
 -- addon decides where it lives -- which is the pressure the gate exists to apply.
 
 local T = _G.MULTIMETERS_TEST
-local test, assertEqual = T.test, T.assertEqual
+local test, assertEqual, assertTrue = T.test, T.assertEqual, T.assertTrue
 
 test("parity: the Options stub carries every public member of the live Helpers surface", function()
     -- The degraded half comes from a real load with `libs/LibKa0s` out of the load list, never from
@@ -163,4 +163,48 @@ test("parity: the bus stub carries the LibKa0s-Bus-1.0 surface, and its record t
     assertEqual(degraded.mocks.LibStub("LibKa0s-Bus-1.0", true), nil, "the library is not absent")
     T.assertSurfaceParity(degraded.NS.BusLib, "LibKa0s-Bus-1.0")
     T.assertSurfaceParity(live.NS.busRecord, degraded.NS.busRecord, "NS.busRecord")
+end)
+
+-- ── LibKa0s-Schema-1.0 ──────────────────────────────────────────────────────────────────────────
+--
+-- settings/Schema_Paths.lua's degradation stub, in the shape LibKa0s docs/api/Schema/
+-- version-2-docs.md "The degradation stub" prescribes, trimmed to what this addon calls. The
+-- instance surface is not in the library's member manifest, so it is pinned the way that document
+-- says: the two-table form, a live instance against the stub's, both from real loads. The stub
+-- LIBRARY is pinned against the live library table beside it.
+
+--- Live-only on purpose, each with no caller here; the stub's header comment names the same list.
+local SCHEMA_INSTANCE_TRIMMED = {
+    "AllRows",            -- both descriptors read NS.Schema itself
+    "Reindex",            -- nothing splices the array by hand
+    "Default",            -- NS.ApplyDefault takes the row, never the path
+    "BulkAdd", "InBulk",  -- no host write goes around Set, and nothing asks
+    -- The profile reset logs its own line without a count (core/Database.lua).
+    "CountOffDefault", "ResetCounted", "ConsumeResetCount",
+    "Validate",           -- NS.ValidateSchema is this addon's own check
+}
+
+test("parity: the Schema stub carries the live runtime's surface, and a degraded batch lands", function()
+    -- red under: dropping any member the addon calls from the stub's New (SetMany, BulkRun, ...),
+    -- or a lib-level primitive (SplitPath, Read, Write, SameValue) from the stub library.
+    local live, degraded = T.load{}, T.load{ libFiles = {} }
+    assertEqual(degraded.mocks.LibStub("LibKa0s-Schema-1.0", true), nil, "the library is not absent")
+    T.assertSurfaceParity(live.NS.SchemaRuntime, degraded.NS.SchemaRuntime, "NS.SchemaRuntime",
+        SCHEMA_INSTANCE_TRIMMED)
+    -- STRINGS is live-only: the stub's refusals are the descriptor's own words.
+    T.assertSurfaceParity(live.NS.__schemaLib, degraded.NS.__schemaLib, "NS.__schemaLib",
+        { "STRINGS", "MAJOR", "MINOR", "MODULES" })
+
+    -- And the degraded write itself: all or nothing, one announce, the window id honored.
+    local NS = degraded.NS
+    assertTrue(NS.WindowManager:Create("Second"))
+    local second = NS.Database.GetWindows()[2].id
+    local seen = {}
+    NS.NewBusTarget():RegisterMessage(NS.Constants.MSG.CONFIG_CHANGED, function(_, p) seen[#seen + 1] = p end)
+    assertEqual(NS.SetByPaths({ { "window.frame.width", 391 }, { "window.frame.scale", 99 } }, second), false)
+    assertEqual(#seen, 0, "a refused degraded batch announced")
+    assertTrue(NS.SetByPaths({ { "window.frame.width", 391 }, { "window.frame.height", 222 } }, second))
+    assertEqual(NS.Database.FindWindow(second).frame.width, 391)
+    assertEqual(#seen, 1, "a degraded batch announces once")
+    assertEqual(seen[1].windowId, second)
 end)

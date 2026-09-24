@@ -345,6 +345,20 @@ cli = SlashLib:New({
     groupKey = function(row)
         return (row.page or "?") .. " \226\128\186 " .. (row.group or "?")
     end,
+
+    -- The echo for every list/get/set/reset line (Slash minor 5). The library's own renderer for
+    -- every row but one: the column array (`window.columns`, one hidden row since issue #52) is a
+    -- table the library has no formatter for, and its generic fallback masks what it cannot
+    -- concatenate as a secret. It reads as how many columns are shown, the same words its
+    -- `[Set]` line uses.
+    format = function(row, value)
+        if row and row.path == "window.columns" and type(value) == "table" then
+            local shown = 0
+            for _, c in ipairs(value) do if type(c) == "table" and c.enabled then shown = shown + 1 end end
+            return ("%d shown"):format(shown)
+        end
+        return SlashLib.FormatValue and SlashLib.FormatValue(row, value) or tostring(value)
+    end,
 })
 
 -- ---------------------------------------------------------------------

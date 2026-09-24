@@ -401,8 +401,8 @@ local UNCOPIED = { ["window.frame.position"] = true }
 --- seam with the target's, so every value the copy lands is validated, deep
 --- copied on the way in and reacted to exactly as if the player had set it
 --- (architecture-§5: a copy-from that touches rows goes through the helper even
---- when the registry is the caller). `columns` is the seam's whole-array
---- carve-out, so it goes as one write and is normalized there.
+--- when the registry is the caller). `columns` is one whole-array row, so it
+--- goes as one write and is normalized there.
 ---
 --- @param src table
 --- @param key string   a COPY_GROUPS key

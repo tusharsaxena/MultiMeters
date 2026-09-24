@@ -163,7 +163,7 @@ how do I make it smaller, how do I put it back — is in the same place under th
 | Enable Multi Meters (`enabled`) | General visibility (`master.visibility`) |
 | Master scale (`master.scale`) | Master alpha (`master.alpha`) |
 | Lock frame (`master.locked`, session-only: every window's own lock) | Debug console (`state.debugConsole`, session-only) |
-| Minimap button (`global.minimap.hide`, the GLOBAL store, [inverted](schema.md#the-minimap-carve-out--exactly-one-row)) | Test mode (`state.testMode`, session-only) |
+| Minimap button (`global.minimap.hide`, the GLOBAL store, [inverted](schema.md#the-minimap-row--exactly-one-inverted-row)) | Test mode (`state.testMode`, session-only) |
 | Reset position | Reset all settings |
 
 **This tab is now EXACTLY the canonical set, and this addon has no rows of its own on it.** All
@@ -583,7 +583,7 @@ Details that are the page's rather than the module's:
 `H.ActionDropdown` and `H.Relayout` are decorated onto the library instance by this page because
 `settings/Columns.lua` needs both. The library's own dropdown maker reads and writes a stored path,
 which is right for a setting and wrong for everything on these two pages: the picker writes
-**session state**, and the column editor writes one element of an array through a carve-out. Neither
+**session state**, and the column editor rewrites a whole array through its one hidden row. Neither
 has a scalar path to name.
 
 ---
@@ -869,6 +869,7 @@ the active window alone.
 library's reset sweep walks the schema **once**, so "Reset all settings" reset the window you happened
 to have selected and left every other one untouched, while `afterRestoreAll`'s `ResetPositions`
 re-centered **all** of them: one action with two different scopes, and nothing on the button to say
-which you would get. Column arrays were missed entirely, because `window.columns` is a
-`NS.SetByPath` carve-out rather than a schema row and no `ApplyDefault` can address it.
+which you would get. Column arrays were missed entirely, because `window.columns` carries no
+`default` (it was a seam carve-out then, and is a hidden row with no default now), so no
+`ApplyDefault` can address it.
 

@@ -726,7 +726,7 @@ test("SetByPaths: a BULK copy or reset logs ONE flow line and no [Set] line per 
     assertEqual(NS.Database.FindWindow(second).frame.width, 400)
     assertEqual(#lines, 1, "one line for the whole bulk write")
     assertEqual(lines[1][1], "Set", "the bulk line is a [Set] line")
-    local text = lines[1][2]:format(lines[1][3], lines[1][4])
+    local text = lines[1][2]:format(unpack(lines[1], 3))
     assertEqual(text, "copy from 'A' to 'B': 3 rows")
     assertEqual(#seen, 1)
     assertEqual(seen[1].windowId, second)
@@ -753,7 +753,7 @@ test("SetByPaths: a bulk copy counts only the rows whose stored value CHANGED", 
 
     assertTrue(ok)
     assertEqual(#lines, 1)
-    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "copy from 'A' to 'B': 1 rows")
+    assertEqual(lines[1][2]:format(unpack(lines[1], 3)), "copy from 'A' to 'B': 1 rows")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -763,9 +763,13 @@ end)
 test("NS.Bulk: a nested bracket logs ONCE, at the outermost close, summing every level", function()
     -- The Columns page brackets its own array write AROUND the library's page
     -- bracket (Options minor 16), so brackets nest. Only the outermost close
-    -- may emit, with what every level changed, and a row written twice counts
-    -- once. red under: a close that emits at any depth (two lines), or a count
-    -- taken from the library's bulkEnd argument (which says 7 here).
+    -- may emit, with what every level changed. A row written TWICE counts twice
+    -- since the bracket is LibKa0s-Schema-1.0's (issue #52): the runtime tallies
+    -- each write whose read-back moved, and no bulk act in this addon writes one
+    -- row twice (the Columns page's array and its page walk are disjoint), so the
+    -- host's once-per-row key had no case left to serve. A row already at its
+    -- value still counts nothing. red under: a close that emits at any depth (two
+    -- lines), or a count taken from the library's bulkEnd argument (which says 7).
     local inst = T.load()
     local NS = inst.NS
     local lines, restore = heardDebug(NS)
@@ -782,7 +786,7 @@ test("NS.Bulk: a nested bracket logs ONCE, at the outermost close, summing every
 
     assertEqual(#lines, 1, "one line for the whole nested act, and no [Set] line per row")
     assertEqual(lines[1][1], "Set")
-    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "reset columns: 2 rows")
+    assertEqual(lines[1][2]:format(unpack(lines[1], 3)), "reset columns: 3 rows")
 end)
 
 test("NS.Bulk: a level that reports a profile reset silences the whole bracket", function()
@@ -822,14 +826,14 @@ test("NS.Bulk: a raising act still closes the bracket, logs what it changed, and
     assertEqual(ok, false)
     assertEqual(err, boom, "the raised value comes back unwrapped")
     assertEqual(#lines, 1)
-    assertEqual(lines[1][2]:format(lines[1][3], lines[1][4]), "reset frame: 1 rows (stopped by an error)")
+    assertEqual(lines[1][2]:format(unpack(lines[1], 3)), "reset frame: 1 rows (stopped by an error)")
 
     assertTrue(NS.SetByPath("window.frame.width", 402))
     assertEqual(#lines, 2, "the mute stuck after a raise")
 
     NS.Bulk.run("reset", "frame", function() assertTrue(NS.SetByPath("window.frame.width", 403)) end)
     restore()
-    assertEqual(lines[3][2]:format(lines[3][3], lines[3][4]), "reset frame: 1 rows",
+    assertEqual(lines[3][2]:format(unpack(lines[3], 3)), "reset frame: 1 rows",
         "the failure marked the next bracket too")
 end)
 

@@ -279,7 +279,7 @@ owner is `core/LauncherSetup.lua`, whose descriptor hands `LibKa0s-Launcher-1.0`
 answering the live table rather than the table itself — `db.global.minimap` does not exist when
 core/ loads, and a table captured then is one AceDB replaces. The one writer is LibDBIcon, on a drag
 of the button. The addon's only write into the table is the `global.minimap.hide` row, through the
-seam's [minimap carve-out](#the-minimap-carve-out).
+row's own [get/set pair](#the-minimap-row--exactly-one-inverted-row).
 
 ### `master` — the addon-wide master controls
 
@@ -1128,10 +1128,26 @@ the next refresh, because a stale id does not error, it silently reads an empty 
 ## The window-relative path model
 
 This is the part of the schema a reader will not guess, and it is the only thing about the schema
-that is not standard-issue. The machinery below lives in `settings/Schema_Paths.lua` — path
-resolution, the index, the read seam, the write seam and the columns carve-out were peeled out of
-`settings/Schema.lua` under the 1500-line cap, along the seam that nothing in them names a single
-setting. The array of rows kept the name `settings/Schema.lua`.
+that is not standard-issue. The settings **runtime** — path splitting and walking, the row index,
+the single write seam, the all-or-nothing batch and the bulk bracket — is
+[`LibKa0s-Schema-1.0`](https://github.com/tusharsaxena/LibKa0s) minor 2 (LibKa0s v1.56.0, adopted in
+issue #52). `settings/Schema_Paths.lua` builds the one instance of it (`NS.SchemaRuntime`) and
+supplies what is this addon's own:
+
+| Descriptor field | What this addon supplies |
+|---|---|
+| `rows` | `NS.Schema` itself, by reference, with the hidden [columns row](#the-columns-row) appended |
+| `resolveRoot(parts, windowId)` | the window-relative model below: the window id handed in, else the active window, else `db.profile` for a global path; `nil, "No window is selected."` when there is nowhere |
+| `announce` / `announceBatch` | one `CONFIG_CHANGED { section, windowId }` plus the panel's in-place scalar re-sync — per write, or **once** per batch |
+| `debug` / `format` | `NS.Debug`, resolved at call time; the value handed through untouched so `NS.Debug`'s deferred, secret-safe formatting renders it (the column array logs `N shown`) |
+| `resetExempt` | `{ ["global.minimap.hide"] = true }` — the sweep veto `launcher-§3` asks for |
+| `L` | this addon's own refusal wording |
+
+The public names every caller used stay, as thin shims over the instance, so no call site moved:
+`NS.FindSchemaRow`, `NS.RegisterSchemaRows`, `NS.GetSetting`, `NS.SetByPath`, `NS.SetByPaths`,
+`NS.ApplyDefault` and `NS.Bulk`. With LibKa0s absent the same file builds the instance from its own
+**degradation stub** — see [below](#the-degradation-stub). The array of rows kept the name
+`settings/Schema.lua`.
 
 ### The problem
 
@@ -1154,10 +1170,11 @@ A window row's path is **relative to a window** and is spelled with a `window.` 
 { path = "window.frame.width", type = "number", default = 716, page = "frame", ... }
 ```
 
-`NS.GetSetting` and `NS.SetByPath` resolve that prefix against the session's **active window** —
-`NS.State.activeWindowId`, which the settings panel's window picker moves. Global rows keep absolute
-paths and resolve against `db.profile` — all but one, and `global.minimap.hide` names its store
-because `launcher-§3` puts LibDBIcon's table in the global one. There are twenty-two of them:
+The runtime's `resolveRoot` resolves that prefix against the window id a caller names, or, with
+none, against the session's **active window** — `NS.State.activeWindowId`, which the settings
+panel's window picker moves. Global rows keep absolute paths and resolve against `db.profile` — all
+but one: `global.minimap.hide` names its store because `launcher-§3` puts LibDBIcon's table in the
+global one, and its own get/set pair reaches it. There are twenty-two of them:
 `enabled`, `global.minimap.hide`, the four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
 the session-only view over every window's own `frame.locked`), `data.mergePets`, `data.throttle`,
 the four `export.*` preferences, the eight `statColors.*` swatches, and the two composed
@@ -1166,13 +1183,20 @@ three session rows, whose own `get`/`set` are the whole of their storage. The ot
 window rows.
 
 ```lua
--- settings/Schema_Paths.lua
-local function resolveRoot(parts)
+-- settings/Schema_Paths.lua (abridged)
+local function resolveRoot(parts, windowId)
     if parts[1] == "window" then
-        local w, id = activeWindow()      -- picker's selection, else windows[1]
+        if windowId ~= nil then                  -- an explicit id is taken literally
+            local w = NS.Database.FindWindow(windowId)
+            if not w then return nil, L["No window is selected."] end
+            return w, 2, windowId
+        end
+        local w, id = activeWindow()             -- picker's selection, else windows[1]
+        ...
         return w, 2, id
     end
-    return NS.db and NS.db.profile or nil, 1, nil
+    ...
+    return NS.db.profile, 1, nil
 end
 ```
 
@@ -1261,6 +1285,11 @@ min/max/step/fmt/isPercent    slider shape.
 values/sorting/dialogControl  dropdown shape. A `number` row carrying `values` is
              inferred as an enum by both majors and constrained rather than clamped.
 validate     optional predicate; a false answer refuses the write.
+normalize    optional (Schema minor 2): runs after `validate` accepts, and its
+             answer is what is stored; nil refuses. Only the columns row has one.
+hidden       kept off the panel (`NS.SchemaForPage`), still writable, listable
+             and validated: `frame.minimized`, the export choices, the header
+             controls' five and the column array.
 onChange     optional reaction for the few settings CONFIG_CHANGED cannot express.
 sessionOnly  never persisted; the row's own get/set are the whole storage.
 composed     stamped by `expandBlocks` on every row a LibKa0s composer emitted.
@@ -1292,22 +1321,24 @@ is declared out of. What they add around the composers is three things:
 See [settings-panel.md](settings-panel.md#the-composed-blocks) for which block is used where, and
 `docs/ARCHITECTURE.md`'s deviation register for what a load without LibKa0s does to them.
 
-### The minimap carve-out — exactly one row
+### The minimap row — exactly one inverted row
 
-`global.minimap.hide` is the one row the seam handles specially, and two things about it are the
-library's rather than this addon's.
+`global.minimap.hide` is the one stored row that carries its own `get`/`set` pair (declared with the
+row's decor in `settings/Schema_Compose.lua`), and two things about it are the library's rather than
+this addon's. The runtime hands a row carrying `set` its value and stores nothing itself, so every
+route — `/mm set`, the checkbox, `/mm reset` — reaches both through the pair.
 
 **Its store is `db.global`**, not the profile — `launcher-§3`, for the reasons under
-[`minimap`](#minimap--and-it-lives-under-global) — so the path is spelled with its store in it and
-resolved by the carve-out rather than by `resolveRoot`.
+[`minimap`](#minimap--and-it-lives-under-global) — so the path is spelled with its store in it, and
+the pair resolves `NS.db.global.minimap` at call time rather than through `resolveRoot`.
 
-**Its boolean says SHOWN while LibDBIcon's key says HIDDEN**, so the read seam and `putWrite`
-invert. A checkbox labeled with a negative is the settings-panel double-negative everyone
+**Its boolean says SHOWN while LibDBIcon's key says HIDDEN**, so `get` answers `not hide` and `set`
+stores `hide = not v`. A checkbox labeled with a negative is the settings-panel double-negative everyone
 mis-clicks once, and the alternative — a second `minimap.show` key beside the library's own — would
 be two records of one state, free to disagree the first time the player used LibDBIcon's own menu
 (**anti-pattern #81**). The row's `default` is therefore what a user would have **clicked** (`true`,
 shown) while the defaults tree ships `hide = false`; `NS.ValidateSchema` compares the two as
-opposites, and `NS.ApplyDefault` needs no round trip because the seam inverts on the way in.
+opposites, and `NS.ApplyDefault` needs no round trip because `set` inverts on the way in.
 
 The `set` also calls `NS.Launcher:SetShown`, so the button follows the checkbox immediately rather
 than at the next reload — and so `/mm set global.minimap.hide false` and the checkbox do the
@@ -1321,7 +1352,7 @@ there is no second inverted row to find.
 with their accessors in `settings/Schema_Compose.lua`, are never persisted, so they have no home in the defaults
 tree and `NS.ValidateSchema` skips them. They are rows anyway because they belong on the page and in
 `/mm list` beside the settings they sit next to — a toggle that exists only in the panel is a toggle
-the CLI cannot reach. Their own `get` / `set` **are** the whole storage; `NS.GetSetting` returns
+the CLI cannot reach. Their own `get` / `set` **are** the whole storage; the runtime's `Get` returns
 `row.get()` directly rather than `and`-ing it through, because a session row answering `false` is a
 real answer and `row.get() or nil` would turn every "off" into "no such setting".
 
@@ -1341,7 +1372,7 @@ panel re-reads its scalars. `onChange` exists only where the message genuinely c
   window appearing or disappearing (the show ladder's decision), not a window redrawing;
 
 That is the only one. The minimap row used to be the second, with a `refreshMinimap` reactor that
-called LibDBIcon directly; moving the button is part of the **write** now, in the carve-out above,
+called LibDBIcon directly; moving the button is part of the **write** now, in the row's `set` above,
 so `/mm set` and the checkbox cannot take different routes to it. `refreshVisibility` lives in
 `settings/Schema_Compose.lua` alongside the vocabularies and the composers, and resolves
 `NS.Visibility` at **call** time rather than at file scope, so it does not depend on what had
@@ -1351,24 +1382,28 @@ finished loading when the schema file ran.
 
 ## The write seam
 
-`NS.SetByPath(path, value, windowId)` is the single write seam (`architecture-§5`). The panel's
+`NS.SetByPath(path, value, windowId)` is the single write seam (`architecture-§5`): the runtime's
+`S.Set`, fronted only by the refusal wording for a path into the column array. The panel's
 widgets, `/mm set`, `/mm reset`, `NS.ApplyDefault` and the global Defaults sweep all land here, so
 validation, the debug line, the row's reaction and the refresh cannot be skipped by whichever caller
 forgot one. `windowId` is optional: omitted, a `window.*` path means the active window; given, it
 means that window and no other (see [the window registry](#the-window-registry-and-its-writer)).
 
 `NS.SetByPaths(writes, windowId, summary)` is the same seam taking several `{ path, value }` writes
-as one change. Each entry goes through exactly what `NS.SetByPath` does, and every entry is checked
-before any is stored, so one refusal stores nothing. Only the tail differs: one `CONFIG_CHANGED` for
-the batch. Its `section` is the page when every row shares one and `nil` when they do not, so no
+as one change — the runtime's `S.SetMany(entries, { instanceId = windowId, act =, scope = })`. Each
+entry is checked exactly as `NS.SetByPath` checks it, and every entry is checked before any is
+stored, so one refusal stores nothing. Then every entry is stored, then every row's `onChange` runs,
+so a reaction reading a sibling row sees the whole batch. Only the tail differs: one
+`CONFIG_CHANGED` for the batch, through the descriptor's `announceBatch`. Its `section` is the page when every row shares one and `nil` when they do not, so no
 subscriber skips part of a change. The log follows debug-logging-§10 as ruled on 2026-09-12: a batch
 logs one `[Set] <path> = <value>` line per row, whatever it is (a resize drag, a header sort, a
 segment pick). A **bulk copy or reset** is the one exception. It passes `summary`, and the batch
-runs inside the seam's bulk bracket (`NS.Bulk`). Inside the bracket the per-row line is muted, and
-the close logs one `[Set] <summary>: N rows` line, such as `[Set] copy from 'A' to 'B': 42 rows`.
-The tag is `[Set]`, which standard v2.44.0 makes a MUST. N counts the rows whose stored value
-actually moved: the seam reads each row before and after its write while the bracket is open, and
-counts a row once, however often it is written. A row already holding its value is not counted.
+runs inside the runtime's bulk bracket (`NS.Bulk`) — its first word is the act and the rest the
+scope. Inside the bracket the per-row line is muted, and the close logs one `[Set] <summary>: N rows`
+line, such as `[Set] copy from 'A' to 'B': 42 rows`. The tag is `[Set]`, which standard v2.44.0
+makes a MUST. N counts the writes whose stored value actually moved: the runtime reads each row back
+before and after its write while the bracket is open. A row already holding its value is not
+counted; a row written twice in one act would count twice, which no act in this addon does.
 Copy-from is the only `summary` caller. The library's reset walks reach the same bracket through
 the descriptors' `bulkBegin` / `bulkEnd`:
 - each page's **Defaults** button logs `[Set] reset <page>: N rows`;
@@ -1377,14 +1412,19 @@ the descriptors' `bulkBegin` / `bulkEnd`:
 
 A whole-profile reset adds no line from the bracket, because `OnProfileReset` logs it once.
 
-**Order is load-bearing**: write → react (`onChange`) → log once → announce `CONFIG_CHANGED` →
-re-sync the panel's scalars. Reacting before the write would hand a refresher the old value; logging
-in the reactor would log it once per subscriber.
+**Order is load-bearing**, and it is the runtime's contract: refuse an unknown path → `validate` →
+`normalize` → refuse a missing root → store → log once → react (`onChange`) → announce
+`CONFIG_CHANGED` → re-sync the panel's scalars. Reacting before the store would hand a refresher the
+old value; logging in the reactor would log it once per subscriber. (Before issue #52 the host's own
+seam logged after the reaction; the library logs first, so a raising `onChange` cannot erase the
+trace of a write that landed.)
 
 Values are **deep-copied on the way in**. A color table handed straight from a widget (or from a
 row's default) would otherwise be shared with whoever else holds it, and editing one window's color
 would edit theirs. `NS.ApplyDefault` copies for the same reason, and takes the **row** rather than
-the path because both library majors hand over the row.
+the path because both library majors hand over the row. It sets `NS.__restoring` around the write
+(the Frame page's meta color mode reads it) and answers `nil, err` rather than `false` on a refusal,
+because exactly `false` is Slash minor 15's "no default".
 
 The announcement carries `{ section = row.page, windowId = <id or nil> }`. A window ignores a
 payload naming a different id, so a twenty-window profile does not re-apply nineteen windows because
@@ -1397,21 +1437,31 @@ structural sweep, because there the rows changed **subject**; see `docs/settings
 
 ---
 
-## The columns carve-out
+## The columns row
 
-`window.columns` is an ordered array whose length is the user's, not the schema's. A path model
-addresses named leaves; it has no vocabulary for "insert a column before index 2". So the columns
-subtree is a documented carve-out rather than a row:
+`window.columns` is an ordered array whose order is the user's, not the schema's. A path model
+addresses named leaves; it has no vocabulary for "move this column above that one". So the array is
+**one hidden row**, written whole:
+
+```lua
+{ path = "window.columns", page = "columns", group = L["Columns"], hidden = true,
+  validate = isColumnList, normalize = normalizeColumns }      -- no `default`
+```
 
 | Operation | Behavior |
 |---|---|
-| `/mm get window.columns` | **reads** — the generic resolver reaches it like any other node |
+| `/mm get window.columns` | **reads** — through the row, like any other |
 | `NS.SetByPath("window.columns", array)` | **accepted whole-array** — the only granularity a path can honestly express |
-| `NS.SetByPath("window.columns.2.width", 90)` | **refused** — the ordinal moves on the next add, remove or reorder, so a stored reference to it is wrong by the next edit |
+| `NS.SetByPath("window.columns.2.enabled", true)` | **refused** — no row declares the path, and `NS.SetByPath` says so in words that point at the Columns page; the ordinal moves on the next reorder, so a stored reference to it is wrong by the next edit |
 
-Because the array has no row, it gets none of a row's `validate`, so the check lives at the seam.
-`normalizeColumns` proves the array shape before reading anything out of it (a hole or a string key
-would make `#value` an arbitrary answer), then rebuilds it entry by entry.
+`validate` refuses what is not a table; `normalize` (Schema minor 2) does the rest, and its answer is
+what the runtime stores (as a copy), logs, reacts to and announces — exactly as for any scalar row.
+It proves the array shape before reading anything out of it (a hole or a string key would make
+`#value` an arbitrary answer), then rebuilds it entry by entry.
+
+The row has **no `default`**, so no reset reaches it: the Columns page's Defaults button writes the
+shipped array itself, inside the page's bracket (`settings/Columns.lua`). `NS.ValidateSchema` holds
+it to resolution alone.
 
 **It REPAIRS rather than rejects**, which is the change schemaVersion 12 brought with it. An entry
 naming a statistic this build does not have used to be stored and listed so the player could remove
@@ -1436,11 +1486,28 @@ definition. That is a **deferred** read: `settings/Schema_Paths.lua` loads thirt
 later, but the ladder runs on Init, which is the same pattern `migrations[1]` already uses for
 `NS.WINDOW_TEMPLATE`.
 
-Rebuilding rather than accepting the caller's table does two jobs at once: the stored array can never
-share a sub-table with whoever handed it over, and any extra key someone smuggled in is dropped
-rather than persisted into a profile the renderer will not read. The write then takes the **same**
-debug line, `CONFIG_CHANGED` message and panel re-sync every scalar write takes — a direct table
-write in the page would be a second seam that looks identical and announces nothing.
+Rebuilding rather than accepting the caller's table means any extra key someone smuggled in is
+dropped rather than persisted into a profile the renderer will not read, and the runtime's copy on
+the way in means the stored array never shares a sub-table with whoever handed it over. The write
+takes the **same** debug line, `CONFIG_CHANGED` message and panel re-sync every scalar write takes —
+a direct table write in the page would be a second seam that looks identical and announces nothing.
+
+## The degradation stub
+
+With `libs/LibKa0s` absent, `settings/Schema_Paths.lua` builds the same instance from its own stub,
+in the shape LibKa0s `docs/api/Schema/version-2-docs.md` ("The degradation stub") prescribes,
+modeled on BankLedger's and trimmed to what this addon calls: the lib-level `SplitPath`, `Read`,
+`Write` and `SameValue`, and `New` answering `FindRow`, `AddRows`, `Get`, `Set`, `SetMany`,
+`ApplyDefault`, `BulkBegin`, `BulkEnd` and `BulkRun`. It is **write-completing and log-silent**:
+reads, writes, `validate`, `normalize`, `onChange`, `announce`/`announceBatch`, the all-or-nothing
+batch and the bracket depth the sweep veto reads are real; the `[Set]` line and the bracket's tally
+are not (the degraded DebugLog stub would discard them anyway). The header controls, the window
+placement, copy-from, the lock sweep and the degraded Reset All all keep writing through it.
+
+**A deliberate, documented duplication**, pinned by `tests/test_surface_parity.lua`: the stub's
+instance against a live one and the stub library against the live library, both from real loads,
+each trimmed member named with its reason, plus a degraded batch landing in the store with one
+announce.
 
 ---
 

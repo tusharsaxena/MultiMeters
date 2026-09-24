@@ -551,8 +551,8 @@ L["How many enemies to list before stopping."] =
 -- ---------------------------------------------------------------------------
 -- Columns page
 -- ---------------------------------------------------------------------------
--- No rows of its own (the column array is a documented carve-out, not a row —
--- see settings/Schema.lua). The column-header strip's styling lives here too,
+-- No rows of its own in settings/Schema.lua (the column array is one hidden row,
+-- written whole, appended by settings/Schema_Paths.lua). The column-header strip's styling lives here too,
 -- under window.columnHeader.* — it LABELS the columns, so it belongs on the
 -- page where the columns are chosen. Its paths stay under window.columnHeader,
 -- unchanged: a row's page is where it is edited, its path where it is stored.

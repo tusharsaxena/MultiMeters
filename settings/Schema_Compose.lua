@@ -651,10 +651,10 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     -- exemption lives in settings/OptionsSetup.lua (launcher-§3, standard v2.54.0).
     --
     -- NO `onChange`. The row's boolean says SHOWN while LibDBIcon's key says HIDDEN, and
-    -- both the inversion and the call that moves the button live in the single write seam
-    -- (settings/Schema_Paths.lua's "minimap carve-out"), which is where `/mm set` reaches
-    -- them too. This row used to be hand-written here with a `refreshMinimap` reactor that
-    -- called LibDBIcon directly; the composer owns the row now and the seam owns the act.
+    -- both the inversion and the call that moves the button live in the row's own get/set
+    -- pair (its decor, below), which the single write seam hands every write, so `/mm set`
+    -- reaches them too. This row used to be hand-written here with a `refreshMinimap` reactor
+    -- that called LibDBIcon directly; the composer owns the row now and its `set` owns the act.
     minimapPath      = "global.minimap.hide",
     -- Test mode (options-ui-§15, preview-mode, standard v2.47.0): the composer's
     -- own session-only row, directly after the console on a line of its own. The
@@ -778,16 +778,35 @@ dress(MASTER_ROWS, {
         end,
     },
     -- THE ONLY ROW IN THIS SCHEMA WHOSE STORE IS NOT THE PROFILE, and the only one whose
-    -- boolean is the negation of what it stores. Both facts are the write seam's
-    -- (settings/Schema_Paths.lua's "minimap carve-out") and neither is restated here: what
-    -- is owed from this file is the sentence, because the composer's own is English rather
-    -- than this addon's locale key.
+    -- boolean is the negation of what it stores. Both facts are this row's own get/set pair
+    -- (settings/Schema_Paths.lua, "The minimap row"): the settings runtime hands a row that
+    -- carries `set` its value and stores nothing itself, so `/mm set`, the checkbox and
+    -- `/mm reset` all reach the inversion by this one route.
     --
-    -- NO `get`/`set` PAIR either, unlike the three session rows around it. This row is
-    -- genuinely STORED -- a button the player hid stays hidden across a reload -- so it
-    -- takes the ordinary stored path, and the seam is what knows where that path lives.
+    --   THE SCOPE. launcher-§3 fixes LibDBIcon's `minimap` table at `db.global.minimap` -- a
+    --   button belongs to the installation, so a profile switch must not move it. Resolved at
+    --   CALL time: this file loads long before NS:InitDB() has built the store.
+    --
+    --   THE SENSE. The row says SHOWN; LibDBIcon's key says HIDDEN. A checkbox labeled with a
+    --   negative is the classic double-negative everyone mis-clicks once, and a second
+    --   `minimap.show` key beside the library's own would be two records of one state
+    --   (anti-pattern #81). So `get` answers `not hide` -- `true` before the store exists,
+    --   because the button ships shown -- and `set` stores `hide = not v`.
+    --
+    --   THE BUTTON MOVES NOW. `set` also calls NS.Launcher:SetShown, so the button follows the
+    --   checkbox immediately rather than at the next reload. Answering `false` is the normal
+    --   state of a build with no broker library, so nothing reads the result.
     ["global.minimap.hide"] = {
         desc = L["Show this addon's button on the minimap. Left-click it to show or hide the meter windows, right-click it to open these settings. Shared by every profile, because the button belongs to the installation rather than to one character's layout."],
+        get = function()
+            local t = NS.db and NS.db.global and NS.db.global.minimap
+            return not (t and t.hide)
+        end,
+        set = function(v)
+            local t = NS.db and NS.db.global and NS.db.global.minimap
+            if t then t.hide = not v end
+            if NS.Launcher and NS.Launcher.SetShown then NS.Launcher:SetShown(v) end
+        end,
     },
     -- Test mode's box, bound to the one flag and the one switch. Through the
     -- registry when it is up -- WindowManager:SetTestMode is also what `/mm test`

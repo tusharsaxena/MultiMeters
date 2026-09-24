@@ -215,12 +215,13 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
     │                     composers decide WHICH rows there are; this file decides
     │                     where each one sits. This is the file that grows, and a
     │                     new setting is still one row in it
-    ├── Schema_Paths.lua — THE PATH MACHINERY and the seams every reader and writer
-    │                     of a setting lands on: the window-relative path model, the
-    │                     path index rebuilt off NS.Schema, GetSetting, SetByPath,
-    │                     FindSchemaRow, RegisterSchemaRows, ApplyDefault,
-    │                     SchemaForPage, ValidateSchema and the columns carve-out.
-    │                     Names no single setting. THE ONE CONFIG_CHANGED SENDER
+    ├── Schema_Paths.lua — THE SETTINGS RUNTIME'S DESCRIPTOR: one LibKa0s-Schema-1.0
+    │                     instance (NS.SchemaRuntime) over NS.Schema, or its
+    │                     degradation stub; the window-relative resolveRoot, the
+    │                     announce, the hidden columns row, and the shims GetSetting,
+    │                     SetByPath, SetByPaths, FindSchemaRow, RegisterSchemaRows,
+    │                     ApplyDefault, NS.Bulk; SchemaForPage, ValidateSchema.
+    │                     THE ONE CONFIG_CHANGED SENDER
     ├── Slash.lua       — LibKa0s-Slash-1.0 seam: NS.COMMANDS (18 verbs), the five
     │                     schema adapters, the six host verbs, and the one gate that
     │                     refuses a feature verb while the addon is disabled
@@ -321,7 +322,7 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 |---|---|---|---|
 | `Schema_Compose.lua` | What the array is **declared out of**, and nothing else: the refresh routing a row's `onChange` reaches for, the dropdown vocabularies its `values` point at, the common validators, and the LibKa0s-Options-1.0 composers together with every canonical block composed out of them. It holds no row of its own — the composers decide *which* rows there are, and `Schema.lua` decides where they sit | `NS.SchemaCompose` (one table rather than fifty names on `NS`, so the peel costs the namespace one entry and the array can re-localize each member under the name its rows already spell) and `NS.MasterControlsAfterGroup`, published separately because `settings/General.lua` is its reader | `NS.L`, `NS.Constants`. Captures nothing across the load boundary — but **not for one reason**, and the TOC only accounts for one of the four. `NS.Helpers` is the one this file genuinely loads before: `settings/OptionsSetup.lua` builds it afterwards, which is why a media row's `values` has to be the deferred `lsmValues` closure rather than a list. `NS.db` exists at **no** file's load time at all: `core/Database.lua` loads long before this one, but it only *declares* `NS:InitDB`, and the AceDB object is not assigned until that runs inside `OnInitialize`. `NS.WindowManager` and `NS.Visibility` both publish themselves at file scope and both load **before** this file, so a capture would in fact resolve; they are still reached through `NS` because the only things that reach them are runtime callbacks — `onResetPosition` wants the live registry and whatever `NS.State.activeWindowId` names at the moment of the click, Lock frame's `get`/`set` want the live registry's `IsLocked`/`SetLocked`, and `refreshVisibility` falls back to `NS:GetModule("Visibility", true)` so a partial install fails open rather than freezing a nil in |
 | `Schema.lua` | **The array, and nothing else.** 169 rows across 8 page keys, each one the single source of truth for a setting's widget, its CLI parser and its default. This is the file that grows, and a new setting is still one row in it | `NS.Schema` | every member of `NS.SchemaCompose`, resolved **at file scope** as the array is declared — which is what puts `settings/Schema_Compose.lua` ahead of it in the TOC |
-| `Schema_Paths.lua` | The path machinery and the seams every reader and writer of a setting lands on: path splitting and memoization, window resolution, the window-relative path model, the one inverted row, the `path → row` index, the read seam, the write seam, the `columns` whole-array carve-out, the bulk bracket that logs a bulk copy or reset as one `[Set]` line, and the page and validation surfaces. **Nothing in this file names a single setting** — the array is the part that grows, this is the part that is read when something is wrong | `NS.GetSetting`, `NS.SetByPath`, `NS.SetByPaths` (both taking an optional window id), `NS.FindSchemaRow`, `NS.RegisterSchemaRows`, `NS.ApplyDefault`, `NS.SchemaForPage`, `NS.ValidateSchema`, `NS.NormalizeColumns`, `NS.Bulk` (`begin` / `finish`, the descriptors' `bulkBegin` / `bulkEnd`, and `run`, a bracket of the host's own) | `NS.Schema` **at file scope** — it builds its index by walking the array, which is why it must load *after* it — plus `NS.db`, `NS.State.activeWindowId`, `NS.Constants`, and `NS.Helpers` / `NS.Visibility` at call time. **The one `CONFIG_CHANGED` sender** |
+| `Schema_Paths.lua` | The settings runtime's descriptor (issue #52). The machinery — path splitting and walking, the `path → row` index, the single write seam, the all-or-nothing batch and the bulk bracket that logs a bulk copy or reset as one `[Set]` line — is `LibKa0s-Schema-1.0` minor 2's; this file builds its one instance, or the write-completing degradation stub in the shape the library's docs prescribe, and supplies what is this addon's: window resolution and the window-relative path model, the announce, the hidden `window.columns` row (written whole, repaired by its `normalize`), and the page and validation surfaces. The one inverted row keeps its own get/set in `Schema_Compose.lua` | `NS.SchemaRuntime`, `NS.__schemaLib`, and the shims `NS.GetSetting`, `NS.SetByPath`, `NS.SetByPaths` (both taking an optional window id), `NS.FindSchemaRow`, `NS.RegisterSchemaRows`, `NS.ApplyDefault`, `NS.Bulk` (`begin` / `finish` / `run`, the runtime's `BulkBegin` / `BulkEnd` / `BulkRun`); `NS.SchemaForPage`, `NS.ValidateSchema`, `NS.NormalizeColumns`, `NS.MINIMAP_PATH` | `NS.Schema` **at file scope** — the runtime builds its index by walking the array, which is why it must load *after* it — plus `NS.db`, `NS.State.activeWindowId`, `NS.Constants`, and `NS.Helpers` / `NS.Visibility` at call time. **The one `CONFIG_CHANGED` sender** |
 | `Slash.lua` | `NS.COMMANDS`, the five schema adapters pointed at the seam above, the six host verbs, the library-absent stub, and the descriptor's `isEnabled` / `brandName` — the LIBRARY's disabled gate, with **no `liveVerbs`**, so the live set is the standard's twelve reserved verbs and only this addon's own feature verbs refuse (`slash-commands-§2`, `§7`) | `NS.Slash` — `Register`, `OnSlash`, `PrintHelp`, `HelpRows`, `LandingRows`, `DisabledLine`, `Version` | LibKa0s-Slash-1.0, `NS.WindowManager`, `NS.DebugLog`, `NS.Perf`, `NS.Export`, the schema seam |
 | `OptionsSetup.lua` | The options descriptor, the page registry, the reset-all veto (`page == "profiles"`), the one row no reset in the panel may write (`global.minimap.hide`, exempted at `applyDefault` — `launcher-§3`), and the library-absent stub | `NS.Helpers` (the library instance itself), `NS.CreateOptionsPanel`, `NS.OpenOptionsPanel`, `NS.RefreshOptionsPanel` | LibKa0s-Options-1.0, `NS.Schema`, `NS.Slash:LandingRows` |
 | `Windows.lua` | The window picker — `H.WindowBanner`, **the only writer of `NS.State.activeWindowId`**, decorated onto the library instance and drawn by all seven window pages — and the five registry buttons plus the copy-from group filter, behind a bespoke two-tab strip (Window, Copy from) | a page registration | `NS.WindowManager`, `NS.State.SetActiveWindow`, `NS.RefreshOptionsPanel` |
@@ -337,8 +338,8 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 
 Schema rows total 169 across 8 page keys — windows 1, frame 26, header 36, bars 29, tooltip 30,
 visibility 17, columns 8, general 22. Counting them means reading `settings/Schema.lua` alone: the
-array is the whole of that file now, and neither `Schema_Compose.lua` nor `Schema_Paths.lua`
-contributes a row. `profiles` is the only page with zero schema rows: it hosts
+array is the whole of that file now, and `Schema_Compose.lua` contributes no row. `Schema_Paths.lua`
+appends exactly one, the hidden `window.columns` row (170 at runtime). `profiles` is the only page with zero schema rows: it hosts
 AceDBOptions' own tree rather than any of ours, which is bespoke by necessity and says why in its
 file header. `columns` carries 8 schema rows (the column-header text and background rows moved here
 from Header) plus a bespoke block editor with none — the array it edits is also bespoke by necessity,
@@ -440,7 +441,7 @@ for the same "a flat path model has no vocabulary for this shape" reason.
       load *before* this file and could be captured, and are not because the only things that reach
       them are runtime callbacks. The per-file table above says which is which.
    2. `Schema.lua` — the array.
-   3. `Schema_Paths.lua` — **after the array**, because it builds its `path → row` index by walking
+   3. `Schema_Paths.lua` — **after the array**, because its runtime builds the `path → row` index by walking
       `NS.Schema` at *file scope*; and **still before `Slash.lua` and `OptionsSetup.lua`**, which
       point their seams at `NS.SetByPath` / `NS.GetSetting` / `NS.FindSchemaRow` / `NS.ApplyDefault`
       at load. It is the one file in the addon pinned from **both** sides, which is why splitting

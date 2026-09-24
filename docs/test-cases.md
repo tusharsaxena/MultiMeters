@@ -1921,6 +1921,16 @@ badge and any count quoted in the docs must agree with it.
 - Picking Current or Overall writes the session type through the seam (issue #50)
 - The sort and segment batches log one [Set] line per row they write
 
+### test_schema_batch.lua (7)
+
+- SetByPaths (a): one refused entry stores NO entry, and answers false with a reason
+- SetByPaths (b): a three-row batch sends exactly ONE CONFIG_CHANGED
+- SetByPaths (c): a bulk act logs exactly one '[Set] <summary>: N rows' line
+- SetByPaths (d): a window id writes THAT window, not the active one
+- SetByPaths (e): window.columns is written whole, normalized and copied; a path into it is refused
+- SetByPaths (f): the minimap row reads SHOWN and stores hide, inverted
+- SetByPaths (g): every entry is stored before the first row reacts
+
 ### test_schema_defaults.lua (18)
 
 - Schema defaults: the two trees the validator compares are both present
@@ -1942,7 +1952,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: answers 0 when there is no profile tree to compare against
 - ValidateSchema: counts every failure, in schema order, with nothing listening
 
-### test_slash.lua (74)
+### test_slash.lua (75)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1968,6 +1978,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: accepting the `resetall` popup resets the profile and logs ONE line
 - Slash: declining the `resetall` popup does nothing
 - Slash: `list` groups by the row's PAGE, the same key the panel pages use
+- Slash: the column array lists and reads as how many columns are shown
 - Slash: `perf` is declared in NS.COMMANDS and routed to NS.Perf.OnCommand
 - Slash: `export` opens the modal on the window the player named
 - Slash: `export` with no name falls back to a window rather than to nothing
@@ -2077,7 +2088,7 @@ badge and any count quoted in the docs must agree with it.
 - Options: the Profiles page SHOWS the container AceConfigDialog fills, even a pooled (hidden) one
 - Options: a widget's set() routes through NS.SetByPath
 - Options: a checkbox's set() routes through NS.SetByPath too
-- Options: applyDefault routes through NS.SetByPath, not around it
+- Options: applyDefault routes through the write seam, not around it
 - Options: the panel and the CLI resolve a page's rows through the SAME function
 - Options: skipRestoreAll vetoes the profiles page from a global reset
 - Options: a global reset restores window POSITIONS, which no schema row owns
@@ -2184,11 +2195,12 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: with only LibKa0s-Slash missing, a disabled left click prints the refusal and raises nothing
 - Degraded: the stub's disabled-line format is the library's, byte for byte
 
-### test_surface_parity.lua (3)
+### test_surface_parity.lua (4)
 
 - parity: the Options stub carries every public member of the live Helpers surface
 - parity: NS.Compat and NS.Secrets carry every LibKa0s-Compat-1.0 member between them
 - parity: the bus stub carries the LibKa0s-Bus-1.0 surface, and its record the instance's
+- parity: the Schema stub carries the live runtime's surface, and a degraded batch lands
 
 ### test_eol.lua (2)
 
@@ -2255,14 +2267,15 @@ badge and any count quoted in the docs must agree with it.
 | test_windowmanager.lua | 47 |
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
+| test_schema_batch.lua | 7 |
 | test_schema_defaults.lua | 18 |
-| test_slash.lua | 74 |
+| test_slash.lua | 75 |
 | test_slash_refusal.lua | 2 |
 | test_disabled.lua | 22 |
 | test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 11 |
 | test_degraded.lua | 34 |
-| test_surface_parity.lua | 3 |
+| test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **1991** |
+| **Total** | **2000** |

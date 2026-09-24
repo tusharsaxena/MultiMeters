@@ -79,6 +79,9 @@ do
         -- core/LifecycleSetup.lua would take its degradation stub, which would make every case in
         -- tests/test_disabled.lua a statement about the stub instead of about the addon.
         "Lifecycle.lua",
+        -- settings/Schema_Paths.lua takes its degradation stub without this one, so every settings
+        -- read and write in the suite would measure the stub instead of LibKa0s-Schema-1.0.
+        "Schema.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do
@@ -292,6 +295,7 @@ local SUITES = {
     -- settings and the CLI
     "test_schema",
     "test_schema_paths",
+    "test_schema_batch",
     "test_schema_defaults",
     "test_slash",
     "test_slash_refusal",

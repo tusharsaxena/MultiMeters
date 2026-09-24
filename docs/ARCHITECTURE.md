@@ -90,10 +90,11 @@ anti-pattern #73. What comes out is an array of ordinary rows, so nothing downst
 [settings-panel.md](settings-panel.md#the-composed-blocks) for which block is used where, and the
 [deviation register](#documented-deviations) for what a load without LibKa0s does to them.
 
-The write seam is `NS.SetByPath`, with `NS.SetByPaths` as its batch form; the reader is
-`NS.GetSetting`. Both the panel and the CLI point at them, so `/mm set window.frame.width 300` takes
-exactly the path a slider takes — same validation, same debug line, same `CONFIG_CHANGED` message,
-same panel re-sync.
+**The runtime is `LibKa0s-Schema-1.0` minor 2's** (issue #52): `settings/Schema_Paths.lua` builds
+`NS.SchemaRuntime` from the rows, a window-aware `resolveRoot` and the announce, or a log-silent
+[degradation stub](schema.md#the-degradation-stub) without LibKa0s. The write seam is `NS.SetByPath`
+(its `Set`), batched by `NS.SetByPaths` (`SetMany`); the reader is `NS.GetSetting`. The panel and the
+CLI both point at them: same validation, debug line, `CONFIG_CHANGED` and panel re-sync.
 
 **The window-relative path model** is the one thing here that is not standard-issue. A window row's
 path is relative (`window.frame.width`) and the seam resolves it against `NS.State.activeWindowId`,
@@ -103,7 +104,7 @@ rows ([schema.md](schema.md#the-window-relative-path-model) lists both sets).
 
 Profiles carries **zero** rows: AceDBOptions' own tree, the one place `AceConfigDialog` is permitted,
 and vetoed from reset-all. Columns carries eight `window.columnHeader.*` rows beside its block
-editor, whose `window.columns` array is the seam's documented whole-array carve-out.
+editor, whose array is a hidden 170th row, [`window.columns`](schema.md#the-columns-row).
 
 **The window registry has one writer** (`architecture-§5`), since no row can name a window's
 existence. Its storage keys are `db.profile.windows` (entries carry their `id` and unique `name`) and
@@ -120,7 +121,7 @@ row. Each piece has one owner, and every writer is listed with the act that reac
 |---|---|---|---|
 | `frame.position` in each `db.profile.windows` entry ([detail](schema.md#frameposition-is-named-non-setting-state)) | geometry only a drag determines | `WindowProto` (`modules/Window_Placement.lua`) | `WindowProto:SavePosition` (title-bar drag-stop); `WindowManager:ResetPosition` / `:ResetPositions` (General's *Reset position*, `/mm reset-positions`) put back the shipped center; `WindowManager:Create` (whole, via `NS.DefaultWindow`) and `:Duplicate` (its 24 px offset); `Database.EnsureWindowShape`'s backfill when `Create`, `Duplicate` or `CopyFrom` calls it |
 | `db.global.roster` (`byGuid`, `pets`) ([detail](schema.md#dbglobal--account-wide)) | learned data | `modules/Roster.lua` | `build()` and its `linkPetOf`, recording every member and pet-owner link the live build sees (the lazy rebuild after a roster invalidation); `Roster.Forget` clears it on `METER_RESET` |
-| `db.global.minimap`'s `minimapPos` ([detail](schema.md#minimap)) | a vendored library's own writes | `core/LauncherSetup.lua` (the descriptor's `minimap` closure hands LibDBIcon the table) | LibDBIcon, when the player drags the minimap button. `hide` is the `global.minimap.hide` row, written through the seam's minimap carve-out |
+| `db.global.minimap`'s `minimapPos` ([detail](schema.md#minimap)) | a vendored library's own writes | `core/LauncherSetup.lua` (the descriptor's `minimap` closure hands LibDBIcon the table) | LibDBIcon, when the player drags the minimap button. `hide` is the `global.minimap.hide` row, written through the seam by the row's own inverting `set` |
 | `MultiMetersPerfDB` | recorded data a vendored library writes | `core/PerfSetup.lua` (hands LibKa0s-Perf the key) | LibKa0s-Perf's `P.Save` on `/mm perf finish`: appends, trims the ring to 10, discards an older schema |
 
 **Sort, session type and the pinned segment are preferences, not a remembered view**: a header

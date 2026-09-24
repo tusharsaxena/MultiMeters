@@ -1025,7 +1025,7 @@ end
 --
 -- A reset-all accepted from the General page's popup, which `/mm resetall`
 -- opens too, reaches the reset line from inside the library's bulk bracket,
--- which then adds nothing (NS.Bulk, in settings/Schema_Paths.lua). The three
+-- which then adds nothing (NS.Bulk, the settings runtime's bracket). The three
 -- share one rebuild. The reset line is logged after it, and ends " (stopped by
 -- an error)" when it raised.
 --
@@ -1102,7 +1102,7 @@ function Database:OnProfileReset(_, db)
     reseedQuietly = false
     -- Logged AFTER the rebuild, so a line never reads as a finished reset when
     -- the rebuild then raised: that one ends " (stopped by an error)", the
-    -- marker NS.Bulk's line carries in settings/Schema_Paths.lua.
+    -- marker NS.Bulk's line carries (LibKa0s-Schema-1.0's bracket).
     if debugOn() then
         NS.Debug("Set", "reset profile '%s' to defaults%s", tostring(key),
             ok and "" or " (stopped by an error)")

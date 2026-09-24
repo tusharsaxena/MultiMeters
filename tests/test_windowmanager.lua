@@ -702,7 +702,11 @@ test("CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it co
     assertEqual(#seen, 1)
     assertEqual(seen[1].windowId, target.id)
     assertEqual(#lines, 1, "a bulk copy is ONE [Set] line, never one per row")
-    assertEqual(lines[1][1], "%s: %d rows", "and that line is the copy's summary, not a row")
+    -- Formatted with every argument the line carries: how the runtime splits the summary into
+    -- act and scope is its business (LibKa0s-Schema-1.0's `%s %s: %d rows%s`), the text is ours.
+    local text = lines[1][1]:format(unpack(lines[1], 2))
+    assertTrue(text:find("^copy from '.-' to '.-': %d+ rows$") ~= nil,
+        "and that line is the copy's summary, not a row: " .. text)
     assertEqual(inst.NS.State.activeWindowId, source.id, "the picker stays where it was")
 end)
 
@@ -724,8 +728,8 @@ test("CopyFrom logs ONE [Set] line naming the source, the target and the rows it
         assertTrue(f[1] ~= "Bulk", "the [Bulk] tag is retired: " .. tostring(f[2]))
     end
     assertEqual(#lines, 2, "one [Set] line per copy")
-    local first  = lines[1][1]:format(lines[1][2], lines[1][3])
-    local second = lines[2][1]:format(lines[2][2], lines[2][3])
+    local first  = lines[1][1]:format(unpack(lines[1], 2))
+    local second = lines[2][1]:format(unpack(lines[2], 2))
     local n = tonumber(first:match("^copy from 'Source' to 'Target': (%d+) rows$"))
     assertTrue(n ~= nil and n > 0, "the line names source, target and count: " .. first)
     assertEqual(second, "copy from 'Source' to 'Target': 0 rows",

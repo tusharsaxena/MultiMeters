@@ -87,7 +87,10 @@ arrives on the list the moment the library publishes it and stays there until th
 loud why the stub does not carry it. `tests/run.lua` registers where the live half is looked up
 (`Kit.setSurfaceSource`), because this stub mirrors the **instance** `lib:New(descriptor)` returned
 and not the four-member library table LibStub answers for the same name. The other six seams are
-not compared by name, and the suite's header gives the reason for each.
+not compared by name, and the suite's header gives the reason for each. The settings runtime's
+stub (`settings/Schema_Paths.lua`, issue #52) is pinned there too, in the two-table form the
+library's docs prescribe for an instance: a live `NS.SchemaRuntime` against a degraded one and the
+stub library against the live one, both from real loads, plus a degraded batch landing in the store.
 
 ### One environment detail worth knowing
 
@@ -173,7 +176,10 @@ redirected, and the picker never moves. `NS.SetByPaths` is held to all-or-nothin
 `[Set]` line per row, and one `CONFIG_CHANGED` per batch. A bulk copy is the exception: one
 `[Set] <act>: N rows` line, where N counts only the rows that changed. The same suite pins
 `NS.Bulk`'s bracket: nesting, the changed-only count, silence after a profile reset, and a raise
-that still closes the bracket. `tests/test_windowmanager.lua` and
+that still closes the bracket. `tests/test_schema_batch.lua` pins `NS.SetByPaths` by what a caller
+observes -- all or nothing, one announce, one bulk line, the window id, the column array, the
+minimap inversion and store-then-react order -- written green against the host seam first and kept
+green across the move onto `LibKa0s-Schema-1.0`'s `SetMany`. `tests/test_windowmanager.lua` and
 `tests/test_window_placement.lua` prove that `Rename`, `CopyFrom`, `SetLocked` and `SaveSize` reach
 the seam ([schema.md](schema.md#the-window-registry-and-its-writer)).
 `settings/Schema_Compose.lua` is the one new module with no suite of its own, and deliberately: it

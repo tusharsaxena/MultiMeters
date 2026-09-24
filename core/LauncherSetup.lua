@@ -61,10 +61,10 @@ local addonName, NS = ...
 --
 -- ── THE INVERSION IS NOT HERE ────────────────────────────────────────────────────────────────
 --
--- The Master-controls row says SHOWN and LibDBIcon's key says HIDDEN, so the row's get/set invert
--- — at settings/Schema_Paths.lua's single write seam (options-ui-§1), with every other row, which
--- is also where `Launcher:SetShown` is called so the button follows the checkbox immediately
--- rather than at the next reload. Nothing about that inversion lives in this file, and the
+-- The Master-controls row says SHOWN and LibDBIcon's key says HIDDEN, so the row's own get/set
+-- invert (settings/Schema_Compose.lua), reached through the single write seam (options-ui-§1) like
+-- every other row, and its `set` is also where `Launcher:SetShown` is called so the button follows
+-- the checkbox immediately rather than at the next reload. Nothing about that inversion lives in this file, and the
 -- library declines to own it too.
 --
 -- ── TOC POSITION ─────────────────────────────────────────────────────────────────────────────

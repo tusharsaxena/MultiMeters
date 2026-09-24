@@ -143,9 +143,12 @@ test("Schema defaults: every non-session row resolves against defaults/Profile.l
 end)
 
 test("Schema defaults: every row's default equals the shipped default, compared deeply", function()
+    -- The column array's row is exempt BY NAME: it carries no `default` on purpose, because no
+    -- reset may reach it -- the Columns page's Defaults button writes the shipped array itself
+    -- (settings/Schema_Paths.lua, COLUMNS_ROW). NS.ValidateSchema holds it to resolution alone.
     local problems = {}
     for _, row in ipairs(NS.Schema) do
-        if not row.sessionOnly then
+        if not row.sessionOnly and row.path ~= "window.columns" then
             local parts = split(row.path)
             diff(row.default, shippedFor(row, parts), row.path, problems)
         end

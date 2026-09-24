@@ -422,9 +422,10 @@ if not lib then
     -- BRACKETED THE WAY THE LIBRARY BRACKETS IT (Options minor 16): the session-row
     -- walk and the profile reset share one bulk bracket, so the rows written first
     -- are muted and the reset logs one line, OnProfileReset's. `resetProfile`
-    -- answers whether it reset, which is what tells the close to stay silent.
+    -- answers whether it reset, and `info.profileReset` is how the walk tells the
+    -- bracket (LibKa0s-Schema-1.0's BulkRun shape), which keeps the close silent.
     Helpers.RestoreAllDefaults = function()
-        NS.Bulk.run("reset", "all", function()
+        NS.Bulk.run("reset", "all", function(info)
             for _, row in ipairs(NS.Schema or {}) do
                 if not vetoedFromResetAll(row) and NS.ApplyDefault then
                     NS.ApplyDefault(row)
@@ -435,7 +436,7 @@ if not lib then
             -- library, so the stub makes the same call. It exists because the LIBRARY is
             -- missing, not the db, and the user whose panel will not open is exactly the
             -- user who needs "reset everything".
-            return descriptor.resetProfile and descriptor.resetProfile()
+            if descriptor.resetProfile and descriptor.resetProfile() then info.profileReset = true end
         end)
     end
 

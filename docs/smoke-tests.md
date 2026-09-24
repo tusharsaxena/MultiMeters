@@ -633,8 +633,11 @@ are holding secret values is precisely what must not happen.
    column.
 3. Change a setting on window 2 and confirm window 1 does **not** move.
 4. Windows page → **Copy settings from** → source = window 1, group = **Bars** → Copy.
-5. Repeat with group = **Everything**.
+5. Repeat with group = **Everything**, with `/mm debug on` and the console open.
 6. **Duplicate window**, then **Delete** one.
+7. The settings runtime (LibKa0s-Schema-1.0, issue #52): with the picker on window **1**, resize
+   window **2** by its grip and click one of its column headers, then toggle **Minimap button** on
+   General twice.
 
 **Pass.**
 - Both windows draw independently, each with its own columns, sorting and refresh interval.
@@ -652,6 +655,12 @@ are holding secret values is precisely what must not happen.
   first surviving window rather than showing empty widgets.
 - `/mm window list` lists both, with shown/hidden state and column count. `/mm window new`,
   `delete`, `copy <source> <target>` do the same things the panel does.
+- The resize and the sort land on window 2 only (its Frame page shows the new width once the
+  picker moves to it), and the picker stays on window 1.
+- A copy-from redraws the target **once** and logs **one** `[Set] copy from '<src>' to '<dst>': N
+  rows` line in the console, never a line per row.
+- The Minimap button checkbox hides and shows the button immediately; `/mm get global.minimap.hide`
+  reads `true` while it is shown, and `/mm list` shows `window.columns = N shown`.
 
 ### 7. Visibility matrix
 
