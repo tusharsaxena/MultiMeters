@@ -694,6 +694,18 @@ function M:IsTest()
     return (NS.State and NS.State.testMode) and true or false
 end
 
+--- Whether any window is on screen: the question a bare `/mm toggle` asks before it
+--- decides to hide them all or show them all, published so the launcher menu's
+--- *Show window* box reads the same answer the click it drives acts on
+--- (core/LauncherSetup.lua, launcher-§2).
+--- @return boolean
+function M:AnyShown()
+    for _, inst in ipairs(M.All()) do
+        if inst:IsShown() then return true end
+    end
+    return false
+end
+
 --- `/mm toggle` with no name flips every window; with a name, one.
 ---
 --- "Toggle" here means SHOWN, not enabled: it hides a window that is on screen
@@ -702,8 +714,9 @@ end
 --- `/mm toggle` in the middle of a pull wants.
 ---
 --- NOTHING SHOWS WHILE STOOD DOWN. The disabled case never gets here -- the slash
---- gate and the launcher refuse first, naming `/mm enable` -- so the caller this
---- refusal answers is the perf hold, and its line says so (performance-§6).
+--- gate refuses first, naming `/mm enable`, and the launcher menu grays its *Show
+--- window* entry -- so the caller this refusal answers is the perf hold, and its
+--- line says so (performance-§6).
 ---
 --- @param name string|nil
 --- @return boolean ok, string|nil err
@@ -712,10 +725,7 @@ function M:Toggle(name)
         return false, L["Windows are suspended while a performance capture runs."]
     end
     if name == nil then
-        local anyShown = false
-        for _, inst in ipairs(M.All()) do
-            if inst:IsShown() then anyShown = true end
-        end
+        local anyShown = M:AnyShown()
         for _, inst in ipairs(M.All()) do
             if anyShown then inst:Hide("toggled") else inst:Show() end
         end

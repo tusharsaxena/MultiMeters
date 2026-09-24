@@ -202,12 +202,28 @@ changes, and `/mm reset global.minimap.shown` still resets the row.
 **The button the row shows answers a hover with the library's status tooltip**, including while the
 addon is disabled (`launcher-§1`, standard v2.66.0; `LibKa0s-Launcher-1.0` minor 3). The library draws
 it and `core/LauncherSetup.lua` only answers its questions: the title is *Ka0s Multi Meters* and the
-TOC's version; **Enabled** reads the same gate the left click asks; **Locked** reads this page's
-*Lock frame* accessor (`WindowManager:IsLocked()`, so Yes only while every window is locked);
-**Test mode** reads the *Test mode* row's `state.testMode`; then *Left-click: Toggle windows* (rung
-(a), from the locale), or *Left-click: disabled — /mm enable* while disabled; then *Right-click: Open
-settings*. The addon adds no lines of its own. Every value is read on each show, so the tooltip and
-this page cannot disagree.
+TOC's version; **Enabled** reads the `enabled` row (`not NS.IsDisabled()`); **Locked** reads this
+page's *Lock frame* accessor (`WindowManager:IsLocked()`, so Yes only while every window is locked);
+**Test mode** reads the *Test mode* row's `state.testMode`; then the fixed hints *Left-click: Open
+settings* and *Right-click: Options menu* (minor 4). The addon adds no lines of its own. Every value
+is read on each show, so the tooltip and this page cannot disagree.
+
+**Its clicks are `launcher-§2`'s (standard v2.67.0, Launcher minor 4).** Left-click opens this panel,
+in either state, through `NS.OpenOptionsPanel` (the `config` verb's seam, with its combat refusal).
+Right-click opens the client's context menu, titled *Ka0s Multi Meters*, with the four entries
+`ADDONS.md` records for this addon:
+
+| Entry | Checked when | Clicking it runs | Grayed while disabled |
+|---|---|---|---|
+| **Enabled** | the `enabled` row is on | `/mm enable` or `/mm disable` | no |
+| **Locked** | every window is locked (the *Lock frame* row's accessor) | `/mm lock` | yes |
+| **Test mode** | `state.testMode` is on (the *Test mode* row) | `/mm test` | yes |
+| **Show window** | any meter window is on screen (`WindowManager:AnyShown()`) | `/mm toggle` | yes |
+
+Each entry calls the verb's own handler out of `NS.COMMANDS`, so the chat acknowledgment, the write
+through this page's seam and any refusal (test mode will not start in combat; `/mm toggle` answers a
+perf capture with its suspend line) are the verb's. A grayed entry reads *(enable the addon first)*
+and does nothing. With no context-menu API, right-click opens this panel instead.
 
 **The `master.*` rows are ADDON-WIDE, and none of them is a promoted per-window row.** A window
 here is an instance (design §6), and its own **Lock window**, **Scale** and **Opacity** stay on the

@@ -8,34 +8,46 @@ local addonName, NS = ...
 -- carried its own click handler and its own `Refresh` seam — about 200 lines of wiring that is
 -- identical in every Ka0s addon, written once per addon in its own spelling. That is exactly the
 -- shape `launcher-§1` names as anti-pattern #81, and the library exists to make it impossible.
--- What is left here is what is genuinely this addon's: its folder name, its logo, what its LEFT
--- button does, how its settings panel opens, and the answers its status tooltip reads.
+-- What is left here is what is genuinely this addon's: its folder name, its logo, how its settings
+-- panel opens, and the accessor-and-toggle pairs its status tooltip and options menu read.
 --
 -- ── ONE OBJECT, REGISTERED TWICE ─────────────────────────────────────────────────────────────
 --
 -- The library creates a single LibDataBroker-1.1 object of `type = "launcher"` and hands THAT
 -- object to LibDBIcon-1.0. The minimap button and any broker display (Titan Panel, ElvUI data
 -- texts, Bazooka) are two renderings of one object, so there is one `OnClick`, one icon and one
--- label, and `launcher-§2`'s rung rule is satisfied on both surfaces by construction rather than
+-- label, and `launcher-§2`'s click rule is satisfied on both surfaces by construction rather than
 -- by two implementations agreeing.
 --
--- ── THE RUNG IS (a): ITS WINDOWS ─────────────────────────────────────────────────────────────
+-- ── THE BUTTONS: LEFT OPENS SETTINGS, RIGHT OPENS THE OPTIONS MENU ──────────────────────────
 --
--- `launcher-§2`'s three rungs are ordered by what the player most likely wants, first match wins,
--- and this addon matches the first: it HAS a primary window — the meter window, which is the
--- thing it exists to show — so LEFT-click toggles it. `ADDONS.md` records the rung as **(a) its
--- windows**, and that roster row is normative: an audit reads it rather than re-deriving it.
+-- `launcher-§2` at standard v2.67.0 (Launcher minor 4, the owner's M6 ruling): the buttons mean the
+-- same thing on every Ka0s addon and neither is reassignable. LEFT-click opens the settings panel,
+-- in either state; RIGHT-click opens the client's own context menu, titled with the label, with a
+-- checkbox per toggle this addon really has. The library builds both; this file only answers.
 --
--- RIGHT-click always opens the settings panel, on every addon, whatever rung its left click sits
--- on, which is what lets rung (a) spend the left button on something better. The panel is
--- therefore never more than one click away, and neither button is reassignable — the rung is a
--- property of the addon, not a preference, so there is deliberately no setting for it.
+-- THIS ADDON HAS ALL FOUR, and `ADDONS.md` records them as its menu entries:
 --
--- BOTH ACTIONS GO THROUGH THE SAME SEAMS THE SLASH VERBS USE and neither is reimplemented here.
--- `NS.OpenOptionsPanel` in particular carries the combat refusal — the options canvas is a
--- protected frame and opening it mid-pull is refused with a chat notice, not deferred — and a
--- private path from this button would be the one way to reach the panel without that guard.
+--     [x] Enabled         isEnabled     + setEnabled     /mm enable | /mm disable
+--     [ ] Locked          isLocked      + toggleLock     /mm lock
+--     [ ] Test mode       isTestMode    + toggleTestMode /mm test
+--     [ ] Show window     isWindowShown + toggleWindow   /mm toggle   (its meter windows)
 --
+-- While the addon is disabled the library grays the last three with "enable the addon first" and
+-- leaves Enabled live. The left button's old job here, toggling the windows (the retired rung
+-- (a)), is the Show window entry now.
+--
+-- EVERY TOGGLE IS THE SLASH VERB'S OWN HANDLER, looked up in `NS.COMMANDS` at click time and called
+-- exactly as the dispatcher calls it, with no argument (`/mm lock`, `/mm test`, `/mm toggle` bare
+-- are the toggles). Nothing is reimplemented here: the verb's refusals (test mode refuses to start
+-- in combat), its chat acknowledgment and its write seam are what the menu gets. A private path
+-- from this file would be a second implementation of each verb, free to drift from the first.
+--
+-- `openSettings` goes through `NS.OpenOptionsPanel`, the seam the `config` verb uses, and that
+-- seam carries the combat refusal — the options canvas is a protected frame and opening it
+-- mid-pull is refused with a chat notice, not deferred — so a private path from this button
+-- would be the one way to reach the panel without that guard.
+
 -- ── WHY `minimap` IS A FUNCTION AND NOT A TABLE ──────────────────────────────────────────────
 --
 -- `db.global.minimap` does not exist when this file runs: the TOC reaches core/ long before
@@ -73,8 +85,8 @@ local addonName, NS = ...
 -- core/Constants.lua: `NS.Constants.LOGO_128` is read at FILE SCOPE below, because the library
 -- raises on a descriptor with no icon and a launcher wearing nothing would be the one failure
 -- this section says is worse than not adopting at all. Everything else the descriptor names —
--- NS.db, NS.WindowManager, NS.OpenOptionsPanel — is resolved at CALL time, because all three load
--- later. `Register()` itself is called from core/MultiMeters.lua's OnInitialize, after InitDB.
+-- NS.db, NS.WindowManager, NS.OpenOptionsPanel, NS.COMMANDS — is resolved at CALL time, because
+-- all four load later. `Register()` itself is called from core/MultiMeters.lua's OnInitialize, after InitDB.
 
 local Launcher = LibStub and LibStub("LibKa0s-Launcher-1.0", true)
 
@@ -137,32 +149,48 @@ end
 -- ---------------------------------------------------------------------------
 --
 -- THE LIBRARY DRAWS IT, and this file only answers its questions (Launcher minor 3, launcher-§1
--- at standard v2.66.0). The block is the same in all eleven addons and it shows while the addon is
--- disabled:
+-- at standard v2.66.0; the click hints are fixed since minor 4). The block is the same in all
+-- eleven addons and it shows while the addon is disabled:
 --
 --     Ka0s Multi Meters  v<version>      label + `version`, the TOC's
---     Enabled: Yes|No                    `isEnabled`, the same gate the left click asks
+--     Enabled: Yes|No                    `isEnabled`, the `enabled` setting
 --     Locked: Yes|No                     `isLocked`, every window's own lock
 --     Test mode: On|Off                  `isTestMode`, the session flag
---     Left-click: Toggle windows         `leftClickLabel`; disabled: `disabled — /mm enable`
---     Right-click: Open settings
+--     Left-click: Open settings
+--     Right-click: Options menu
 --
 -- NO `onTooltipShow`. Through Launcher minor 2 this file drew the whole tooltip: the title, a
 -- Version line and both click hints. All four are the library's now, and a hook that drew them
 -- again would draw a second copy of each (anti-pattern #89). This addon has no line of its own to
 -- add below the status block, so it passes no hook at all rather than an empty one.
 --
--- BOTH STATES ARE ONES THIS ADDON REALLY HAS, and each is read through the accessor its
--- Master-controls row reads, so the tooltip and the General page cannot disagree:
+-- EVERY STATE IS ONE THIS ADDON REALLY HAS, and each is read through the accessor its
+-- Master-controls row or its slash verb reads, so the tooltip, the menu and the General page
+-- cannot disagree:
 --
+--   Enabled is `not NS.IsDisabled()`: the `enabled` setting, the store `setEnabled` writes. NOT
+--   `NS.IsStoodDown`, which the retired left-click gate asked so a perf capture refused the click
+--   too. As a menu box that answer would untick Enabled mid-capture over a setting that is on,
+--   and gray three entries whose verbs answer the capture themselves (`/mm toggle` prints the
+--   suspend line).
 --   Locked is `WindowManager:IsLocked()`, which is true only while EVERY window's own
 --   `frame.locked` is on. That is the *Lock frame* row's `get` (settings/Schema_Compose.lua),
---   a view over the per-window locks rather than a lock of its own.
+--   a view over the per-window locks rather than a lock of its own, and the answer `/mm lock`
+--   flips.
 --   Test mode is `NS.State.testMode`, the `state.testMode` row's store and the flag `/mm test`
 --   toggles.
+--   Show window is `WindowManager:AnyShown()`, the question a bare `/mm toggle` asks before it
+--   hides them all or shows them all. Menu only: the tooltip draws no window line.
 --
--- All three accessors are resolved at CALL time and read on every show: modules/ loads after core/,
--- and a cached answer would go stale the moment the player clicked the lock in a window's header.
+-- All accessors are resolved at CALL time and read on every show and every menu open: modules/
+-- loads after core/, and a cached answer would go stale the moment the player clicked the lock in
+-- a window's header.
+
+--- Whether the addon is enabled: the stored setting, not the perf hold. See above.
+--- @return boolean
+local function isEnabled()
+    return not (NS.IsDisabled and NS.IsDisabled())
+end
 
 --- Whether every window is locked. False on a build with no window manager, as the row answers.
 --- @return boolean
@@ -175,6 +203,24 @@ end
 --- @return boolean
 local function isTestMode()
     return NS.State ~= nil and NS.State.testMode == true
+end
+
+--- Whether any meter window is on screen. False on a build with no window manager.
+--- @return boolean
+local function isWindowShown()
+    local M = NS.WindowManager
+    return M ~= nil and M.AnyShown ~= nil and M:AnyShown() or false
+end
+
+--- Run one slash verb's OWN handler, exactly as the dispatcher would for `/mm <verb>` with no
+--- argument. Looked up in NS.COMMANDS at call time (settings/Slash.lua loads after core/), so the
+--- menu and the verb are one function rather than two that agree. A build with no such verb does
+--- nothing rather than raising.
+--- @param verb string
+local function runVerb(verb)
+    for _, entry in ipairs(NS.COMMANDS or {}) do
+        if entry[1] == verb then return entry[3]("") end
+    end
 end
 
 --- The version from the TOC metadata, through the one reader `/mm version` and the options header
@@ -222,68 +268,27 @@ NS.Launcher = Launcher:New({
     -- A FUNCTION, not the table — see the header.
     minimap = minimapTable,
 
-    -- RIGHT-click always, and LEFT-click never reaches it on this rung. Resolved at call time: the
-    -- seam is published by settings/OptionsSetup.lua, which loads after core/.
+    -- LEFT-click, always, in either state (Launcher minor 4); and right-click on a client with no
+    -- context-menu API. Resolved at call time: the seam is published by settings/OptionsSetup.lua,
+    -- which loads after core/.
     openSettings = function()
         if NS.OpenOptionsPanel then NS.OpenOptionsPanel() end
     end,
 
-    -- THE RUNG. Its presence is what says this addon is on (a); an addon on (a) or (b) whose
-    -- left-click opened the settings panel would have skipped the rule rather than chosen a
-    -- different design, since the panel is already on the other button.
-    --
-    -- `NS.WindowManager:Toggle()` is the SAME seam `/mm toggle` drives, resolved at call time
-    -- because modules/ loads after core/. `GetModule` is the Ace fallback for a build where the
-    -- namespace publication has not run; a build with neither does nothing rather than raising.
-    --
-    -- NO GATE IN HERE. The refusal is the library's (Launcher minor 2): `isEnabled` below answers
-    -- false and the left click prints `disabledLine()` and never reaches this function. So this
-    -- body is the toggle and nothing else.
-    onClick = function()
-        local wm = NS.WindowManager or (NS.GetModule and NS:GetModule("WindowManager", true))
-        if wm and wm.Toggle then wm:Toggle() end
-    end,
-
-    -- THE LEFT-CLICK GATE (launcher-§2, slash-commands-§7). This is a rung-(a) left
-    -- click, so what it drives is a primary window, and a window is a feature: refused, it prints
-    -- the ONE refusal line and DOES NOTHING ELSE. In particular it writes no SavedVariables, which
-    -- is what a minimap button with no disabled gate does for an addon the player switched off
-    -- (anti-pattern #85).
-    --
-    -- IT ASKS `NS.IsStoodDown`, NOT the disabled flag alone, so it includes the perf latch: a click during
-    -- a capture's suspended arm is refused too, where a disabled-only gate let it through to a
-    -- Toggle that refuses with an err nobody printed (MultiMeters-R-04). Resolved at CALL time,
-    -- because the seam is published after this file loads.
-    --
-    -- RUNG (c)'S CARVE-OUT DOES NOT APPLY HERE and is named so a reader does not wonder: a rung-(c)
-    -- left click opens the settings panel, which survives the disabled state, so refusing it would
-    -- decline one button for doing precisely what the right button beside it is required to keep
-    -- doing. This addon is on rung (a), where there is no such contradiction; the library never
-    -- gates rung (c) either way.
-    --
-    -- RIGHT-CLICK IS UNCHANGED, in either state: the ruling narrows the SLASH surface and a mouse
-    -- click is not a slash command. The library never gates `openSettings`.
-    isEnabled = function() return not (NS.IsStoodDown and NS.IsStoodDown()) end,
-
-    -- THE LINE, per hold. Disabled: the dispatcher's, through NS.Slash:DisabledLine, never written
-    -- again here -- one shape, collection-wide, and a second copy in this file is how it drifts.
-    -- Resolved at CALL time because settings/ loads after core/. A nil answer prints nothing,
-    -- which only a build with no Slash seam at all can reach. Perf-suspended: the same line
-    -- `/mm toggle` prints, since `/mm enable` is the wrong advice mid-capture.
-    disabledLine = function()
-        if NS.IsDisabled and NS.IsDisabled() then
-            local Sl = NS.Slash
-            return Sl and Sl.DisabledLine and Sl:DisabledLine() or nil
-        end
-        return L["Windows are suspended while a performance capture runs."]
-    end,
-
-    -- THE STATUS TOOLTIP'S ANSWERS (Launcher minor 3) -- see "The tooltip" above. The rung-(a)
-    -- label is this addon's own words, through its locale; the library falls back to `Toggle`.
-    version        = version,
+    -- THE OPTIONS MENU'S PAIRS (Launcher minor 4) -- see "THE BUTTONS" in the header. Each toggle
+    -- is the slash verb's own handler; each accessor is the one the tooltip or the verb reads.
+    -- `setEnabled` is handed the state the addon is moving TO, which picks the verb.
+    isEnabled      = isEnabled,
+    setEnabled     = function(on) runVerb(on and "enable" or "disable") end,
     isLocked       = isLocked,
+    toggleLock     = function() runVerb("lock") end,
     isTestMode     = isTestMode,
-    leftClickLabel = function() return L["Toggle windows"] end,
+    toggleTestMode = function() runVerb("test") end,
+    isWindowShown  = isWindowShown,
+    toggleWindow   = function() runVerb("toggle") end,
+
+    -- The tooltip's title. The rest of the status block reads the accessors above.
+    version        = version,
 
     -- Both resolved at CALL time rather than captured, so this file's correctness does not depend
     -- on a TOC line staying where it is (anti-patterns #36).

@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2037%2F2037_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2045%2F2045_passing-green)
 
 Most Damage meter addons show you one statistic at a time. This addon shows all of them in one grid — who kicked, who dispelled, who stood in the fire, who died. One row per player, one column per statistic.
 
@@ -60,6 +60,12 @@ window new`, then copy the settings across from the first rather than building t
 Everything else is configuration, and it lives in two places: the addon's own page under Settings →
 AddOns in game, and the slash command. `/mm` (or `/multimeters`) on its own opens that page, and
 `/mm help` prints the full command list.
+
+The minimap button is a shortcut to both. Left-click it for the settings page. Right-click it for a
+small menu with four switches: Enabled, Locked, Test mode and Show window. Each one does exactly what
+`/mm enable` or `/mm disable`, `/mm lock`, `/mm test` and `/mm toggle` do. While the addon is turned
+off, only Enabled can be clicked. Hover the button to see the version and whether the addon is on,
+locked and in test mode.
 
 ## How it works
 

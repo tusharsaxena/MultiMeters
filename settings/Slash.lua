@@ -211,8 +211,9 @@ if not SlashLib then
             stub["Cli" .. verb] = absent(verb:lower())
         end
         -- Formatted the way the live `cli:DisabledLine()` does: the plain-text brand, then
-        -- `<slash> enable`. core/LauncherSetup.lua's refused left click reaches it through
-        -- Sl:DisabledLine, so a stub without it raised there (MultiMeters-R-06).
+        -- `<slash> enable`. Through Launcher minor 3, core/LauncherSetup.lua's refused left click
+        -- reached it through Sl:DisabledLine, so a stub without it raised there
+        -- (MultiMeters-R-06); the member stays because Sl:DisabledLine is published surface.
         stub.DisabledLine = function()
             return SlashLib.DISABLED_LINE_FORMAT:format(tostring(d.brandName or d.slash),
                 d.slash .. " enable")
@@ -809,16 +810,17 @@ function Sl:OnSlash(msg)  return cli:OnSlash(msg)  end
 --- slash-commands-§7's one refusal line, built by the library from `brandName`
 --- and the collection's own format string.
 ---
---- Published because core/LauncherSetup.lua needs the SAME line for a refused
---- left-click, and launcher-§2 says to call this rather than write the line
---- again: the wording is the collection's, it MUST NOT be re-spelled per call
---- site, and a second copy here is how eleven addons ended up with eleven
---- wordings. The degradation stub above answers it too, for the same reason it
---- answers every other member the addon reaches.
+--- Published so any caller outside the dispatcher prints the SAME line rather
+--- than writing it again: the wording is the collection's, it MUST NOT be
+--- re-spelled per call site, and a second copy is how eleven addons ended up
+--- with eleven wordings. The degradation stub above answers it too. Its first
+--- caller was the launcher's refused left click, which Launcher minor 4 retired
+--- (launcher-§2, v2.67.0: the left button opens the panel in either state, and
+--- the menu grays its feature entries instead); the suites still read the
+--- refusal line through it.
 ---
---- Published ONLY when the dispatcher has the member (MultiMeters-R-06). The
---- launcher guards on `Sl.DisabledLine` before calling it, so a wrapper that
---- always existed let a stub without the member raise through it.
+--- Published ONLY when the dispatcher has the member (MultiMeters-R-06): a
+--- wrapper that always existed let a stub without the member raise through it.
 if cli.DisabledLine then
     function Sl:DisabledLine() return cli:DisabledLine() end
 end

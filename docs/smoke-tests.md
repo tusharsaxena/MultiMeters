@@ -740,8 +740,9 @@ die · pull a target dummy.
   addon down** — every window hidden immediately, every game event unregistered, every timer
   canceled, nothing read from the meter. `/mm toggle`, `/mm lock`, `/mm test`, `/mm window`,
   `/mm reset-positions` and `/mm export` each answer one line naming `/mm enable` and do nothing
-  else, and a LEFT-click on the minimap button answers the same line; `/mm` still opens the settings
-  panel, the whole schema CLI still reads and writes, and a RIGHT-click still opens the panel. See
+  else; `/mm` still opens the settings panel, the whole schema CLI still reads and writes, a
+  LEFT-click on the minimap button still opens the panel, and its RIGHT-click menu grays everything
+  but Enabled. See
   [disabled-state.md](disabled-state.md).
 - **Test mode overrides context**: with Test mode on, the window shows wherever you are standing.
 
@@ -1173,16 +1174,27 @@ is why the popup exists. Every open drill-down closes and this module's caches a
   settings landing page; a verb that disappeared from either while the addon was off would be a
   second way to lose it.
 
-**Then the minimap button, disabled and mid-capture (SM-11, and SM-02's launcher half).**
-The left-click gate is LibKa0s-Launcher minor 2's, fed by this addon's `isEnabled` and
-`disabledLine`.
+**Then the minimap button, enabled, disabled and mid-capture (SM-11, and SM-02's launcher half).**
+The clicks and the menu are LibKa0s-Launcher minor 4's (`launcher-§2`, standard v2.67.0); each menu
+entry runs this addon's own slash verb.
 
-- **SM-11.** `/mm disable`, then left-click the minimap button. Chat prints **one** refusal line,
-  the same words `/mm toggle` prints, and no window appears. Right-click still opens the settings
-  panel.
+- **SM-11a (enabled).** Hover the button: the tooltip ends *Left-click: Open settings* /
+  *Right-click: Options menu*. Left-click opens the settings panel. Right-click opens a menu titled
+  *Ka0s Multi Meters* with four checkboxes in this order: **Enabled** (ticked), **Locked**, **Test
+  mode**, **Show window**, each ticked to match the current state. Click **Locked**: chat prints
+  *Windows are locked.*, the same line `/mm lock` prints, and reopening the menu shows it ticked.
+  Click **Test mode**: placeholder rows appear, as with `/mm test`; click it again to end it. Click
+  **Show window**: every meter window hides (or shows, if none was up), as with `/mm toggle`. In
+  combat, **Test mode** refuses with the same line `/mm test` prints there.
+- **SM-11b (disabled).** `/mm disable`, or untick **Enabled** in the menu (chat prints
+  `enabled = false`). Left-click still opens the settings panel and prints nothing. Right-click: the
+  menu shows **Enabled** unticked and clickable, and **Locked**, **Test mode** and **Show window**
+  grayed, each reading *(enable the addon first)*. The grayed entries cannot be clicked. Tick
+  **Enabled**: the addon comes back, as with `/mm enable`.
 - **SM-02 (launcher half).** `/mm enable`, then `/mm perf start`, and during the suspended arm
-  left-click the minimap button. Chat prints *Windows are suspended while a performance capture
-  runs.* and no window appears. Right-click still opens the settings panel.
+  right-click the button. **Enabled** is still ticked and nothing is grayed. Click **Show window**:
+  chat prints *Windows are suspended while a performance capture runs.* and no window appears.
+  Left-click still opens the settings panel.
 
 ### 15. Profiles
 

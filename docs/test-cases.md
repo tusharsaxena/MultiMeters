@@ -582,7 +582,7 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
-### test_launchersetup.lua (42)
+### test_launchersetup.lua (50)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -596,6 +596,14 @@ badge and any count quoted in the docs must agree with it.
 - Launcher: LEFT-click opens the settings panel, and toggles nothing
 - Launcher: a LEFT-click while disabled still opens the panel, and says nothing
 - Launcher: a click on a build with no window manager does not raise
+- Launcher menu: right-click opens the four entries ADDONS.md records, in order
+- Launcher menu: each entry calls its slash verb's own handler, once
+- Launcher menu: Enabled writes the setting both ways, through /mm enable and /mm disable
+- Launcher menu: Locked, Test mode and Show window act and read back through the addon
+- Launcher menu: while disabled, everything but Enabled is grayed and inert
+- Launcher menu: a perf capture is not the disabled state; the entries stay live
+- Launcher menu: with no context-menu API, right-click opens the settings panel
+- Launcher: the descriptor carries none of minor 4's retired fields
 - Launcher tooltip: the full block, enabled, with nothing of the host's appended
 - Launcher tooltip: the version is the TOC's, not the hardcoded fallback
 - Launcher tooltip: Locked follows every window's own lock, read on every show
@@ -2296,7 +2304,7 @@ badge and any count quoted in the docs must agree with it.
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 12 |
-| test_launchersetup.lua | 42 |
+| test_launchersetup.lua | 50 |
 | test_lifecycle.lua | 38 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
@@ -2343,4 +2351,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2037** |
+| **Total** | **2045** |

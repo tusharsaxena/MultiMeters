@@ -800,7 +800,7 @@ dress(MASTER_ROWS, {
     --   checkbox immediately rather than at the next reload. Answering `false` is the normal
     --   state of a build with no broker library, so nothing reads the result.
     ["global.minimap.shown"] = {
-        desc = L["Show this addon's button on the minimap. Left-click it to show or hide the meter windows, right-click it to open these settings. Shared by every profile, because the button belongs to the installation rather than to one character's layout."],
+        desc = L["Show this addon's button on the minimap. Left-click it to open these settings; right-click it for a menu that turns the addon on or off, locks the windows, starts test mode, and shows or hides the meter windows. Shared by every profile, because the button belongs to the installation rather than to one character's layout."],
         get = function()
             local t = NS.db and NS.db.global and NS.db.global.minimap
             return not (t and t.hide)

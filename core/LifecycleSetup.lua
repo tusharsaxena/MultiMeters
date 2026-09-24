@@ -266,8 +266,8 @@ end
 
 --- Is the addon standing down right now -- for any reason?
 ---
---- Published so the show ladder, the slash gate and the launcher click all ask
---- ONE question rather than three that could disagree. It is `IsDown`, not
+--- Published so the show ladder and the window seams all ask ONE question
+--- rather than several that could disagree. It is `IsDown`, not
 --- `IsHeld("disabled")`, everywhere the question is "should this happen": a
 --- perf-suspended addon must refuse the same work.
 --- @return boolean
@@ -281,8 +281,9 @@ end
 --- The slash gate asks this one rather than `IsStoodDown`, because the refusal
 --- line names `/mm enable` and that is the wrong advice to give someone whose
 --- addon is merely mid-capture. slash-commands-§7 keeps `perf` on the live list
---- for the same reason. The launcher click gates on `IsStoodDown` and asks this
---- one only to choose which refusal line it prints.
+--- for the same reason. The launcher's `isEnabled` asks this one too
+--- (core/LauncherSetup.lua): its Enabled box is the `enabled` setting, and a
+--- perf capture must not untick it.
 --- @return boolean
 function NS.IsDisabled()
     local lc = NS.lifecycle

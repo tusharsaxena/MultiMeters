@@ -92,7 +92,7 @@ stands up an addon the other still holds down. It replaced a draw gate.
 
 **The command surface is deliberately unchanged.** All twelve reserved verbs answer, and the bare
 `/mm` opens the settings panel; only this addon's own six feature verbs refuse, on one line naming
-`/mm enable`. Full detail, the teardown table and the launcher's refused left-click:
+`/mm enable`. Full detail, the teardown table and the launcher's options menu while disabled:
 [disabled-state.md](disabled-state.md).
 
 **The gate is the library's, and the live set is its data** (LibKa0s-Slash minor 13). The host passes

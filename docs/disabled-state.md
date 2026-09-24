@@ -102,19 +102,19 @@ line is `cli:DisabledLine()`, built from the format string every addon in the co
 
 **The launcher.** The button stays on the minimap and the broker row stays in the display —
 `minimap.hide` is a per-installation display preference and says nothing about whether the addon is
-running. This addon is on rung **(a)**, so its left-click drives a primary window, which is a
-feature: while disabled it prints the one refusal line and does nothing else, and in particular
-writes no SavedVariables. Rung (c)'s carve-out does not apply here. **Right-click still opens the
-settings panel, in either state** — the ruling narrows the slash surface, and a mouse click is not a
-slash command. **The hover still answers**: the library's status tooltip (Launcher minor 3) reads
-*Enabled: No* and *Left-click: disabled — /mm enable*, read out of the same `disabledLine`, so the
-hint says what the click will do before it is clicked. During a capture's suspended arm the line names
-no `/mm enable`, and the hint reads the bare *Left-click: disabled*.
+running. Since LibKa0s-Launcher minor 4 (`launcher-§2`, standard v2.67.0) its buttons need no
+refusal of their own. **Left-click opens the settings panel, in either state**: the panel is setup,
+and it is where a disabled addon is turned back on. **Right-click opens the options menu**, and
+while the addon is disabled the library grays *Locked*, *Test mode* and *Show window* with *(enable
+the addon first)*; a grayed entry calls nothing and writes nothing. *Enabled* stays live, and it
+runs `/mm enable`, so the menu can turn the addon back on. **The hover still answers**: the library's
+status tooltip reads *Enabled: No* and the same two fixed hints.
 
-The gate is LibKa0s-Launcher minor 2's, not a hand check in `onClick`: the descriptor passes
-`isEnabled`, which asks `NS.IsStoodDown()` so the perf hold refuses a left click too, and
-`disabledLine`, which answers `NS.Slash:DisabledLine()` while disabled and *Windows are suspended
-while a performance capture runs.* during a capture's suspended arm. On a build where only
-LibKa0s-Slash is missing, the Slash degradation stub answers `DisabledLine` from a byte copy of the
-library's `DISABLED_LINE_FORMAT`, so the refusal reads the same and nothing raises.
+The menu's `isEnabled` asks `NS.IsDisabled()`, **not** `NS.IsStoodDown()`: the *Enabled* box is the
+`enabled` setting, the store its toggle writes, and a perf capture must not untick it. During a
+capture's suspended arm the three feature entries stay live and each verb answers the hold in its own
+words — *Show window* runs `/mm toggle`, which prints *Windows are suspended while a performance
+capture runs.* and shows nothing. Through Launcher minor 3 the left click was refused by the library
+while stood down, reading `disabledLine` (`NS.Slash:DisabledLine()`); minor 4 retired that refusal,
+and the descriptor no longer passes `disabledLine`.
 

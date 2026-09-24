@@ -208,3 +208,8 @@ files["settings/Slash.lua"] = { ignore = { "212/self" } }
 -- menu-root API, which production code calls as `rootDescription:CreateButton(...)` -- a mock that
 -- quietly narrowed the signature would let a caller pass here and fail in the client.
 files["tests/wow_mock.lua"] = { ignore = { "212/self" } }
+
+-- The launcher menu fake, the same shape for the checkbox API: `root:CreateCheckbox`, and the
+-- element's `SetEnabled` / `IsEnabled`, which production code (the library) calls with a colon.
+-- The element methods sit inside `CreateCheckbox`, so their `self` shadows the root's (432).
+files["tests/mock_menu.lua"] = { ignore = { "212/self", "432/self" } }

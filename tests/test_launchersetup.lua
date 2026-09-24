@@ -251,6 +251,197 @@ test("Launcher: a click on a build with no window manager does not raise", funct
 end)
 
 -- ---------------------------------------------------------------------------
+-- The options menu (right-click)
+-- ---------------------------------------------------------------------------
+--
+-- ADDONS.md (standard v2.67.0) records this addon's entries as Enabled · Locked · Test mode · Show
+-- window. The library draws the menu and grays it; what only this file can prove is that each
+-- entry reaches THE SAME HANDLER ITS SLASH VERB RUNS, so its refusals, combat rules and chat lines
+-- are the addon's own (launcher-§2). The spy cases swap the verb's own NS.COMMANDS handler and
+-- watch the click arrive there; the effect cases leave the real handler in place.
+
+--- Install the menu fake over the builder's, right-click, and answer the recorded menu.
+local function openMenu(inst)
+    local menu = inst.__menu or assert(loadfile(T.root .. "/tests/mock_menu.lua"))()(inst.mocks)
+    inst.__menu = menu
+    menu.install()
+    local before = menu.opens
+    broker(inst).OnClick({}, "RightButton")
+    assertEqual(menu.opens, before + 1, "the right click opened no menu")
+    return menu.last
+end
+
+--- Replace one slash verb's handler with a recorder and answer the calls it saw.
+local function spyVerb(NS, verb)
+    local calls = {}
+    for _, entry in ipairs(NS.COMMANDS) do
+        if entry[1] == verb then
+            entry[3] = function(rest) calls[#calls + 1] = rest end
+            return calls
+        end
+    end
+    error("no /mm " .. verb .. " verb to spy on")
+end
+
+test("Launcher menu: right-click opens the four entries ADDONS.md records, in order", function()
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    local opens = 0
+    NS.OpenOptionsPanel = function() opens = opens + 1 end
+
+    local menu = openMenu(inst)
+    assertEqual(menu.titles[1], "Ka0s Multi Meters", "the menu is titled with the brand label")
+    assertEqual(table.concat(menu:Texts(), ","), "Enabled,Locked,Test mode,Show window")
+    assertEqual(opens, 0, "a right click that found its menu does not also open the panel")
+end)
+
+test("Launcher menu: each entry calls its slash verb's own handler, once", function()
+    -- red under: a toggle that re-implemented the verb (a direct WindowManager call) rather than
+    -- going through NS.COMMANDS, since the spy sits on the verb's handler and nowhere else.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    local calls = {
+        disable = spyVerb(NS, "disable"),
+        lock    = spyVerb(NS, "lock"),
+        test    = spyVerb(NS, "test"),
+        toggle  = spyVerb(NS, "toggle"),
+    }
+
+    openMenu(inst):Click("Enabled")
+    openMenu(inst):Click("Locked")
+    openMenu(inst):Click("Test mode")
+    openMenu(inst):Click("Show window")
+
+    for verb, seen in pairs(calls) do
+        assertEqual(#seen, 1, "/mm " .. verb .. " ran " .. #seen .. " times")
+        -- The bare verb: `/mm lock`, `/mm test` and `/mm toggle` with no argument are the toggles.
+        assertEqual(seen[1], "", "/mm " .. verb .. " was handed an argument")
+    end
+end)
+
+test("Launcher menu: Enabled writes the setting both ways, through /mm enable and /mm disable",
+function()
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+
+    assertTrue(openMenu(inst):Checked("Enabled"))
+    openMenu(inst):Click("Enabled")
+    assertEqual(NS.GetSetting("enabled"), false, "unticking Enabled did not disable the addon")
+    assertTrue(NS.IsDisabled())
+
+    -- Enabled stays live while disabled, or the menu could turn the addon off and never back on.
+    local menu = openMenu(inst)
+    assertFalse(menu:Checked("Enabled"))
+    menu:Click("Enabled")
+    assertEqual(NS.GetSetting("enabled"), true, "ticking Enabled did not re-enable the addon")
+end)
+
+test("Launcher menu: Locked, Test mode and Show window act and read back through the addon",
+function()
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    NS.WindowManager:SetLocked(false)
+    NS.State.SetTestMode(false)
+
+    assertFalse(openMenu(inst):Checked("Locked"))
+    local n = #inst.mocks.__chat
+    openMenu(inst):Click("Locked")
+    assertTrue(NS.WindowManager:IsLocked(), "Locked did not lock every window")
+    assertTrue(openMenu(inst):Checked("Locked"), "Locked is read afresh on every open")
+    -- The verb's own acknowledgment, because the verb ran: not a line the launcher wrote.
+    assertTrue(inst.mocks.__chat[n + 1]:find(NS.L["Windows are locked."], 1, true) ~= nil)
+
+    openMenu(inst):Click("Test mode")
+    assertTrue(NS.State.testMode, "Test mode did not start test mode")
+    assertTrue(openMenu(inst):Checked("Test mode"))
+    openMenu(inst):Click("Test mode")
+    assertFalse(NS.State.testMode)
+
+    -- Show window is checked while ANY window is shown, which is the question `/mm toggle` asks
+    -- before it decides to hide them all or show them all.
+    local shown = NS.WindowManager:AnyShown()
+    assertEqual(openMenu(inst):Checked("Show window"), shown)
+    openMenu(inst):Click("Show window")
+    assertEqual(NS.WindowManager:AnyShown(), not shown, "Show window did not toggle the windows")
+    assertEqual(openMenu(inst):Checked("Show window"), not shown)
+end)
+
+test("Launcher menu: while disabled, everything but Enabled is grayed and inert", function()
+    -- The ruling: features refuse while disabled (slash-commands-§7), so the three feature entries
+    -- are grayed with the note, and a grayed entry the client dispatched anyway calls nothing.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    assertTrue(NS.SetByPath("enabled", false))
+    local calls = { lock = spyVerb(NS, "lock"), test = spyVerb(NS, "test"),
+        toggle = spyVerb(NS, "toggle") }
+
+    local menu = openMenu(inst)
+    assertEqual(table.concat(menu:Texts(), ","), "Enabled,"
+        .. "Locked (enable the addon first),Test mode (enable the addon first),"
+        .. "Show window (enable the addon first)")
+    assertTrue(menu:Find("Enabled").enabled, "Enabled must stay live while disabled")
+    for _, prefix in ipairs({ "Locked", "Test mode", "Show window" }) do
+        assertFalse(menu:Find(prefix).enabled, prefix .. " is not grayed while disabled")
+        menu:ForceClick(prefix)
+    end
+    for verb, seen in pairs(calls) do
+        assertEqual(#seen, 0, "a grayed entry still ran /mm " .. verb)
+    end
+end)
+
+test("Launcher menu: a perf capture is not the disabled state; the entries stay live", function()
+    -- isEnabled asks NS.IsDisabled, the store setEnabled writes, so the Enabled box and the setting
+    -- cannot disagree. A capture's suspend is the addon's own hold, and each verb answers it in its
+    -- own words: Show window runs `/mm toggle`, which prints the suspend line.
+    -- red under: `isEnabled` asking NS.IsStoodDown, which unticks Enabled mid-capture.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    NS.Perf.Suspend()
+
+    local menu = openMenu(inst)
+    local enabled = menu:Checked("Enabled")
+    local live = menu:Find("Show window").enabled
+    local n = #inst.mocks.__chat
+    menu:Click("Show window")
+    local said = inst.mocks.__chat[n + 1]
+    NS.Perf.Resume()
+
+    assertTrue(enabled, "a perf capture unticked Enabled")
+    assertTrue(live, "a perf capture grayed Show window")
+    local want = NS.L["Windows are suspended while a performance capture runs."]
+    assertTrue(said ~= nil and said:find(want, 1, true) ~= nil, "not the suspend line: " .. tostring(said))
+end)
+
+test("Launcher menu: with no context-menu API, right-click opens the settings panel", function()
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    inst.mocks.MenuUtil = nil
+    local opens = 0
+    NS.OpenOptionsPanel = function() opens = opens + 1 end
+
+    broker(inst).OnClick({}, "RightButton")
+    assertEqual(opens, 1, "a client with no MenuUtil lost the panel from the right button")
+end)
+
+test("Launcher: the descriptor carries none of minor 4's retired fields", function()
+    -- `onClick`, `leftClickLabel`, `disabledLine` and `slash` are ignored by the library, so no
+    -- runtime case can see them; read the source instead (launcher-§5: dead configuration).
+    local fh = assert(io.open(T.root .. "/core/LauncherSetup.lua", "r"))
+    local src = fh:read("*a")
+    fh:close()
+    for _, field in ipairs({ "onClick", "leftClickLabel", "disabledLine", "slash" }) do
+        assertNil(src:match("\n%s*" .. field .. "%s*="), "core/LauncherSetup.lua still passes " .. field)
+    end
+end)
+
+-- ---------------------------------------------------------------------------
 -- The tooltip
 -- ---------------------------------------------------------------------------
 

@@ -737,9 +737,8 @@ L["Not read while the color mode beside it is anything but Custom color, except 
 L["Minimap button"] = "Minimap button"
 L["Color for this statistic wherever it identifies a column: bars set to Per-statistic, the column header, and the tooltip's all-statistics list."] =
     "Color for this statistic wherever it identifies a column: bars set to Per-statistic, the column header, and the tooltip's all-statistics list."
-L["Show this addon's button on the minimap. Left-click it to show or hide the meter windows, right-click it to open these settings. Shared by every profile, because the button belongs to the installation rather than to one character's layout."] =
-    "Show this addon's button on the minimap. Left-click it to show or hide the meter windows, right-click it to open these settings. Shared by every profile, because the button belongs to the installation rather than to one character's layout."
-L["Toggle windows"] = "Toggle windows"
+L["Show this addon's button on the minimap. Left-click it to open these settings; right-click it for a menu that turns the addon on or off, locks the windows, starts test mode, and shows or hides the meter windows. Shared by every profile, because the button belongs to the installation rather than to one character's layout."] =
+    "Show this addon's button on the minimap. Left-click it to open these settings; right-click it for a menu that turns the addon on or off, locks the windows, starts test mode, and shows or hides the meter windows. Shared by every profile, because the button belongs to the installation rather than to one character's layout."
 L["Test mode"] = "Test mode"
 L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."] =
     "Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."

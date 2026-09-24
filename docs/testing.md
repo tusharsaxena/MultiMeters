@@ -213,6 +213,12 @@ What stayed is the builder, the meter and group fixtures, `C_AddOns`, the AceDB 
 callbacks and the control surface, which still lists everything in one block including the two halves
 that no longer live there.
 
+A third sibling, `tests/mock_menu.lua`, is not loaded by the builder at all: it is the launcher
+options menu's `MenuUtil` fake (`CreateCheckbox`, grayed entries that refuse a click), modeled on
+LibKa0s's own `tests/mock_menu.lua`, which is repo-local to the library and not in the kit.
+`tests/test_launchersetup.lua` installs it per case over the builder's simpler `MenuUtil`, which
+still serves the window header's segment selector.
+
 **AceEvent and AceAddon are the kit's, whole** (kit revision 17, LibKa0s v1.31.0). The file used to
 replace both: the message half, for `UnregisterAllMessages` and string-method dispatch, and AceAddon,
 for `NewModule` / `GetModule`. The kit now models both from the real CallbackHandler and AceAddon-3.0,
