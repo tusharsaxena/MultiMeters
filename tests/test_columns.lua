@@ -298,3 +298,95 @@ test("Columns: the stored array is never the page's own working copy", function(
     assertFalse(handed == storedColumns(inst),
         "the seam stored the caller's own table")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The three tabs (MM-18: the pin the RenderTabbedSchema decline, issue #53, leaves standing)
+-- ---------------------------------------------------------------------------
+--
+-- The page hand-builds its strip with H.TabStrip rather than handing it to
+-- H.RenderTabbedSchema's host tabs, because the library's tab click clears the scroll ITSELF and
+-- re-enters RenderTabbedSchema, not this page's render -- so NS.CancelReorder could no longer run
+-- before the clear. These three cases pin what the page does today, so any later adoption has to
+-- keep all three.
+
+--- Every tab button of the strip, by its label, in strip order.
+local function tabLabels(ctx)
+    local out = {}
+    for i, b in ipairs(ctx.__tabKids or {}) do out[i] = b.__ka0sTabTipLabel end
+    return out
+end
+
+test("Columns: the page draws three tabs, Columns then Header text then Header background",
+function()
+    -- red under: letting a group partition order the strip, which would put the block editor last.
+    local inst, ctx = openPage()
+    local L = inst.NS.L
+    assertEqual(table.concat(tabLabels(ctx), "|"),
+        table.concat({ L["Columns"], L["Header text"], L["Header background"] }, "|"))
+    assertEqual(ctx.activeTab, L["Columns"], "the page opens on the block editor")
+end)
+
+test("Columns: the Header text tab renders exactly its group's rows, with no headings",
+function()
+    -- red under: rendering the whole page's rows on a schema tab, or dropping noHeadings so the
+    -- tab's own name is repeated as a heading under it.
+    local inst, ctx = openPage()
+    local L, NS = inst.NS.L, inst.NS
+    local calls = {}
+    local real = NS.Helpers.RenderRows
+    NS.Helpers.RenderRows = function(c, rows, afterGroup, pairWith, opts)
+        calls[#calls + 1] = { rows = rows, opts = opts }
+        return real(c, rows, afterGroup, pairWith, opts)
+    end
+    local ok, err = pcall(function() ctx.__tabKids[2]:__fire("OnClick") end)
+    NS.Helpers.RenderRows = real
+    assertTrue(ok, tostring(err))
+
+    assertEqual(ctx.activeTab, L["Header text"])
+    assertEqual(#calls, 1, "the Header text tab must render one row list")
+    local want = {}
+    for _, row in ipairs(NS.SchemaForPage("columns")) do
+        if row.group == L["Header text"] then want[#want + 1] = row.path end
+    end
+    local got = {}
+    for i, row in ipairs(calls[1].rows) do got[i] = row.path end
+    assertTrue(#want > 0, "the page declares no Header text rows")
+    assertEqual(table.concat(got, ","), table.concat(want, ","))
+    assertTrue(calls[1].opts and calls[1].opts.noHeadings == true, "the tab drew headings")
+end)
+
+test("Columns: leaving the Columns tab mid-drag cancels the reorder BEFORE the scroll clear",
+function()
+    -- ClearScroll hands the page's AceGUI containers back to a process-wide pool, and a drag
+    -- handle stays parented to one until the controller is canceled. Canceling after the clear
+    -- hands some unrelated widget a frame with a live handle on it.
+    -- red under: an H.ClearScroll in the tab's onSelect, or any tab switch that clears without
+    -- re-entering render() -- which is what RenderTabbedSchema's own click does.
+    local inst, ctx, blocks = openPage()
+    local NS = inst.NS
+    inst.mocks.setMouseDown("LeftButton", true)
+    inst.mocks.setCursor(0, 1000)
+    blocks[1].mmHandle:_run("OnMouseDown")
+    assertTrue(ctx.mmReorder ~= nil, "the press left no live reorder to cancel")
+
+    local order = {}
+    local realCancel, realClear = NS.CancelReorder, NS.Helpers.ClearScroll
+    NS.CancelReorder = function(c)
+        order[#order + 1] = c.mmReorder and "cancel-live" or "cancel"
+        return realCancel(c)
+    end
+    NS.Helpers.ClearScroll = function(c)
+        order[#order + 1] = "clear"
+        return realClear(c)
+    end
+    local ok, err = pcall(function() ctx.__tabKids[2]:__fire("OnClick") end)
+    NS.CancelReorder, NS.Helpers.ClearScroll = realCancel, realClear
+    inst.mocks.setMouseDown("LeftButton", false)
+    assertTrue(ok, tostring(err))
+
+    assertEqual(ctx.activeTab, NS.L["Header text"], "the tab click did not switch tabs")
+    assertEqual(order[1], "cancel-live", "the first thing the switch did was not the cancel: "
+        .. table.concat(order, ","))
+    assertEqual(order[2], "clear", "no scroll clear followed the cancel: " .. table.concat(order, ","))
+    assertTrue(ctx.mmReorder == nil, "the reorder controller survived the switch")
+end)

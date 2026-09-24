@@ -616,6 +616,22 @@ pool, which is where every leftover in this page's history has come from.
 Also check: every column draws its **bar** (there is no numbers-only column any more), and the
 columns share the frame width evenly (there is no per-column width to set).
 
+**The three tabs.** The strip reads **Columns**, **Header text**, **Header background**, in that
+order, and the page opens on Columns. Click each tab. Header text shows only the header-font rows and
+Header background only its color pair, neither with a section heading of its own. Back on Columns,
+the blocks are all there. Then drag a block, drop it, and click **Header text** straight away: the
+list's reorder controller is live for as long as Columns is showing. **Pass:** no drag handle or block
+survives onto the schema tab, and with `/mm debug` the `[Blocks] released N blocks` line comes before
+the tab's repaint.
+The strip is hand-built on purpose (issue #53, pinned by `tests/test_columns.lua`).
+
+**The library drag (LK-21).** The reorder is LibKa0s-Widgets' `ReorderList` drag. Drag a block **from
+the middle of the ticked group** by its handle and drop it lower. **Pass:** the insertion line is drawn
+in the list's own color, the order changes in the page and in the window, and a second drag in
+**another window's** Columns page (change the window banner's selection) draws its own line, not a
+leftover from the first. After the drop nothing stutters: no row's `OnUpdate` stays armed, so frame
+time with the page open and idle is what it was before the drag.
+
 **Combat lock.** Leave the Columns page **open**, then pull. Click a glyph and drag a handle.
 
 **Pass.** The library's gray cover is over the page, so neither lands: the columns do not change,

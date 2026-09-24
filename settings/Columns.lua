@@ -296,10 +296,15 @@ local function renderBlockEditor(ctx)
 end
 
 -- Three tabs: the block editor (bespoke, not schema rows) and the two schema groups that used
--- to sit under it with no heading saying which window they belonged to. H.RenderTabbedSchema
--- cannot drive this page -- it partitions ALL of a page's rows by group, and the Columns tab has
--- none -- so the strip is drawn directly with H.TabStrip and each schema tab renders its own
--- filtered row list through H.RenderRows.
+-- to sit under it with no heading saying which window they belonged to. The strip is drawn
+-- directly with H.TabStrip and each schema tab renders its own filtered row list through
+-- H.RenderRows.
+--
+-- NOT H.RenderTabbedSchema's host tabs (issue #53, declined). Options minor 4's opts.tabs could
+-- carry the block editor, but that function's tab click runs its own ClearScroll and then
+-- re-enters itself, not this render(), so NS.CancelReorder could no longer run before the clear
+-- (see the top of render below). It needs a hook that runs before the clear, and it has none.
+-- tests/test_columns.lua pins the three tabs and the cancel-then-clear order.
 local TAB_COLUMNS = L["Columns"]
 local TAB_HEADER_TEXT = L["Header text"]
 local TAB_HEADER_BG = L["Header background"]

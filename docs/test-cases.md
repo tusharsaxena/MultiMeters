@@ -2151,7 +2151,7 @@ badge and any count quoted in the docs must agree with it.
 - Blocks: the release is announced on the debug log, with the count
 - Blocks: the returned list and the list parked on the ctx are two tables, same contents
 
-### test_columns.lua (11)
+### test_columns.lua (14)
 
 - Columns: the page draws one block per statistic in the catalog
 - Columns: the blocks are in the STORED order, ticked ones first
@@ -2164,6 +2164,9 @@ badge and any count quoted in the docs must agree with it.
 - Columns: a refused write is REPORTED and the page is not repainted
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
+- Columns: the page draws three tabs, Columns then Header text then Header background
+- Columns: the Header text tab renders exactly its group's rows, with no headings
+- Columns: leaving the Columns tab mid-drag cancels the reorder BEFORE the scroll clear
 
 ### test_degraded.lua (38)
 
@@ -2285,8 +2288,8 @@ badge and any count quoted in the docs must agree with it.
 | test_disabled.lua | 22 |
 | test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
-| test_columns.lua | 11 |
+| test_columns.lua | 14 |
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2011** |
+| **Total** | **2014** |
