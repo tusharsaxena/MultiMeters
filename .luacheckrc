@@ -66,7 +66,7 @@ read_globals = {
   -- native formatting / curve evaluation: the only legal arithmetic on a secret value
   "C_StringUtil", "C_CurveUtil",
   "C_Timer", "C_Spell", "C_SpecializationInfo", "C_AddOns", "C_ChallengeMode",
-  "Enum", "GetLocale", "GetSpellInfo",
+  "Enum", "GetLocale",
   -- combat state. InCombatLockdown() gates secure writes; UnitAffectingCombat() drives
   -- combat-reactive display logic (they are not interchangeable).
   "InCombatLockdown", "UnitAffectingCombat",
