@@ -883,6 +883,9 @@ a raider most wants to know what killed them is the moment they are still fighti
   stops at both ends, survives the refresh tick rather than snapping back, and resets to the top when
   you enter or leave a breakdown. Shrink the window until rows are hidden to test it.
 - The drill-down **does not reshuffle** while you watch it, in or out of combat.
+- **Renaming a drilled window keeps its breakdown open.** Open a spell breakdown, then rename the
+  window from the Windows page: the breakdown stays up under the new title. Copying settings onto
+  that window still returns it to the grid, because a copy can replace the column it drilled.
 - **Settings → Text → Death timestamps** offers two styles — time of day, and how long ago — and the
   Deaths cell tooltip and the death list must agree on whichever is picked: the first is the index
   into the second, and two labelings would make one list look like two. A third style, "time into

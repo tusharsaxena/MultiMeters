@@ -849,7 +849,10 @@ end
 --- — an action of "deleted" carries the id, but a bulk reset may not.
 function DrillDown:OnWindowsChanged(_, payload)
     local id = type(payload) == "table" and payload.windowId or nil
-    if id ~= nil and views[id] ~= nil then
+    local action = type(payload) == "table" and payload.action or nil
+    -- A rename changes neither the data nor the columns the view was built
+    -- from; "copied" can replace the columns, so it still exits.
+    if id ~= nil and views[id] ~= nil and action ~= "renamed" then
         self:Exit(id)
         return
     end

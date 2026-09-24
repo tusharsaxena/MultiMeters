@@ -1523,7 +1523,7 @@ badge and any count quoted in the docs must agree with it.
 - Tooltip: a stat key the catalog does not know heads with the key itself
 - Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block
 
-### test_drilldown.lua (58)
+### test_drilldown.lua (60)
 
 - DrillDown.IsActive is a PLAIN BOOLEAN, in both directions
 - Enter captures PLAIN identity fields, never a reference to the row
@@ -1555,6 +1555,8 @@ badge and any count quoted in the docs must agree with it.
 - The back button exits the drill-down
 - A meter reset leaves every drill-down
 - Deleting a window leaves the drill-down that belonged to it
+- Renaming a window keeps its drill-down open
+- Copying settings onto a window still leaves its drill-down
 - A bulk registry change sweeps views whose window is gone
 - A Deaths click on a player who died enters the DEATHS view
 - The deaths view lists one row per death, newest first
@@ -2214,7 +2216,7 @@ badge and any count quoted in the docs must agree with it.
 | test_tooltip_lines.lua | 37 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
-| test_drilldown.lua | 58 |
+| test_drilldown.lua | 60 |
 | test_export.lua | 89 |
 | test_export_modal.lua | 31 |
 | test_visibility.lua | 41 |
@@ -2230,4 +2232,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 33 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1964** |
+| **Total** | **1966** |
