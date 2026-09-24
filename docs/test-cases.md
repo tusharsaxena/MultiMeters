@@ -547,10 +547,11 @@ badge and any count quoted in the docs must agree with it.
 - MediaSetup: every name the library ships has a file in the vendored copy
 - MediaSetup: with no library there is no art, and that is not an error
 
-### test_envsetup.lua (11)
+### test_envsetup.lua (12)
 
 - EnvSetup: the vendored library really did register, so the cases below mean something
 - EnvSetup: NS.Meta reads this addon's TOC
+- EnvSetup: the default fixture's Version is the TOC's
 - EnvSetup: NS.Meta asks about THIS addon's folder, not its title or its chat tag
 - EnvSetup: NS.Meta answers nil — not a placeholder — for a field the TOC does not carry
 - EnvSetup: NS.Version prefers the TOC over this addon's own constant
@@ -2210,7 +2211,7 @@ badge and any count quoted in the docs must agree with it.
 | test_perfsetup.lua | 24 |
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
-| test_envsetup.lua | 11 |
+| test_envsetup.lua | 12 |
 | test_launchersetup.lua | 40 |
 | test_lifecycle.lua | 38 |
 | test_vendor_sync.lua | 3 |
@@ -2251,4 +2252,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 34 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1981** |
+| **Total** | **1982** |

@@ -9,7 +9,8 @@
 -- THE CASE THAT EARNS THIS FILE is the last one. core/Namespace.lua resolves NS.version at FILE
 -- SCOPE, so the seam has to be published before it; a TOC reshuffle that moved core/EnvSetup.lua
 -- below core/Namespace.lua would leave NS.version as the hardcoded FALLBACK_VERSION for the life of
--- the session, and nothing else in the suite would say so — "0.1.0" is a perfectly plausible answer.
+-- the session, and nothing else in the suite would say so — the constant is a perfectly plausible
+-- answer, and on a release where it matches the TOC it is even the right one.
 
 local T = _G.MULTIMETERS_TEST
 
@@ -23,11 +24,10 @@ local assertNil   = T.assertNil
 -- Stand a DIFFERENT version in the mock's manifest for the duration of `fn`, recording what the
 -- reader was asked about.
 --
--- A literal is needed here rather than the fixture. tests/wow_mock.lua stamps
--- `__toc.Version = "0.1.0"`; core/Namespace.lua's FALLBACK_VERSION was "0.1.0" too until the 1.0.0
--- release moved it, and the two coinciding is what made asserting the fixture worthless — it would
--- have passed just as green with the TOC unread. They differ today, but the literal stays: the case
--- must not depend on two unrelated constants happening to disagree.
+-- A literal is needed here rather than the fixture. tests/wow_mock.lua reads `__toc.Version` from
+-- MultiMeters.toc, and core/Namespace.lua's FALLBACK_VERSION is kept equal to that same TOC line at
+-- every release, so asserting the fixture is worthless — it would pass just as green with the TOC
+-- unread. Only a version neither of them carries tells the two paths apart.
 local function withTOC(version, fn)
     local askedName, askedField
     local saved = mocks.C_AddOns
@@ -60,6 +60,19 @@ test("EnvSetup: NS.Meta reads this addon's TOC", function()
     assertEqual(NS.Meta("Version"), mocks.__toc.Version)
     assertEqual(NS.Meta("Title"), mocks.__toc.Title)
     assertEqual(NS.Meta("Notes"), mocks.__toc.Notes)
+end)
+
+test("EnvSetup: the default fixture's Version is the TOC's", function()
+    -- The mock's manifest is read from MultiMeters.toc, not typed in, so a release bump cannot
+    -- leave the harness (and every perf record it stamps) reporting a version the addon is not.
+    -- Read independently here: comparing the fixture against itself would prove nothing.
+    local fh = assert(io.open(T.root .. "/MultiMeters.toc", "r"))
+    local toc = fh:read("*a")
+    fh:close()
+    local want = ("\n" .. toc .. "\n"):match("\n## Version:%s*([^\r\n]-)%s*[\r\n]")
+    assertTrue(want ~= nil and want ~= "", "MultiMeters.toc has no ## Version: line")
+    assertEqual(mocks.__toc.Version, want)
+    assertEqual(NS.Version(), want)
 end)
 
 test("EnvSetup: NS.Meta asks about THIS addon's folder, not its title or its chat tag", function()
@@ -113,9 +126,11 @@ test("EnvSetup degraded: an install with no LibKa0s still reads its own TOC", fu
     -- nil for everything unless it repeats the ladder the deleted shim ran, and nil is not an error
     -- a player would ever see reported: it is a blank version in the banner and "v?" on every perf
     -- record. Nothing here loads the library, so this runs the else-branch of both helpers.
-    local inst = T.load{ libFiles = {} }
-    assertEqual(inst.NS.Meta("Version"), inst.mocks.__toc.Version)
-    assertEqual(inst.NS.Version(), inst.mocks.__toc.Version)
+    -- The manifest carries a version the fallback constant does not, for the reason withTOC gives:
+    -- the fixture reads the real TOC, which the constant matches, so it could not tell them apart.
+    local inst = T.load{ libFiles = {}, mutate = function(m) m.__toc.Version = "9.9.9" end }
+    assertEqual(inst.NS.Meta("Version"), "9.9.9")
+    assertEqual(inst.NS.Version(), "9.9.9")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -161,9 +176,9 @@ test("EnvSetup: the version was resolved at load, not deferred", function()
     -- say so.
     --
     -- A fresh instance with a manifest that does NOT match the constant is the only way to ask
-    -- this: the shared instance's fixture version is "0.1.0" while FALLBACK_VERSION is "1.0.0"
-    -- since the release. A mismatched manifest is asked for explicitly rather than relying on that
-    -- gap, which is two unrelated constants and could close again on any bump.
+    -- this: the shared instance's fixture version is read from MultiMeters.toc, which
+    -- FALLBACK_VERSION is kept equal to at every release, so the two normally agree and the
+    -- fixture alone could not tell a published seam from a fallen-back one.
     local inst = T.load{ mutate = function(m) m.__toc.Version = "9.9.9" end }
     assertEqual(inst.NS.version, "9.9.9")
     assertTrue(inst.NS.version ~= inst.NS.FALLBACK_VERSION,

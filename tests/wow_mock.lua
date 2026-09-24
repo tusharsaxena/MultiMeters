@@ -79,6 +79,20 @@
 local repoRoot = ... or "."
 local kitMockBase = dofile(repoRoot .. "/tests/_kit/mock_base.lua")
 
+-- The manifest version the mock's C_AddOns answers with (see `M.__toc`). Read
+-- once per load from the real TOC so a release bump carries the harness along.
+-- "0.0.0" is the LOUD fallback: no real release is ever that, so a missing or
+-- unparseable `## Version:` line shows up in tests/test_envsetup.lua's
+-- default-fixture case and in tests/perf.lua's printed version, not silently.
+local tocVersion = (function()
+    local fh = io.open(repoRoot .. "/MultiMeters.toc", "r")
+    if not fh then return "0.0.0" end
+    local body = fh:read("*a")
+    fh:close()
+    local v = ("\n" .. body .. "\n"):match("\n## Version:%s*([^\r\n]-)%s*[\r\n]")
+    return (v and v ~= "") and v or "0.0.0"
+end)()
+
 -- The two halves this file was peeled into (layout-§1's 1500-line cap; issue #34).
 -- Neither is a SUITE -- Kit.assertSuiteInventory never sees them and tests/run.lua's
 -- SUITES list must not name them -- and both are resolved through `repoRoot` for the
@@ -1088,8 +1102,12 @@ local function build()
     -- Stubbed HERE and not in the base (whose header explains why). Clear
     -- `mocks.C_AddOns` — not `_G.C_AddOns` — to drive core/EnvSetup.lua's
     -- deprecated-global rung; `mocks._G` resolves through this table.
+    --
+    -- Version is READ from MultiMeters.toc's `## Version:` line, not typed in:
+    -- a literal went stale at every release bump and stamped the wrong version
+    -- on every perf record the harness wrote. Title and Notes stay literals.
     M.__toc = {
-        Version = "0.1.0",
+        Version = tocVersion,
         Title   = "Ka0s Multi Meters",
         Notes   = "One grid, one row per group member, one column per stat.",
     }
