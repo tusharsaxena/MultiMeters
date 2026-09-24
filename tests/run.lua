@@ -250,6 +250,7 @@ local SUITES = {
     "test_locale",
     -- database and defaults
     "test_database",
+    "test_database_migrations",
     "test_migrations",
     "test_diagnostics",
     "test_diagnostics_deathrecap",
@@ -279,6 +280,7 @@ local SUITES = {
     -- the display
     "test_window",
     "test_window_header",
+    "test_window_header_sort",
     "test_window_placement",
     "test_window_lifecycle",
     "test_window_segment",
@@ -286,6 +288,7 @@ local SUITES = {
     "test_row",
     "test_row_namecell",
     "test_row_cells",
+    "test_row_mouse",
     "test_targets",
     "test_tooltip",
     "test_tooltip_lines",

@@ -137,11 +137,13 @@ to duplicate — the tooltip found no source, the drill-down opened on nothing, 
 applied twice.
 
 `modules/Window.lua` split into the band across the top and the geometry underneath.
-`tests/test_window_header.lua` is the title strip, the column header buttons and the sort hand-off,
-the segment picker and the minimize collapse that takes the body away and leaves the strip behind;
-its sort-arrow cases exist once per rung of the three-rung ladder, so an arrow assertion that fails
-on one rung may be perfectly correct on another and the first thing to read in a failure is which
-rung the case forced. `tests/test_window_placement.lua` is where a window sits, how big it is, and
+`tests/test_window_header.lua` is the title strip, the column header buttons, the segment picker and
+the minimize collapse that takes the body away and leaves the strip behind. The sort hand-off went
+to `tests/test_window_header_sort.lua` on 2026-09-24, when the header suite sat six lines under the
+cap: which header wears the arrow, what a header click does to the order in and out of combat, and
+the arrow ladder itself. Its sort-arrow cases exist once per rung of the three-rung ladder, so an
+arrow assertion that fails on one rung may be perfectly correct on another and the first thing to
+read in a failure is which rung the case forced. `tests/test_window_placement.lua` is where a window sits, how big it is, and
 whether it is drawn at all. Its save cases **poison** `GetPoint`, `GetWidth` and `GetHeight` on the
 value-carrying frame and then drive a save through them, so a rule-R3 read that crept back in is a
 stack trace rather than something a reviewer has to notice. When the bus wiring and the lifecycle
@@ -152,7 +154,15 @@ every data message sets, `SetConfig`, `Suspend` / `Resume` and `Destroy`.
 `tests/test_row_namecell.lua` covers the one cell in the row that never holds a figure. Because it
 holds no meter value it stays **out** of the secret set, its geometry stays readable through a
 restricted pull, and that is why its icon and truncation cases can assert on widths at all; the value
-cell and the shared color, media and mouse parts stay in `tests/test_row.lua`.
+cell and the shared color, media, highlight and pool parts stay in `tests/test_row.lua`.
+`tests/test_row_mouse.lua` took the row's mouse hand-off on 2026-09-24, names unchanged: a stat cell
+asks the tooltip the narrow question and a click routes to the drill-down, while inside a breakdown
+the row is a spell, the row owns the mouse and a right click leaves.
+
+`tests/test_database_migrations.lua` took `core/Database.lua`'s migration runner and every step it
+walks out of `tests/test_database.lua` on the same day, mirroring the module's own `Migrations`
+section; the AceDB instance, the `== nil` merge, the window registry and the profile callbacks stay
+behind. Who owns the schema stamp is still `tests/test_migrations.lua`'s subject.
 
 `modules/Tooltip.lua` is the bent seam — two modules, three suites. `tests/test_tooltip_lines.lua`
 covers one pooled line as a widget, including the minimum width, which is **computed** from character

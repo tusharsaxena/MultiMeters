@@ -239,7 +239,7 @@ badge and any count quoted in the docs must agree with it.
 - Locale: the locale file registers no second table over NS.L
 - Locale: enUS is the only locale shipped, and it is unconditional
 
-### test_database.lua (76)
+### test_database.lua (28)
 
 - Database: InitDB publishes the live instance under both names
 - Database: the profile is the SHARED Default, not a per-character one
@@ -264,6 +264,14 @@ badge and any count quoted in the docs must agree with it.
 - Database: window ids are monotonic and never reused
 - Database: NextWindowId answers 1 with no database rather than raising
 - Database: a stored window with no id is given one rather than dropped
+- Database: a profile swap publishes PROFILE_CHANGED exactly once, with the new key
+- Database: core/Database.lua is the only sender of PROFILE_CHANGED
+- Database: a profile swap clears the session state derived from the old profile
+- Database: the profile a swap lands on is migrated and normalized before anything reads it
+- Database: a profile RESET re-seeds rather than leaving an empty registry
+
+### test_database_migrations.lua (48)
+
 - Database: RunMigrations stamps and holds the current schema version
 - Database: the schema version is account-wide, not per-profile
 - Database: a version ahead of any registered step is walked forward, not spun on
@@ -275,11 +283,6 @@ badge and any count quoted in the docs must agree with it.
 - Database v2: the step is idempotent and survives a malformed window
 - Database: RunMigrations with no database is a no-op, not an error
 - Database: RunMigrations normalizes every window whatever the version claims
-- Database: a profile swap publishes PROFILE_CHANGED exactly once, with the new key
-- Database: core/Database.lua is the only sender of PROFILE_CHANGED
-- Database: a profile swap clears the session state derived from the old profile
-- Database: the profile a swap lands on is migrated and normalized before anything reads it
-- Database: a profile RESET re-seeds rather than leaving an empty registry
 - Database v3: ANY of the three old icon flags means the icon stays on
 - Database v3: all three off stays off
 - Database v3: the three dead keys are REMOVED, not left to rot
@@ -1074,7 +1077,7 @@ badge and any count quoted in the docs must agree with it.
 - A pass with fewer entries releases exactly the surplus, and keeps the rest bound
 - A second pass re-anchors nothing until ApplyConfig moves the layout
 
-### test_window_header.lua (73)
+### test_window_header.lua (57)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -1106,19 +1109,6 @@ badge and any count quoted in the docs must agree with it.
 - Segment: with no provider the pin is left alone rather than rewritten
 - Segment: the session line takes NO mouse
 - Column headers are BUTTONS carrying the full stat label, left-aligned
-- The sort column shows an arrow and the others do not
-- The arrow flips with the direction
-- The sort arrow prefers the collection's own art over the Blizzard atlas
-- The sort arrow's two directions are two assets, never one flipped
-- The sort arrow falls to the Blizzard atlas with no LibKa0s art
-- Clicking a header sorts by it; clicking again reverses
-- Clicking a header drops the frozen sort order
-- A STAT header is honored in combat: the column it ranks by is a choice
-- A stat header REVERSES in combat too, because reversing compares nothing
-- The Player header sorts by PLAYER, ascending first
-- The Player header is the ONE that still refuses while restricted
-- Mid-pull the arrow sits on the column the rows are ACTUALLY ordered by
-- The sort arrow moves to the Player header in name mode
 - Test mode is marked in RED in the title, and clears when it is off
 - Building a window sets no text on a fontless FontString
 - Header art falls back to ASCII on a client with none of the atlases
@@ -1146,6 +1136,22 @@ badge and any count quoted in the docs must agree with it.
 - Every header sits exactly over the column it labels, from the same layout
 - The Player header is a Button like every other, not a label with a gap beside it
 - The strip background and the per-column ones are mutually exclusive, both ways
+
+### test_window_header_sort.lua (16)
+
+- The sort column shows an arrow and the others do not
+- The arrow flips with the direction
+- The sort arrow prefers the collection's own art over the Blizzard atlas
+- The sort arrow's two directions are two assets, never one flipped
+- The sort arrow falls to the Blizzard atlas with no LibKa0s art
+- Clicking a header sorts by it; clicking again reverses
+- Clicking a header drops the frozen sort order
+- A STAT header is honored in combat: the column it ranks by is a choice
+- A stat header REVERSES in combat too, because reversing compares nothing
+- The Player header sorts by PLAYER, ascending first
+- The Player header is the ONE that still refuses while restricted
+- Mid-pull the arrow sits on the column the rows are ACTUALLY ordered by
+- The sort arrow moves to the Player header in name mode
 - The sort arrow follows the LABEL, rather than sitting at a fixed offset
 - The atlas rung flips ONE texture with SetTexCoord, and only for ascending
 - With no art and no atlas the arrow is an ASCII character, and a legible one
@@ -1279,7 +1285,7 @@ badge and any count quoted in the docs must agree with it.
 - HeaderControls: close hides the window AS a deliberate close
 - HeaderControls: only the two toggles write to the settings seam
 
-### test_row.lua (77)
+### test_row.lua (62)
 
 - Row.OffsetFor is a pure function of the index and the row config
 - Cell:ApplyLayout places every cell from the layout table
@@ -1339,21 +1345,6 @@ badge and any count quoted in the docs must agree with it.
 - The mouseover overlay is driven from the CELLS, and honors the setting
 - On the grid the mouse goes to every cell, including the name cell
 - Release blanks the row without destroying a widget
-- Hovering a stat cell asks the tooltip the narrow question
-- Clicking a stat cell routes to the drill-down; the name cell does not
-- A cell with no entry does nothing under the cursor
-- Hovering a breakdown ROW shows the client's spell tooltip
-- A breakdown row takes the mouse, and its cells give theirs up
-- Hovering a breakdown row lights its highlight, since no cell can
-- Crossing a cell boundary does NOT blink the breakdown tooltip
-- Leaving the row hides the breakdown tooltip
-- On the GRID a cell still owns its own tooltip
-- A breakdown row with no resolvable spell still says which spell it is
-- A left click inside a breakdown does nothing
-- A right click leaves the breakdown
-- A right click on the ROW ITSELF leaves the breakdown
-- A right click on the GRID is a harmless no-op
-- Cells register for BOTH buttons, or the right click never arrives
 - Row: a cell renders displayText in place of its number
 - Row: displayText wins over BOTH slots
 - Row: a cell with no displayText is completely unaffected
@@ -1395,6 +1386,24 @@ badge and any count quoted in the docs must agree with it.
 ### test_row_cells.lua (1)
 
 - Update never touches a cell the layout hid, and the live list is reused in place
+
+### test_row_mouse.lua (15)
+
+- Hovering a stat cell asks the tooltip the narrow question
+- Clicking a stat cell routes to the drill-down; the name cell does not
+- A cell with no entry does nothing under the cursor
+- Hovering a breakdown ROW shows the client's spell tooltip
+- A breakdown row takes the mouse, and its cells give theirs up
+- Hovering a breakdown row lights its highlight, since no cell can
+- Crossing a cell boundary does NOT blink the breakdown tooltip
+- Leaving the row hides the breakdown tooltip
+- On the GRID a cell still owns its own tooltip
+- A breakdown row with no resolvable spell still says which spell it is
+- A left click inside a breakdown does nothing
+- A right click leaves the breakdown
+- A right click on the ROW ITSELF leaves the breakdown
+- A right click on the GRID is a harmless no-op
+- Cells register for BOTH buttons, or the right click never arrives
 
 ### test_targets.lua (24)
 
@@ -2272,7 +2281,8 @@ badge and any count quoted in the docs must agree with it.
 | test_compat.lua | 40 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
-| test_database.lua | 76 |
+| test_database.lua | 28 |
+| test_database_migrations.lua | 48 |
 | test_migrations.lua | 8 |
 | test_diagnostics.lua | 23 |
 | test_diagnostics_deathrecap.lua | 30 |
@@ -2298,14 +2308,16 @@ badge and any count quoted in the docs must agree with it.
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 62 |
-| test_window_header.lua | 73 |
+| test_window_header.lua | 57 |
+| test_window_header_sort.lua | 16 |
 | test_window_placement.lua | 33 |
 | test_window_lifecycle.lua | 8 |
 | test_window_segment.lua | 10 |
 | test_headercontrols.lua | 66 |
-| test_row.lua | 77 |
+| test_row.lua | 62 |
 | test_row_namecell.lua | 30 |
 | test_row_cells.lua | 1 |
+| test_row_mouse.lua | 15 |
 | test_targets.lua | 24 |
 | test_tooltip.lua | 20 |
 | test_tooltip_lines.lua | 37 |
