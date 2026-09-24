@@ -100,6 +100,7 @@ Please raise them on GitHub:
 
 | Version | Date | Highlights |
 |---|---|---|
+| 1.0.1 | 2026-09-11 | - Re-published 1.0.0 unchanged (a rebuild trigger); the TOC still read 1.0.0 |
 | 1.0.0 | 2026-09-10 | - First published release — Multi Meters is now on CurseForge<br>- Fixed test mode drawing breakdown bars with no numbers on them<br>- Roster rows now carry spec identity<br>- Updated for game patch 12.1.0 |
 | 0.1.0 | 2026-08-09 | - First release. Multi-column single-frame group meter sourced from Blizzard's damage meter: Damage, Healing, Interrupts, Dispels, Avoidable Damage and Deaths; current/overall sessions; multiple independently configured windows with copy-settings-from; tooltips, cell drill-down and death recap; per-window visibility. |
 

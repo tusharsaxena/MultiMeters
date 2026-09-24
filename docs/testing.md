@@ -570,6 +570,14 @@ which is a signal rather than a stop.
 functions above CCN 15**, evaluated by `/wow-addon:bump-version` from the `manifest.json` the release
 run writes — not by the runner, whose exit code is unchanged.
 
+**The next release goes through `/wow-addon:bump-version`, never a bare tag.** `1.0.1-release` was
+cut without one: it re-published 1.0.0 unchanged to trigger a rebuild, so its TOC still read
+`1.0.0` and no release run was recorded for it (README Version History now carries the row). The
+next version is **1.1.0**, not 1.0.2, because the v16 schema migration (the US-spelled `minimize`
+keys) has landed since. The bump runs the four-suite battery first and refuses unless all four are at
+`pass` with zero functions above CCN 15 — that battery passes before the tag, not after. Which
+release and when is the owner's call; nothing here bumps a version.
+
 **A missing tool is a SKIP recorded with its reason, never a pass.** A green run that measured
 nothing must not be mistakable for a green run that measured everything, so an absent `lizard` or
 `luacheck` is written into the manifest as `skip` with the install line that fixes it. **A skip is
