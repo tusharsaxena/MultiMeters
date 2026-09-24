@@ -158,7 +158,7 @@ badge and any count quoted in the docs must agree with it.
 - Secrets degraded: canaccessvalue alone missing still refuses a known secret
 - Secrets degraded: canaccesstable alone missing still refuses a secret table
 
-### test_compat.lua (39)
+### test_compat.lua (40)
 
 - Compat: GetSpellInfo flattens C_Spell's struct to the old multi-return
 - Compat: GetSpellInfo answers nil for an unknown spell rather than raising
@@ -198,6 +198,7 @@ badge and any count quoted in the docs must agree with it.
 - Compat.IsSkyriding is a PLAIN boolean, and false with no C_PlayerInfo
 - Compat.IsInHousing follows C_Housing, and is false without it
 - Compat.BarInterpolation answers the client's ease-out, and nil below 12.0 (#23)
+- Compat.ChatSender prefers C_ChatInfo, falls back to the global, and is nil with neither
 - Compat: a delve namespace present but missing its member does not raise
 
 ### test_state.lua (17)
@@ -1583,7 +1584,7 @@ badge and any count quoted in the docs must agree with it.
 - The exit toggle is answered BEFORE the Deaths ladder is climbed
 - Switching out of a deaths view replaces the state, it does not merge into it
 
-### test_export.lua (86)
+### test_export.lua (89)
 
 - Export is a plain table on NS, not an AceAddon module
 - Export.Available says yes out of combat, with nothing to explain
@@ -1657,6 +1658,9 @@ badge and any count quoted in the docs must agree with it.
 - Export.Send hands one message per line to the client
 - Export.Send sends every line at once on a client with no C_Timer
 - Export.Send prints locally for SELF and sends nothing to any channel
+- Export.Send sends through C_ChatInfo when the client has both senders
+- Export.Send names a missing sender once before printing a channel export to self
+- Export.Send prints SELF with no notice even when the client has no sender
 - Export.SendDelay takes an extra second every batch, to duck the message counter
 - Export.NeedsHardwareEvent is true for Say outdoors and false inside an instance
 - Say outdoors sends the WHOLE dump inside the click, not off timers
@@ -2173,7 +2177,7 @@ badge and any count quoted in the docs must agree with it.
 | test_prose.lua | 15 |
 | test_constants.lua | 25 |
 | test_secrets.lua | 38 |
-| test_compat.lua | 39 |
+| test_compat.lua | 40 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 76 |
@@ -2211,7 +2215,7 @@ badge and any count quoted in the docs must agree with it.
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
 | test_drilldown.lua | 58 |
-| test_export.lua | 86 |
+| test_export.lua | 89 |
 | test_export_modal.lua | 31 |
 | test_visibility.lua | 41 |
 | test_windowmanager.lua | 44 |
@@ -2226,4 +2230,4 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 33 |
 | test_surface_parity.lua | 3 |
 | test_eol.lua | 2 |
-| **Total** | **1960** |
+| **Total** | **1964** |

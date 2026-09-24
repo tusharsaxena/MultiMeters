@@ -858,15 +858,19 @@ end
 --- Put a set of chat lines where the player asked for them.
 ---
 --- SELF goes through NS.Print, which is the addon's prefixed chat printer and
---- reaches nobody else. Everything else goes through SendChatMessage one line at
---- a time — the API's 255-byte ceiling is per message, and no line built above
---- comes close, because every field in one is a formatted number or a player
---- name.
+--- reaches nobody else. Everything else goes through the sender
+--- NS.Compat.ChatSender resolves (C_ChatInfo.SendChatMessage, else the
+--- deprecated global) one line at a time — the API's 255-byte ceiling is per
+--- message, and no line built above comes close, because every field in one is
+--- a formatted number or a player name.
 ---
---- Falls back to printing when the client has no SendChatMessage at all (the
---- headless harness does not define one), so a test of the caller does not need
---- a stub to avoid an error. A client with no C_Timer sends everything at once,
---- which is the old behavior and still better than not sending.
+--- Falls back to printing when the client has no sender at all (the headless
+--- harness does not define one), so a test of the caller does not need a stub
+--- to avoid an error. When a real channel was asked for, one notice line says
+--- so first: a RAID export that silently printed to the player would look sent
+--- when nothing reached the raid. SELF says nothing, because nothing was lost.
+--- A client with no C_Timer sends everything at once, which is the old behavior
+--- and still better than not sending.
 ---
 --- @param lines table|nil     array of strings
 --- @param channel string|nil  a key from Const.EXPORT_CHANNELS
@@ -876,14 +880,18 @@ function Export.Send(lines, channel, target)
     if type(lines) ~= "table" or #lines == 0 then return false end
 
     local chatType, to = Export.ResolveChannel(channel, target)
-    local send = chatType and _G.SendChatMessage
+    local send = chatType and NS.Compat and NS.Compat.ChatSender and NS.Compat.ChatSender()
 
     -- LOCAL PRINTING IS NOT A SEND and is not throttled: NS.Print writes straight
     -- into the player's own chat frame, reaches nobody, and the server never
-    -- sees it. This is also the path a client with no SendChatMessage takes, so
-    -- an export there degrades to "printed to yourself" rather than to silence.
+    -- sees it. This is also the path a client with no chat sender takes, so an
+    -- export there degrades to "printed to yourself" rather than to silence —
+    -- and says so first, since the player asked for a channel and got none.
     if not send then
         if not NS.Print then return false end
+        if chatType then
+            NS.Print(L["This client has no way to send chat messages, so the export was printed to you instead."])
+        end
         for _, line in ipairs(lines) do NS.Print(line) end
         return true
     end

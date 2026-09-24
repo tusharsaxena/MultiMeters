@@ -1052,6 +1052,56 @@ test("Export.Send prints locally for SELF and sends nothing to any channel", fun
     assertEqual(sent, 0, "SELF must never reach the server")
 end)
 
+test("Export.Send sends through C_ChatInfo when the client has both senders", function()
+    -- The bare global has been deprecated since 11.2.0 in favor of
+    -- C_ChatInfo.SendChatMessage, and Compat.ChatSender picks the namespaced one.
+    -- red under: a feature module reaching _G.SendChatMessage directly.
+    local inst = T.load()
+    local modern, legacy = {}, 0
+    inst.mocks.C_ChatInfo = { SendChatMessage = function(text, chatType)
+        modern[#modern + 1] = { text = text, chatType = chatType }
+    end }
+    inst.mocks.SendChatMessage = function() legacy = legacy + 1 end
+
+    assertTrue(inst.NS.Export.Send({ "one", "two" }, "RAID"))
+    inst.mocks.__fireTimers()
+    assertEqual(#modern, 2, "every line must go through C_ChatInfo")
+    assertEqual(modern[1].chatType, "RAID")
+    assertEqual(legacy, 0, "the deprecated global must not be called")
+end)
+
+test("Export.Send names a missing sender once before printing a channel export to self", function()
+    -- red under: the silent self-print, which makes a RAID export look sent
+    -- when nothing reached the raid.
+    local inst = T.load()
+    inst.mocks.C_ChatInfo = nil
+    inst.mocks.SendChatMessage = nil
+    local before = #inst.mocks.__chat
+
+    assertTrue(inst.NS.Export.Send({ "one", "two" }, "RAID"))
+    local chat = inst.mocks.__chat
+    assertEqual(#chat - before, 3, "one notice, then one line per export line")
+    assertTrue(chat[before + 1]:find("no way to send chat messages", 1, true) ~= nil,
+        tostring(chat[before + 1]))
+    assertTrue(chat[before + 2]:find("one", 1, true) ~= nil, tostring(chat[before + 2]))
+    assertTrue(chat[before + 3]:find("two", 1, true) ~= nil, tostring(chat[before + 3]))
+end)
+
+test("Export.Send prints SELF with no notice even when the client has no sender", function()
+    -- SELF was never going to be sent, so nothing was lost and nothing is said.
+    local inst = T.load()
+    inst.mocks.C_ChatInfo = nil
+    inst.mocks.SendChatMessage = nil
+    local before = #inst.mocks.__chat
+
+    assertTrue(inst.NS.Export.Send({ "one", "two" }, "SELF"))
+    local chat = inst.mocks.__chat
+    assertEqual(#chat - before, 2, "the lines alone")
+    for i = before + 1, #chat do
+        assertTrue(chat[i]:find("no way to send", 1, true) == nil, chat[i])
+    end
+end)
+
 test("Export.SendDelay takes an extra second every batch, to duck the message counter", function()
     -- Public channels count MESSAGES as well as bytes: more than about three in
     -- quick succession answers with "the number of messages that can be sent to

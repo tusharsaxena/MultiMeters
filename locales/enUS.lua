@@ -900,6 +900,10 @@ L["You have no target to whisper to."] = "You have no target to whisper to."
 L["Your target is not a player."] = "Your target is not a player."
 L["No window named '%s'."] = "No window named '%s'."
 L["Exported %d rows to chat."] = "Exported %d rows to chat."
+-- A channel export on a client with no chat sender at all: the lines are
+-- printed to the player instead, and this says so before them.
+L["This client has no way to send chat messages, so the export was printed to you instead."] =
+    "This client has no way to send chat messages, so the export was printed to you instead."
 
 -- ---------------------------------------------------------------------------
 -- Slash commands (/mm, /multimeters)
