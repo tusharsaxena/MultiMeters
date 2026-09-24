@@ -105,6 +105,10 @@ modules\Aggregator_Identity.lua
 modules\Aggregator_Preview.lua
 modules\WindowManager.lua
 modules\Window.lua
+# The bus wiring and lifecycle tail (Window.New, SetConfig, Destroy, Suspend, Resume), peeled out
+# of modules\Window.lua for layout-§1. LOAD-BEARING POSITION: it resolves NS.Window, NS.WindowProto
+# and NS.WindowInternals at FILE SCOPE, so it MUST follow modules\Window.lua, which publishes them.
+modules\Window_Lifecycle.lua
 # The two files modules\Window.lua was peeled into for layout-§1 (issue #29): the header band,
 # and the window's placement and presence. LOAD-BEARING POSITIONS, both of them: each resolves
 # NS.WindowProto -- and Window_Header.lua also NS.WindowFontPath, NS.SurfaceColor and

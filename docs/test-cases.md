@@ -1009,7 +1009,7 @@ badge and any count quoted in the docs must agree with it.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (70)
+### test_window.lua (62)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - BuildLayout computes every coordinate from config alone
@@ -1035,14 +1035,6 @@ badge and any count quoted in the docs must agree with it.
 - The notice omits a reason it cannot safely render
 - An empty session says so rather than leaving a blank grid
 - A drilled-in window draws the breakdown, decided by the ROWS not the title
-- Suspend takes the OnUpdate away and Resume puts it back
-- Destroy takes the window off screen and off the bus
-- Each window owns a PRIVATE bus target, so two windows cannot clobber each other
-- RegisterBus subscribes exactly the twelve messages a window answers
-- Every data message marks the window dirty
-- CONFIG_CHANGED for ANOTHER window leaves this one alone
-- Destroy takes the window off EVERY message, not just the meter
-- SetConfig re-points the window at a new config without rebuilding it
 - Scrolling moves the window into the list, it does not shorten it
 - The offset survives a refresh, or scrolling is impossible
 - The offset cannot run past the end of the list
@@ -1193,6 +1185,17 @@ badge and any count quoted in the docs must agree with it.
 - SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)
 - SaveSize applies the config ONCE per resize-stop, and still applies when the seam refuses
 - A resize logs one [Set] line per dimension, not a row count
+
+### test_window_lifecycle.lua (8)
+
+- Suspend takes the OnUpdate away and Resume puts it back
+- Destroy takes the window off screen and off the bus
+- Each window owns a PRIVATE bus target, so two windows cannot clobber each other
+- RegisterBus subscribes exactly the twelve messages a window answers
+- Every data message marks the window dirty
+- CONFIG_CHANGED for ANOTHER window leaves this one alone
+- Destroy takes the window off EVERY message, not just the meter
+- SetConfig re-points the window at a new config without rebuilding it
 
 ### test_window_segment.lua (10)
 
@@ -2294,9 +2297,10 @@ badge and any count quoted in the docs must agree with it.
 | test_aggregator_identity.lua | 27 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 70 |
+| test_window.lua | 62 |
 | test_window_header.lua | 73 |
 | test_window_placement.lua | 33 |
+| test_window_lifecycle.lua | 8 |
 | test_window_segment.lua | 10 |
 | test_headercontrols.lua | 66 |
 | test_row.lua | 77 |

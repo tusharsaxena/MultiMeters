@@ -144,7 +144,10 @@ on one rung may be perfectly correct on another and the first thing to read in a
 rung the case forced. `tests/test_window_placement.lua` is where a window sits, how big it is, and
 whether it is drawn at all. Its save cases **poison** `GetPoint`, `GetWidth` and `GetHeight` on the
 value-carrying frame and then drive a save through them, so a rule-R3 read that crept back in is a
-stack trace rather than something a reviewer has to notice.
+stack trace rather than something a reviewer has to notice. When the bus wiring and the lifecycle
+tail left for `modules/Window_Lifecycle.lua`, their cases left with them, names unchanged, for
+`tests/test_window_lifecycle.lua`: the exact twelve subscriptions on a private target, the dirty flag
+every data message sets, `SetConfig`, `Suspend` / `Resume` and `Destroy`.
 
 `tests/test_row_namecell.lua` covers the one cell in the row that never holds a figure. Because it
 holds no meter value it stays **out** of the secret set, its geometry stays readable through a

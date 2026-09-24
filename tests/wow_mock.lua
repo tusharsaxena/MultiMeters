@@ -1210,7 +1210,7 @@ local function build()
 
     -- AceEvent-3.0 and AceAddon-3.0 are THE KIT'S, whole (kit revision 17). This
     -- file carried its own message half -- one registry, `UnregisterAllMessages`
-    -- for modules/Provider.lua's Suspend and modules/Window.lua's UnregisterBus,
+    -- for modules/Provider.lua's Suspend and Window_Lifecycle.lua's UnregisterBus,
     -- a string method resolved on the target at dispatch -- and its own module
     -- layer, because the kit had neither. It has both now, taken from the real
     -- CallbackHandler and AceAddon-3.0, so the copies are gone. What a suite

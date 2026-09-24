@@ -280,6 +280,7 @@ local SUITES = {
     "test_window",
     "test_window_header",
     "test_window_placement",
+    "test_window_lifecycle",
     "test_window_segment",
     "test_headercontrols",
     "test_row",

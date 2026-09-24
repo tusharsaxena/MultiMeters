@@ -3,7 +3,7 @@
 Where each responsibility lives, what each file publishes, and what it consumes. `MultiMeters.toc`
 is the source of truth for load order — check this map against it before editing.
 
-Fifty-nine non-vendored source files: 1 locale, 19 `core/`, 1 `defaults/`, 23 `modules/`,
+Sixty non-vendored source files: 1 locale, 19 `core/`, 1 `defaults/`, 24 `modules/`,
 15 `settings/`.
 
 Thirteen of those arrived on one day, 2026-09-09, and **not one of them is a new module.** They are
@@ -152,7 +152,11 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   ├── Window.lua      — one window instance and its LOOP: the anchor/visible
 │   │                     frame pair, the layout computation (R3), frame
 │   │                     construction, ApplyConfig, the row pool and the coalesced
-│   │                     refresh. Publishes WindowProto for the two files below
+│   │                     refresh. Publishes WindowProto for the three files below
+│   ├── Window_Lifecycle.lua
+│   │                   — how a window is born, re-pointed, stood down and put
+│   │                     away: Window.New, the private bus target's twelve
+│   │                     subscriptions, SetConfig, Destroy, Suspend, Resume
 │   ├── Window_Header.lua
 │   │                   — the header BAND of one window: the title bar, the session
 │   │                     line, the column labels, the sort a click on one performs,
@@ -303,7 +307,8 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 | `Aggregator_Identity.lua` | — | The grid drawn while `sourceGUID` is secret, and the rectangle that measures how much of it got filled: the correlation pass, the collision bookkeeping and the per-pass identity statistics. It exists because the client stopped handing out GUIDs, and it asks a question the join never asks | `Aggregator._identity.buildByIdentity`, and `lastIdentityStats` on the same seam — the one private the peel had to publish, written at the end of a pass here and read by `Aggregator.LastIdentityStats` there | `NS.Aggregator`, `NS.Provider`, `NS.Roster`, `NS.Secrets`, `NS.Constants`, and the five `Aggregator._identity` helpers — all **at file scope**, which is what pins its TOC line after `modules/Aggregator.lua` |
 | `Aggregator_Preview.lua` | — | The invented meter: the placeholder group, spells and scaling a player sees when they unlock a window at a target dummy. Placeholder data is required of any addon with a positionable display | `NS.Aggregator.TestGroup`, `TestColumn`, `TestRecap`, `TestSourceDetail` | the module table, and nothing else. **No upvalue crosses the line in either direction** — which is what made this the cheapest second cut once the identity seam had not got the file under on its own. `Provider`, `Roster`, `Tooltip` and `DrillDown` reach these four at call time, behind an `and`, exactly as before |
 | `WindowManager.lua` | AceAddon | The live instance registry and every runtime mutation of the window list: the `architecture-§5` registry writer, with the load pass (`Database.SeedWindows`) the only other writer. Deep-copies on duplicate and copy-from | `NS.WindowManager` — `Resolve`, `Get`, `All`, `Init`, `Create`, `Delete`, `Rename`, `Duplicate`, `CopyFrom`, `RefreshAll`, `MarkAllDirty`, `ResetPosition(s)`, `SetLocked` / `IsLocked`, `SetTestMode` / `IsTest`, `Toggle`, `BuildListLines`, `Suspend` / `Resume`, `COPY_GROUPS` | `NS.Database`, `NS.Window`, `NS.State`, `NS.DefaultWindow`. Subscribes `PROFILE_CHANGED`. **The one `WINDOWS_CHANGED` sender** |
-| `Window.lua` | plain table + prototype | One instance and its **loop**: the anchor/visible frame pair, `BuildLayout` (R3), `RefreshUpvalues`, `BuildFrame`, `ApplyConfig`, `ApplyBorder`, the row pool, the scroll, the `OnUpdate` throttle, `Refresh` and `Render`, plus the bus registration and teardown. Issue #29 names that chain as one causal sequence and forbids cutting inside it — splitting it would put a reader on two files to follow one frame | `NS.Window.New(config)` and the loop's `WindowProto` methods; and, for the two files below, `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor` and `NS.WindowModule` | `NS.Constants`, `NS.Row`, `NS.Provider`, `NS.Aggregator`, `NS.DrillDown`, `NS.ShouldShow`, `NS.Format`, `NS.ApplySkin`. Each instance subscribes 12 messages on **its own** private bus target |
+| `Window.lua` | plain table + prototype | One instance and its **loop**: the anchor/visible frame pair, `BuildLayout` (R3), `RefreshUpvalues`, `BuildFrame`, `ApplyConfig`, `ApplyBorder`, the row pool, the scroll, the `OnUpdate` throttle, `Refresh` and `Render`. Issue #29 names that chain as one causal sequence and forbids cutting inside it — splitting it would put a reader on two files to follow one frame | `NS.Window` and the loop's `WindowProto` methods; and, for the three files below, `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor`, `NS.WindowModule` and `NS.WindowInternals` (the row pool's constructor and the `OnUpdate` clock) | `NS.Constants`, `NS.Row`, `NS.Provider`, `NS.Aggregator`, `NS.DrillDown`, `NS.ShouldShow`, `NS.Format`, `NS.ApplySkin` |
+| `Window_Lifecycle.lua` | — | How a window is born, re-pointed, stood down and put away, and the bus wiring that keeps it listening in between. Peeled out of `Window.lua` for layout-§1 along the seam the automated-test disposition named: it arms the clock and marks the window dirty, and never decides what is drawn, so it sits outside issue #29's refresh chain | `NS.Window.New(config)`, `WindowProto:RegisterBus`, `UnregisterBus`, `SetConfig`, `Destroy`, `Suspend`, `Resume` | `NS.Window`, `NS.WindowProto` and `NS.WindowInternals`, all at file scope; `NS.NewBusTarget` and `NS.IsStoodDown` at call time. Each instance subscribes 12 messages on **its own** private bus target |
 | `Window_Header.lua` | — | The header **band**: the sort art and its ladder, the title bar, the session line, the column labels above the grid, the sort a click on one of those labels performs, the segment dropdown, the session label, the restricted notice and the unavailable notice. The band is computed from config and read back from nothing at all, which is why it separates from the loop cleanly | `NS.HeaderStyle(window)` (the header's font and color, read by `modules/HeaderControls.lua` at call time), and the band's `WindowProto` methods — `ApplyHeader`, `ApplyTitle`, `ApplyHeaderStrip`, `ApplySessionLine`, `ApplyColumnHeaders`, `ApplyMinimized`, `SortByColumn`, `SetSegment`, `SetSessionType`, `OpenSegmentMenu`, `UpdateHeaderText`, `ShowNotice`, and `TitleRowTop(h)` — the one center line the title, the session line and the control strip are all placed against | `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor`, `NS.WindowModule`, `NS.Constants`, `NS.L`, `NS.PlayerClassRGB`, `NS.RGBA` — the first four **at file scope**, which is what makes its TOC position load-bearing |
 | `Window_Placement.lua` | — | Where a window sits, how big it is, whether it is locked, and whether it is on screen at all — everything the player's hands and the visibility ladder do to the frame, as against what the loop draws inside it. **R3 did not weaken on this side of the seam**: `SavePosition` and `SaveSize` ask `inst.anchor`, the bare frame that has never held a meter value, and never `inst.frame` | the placement `WindowProto` methods — `ApplyPosition`, `SavePosition`, `SaveSize`, `ApplyResizeBounds`, `ApplyLock`, `RefreshVisibility`, `Show`, `ClearForcedShow`, `Hide`, `IsShown` | `NS.WindowProto`, **at file scope** |
 | `HeaderControls.lua` | plain table | The window's own control strip: which controls exist, where each sits (right-to-left, indexed, a hidden one yields its slot), what art each draws from (our TGA -> Blizzard atlas -> ASCII) and when the set fades | `NS.HeaderControls` — `Attach`, `Apply`, `HookHover`, `WidthUsed` | `NS.Compat.FirstTexture` / `FirstAtlas`, `NS.SetByPath`, `NS.HeaderStyle`, `NS.ShowResetMeterData`. Every control in the strip is built here, close included, so the strip is the same seven controls with or without LibKa0s. Owns no state and registers no event |
@@ -402,19 +407,20 @@ for the same "a flat path model has no vocabulary for this shape" reason.
 5. **`modules/`** — `Format` first (nothing reads another module, and `Row` and `Tooltip` both format
    on their first render), then `Provider` → `Roster` → `Feign` → `Aggregator` →
    **`Aggregator_Identity` → `Aggregator_Preview`** → `WindowManager` → `Window` →
-   **`Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_Cells`** → **`Row_NameCell`** →
+   **`Window_Lifecycle` → `Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_Cells`** → **`Row_NameCell`** →
    `Targets` → `Tooltip` → **`Tooltip_Lines` → `Tooltip_Builders`** → `DrillDown` → `Export` →
    **`Export_Modal`** → `Visibility`.
 
-   The nine in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
+   The ten in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
    for the same reason: each resolves something its parent publishes at *file scope*, so a peel
    ahead of its parent captures nil and stays nil for the session.
    `modules/Aggregator_Identity.lua` takes the five row-assembly helpers off `Aggregator._identity`;
    `Aggregator_Preview.lua` needs only the module table, but is kept beside its sibling because that
    is where the reading order puts it.
+   `Window_Lifecycle.lua` resolves `NS.Window`, `NS.WindowProto` and `NS.WindowInternals`,
    `Window_Header.lua` resolves `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor` and
-   `NS.WindowModule`, and `Window_Placement.lua` resolves `NS.WindowProto` — both after
-   `modules/Window.lua`, which publishes all four. `Window_Header.lua` also sits **ahead of**
+   `NS.WindowModule`, and `Window_Placement.lua` resolves `NS.WindowProto` — all three after
+   `modules/Window.lua`, which publishes every one of them. `Window_Header.lua` also sits **ahead of**
    `HeaderControls.lua`, which reads the `NS.HeaderStyle` it publishes; that read is at *call* time,
    so this half is order by intent rather than a load-time requirement, and the TOC says which is
    which.
