@@ -24,9 +24,13 @@ local T = _G.MULTIMETERS_TEST
 local test, assertEqual, assertTrue, assertFalse =
     T.test, T.assertEqual, T.assertTrue, T.assertFalse
 
--- slash-commands-§2's twelve reserved verbs: the whole live set while disabled.
--- Spelled out rather than read off the library so a narrowing there is caught
--- here rather than ratified by it.
+-- slash-commands-§2's reserved verbs that this addon REGISTERS: the whole live set
+-- while disabled. Spelled out rather than read off the library so a narrowing there
+-- is caught here rather than ratified by it. The library's set has a thirteenth,
+-- `diagnostics` (LibKa0s-Slash minor 16), which is not listed yet because this
+-- addon does not register the verb yet: an unregistered reserved verb answers
+-- `unknown command` and the index, which carries the disabled notice under its
+-- header exactly as `help` does. It joins this list with the report itself.
 local RESERVED = {
     "help", "config", "version", "enable", "disable", "debug", "perf",
     "get", "set", "list", "reset", "resetall",

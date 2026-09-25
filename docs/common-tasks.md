@@ -63,7 +63,7 @@ string built at the call site, and one line per pass rather than one per row (`d
 
 **A pass that repeats on a timer logs through `NS.DebugSteady(key, "Tag", "fmt %d", n)` instead.**
 One line per *change*, plus a heartbeat every 10s carrying `(xN)` for the passes it stood for — the
-refresh loop runs four times a second and the console buffer holds 1500 lines, so `NS.Debug` on that
+refresh loop runs four times a second and the console buffer holds 3000 lines, so `NS.Debug` on that
 path spends the whole buffer on one steady state. `key` separates emitters that share a call site
 (pass the window id); the call site itself is identified by the format string, so two `NS.Debug`
 calls under one tag do not need distinct keys. Still gated at the call site exactly as `NS.Debug` is
@@ -526,7 +526,7 @@ is a sub-verb nobody can discover (`slash-commands-§4`).
 
 **5. Decide nothing about the disabled state — the library already has.** `settings/Slash.lua` hands
 LibKa0s-Slash-1.0 an `isEnabled` and a `brandName` and **no `liveVerbs`**, so the live set is the
-library's default: the standard's twelve reserved verbs. Any verb this addon ships that is *not* one
+library's default: the standard's thirteen reserved verbs. Any verb this addon ships that is *not* one
 of them is refused while the addon is off, on one tagged line naming `/mm enable`
 (`slash-commands-§2`). A new host verb is therefore gated by default and there is nothing to
 remember. **Do not add a `liveVerbs` array to narrow that set** — standard v2.57.0 reversed exactly

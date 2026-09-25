@@ -403,8 +403,8 @@ default to total and rate.
 - Debug logging is session-only (`NS.State.debug`) and resets on every `/reload`.
 - **A refresh pass logs on change, not on every pass.** The `[Aggregator]` and `[Render]` summary
   lines go through `NS.DebugSteady`, which emits a change immediately and otherwise re-announces an
-  unchanged run at most every 10 seconds as `… (xN)`. It is what keeps a 1500-line buffer holding
-  hours rather than two minutes. Ratified as a deviation from `debug-logging-§8` — see
+  unchanged run at most every 10 seconds as `… (xN)`. It is what keeps a 3000-line buffer holding
+  hours rather than four minutes. Ratified as a deviation from `debug-logging-§8` — see
   [ARCHITECTURE.md](ARCHITECTURE.md#documented-deviations). Note the console's **Clear** button does not reset the comparison (the library offers the
   host no hook), so a freshly cleared console can sit silent until the next change or heartbeat.
 - No automated in-client tests: headless suites plus manual in-game smoke tests.

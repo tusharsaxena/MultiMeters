@@ -97,8 +97,9 @@ stands up an addon the other still holds down. It replaced a draw gate.
 
 **The gate is the library's, and the live set is its data** (LibKa0s-Slash minor 13). The host passes
 two descriptor fields. `isEnabled` asks `NS.IsDisabled` at dispatch time and never caches it, so the
-command after `/mm enable` works. The live set is the library's `LIVE_VERBS`, the standard's twelve
-reserved verbs, and this host passes no `liveVerbs` to narrow it.
+command after `/mm enable` works. The live set is the library's `LIVE_VERBS`, the standard's thirteen
+reserved verbs, and this host passes no `liveVerbs` to narrow it. `diagnostics` is in that set
+but not yet in `NS.COMMANDS`, so for now it answers `unknown command` and the index.
 
 - **Still answers while disabled:** `help`, `config`, `version`, `enable`, `disable`, `debug`, `perf`,
   `get`, `set`, `list`, `reset`, `resetall`, and the bare `/mm`.

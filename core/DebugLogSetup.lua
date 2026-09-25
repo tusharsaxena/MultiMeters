@@ -300,6 +300,22 @@ if not lib then
                 set     = function() sayOnce() end,
             }
         end,
+        -- The diagnostics report (LibKa0s-DebugLog 14.1, DebugLogDiagnostics.lua).
+        -- With no library there is no report to build, so the stub says so in the
+        -- collection's one placeholder line (debug-logging-§14), writes nothing and
+        -- answers 0 lines. BuildDiagnostics answers the empty report, DebugVerb
+        -- answers "not mine" so the host keeps its own `debug` fallback.
+        RunDiagnostics  = function()
+            if NS.Print then
+                NS.Print(NS.L["%s is unavailable: the LibKa0s library did not load."]
+                    :format("/mm diagnostics"))
+            end
+            return 0
+        end,
+        BuildDiagnostics = function()
+            return { lines = {}, dropped = 0, capped = false, capsHit = false }
+        end,
+        DebugVerb       = function() return false end,
     }
     D.FormatColored = D.FormatPlain
     NS.DebugLog = D

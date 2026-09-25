@@ -524,7 +524,7 @@ badge and any count quoted in the docs must agree with it.
 - PerfSetup: the degraded `/mm perf` answers with the shared cause and its own consequence
 - PerfSetup: a save past the ring's cap says what it dropped, in the console
 
-### test_debuglogsetup.lua (30)
+### test_debuglogsetup.lua (31)
 
 - DebugLogSetup: NS.DebugLog is the library instance and NS.Debug is its bare sink
 - DebugLogSetup: the sink is gated on the flag and costs nothing when it is off
@@ -541,6 +541,7 @@ badge and any count quoted in the docs must agree with it.
 - DebugLogSetup degraded: the stub carries the WHOLE live surface
 - DebugLogSetup degraded: NS.Debug is still a plain callable function
 - DebugLogSetup degraded: the flag still works, and says so once
+- DebugLogSetup degraded: RunDiagnostics prints the placeholder, writes nothing, answers 0
 - DebugLogSetup degraded: the honest missing-console line is said ONCE
 - DebugLogSetup degraded: the stub reproduces NO part of the library's line format
 - DebugLogSetup degraded: the console checkbox answers a usable data contract
@@ -2273,6 +2274,10 @@ badge and any count quoted in the docs must agree with it.
 - eol: every tracked file carries the terminator .gitattributes declares for it
 - eol: .gitattributes is line-endings-§5's canonical body for this repo kind
 
+### test_diagnostics_contract.lua (1)
+
+- diagnostics contract: debug-logging-§14 (skipped: Kit.diagnostics is not set in the runner, so this repo's dispatcher is not wired to the shared contract yet. Every Ka0s addon owes debug-logging-§14's report; wire Kit.diagnostics once the report exists)
+
 ## Totals
 
 | Suite | Cases |
@@ -2301,7 +2306,7 @@ badge and any count quoted in the docs must agree with it.
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
 | test_perfsetup.lua | 26 |
-| test_debuglogsetup.lua | 30 |
+| test_debuglogsetup.lua | 31 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 12 |
 | test_launchersetup.lua | 50 |
@@ -2351,4 +2356,5 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **2045** |
+| test_diagnostics_contract.lua | 1 |
+| **Total** | **2047** |
