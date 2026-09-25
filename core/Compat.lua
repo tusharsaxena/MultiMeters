@@ -744,3 +744,27 @@ function Compat.BarInterpolation()
     local enum = _G.Enum and _G.Enum.StatusBarInterpolation
     return enum and enum.ExponentialEaseOut or nil
 end
+
+-- ---------------------------------------------------------------------------
+-- Chat sending
+-- ---------------------------------------------------------------------------
+
+--- The function that sends one chat message, or nil where the client has none.
+---
+--- The bare `SendChatMessage` global has been deprecated since patch 11.2.0
+--- (Deprecated_ChatInfo.lua) in favor of `C_ChatInfo.SendChatMessage`, which
+--- takes the same `(text, chatType, languageID, target)`. This file is the only
+--- one allowed to name the global (compat), so modules/Export.lua asks here.
+--- Resolved at CALL time, not captured at load, so a namespace that arrives
+--- late still wins and a test can swap either one. Nil means the export has no
+--- way to reach a channel, and the caller says so rather than pretending.
+---
+--- A host member, not a LibKa0s-Compat one: it has exactly one consumer in the
+--- collection (anti-pattern #55).
+---
+--- @return function|nil
+function Compat.ChatSender()
+    local chat = _G.C_ChatInfo
+    if chat and chat.SendChatMessage then return chat.SendChatMessage end
+    return _G.SendChatMessage
+end

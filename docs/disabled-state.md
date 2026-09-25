@@ -2,7 +2,8 @@
 
 > Ka0s Multi Meters. Part of the doc set mapped in
 > [ARCHITECTURE.md](ARCHITECTURE.md#documentation-map). The hub's summary is
-> [Disabled — total, and the slash surface is not](ARCHITECTURE.md#disabled--total-and-the-slash-surface-is-not).
+> [Disabled — total, and the slash surface is not](ARCHITECTURE.md#disabled--total-and-the-slash-surface-is-not);
+> the slash gate itself is in [slash-dispatch.md](slash-dispatch.md#disabled--total-and-the-slash-surface-is-not).
 
 ## The disabled state is total
 
@@ -44,6 +45,15 @@ so nothing — a combat transition, a target swap, a settings write — can re-s
 switch's back. A frame hidden imperatively comes back. `standUp` rebuilds from **current state**,
 never from a snapshot: a window created or a column toggled while the addon was off comes back as it
 is now.
+
+The paths that show a window **without** asking the ladder ask the latch themselves, through
+`NS.IsStoodDown()`, which covers the `disabled` and `perf` holds both. `WindowProto:Show` (the
+manual Test mode turn-off and `/mm toggle`) returns `false` and shows nothing while stood down.
+`WindowManager:Toggle` refuses first, with *Windows are suspended while a performance capture
+runs.*; the disabled case never reaches it, because the slash gate refuses before it does, so that
+line only answers the perf hold. `Window.New` arms no OnUpdate while stood down, and
+`WindowManager:Resume` arms every instance at stand-up, including one created while the addon was
+off.
 
 `standUp` brings the bus up **first**, before `NS:OnEnable`, and the order matters. While the bus is
 down, `LibKa0s-Bus-1.0` records a registration on a bus target without making it, so a disabled
@@ -92,9 +102,19 @@ line is `cli:DisabledLine()`, built from the format string every addon in the co
 
 **The launcher.** The button stays on the minimap and the broker row stays in the display —
 `minimap.hide` is a per-installation display preference and says nothing about whether the addon is
-running. This addon is on rung **(a)**, so its left-click drives a primary window, which is a
-feature: while disabled it prints the one refusal line and does nothing else, and in particular
-writes no SavedVariables. Rung (c)'s carve-out does not apply here. **Right-click still opens the
-settings panel, in either state** — the ruling narrows the slash surface, and a mouse click is not a
-slash command.
+running. Since LibKa0s-Launcher minor 4 (`launcher-§2`, standard v2.67.0) its buttons need no
+refusal of their own. **Left-click opens the settings panel, in either state**: the panel is setup,
+and it is where a disabled addon is turned back on. **Right-click opens the options menu**, and
+while the addon is disabled the library grays *Locked*, *Test mode* and *Show window* with *(enable
+the addon first)*; a grayed entry calls nothing and writes nothing. *Enabled* stays live, and it
+runs `/mm enable`, so the menu can turn the addon back on. **The hover still answers**: the library's
+status tooltip reads *Enabled: No* and the same two fixed hints.
+
+The menu's `isEnabled` asks `NS.IsDisabled()`, **not** `NS.IsStoodDown()`: the *Enabled* box is the
+`enabled` setting, the store its toggle writes, and a perf capture must not untick it. During a
+capture's suspended arm the three feature entries stay live and each verb answers the hold in its own
+words — *Show window* runs `/mm toggle`, which prints *Windows are suspended while a performance
+capture runs.* and shows nothing. Through Launcher minor 3 the left click was refused by the library
+while stood down, reading `disabledLine` (`NS.Slash:DisabledLine()`); minor 4 retired that refusal,
+and the descriptor no longer passes `disabledLine`.
 

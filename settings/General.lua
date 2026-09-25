@@ -145,8 +145,8 @@ StaticPopupDialogs["MULTIMETERS_RESET_METER_DATA"] = {
         -- modules/Provider.lua is the only permitted caller of the meter shims
         -- (that is where the suspend-while-restricted state and the memo
         -- invalidation live), and it publishes Reset() for exactly this button.
-        -- Resolved at call time because settings/ loads ahead of modules/, and
-        -- because a popup handler can fire long after either.
+        -- Resolved at call time: settings/ loads after modules/, so the lookup
+        -- would work at load too, but a popup handler fires long after either.
         local Provider = NS.Provider
         if Provider and Provider.Reset then Provider.Reset() end
     end,

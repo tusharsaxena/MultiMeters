@@ -702,7 +702,11 @@ test("CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it co
     assertEqual(#seen, 1)
     assertEqual(seen[1].windowId, target.id)
     assertEqual(#lines, 1, "a bulk copy is ONE [Set] line, never one per row")
-    assertEqual(lines[1][1], "%s: %d rows", "and that line is the copy's summary, not a row")
+    -- Formatted with every argument the line carries: how the runtime splits the summary into
+    -- act and scope is its business (LibKa0s-Schema-1.0's `%s %s: %d rows%s`), the text is ours.
+    local text = lines[1][1]:format(unpack(lines[1], 2))
+    assertTrue(text:find("^copy from '.-' to '.-': %d+ rows$") ~= nil,
+        "and that line is the copy's summary, not a row: " .. text)
     assertEqual(inst.NS.State.activeWindowId, source.id, "the picker stays where it was")
 end)
 
@@ -724,8 +728,8 @@ test("CopyFrom logs ONE [Set] line naming the source, the target and the rows it
         assertTrue(f[1] ~= "Bulk", "the [Bulk] tag is retired: " .. tostring(f[2]))
     end
     assertEqual(#lines, 2, "one [Set] line per copy")
-    local first  = lines[1][1]:format(lines[1][2], lines[1][3])
-    local second = lines[2][1]:format(lines[2][2], lines[2][3])
+    local first  = lines[1][1]:format(unpack(lines[1], 2))
+    local second = lines[2][1]:format(unpack(lines[2], 2))
     local n = tonumber(first:match("^copy from 'Source' to 'Target': (%d+) rows$"))
     assertTrue(n ~= nil and n > 0, "the line names source, target and count: " .. first)
     assertEqual(second, "copy from 'Source' to 'Target': 0 rows",
@@ -785,4 +789,55 @@ test("SetLocked writes each window through the seam, tagged with its own id", fu
     assertEqual(#lines, 2)
     assertEqual(inst.NS.State.activeWindowId, windows[1].id)
     assertEqual(M:IsLocked(), true)
+end)
+
+-- ---------------------------------------------------------------------------
+-- Error text: the command names the window it could not find (MultiMeters-R-10)
+-- ---------------------------------------------------------------------------
+
+test("Toggle of an unknown window names the window, not a setting", function()
+    -- red under: Toggle answering L["Setting not found: %s"] for a window name.
+    local _, M = loaded()
+    local ok, err = M:Toggle("nope")
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'nope'.")
+end)
+
+test("Delete, Duplicate and CopyFrom of an unknown window name it too", function()
+    -- red under: each answering L["No window is selected."] for a key the
+    -- caller DID pass. That sentence stays only for a nil key (nothing picked).
+    local _, M = loaded()
+    local ok, err = M:Delete("nope")
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'nope'.")
+    ok, err = M:Duplicate("nope")
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'nope'.")
+    ok, err = M:CopyFrom("nope", 1)
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'nope'.")
+    ok, err = M:CopyFrom(1, "gone")
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'gone'.")
+    ok, err = M:Rename("nope", "x")
+    assertEqual(ok, false)
+    assertEqual(err, "No window named 'nope'.")
+    ok, err = M:Delete(nil)
+    assertEqual(ok, false)
+    assertEqual(err, "No window is selected.")
+    -- A blank key is nothing picked too, not a window named "" or "   ".
+    ok, err = M:Delete("")
+    assertEqual(ok, false)
+    assertEqual(err, "No window is selected.")
+    ok, err = M:Delete("   ")
+    assertEqual(ok, false)
+    assertEqual(err, "No window is selected.")
+end)
+
+test("Rename to an empty name answers a sentence, not the row's label", function()
+    -- red under: Rename answering L["Window name"] for a blank name.
+    local _, M = loaded()
+    local ok, err = M:Rename(1, "   ")
+    assertEqual(ok, false)
+    assertEqual(err, "A window name cannot be empty.")
 end)

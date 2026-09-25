@@ -85,6 +85,40 @@ local function fallbackRGBA(c, dr, dg, db, da)
     return r, g, b, a
 end
 
+-- THE PCALLED EVENT REGISTRATION HELPER (events-frames-taint-§1). The client
+-- RAISES on an event name it does not know, and a block of bare RegisterEvent
+-- calls loses every line after the one that raised -- in core/MultiMeters.lua
+-- that is the three meter events, which are registered last. Core minor 8 owns
+-- the helper; these are the one-rung bodies its version-8 document prescribes
+-- for a host running without it: the pcall and the append-once to the caller's
+-- `rejected` list, no front gate and no probe frame. Defined ABOVE the branch
+-- because both paths need them: a missing libs/LibKa0s has none of the three,
+-- and a vendored Core older than minor 8 answers the major without them.
+local function stubRegister(method, target, event, rejected, ...)
+    if pcall(method, target, event, ...) then return true end
+    if type(rejected) == "table" then
+        for i = 1, #rejected do if rejected[i] == event then return false end end
+        rejected[#rejected + 1] = event
+    end
+    return false
+end
+
+local function stubSafeRegisterEvent(target, event, handler, rejected)
+    return stubRegister(target.RegisterEvent, target, event, rejected, handler)
+end
+
+local function stubSafeRegisterUnitEvent(frame, event, rejected, ...)
+    return stubRegister(frame.RegisterUnitEvent, frame, event, rejected, ...)
+end
+
+local function stubSafeRegisterEvents(target, events, handler, rejected)
+    local n = 0
+    for _, event in ipairs(events) do
+        if stubRegister(target.RegisterEvent, target, event, rejected, handler) then n = n + 1 end
+    end
+    return n
+end
+
 local lib = LibStub and LibStub("LibKa0s-Core-1.0", true)
 
 if not lib then
@@ -177,6 +211,9 @@ if not lib then
     -- the user can live without, it is how every bar and every label gets its
     -- color out of the profile at all, and a degraded install still renders rows.
     NS.RGBA            = fallbackRGBA
+    NS.SafeRegisterEvent     = stubSafeRegisterEvent
+    NS.SafeRegisterUnitEvent = stubSafeRegisterUnitEvent
+    NS.SafeRegisterEvents    = stubSafeRegisterEvents
     return
 end
 
@@ -193,6 +230,14 @@ NS.SafeToString = lib.SafeToString
 -- NS.RGBA and never LibStub for themselves: one lookup, one degradation decision,
 -- in the file that owns both.
 NS.RGBA = lib.RGBA or fallbackRGBA
+
+-- The registration helper, by reference: stateless and lib-level like the pair
+-- above. The library's bodies add the two rungs the stub lacks -- the
+-- C_EventUtils.IsEventValid front gate and a private probe frame -- so a refused
+-- name never reaches the target at all. See the stub bodies above the branch.
+NS.SafeRegisterEvent     = lib.SafeRegisterEvent     or stubSafeRegisterEvent
+NS.SafeRegisterUnitEvent = lib.SafeRegisterUnitEvent or stubSafeRegisterUnitEvent
+NS.SafeRegisterEvents    = lib.SafeRegisterEvents    or stubSafeRegisterEvents
 
 -- ONE CLASS-COLOR RESOLVER FOR THE COLLECTION (options-ui-§17). `lib.ClassColor`
 -- arrived at Core minor 7 and reads RAID_CLASS_COLORS -- the table every other UI

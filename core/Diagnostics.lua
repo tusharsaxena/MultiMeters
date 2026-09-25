@@ -195,6 +195,25 @@ end
 -- Sections
 -- ---------------------------------------------------------------------------
 
+--- The event names the client refused at the last enable (events-frames-taint-§1).
+---
+--- core/MultiMeters.lua registers every game event through NS.SafeRegisterEvent,
+--- which isolates each name and records the ones the client did not know in
+--- NS.State.rejectedEvents. That record is only useful if a player can reach it,
+--- and this report is what a player is asked to paste. The names are the addon's
+--- own constants, never a meter value, so they are printed as they are.
+local function reportEvents()
+    out("|cff00ff00-- events --|r")
+    local rejected = NS.State and NS.State.rejectedEvents
+    if type(rejected) ~= "table" then
+        out("  rejected events: not recorded (the addon has not enabled)")
+    elseif #rejected == 0 then
+        out("  rejected events: none")
+    else
+        out("  rejected events: " .. table.concat(rejected, ", "))
+    end
+end
+
 local function reportAtlases()
     out("|cff00ff00-- atlases --|r")
     local api = _G.C_Texture
@@ -296,6 +315,26 @@ local function reportNameColumn()
     end
 end
 
+--- One line per window: what modules/Visibility.lua's Evaluate pass last
+--- answered for it. That pass runs only under debug (MultiMeters-R-09), so a
+--- window it never reached says so instead of printing a stale or guessed answer.
+local function reportLastPass(V)
+    local Database = NS.Database
+    local windows = Database and Database.GetWindows and Database.GetWindows()
+    if type(windows) ~= "table" then return end
+    for i = 1, #windows do
+        local id = (type(windows[i]) == "table" and windows[i].id) or i
+        local show, reason
+        if V and V.LastResult then show, reason = V.LastResult(id) end
+        if show == nil then
+            out(string.format("  last pass #%s: not evaluated (debug was off)", tostring(id)))
+        else
+            out(string.format("  last pass #%s: %s (%s)", tostring(id),
+                show and "shown" or "hidden", tostring(reason)))
+        end
+    end
+end
+
 --- Why the window is or is not on screen — the show ladder's own answer.
 ---
 --- Added because "changing a setting closes my window" turned out to be the
@@ -338,6 +377,8 @@ local function reportVisibility()
     out(string.format("  ShouldShow -> %s (%s)   shown=%s forcedShow=%s",
         tostring(show), tostring(reason),
         tostring(inst:IsShown()), tostring(inst.forcedShow)))
+
+    reportLastPass(V)
 end
 
 local function reportHeader()
@@ -367,7 +408,7 @@ local function reportHeader()
         out("  header controls: none built")
         return
     end
-    for _, key in ipairs({ "close", "minimise", "lock", "settings",
+    for _, key in ipairs({ "close", "minimize", "lock", "settings",
                            "segment", "reset", "export" }) do
         local button = controls[key]
         if not button then
@@ -792,7 +833,7 @@ function Diagnostics.Report()
     -- in core/Diagnostics_DeathRecap.lua; every other section is still a local
     -- here. The list is built at CALL time, so the lookup costs nothing extra.
     for _, section in ipairs({
-        reportAtlases, reportFormatter, reportVisibility, reportHeader,
+        reportEvents, reportAtlases, reportFormatter, reportVisibility, reportHeader,
         reportNameColumn, reportCells, reportTooltipFont, reportTooltipWidth,
         reportTargets, reportProviderOrder, Diagnostics.reportDeathRecap,
     }) do

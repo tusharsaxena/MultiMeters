@@ -11,7 +11,7 @@ that outgrows a screen belongs in its topic doc with a summary and a link left b
 ## Overview
 
 
-Fifty-seven non-vendored source files: 1 locale, 18 `core/`, 1 `defaults/`, 22 `modules/`, 15 `settings/`.
+Sixty non-vendored source files: 1 locale, 19 `core/`, 1 `defaults/`, 24 `modules/`, 15 `settings/`.
 
 The addon is built on the **private namespace** WoW hands each file. `core/MultiMeters.lua` calls
 `AceAddon-3.0:NewAddon(NS, addonName, …)`, which promotes that table in place — so **`NS` *is* the
@@ -48,16 +48,16 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | Layer | Files | Responsibility |
 |---|---|---|
 | `locales/` | `enUS.lua` | `NS.L`, with the key-is-the-string fallback. Loads first. |
-| `core/` boundary | `Compat.lua` | All 29 cross-patch shims, including the eight `C_DamageMeter` reads. Four of them, the spell and spec readers, are bound to `LibKa0s-Compat-1.0` and answer `nil` without it. No logic. |
+| `core/` boundary | `Compat.lua` | All 30 cross-patch shims, including the eight `C_DamageMeter` reads and the chat export's `ChatSender`. Four of them, the spell and spec readers, are bound to `LibKa0s-Compat-1.0` and answer `nil` without it. No logic. |
 | `core/` boundary | `EnvSetup.lua` | The `LibKa0s-Env-1.0` seam: `NS.Meta` / `NS.Version`, the TOC-manifest reader `Compat.lua` used to own. |
 | `core/` values | `Constants.lua`, `Namespace.lua`, `State.lua` | The stat catalog, the bus catalog, identity, session-only flags and the shared cache. |
 | `core/` the rule | `Secrets.lua` | **The only file that inspects a meter value.** Its guards `IsSecret` / `CanAccess` / `IsSafeKey` are `LibKa0s-Compat-1.0`'s, with a guard arm that re-implements each body when the library is absent. |
-| `core/` seams | `MediaSetup`, `CoreSetup`, `LifecycleSetup`, `PerfSetup`, `DebugLogSetup`, `PoolSetup`, `LauncherSetup` | LibKa0s wiring, the art and font seam, and the window row pool. `LifecycleSetup` is the ONE latch and the ONE teardown — `disabled` and `perf` are two holds on it — and it loads **before** `PerfSetup`, which raises without a `lifecycle`. The `LSM30_Border` fixup that used to make a seventh file here is `lib.__PatchLSM30Border()` now, called from `settings/OptionsSetup.lua`: AceGUI's widget registry is process-global, so a re-registration belongs to the library the whole collection shares. |
+| `core/` seams | `MediaSetup`, `CoreSetup`, `LifecycleSetup`, `PerfSetup`, `DebugLogSetup`, `PoolSetup`, `LauncherSetup` | LibKa0s wiring, the art and font seam, and the window row pool. `LifecycleSetup` is the ONE latch and the ONE teardown — `disabled` and `perf` are two holds on it — and it loads **before** `PerfSetup`, which raises without a `lifecycle`. The `LSM30_Border` fixup that used to make a seventh file here is `lib.__PatchLSM30Border()` now, called from `settings/OptionsSetup.lua`: AceGUI's widget registry is process-global, so a re-registration belongs to the library the whole collection shares. `LauncherSetup` hands `LibKa0s-Launcher-1.0` the descriptor for the one LDB object. The library owns the clicks and draws the status tooltip and, since Launcher minor 4 (`launcher-§2`, v2.67.0), the options menu: left-click opens the settings panel, right-click opens the menu (Enabled · Locked · Test mode · Show window). The descriptor only answers: `version`, and four accessor-and-toggle pairs whose toggles are the `enable`/`disable`, `lock`, `test` and `toggle` verbs' own `NS.COMMANDS` handlers. No host tooltip lines. |
 | `core/` runtime | `MultiMeters.lua`, `Database.lua` | The single game-event listener and the show ladder; AceDB and migrations. |
 | `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm debug diag` and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
 | `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret. |
-| `modules/` display | `WindowManager`, `Window` (+ `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window, one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
+| `modules/` display | `WindowManager`, `Window` (+ `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window, one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
 | `settings/` | `Schema_Compose` → `Schema` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 9 pages | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, and the path and write seams. `ColumnBlocks` is the Columns page's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
 
@@ -90,10 +90,11 @@ anti-pattern #73. What comes out is an array of ordinary rows, so nothing downst
 [settings-panel.md](settings-panel.md#the-composed-blocks) for which block is used where, and the
 [deviation register](#documented-deviations) for what a load without LibKa0s does to them.
 
-The write seam is `NS.SetByPath`, with `NS.SetByPaths` as its batch form; the reader is
-`NS.GetSetting`. Both the panel and the CLI point at them, so `/mm set window.frame.width 300` takes
-exactly the path a slider takes — same validation, same debug line, same `CONFIG_CHANGED` message,
-same panel re-sync.
+**The runtime is `LibKa0s-Schema-1.0` minor 2's** (issue #52): `settings/Schema_Paths.lua` builds
+`NS.SchemaRuntime` from the rows, a window-aware `resolveRoot` and the announce, or a log-silent
+[degradation stub](schema.md#the-degradation-stub) without LibKa0s. The write seam is `NS.SetByPath`
+(its `Set`), batched by `NS.SetByPaths` (`SetMany`); the reader is `NS.GetSetting`. The panel and the
+CLI both point at them: same validation, debug line, `CONFIG_CHANGED` and panel re-sync.
 
 **The window-relative path model** is the one thing here that is not standard-issue. A window row's
 path is relative (`window.frame.width`) and the seam resolves it against `NS.State.activeWindowId`,
@@ -102,8 +103,8 @@ twenty-two rows keep absolute paths against `db.profile`, so moving one integer 
 rows ([schema.md](schema.md#the-window-relative-path-model) lists both sets).
 
 Profiles carries **zero** rows: AceDBOptions' own tree, the one place `AceConfigDialog` is permitted,
-and vetoed from reset-all. Columns carries eight `window.columnHeader.*` rows beside its block
-editor, whose `window.columns` array is the seam's documented whole-array carve-out.
+and vetoed from reset-all ([profiles.md](profiles.md)). Columns carries eight
+`window.columnHeader.*` rows beside its block editor, whose array is a hidden 170th row, [`window.columns`](schema.md#the-columns-row).
 
 **The window registry has one writer** (`architecture-§5`), since no row can name a window's
 existence. Its storage keys are `db.profile.windows` (entries carry their `id` and unique `name`) and
@@ -119,8 +120,8 @@ row. Each piece has one owner, and every writer is listed with the act that reac
 | Storage key | Class | Owner | Writers — and the act |
 |---|---|---|---|
 | `frame.position` in each `db.profile.windows` entry ([detail](schema.md#frameposition-is-named-non-setting-state)) | geometry only a drag determines | `WindowProto` (`modules/Window_Placement.lua`) | `WindowProto:SavePosition` (title-bar drag-stop); `WindowManager:ResetPosition` / `:ResetPositions` (General's *Reset position*, `/mm reset-positions`) put back the shipped center; `WindowManager:Create` (whole, via `NS.DefaultWindow`) and `:Duplicate` (its 24 px offset); `Database.EnsureWindowShape`'s backfill when `Create`, `Duplicate` or `CopyFrom` calls it |
-| `db.global.roster` (`byGuid`, `pets`) ([detail](schema.md#dbglobal--account-wide)) | learned data | `modules/Roster.lua` | `build()` and its `linkPetOf`, recording every member and pet-owner link the live build sees (the lazy rebuild after a roster invalidation); `Roster.Forget` clears it on `METER_RESET` |
-| `db.global.minimap`'s `minimapPos` ([detail](schema.md#minimap)) | a vendored library's own writes | `core/LauncherSetup.lua` (the descriptor's `minimap` closure hands LibDBIcon the table) | LibDBIcon, when the player drags the minimap button. `hide` is the `global.minimap.hide` row, written through the seam's minimap carve-out |
+| `db.global.roster` (`byGuid`, `pets`, `count`) ([detail](schema.md#dbglobal--account-wide)) | learned data | `modules/Roster.lua` | `build()` and its `linkPetOf`, recording every member and pet-owner link the live build sees (the lazy rebuild after a roster invalidation), and `count` beside them; past `4 * MAX_ROWS` members a complete build prunes every member not in the live group, with their pet links; `Roster.Forget` clears it on `METER_RESET`. **Bounded by that prune, not forgotten at login**: SM-06 (2026-09-24) saw the meter keep the previous fight's data (two Cleave Training Dummy segments, 1:09 with 128.8K damage and 1:13) across a full logout and fresh login, so a login forget would drop the owners of numbers still on screen. Every writer runs from a build or a bus message, both gone while stood down, so no game event writes it while disabled |
+| `db.global.minimap`'s `minimapPos` ([detail](schema.md#minimap)) | a vendored library's own writes | `core/LauncherSetup.lua` (the descriptor's `minimap` closure hands LibDBIcon the table) | LibDBIcon, when the player drags the minimap button. `hide` is what the `global.minimap.shown` row stores (inverted), written through the seam by the row's own inverting `set` |
 | `MultiMetersPerfDB` | recorded data a vendored library writes | `core/PerfSetup.lua` (hands LibKa0s-Perf the key) | LibKa0s-Perf's `P.Save` on `/mm perf finish`: appends, trims the ring to 10, discards an older schema |
 
 **Sort, session type and the pinned segment are preferences, not a remembered view**: a header
@@ -132,116 +133,25 @@ through the seam by window id; the pin's none is `NO_SEGMENT` (0) ([schema.md](s
 
 ## Message bus
 
-Fourteen `AceEvent` messages are the only inter-module communication channel — modules never call each
-other across boundaries. Every name is declared once in `core/Constants.lua`'s `MSG` catalog.
-**One sender each**; a second sender is a bug, not a convenience.
-
-The catalog goes through **`LibKa0s-Bus-1.0`'s `Catalog`** (LibKa0s v1.55.0). It checks the table at
-load: SCREAMING_SNAKE keys, and wire strings of the form `Ka0s_MultiMeters_<PascalCase>`, as in
-`METER_UPDATED` → `Ka0s_MultiMeters_MeterUpdated`. It hands back a **strict** table, so a mistyped
-key raises at the call site, for a sender as well as a subscriber. The wire strings used the keys'
-SCREAMING_SNAKE spelling until that adoption, and every sender and subscriber reads the constant, so
-the rename moved nothing else. With no LibKa0s the plain table is the catalog, and a mistyped key is
-a subscriber's nil-index again. The table below names messages by key.
-
-| Message | Sender | Consumers | Payload |
-|---|---|---|---|
-| `METER_UPDATED` | `core/MultiMeters.lua` | `Targets`, every `Window` | — |
-| `METER_SESSION` | `core/MultiMeters.lua` | `Provider`, `Targets`, every `Window` | `{ type, sessionID }` |
-| `METER_RESET` | `core/MultiMeters.lua`, and `Provider.Reset` for the manual path | `Provider`, `Roster`, `Feign`, `Aggregator`, `Targets`, `DrillDown`, every `Window` | — |
-| `ROSTER_CHANGED` | `core/MultiMeters.lua` | `Roster`, `Feign`, `Visibility`, every `Window` | — |
-| `ZONE_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
-| `ENTERING_WORLD` | `core/MultiMeters.lua` | `Provider`, `Roster`, `Feign`, `Visibility`, every `Window` | `{ isLogin, isReload }` |
-| `RESTRICTION_CHANGED` | `core/MultiMeters.lua` | every `Window`, the export modal (`modules/Export_Modal.lua`) | `{ type, state }` |
-| `COMBAT_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
-| `PLAYER_STATE_CHANGED` | `core/MultiMeters.lua` | `Visibility`, every `Window` | — |
-| `PROFILE_CHANGED` | `core/Database.lua` (`fireProfileChanged`) | `Format`, `Roster`, `Aggregator`, `Targets`, `WindowManager`, `DrillDown`, `Visibility`, `settings/Profiles.lua` | `{ newProfileKey }` |
-| `CONFIG_CHANGED` | `settings/Schema_Paths.lua` (`NS.SetByPath`, and once per batch from `NS.SetByPaths`) | `Format`, every `Window` | `{ section, windowId }` |
-| `WINDOWS_CHANGED` | `modules/WindowManager.lua` (`announce`) | `DrillDown`; the settings panel repaints on the same registry actions through `NS.RefreshOptionsPanel`, by direct call rather than by subscription | `{ windowId, action }` |
-| `TEST_MODE_CHANGED` | `core/State.lua` (`State.SetTestMode`) | `Roster`, every `Window` | `{ enabled }` |
-| `DRILLDOWN_CHANGED` | `modules/DrillDown.lua` (`announce`) | the addressed `Window` | `{ windowId, active }` |
-
-`METER_RESET` has two dispatch paths on purpose: the game fires `DAMAGE_METER_RESET` and
-`Provider.Reset` also announces, so a manual reset does not depend on the event arriving. Every
-handler on it is idempotent, and a duplicate wipe is a far smaller problem than a window still
-drawing rows for sessions that no longer exist.
-
-`CONFIG_CHANGED` and `WINDOWS_CHANGED` are deliberately distinct: the first is a setting moving
-inside a window that already exists (re-apply and refresh), the second is the registry changing
-*shape* (rebuild, and the panel re-draws its picker). Both carry `windowId`, so a twenty-window
-profile does not re-apply nineteen windows for one edit.
-
-**Bus-target discipline.** CallbackHandler keys callbacks by `(message, target)`, so two receivers of
-one message on the same object silently clobber each other and only the last registrant fires. This
-addon is unusually exposed — every window subscribes to the same refresh messages and there can be
-many windows. AceAddon modules are their own targets; each `Window` instance, `modules/Format.lua`,
-`modules/Targets.lua`, the export modal in `modules/Export_Modal.lua` and `settings/Profiles.lua`'s
-page own a private target from `NS.NewBusTarget()`. Nothing registers on the shared addon object.
-
-**The stand-down record is `LibKa0s-Bus-1.0`'s** (hand-written here until LibKa0s v1.55.0).
-`NS.busRecord` (`core/Namespace.lua`) tracks every target from `NS.NewBusTarget()`, and
-`NS.BusStandDown()` takes all their registrations down while keeping the record. `NS.BusStandUp()`,
-called first in `standUp`, replays the record as it is now. While the bus is down, a registration
-is recorded but not made, and a target its owner has emptied is never replayed. The stand-down it serves
-is in [disabled-state.md](disabled-state.md), and `tests/test_disabled.lua` pins it.
+Fourteen `AceEvent` messages, declared once in `core/Constants.lua`'s `MSG` catalog through
+`LibKa0s-Bus-1.0`'s `Catalog`, are the only channel between modules. Each has **one sender**, and every
+receiver that is not an AceAddon module owns a private target from `NS.NewBusTarget()`. The catalog
+with sender, consumers and payload, the two `METER_RESET` paths and the stand-down record:
+**[message-bus.md](message-bus.md)**.
 
 ## Slash commands
 
-`/mm` and `/multimeters` are aliases, registered through AceConsole (never a raw `SLASH_*` global).
-A bare `/mm` (empty, or whitespace only) runs the `config` verb with `""` and opens the settings
-panel on its landing page; `/mm help` prints the index (`slash-commands-§4`, LibKa0s-Slash minor 11).
-The library-absent stub in `settings/Slash.lua` mirrors the rule, so there `config` answers that the
-panel is unavailable.
-`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **18 verbs**, the
-twelve reserved ones first in the order the standard fixes, then this addon's six. The dispatcher, the
-help renderer and the schema CLI are LibKa0s-Slash-1.0's; the verb table stays this addon's and is
-passed *in*, because the settings landing page renders the same rows and library ownership would make
-that a load-time cycle between two majors.
-
-| Command | What it does |
-|---|---|
-| `help` | Show the command index |
-| `config` | Open the settings panel on its landing page (`options` is accepted as an alias). A bare `/mm` runs this verb |
-| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgment is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: nothing unregisters the chat command, tears down `NS.COMMANDS` or drops the dispatcher, so every reserved verb — and the bare `/mm`, which opens the panel — still works with the addon off, and the pair is never one-way. `disable` **stands the addon down** rather than hiding its windows; what that means, and what the six feature verbs answer instead, is [disabled-state.md](disabled-state.md) |
-| `list` | List every setting and its current value |
-| `get <path>` | Read one setting |
-| `set <path> <value>` | Write one setting |
-| `reset <path>` | Reset one setting to its default |
-| `resetall` | Reset the active profile to the shipped defaults, **after a confirmation**. It opens the General page's "Reset all settings?" popup (`MULTIMETERS_RESET_ALL`, through `NS.ShowResetAll`, the opener the button calls), and only accepting resets; No or Escape changes nothing. The reset is a **profile reset**, so it is the equivalent of a new profile: extra windows are deleted and one fresh window is left. The same act as Profiles → Reset Profile; other profiles are never touched. Until 2026-09-12 it went to the library's `CliResetAll`, which reset only the active window's rows, and then, until the owner's decision the same day, it reset without asking. See [settings-panel.md](settings-panel.md#reset-all-settings-vs-reset-profile) |
-| `debug` | Toggle the console window; `on` / `off` set session logging; **`tooltip`** toggles the tooltip log channel, off by default because a tooltip is rebuilt on every mouse-over and would evict the buffer; **`diag`** prints the diagnostic report; **`recap`** prints the death-recap probe alone; **`identity`** prints the mid-pull identity-correlation capture (issue #22); **`feign on`** / **`feign off`** arm and disarm the feign-death recording and **`feign`** prints it (issue #25) |
-| `perf` | Performance capture — `/mm perf help` for the run's own verbs |
-| `version` | Print the addon version, read from the TOC manifest |
-| `lock` | Lock or unlock every window for dragging. It governs movement and nothing else: unlocking no longer switches Test mode on. General → Master controls' **Lock frame** box is the same switch |
-| `test` | Toggle test mode — placeholder rows, for positioning. The General page's Test mode box is the same switch. Combat starting ends it, and a start during combat is refused |
-| `toggle` | Show or hide one window by name, or all of them |
-| `window` | `list` · `new <name>` · `delete <name>` · `copy <source> <target>` |
-| `reset-positions` | Move every window back to the center of the screen |
-| `export` | Open the export modal for one window's segment: `/mm export [window]` |
-
-The six host verbs act on **windows** — instances the registry owns — rather than on schema rows, so
-they are untouched by the library's absence and route straight into `modules/WindowManager.lua`
-rather than duplicating its rules. Window keys accept either an id or a name: a number is an id, a
-string is a name, matched case-insensitively but stored exactly as typed.
-
-`export` is the one of the six that ends somewhere other than the registry: it resolves a window the
-same way `/mm toggle` does, then hands the **config** — not the live instance — to `NS.Export:Open`. A window in the registry that has never been built still points at a segment, and
-its numbers are as exportable as a drawn one's. Named with no argument it means the window the
-settings panel is pointed at, falling back to the first in the registry, because the CLI has no
-picker and `/mm export` on a fresh login has to mean something. Whether an export may run at all is
-asked once, of `NS.Export.Available()`, and is never re-decided here — see [Taint notes](#taint-notes).
+`/mm` and `/multimeters` dispatch `NS.COMMANDS` (`settings/Slash.lua`) through LibKa0s-Slash-1.0:
+**18 verbs**, the twelve reserved ones then this addon's six, plus the `window` sub-tree. A bare `/mm`
+opens the settings panel. The verb table, the sub-tree, the `debug` words, the degraded behavior and
+every refusal line: **[slash-dispatch.md](slash-dispatch.md)**.
 
 ### Disabled — total, and the slash surface is not
 
-`slash-commands-§7`. **Disabled means the addon is not running.** Every game event unregistered,
-every module and bus subscription dropped, every timer canceled, every window hidden at the source,
-nothing written from a game event. It is one `LibKa0s-Lifecycle-1.0` latch with two named holds —
-`disabled` from the stored `enabled` path, `perf` from the capture harness — and releasing one never
-stands up an addon the other still holds down. It replaced a draw gate.
-
-**The command surface is deliberately unchanged.** All twelve reserved verbs answer, and the bare
-`/mm` opens the settings panel; only this addon's own six feature verbs refuse, on one line naming
-`/mm enable`. Full detail, the teardown table and the launcher's refused left-click:
-[disabled-state.md](disabled-state.md).
+`slash-commands-§7`. Disabled means the addon is not running, and the command surface stays: all
+twelve reserved verbs answer and only the six feature verbs refuse, on one line naming `/mm enable`.
+The gate and its live list: [slash-dispatch.md](slash-dispatch.md#disabled--total-and-the-slash-surface-is-not);
+the teardown: [disabled-state.md](disabled-state.md).
 
 ## Event subscriptions
 
@@ -250,6 +160,10 @@ stands up an addon the other still holds down. It replaced a draw gate.
 registers any.** Each handler does the minimum translation and republishes onto the bus; none reads a
 value and — with two stated exceptions, the feign filter and the system-message filter below — none
 decides anything, which is what lets that section be read as a wiring diagram.
+
+Every registration goes through `NS.SafeRegisterEvent` (`core/CoreSetup.lua`, LibKa0s-Core minor 8,
+`events-frames-taint-§1`), walked off the module-level `EVENTS` array, so one name the client does
+not know costs only itself and lands in `NS.State.rejectedEvents`, which `/mm debug diag` prints.
 
 | Event | Handler | Becomes |
 |---|---|---|
@@ -268,7 +182,9 @@ decides anything, which is what lets that section be read as a wiring diagram.
 The three `DAMAGE_METER_*` handlers carry the `meterEvent` perf bracket. It measures the **fan-out**,
 not the redraw: `SendMessage` walks every subscribed window's callback synchronously, which is the
 cost that scales with window count at raid event rate. What a window then does on its own throttle
-tick is the separate `refresh` bucket.
+tick is the separate `refresh` bucket. `OnSpellSucceeded` and `OnSystemMessage` carry their own
+top-level buckets, `spellEvent` and `systemEvent`: measurement only, so a capture can say whether
+their all-session registration is worth narrowing (MultiMeters-R-17).
 
 The player-state block exists for `modules/Visibility.lua`'s rules and carries **no payload**,
 because those rules read their inputs live at the moment they are asked.
@@ -276,15 +192,16 @@ because those rules read their inputs live at the moment they are asked.
 **These edges are load-bearing, not an optimization** — there is no fallback poll, so a visibility
 input with no edge on the bus is a rule that never fires. Why, and which rule it cost, is in
 [module-map.md](module-map.md#game-event-edges-are-load-bearing). The three edges that exist because
-of what a particular client has — the probed `PLAYER_IS_GLIDING_CHANGED`, the event-name filter, and
+of what a particular client has — the newest-of-the-set `PLAYER_IS_GLIDING_CHANGED`, the event-name filter, and
 the settle pass over client state that lags its own event — are in
 [midnight-quirks.md](midnight-quirks.md#client-version-workarounds-on-the-event-edges).
 
 Everything else is a bus subscription. Registration by module is tabulated in
 [module-map.md](module-map.md#what-each-file-publishes-and-consumes).
 
-Perf buckets, declared in `core/PerfSetup.lua` with their nesting: `meterEvent` · `refresh`
-(→ `aggregate` → `providerRead`, `render` → `renderRow`) · `tooltip` (→ `targets` → `providerRead`).
+Perf buckets, declared in `core/PerfSetup.lua` with their nesting: `meterEvent` · `spellEvent` ·
+`systemEvent` · `refresh` (→ `aggregate` → `providerRead`, `render` → `renderRow`) · `tooltip`
+(→ `targets` → `providerRead`).
 `providerRead` has two parents, so it declares none, and every nested bracket passes the parent it
 ran inside, so a capture reports the tree as observed. A parent is never summed with its children.
 Detail in [performance.md](performance.md) and
@@ -334,8 +251,8 @@ Three design rules follow, and they are enforced in one place each rather than r
   discovers an illegal comparison halfway through has already raised.
 - **R3 — layout is computed from config, never read back off a frame.** `SetValue(secret)` marks a
   frame `HasSecretValues`, which makes its position data secret and propagates that to anything
-  anchored to it. There is not one `GetPoint` / `GetWidth` / `GetLeft` in `modules/Row.lua` or in
-  `modules/Row_NameCell.lua`, the name cell peeled out of it; a window keeps drag and resize on a
+  anchored to it. There is not one `GetPoint` / `GetWidth` / `GetLeft` in `modules/Row.lua`, in
+  `modules/Row_NameCell.lua`, the name cell peeled out of it, or in `modules/Row_Cells.lua`; a window keeps drag and resize on a
   bare `inst.anchor` frame that never holds a value.
 
 Two consequences worth stating once, because both look like bugs: **percentage text slots go quiet in
@@ -349,47 +266,12 @@ why an export refuses entire rather than degrading, and why secrecy keys off `Co
 
 ## The segment selector
 
-The **segment control** in the header strip — the three horizontal lines — opens a context menu of
-every session the client is still holding — name and duration, newest first as the API returns them — then a divider, then the
-two synthetic entries `Current` and `Overall`. The menu anchors to the header's session line, which
-is where it has always come out; that line used to be a 220px Button and opened the menu itself,
-which put an invisible click target across the middle of the title bar and was removed.
-
-The choice is stored in `window.data.sessionID`, which **overrides `sessionType` when it pins a
-segment** and holds `Constants.NO_SEGMENT` (0) when none is pinned. It is a hidden schema row: the
-menu is its control, and it writes the pin through `NS.SetByPath` addressed to its own window. Every
-consumer reads it through `Database.PinnedSegment`, which answers nil for the sentinel.
-
-Threading it took one optional trailing argument rather than a new shape. `Provider.GetColumn`,
-`GetSourceDetail` and `GetSessionDuration` each accept a trailing `sessionID`; nil routes to the
-`…FromType` shim exactly as before, and a number routes to the `…FromID` shim. `modules/Provider.lua`
-therefore remains the only caller of `C_DamageMeter`, and every existing call site was unchanged.
-`Compat.GetCombatSessionFromID` and `Compat.GetAvailableCombatSessions` had shipped unused since v0.1.0
-for precisely this.
-
-Every read path honors the pin, and that matters more than it looks: a tooltip or a drill-down still
-reading the live pull while the grid under it showed a fight from ten minutes ago would be describing
-a different encounter than the row the cursor is on.
-
-**Staleness is handled by forgetting, at the top of the refresh.** `WindowProto:DropStaleSegment`
-asks `Provider.HasSession` and clears a pin the client no longer holds. A stale id does not raise —
-it silently reads an empty session, which is indistinguishable from a broken addon. Session ids are
-never reused, so nothing is lost by forgetting one. With no provider module at all the pin is left
-alone: that is a broken install, not a stale segment, and rewriting the player's setting because of
-our own load order would be the worse failure.
-
-`Compat.OpenContextMenu` wraps `MenuUtil.CreateContextMenu` and is the only Blizzard menu API
-wired. The pre-11.0 alternatives are deliberately absent — they do not exist on any client this
-addon supports, and a fallback nobody can run is a fallback nobody has tested.
-
-**It is no longer the only menu in the addon, and this control is deliberately the one that keeps
-it.** The export modal's three selectors are `LibKa0s-Widgets-1.0` dropdowns — a flat-skinned button
-that drops the library's own popup, shared process-wide with every other Ka0s addon's dropdowns.
-This control is not converted: it is a mark in a header strip rather than a labeled selector in a
-form, its list is built from live client state and carries a divider, and a dropdown button wide
-enough to show a session name would take back the title bar the removed 220px Button already cost.
-The two mechanisms coexist on purpose — see `modules/Export_Modal.lua`'s "The modal's three selectors"
-comment, which argues the same split from the other side.
+The header strip's **segment control** pins a window to one session the client still holds. The
+pin is `window.data.sessionID` (`Constants.NO_SEGMENT` when none), read through
+`Database.PinnedSegment`; every read path honors it, a stale pin is dropped at the top of the refresh,
+and `modules/Provider.lua` stays the only caller of `C_DamageMeter`. The menu, the threading and why
+this control keeps a context menu rather than a dropdown are in
+**[data-flow.md](data-flow.md#the-segment-selector)**.
 
 ## Known limitations
 
@@ -462,19 +344,19 @@ issue needs a picture, and expect it to empty itself again.
 ### Conditional (documentation-§3, Tier 2)
 
 Each trigger was measured against the source, not assumed, and the measurement stays on the row
-whichever way it came out — so a later audit can re-run it rather than re-argue it. **Four of the
-seven ship**; the three that do not carry the count that decided it, and the number is what a
-re-check reads, not the verdict beside it.
+whichever way it came out — so a later audit can re-run it rather than re-argue it. **All seven
+ship**, and each row carries the count that decided it, so the number is what a re-check reads, not
+the verdict beside it.
 
 | Doc | Status | Trigger, as measured |
 |---|---|---|
 | `perf-analysis/README.md` | Present | **The performance harness is wired** — `core/PerfSetup.lua` plus `Perf` brackets in eight modules (`performance-§12`). The doc says what a recorded in-game capture bundle is and how to produce one; `docs/perf-analysis/20260909-014604/` is the standing example. |
-| `compat-layer.md` | Present | **`core/Compat.lua` is 746 lines and 29 shims** (4 of them the spell and spec readers bound to `LibKa0s-Compat-1.0` since LibKa0s v1.55.0, 8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap` and the bar-animation read `BarInterpolation`), each a guarded namespace check around one passthrough, with no feature decisions, no state, and nothing there inspecting a meter value. The row read *re-measure — the trigger now fires* from the day this addon's Compat passed KickCD's, which ships the doc: 389 lines and 18 shims when the row was last written, 777 and 29 at the v1.55.0 adoption, and 746 and 29 after it (`wc -l core/Compat.lua`; the four readers kept their names). `documentation-§3` has since given the trigger a number — **three or more** addon-specific shims, counted over this file alone — which settles it at any reading. Written, and registered on this row. |
-| `midnight-quirks.md` | Present | **At least one client-version workaround of the addon's own** — the trigger as §3 states it, and this addon carries four: the probed `PLAYER_IS_GLIDING_CHANGED`, `ADDON_RESTRICTION_STATE_CHANGED` registered against a namespace a client may not have, the settle pass over client state that lags its own event, and the secret-value model itself. It was read as Not applicable on the argument that a third copy of the secret-value rules would be the one that drifts — which was an argument against DUPLICATING them, not against the doc. The detail was MOVED here rather than copied: [Taint notes](#taint-notes) keeps the constraint, the operation lists and R1–R3, and nothing is stated twice. |
+| `compat-layer.md` | Present | **`core/Compat.lua` is 770 lines and 30 shims** (4 of them the spell and spec readers bound to `LibKa0s-Compat-1.0` since LibKa0s v1.55.0, 8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap` the bar-animation read `BarInterpolation` and the chat sender `ChatSender`), each a guarded namespace check around one passthrough, with no feature decisions, no state, and nothing there inspecting a meter value. The row read *re-measure — the trigger now fires* from the day this addon's Compat passed KickCD's, which ships the doc: 389 lines and 18 shims when the row was last written, 777 and 29 at the v1.55.0 adoption, 746 and 29 after it (`wc -l core/Compat.lua`; the four readers kept their names), and 770 and 30 once `ChatSender` took the chat export off the deprecated global. `documentation-§3` has since given the trigger a number — **three or more** addon-specific shims, counted over this file alone — which settles it at any reading. Written, and registered on this row. |
+| `midnight-quirks.md` | Present | **At least one client-version workaround of the addon's own** — the trigger as §3 states it, and this addon carries four: the isolated event registrations (the newest, `PLAYER_IS_GLIDING_CHANGED`, the likeliest refused), `ADDON_RESTRICTION_STATE_CHANGED` registered against a namespace a client may not have, the settle pass over client state that lags its own event, and the secret-value model itself. It was read as Not applicable on the argument that a third copy of the secret-value rules would be the one that drifts — which was an argument against DUPLICATING them, not against the doc. The detail was MOVED here rather than copied: [Taint notes](#taint-notes) keeps the constraint, the operation lists and R1–R3, and nothing is stated twice. |
 | `debug.md` | Present | The console is `LibKa0s-DebugLog-1.0`'s window; this addon's own surface is the four probe verbs, the `tooltip` channel flag and the eighteen `NS.Debug` channels. **Written 2026-09-09, when this row's own re-check trigger fired.** It had read "Not applicable — print statements with no state and no options for a doc to describe", which was true until `/mm debug tooltip` added a session flag on `NS.State`. The trigger was recorded on the row and the doc followed in the same changeset. |
-| `slash-dispatch.md` | Not applicable | **18 verbs in `NS.COMMANDS`.** Twelve are the standard's reserved set, implemented entirely by LibKa0s-Slash-1.0 and documented by the standard. This addon's own surface is 6 verbs and one 4-entry sub-verb tree (`window`: list/new/delete/copy); `debug` takes 7 words, one of which (`feign`) takes an argument of its own and one of which (`tooltip`) is a session flag; `perf` delegates its whole sub-surface to the library, and `export` takes one optional window name. The [Slash commands](#slash-commands) section carries all of it in a screen. |
-| `message-bus.md` | Not applicable | **14 distinct messages**, all declared in one catalog (`core/Constants.lua` `MSG`) with the owning sender named beside each. Every payload is a flat table of one to two plain fields; none carries a handle, a curve object or a per-unit filter needing prose. The [Message bus](#message-bus) section carries sender, consumers and payload for all fourteen in one table. |
-| `profiles.md` | Not applicable | `settings/Profiles.lua` is 133 lines hosting **AceDBOptions-3.0's own tree** unchanged. The addon adds no profile semantics beyond the `PROFILE_CHANGED` fan-out already tabulated above and the reset-all veto already stated under [Settings schema](#settings-schema); the persisted shape is [schema.md](schema.md)'s. |
+| `slash-dispatch.md` | Present | **18 verbs in `NS.COMMANDS` and a sub-command tree**, against a trigger of eight or more commands or any sub-command tree. Twelve verbs are the standard's reserved set; this addon's own six include `window` with its four sub-verbs (list/new/delete/copy), `debug` takes seven words, and `export` an optional window name. The row used to waive it as "carried in a screen", which the trigger does not accept; the hub's `## Slash commands` section was MOVED into the doc (2026-09-24, MultiMeters-A-03) and a summary and link left behind. |
+| `message-bus.md` | Present | **14 distinct messages**, against a trigger of more than ten. All are declared in one catalog (`core/Constants.lua` `MSG`) with one sender each. The row used to waive it as "one table carries it", which the trigger does not accept; the hub's `## Message bus` section was MOVED into the doc (2026-09-24, MultiMeters-A-03) and a summary and link left behind. |
+| `profiles.md` | Present | **User-visible profiles**: `settings/Profiles.lua` registers AceDBOptions-3.0's tree as a settings page. The row used to waive it as "no profile semantics of its own"; the trigger is the visible profiles, not the semantics. The Profiles page moved in from settings-panel.md and the lifecycle from schema.md (2026-09-24, MultiMeters-A-03), with the `PROFILE_CHANGED` fan-out, the reset-all veto, the global-vs-profile split and the migration runner's every-profile rule beside them. |
 
 ### Verification and record (documentation-§3)
 
@@ -492,6 +374,7 @@ re-check reads, not the verdict beside it.
 | Doc | Covers |
 |---|---|
 | `disabled-state.md` | What *disabled* means here — the one latch, its two holds, the full teardown and rebuild, what survives because it is setup, and the slash and launcher surfaces while the addon is off |
+| `texture-paths.md` | The hard-coded texture-path census (`library-stack-§8`): every `Interface\` path in authored source, its disposition, and the command that measures it |
 | `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact |
 | `revendor/` | Frozen — one dated bundle per LibKa0s re-vendor: the payload delta and what was adopted, declined or filed from it |
 | `audits/` | Frozen — one dated bundle per `/wow-addon:standards-audit` run: the state, the deviations and the evidence as they stood on that date |
@@ -513,32 +396,23 @@ Rows are shaped `| Rule | What differs | Why | Decided | Re-check trigger |`.
 
 | Rule | What differs | Why | Decided | Re-check trigger |
 |---|---|---|---|---|
-| `debug-logging-§8` — each recompute logged "as a single summary line" | A refresh pass whose summary line is **unchanged** from the previous pass is not logged. The line is emitted on every *change*, plus a heartbeat at most every 10s carrying `(xN)` for the passes it stood for. | `throttle = 0.25` is four passes a second, each emitting an `[Aggregator]` and a `[Render]` line (three while restricted) into a buffer capped at 500 lines (§1) — **the console holds 40 seconds**. (Measured 2026-08-21 against the cap of the day; LibKa0s v1.15.0 raised it to 1500, which buys two minutes rather than forty seconds and evicts the console just the same.) A live capture showed one identity line repeating byte-identically for 41 seconds: ~160 passes, ~480 lines, one string, evicting every other line in the buffer. That is the harm §9 names ("it **evicts** it") arriving by a route §9 does not cover: §9 bounds *per-item* emission and says nothing about a pass repeating unchanged on a timer. A change is never delayed and never dropped, so nothing a reader wants is what goes missing. Implementation and reasoning: `core/DebugLogSetup.lua` → the steady-state sink. | 2026-08-21 | debug-logging gains a rule for repeating timer-driven passes — the gap is general to any Ka0s addon with a refresh timer, so the standard is the right long-term home and this row retires the day it lands. |
+| `debug-logging-§8` — each recompute logged "as a single summary line" | A refresh pass whose summary line is **unchanged** from the previous pass is not logged. The line is emitted on every *change*, plus a heartbeat at most every 10s carrying `(xN)` for the passes it stood for. | `throttle = 0.25` is four passes a second, each emitting an `[Aggregator]` and a `[Render]` line (three while restricted) into a buffer then capped at 500 lines (`debug-logging-§1`) — **the console held 40 seconds**. (Measured 2026-08-21 against the cap of the day; LibKa0s v1.15.0 raised it to 1500, the figure `debug-logging-§9` now quotes, which buys two minutes rather than forty seconds and evicts the console just the same.) A live capture showed one identity line repeating byte-identically for 41 seconds: ~160 passes, ~480 lines, one string, evicting every other line in the buffer. That is the harm `debug-logging-§9` names ("it **evicts** it") arriving by a route §9 does not cover: §9 bounds *per-item* emission and says nothing about a pass repeating unchanged on a timer. A change is never delayed and never dropped, so nothing a reader wants is what goes missing. Implementation and reasoning: `core/DebugLogSetup.lua` → the steady-state sink. | 2026-08-21 | debug-logging gains a rule for repeating timer-driven passes — the gap is general to any Ka0s addon with a refresh timer, so the standard is the right long-term home and this row retires the day it lands. |
 | `options-ui-§17` — every color picker carries a "use class color" companion | `window.header.bgColor` — the title bar's own background — ships with **no** companion. Every other non-palette swatch in the addon has one. | Neither answer a companion could give is true of this surface. The title bar is **one strip spanning the whole window**, so "per statistic" could only ever mean the sort column's color — a fact already on screen twice, in that column's own header and in its arrow — and that is the same argument that took the mode off the title bar's *text* background and off the divider's `stat` option. The strip beside it, the column-header background, **does** keep a mode, and the difference is the point: that one labels the columns, so per-statistic tints each label with its own column's color and means something (`settings/Schema_Compose.lua`, the note above `window.columnHeader.bgColorMode`). A companion added here would be a control wired to a color nobody chose. | 2026-09-02 | The title bar grows a surface that belongs to one column or to one player — a per-row header, a sort-column tint on the strip itself — at which point "which class" and "which statistic" both have an answer and the row retires. |
 | `options-ui-§17` — "one resolver": the class-color lookup is the library's | `NS.ClassRGB(classFilename)` (`core/Namespace.lua`) stays as a **second** reader of `RAID_CLASS_COLORS`, beside the library's `NS.ClassColor(unit)`. | The two answer different questions. `LibKa0s-Core-1.0`'s `ClassColor` takes a **unit token**; a meter row is a GUID and a `classFilename` out of `C_DamageMeter`, and most rows have no token at all — a player who left the group, an NPC in a damage-taken column, a follower-dungeon companion. Retiring `ClassRGB` in favor of the unit-keyed lookup would silently uncolor every one of them. The **surface** question — the window's chrome, its header, its backdrop and its border — does go through the library, via `NS.PlayerClassRGB`, which is the case the standard's clause is about; what stays private is the roster reader. Neither has a fallback the other lacks: the degraded reader in `core/CoreSetup.lua` calls `ClassRGB` too, so there is still exactly one table lookup in the addon. | 2026-09-02 | `LibKa0s-Core-1.0` grows a class-**filename** overload of `ClassColor` (or a sibling reader), at which point `ClassRGB` becomes the private copy the clause forbids and is deleted. |
-| library-stack §8 — "where the addon needs a mark it MUST use the catalog's" | `settings/ColumnBlocks.lua:72-73`'s column-block enable/disable glyph stays on Blizzard's `ReadyCheck-Ready` / `ReadyCheck-NotReady` pair, although `LibKa0s-Media-1.0` **does** carry `circle-check` and `ban`. This is the one site in the addon where the catalog has the mark and the addon declines it. | **Three reasons, and only the third is the one that binds.** (1) *Color.* The catalog's art ships white with its shape in the alpha channel, because the collection tints by multiplying — so `circle-check` and `ban` would both draw white, and enabled-vs-disabled would be carried by shape alone where the pair on screen today carries it in green and red as well. Reconstructing that means a vertex color per state, which is a second vocabulary for one signal rather than one fewer. (2) *Degradation.* `NS.Icon` answers **nil** on a load without the payload (`core/MediaSetup.lua`), and this glyph has no ladder beneath it the way `modules/HeaderControls.lua`'s art does — the block would lose its tick outright, where a Blizzard path is part of the client and cannot go missing. (3) *Parity, which is why the line exists at all.* These are the same two textures ConsumableMaster's priority list wears (`settings/StatPriority.lua`'s `INCLUDED_TEX`/`EXCLUDED_TEX`, with `modules/KCMItemRow.lua`'s `OWNED_TEX`/`NOT_OWNED_TEX` and `settings/Category.lua`'s `OWNED_ICON`/`NOT_OWNED_ICON` beside them — named rather than numbered, because no gate in this repository can follow a line number into another one and one of those three had already slipped a lane's worth of edits by the next morning), so a player running both reads one glyph vocabulary rather than two. Moving one addon alone does not reduce the deviation; it converts a shared vocabulary into a split one, which is strictly worse than the state being ratified here. The 2026-09-07 remediation plan reaches the same conclusion in as many words — the two sites "move in both repositories together or in neither", and filing the row in both is the other half of the same choice. This repository can only file its half. **Re-challenged 2026-09-08 and unchanged.** The item's acceptance asks for two things at once — both named sites on `NS.Icon`, *and* MultiMeters' parity comment still true — and from inside this repository alone the two are not simultaneously satisfiable while ConsumableMaster's three sites stand: the move that meets the first clause is what makes the second false. The finding the item traces to says so in its own words, offering "in MultiMeters and ConsumableMaster together, **or** file the register row in both" (`MM-A-07` in `docs/audits/2026-09-07/`), and this is that second branch taken deliberately rather than a site left unvisited. LootHistory's half of the same item shipped meanwhile and settles reasons (1) and (2) on the record rather than in argument — its `NS.IconMarkup` carries the state color in the escape's own vertex fields and keeps the Blizzard path underneath as the fallback rung — which is why the row has always said only the third reason binds. | 2026-09-08 | ConsumableMaster's three sites adopt the catalog, or its priority list is retired — at which point the parity argument has no second half and this pair moves in the same cycle it does. Reasons (1) and (2) are answered upstream instead and each retires this row on its own: a `LibKa0s-Media-1.0` that publishes a tinted state pair, or an `NS.Icon` contract that carries a Blizzard fallback. |
+| library-stack-§8 — "where the addon needs a mark it MUST use the catalog's" | `settings/ColumnBlocks.lua:72-73`'s column-block enable/disable glyph stays on Blizzard's `ReadyCheck-Ready` / `ReadyCheck-NotReady` pair, although `LibKa0s-Media-1.0` **does** carry `circle-check` and `ban`. This is the one site in the addon where the catalog has the mark and the addon declines it. | **Three reasons, and only the third is the one that binds.** (1) *Color.* The catalog's art ships white with its shape in the alpha channel, because the collection tints by multiplying — so `circle-check` and `ban` would both draw white, and enabled-vs-disabled would be carried by shape alone where the pair on screen today carries it in green and red as well. Reconstructing that means a vertex color per state, which is a second vocabulary for one signal rather than one fewer. (2) *Degradation.* `NS.Icon` answers **nil** on a load without the payload (`core/MediaSetup.lua`), and this glyph has no ladder beneath it the way `modules/HeaderControls.lua`'s art does — the block would lose its tick outright, where a Blizzard path is part of the client and cannot go missing. (3) *Parity, which is why the line exists at all.* These are the same two textures ConsumableMaster's priority list wears (`settings/StatPriority.lua`'s `INCLUDED_TEX`/`EXCLUDED_TEX`, with `modules/KCMItemRow.lua`'s `OWNED_TEX`/`NOT_OWNED_TEX` and `settings/Category.lua`'s `OWNED_ICON`/`NOT_OWNED_ICON` beside them — named rather than numbered, because no gate in this repository can follow a line number into another one and one of those three had already slipped a lane's worth of edits by the next morning), so a player running both reads one glyph vocabulary rather than two. Moving one addon alone does not reduce the deviation; it converts a shared vocabulary into a split one, which is strictly worse than the state being ratified here. The 2026-09-07 remediation plan reaches the same conclusion in as many words — the two sites "move in both repositories together or in neither", and filing the row in both is the other half of the same choice. This repository can only file its half. **Re-challenged 2026-09-08 and unchanged.** The item's acceptance asks for two things at once — both named sites on `NS.Icon`, *and* MultiMeters' parity comment still true — and from inside this repository alone the two are not simultaneously satisfiable while ConsumableMaster's three sites stand: the move that meets the first clause is what makes the second false. The finding the item traces to says so in its own words, offering "in MultiMeters and ConsumableMaster together, **or** file the register row in both" (`MM-A-07` in `docs/audits/2026-09-07/`), and this is that second branch taken deliberately rather than a site left unvisited. LootHistory's half of the same item shipped meanwhile and settles reasons (1) and (2) on the record rather than in argument — its `NS.IconMarkup` carries the state color in the escape's own vertex fields and keeps the Blizzard path underneath as the fallback rung — which is why the row has always said only the third reason binds. | 2026-09-08 | ConsumableMaster's three sites adopt the catalog, or its priority list is retired — at which point the parity argument has no second half and this pair moves in the same cycle it does. Reasons (1) and (2) are answered upstream instead and each retires this row on its own: a `LibKa0s-Media-1.0` that publishes a tinted state pair, or an `NS.Icon` contract that carries a Blizzard fallback. |
+| library-stack-§8 — "where the addon needs a mark it MUST use the catalog's" | `modules/Tooltip.lua:107` hard-codes `Ability_Hunter_FocusedAim` for the TARGET line's icon instead of the catalog's `target`. | A white alpha glyph in a column of colored spell icons reads as foreign ([texture-paths.md](texture-paths.md#the-census)). Ratified as MM-A-25's option (b); the owner's option (a), `NS.Icon("target")` with this path as the nil fallback, stays open. | 2026-09-23 | The catalog ships a colored or iconic variant of `target`, or the tooltip stops drawing spell icons. |
+| library-stack-§8 — "where the addon needs a mark it MUST use the catalog's" | `modules/Window.lua:646-647` hard-code the chat `UI-ChatIM-SizeGrabber-Up` / `-Highlight` pair for the resize grip instead of the catalog's `resize`. | A two-state hover pair every player reads in each chat window, and the catalog publishes no hover variant, so adopting it would mean drawing one locally (MM-A-25, option (b)). | 2026-09-23 | `LibKa0s-Media-1.0` gains a hover variant of `resize`. |
 | options-ui-§15 — the per-instance scale, alpha and lock stay on the instance's own page: "the two are different settings and MUST NOT be conflated" | Master controls' **Lock frame** (`master.locked`) is a view over every window's own `frame.locked`, not a separate addon-wide lock. It reads ticked only when every window is locked (`WindowManager:IsLocked`), and ticking or unticking it writes each window's own lock through `WindowManager:SetLocked`, the same switch as `/mm lock on` and `/mm lock off`. The row is `sessionOnly` and stores nothing; `core/Database.lua`'s v13 → v14 step carried a stored `master.locked = true` onto every window and pruned the key. A window's own padlock (its header, or Frame → Lock window) still locks that window alone. Master scale and Master alpha are unchanged and still compose with the per-window pair. | With a separate master lock ORed over the per-window locks, `/mm lock` set the per-window locks, and the Lock frame checkbox could then neither unlock the windows nor visibly lock them (owner-reported bug, 2026-09-16). The owner chose one switch over two. Implementation: the `master.locked` entry in `settings/Schema_Compose.lua`'s Master controls `dress()`, and `WindowProto:RefreshUpvalues` in `modules/Window.lua`. | 2026-09-16 | The standard defines a master lock that coexists with per-window locks without this trap, or MultiMeters drops per-window locks. |
 
 **Retired on 2026-09-09: the seven mirror suites over the cap.** The register carried a `layout-§1`
-row ratifying seven test files that stayed over the 1500-line cap — `tests/test_window.lua` (2737)
-down to `tests/test_export.lua` (1509) — on the argument that a mirror suite has no seam of its own:
-its partition is whatever partition its module ends up peeled on, and peeling the suite first commits
-to a partition the module has not chosen yet. That argument was right, and the row was written with
-the trigger that ends it: *"The mirrored module is peeled … the suite peels along the same seam, in
-the same commit."*
-
-It fired. On 2026-09-09 every mirrored module was peeled along the seam its own issue named, and each
-suite followed it — `tests/test_window.lua` behind `modules/Window_Header.lua` and
-`Window_Placement.lua`, `tests/test_diagnostics.lua` into one suite per probe, and so on. All seven
-are under the cap, the eight breaches the row explicitly did not cover are gone with them, and
-nothing this repository tracks is over 1500 lines. A ratified deviation for a state that no longer
-exists is the graveyard this table's own preamble forbids, so the row is retired rather than re-dated.
-
-Worth keeping from it: the reason the peel had to be the module's commit and not its own. The two
-files track each other closely enough that several banners were byte-identical — `modules/Window.lua`
-and `tests/test_window.lua` both carried *Layout — rule R3 in one function*; `modules/Row.lua` and
-`tests/test_row.lua` both *The name cell* — and that pairing is what makes a red legible, because you
-read the failing case name and know which file to open. It survived the peel because the peel kept it.
+row ratifying seven test files over the 1500-line cap, `tests/test_window.lua` (2737) down to
+`tests/test_export.lua` (1509), on the argument that a mirror suite has no seam of its own and must
+peel along whatever seam its module is peeled on. Its trigger was *"The mirrored module is peeled …
+the suite peels along the same seam, in the same commit."* It fired: on 2026-09-09 every mirrored
+module was peeled and each suite followed it, so a row for a state that no longer exists is retired
+rather than re-dated. Worth keeping from it: the peel had to be the module's commit because the two
+files track each other closely enough that a failing case name tells you which file to open, and the
+peel kept that pairing.
 
 **Retired on 2026-09-08: the composed blocks on a degraded load.** The register carried an
 `options-ui-§15`/`§16` row for the schema a library-less install ends up with — the Master controls
@@ -591,129 +465,54 @@ Three things read like deviations and are not, recorded here so the same questio
 
 ### Files over the 1500-line cap
 
-Nothing is over the cap today. On 2026-09-09 the last of fifteen breaches was peeled, and the census
+Nothing is over the cap today. On 2026-09-09 the last of fifteen breaches was peeled, each source
+file along the seam its own issue named and each suite behind the module it mirrors, and the census
 table that used to stand here went with them. The heading stays and carries this sentence, because
 `layout-§1` treats an empty census as a **result**: a heading with nothing under it cannot be told
 apart from a census nobody wrote.
 
-`tests/_kit/test_layout_cap.lua` is what keeps that honest. It is the kit's gate (test-kit revision
-25, vendored with LibKa0s v1.55.0), and it replaced the hand-written `tests/test_layout_cap.lua` this
-repository carried until then. A file that crosses 1500 lines turns it red until a row naming the
-file and its terminal state is added here, a row that outlives its breach turns it red the other way,
-and this section going blank or losing its heading is red as well.
+`tests/_kit/test_layout_cap.lua` (test-kit revision 25, vendored with LibKa0s v1.55.0) keeps that
+honest, replacing the hand-written `tests/test_layout_cap.lua` this repository carried until then. A
+file that crosses 1500 lines turns it red until a row naming the file and its terminal state is added
+here, a row that outlives its breach turns it red the other way, and this section going blank or
+losing its heading is red as well.
 
-What was peeled, and along which seam, is in the git history of that day — each of the seven source
-files took the seam its own issue had already named, and the eight suites followed the modules they
-mirror.
-
-What remains worth knowing is the **1000–1500 on-notice band**, which is busier than it has ever
-been: 20 files, nine of them source, because a peel lands a file wherever its seam falls and a seam
-chosen for what a reader can hold does not aim at a line count. The tightest is `tests/test_provider.lua`
-at exactly the cap, and the one to watch is `modules/Row.lua` at 1469 — source, on the refresh
-path, and the file every identity, spec-icon and pet-fold change has historically landed in.
-
-**The band is tabulated in [automated-tests/RESULTS.md](automated-tests/RESULTS.md#files-by-layout-1-band), not here.**
-`automated-tests-§4` makes that one overwritten file the home for the watch list and the band
-together, so this section carries the reading and that file carries the figures. Two copies of a
-measurement stay equal only by there being one — which is the failure this whole cycle is a repair
-for, in miniature.
+The **1000–1500 on-notice band** is busier than it has ever been, because a peel lands a file wherever
+its seam falls. `modules/Window.lua` reached 1490 after the bound-slot render (review F-007) and was peeled
+first, as ruled: the bus wiring and the lifecycle tail went to `modules/Window_Lifecycle.lua`,
+leaving it at 1321. The one to watch now is `modules/Row.lua` at 1446 after its live-cell set and
+`Release` left for `modules/Row_Cells.lua`: source, on the refresh path, and the file every identity,
+spec-icon and pet-fold change has historically landed in. The band's figures are
+tabulated in [automated-tests/RESULTS.md](automated-tests/RESULTS.md#files-by-layout-1-band), not
+here: `automated-tests-§4` makes that one overwritten file their home, and two copies of a
+measurement stay equal only by there being one.
 
 ### Hard-coded texture paths
 
-`library-stack-§8` makes the shared catalog the addon's **vocabulary for marks**: where the addon
-needs one it uses `LibKa0s-Media-1.0`'s, ships no private copy, and draws no local substitute. The
-2026-09-07 collection review found the rule bypassed across all nine addons and could not say by how
-much — three passes produced three different figures, and the one that was believed was believed
-because it was the biggest, not because anyone could reproduce it. So the number below arrives with
-the command that produced it and the scope that command runs over, and this table is what an audit
-reads instead of measuring again.
-
-**Fifteen lines carrying fifteen paths, thirteen distinct file/path pairs, measured 2026-09-16** over
-the tracked `*.lua` this repository authors — `libs/` excluded because vendored code is audited where
-it is written, `tests/` excluded because a path in a fixture is an assertion about a string rather
-than chrome any player sees:
-
-```
-git ls-files '*.lua' | grep -v '^libs/' | grep -v '^tests/' \
-  | xargs grep -nE '("|\[\[)Interface\\'
-```
-
-**The quote is part of the pattern, and that is the correction this section exists to record.** The
-remediation plan's own per-repo census put this addon at **8**, which is exactly what a
-`grep 'Interface\\\\'` returns here: the escaped form inside a double-quoted string, and nothing
-else. Seven of this repository's paths are written as Lua **long-bracket** literals —
-`[[Interface\ICONS\…]]`, the form that needs no escaping and is what `modules/` reaches for — and a
-pattern keyed on the doubled backslash cannot see any of them. The plan's prose already knew about
-two of the seven, naming "the chat size-grabber" and "class circles" among the chrome the catalog
-cannot answer for, so the narrative and the tally were measured with different hands. That is the
-same defect the cluster was filed for, one layer down: the scope was written out and the *pattern*
-was not.
-
-Dropping the quote widens the match to **19** lines, and the four it adds are prose, not paths:
-`core/Compat.lua:593` and `modules/Window_Header.lua:78` both quote `UI-SortArrow-Up` while explaining that
-it does not exist, `core/MediaSetup.lua:27` names the `Interface\AddOns\` prefix in the argument for
-taking the folder name from the vararg, and `core/Namespace.lua:137` does the same. A comment naming
-a texture is not a texture, so they are named here rather than given rows — and naming them is what
-makes the subtraction from 19 checkable by a reader who runs the looser form.
-
-| File | Path | Disposition |
-|---|---|---|
-| `core/Constants.lua` | `Interface\AddOns\MultiMeters\media\logos\multimeters.logo.tga` | The addon's **own shipped art**, which no icon catalog is meant to replace (`layout-§3`). The reasoning above the line is about the extension, not the hard-coding: `.tga` is the only form the client loads, and the `.png` master beside it is packaging. |
-| `modules/Export_Modal.lua` | `Interface\Buttons\WHITE8x8` | The flat 1px fill `standalone-windows` **mandates** for the shared window edge — a client primitive, not a mark, so outside what the catalog answers for. `LibKa0s/Core.lua:91,94` reaches for the same file for the same reason. Two sites, one path. |
-| `core/Constants.lua` | `Interface\AddOns\MultiMeters\media\logos\multimeters.logo.128.tga` | The addon's **own shipped art** again, in its icon form. `layout-§4` requires this exact file and `launcher-§4` requires it in three places at once -- the TOC's `## IconTexture`, the minimap button and a broker display -- so one path is read by `core/LauncherSetup.lua` and restated in `MultiMeters.toc`. A catalog mark here is the thing `launcher-§4` forbids outright: a borrowed icon makes the addon look like something else in the one list where the player is choosing what to turn off (**anti-pattern #82**). Replaced `modules/Minimap.lua`'s borrowed `achievement_challengemode_gold` when the launcher was adopted. |
-| `modules/Row.lua` | `Interface\TargetingFrame\UI-Classes-Circles` | The client's **class atlas**, cropped by coordinate. The catalog carries no class art and `library-stack-§8` sends a missing mark upstream rather than into an addon — but twelve class circles are Blizzard's own data, not a Ka0s glyph, and they change when the game's classes do. |
-| `modules/Row.lua` | `Interface\TargetingFrame\UI-StatusBar` | Last-resort bar fill after an LSM fetch answers nothing. The catalog **does** ship bar textures (`library-stack-§8`), and they reach LSM through `core/MediaSetup.lua`'s `RegisterLSM` — so the only load that reaches this line is one where the payload is absent, and on that load the catalog's textures never reached LSM either. A fallback that needs the thing that is missing is not a fallback. |
-| `modules/Tooltip.lua` | `Interface\ICONS\INV_Misc_QuestionMark` | The client's canonical unknown-item mark, standing in for a spellID it cannot resolve. `library-stack-§8` has no equivalent and could not sensibly grow one: the whole point of this texture is that every WoW player already reads it as "missing", which is a meaning the client owns and a Ka0s glyph cannot borrow. |
-| `modules/Tooltip.lua` | `Interface\ICONS\Ability_Hunter_FocusedAim` | The icon every TARGET line wears, and the second site where the catalog **does** have a candidate — `target`. A considered decline, not an oversight: this slot sits in a column of colored Blizzard spell icons, and `library-stack-§8` requires catalog art to be white with its shape in the alpha channel, so the one line drawing a Ka0s glyph would be the one line that looked foreign. |
-| `modules/Tooltip.lua` | `Interface\Buttons\WHITE8X8` | The fill `standalone-windows` mandates, here as the bar fallback for a window with no texture configured — a `StatusBar` with no texture draws nothing, so a tint alone is not a fallback. The casing differs from the `modules/Export_Modal.lua` row and from nothing else; `LibKa0s` spells it both ways too (`Core.lua:91` / `Widgets.lua:44`), WoW paths are case-insensitive, and it is recorded here so nobody spends a commit "fixing" it. |
-| `modules/Window.lua` | `Interface\ChatFrame\UI-ChatIM-SizeGrabber-Up` | The corner resize grip. `library-stack-§8`'s catalog carries `resize`, but it is a **glyph** — one state, one color; this is a two-state pair (`-Up` and the `-Highlight` below) that a player already reads in every chat window. The 2026-09-07 plan names the chat size-grabber among the chrome the catalog has no equivalent for. |
-| `modules/Window.lua` | `Interface\ChatFrame\UI-ChatIM-SizeGrabber-Highlight` | The hover half of the pair above. The second state is what makes it chrome rather than a mark: `library-stack-§8`'s catalog publishes no hover variant of anything, so adopting it would mean drawing one locally, which is the thing the rule forbids. |
-| `settings/ColumnBlocks.lua` | `Interface\RaidFrame\ReadyCheck-Ready` | **Register row above** — `library-stack §8`, ratified 2026-09-08 on parity with ConsumableMaster's priority list. The one site here where the catalog has the mark. |
-| `settings/ColumnBlocks.lua` | `Interface\RaidFrame\ReadyCheck-NotReady` | **Register row above** — the other half of the same pair and the same row. |
-
-**The paths are the invariant, not the count.** `tests/test_texture_paths.lua` reads the tracked set
-and this table and compares them in both directions: a file that grows a hard-coded path nobody
-listed turns the suite red, and so does a row for a path that has gone. It pins the distinct
-file/path pair rather than a line number or an occurrence count, because those move on every ordinary
-edit while the arrival of a *new* path is the only event this rule has an opinion about. It also
-asserts that the two `ColumnBlocks.lua` rows have a `library-stack §8` row to point at, so "register
-row above" stays a reference rather than becoming a phrase.
+The census of every hard-coded `Interface\` path in authored source, with a disposition per
+file/path pair and the command that measures it, is **[texture-paths.md](texture-paths.md)**, and
+`tests/test_texture_paths.lua` compares it with the tree in both directions. Its three
+`library-stack-§8` declines of a mark the catalog does carry are ratified in the register above.
 
 ## Complexity register
 
 None. On 2026-09-09 the last of this addon's twenty-three warned functions came under CCN 15, and the
 table that used to stand here went with them.
 
-**What that table was for, and why it is not simply archived.** `performance-§10` makes the
-complexity report a *report* — it says in as many words that a commit MUST NOT be gated on it — and
-then asks the one thing that turns a page of numbers into a decision record: every function `lizard`
-warns on carries a one-line disposition. This addon had twenty-three, which is the number anti-pattern
-**#53** describes as the failure mode: a list where everything is accepted is an inventory, and an
-inventory cannot tell you when something alarming arrives. The register answered that with eleven
-peels and twelve accepts, each accept carrying the re-check trigger that would end it.
+`performance-§10` makes the complexity report a *report* that a commit MUST NOT be gated on, and asks
+that every function `lizard` warns on carry a one-line disposition. The register answered its
+twenty-three with eleven peels and twelve accepts, and then all twenty-three came down, accepts
+included: an accept is a compliant *watch-list* state but not a release gate, and
+`automated-tests-§3` refuses a tag while any function sits above CCN 15. Each of the twelve turned out
+to be one of `performance-§11`'s permitted shapes away from the line. Two had already spent a trigger
+this repository wrote itself (`Cell:ApplyBorder` and `WindowProto:BuildLayout`, on the v0.1.0 *At the
+ceiling* list at CCN 15, read 30 and 24 by 2026-09-08), which is the argument for the register.
 
-**All twenty-three came down, accepts included, and the reason is worth keeping.** An accept is a
-compliant *watch-list* state and it is not a release gate. `automated-tests-§3` refuses a tag while any
-function sits above CCN 15 — which is why this addon had never cut one — so a ratified accept would
-have kept its function off the watch list and the addon off the version list at the same time. The
-twelve were re-read rather than re-argued, and each turned out to be one of `performance-§11`'s
-permitted shapes away from the line: a data table plus one loop for the `and`/`or` defaulting, a
-module-level dispatch table for an `elseif` chain, a named helper for a block that already had a name.
-
-**Two of them had already spent a trigger this repository wrote in its own hand.**
-`docs/automated-tests/RESULTS.md`'s v0.1.0 watch list carried an *At the ceiling* table of four
-functions at exactly CCN 15, written so "whoever next edits one knows there is **zero** headroom
-left". By 2026-09-08 `Cell:ApplyBorder` read 30 and `WindowProto:BuildLayout` read 24. A trigger that
-fires and is not acted on is the thing a register exists to catch, and it took a year and this cycle
-to catch it — which is the argument for the register, not against it.
-
-`tests/test_complexity_register.lua` still guards the shape, and reads this absence deliberately: it
-holds vacuously over an empty table, and every one of its checks — that the stated tally matches the
-rows, that each Location names a file that exists, that no function is entered twice, that every
-disposition is followable — comes back the moment a row does. `lizard` is never run from the suite,
-because `performance-§10` forbids gating a commit on complexity and a test that shelled out to it
-would be that gate wearing a test's clothes. The measurement lives in `docs/automated-tests/RESULTS.md` and in each
-run's `docs/automated-tests/<stamp>/complexity.txt`.
+`tests/test_complexity_register.lua` still guards the shape and holds vacuously over an empty table;
+each of its checks (the stated tally, a Location that exists, no function twice, a followable
+disposition) comes back the moment a row does. `lizard` is never run from the suite, because a test
+that shelled out to it would be the commit gate `performance-§10` forbids. The measurement lives in
+`docs/automated-tests/RESULTS.md` and each run's `docs/automated-tests/<stamp>/complexity.txt`.
 
 ## Load order
 
@@ -745,7 +544,7 @@ per-file reasoning in [module-map.md](module-map.md#load-order). The binding con
 9. `defaults/Profile.lua` after `core/Constants.lua`, whose stat catalog it captures at load.
 10. `modules/Format.lua` first in the module block; `modules/Row.lua` resolves `Tooltip` and
    `DrillDown` at *call* time because both load after it. `modules/Targets.lua` loads before
-   `modules/Tooltip.lua`, its only caller. **Each of the eight `modules/` peels follows the parent it
+   `modules/Tooltip.lua`, its only caller. **Each of the ten `modules/` peels follows the parent it
    was cut from, and every one of those positions is load-bearing**: each resolves at *file scope*
    something its parent publishes, so a peel loading first captures nil and stays nil for the
    session. `modules/Export.lua` was the one file in the block whose position carried no constraint

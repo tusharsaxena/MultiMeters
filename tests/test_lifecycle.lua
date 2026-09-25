@@ -304,7 +304,7 @@ test("Lifecycle: combat ending test mode during a perf suspend re-shows no windo
     for _, w in ipairs(M.All()) do assertFalse(w:IsShown(), "the fixture needs suspend to hide") end
 
     -- AND THE COMBAT EVENT NO LONGER ARRIVES AT ALL, which is the stand-down
-    -- rather than a weaker version of this case (slash-commands-\194\1677). A suspended
+    -- rather than a weaker version of this case (slash-commands-§7). A suspended
     -- addon has actually UNREGISTERED PLAYER_REGEN_DISABLED, so the client would
     -- never dispatch it -- and `__fire` fires at the LIVE registration set only,
     -- so it reaches nobody here either. Test mode is therefore untouched, and no
@@ -398,6 +398,72 @@ test("Lifecycle: a client with no PLAYER_IS_GLIDING_CHANGED still enables", func
     assertNil(inst.NS.__events["PLAYER_IS_GLIDING_CHANGED"])
     assertEqual(inst.NS.__events["PLAYER_CAN_GLIDE_CHANGED"], "OnPlayerStateChanged",
         "the rest of the set must still be registered")
+end)
+
+-- ── registration isolation (events-frames-taint-§1) ─────────────────────────
+--
+-- An unknown event name RAISES on the client, and a block of bare RegisterEvent
+-- calls loses every line after the one that raised. The three meter events are
+-- registered LAST, so a single retired name anywhere above them used to take
+-- every number this addon draws with it. Each registration now costs only itself,
+-- and the names the client refused are kept where `/mm debug diag` can read them.
+
+--- The events live on `inst.NS` as AceEvent registrations, read off the kit's survey.
+local function liveEvents(inst)
+    local out = {}
+    for _, r in ipairs(inst.mocks.__registrations()) do
+        if r.kind == "event" and r.target == inst.NS then out[r.event] = true end
+    end
+    return out
+end
+
+local METER_EVENTS = {
+    "DAMAGE_METER_CURRENT_SESSION_UPDATED", "DAMAGE_METER_COMBAT_SESSION_UPDATED",
+    "DAMAGE_METER_RESET",
+}
+
+test("Lifecycle: one unknown event name costs only itself, and is recorded", function()
+    -- red under: a bare self:RegisterEvent anywhere in the block, which raises
+    -- at UNIT_SPELLCAST_SUCCEEDED and never reaches the meter events below it.
+    local inst = T.load{ enable = true, mutate = function(m)
+        m.__badEvents = { UNIT_SPELLCAST_SUCCEEDED = true }
+    end }
+    local live = liveEvents(inst)
+    for _, event in ipairs(METER_EVENTS) do
+        assertTrue(live[event], event .. " was lost to an earlier refused name")
+    end
+    assertEqual(table.concat(inst.NS.State.rejectedEvents, ","), "UNIT_SPELLCAST_SUCCEEDED")
+end)
+
+test("Lifecycle: with no C_EventUtils the refused name is still isolated and recorded", function()
+    -- An older client has no front gate, so the pcall rung is what decides.
+    local inst = T.load{ enable = true, mutate = function(m)
+        m.__badEvents = { UNIT_SPELLCAST_SUCCEEDED = true }
+        m.C_EventUtils = nil
+    end }
+    local live = liveEvents(inst)
+    for _, event in ipairs(METER_EVENTS) do
+        assertTrue(live[event], event .. " was lost to an earlier refused name")
+    end
+    assertEqual(table.concat(inst.NS.State.rejectedEvents, ","), "UNIT_SPELLCAST_SUCCEEDED")
+end)
+
+test("Lifecycle: a disable/enable cycle resets the rejected list rather than growing it", function()
+    -- red under: an OnEnable that appends to the list it found instead of
+    -- starting a fresh one.
+    local inst = T.load{ enable = true, mutate = function(m)
+        m.__badEvents = { UNIT_SPELLCAST_SUCCEEDED = true }
+    end }
+    local first = inst.NS.State.rejectedEvents
+    assertTrue(inst.NS.SetByPath("enabled", false))
+    assertTrue(inst.NS.SetByPath("enabled", true))
+    assertTrue(inst.NS.State.rejectedEvents ~= first, "the list was not replaced on enable")
+    assertEqual(table.concat(inst.NS.State.rejectedEvents, ","), "UNIT_SPELLCAST_SUCCEEDED")
+end)
+
+test("Lifecycle: a clean client records no rejected events", function()
+    local inst = T.load{ enable = true }
+    assertEqual(#inst.NS.State.rejectedEvents, 0)
 end)
 
 test("Lifecycle: PLAYER_ENTERING_WORLD is republished with its login/reload flags", function()
@@ -538,7 +604,7 @@ end)
 
 test("ShouldShow: the master enable refuses every window", function()
     -- THROUGH THE WRITE SEAM, never by poking `db.profile.enabled`. The stored
-    -- key is no longer read by the ladder at all (slash-commands-\194\1677): what the
+    -- key is no longer read by the ladder at all (slash-commands-§7): what the
     -- ladder reads is the latch, and only the seam's onChange takes the hold. A
     -- fixture that writes the raw key is testing a draw gate that no longer
     -- exists, and would go on passing over an addon that never stood down.
@@ -605,7 +671,7 @@ function()
     -- Test mode is one-way and forces a window ON, which is the documented way
     -- every other rule is stepped past while a player lays columns out at a target
     -- dummy. A combat answer above it would make that impossible out of combat.
-    -- red under: moving the master visibility check above step 2.
+    -- red under: moving the master visibility check above step 1 (test mode).
     local inst = T.load{ enable = true }
     inst.mocks.setInstance("party")
     inst.mocks.setGroup({ {}, {}, {}, {}, {} })

@@ -79,6 +79,9 @@ do
         -- core/LifecycleSetup.lua would take its degradation stub, which would make every case in
         -- tests/test_disabled.lua a statement about the stub instead of about the addon.
         "Lifecycle.lua",
+        -- settings/Schema_Paths.lua takes its degradation stub without this one, so every settings
+        -- read and write in the suite would measure the stub instead of LibKa0s-Schema-1.0.
+        "Schema.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do
@@ -226,7 +229,7 @@ local SUITES = {
     "test_complexity_register",
     "test_deviation_register",
     -- The third register, and the same bargain a third time: it reads the
-    -- "Hard-coded texture paths" table out of docs/ARCHITECTURE.md and checks
+    -- "Hard-coded texture paths" table out of docs/texture-paths.md and checks
     -- membership both ways. It differs from the two above in ONE thing, and the
     -- difference is deliberate: its scope drops `tests/` entirely, because
     -- library-stack-§8 is about what a player sees drawn and a path in a fixture
@@ -247,6 +250,8 @@ local SUITES = {
     "test_locale",
     -- database and defaults
     "test_database",
+    "test_database_migrations",
+    "test_migrations",
     "test_diagnostics",
     "test_diagnostics_deathrecap",
     "test_diagnostics_identity",
@@ -264,6 +269,8 @@ local SUITES = {
     -- the data path
     "test_format",
     "test_provider",
+    "test_provider_recap",
+    "test_provider_fields",
     "test_roster",
     "test_feign",
     "test_aggregator",
@@ -273,11 +280,15 @@ local SUITES = {
     -- the display
     "test_window",
     "test_window_header",
+    "test_window_header_sort",
     "test_window_placement",
+    "test_window_lifecycle",
     "test_window_segment",
     "test_headercontrols",
     "test_row",
     "test_row_namecell",
+    "test_row_cells",
+    "test_row_mouse",
     "test_targets",
     "test_tooltip",
     "test_tooltip_lines",
@@ -291,12 +302,14 @@ local SUITES = {
     -- settings and the CLI
     "test_schema",
     "test_schema_paths",
+    "test_schema_batch",
     "test_schema_defaults",
     "test_slash",
-    -- slash-commands-\194\1677's conformance suite: the disabled state is TOTAL. It asserts on
+    "test_slash_refusal",
+    -- slash-commands-§7's conformance suite: the disabled state is TOTAL. It asserts on
     -- the REGISTRATION SET rather than on a handler's return value, because an early
     -- return is what a draw gate does and a suite written that way certifies the shape
-    -- it exists to catch (testing-\194\16712).
+    -- it exists to catch (testing-§12).
     "test_disabled",
     "test_options_panel",
     "test_columnblocks",

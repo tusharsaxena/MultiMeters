@@ -39,7 +39,7 @@ end
 
 local function bench(opts)
     opts = opts or {}
-    local inst = T.load()
+    local inst = T.load(opts.enable and { enable = true } or nil)
     inst.mocks.setSourceDetail(CURRENT, "*", "*", opts.detail or ascendingSpells())
     if opts.restricted then inst.mocks.setRestricted(true) end
     local cfg = inst.NS.Database.GetWindows()[1]
@@ -428,6 +428,26 @@ test("Deleting a window leaves the drill-down that belonged to it", function()
     inst.NS.DrillDown:Enter(cfg, playerRow(), "DamageDone")
     inst.NS.DrillDown:OnWindowsChanged(nil, { windowId = cfg.id, action = "deleted" })
     assertEqual(inst.NS.DrillDown.IsActive(cfg), false)
+end)
+
+test("Renaming a window keeps its drill-down open", function()
+    -- Through the real bus: WindowManager:Rename announces "renamed", which
+    -- changes neither the data nor the columns the view was built from.
+    -- Enabled, so DrillDown's OnEnable has subscribed to WINDOWS_CHANGED.
+    local inst, cfg = bench{ enable = true }
+    inst.NS.DrillDown:Enter(cfg, playerRow(), "DamageDone")
+    assertTrue(inst.NS.WindowManager:Rename(cfg.id, "Renamed"))
+    assertEqual(inst.NS.DrillDown.IsActive(cfg), true, "a rename closed the breakdown")
+end)
+
+test("Copying settings onto a window still leaves its drill-down", function()
+    -- A copy can replace the target's columns, so the drilled stat may be gone.
+    local inst, cfg = bench{ enable = true }
+    assertTrue(inst.NS.WindowManager:Create("Second"))
+    local second = inst.NS.Database.GetWindows()[2]
+    inst.NS.DrillDown:Enter(cfg, playerRow(), "DamageDone")
+    assertTrue(inst.NS.WindowManager:CopyFrom(second.id, cfg.id))
+    assertEqual(inst.NS.DrillDown.IsActive(cfg), false, "a copy left the breakdown open")
 end)
 
 test("A bulk registry change sweeps views whose window is gone", function()

@@ -142,7 +142,7 @@ end
 -- reset the library grows next. `skipRestoreAll` cannot do the job -- `RestoreDefaults` never asks
 -- it -- and a clause per page would be a clause to forget.
 --
--- `/mm reset global.minimap.hide` IS NOT A RESET IN THIS SENSE and stays live. It reaches
+-- `/mm reset global.minimap.shown` IS NOT A RESET IN THIS SENSE and stays live. It reaches
 -- NS.ApplyDefault through the SLASH descriptor (settings/Slash.lua), which this clause does not
 -- sit on, and it is a player naming this one row on purpose -- the opposite of a sweep that
 -- reached it on the way past. So is the checkbox, and so is `/mm set`.
@@ -267,6 +267,14 @@ local descriptor = {
     -- than an AceTimer embed, because embedding would be the library's second
     -- dependency-budget breach. Without it a drag commits every frame — and this
     -- addon has a color row per column, so the omission would be felt.
+    -- The return is deliberately nil. From LibKa0s-Options-1.0 24.31.x
+    -- (OptionsWidgets minor 31; libs/LibKa0s docs/api/Options/
+    -- version-24.31.4.7.4-docs.md, "The drag throttles keep their own armed
+    -- flag") the library arms its own flag around this call and never reads
+    -- what it returns, so the 50 ms slider/color throttle holds with this
+    -- nil-returning wrapper. Through minor 30 it read the return as "armed", and
+    -- a nil defeated the throttle. C_Timer.NewTimer would buy nothing now and
+    -- allocate a cancelable object per drag frame, so it stays After.
     scheduleTimer = function(fn, delay)
         if C_Timer and C_Timer.After then C_Timer.After(delay, fn) end
     end,
@@ -422,9 +430,10 @@ if not lib then
     -- BRACKETED THE WAY THE LIBRARY BRACKETS IT (Options minor 16): the session-row
     -- walk and the profile reset share one bulk bracket, so the rows written first
     -- are muted and the reset logs one line, OnProfileReset's. `resetProfile`
-    -- answers whether it reset, which is what tells the close to stay silent.
+    -- answers whether it reset, and `info.profileReset` is how the walk tells the
+    -- bracket (LibKa0s-Schema-1.0's BulkRun shape), which keeps the close silent.
     Helpers.RestoreAllDefaults = function()
-        NS.Bulk.run("reset", "all", function()
+        NS.Bulk.run("reset", "all", function(info)
             for _, row in ipairs(NS.Schema or {}) do
                 if not vetoedFromResetAll(row) and NS.ApplyDefault then
                     NS.ApplyDefault(row)
@@ -435,7 +444,7 @@ if not lib then
             -- library, so the stub makes the same call. It exists because the LIBRARY is
             -- missing, not the db, and the user whose panel will not open is exactly the
             -- user who needs "reset everything".
-            return descriptor.resetProfile and descriptor.resetProfile()
+            if descriptor.resetProfile and descriptor.resetProfile() then info.profileReset = true end
         end)
     end
 

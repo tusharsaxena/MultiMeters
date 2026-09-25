@@ -624,6 +624,7 @@ function()
     local degraded = degradedInstance().NS
     for _, name in ipairs({ "Print", "Format", "IsConcatSafe", "SafeToString", "RGBA",
                             "ApplySkin", "MakeCloseButton", "Debug",
+                            "SafeRegisterEvent", "SafeRegisterUnitEvent", "SafeRegisterEvents",
                             "RegisterOptionsPage", "RefreshOptionsPanel",
                             "CreateOptionsPanel", "OpenOptionsPanel" }) do
         assertEqual(type(degraded[name]), type(full[name]),
@@ -665,7 +666,10 @@ test("Degraded: every NS.Perf member the addon actually reaches exists on the st
             "NS.Perf." .. name .. " (reached from " .. rel .. ") is "
             .. type(full.Perf[name]) .. " live and " .. type(degraded.Perf[name]) .. " degraded")
     end
-    assertTrue(n >= 4, "the Perf member scan found only " .. n .. " members — it drifted")
+    -- Was 4 until modules/WindowManager.lua's test-mode exit stopped reading
+    -- `Perf.suspended` and asked NS.IsStoodDown instead (MM-01): the addon now
+    -- reaches `on`, `Note` and `OnCommand`, and nothing else.
+    assertTrue(n >= 3, "the Perf member scan found only " .. n .. " members — it drifted")
 end)
 
 -- ── the sixth seam: modules/Export.lua ──────────────────────────────────────
@@ -695,6 +699,21 @@ test("Degraded: the addon still enables end to end with no library", function()
     inst.mocks.__flushTimers()
 end)
 
+test("Degraded: a refused event name costs only itself with no library, and is recorded",
+function()
+    -- The Core stub's one-rung SafeRegisterEvent: the pcall and the append, no
+    -- front gate. It is what keeps a retired name from taking the enable path
+    -- down on exactly the install that has no library to lean on.
+    -- red under: a stub that returns without publishing NS.SafeRegisterEvent.
+    local inst = T.load{ libFiles = {}, enable = true, mutate = function(m)
+        m.__badEvents = { UNIT_SPELLCAST_SUCCEEDED = true }
+    end }
+    assertEqual(inst.NS.__events["DAMAGE_METER_RESET"], "OnMeterReset",
+        "the meter events were lost to an earlier refused name")
+    assertEqual(table.concat(inst.NS.State.rejectedEvents, ","), "UNIT_SPELLCAST_SUCCEEDED")
+    assertTrue(inst.NS:GetModule("WindowManager", true) ~= nil, "the cascade did not finish")
+end)
+
 test("Degraded: the bus stub still hands every receiver a target, untracked", function()
     -- options-ui-§1's untracked-target stub. The receiver rule holds (each receiver
     -- gets its own AceEvent target and hears the bus), and the record is what is lost:
@@ -713,4 +732,165 @@ test("Degraded: the bus stub still hands every receiver a target, untracked", fu
     assertEqual(n, 1, "a degraded receiver does not hear the bus")
     assertEqual(NS.BusStandDown(), 0, "the stub recorded something")
     assertEqual(NS.BusStandUp(), 0)
+end)
+
+-- ── the launcher's refusal with only the Slash major gone ──────────────────
+
+--- A stable text form of a table, keys sorted, for a before/after comparison.
+local function snapshot(v, seen)
+    if type(v) ~= "table" then return type(v) .. ":" .. tostring(v) end
+    seen = seen or {}
+    if seen[v] then return "<cycle>" end
+    seen[v] = true
+    local keys = {}
+    for k in pairs(v) do keys[#keys + 1] = k end
+    table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+    local parts = {}
+    for _, k in ipairs(keys) do
+        parts[#parts + 1] = tostring(k) .. "=" .. snapshot(v[k], seen)
+    end
+    seen[v] = nil
+    return "{" .. table.concat(parts, ",") .. "}"
+end
+
+test("Degraded: with only LibKa0s-Slash missing, a disabled left click opens the panel "
+    .. "and raises nothing", function()
+    -- The one install where the Launcher major loads and the Slash one does not. Through Launcher
+    -- minor 3 the left click's refusal asked NS.Slash:DisabledLine, which the Slash stub had to
+    -- answer; minor 4 retired the refusal, and the click only reaches openSettings now. The case
+    -- stays because the install is still the odd one: a click there must raise nothing and write
+    -- nothing.
+    local libFiles = {}
+    for _, path in ipairs(T.libFiles) do
+        if not path:match("/Slash%.lua$") then libFiles[#libFiles + 1] = path end
+    end
+    assertEqual(#libFiles, #T.libFiles - 1, "the load list names no Slash.lua to drop")
+
+    local inst = T.load{ libFiles = libFiles, enable = true }
+    local NS = inst.NS
+    assertNil(inst.mocks.LibStub("LibKa0s-Slash-1.0", true), "the Slash major still loaded")
+    assertTrue(inst.mocks.LibStub("LibKa0s-Launcher-1.0", true) ~= nil, "the Launcher major is gone")
+    NS.Launcher:Register()
+    assertTrue(NS.SetByPath("enabled", false))
+
+    local obj = NS.Launcher:Object()
+    assertTrue(obj ~= nil and type(obj.OnClick) == "function", "no LDB object to click")
+    local opened = 0
+    NS.OpenOptionsPanel = function() opened = opened + 1 end
+    local before = snapshot(NS.db.profile)
+    local n = #inst.mocks.__chat
+    local ok, err = pcall(obj.OnClick, obj, "LeftButton")
+
+    assertTrue(ok, "the click raised: " .. tostring(err))
+    assertEqual(opened, 1, "the left click did not open the panel")
+    assertEqual(#inst.mocks.__chat, n, "the left click printed a line")
+    assertEqual(snapshot(NS.db.profile), before, "a left click wrote SavedVariables")
+end)
+
+test("Degraded: the stub's disabled-line format is the library's, byte for byte", function()
+    -- The one library string the Slash stub may carry (LibKa0s Slash version-15, "The
+    -- degradation stub"), pinned against the live library so a reworded refusal goes red here.
+    local degraded = degradedInstance()
+    T.assertLibraryConstant(degraded.NS.Slash.__stubFormat, "LibKa0s-Slash-1.0",
+        "DISABLED_LINE_FORMAT")
+end)
+
+-- ── /mm enable and /mm disable with no composed `enabled` row ──────────────
+--
+-- The `Enable Multi Meters` row is composed by LibKa0s-Options-1.0's MasterControls, so a load
+-- without that major has no row for the two verbs to write. options-ui-§1 route (a): the Schema
+-- seam's descriptor names `enabled` in `writeThrough`, the seam (live or stub) stores it raw, and
+-- the host's announce is where the latch reacts, because the row's onChange is not there.
+
+--- The registration survey minus the bus's own message rows. The degraded bus stub records
+--- nothing, so a disable leaves those live on a library-absent install (docs/ARCHITECTURE.md,
+--- Known limitations); every event, bucket and frame registration still has to go.
+local function liveRegistrations(inst)
+    local out = {}
+    for _, r in ipairs(inst.mocks.__registrations()) do
+        if r.kind ~= "message" then out[#out + 1] = tostring(r.kind) .. ":" .. tostring(r.event) end
+    end
+    return out
+end
+
+--- A full load of the addon with every Options*.lua file dropped: LibKa0s-Schema-1.0 and
+--- LibKa0s-Slash-1.0 are live, the composer that declares `enabled` is not.
+local function optionsAbsentInstance()
+    local libFiles = {}
+    for _, path in ipairs(T.libFiles) do
+        if not path:match("/Options[^/]*%.lua$") then libFiles[#libFiles + 1] = path end
+    end
+    assertTrue(#libFiles < #T.libFiles, "the load list names no Options*.lua to drop")
+    return T.load{ libFiles = libFiles, enable = true }
+end
+
+--- `/mm disable`, then `/mm enable`, on an instance with no composed `enabled` row: the store,
+--- the latch and the registration set, each checked on both legs.
+local function disableRoundTrip(inst, label)
+    local NS = inst.NS
+    assertNil(NS.FindSchemaRow("enabled"), label .. ": the composed enabled row survived")
+    local before = #liveRegistrations(inst)
+    assertTrue(before > 0, label .. ": nothing is registered, so nothing below can fail")
+
+    local n = #inst.mocks.__chat
+    local ok, err = pcall(NS.Slash.OnSlash, NS.Slash, "disable")
+    assertTrue(ok, label .. ": /mm disable raised: " .. tostring(err))
+    assertEqual(NS.db.profile.enabled, false, label .. ": /mm disable stored nothing")
+    assertTrue(NS.IsDisabled(), label .. ": the latch did not take the disabled hold")
+    local left = liveRegistrations(inst)
+    assertEqual(#left, 0, label .. ": still registered: " .. table.concat(left, ", "))
+    local said = table.concat(inst.mocks.__chat, "\n", n + 1)
+    assertTrue(said:find("enabled = false", 1, true) ~= nil,
+        label .. ": /mm disable did not acknowledge: " .. said)
+
+    ok, err = pcall(NS.Slash.OnSlash, NS.Slash, "enable")
+    assertTrue(ok, label .. ": /mm enable raised: " .. tostring(err))
+    assertEqual(NS.db.profile.enabled, true, label .. ": /mm enable stored nothing")
+    assertFalse(NS.IsDisabled(), label .. ": the latch kept the disabled hold")
+    assertEqual(#liveRegistrations(inst), before, label .. ": /mm enable did not re-register")
+end
+
+test("Degraded: /mm disable stores enabled=false and stands the addon down with no library",
+function()
+    -- red under: a doEnabled that goes to the Slash stub's CliSet ('/mm set is unavailable'),
+    -- or a schema stub with no writeThrough (the row-less path is refused as NOT_FOUND).
+    local inst = T.load{ libFiles = {}, enable = true }
+    local NS = inst.NS
+    local before = #liveRegistrations(inst)
+    local ok, err = pcall(NS.Slash.OnSlash, NS.Slash, "disable")
+    assertTrue(ok, "/mm disable raised: " .. tostring(err))
+    assertEqual(NS.db.profile.enabled, false, "/mm disable stored nothing")
+    assertTrue(NS.IsDisabled(), "the latch did not take the disabled hold")
+    assertTrue(before > 0)
+    assertEqual(#liveRegistrations(inst), 0, "a registration survived the degraded disable")
+end)
+
+test("Degraded: /mm enable after /mm disable restores the registrations with no library",
+function()
+    -- red under: an announce that reacts to nothing, so the latch never lets go.
+    disableRoundTrip(T.load{ libFiles = {}, enable = true }, "library absent")
+end)
+
+test("Degraded: with only the Options majors missing, /mm disable and /mm enable still work",
+function()
+    -- A partial load: the Schema major is live, so the write goes through the LIVE instance's
+    -- writeThrough list, and the Slash major is live, whose CliSet finds no row for `enabled`.
+    -- red under: a descriptor with no writeThrough, or a doEnabled that always takes CliSet.
+    local inst = optionsAbsentInstance()
+    assertTrue(inst.mocks.LibStub("LibKa0s-Schema-1.0", true) ~= nil, "the Schema major is gone")
+    assertNil(inst.mocks.LibStub("LibKa0s-Options-1.0", true), "the Options major still loaded")
+    disableRoundTrip(inst, "Options absent")
+end)
+
+test("Degraded: the stub refuses a row-less path it was not told to write through", function()
+    -- writeThrough is a list, not a switch: every other unknown path is still NOT_FOUND.
+    -- red under: a stub that stores any row-less path raw.
+    local inst = degradedInstance()
+    local NS = inst.NS
+    local ok, err = NS.SetByPath("some.unknown", "x")
+    assertFalse(ok, "the stub stored an unknown path")
+    assertEqual(err, NS.L["Setting not found: %s"]:format("some.unknown"))
+    assertNil(NS.db.profile.some, "the refused path reached the store")
+    inst.NS.Slash:OnSlash("set some.unknown x")
+    assertNil(NS.db.profile.some, "/mm set stored an unknown path")
 end)

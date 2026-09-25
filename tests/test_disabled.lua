@@ -1,4 +1,4 @@
--- tests/test_disabled.lua -- the conformance suite for slash-commands-7, `The
+-- tests/test_disabled.lua -- the conformance suite for slash-commands-§7, `The
 -- disabled state is total`.
 --
 -- WHAT THIS SUITE IS FOR, and why it asserts where it does. Eleven addons in this
@@ -13,7 +13,7 @@
 -- set, the SavedVariables writes and the printed lines, taken from the kit's
 -- recording mock. NOT ONE of them is "call a handler and assert it returned
 -- early": an early return is what a draw gate does, so a suite written that way
--- certifies the very thing it exists to catch (testing-12).
+-- certifies the very thing it exists to catch (testing-§12).
 --
 -- The mock has to REMOVE on unregister for any of this to be falsifiable, which
 -- kit revision 22's `__registrations()` does -- a registry that only ever grew
@@ -24,7 +24,7 @@ local T = _G.MULTIMETERS_TEST
 local test, assertEqual, assertTrue, assertFalse =
     T.test, T.assertEqual, T.assertTrue, T.assertFalse
 
--- slash-commands-2's twelve reserved verbs: the whole live set while disabled.
+-- slash-commands-§2's twelve reserved verbs: the whole live set while disabled.
 -- Spelled out rather than read off the library so a narrowing there is caught
 -- here rather than ratified by it.
 local RESERVED = {
@@ -379,11 +379,11 @@ test("Disabled 7: every reserved verb and the bare command answer normally", fun
 end)
 
 test("Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam", function()
-    -- This addon TAKES slash-commands-2's SHOULD, and the suite pins that choice
+    -- This addon TAKES slash-commands-§2's SHOULD, and the suite pins that choice
     -- so it cannot drift silently: an addon that declined it would assert its
     -- feature verbs act normally instead, and either is conformant.
     --
-    -- `lock` is on this list under slash-commands-8's own ruling -- unlocking a
+    -- `lock` is on this list under slash-commands-§8's own ruling -- unlocking a
     -- frame that is not drawn is not a coherent request -- and that says nothing
     -- about what `lock` MEANS in this addon, which is its ratified deviation.
     -- red under: naming a feature verb in a `liveVerbs` array.
@@ -417,36 +417,31 @@ end)
 -- 8. The launcher
 -- ---------------------------------------------------------------------------
 
-test("Disabled 8: left-click refuses and writes nothing; right-click still opens the panel",
+test("Disabled 8: left-click opens the panel and writes nothing, in either state",
 function()
     -- The audit found a minimap button with NO disabled gate at all, so clicking
-    -- it wrote the stored tree of an addon the player had switched off. This
-    -- addon's rung-(a) left click drives `WindowManager:Toggle`, which writes each
-    -- window's stored `shown`, so it was exactly that bug.
-    -- red under: removing the NS.IsDisabled branch from core/LauncherSetup.lua.
+    -- it wrote the stored tree of an addon the player had switched off: this
+    -- addon's old rung-(a) left click drove `WindowManager:Toggle`, which writes
+    -- each window's stored `shown`. Launcher minor 4 (launcher-§2, v2.67.0)
+    -- removes that path: the left button only opens the settings panel, which is
+    -- setup and where the addon is re-enabled, so it needs no gate.
+    -- red under: an `openSettings` that reached WindowManager:Toggle again.
     local inst, NS = scene()
     assertTrue(NS.SetByPath("enabled", false))
 
     local obj = NS.Launcher.Object and NS.Launcher:Object()
     assertTrue(obj ~= nil and type(obj.OnClick) == "function", "no LDB object to click")
 
+    local opened = 0
+    NS.OpenOptionsPanel = function() opened = opened + 1 end
     inst.mocks.__resetSvWrites()
     local chatN = #inst.mocks.__chat
     obj.OnClick(obj, "LeftButton")
 
-    local printed = chatSince(inst, chatN)
-    assertEqual(#printed, 1, "the refused click said " .. #printed .. " lines")
-    assertTrue(printed[1]:find(refusalLine(inst), 1, true) ~= nil, printed[1])
-    assertEqual(#inst.mocks.__svWrites(), 0, "a refused click wrote SavedVariables")
-    assertEqual(#shownFrames(inst), 0, "a refused click showed a window")
-
-    -- RIGHT-CLICK IS UNCHANGED, in either state: the ruling narrows the SLASH
-    -- surface, and a mouse click is not a slash command. It is also one of the two
-    -- routes slash-commands-7 nominates to the panel while the addon is off.
-    local opened = 0
-    NS.OpenOptionsPanel = function() opened = opened + 1 end
-    obj.OnClick(obj, "RightButton")
-    assertEqual(opened, 1, "right-click must still open the settings panel")
+    assertEqual(opened, 1, "a disabled left click must open the settings panel")
+    assertEqual(#chatSince(inst, chatN), 0, "the left click printed a line")
+    assertEqual(#inst.mocks.__svWrites(), 0, "a disabled left click wrote SavedVariables")
+    assertEqual(#shownFrames(inst), 0, "a disabled left click showed a window")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -468,7 +463,7 @@ test("Disabled 9: re-enabling restores the registration set it had", function()
 end)
 
 test("Disabled 9: the rebuild reflects a setting changed WHILE disabled", function()
-    -- performance-6's restore-from-current-state rule, and the case that tells a
+    -- performance-§6's restore-from-current-state rule, and the case that tells a
     -- replay from a rebuild: a window created while the addon was off must come
     -- back with the others, not be forgotten because it was not in the snapshot.
     -- red under: `WindowManager:Resume` skipping its `Init()`.
@@ -644,4 +639,111 @@ test("Disabled 11: standUp brings the bus up FIRST, before any module re-enables
     assertTrue(NS.SetByPath("enabled", false))
     assertTrue(NS.SetByPath("enabled", true))
     assertEqual(table.concat(order, ","), "BusStandUp,OnEnable")
+end)
+
+-- ---------------------------------------------------------------------------
+-- 12. Every show path holds the latch
+-- ---------------------------------------------------------------------------
+--
+-- NS.ShouldShow reads the latch as step 0, but three paths put a window on screen
+-- WITHOUT asking the ladder: WindowProto:Show (the test-mode exit and `/mm
+-- toggle`), and Window.New arming the refresh clock. Each is asserted on the
+-- window frames that path touches, never on a global shown count: kit 26's
+-- CreateFrame starts a frame shown.
+
+--- Is any window frame on screen? The window's own frame, from the manager's
+--- registry, so a survivor is one the path under test actually touched.
+local function anyWindowShown(NS)
+    for _, w in ipairs(NS.WindowManager.All()) do
+        if w.frame and w.frame:IsShown() then return true end
+    end
+    return false
+end
+
+test("Disabled 10: unticking Test mode while disabled re-shows nothing", function()
+    -- The manual test-mode exit keeps windows on screen through WindowProto:Show,
+    -- which skips the ladder. Standing down is not a reason to keep anything up.
+    -- red under: reverting BOTH WindowProto:Show's latch guard and the SetTestMode
+    --            keepShown check back to the perf-only `NS.Perf.suspended`. The two
+    --            cover for each other on this path, so either alone stays green here;
+    --            the Show() guard on its own is pinned by the test below.
+    local _, NS = scene()
+    assertTrue(NS.SetByPath("enabled", false))
+    assertFalse(anyWindowShown(NS), "the fixture needs the stand-down to hide")
+
+    NS.WindowManager:SetTestMode(true)
+    NS.WindowManager:SetTestMode(false)
+    for _, w in ipairs(NS.WindowManager.All()) do
+        assertFalse(w.frame:IsShown(), "a window re-showed while disabled: " .. tostring(w.id))
+    end
+end)
+
+test("Disabled 10: an explicit WindowProto:Show while stood down refuses and shows nothing",
+function()
+    -- The Show() guard pinned directly. Disabled 10 reaches it only through
+    -- SetTestMode, whose own keepShown check covers for it, and `/mm toggle` refuses
+    -- before it ever calls Show, so neither of those notices the guard going.
+    -- red under: deleting WindowProto:Show's IsStoodDown guard.
+    local _, NS = scene()
+    local M = NS.WindowManager
+    assertTrue(#M.All() >= 1, "the fixture needs a window")
+
+    local function assertRefused(label)
+        for _, w in ipairs(M.All()) do
+            w.forcedShow = nil   -- the fixture's own shows may have set it; measure only Show()'s
+            assertFalse(w:Show(), label .. ": Show() did not refuse on window " .. tostring(w.id))
+            assertFalse(w.frame and w.frame:IsShown() or false,
+                label .. ": Show() put window " .. tostring(w.id) .. " on screen")
+            assertTrue(w.forcedShow == nil,
+                label .. ": Show() recorded a forced show on window " .. tostring(w.id))
+        end
+    end
+
+    assertTrue(NS.SetByPath("enabled", false))
+    assertRefused("disabled")
+    assertTrue(NS.SetByPath("enabled", true))
+
+    NS.Perf.Suspend()
+    assertRefused("perf suspend")
+    NS.Perf.Resume()
+end)
+
+test("Disabled 11: /mm toggle under a perf suspend shows nothing and says why", function()
+    -- The slash gate refuses feature verbs only while DISABLED (its line names
+    -- `/mm enable`, wrong advice mid-capture), so `/mm toggle` reaches the
+    -- manager under the perf hold. It must refuse there, on its own line.
+    -- red under: dropping M:Toggle's IsStoodDown refusal.
+    local inst, NS = scene()
+    NS.Perf.Suspend()
+    assertFalse(anyWindowShown(NS), "the fixture needs suspend to hide")
+
+    local lines = say(inst, "toggle")
+    assertFalse(anyWindowShown(NS), "/mm toggle showed a window during a perf suspend")
+    assertTrue(#lines >= 1, "/mm toggle printed nothing")
+    local want = NS.L["Windows are suspended while a performance capture runs."]
+    assertTrue(lines[#lines]:find(want, 1, true) ~= nil,
+        "the last line is not the suspend line: " .. tostring(lines[#lines]))
+    NS.Perf.Resume()
+end)
+
+test("Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it",
+function()
+    -- slash-commands-§7: every OnUpdate is cleared, and none is armed for the rest
+    -- of the run. Create is reachable from the settings panel while disabled.
+    -- red under: Window.New arming the OnUpdate unconditionally.
+    local _, NS = scene()
+    local M = NS.WindowManager
+    assertTrue(NS.SetByPath("enabled", false))
+    local before = #M.All()
+    assertTrue(M:Create("Stood Down"))
+    local all = M.All()
+    assertEqual(#all, before + 1)
+    assertTrue(all[#all].frame:GetScript("OnUpdate") == nil,
+        "a window created while disabled was armed with an OnUpdate")
+
+    assertTrue(NS.SetByPath("enabled", true))
+    for _, w in ipairs(M.All()) do
+        assertTrue(w.frame:GetScript("OnUpdate") ~= nil,
+            "enable left a window without its OnUpdate: " .. tostring(w.id))
+    end
 end)

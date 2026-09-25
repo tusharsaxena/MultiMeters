@@ -41,11 +41,11 @@ end
 -- ---------------------------------------------------------------------------
 
 test("Schema: a `hidden` row is writable and listable but draws no control", function()
-    -- `frame.minimised` is per-window STATE, not a preference: the header's
-    -- minimise control writes it and a window left collapsed comes back
+    -- `frame.minimized` is per-window STATE, not a preference: the header's
+    -- minimize control writes it and a window left collapsed comes back
     -- collapsed. As a checkbox it duplicated that control on a page you have to
     -- open to reach. It cannot simply be DELETED, though -- NS.SetByPath refuses
-    -- a path with no row, and the minimise control writes through that seam
+    -- a path with no row, and the minimize control writes through that seam
     -- precisely because it is what publishes CONFIG_CHANGED.
     -- red under: dropping the row, or dropping SchemaForPage's `hidden` filter.
     local inst = T.load()
@@ -53,17 +53,17 @@ test("Schema: a `hidden` row is writable and listable but draws no control", fun
 
     local found
     for _, row in ipairs(NS.Schema) do
-        if row.path == "window.frame.minimised" then found = row end
+        if row.path == "window.frame.minimized" then found = row end
     end
-    assertTrue(found ~= nil, "the path must still resolve, or minimise cannot write")
+    assertTrue(found ~= nil, "the path must still resolve, or minimize cannot write")
     assertEqual(found.hidden, true)
 
     for _, row in ipairs(NS.SchemaForPage("header")) do
-        assertTrue(row.path ~= "window.frame.minimised",
+        assertTrue(row.path ~= "window.frame.minimized",
             "a state row was rendered as a setting")
     end
 
-    assertTrue((NS.SetByPath("window.frame.minimised", true)),
+    assertTrue((NS.SetByPath("window.frame.minimized", true)),
         "the seam must still accept it")
 end)
 
@@ -347,7 +347,7 @@ local MASTER_ROWS = {
     -- column 1; the other way round, an addon with no test mode draws a hole in the first
     -- column with a lone control to its right. The path names its STORE because
     -- launcher-§3 puts LibDBIcon's table in the global one.
-    { "global.minimap.hide", "Minimap button"     },
+    { "global.minimap.shown", "Minimap button"     },
     { "state.testMode",     "Test mode"           },
 }
 
@@ -436,7 +436,7 @@ function()
     assertTrue(at ~= nil, "no state.testMode row")
     local row = rows[at]
 
-    assertEqual(rows[at - 1].path, "global.minimap.hide",
+    assertEqual(rows[at - 1].path, "global.minimap.shown",
         "Minimap button opens the line Test mode pairs into")
     assertEqual(rows[at - 2].path, "state.debugConsole", "and the console closes the line above")
     assertEqual(row.composed, true, "the row must come from the composer, not the schema's own text")
@@ -753,7 +753,10 @@ test("Schema: no tab holds fewer than two controls", function()
     -- red under: a tab losing rows until one is left, or a new one-row section.
     local inst = T.load()
     local NS, L = inst.NS, inst.NS.L
-    local EXEMPT = { [L["Window"]] = true }
+    -- Columns' Columns tab is exempt for the same reason: its controls are the bespoke block
+    -- editor, and the one row filed under it is the hidden column array (window.columns) the
+    -- editor writes whole.
+    local EXEMPT = { [L["Window"]] = true, [L["Columns"]] = true }
 
     local counts, pageOf = {}, {}
     for _, row in ipairs(NS.Schema) do
@@ -787,8 +790,9 @@ test("Schema: a hidden row is filed under a tab that exists, and draws nothing",
                 row.path .. " is hidden but carries no page or group")
         end
     end
-    assertEqual(hidden, 10, "ten rows are hidden: frame.minimised, the four export choices "
-        .. "and the five the window's own header controls choose (issue #50)")
+    assertEqual(hidden, 11, "eleven rows are hidden: frame.minimized, the four export choices, "
+        .. "the five the window's own header controls choose (issue #50) and the column array "
+        .. "the Columns page draws itself (window.columns, issue #52)")
 
     -- And the other half: no tab the strip actually draws is empty.
     for _, page in ipairs({ "general", "windows", "frame", "header", "bars", "tooltip",
@@ -951,8 +955,8 @@ test("Schema: the header controls are EDITED on Header and STORED under frame", 
             end
         end
     end
-    -- Exactly 17: Controls (close/showMinimise/showLock/showSettings, the hidden
-    -- `window.frame.minimised`, and the four meter buttons) + Button style (8). Walked over
+    -- Exactly 17: Controls (close/showMinimize/showLock/showSettings, the hidden
+    -- `window.frame.minimized`, and the four meter buttons) + Button style (8). Walked over
     -- NS.Schema, not SchemaForPage, so the hidden row counts.
     assertEqual(n, 17, "the whole set moved, not one row of it")
     assertEqual(view, 5, "sessionType, sessionID, sortColumn, sortMode and sortAscending")

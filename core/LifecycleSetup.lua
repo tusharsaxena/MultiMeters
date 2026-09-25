@@ -2,7 +2,7 @@ local addonName, NS = ...
 
 -- core/LifecycleSetup.lua -- the ONE latch, and the addon's ONE teardown.
 --
--- slash-commands-7 (`The disabled state is total`). Disabled means the addon is
+-- slash-commands-§7 (`The disabled state is total`). Disabled means the addon is
 -- NOT RUNNING. Not hidden, not quiet, not skipping a repaint -- not running. The
 -- player who unticks *Enable Ka0s Multi Meters* has asked for the outcome they
 -- would get by unticking the addon in Blizzard's own list, minus the /reload.
@@ -10,7 +10,7 @@ local addonName, NS = ...
 -- ── WHY THIS IS NOT A SECOND TEARDOWN PATH ───────────────────────────────────
 --
 -- This addon already shipped the machinery: `Provider:Suspend`, `WindowManager:
--- Suspend` and the show ladder's step 0, built for performance-6's second arm.
+-- Suspend` and the show ladder's step 0, built for performance-§6's second arm.
 -- Disable declined to use it and implemented itself as a DRAW GATE instead --
 -- `NS.ShouldShow` read the stored switch as one rung of the show ladder, every
 -- one of the addon's twenty-one game-event registrations stayed live, every bus
@@ -77,7 +77,7 @@ end
 
 -- 4. The windows: the OnUpdate that drives the coalesced refresh, and the
 --    per-window bus target. A coalescing repaint timer left armed to wake up
---    and find a flag is the shape slash-commands-7 names as the single most
+--    and find a flag is the shape slash-commands-§7 names as the single most
 --    expensive one.
 local function standDownWindows()
     local wm = mod("WindowManager")
@@ -99,8 +99,12 @@ local function standDownExport()
     if export and export.CancelSend then export.CancelSend() end
 end
 
--- 7. Act on the ladder NOW rather than at the next event: the windows already
---    on screen have to go, and this is the pass that asks them to.
+-- 7. Re-run the visibility pass so its debug line and `/mm debug diag` record
+--    the stood-down answer now rather than at the next edge. It hides NOTHING:
+--    Evaluate publishes nothing, touches no frame and runs only under debug.
+--    The windows already on screen go in step 4: WindowManager:Suspend re-runs
+--    each window's own RefreshVisibility, which NS.ShouldShow's latch step now
+--    refuses, and that same step keeps them down.
 local function standDownVisibility()
     local vis = mod("Visibility")
     if vis and vis.Refresh then vis:Refresh() end
@@ -115,7 +119,7 @@ end
 --- subscribers are what the fan-out reaches; then the windows, which are the last
 --- thing still holding a script.
 ---
---- HIDING IS NOT DONE FROM HERE, and that is performance-6's rule rather than a
+--- HIDING IS NOT DONE FROM HERE, and that is performance-§6's rule rather than a
 --- shortcut. `NS.ShouldShow` reads the latch as step 0, so the show decision
 --- answers no AT THE SOURCE -- nothing, not a combat transition, not a target
 --- swap, not a settings write, can re-show a window behind the switch's back. A
@@ -123,7 +127,7 @@ end
 ---
 --- NO SECURE OR ATTRIBUTE WORK IS PENDED, because this addon does none: it has no
 --- state driver, no attribute driver and no secure-attribute rewrite (grep the
---- tree for `SetAttribute`). slash-commands-7 permits a disabled addon to keep
+--- tree for `SetAttribute`). slash-commands-§7 permits a disabled addon to keep
 --- PLAYER_REGEN_ENABLED registered for exactly that pending completion; this
 --- addon has nothing to complete, so it keeps NOTHING and the registration set
 --- goes to empty. An addon that later grows secure work adds the hold-pending
@@ -142,7 +146,7 @@ local function standDown()
 end
 
 --- Put it all back, FROM CURRENT STATE and never from a snapshot taken on the
---- way down (performance-6). A column toggled, a window created or a visibility
+--- way down (performance-§6). A column toggled, a window created or a visibility
 --- rule changed while the addon was off comes back as it is NOW: `NS:OnEnable`
 --- re-reads nothing it cached, each module's `OnEnable` re-registers its own
 --- fixed set, and `WindowManager:Resume` calls `Init` first so a window created
@@ -262,8 +266,8 @@ end
 
 --- Is the addon standing down right now -- for any reason?
 ---
---- Published so the show ladder, the slash gate and the launcher click all ask
---- ONE question rather than three that could disagree. It is `IsDown`, not
+--- Published so the show ladder and the window seams all ask ONE question
+--- rather than several that could disagree. It is `IsDown`, not
 --- `IsHeld("disabled")`, everywhere the question is "should this happen": a
 --- perf-suspended addon must refuse the same work.
 --- @return boolean
@@ -274,10 +278,12 @@ end
 
 --- Is the addon DISABLED specifically -- the player's switch, not the harness's.
 ---
---- The slash gate and the launcher click ask this one rather than `IsStoodDown`,
---- because the refusal line names `/mm enable` and that is the wrong advice to
---- give someone whose addon is merely mid-capture. slash-commands-7 keeps `perf`
---- on the live list for the same reason.
+--- The slash gate asks this one rather than `IsStoodDown`, because the refusal
+--- line names `/mm enable` and that is the wrong advice to give someone whose
+--- addon is merely mid-capture. slash-commands-§7 keeps `perf` on the live list
+--- for the same reason. The launcher's `isEnabled` asks this one too
+--- (core/LauncherSetup.lua): its Enabled box is the `enabled` setting, and a
+--- perf capture must not untick it.
 --- @return boolean
 function NS.IsDisabled()
     local lc = NS.lifecycle

@@ -1,13 +1,14 @@
 -- tests/test_doc_structure.lua — the shapes documentation-§1 and §3 fix in place for the README
 -- and the architecture hub.
 --
--- WHAT IT PROVES, in five cases:
+-- WHAT IT PROVES, in six cases:
 --   1. docs/ARCHITECTURE.md carries the TEN sections `documentation-§3` names for the hub.
 --   2. Every mandated section that has a canonical topic doc stays inside the spill threshold.
 --   3. Every markdown link pointing INTO one of the hub's headings lands on a heading that exists.
 --   4. README.md carries the two player-facing history surfaces `documentation-§1` allows, and the
 --      tracked markdown carries no third.
 --   5. README.md's top-level sections are the ones §1 names, in the order it names them.
+--   6. The hub's inventory line (and module-map.md's copy) counts the files git tracks.
 --
 -- WHY IT EXISTS. `documentation-§3` states the hub rule as two thresholds "because 'keep it short'
 -- demonstrably did not hold": a mandated section past roughly 60 lines MUST spill into its canonical
@@ -269,4 +270,78 @@ test("README.md's top-level sections are the ones documentation-§1 names, in it
         if entry.required and not seen[i] then absent[#absent + 1] = entry.name end
     end
     assertTrue(#absent == 0, README .. " is missing " .. table.concat(absent, ", "))
+end)
+
+--- A number the docs spell out ("Fifty-eight", "nineteen") or write as digits, or nil. Covers
+--- 0..99 because that is the range a file count here lives in; a count past it is written as digits.
+local UNITS = {
+    zero = 0, one = 1, two = 2, three = 3, four = 4, five = 5, six = 6, seven = 7, eight = 8,
+    nine = 9, ten = 10, eleven = 11, twelve = 12, thirteen = 13, fourteen = 14, fifteen = 15,
+    sixteen = 16, seventeen = 17, eighteen = 18, nineteen = 19,
+}
+local TENS = {
+    twenty = 20, thirty = 30, forty = 40, fifty = 50, sixty = 60, seventy = 70, eighty = 80,
+    ninety = 90,
+}
+local function number(word)
+    if word:match("^%d+$") then return tonumber(word) end
+    local w = word:lower()
+    if UNITS[w] then return UNITS[w] end
+    if TENS[w] then return TENS[w] end
+    local tens, unit = w:match("^(%a+)%-(%a+)$")
+    if tens and TENS[tens] and UNITS[unit] and UNITS[unit] > 0 and UNITS[unit] < 10 then
+        return TENS[tens] + UNITS[unit]
+    end
+    return nil
+end
+
+--- How many tracked paths a `git ls-files` invocation prints that `keep` accepts, or a failure.
+local function countTracked(spec, keep)
+    if not io.popen then
+        fail("doc gate: io.popen is unavailable, so this gate cannot run and must not be reported "
+            .. "as passing", 2)
+    end
+    local p = io.popen("git ls-files " .. spec .. " 2>/dev/null")
+    if not p then
+        fail("doc gate: io.popen returned no handle, so this gate cannot run and must not be "
+            .. "reported as passing", 2)
+    end
+    local n = 0
+    for path in p:lines() do
+        if keep(path) then n = n + 1 end
+    end
+    p:close()
+    if n == 0 then
+        fail("doc gate: git tracks no " .. spec .. " source, which cannot be true here — treating a "
+            .. "blind gate as a failure", 2)
+    end
+    return n
+end
+
+-- The hub's inventory line and module-map.md's copy of it, both shaped
+-- "<N> non-vendored source files: 1 locale, <M> `core/`, …". A count typed by hand goes stale the
+-- day a peel lands (the hub said 57 / 18 while module-map.md and the tree said 58 / 19), so the
+-- figures are derived from what git tracks: every authored .lua outside libs/ and tests/, and the
+-- core/ share of it.
+test("the hub's file count matches git ls-files", function()
+    local total = countTracked("'*.lua'", function(path)
+        return not path:match("^libs/") and not path:match("^tests/")
+    end)
+    local core = countTracked("'core/*.lua'", function() return true end)
+    local wrong = {}
+    for _, rel in ipairs({ ARCHITECTURE, "docs/module-map.md" }) do
+        local body = read(rel):gsub("\n", " ")
+        local nWord, rest = body:match("([%w%-]+) non%-vendored source files:(.-)%.%s")
+        local cWord = rest and rest:match("([%w%-]+) `core/`")
+        if not nWord or not cWord then
+            wrong[#wrong + 1] = rel .. " carries no \"<N> non-vendored source files: … <M> `core/`\" line"
+        else
+            local n, c = number(nWord), number(cWord)
+            if n ~= total or c ~= core then
+                wrong[#wrong + 1] = string.format("%s says %s / %s core/, git tracks %d / %d",
+                    rel, nWord, cWord, total, core)
+            end
+        end
+    end
+    assertTrue(#wrong == 0, table.concat(wrong, "; "))
 end)

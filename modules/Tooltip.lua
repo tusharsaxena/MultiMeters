@@ -103,7 +103,7 @@ local FALLBACK_ICON = [[Interface\ICONS\INV_Misc_QuestionMark]]
 -- sits in a column of Blizzard spell icons, and the catalog's marks are white
 -- with their shape in the alpha channel BY RULE, so the one line drawing a Ka0s
 -- glyph would be the one line that looked foreign. Recorded in
--- docs/ARCHITECTURE.md's "Hard-coded texture paths" census.
+-- docs/texture-paths.md's census; ratified by an ARCHITECTURE.md register row.
 local TARGET_ICON = [[Interface\ICONS\Ability_Hunter_FocusedAim]]
 
 -- Icon edge length inside a tooltip line, in pixels. Sized to sit on the text

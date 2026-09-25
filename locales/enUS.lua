@@ -141,6 +141,8 @@ L["Which window the settings on every other page apply to. Each window is config
     "Which window the settings on every other page apply to. Each window is configured independently."
 L["Window"] = "Window"
 L["Window name"] = "Window name"
+-- A rename to a blank (or all-whitespace) name, answered by WindowManager:Rename.
+L["A window name cannot be empty."] = "A window name cannot be empty."
 L["Name shown in this picker and, optionally, in the window's own header."] =
     "Name shown in this picker and, optionally, in the window's own header."
 L["New window"] = "New window"
@@ -211,7 +213,7 @@ L["Draw the title strip along the top of the window."] =
 L["Show close button"] = "Show close button"
 L["Draw a close button in the title bar."] = "Draw a close button in the title bar."
 L["Show close"] = "Show close"
-L["Show minimise"] = "Show minimise"
+L["Show minimize"] = "Show minimize"
 L["Collapse the window to its title bar and back."] = "Collapse the window to its title bar and back."
 L["Show lock"] = "Show lock"
 L["Lock or unlock the window for dragging."] = "Lock or unlock the window for dragging."
@@ -228,7 +230,7 @@ L["Show export"] = "Show export"
 L["Export this window's segment to CSV or to chat."] = "Export this window's segment to CSV or to chat."
 L["Reveal controls on hover"] = "Reveal controls on hover"
 L["Fade every control except the one under the pointer. Off keeps them all visible."] = "Fade every control except the one under the pointer. Off keeps them all visible."
-L["Minimised"] = "Minimised"
+L["Minimized"] = "Minimized"
 L["Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."] = "Collapsed to the title bar. The window's stored height is untouched, so expanding restores it exactly."
 -- The four hidden rows the window's own header controls write (issue #50): the
 -- segment menu's Current / Overall entries, and a click on a column header.
@@ -303,7 +305,7 @@ L["What colors the tooltip's text. Class is the class of the player you are hove
 -- TWO tabs for the title bar now: "Title bar" for whether it shows, its
 -- alignment, its height and its background, and "Title text" for the face
 -- drawn on it. The column-label strip below it moved to its own page (the
--- Columns page it labels), and the meter's own controls (close, minimise,
+-- Columns page it labels), and the meter's own controls (close, minimize,
 -- segment picker...) sort into two further tabs of their own.
 L["Color mode (all surfaces)"] = "Color mode (all surfaces)"
 L["Set the color mode of every bar and header in this window at once. Text colors are left alone — they sit on top of these surfaces and have to contrast with them. Each surface is still its own setting, so you can change one afterwards without changing the rest."] =
@@ -549,8 +551,8 @@ L["How many enemies to list before stopping."] =
 -- ---------------------------------------------------------------------------
 -- Columns page
 -- ---------------------------------------------------------------------------
--- No rows of its own (the column array is a documented carve-out, not a row —
--- see settings/Schema.lua). The column-header strip's styling lives here too,
+-- No rows of its own in settings/Schema.lua (the column array is one hidden row,
+-- written whole, appended by settings/Schema_Paths.lua). The column-header strip's styling lives here too,
 -- under window.columnHeader.* — it LABELS the columns, so it belongs on the
 -- page where the columns are chosen. Its paths stay under window.columnHeader,
 -- unchanged: a row's page is where it is edited, its path where it is stored.
@@ -735,11 +737,8 @@ L["Not read while the color mode beside it is anything but Custom color, except 
 L["Minimap button"] = "Minimap button"
 L["Color for this statistic wherever it identifies a column: bars set to Per-statistic, the column header, and the tooltip's all-statistics list."] =
     "Color for this statistic wherever it identifies a column: bars set to Per-statistic, the column header, and the tooltip's all-statistics list."
-L["Show this addon's button on the minimap. Left-click it to show or hide the meter windows, right-click it to open these settings. Shared by every profile, because the button belongs to the installation rather than to one character's layout."] =
-    "Show this addon's button on the minimap. Left-click it to show or hide the meter windows, right-click it to open these settings. Shared by every profile, because the button belongs to the installation rather than to one character's layout."
-L["Left-click to show or hide the meter windows."] =
-    "Left-click to show or hide the meter windows."
-L["Right-click to open the settings."] = "Right-click to open the settings."
+L["Show this addon's button on the minimap. Left-click it to open these settings; right-click it for a menu that turns the addon on or off, locks the windows, starts test mode, and shows or hides the meter windows. Shared by every profile, because the button belongs to the installation rather than to one character's layout."] =
+    "Show this addon's button on the minimap. Left-click it to open these settings; right-click it for a menu that turns the addon on or off, locks the windows, starts test mode, and shows or hides the meter windows. Shared by every profile, because the button belongs to the installation rather than to one character's layout."
 L["Test mode"] = "Test mode"
 L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."] =
     "Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."
@@ -900,6 +899,10 @@ L["You have no target to whisper to."] = "You have no target to whisper to."
 L["Your target is not a player."] = "Your target is not a player."
 L["No window named '%s'."] = "No window named '%s'."
 L["Exported %d rows to chat."] = "Exported %d rows to chat."
+-- A channel export on a client with no chat sender at all: the lines are
+-- printed to the player instead, and this says so before them.
+L["This client has no way to send chat messages, so the export was printed to you instead."] =
+    "This client has no way to send chat messages, so the export was printed to you instead."
 
 -- ---------------------------------------------------------------------------
 -- Slash commands (/mm, /multimeters)
@@ -929,8 +932,51 @@ L["Setting not found: %s"] = "Setting not found: %s"
 L["Invalid value for %s"] = "Invalid value for %s"
 L["Allowed values: %s"] = "Allowed values: %s"
 L["Windows are locked."] = "Windows are locked."
-L["Windows are unlocked."] = "Windows are unlocked."
+L["Windows are unlocked \226\128\148 drag them into place."] =
+    "Windows are unlocked \226\128\148 drag them into place."
+L["Windows are suspended while a performance capture runs."] =
+    "Windows are suspended while a performance capture runs."
 L["No window is selected."] = "No window is selected."
+-- `/mm enable` / `/mm disable`'s acknowledgment when the composed `enabled` row is absent
+-- (settings/Slash.lua doEnabled). The live CliSet's echo is the library's own formatter.
+L["enabled = %s"] = "enabled = %s"
+
+-- The host verbs' acknowledgments (settings/Slash.lua). Whole sentences with placeholders
+-- (localization-§1); the reset-positions count is two keys, one per plural form, rather
+-- than a noun spliced into a sentence.
+L["test mode on \226\128\148 showing placeholder rows"] =
+    "test mode on \226\128\148 showing placeholder rows"
+L["test mode off"] = "test mode off"
+L["Moved 1 window back to the center."] = "Moved 1 window back to the center."
+L["Moved %d windows back to the center."] = "Moved %d windows back to the center."
+L["%d shown"] = "%d shown"
+L["Usage: %s, %s, %s, %s"] = "Usage: %s, %s, %s, %s"
+L["new <name>"] = "new <name>"
+L["delete <name>"] = "delete <name>"
+L["copy <source> <target>"] = "copy <source> <target>"
+L["window management is unavailable \226\128\148 modules/WindowManager.lua did not load."] =
+    "window management is unavailable \226\128\148 modules/WindowManager.lua did not load."
+L["export is unavailable \226\128\148 modules/Export.lua did not load."] =
+    "export is unavailable \226\128\148 modules/Export.lua did not load."
+L["export is not available right now."] = "export is not available right now."
+L["there is no window to export."] = "there is no window to export."
+
+-- The two debug channels' acknowledgments (`/mm debug feign`, `/mm debug tooltip`).
+L["feign trace ON \226\128\148 run the dungeon, then `/mm debug feign`."] =
+    "feign trace ON \226\128\148 run the dungeon, then `/mm debug feign`."
+L["feign trace off."] = "feign trace off."
+L["unknown feign argument '%s' \226\128\148 `/mm debug feign on|off`, or `/mm debug feign` to print the recording."] =
+    "unknown feign argument '%s' \226\128\148 `/mm debug feign on|off`, or `/mm debug feign` to print the recording."
+L["tooltip logging ON \226\128\148 mouse over a row and read the console."] =
+    "tooltip logging ON \226\128\148 mouse over a row and read the console."
+L["tooltip logging off."] = "tooltip logging off."
+
+-- The degradation stub's own lines (settings/Slash.lua, LibKa0s-Slash-1.0 absent). The first
+-- `%s` is the verb (`/mm list`), the second core/CoreSetup.lua's shared cause clause.
+L["%s is unavailable. %s."] = "%s is unavailable. %s."
+L["v%s"] = "v%s"
+L["v%s slash commands"] = "v%s slash commands"
+L["unknown command '%s'"] = "unknown command '%s'"
 
 -- NO ENTRY FOR THE DISABLED REFUSAL LINE, and its absence is the rule rather
 -- than an omission (slash-commands-§7). That line is exactly one shape

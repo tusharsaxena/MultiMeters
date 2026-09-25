@@ -128,11 +128,11 @@ end
 --- ends up permanently undraggable until a reload.
 function WindowProto:ApplyLock()
     local locked = self.locked
-    -- MINIMISE IS THE GRIP'S OTHER AUTHOR, so this has to agree with it or
+    -- MINIMIZE IS THE GRIP'S OTHER AUTHOR, so this has to agree with it or
     -- `/mm lock off` resurrects a grip over a collapsed window. Whichever of the
     -- two runs last wins, so both ask the same question.
     if self.grip then
-        local down = (self.config.frame or {}).minimised and true or false
+        local down = (self.config.frame or {}).minimized and true or false
         self.grip:SetShown(not locked and not down)
     end
 
@@ -193,14 +193,14 @@ end
 --- the ladder exists specifically to forbid ("a suspended capture must be inert:
 --- nothing may re-show a window behind suspend's back", performance-§6).
 ---
---- The reasons below are steps 0 and 1, which are the addon-wide answers. Matched
+--- The reasons below are steps 0 and 2, which are the addon-wide answers. Matched
 --- on the REASON rather than re-asking each source, because the ladder already
 --- names the step that decided and a second reading of NS.Perf.suspended here is
 --- a second place for the two to disagree.
 local UNFORCEABLE = {
     ["suspended"] = true,   -- step 0: a suspended capture must be inert
-    ["disabled"]  = true,   -- step 1: the master switch is not a context rule
-    -- step 1b: General visibility set to Never. The same statement the master
+    ["disabled"]  = true,   -- step 0: the master switch is not a context rule
+    -- step 2: General visibility set to Never. The same statement the master
     -- switch makes, made on the same tab -- so an explicit "show this window" must
     -- not overrule it either. The dropdown's two COMBAT answers are deliberately
     -- absent: those ARE context rules and behave like the per-window pair.
@@ -229,6 +229,11 @@ function WindowProto:RefreshVisibility()
 end
 
 function WindowProto:Show()
+    -- AN EXPLICIT SHOW NEVER OVERRIDES THE LATCH. This path shows the frame
+    -- itself rather than asking NS.ShouldShow, so it has to ask the latch on its
+    -- own: a disabled or perf-suspended addon puts nothing on screen, whoever
+    -- asks (slash-commands-§7, performance-§6).
+    if NS.IsStoodDown and NS.IsStoodDown() then return false end
     self:BuildFrame()
     -- An explicit request. See RefreshVisibility for why it is remembered.
     self.forcedShow = true
@@ -251,6 +256,7 @@ function WindowProto:Show()
     -- wait is neither fixed nor short. The window appeared to assemble itself in
     -- two stages.
     self.elapsed = self.throttle   -- draw on the next tick, not in 0.25s
+    return true
 end
 
 --- Forget an explicit show request. Called on a real context change, which is

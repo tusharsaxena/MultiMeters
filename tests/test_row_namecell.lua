@@ -14,8 +14,8 @@
 -- What lives here: class color on the name string, the spec/class icon slot
 -- and the space it consumes, the realm strip and the character-counting cap,
 -- and the fold arrow and drill-down hand-off that hang off the same cell. What
--- stays in tests/test_row.lua: the value cell, the shared color/media/mouse
--- parts and the cell descriptor.
+-- stays in tests/test_row.lua: the value cell, the shared color/media parts
+-- and the cell descriptor; the row's mouse hand-off is tests/test_row_mouse.lua.
 
 local T = _G.MULTIMETERS_TEST
 

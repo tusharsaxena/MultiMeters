@@ -628,6 +628,25 @@ test("Compat.BarInterpolation answers the client's ease-out, and nil below 12.0 
     assertEqual(inst.NS.Compat.BarInterpolation(), 1)
 end)
 
+test("Compat.ChatSender prefers C_ChatInfo, falls back to the global, and is nil with neither", function()
+    -- Resolved at CALL time, so a namespace that arrives after load still wins.
+    -- red under: no shim, or one that hands back the deprecated global first.
+    local inst = T.load()
+    local modern = function() end
+    local legacy = function() end
+    inst.mocks.C_ChatInfo = { SendChatMessage = modern }
+    inst.mocks.SendChatMessage = legacy
+    assertEqual(inst.NS.Compat.ChatSender(), modern, "C_ChatInfo first")
+
+    inst.mocks.C_ChatInfo = {}
+    assertEqual(inst.NS.Compat.ChatSender(), legacy, "the namespace without its member falls through")
+    inst.mocks.C_ChatInfo = nil
+    assertEqual(inst.NS.Compat.ChatSender(), legacy, "no namespace, the global")
+
+    inst.mocks.SendChatMessage = nil
+    assertNil(inst.NS.Compat.ChatSender(), "neither, nil")
+end)
+
 test("Compat: a delve namespace present but missing its member does not raise", function()
     -- A PTR build can have the namespace without one of its functions, which is
     -- the shape that turns a guarded call into an error at the call site.

@@ -65,8 +65,8 @@ local H = NS.Helpers or {}
 ---
 --- The library's own dropdown maker reads and writes a stored path, which is
 --- right for a setting and wrong for everything on this page: the window picker
---- writes SESSION state, and the column editor writes one element of an array
---- through a carve-out. Neither has a scalar path to name.
+--- writes SESSION state, and the column editor rewrites a whole array through
+--- its one hidden row. Neither has a scalar path to name.
 ---
 --- `spec` = { label, tooltip, list, order, value, onSelect }.
 H.ActionDropdown = function(parent, relativeWidth, spec)

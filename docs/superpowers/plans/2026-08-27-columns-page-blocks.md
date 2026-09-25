@@ -1585,7 +1585,7 @@ Expected: the second command prints nothing.
 
 - [ ] **Step 2: Add the deviation row**
 
-In `docs/ARCHITECTURE.md`, append to the deviations table (after the `debug-logging §8` row):
+In `docs/ARCHITECTURE.md`, append to the deviations table (after the `debug-logging-§8` row):
 
 ```markdown
 | options-ui — generic options widgets live in `LibKa0s-Options` | The drag-to-reorder block list is `settings/ColumnBlocks.lua`, private to this addon, rather than a `LibKa0s-Options` member beside `Section`, `TextRow`, `RenderGrid` and `InlineButtonPair`. | A LibKa0s widget re-vendors into every addon in the collection, so its API is expensive to change once shipped, and one consumer is not enough evidence to freeze a signature on — the first real page it serves is what tells you which parts of the signature were guesses. It is kept in its own file rather than inside the page precisely so the promotion is a file move rather than an extraction. Tracked as [issue #21](https://github.com/tusharsaxena/MultiMeters/issues/21). | 2026-08-27 | Any addon in the collection adding a second user-orderable list. That is the second consumer the API needs; the widget moves to LibKa0s and this row retires. |

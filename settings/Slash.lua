@@ -38,7 +38,16 @@ local Sl = NS.Slash
 -- schema seam this file's adapters call. Everything else is resolved through NS
 -- at call time, so nothing further binds.
 
-local L = NS.L
+-- EVERY USER-FACING LINE HERE IS A WHOLE-SENTENCE KEY (localization-§1): the verbs'
+-- acknowledgments, the degradation stub's lines and the usage text all read through `L` with
+-- `%s`/`%d` placeholders, and a count's plural is two keys rather than a noun concatenated into
+-- a sentence, which no translation could reorder. The one string NOT routed is the stub's copy
+-- of the library's DISABLED_LINE_FORMAT, whose wording is the collection's (slash-commands-§7).
+--
+-- The fallback is for a load with no locale at all: locales/ loads first in the TOC, so NS.L is
+-- always here in the client, but the degradation stub below must still speak plain English on a
+-- load that never ran locales/enUS.lua rather than raise indexing nil.
+local L = NS.L or setmetatable({}, { __index = function(_, k) return k end })
 
 local function out(line)
     if NS.Print then NS.Print(line) end
@@ -168,12 +177,17 @@ NS.COMMANDS = {
 -- forbids, so a degraded help row renders plainly and says so.
 local SlashLib = LibStub and LibStub("LibKa0s-Slash-1.0", true)
 
+-- Set only in the stub branch below. doEnabled reads it: the stub's CliSet names the missing
+-- library, so `/mm enable` and `/mm disable` write through the seam directly instead.
+local degraded = false
+
 if not SlashLib then
+    degraded = true
     -- The cause half is core/CoreSetup.lua's shared clause (NS.LIBKA0S_MISSING);
     -- only the consequence is this seam's. This is the one of the five whose
     -- consequence comes FIRST — the verb has to lead, or "/mm list" is buried
     -- mid-sentence — so it reads "<verb> is unavailable. <cause>."
-    local missing = " is unavailable. " .. NS.LIBKA0S_MISSING .. "."
+    local MISSING = L["%s is unavailable. %s."]
 
     SlashLib = {}
     SlashLib.ParseValue = function() return nil, "the LibKa0s library is missing" end
@@ -181,16 +195,31 @@ if not SlashLib then
     -- own "not a boolean word" signal, so `/mm lock on` degrades to a toggle
     -- rather than to a Lua error — see doLock.
     SlashLib.ParseBool  = function() return nil end
+    -- THE ONE LIBRARY STRING THIS STUB CARRIES (LibKa0s docs/api/Slash/version-15-docs.md, "The
+    -- degradation stub"): a byte copy of the live `lib.DISABLED_LINE_FORMAT`, so a degraded build
+    -- refuses in the collection's words (slash-commands-§7). tests/test_degraded.lua pins
+    -- it against the library through `NS.Slash.__stubFormat`, a debug seam set only here.
+    SlashLib.DISABLED_LINE_FORMAT = "%s is disabled \226\128\148 enable it with |cFFFFFF00%s|r"
+    Sl.__stubFormat = SlashLib.DISABLED_LINE_FORMAT
 
     function SlashLib:New(d)
         local stub = { SetRowAnnotator = function() end }
         local function absent(verb)
-            return function() out(d.slash .. " " .. verb .. missing) end
+            return function() out(MISSING:format(d.slash .. " " .. verb, NS.LIBKA0S_MISSING)) end
         end
         for _, verb in ipairs({ "List", "Get", "Set", "Reset", "ResetAll" }) do
             stub["Cli" .. verb] = absent(verb:lower())
         end
-        stub.CliVersion = function() out("v" .. tostring(d.version and d.version() or "?")) end
+        -- Formatted the way the live `cli:DisabledLine()` does: the plain-text brand, then
+        -- `<slash> enable`. Through Launcher minor 3, core/LauncherSetup.lua's refused left click
+        -- reached it through Sl:DisabledLine, so a stub without it raised there
+        -- (MultiMeters-R-06); the member stays because Sl:DisabledLine is published surface.
+        stub.DisabledLine = function()
+            return SlashLib.DISABLED_LINE_FORMAT:format(tostring(d.brandName or d.slash),
+                d.slash .. " enable")
+        end
+        local function version() return tostring(d.version and d.version() or "?") end
+        stub.CliVersion = function() out(L["v%s"]:format(version())) end
         stub.LandingRows = function()
             local rows = {}
             for _, e in ipairs(d.commands or {}) do
@@ -204,7 +233,7 @@ if not SlashLib then
             return rows
         end
         stub.PrintHelp = function()
-            out("v" .. tostring(d.version and d.version() or "?") .. " slash commands")
+            out(L["v%s slash commands"]:format(version()))
             for _, r in ipairs(stub.HelpRows()) do out(r) end
         end
         local function findVerb(name)
@@ -229,7 +258,7 @@ if not SlashLib then
             verb = (d.aliases or {})[verb] or verb
             local entry = findVerb(verb)
             if entry then return entry[3](rest or "") end
-            out("unknown command '" .. verb .. "'")
+            out(L["unknown command '%s'"]:format(verb))
             stub.PrintHelp()
         end
         return stub
@@ -254,8 +283,8 @@ cli = SlashLib:New({
     isEnabled = function() return not (NS.IsDisabled and NS.IsDisabled()) end,
 
     -- THE BRAND NAME IN PLAIN TEXT -- `Ka0s <Name>` -- and the SAME string
-    -- core/LauncherSetup.lua hands the LDB object as its `label` (launcher-\194\1671).
-    -- Reusing it is not an aesthetic choice: launcher-\194\1671 already forbids escape
+    -- core/LauncherSetup.lua hands the LDB object as its `label` (launcher-§1).
+    -- Reusing it is not an aesthetic choice: launcher-§1 already forbids escape
     -- sequences in that field, which is what makes it safe to drop into a colored
     -- line, and it means this addon has one brand spelling rather than a second one
     -- invented for this message. NEVER the TOC `Title`, which MAY carry color
@@ -292,13 +321,27 @@ cli = SlashLib:New({
         if not NS.GetSetting then return nil end
         return NS.GetSetting(path)
     end,
-    set          = function(path, v) if NS.SetByPath then NS.SetByPath(path, v) end end,
+    -- THE REFUSAL IS RETURNED, NOT SWALLOWED (Slash minor 15). NS.SetByPath answers
+    -- `false, reason` when a row's validate rejects the value or no window is
+    -- selected, and stores nothing. CliSet echoes the re-read value after a write;
+    -- handed nothing back, it printed the OLD value as though the write had landed.
+    -- Returning the seam's answer makes CliSet print the INVALID line and the
+    -- reason instead. A missing seam is a refusal too, named by the shared clause.
+    set          = function(path, v)
+        if not NS.SetByPath then return false, NS.LIBKA0S_MISSING end
+        return NS.SetByPath(path, v)
+    end,
     findRow      = function(path) return NS.FindSchemaRow and NS.FindSchemaRow(path) or nil end,
     allRows      = function() return NS.Schema or {} end,
     -- Handed the ROW, not the path: NS.ApplyDefault owns the deep copy a table
     -- default needs, so two profiles resetting to the same color default do not
-    -- end up sharing one table.
-    applyDefault = function(row) if NS.ApplyDefault then NS.ApplyDefault(row) end end,
+    -- end up sharing one table. Its answer is returned for the same reason `set`'s
+    -- is: exactly false (a row with no default) makes CliReset print the library's
+    -- NO_DEFAULT line instead of echoing the value it left alone.
+    applyDefault = function(row)
+        if not NS.ApplyDefault then return false end
+        return NS.ApplyDefault(row)
+    end,
 
     -- The bulk bracket (Slash minor 8), the same pair settings/OptionsSetup.lua hands
     -- the Options major. No verb here reaches CliResetAll any more -- `resetall` is
@@ -317,6 +360,20 @@ cli = SlashLib:New({
     -- encoding surviving every editor between here and a client.
     groupKey = function(row)
         return (row.page or "?") .. " \226\128\186 " .. (row.group or "?")
+    end,
+
+    -- The echo for every list/get/set/reset line (Slash minor 5). The library's own renderer for
+    -- every row but one: the column array (`window.columns`, one hidden row since issue #52) is a
+    -- table the library has no formatter for, and its generic fallback masks what it cannot
+    -- concatenate as a secret. It reads as how many columns are shown, the same words its
+    -- `[Set]` line uses.
+    format = function(row, value)
+        if row and row.path == "window.columns" and type(value) == "table" then
+            local shown = 0
+            for _, c in ipairs(value) do if type(c) == "table" and c.enabled then shown = shown + 1 end end
+            return L["%d shown"]:format(shown)
+        end
+        return SlashLib.FormatValue and SlashLib.FormatValue(row, value) or tostring(value)
     end,
 })
 
@@ -364,7 +421,7 @@ end
 local function wm()
     local m = NS.WindowManager
     if m then return m end
-    out("window management is unavailable \226\128\148 modules/WindowManager.lua did not load.")
+    out(L["window management is unavailable \226\128\148 modules/WindowManager.lua did not load."])
     return nil
 end
 
@@ -401,9 +458,23 @@ end
 --- reached unwrapped; a gate over it would BE the one-way switch the clause above exists to
 --- prevent, which is why the live list is data rather than a judgment made per verb.
 ---
+--- WITHOUT THE COMPOSED ROW, OR WITHOUT THE SLASH MAJOR, CliSet cannot carry the write: the
+--- stub's CliSet names the missing library, and the live one finds no `enabled` row to parse
+--- against on a load where LibKa0s-Options-1.0 (whose MasterControls composes it) is absent.
+--- options-ui-§1 route (a): the pair then writes NS.SetByPath directly, which stores the path
+--- through the Schema seam's `writeThrough` list and pulls the latch in its announce
+--- (settings/Schema_Paths.lua). Same `path = value` acknowledgment, or the seam's refusal.
+--- It never raises.
+---
 --- @param want boolean
 function doEnabled(want)
-    cli:CliSet("enabled " .. tostring(want))
+    if not degraded and NS.FindSchemaRow and NS.FindSchemaRow("enabled") then
+        cli:CliSet("enabled " .. tostring(want))
+        return
+    end
+    local ok, err = false, NS.LIBKA0S_MISSING
+    if NS.SetByPath then ok, err = NS.SetByPath("enabled", want) end
+    out(ok and L["enabled = %s"]:format(tostring(want)) or tostring(err))
 end
 
 function doLock(rest)
@@ -412,7 +483,7 @@ function doLock(rest)
     local want = boolArg(rest)
     if want == nil then want = not (M.IsLocked and M:IsLocked()) end
     M:SetLocked(want)
-    out("windows " .. (want and "locked" or "unlocked \226\128\148 drag them into place"))
+    out(want and L["Windows are locked."] or L["Windows are unlocked \226\128\148 drag them into place."])
 end
 
 function doTest(rest)
@@ -425,7 +496,7 @@ function doTest(rest)
     -- the box follows, and refuses a start during combat, printing its own line
     -- (modules/WindowManager.lua) -- so a refusal prints nothing more here.
     if not M:SetTestMode(want) then return end
-    out("test mode " .. (want and "on \226\128\148 showing placeholder rows" or "off"))
+    out(want and L["test mode on \226\128\148 showing placeholder rows"] or L["test mode off"])
 end
 
 --- `/mm toggle` flips every window; `/mm toggle <name>` flips one. The name keeps
@@ -442,17 +513,22 @@ end
 function doResetPositions()
     local M = wm()
     if not (M and M.ResetPositions) then return end
-    local moved = M:ResetPositions()
-    out(("moved %s back to the center of the screen"):format(
-        tonumber(moved) == 1 and "1 window" or tostring(moved or 0) .. " windows"))
+    -- Two keys, not "1 window" / "N windows" spliced into one sentence: a language whose
+    -- plural moves the count, or inflects more than the noun, cannot translate a fragment.
+    local moved = tonumber(M:ResetPositions()) or 0
+    if moved == 1 then
+        out(L["Moved 1 window back to the center."])
+    else
+        out(L["Moved %d windows back to the center."]:format(moved))
+    end
 end
 
 --- `/mm window <verb> [args]` — the four registry actions, each routed straight
 --- through. The sub-verb is lowercased because it is an identifier; the remainder
 --- is left exactly as typed because it is a window name.
-local WINDOW_USAGE = "Usage: |cFFFFFF00/mm window list|r, "
-    .. "|cFFFFFF00new <name>|r, |cFFFFFF00delete <name>|r, "
-    .. "|cFFFFFF00copy <source> <target>|r"
+local function yellow(s) return "|cFFFFFF00" .. s .. "|r" end
+local WINDOW_USAGE = L["Usage: %s, %s, %s, %s"]:format(yellow("/mm window list"),
+    yellow(L["new <name>"]), yellow(L["delete <name>"]), yellow(L["copy <source> <target>"]))
 
 -- The sub-verb table, built ONCE at file scope. slash-commands names an
 -- `if verb == "x" then ... elseif` sub-dispatcher as an anti-pattern for the
@@ -553,13 +629,13 @@ end
 function doExport(rest)
     local E = NS.Export
     if not (E and E.Open) then
-        out("export is unavailable \226\128\148 modules/Export.lua did not load.")
+        out(L["export is unavailable \226\128\148 modules/Export.lua did not load."])
         return
     end
 
     local ok, reason = E.Available()
     if not ok then
-        out(reason or "export is not available right now.")
+        out(reason or L["export is not available right now."])
         return
     end
 
@@ -571,13 +647,13 @@ function doExport(rest)
     if name ~= "" then
         cfg = M.Resolve(name)
         if not cfg then
-            out(NS.L["No window named '%s'."]:format(name))
+            out(L["No window named '%s'."]:format(name))
             return
         end
     else
         cfg = defaultWindow(M)
         if not cfg then
-            out("there is no window to export.")
+            out(L["there is no window to export."])
             return
         end
     end
@@ -629,8 +705,8 @@ local function doDebugFeign(rest)
     elseif arg == "on" or arg == "off" then
         local on = D.ArmFeignTrace and D.ArmFeignTrace(arg == "on") or false
         local line = on
-            and "feign trace ON — run the dungeon, then `/mm debug feign`."
-            or  "feign trace off."
+            and L["feign trace ON \226\128\148 run the dungeon, then `/mm debug feign`."]
+            or  L["feign trace off."]
         if NS.Print then NS.Print(line) end
     else
         -- NAMED AND REFUSED, following the dispatcher's own unknown-verb
@@ -640,8 +716,8 @@ local function doDebugFeign(rest)
         -- trace armed for the rest of the session with no line saying so. A
         -- typo in a diagnostic verb must cost the typo and nothing else.
         if NS.Print then
-            NS.Print("unknown feign argument '" .. arg ..
-                "' — `/mm debug feign on|off`, or `/mm debug feign` to print the recording.")
+            local refusal = L["unknown feign argument '%s' \226\128\148 `/mm debug feign on|off`, or `/mm debug feign` to print the recording."]
+            NS.Print(refusal:format(arg))
         end
     end
 end
@@ -693,8 +769,8 @@ function doDebug(rest)
             S.debugTooltip = not S.debugTooltip
             if NS.Print then
                 NS.Print(S.debugTooltip
-                    and "tooltip logging ON — mouse over a row and read the console."
-                    or  "tooltip logging off.")
+                    and L["tooltip logging ON \226\128\148 mouse over a row and read the console."]
+                    or  L["tooltip logging off."])
             end
         end
         return
@@ -731,16 +807,23 @@ end
 
 function Sl:OnSlash(msg)  return cli:OnSlash(msg)  end
 
---- slash-commands-\194\1677's one refusal line, built by the library from `brandName`
+--- slash-commands-§7's one refusal line, built by the library from `brandName`
 --- and the collection's own format string.
 ---
---- Published because core/LauncherSetup.lua needs the SAME line for a refused
---- left-click, and launcher-\194\1672 says to call this rather than write the line
---- again: the wording is the collection's, it MUST NOT be re-spelled per call
---- site, and a second copy here is how eleven addons ended up with eleven
---- wordings. The stub below answers it too, for the same reason it answers every
---- other member the addon reaches.
-function Sl:DisabledLine() return cli:DisabledLine() end
+--- Published so any caller outside the dispatcher prints the SAME line rather
+--- than writing it again: the wording is the collection's, it MUST NOT be
+--- re-spelled per call site, and a second copy is how eleven addons ended up
+--- with eleven wordings. The degradation stub above answers it too. Its first
+--- caller was the launcher's refused left click, which Launcher minor 4 retired
+--- (launcher-§2, v2.67.0: the left button opens the panel in either state, and
+--- the menu grays its feature entries instead); the suites still read the
+--- refusal line through it.
+---
+--- Published ONLY when the dispatcher has the member (MultiMeters-R-06): a
+--- wrapper that always existed let a stub without the member raise through it.
+if cli.DisabledLine then
+    function Sl:DisabledLine() return cli:DisabledLine() end
+end
 function Sl:PrintHelp()   return cli:PrintHelp()   end
 function Sl:HelpRows()    return cli:HelpRows()    end
 

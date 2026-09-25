@@ -408,7 +408,7 @@ assert_(restricted.bytesPerIter <= RESTRICTED_BYTES_CEILING,
 --
 -- The single most important performance property in the addon: N meter events
 -- inside one throttle window must produce exactly ONE refresh. Every message
--- handler in modules/Window.lua does nothing but set `dirty`, and the OnUpdate
+-- handler in modules/Window_Lifecycle.lua does nothing but set `dirty`, and the OnUpdate
 -- tick is the only clock.
 
 local BURST = 200
@@ -543,6 +543,15 @@ end)
 -- The instrumentation must be free when capture is off, or the measurement tool
 -- is itself the regression. Same path, brackets dormant versus armed — evidence,
 -- not a comment.
+
+-- ONE UNMEASURED PASS FIRST. The applyConfig scenario above bumped the window's
+-- layoutVersion, so the next Refresh re-anchors every bound row once (review
+-- F-007) -- and the mock's SetPoint allocates where the client's does not. Left
+-- in, that one-time ~3 KB lands in whichever arm runs first and reads as the
+-- dormant bracket costing more than the armed one. Both arms measure the steady
+-- state instead.
+inst.dirty = true
+inst:Refresh()
 
 local probeOff = measure("probeOverheadOff", ITERS, function()
     inst.dirty = true
@@ -746,6 +755,46 @@ do
             { stat = key, width = NS.Constants.STAT_BY_KEY[key].defaultWidth, showBar = true }
     end
     inst:ApplyConfig()
+end
+
+-- ── 7. THE TWO NARROW LISTENERS, DORMANT (MultiMeters-R-17) ────────────────
+--
+-- UNIT_SPELLCAST_SUCCEEDED and CHAT_MSG_SYSTEM carry the `spellEvent` and
+-- `systemEvent` brackets so an in-game capture can price their all-session
+-- registration. The bracket itself must be free while nobody is measuring, and
+-- the path it wraps is the one nearly every cast in a raid takes: a spell that is
+-- not Feign Death, answered by an early return. That path allocates NOTHING --
+-- no fields table, no closure, no string -- so the dormant arm is held to zero
+-- bytes exactly, not to a ceiling. The armed arm is printed for the ratio only;
+-- the first armed Note creates the bucket, which is why it is not held to zero.
+--
+-- Called as the method, not through the mock's event dispatch, so the figure is
+-- the handler's cost and not the harness's.
+
+do
+    local NOT_FEIGN = 116
+    local handler = NS.OnSpellSucceeded
+    assert(handler, "core/MultiMeters.lua did not publish OnSpellSucceeded -- this "
+        .. "scenario would be measuring its own absence")
+    NS.Perf.on = false
+    handler(NS, "UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", NOT_FEIGN)   -- prime
+
+    local spellOff = measure("spellEventOff", ITERS, function()
+        handler(NS, "UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", NOT_FEIGN)
+    end)
+
+    NS.Perf.on = true
+    local spellOn = measure("spellEventOn", ITERS, function()
+        handler(NS, "UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", NOT_FEIGN)
+    end)
+    NS.Perf.on = false
+
+    assert_(spellOff.bytesPerIter == 0,
+        ("a dormant spellEvent bracket allocated %.1f bytes/iter -- a disarmed "
+         .. "UNIT_SPELLCAST_SUCCEEDED must cost nothing but its early return (performance-§2)")
+            :format(spellOff.bytesPerIter))
+    assert_(spellOff.apiPerIter == 0 and spellOn.apiPerIter == 0,
+        "a cast reached the meter API -- the feign check must never read C_DamageMeter")
 end
 
 -- ── report ──────────────────────────────────────────────────────────────────

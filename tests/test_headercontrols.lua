@@ -80,7 +80,7 @@ end
 
 test("HeaderControls: every control this addon builds is attached", function()
     local _, window = scene()
-    for _, key in ipairs({ "minimise", "lock", "settings", "segment", "reset", "export" }) do
+    for _, key in ipairs({ "minimize", "lock", "settings", "segment", "reset", "export" }) do
         assertTrue(window.controls[key] ~= nil, "missing control: " .. key)
         assertTrue(window.controls[key]:GetScript("OnClick") ~= nil,
             key .. " has no click")
@@ -106,9 +106,9 @@ test("HeaderControls: a hidden control YIELDS its slot", function()
     local settingsAt = offsetOf(before.controls.settings)
     local exportAt   = offsetOf(before.controls.export)
 
-    local _, after = scene(function(cfg) cfg.frame.showMinimise = false end)
+    local _, after = scene(function(cfg) cfg.frame.showMinimize = false end)
     assertEqual(offsetOf(after.controls.settings), settingsAt + 20,
-        "settings sits one slot further right once minimise goes")
+        "settings sits one slot further right once minimize goes")
     assertEqual(offsetOf(after.controls.export), exportAt + 20,
         "and so does everything past it")
 end)
@@ -281,7 +281,7 @@ test("HeaderControls: the width reserved equals the width occupied", function()
     local _, window = scene()
 
     local leftmost = 0
-    for _, key in ipairs({ "minimise", "lock", "settings", "segment", "reset", "export" }) do
+    for _, key in ipairs({ "minimize", "lock", "settings", "segment", "reset", "export" }) do
         local x = offsetOf(window.controls[key])
         if x and x < leftmost then leftmost = x end
     end
@@ -345,7 +345,7 @@ test("HeaderControls: an unlocked padlock is drawn at the same weight as its nei
 
     local function alphas()
         local out = {}
-        for _, key in ipairs({ "close", "minimise", "lock", "settings", "segment", "reset", "export" }) do
+        for _, key in ipairs({ "close", "minimize", "lock", "settings", "segment", "reset", "export" }) do
             local b = window.controls[key]
             out[key] = b.tex:IsShown() and b.tex:GetAlpha() or b.glyph:GetAlpha()
         end
@@ -385,19 +385,19 @@ test("HeaderControls: the padlock's two states do not draw the same", function()
     assertFalse(art() == locked, "an open padlock and a closed one must differ")
 end)
 
-test("HeaderControls: minimise shows the opposite of the state it is in", function()
+test("HeaderControls: minimize shows the opposite of the state it is in", function()
     local inst, window, cfg = scene()
     local function art()
-        local b = window.controls.minimise
+        local b = window.controls.minimize
         return table.concat({ tostring(b.tex:GetTexture()), tostring(b.tex:GetAtlas()),
                               tostring(b.glyph:GetText()) }, "/")
     end
 
-    cfg.frame.minimised = false
+    cfg.frame.minimized = false
     inst.NS.HeaderControls:Apply(window)
     local expanded = art()
 
-    cfg.frame.minimised = true
+    cfg.frame.minimized = true
     inst.NS.HeaderControls:Apply(window)
     assertFalse(art() == expanded, "collapsed and expanded must not look the same")
 end)
@@ -451,19 +451,37 @@ test("HeaderControls: the reset confirmation opens in the CENTER of the screen",
     assertEqual(dialog:GetNumPoints(), 1, "the stack's own anchor was left on the dialog")
 end)
 
-test("HeaderControls: minimise writes through the settings seam", function()
+test("HeaderControls: minimize writes through the settings seam", function()
     -- Not by poking the config table: NS.SetByPath is what publishes
     -- CONFIG_CHANGED, and it is what the panel's own checkbox writes through, so
     -- a direct poke leaves the panel and the window disagreeing.
-    -- red under: `frameCfg.minimised = not frameCfg.minimised`.
+    -- red under: `frameCfg.minimized = not frameCfg.minimized`.
     local _, window, cfg = scene()
-    assertFalse(cfg.frame.minimised and true or false)
+    assertFalse(cfg.frame.minimized and true or false)
 
-    window.controls.minimise:_run("OnClick")
-    assertEqual(cfg.frame.minimised, true)
+    window.controls.minimize:_run("OnClick")
+    assertEqual(cfg.frame.minimized, true)
 
-    window.controls.minimise:_run("OnClick")
-    assertEqual(cfg.frame.minimised, false)
+    window.controls.minimize:_run("OnClick")
+    assertEqual(cfg.frame.minimized, false)
+end)
+
+test("HeaderControls: the minimize control writes frame.minimized and draws the library's own art", function()
+    -- The control, its setting and its stored path are spelled the US way; the ART stays
+    -- `minimise`, because that is LibKa0s-Media-1.0's catalog key (media/icons/minimise.tga), a
+    -- library field name this repository does not own.
+    -- red under: the control still keyed `minimize`, or the art renamed to a file that does not exist.
+    local inst, window, cfg = scene()
+    local b = window.controls.minimize
+    assertTrue(b ~= nil, "no control keyed minimize")
+    assertTrue(tostring(b.tex:GetTexture()):find(ICON_PATH .. "minimise", 1, true) ~= nil,
+        "the expanded window must draw the catalog's minimise art")
+
+    b:_run("OnClick")
+    assertEqual(cfg.frame.minimized, true, "the click did not write window.frame.minimized")
+    inst.NS.HeaderControls:Apply(window)
+    assertTrue(tostring(b.tex:GetTexture()):find(ICON_PATH .. "expand", 1, true) ~= nil,
+        "the collapsed window must draw the catalog's expand art")
 end)
 
 test("HeaderControls: the lock button toggles this window only", function()
@@ -503,7 +521,7 @@ test("HeaderControls: the title bar itself reveals nothing", function()
     local _, window = scene()
     local rest = window.controls.settings:GetAlpha()
     window.dragBar:_run("OnEnter")
-    for _, key in ipairs({ "minimise", "lock", "settings", "segment", "reset", "export" }) do
+    for _, key in ipairs({ "minimize", "lock", "settings", "segment", "reset", "export" }) do
         assertEqual(window.controls[key]:GetAlpha(), rest, key .. " came up with the bar")
     end
 end)
@@ -688,7 +706,7 @@ test("HeaderControls: a click writes to the window it was clicked ON", function(
     -- THE WORST BUG IN THE FIRST CUT. `window.`-prefixed paths resolve against
     -- ONE integer -- the active window id -- and NS.SetByPath takes only
     -- (path, value), so the third argument this passed was silently ignored.
-    -- Clicking minimise on the second window wrote to whichever one the settings
+    -- Clicking minimize on the second window wrote to whichever one the settings
     -- panel had last been left on: a control changing a window the player is not
     -- even looking at.
     -- red under: calling SetByPath without setting the active window first.
@@ -703,10 +721,10 @@ test("HeaderControls: a click writes to the window it was clicked ON", function(
 
     -- Point the panel at the FIRST window, then click the SECOND window's button.
     NS.State.SetActiveWindow(cfgs[1].id)
-    second.controls.minimise:_run("OnClick")
+    second.controls.minimize:_run("OnClick")
 
-    assertEqual(cfgs[2].frame.minimised, true, "the clicked window did not change")
-    assertFalse(cfgs[1].frame.minimised and true or false,
+    assertEqual(cfgs[2].frame.minimized, true, "the clicked window did not change")
+    assertFalse(cfgs[1].frame.minimized and true or false,
         "the click landed on the window the PANEL had selected, not the one clicked")
     assertTrue(first ~= nil)
 end)
@@ -753,7 +771,7 @@ test("HeaderControls: the strip fits at every size the schema allows", function(
     for _, size in ipairs({ 10, 14, 18, 24, 32 }) do
         local inst, window = scene(function(cfg) cfg.frame.controlSize = size end)
         local placed = {}
-        for _, key in ipairs({ "close", "minimise", "lock", "settings",
+        for _, key in ipairs({ "close", "minimize", "lock", "settings",
                                "segment", "reset", "export" }) do
             local b = window.controls[key]
             if b and b:IsShown() then
@@ -932,22 +950,22 @@ end)
 test("HeaderControls: the two toggles name the EXACT settings paths", function()
     -- The path string IS the contract -- NS.SetByPath resolves it against the
     -- schema index and answers `Setting not found` for anything else, silently
-    -- from a click's point of view. `window.frame.minimised` and
+    -- from a click's point of view. `window.frame.minimized` and
     -- `window.frame.locked`, and the value written is a BOOLEAN rather than
     -- whatever truthy thing was stored.
-    -- red under: a table row spelling `windows.frame.minimised`.
+    -- red under: a table row spelling `windows.frame.minimized`.
     local inst, window, cfg = scene()
     local writes = recordWrites(inst)
 
-    window.controls.minimise:_run("OnClick")
+    window.controls.minimize:_run("OnClick")
     window.controls.lock:_run("OnClick")
 
     assertEqual(#writes, 2)
-    assertEqual(writes[1].path, "window.frame.minimised")
+    assertEqual(writes[1].path, "window.frame.minimized")
     assertEqual(writes[1].value, true)
     assertEqual(writes[2].path, "window.frame.locked")
     assertEqual(writes[2].value, true)
-    assertFalse(cfg.frame.minimised and true or false,
+    assertFalse(cfg.frame.minimized and true or false,
         "the click poked the config table as well as writing through the seam")
 end)
 
@@ -962,9 +980,9 @@ test("HeaderControls: a toggle inverts what is STORED, as a boolean", function()
     local writes = recordWrites(inst)
 
     cfg.frame.locked = "yes"
-    cfg.frame.minimised = true
+    cfg.frame.minimized = true
     window.controls.lock:_run("OnClick")
-    window.controls.minimise:_run("OnClick")
+    window.controls.minimize:_run("OnClick")
 
     assertEqual(writes[1].value, false, "a truthy stored value did not invert to false")
     assertEqual(writes[2].value, false)
@@ -1001,9 +1019,9 @@ test("HeaderControls: with no settings seam a toggle changes nothing and raises 
     local inst, window, cfg = scene()
     inst.NS.SetByPath = nil
 
-    local ok, err = pcall(function() window.controls.minimise:_run("OnClick") end)
+    local ok, err = pcall(function() window.controls.minimize:_run("OnClick") end)
     assertTrue(ok, "a click with no settings seam raised: " .. tostring(err))
-    assertFalse(cfg.frame.minimised and true or false,
+    assertFalse(cfg.frame.minimized and true or false,
         "the click fell back to poking the config table")
 end)
 
@@ -1148,12 +1166,12 @@ test("HeaderControls: only the two toggles write to the settings seam", function
     inst.NS.Export.Open = function() end
     local writes = recordWrites(inst)
 
-    for _, key in ipairs({ "close", "minimise", "lock", "settings",
+    for _, key in ipairs({ "close", "minimize", "lock", "settings",
                            "segment", "reset", "export" }) do
         window.controls[key]:_run("OnClick")
     end
 
     assertEqual(#writes, 2, "the strip wrote to the settings seam an unexpected number of times")
-    assertEqual(writes[1].path, "window.frame.minimised")
+    assertEqual(writes[1].path, "window.frame.minimized")
     assertEqual(writes[2].path, "window.frame.locked")
 end)

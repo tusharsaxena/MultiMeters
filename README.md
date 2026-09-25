@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-1948%2F1948_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2045%2F2045_passing-green)
 
 Most Damage meter addons show you one statistic at a time. This addon shows all of them in one grid — who kicked, who dispelled, who stood in the fire, who died. One row per player, one column per statistic.
 
@@ -47,8 +47,8 @@ which contexts it belongs in — dungeons and raids and nothing else, say — an
 should get out of the way for, and you can stop thinking about it. Ten hide rules ship. Solo,
 mounted, dead, on a flight path, and six more.
 
-Seven controls can sit in the title bar — close, minimise, lock, settings, segment, reset, export —
-and you pick which ones each window draws. The segment control is the three horizontal lines, and it
+The title bar has room for seven controls: close, minimize, lock, settings, segment, reset and
+export. Each window draws the ones you pick. The segment control is the three horizontal lines, and it
 is the one people miss. Open it for every fight the game still holds, by name and length, Current and
 Overall at the bottom; your pick sticks until you change it, reloads included.
 
@@ -60,6 +60,12 @@ window new`, then copy the settings across from the first rather than building t
 Everything else is configuration, and it lives in two places: the addon's own page under Settings →
 AddOns in game, and the slash command. `/mm` (or `/multimeters`) on its own opens that page, and
 `/mm help` prints the full command list.
+
+The minimap button is a shortcut to both. Left-click it for the settings page. Right-click it for a
+small menu with four switches: Enabled, Locked, Test mode and Show window. Each one does exactly what
+`/mm enable` or `/mm disable`, `/mm lock`, `/mm test` and `/mm toggle` do. While the addon is turned
+off, only Enabled can be clicked. Hover the button to see the version and whether the addon is on,
+locked and in test mode.
 
 ## How it works
 
@@ -100,6 +106,7 @@ Please raise them on GitHub:
 
 | Version | Date | Highlights |
 |---|---|---|
+| 1.0.1 | 2026-09-11 | - Re-published 1.0.0 unchanged (a rebuild trigger); the TOC still read 1.0.0 |
 | 1.0.0 | 2026-09-10 | - First published release — Multi Meters is now on CurseForge<br>- Fixed test mode drawing breakdown bars with no numbers on them<br>- Roster rows now carry spec identity<br>- Updated for game patch 12.1.0 |
 | 0.1.0 | 2026-08-09 | - First release. Multi-column single-frame group meter sourced from Blizzard's damage meter: Damage, Healing, Interrupts, Dispels, Avoidable Damage and Deaths; current/overall sessions; multiple independently configured windows with copy-settings-from; tooltips, cell drill-down and death recap; per-window visibility. |
 

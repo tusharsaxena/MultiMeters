@@ -45,9 +45,10 @@ Start here, then read the docs:
   wiring, taint notes, known limitations, documented deviations. What this addon actually is.
 - **`docs/testing.md`** — how to verify: the headless harness, lint, and the green commit gate.
 - Topic detail in `docs/` as needed (`scope.md`, `module-map.md`, `schema.md`, `settings-panel.md`,
-  `data-flow.md`, `compat-layer.md`, `midnight-quirks.md`, `common-tasks.md`, `smoke-tests.md`).
+  `data-flow.md`, `compat-layer.md`, `midnight-quirks.md`, `common-tasks.md`, `smoke-tests.md`,
+  `slash-dispatch.md`, `message-bus.md`, `profiles.md`, `texture-paths.md`).
 
 Green gate before every commit: `lua tests/run.lua` and `luacheck .` (0/0). Never auto-stage/commit/
 push and never bump the version without an explicit instruction.
 
-Bundles [LibKa0s](https://github.com/tusharsaxena/LibKa0s) v1.55.0 (MIT).
+Bundles [LibKa0s](https://github.com/tusharsaxena/LibKa0s) v1.58.0 (MIT).

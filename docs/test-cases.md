@@ -6,7 +6,7 @@ badge and any count quoted in the docs must agree with it.
 
 **Generated — do not hand-edit.** Regenerate with `lua tests/run.lua --list > docs/test-cases.md`.
 
-### test_loadorder.lua (8)
+### test_loadorder.lua (10)
 
 - loadorder: every file the TOC names exists on disk
 - loadorder: AceGUI-3.0 loads before AceConfig-3.0
@@ -16,12 +16,14 @@ badge and any count quoted in the docs must agree with it.
 - loadorder: locales/ loads ahead of every file that captures NS.L
 - loadorder: the LibKa0s seams load in the order their headers pin
 - loadorder: core/MultiMeters.lua loads after every core/ setup file
+- loadorder: the file-scope readers of CoreSetup, EnvSetup and OptionsSetup load after them
+- loadorder: each load-bearing seam line carries a LOAD-BEARING comment at the line
 
 ### test_layout_cap.lua (13)
 
 - layoutcap: every authored file over the 1500-line cap is named in the census
 - layoutcap: no census row outlives the breach it records
-- layoutcap: every over-cap census row carries one of layout-1's three terminal states
+- layoutcap: every over-cap census row carries one of layout-§1's three terminal states
 - layoutcap: the census and the exempt set agree about which paths were exempted
 - layoutcap: an empty census is written as a result rather than left standing empty
 - layoutcap self-test: the parser reads the census nested under the register, and stops there
@@ -44,25 +46,27 @@ badge and any count quoted in the docs must agree with it.
 
 - every deviation id the register cites is assigned by a bundle in docs/audits/
 
-### test_texture_paths.lua (5)
+### test_texture_paths.lua (6)
 
-- texturepaths: every hard-coded path in authored source is named in the ARCHITECTURE.md census
+- texturepaths: every hard-coded path in authored source is named in the texture-paths.md census
 - texturepaths: no census row outlives the path it records
 - texturepaths: every census row carries a disposition that can be followed
 - texturepaths: the deviation register carries the row the ColumnBlocks sites point at
 - texturepaths: the register row's ColumnBlocks citation names the lines the pair is on
+- texturepaths: the register carries a library-stack-§8 row for the Tooltip and Window declines
 
 ### test_docmap.lua (1)
 
 - doc map: every Tier 2 row agrees with what docs/ holds
 
-### test_doc_structure.lua (5)
+### test_doc_structure.lua (6)
 
 - docs/ARCHITECTURE.md carries the ten sections documentation-§3 names
 - every mandated hub section that has a topic doc has spilled into it
 - every anchor pointing into docs/ARCHITECTURE.md resolves to a heading
 - the player-facing history has the ONE home documentation-§1 allows, and no second
 - README.md's top-level sections are the ones documentation-§1 names, in its order
+- the hub's file count matches git ls-files
 
 ### test_lintconfig.lua (4)
 
@@ -73,8 +77,8 @@ badge and any count quoted in the docs must agree with it.
 
 ### test_prose.lua (15)
 
-- prose: no authored file carries a British spelling from localization-5's published list
-- prose: the gate carries localization-5's two lists whole, and nothing of its own
+- prose: no authored file carries a British spelling from localization-§5's published list
+- prose: the gate carries localization-§5's two lists whole, and nothing of its own
 - prose self-test: the carve-out suppresses the named generated folder, and only it
 - prose self-test: a path the carve-out does not name is not covered by one that looks like it
 - prose self-test: a carve-out that is not a set of path strings is a failure, not a silence
@@ -158,7 +162,7 @@ badge and any count quoted in the docs must agree with it.
 - Secrets degraded: canaccessvalue alone missing still refuses a known secret
 - Secrets degraded: canaccesstable alone missing still refuses a secret table
 
-### test_compat.lua (39)
+### test_compat.lua (40)
 
 - Compat: GetSpellInfo flattens C_Spell's struct to the old multi-return
 - Compat: GetSpellInfo answers nil for an unknown spell rather than raising
@@ -198,6 +202,7 @@ badge and any count quoted in the docs must agree with it.
 - Compat.IsSkyriding is a PLAIN boolean, and false with no C_PlayerInfo
 - Compat.IsInHousing follows C_Housing, and is false without it
 - Compat.BarInterpolation answers the client's ease-out, and nil below 12.0 (#23)
+- Compat.ChatSender prefers C_ChatInfo, falls back to the global, and is nil with neither
 - Compat: a delve namespace present but missing its member does not raise
 
 ### test_state.lua (17)
@@ -234,7 +239,7 @@ badge and any count quoted in the docs must agree with it.
 - Locale: the locale file registers no second table over NS.L
 - Locale: enUS is the only locale shipped, and it is unconditional
 
-### test_database.lua (76)
+### test_database.lua (28)
 
 - Database: InitDB publishes the live instance under both names
 - Database: the profile is the SHARED Default, not a per-character one
@@ -259,6 +264,14 @@ badge and any count quoted in the docs must agree with it.
 - Database: window ids are monotonic and never reused
 - Database: NextWindowId answers 1 with no database rather than raising
 - Database: a stored window with no id is given one rather than dropped
+- Database: a profile swap publishes PROFILE_CHANGED exactly once, with the new key
+- Database: core/Database.lua is the only sender of PROFILE_CHANGED
+- Database: a profile swap clears the session state derived from the old profile
+- Database: the profile a swap lands on is migrated and normalized before anything reads it
+- Database: a profile RESET re-seeds rather than leaving an empty registry
+
+### test_database_migrations.lua (48)
+
 - Database: RunMigrations stamps and holds the current schema version
 - Database: the schema version is account-wide, not per-profile
 - Database: a version ahead of any registered step is walked forward, not spun on
@@ -270,11 +283,6 @@ badge and any count quoted in the docs must agree with it.
 - Database v2: the step is idempotent and survives a malformed window
 - Database: RunMigrations with no database is a no-op, not an error
 - Database: RunMigrations normalizes every window whatever the version claims
-- Database: a profile swap publishes PROFILE_CHANGED exactly once, with the new key
-- Database: core/Database.lua is the only sender of PROFILE_CHANGED
-- Database: a profile swap clears the session state derived from the old profile
-- Database: the profile a swap lands on is migrated and normalized before anything reads it
-- Database: a profile RESET re-seeds rather than leaving an empty registry
 - Database v3: ANY of the three old icon flags means the icon stays on
 - Database v3: all three off stays off
 - Database v3: the three dead keys are REMOVED, not left to rot
@@ -313,15 +321,28 @@ badge and any count quoted in the docs must agree with it.
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 
-### test_diagnostics.lua (21)
+### test_migrations.lua (8)
+
+- migrations: the defaults declare schemaVersion 0, never the current version
+- migrations: a fresh install runs every step and lands on the default profile
+- migrations: a step that raises leaves the stamp at its from value
+- migrations: the stamp is stored raw and survives AceDB's logout strip
+- migrations: a legacy unstamped account migrates every stored profile
+- migrations: v16 moves both minimize keys onto the US spelling in every window of every profile
+- migrations: the v16 step run twice is a no-op, and never overwrites a US key
+- migrations: a fresh install stores frame.minimized and no British key
+
+### test_diagnostics.lua (23)
 
 - Diagnostics: the report is published and reachable
 - Diagnostics: `/mm debug diag` reaches it without the debug log
 - Diagnostics: every section appears
+- Diagnostics: the rejected event names are printed, or `none`
 - Diagnostics: it reports what the CLIENT has, not what the addon wants
 - Diagnostics: a number that misses the ladder is FLAGGED, not just printed
 - Diagnostics: one broken section cannot take the report down
 - Diagnostics: it never renders a meter value
+- Diagnostics: one visibility line per window, from the debug pass's last answer
 - Diagnostics: with no window it says so rather than erroring
 - Diagnostics: the report lands in the debug console, not in chat
 - Diagnostics: the console is OPENED, so the report is not written out of sight
@@ -474,7 +495,7 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: NS.LIBKA0S_MISSING is set on BOTH paths, not only the degraded one
 - CoreSetup: all six seams append to the shared clause rather than re-spelling it
 
-### test_perfsetup.lua (24)
+### test_perfsetup.lua (26)
 
 - PerfSetup: NS.Perf is the library instance, with the gate as a plain boolean field
 - PerfSetup: the capture ring is a SECOND SavedVariables global, outside the AceDB tree
@@ -484,6 +505,8 @@ badge and any count quoted in the docs must agree with it.
 - PerfSetup: the descriptor names the FOLDER and leaves the close control to the library
 - PerfSetup: every declared bucket is reached by a real bracket in the addon's source
 - PerfSetup: every bracket in the addon names a bucket the descriptor declares
+- PerfSetup: one UNIT_SPELLCAST_SUCCEEDED records one spellEvent sample
+- PerfSetup: one CHAT_MSG_SYSTEM records one systemEvent sample
 - PerfSetup: the bucket nesting is declared, so a reader never sums a parent with a child
 - PerfSetup: every bracket passes the parent it runs inside, and a top-level one passes none (#47)
 - PerfSetup: a capture OBSERVES the tree, and a column read reached two ways is mixed (#47)
@@ -544,10 +567,11 @@ badge and any count quoted in the docs must agree with it.
 - MediaSetup: every name the library ships has a file in the vendored copy
 - MediaSetup: with no library there is no art, and that is not an error
 
-### test_envsetup.lua (11)
+### test_envsetup.lua (12)
 
 - EnvSetup: the vendored library really did register, so the cases below mean something
 - EnvSetup: NS.Meta reads this addon's TOC
+- EnvSetup: the default fixture's Version is the TOC's
 - EnvSetup: NS.Meta asks about THIS addon's folder, not its title or its chat tag
 - EnvSetup: NS.Meta answers nil — not a placeholder — for a field the TOC does not carry
 - EnvSetup: NS.Version prefers the TOC over this addon's own constant
@@ -558,7 +582,7 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
-### test_launchersetup.lua (38)
+### test_launchersetup.lua (50)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -569,10 +593,22 @@ badge and any count quoted in the docs must agree with it.
 - Launcher: Register is idempotent
 - Launcher: IsRegistered and Object report what Register actually did
 - Launcher: OnInitialize registers it, after the database exists
-- Launcher: LEFT-click toggles the windows, through WindowManager's own seam
-- Launcher: RIGHT-click opens the settings, through OpenOptionsPanel
+- Launcher: LEFT-click opens the settings panel, and toggles nothing
+- Launcher: a LEFT-click while disabled still opens the panel, and says nothing
 - Launcher: a click on a build with no window manager does not raise
-- Launcher: the tooltip states BOTH clicks and the version
+- Launcher menu: right-click opens the four entries ADDONS.md records, in order
+- Launcher menu: each entry calls its slash verb's own handler, once
+- Launcher menu: Enabled writes the setting both ways, through /mm enable and /mm disable
+- Launcher menu: Locked, Test mode and Show window act and read back through the addon
+- Launcher menu: while disabled, everything but Enabled is grayed and inert
+- Launcher menu: a perf capture is not the disabled state; the entries stay live
+- Launcher menu: with no context-menu API, right-click opens the settings panel
+- Launcher: the descriptor carries none of minor 4's retired fields
+- Launcher tooltip: the full block, enabled, with nothing of the host's appended
+- Launcher tooltip: the version is the TOC's, not the hardcoded fallback
+- Launcher tooltip: Locked follows every window's own lock, read on every show
+- Launcher tooltip: Test mode follows the session flag, read on every show
+- Launcher tooltip: while disabled it still shows, with the same two hints
 - Launcher: the tooltip callback never shows or clears the tooltip itself
 - Launcher: the tooltip callback tolerates an object it cannot write to
 - Minimap row: it is COMPOSED, stored, and named for what it shows
@@ -599,7 +635,7 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: with LibKa0s absent the stub still answers from the STORE
 - Degraded: core/LauncherSetup.lua passes the silent flag to LibStub
 
-### test_lifecycle.lua (34)
+### test_lifecycle.lua (38)
 
 - Lifecycle: NS IS the AceAddon object, promoted in place
 - Lifecycle: every module registers, and the enable cascade runs them all
@@ -618,6 +654,10 @@ badge and any count quoted in the docs must agree with it.
 - Lifecycle: a MANUAL turn-off still keeps the window its rules would hide
 - Lifecycle: every player-state edge fans out as PLAYER_STATE_CHANGED
 - Lifecycle: a client with no PLAYER_IS_GLIDING_CHANGED still enables
+- Lifecycle: one unknown event name costs only itself, and is recorded
+- Lifecycle: with no C_EventUtils the refused name is still isolated and recorded
+- Lifecycle: a disable/enable cycle resets the rejected list rather than growing it
+- Lifecycle: a clean client records no rejected events
 - Lifecycle: PLAYER_ENTERING_WORLD is republished with its login/reload flags
 - Lifecycle: the roster cache is dropped BEFORE ROSTER_CHANGED goes out
 - Lifecycle: a meter reset wipes EVERY cache before publishing
@@ -688,7 +728,7 @@ badge and any count quoted in the docs must agree with it.
 - A floored rung whose floor did not take is not accepted on the K probe alone (#26)
 - The client's defaults under a floor that did not take are not accepted either (#26)
 
-### test_provider.lua (78)
+### test_provider.lua (41)
 
 - Provider: core/Compat.lua is the only file that names C_DamageMeter
 - Provider: modules/Provider.lua is the only caller of the meter shims
@@ -731,6 +771,9 @@ badge and any count quoted in the docs must agree with it.
 - Provider.ProbeSourceLookup skips a source that carries no GUID
 - Provider: an NPC source with no GUID is KEPT, on its creature ID
 - Provider: a source with NEITHER identifier is still dropped
+
+### test_provider_recap.lua (26)
+
 - Provider: with no recap namespace the probe finds nothing, and says so
 - Provider: it reports the readers the CLIENT has, not a list we wrote
 - Provider: a non-function member is not a reader
@@ -757,6 +800,9 @@ badge and any count quoted in the docs must agree with it.
 - Provider.GetRecap is inert while the perf harness has it suspended
 - Provider.GetRecap answers a PREVIEW recap in test mode
 - Provider.GetRecap in test mode does not poison the live memo
+
+### test_provider_fields.lua (11)
+
 - Provider describes the RAW source row, not the projection it keeps
 - The probe DESCRIBES a secret field and never carries its value
 - The probe answers an empty list rather than raising on no session
@@ -769,7 +815,7 @@ badge and any count quoted in the docs must agree with it.
 - Distinct PLAIN values are counted, so a constant field reads as one
 - A SECRET value is never compared or keyed on to count distinctness
 
-### test_roster.lua (42)
+### test_roster.lua (45)
 
 - Roster.GetGroup is player-first, then party order
 - Roster.GetGroup carries name, class and role off the unit API
@@ -813,6 +859,9 @@ badge and any count quoted in the docs must agree with it.
 - A short build says so, and does not also claim it built the group
 - Roster.Forget traces what it forgot, in one line
 - A meter reset forgets the remembered roster, through the bus
+- The remembered roster is bounded at 4 x MAX_ROWS, and every live member survives
+- A partial build never prunes, so a member the unit API has not reached survives
+- While disabled, no game event writes to db.global.roster
 
 ### test_feign.lua (27)
 
@@ -844,7 +893,7 @@ badge and any count quoted in the docs must agree with it.
 - Feign: with no Roster at all every entry is evicted
 - Feign: the set stops being walked once the last entry goes
 
-### test_aggregator.lua (61)
+### test_aggregator.lua (62)
 
 - Aggregator joins columns on the GUID, which is the only legal key
 - Aggregator's result table IS the row array, and cells aliases values
@@ -868,6 +917,7 @@ badge and any count quoted in the docs must agree with it.
 - ApplyRowLimit treats 0 and an over-large cap as the hard ceiling
 - alwaysShowSelf spends the last visible slot on the player
 - alwaysShowSelf does nothing when the player is already visible
+- SelfPinIndex answers the player's index only when they are outside the slice
 - Aggregator applies the cap before dividing, not after
 - A meter reset drops this module's cache
 - A pet gets its OWN row by default, with its own name
@@ -972,7 +1022,7 @@ badge and any count quoted in the docs must agree with it.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (59)
+### test_window.lua (62)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - BuildLayout computes every coordinate from config alone
@@ -998,15 +1048,15 @@ badge and any count quoted in the docs must agree with it.
 - The notice omits a reason it cannot safely render
 - An empty session says so rather than leaving a blank grid
 - A drilled-in window draws the breakdown, decided by the ROWS not the title
-- Suspend takes the OnUpdate away and Resume puts it back
-- Destroy takes the window off screen and off the bus
-- Each window owns a PRIVATE bus target, so two windows cannot clobber each other
 - Scrolling moves the window into the list, it does not shorten it
 - The offset survives a refresh, or scrolling is impossible
 - The offset cannot run past the end of the list
 - A list that shrinks under a stationary offset re-clamps on the next draw
 - Scrolling up stops at the top
 - A list that fits entirely cannot be scrolled
+- alwaysShowSelf pins the player into the last row the default window draws
+- alwaysShowSelf pins nothing once the scroll puts the player in view
+- alwaysShowSelf off leaves the last slot to its own rank
 - The body takes the wheel, or the handler is never called in game
 - The wheel scrolls up on a positive delta
 - Entering or leaving a breakdown puts the view back at the top
@@ -1033,8 +1083,11 @@ badge and any count quoted in the docs must agree with it.
 - A window too short for even one row still asks the pool for one
 - A maxRows cap LARGER than the frame holds does not win
 - BuildLayout survives a config with the sub-tables missing, on the shipped numbers
+- Two passes over the same ten entries ask the pool for nothing the second time
+- A pass with fewer entries releases exactly the surplus, and keeps the rest bound
+- A second pass re-anchors nothing until ApplyConfig moves the layout
 
-### test_window_header.lua (73)
+### test_window_header.lua (57)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -1066,6 +1119,36 @@ badge and any count quoted in the docs must agree with it.
 - Segment: with no provider the pin is left alone rather than rewritten
 - Segment: the session line takes NO mouse
 - Column headers are BUTTONS carrying the full stat label, left-aligned
+- Test mode is marked in RED in the title, and clears when it is off
+- Building a window sets no text on a fontless FontString
+- Header art falls back to ASCII on a client with none of the atlases
+- Header art prefers an atlas where the client has one
+- Column headers take their own font, not the cells'
+- Column headers have their own color and background
+- Per-statistic mode leaves the Player header white, not the sort column's color
+- The Player header's sort arrow is white too, in per-statistic mode
+- Minimize hides everything below the title bar
+- Minimize actually shrinks the window
+- Minimize leaves the STORED height alone, so expanding restores it
+- A collapsed window does not aggregate or render
+- A collapsed window keeps the notice hidden
+- Header shadow reaches every line of the strip
+- Column header shadow is its OWN setting, not the header's
+- The header's text answers TWO modes, and the custom one is the picker
+- The header's text takes the CLASS color, keeping the configured alpha
+- The header's text mode offers class and custom, and NOT per-statistic
+- The header color survives a sort change, having nothing to do with it
+- The window NAME takes the header's color
+- Column header class color is the local player's too
+- A profile written before minimize existed is not collapsed
+- Header buttons are created ONCE per index and re-pointed, never rebuilt
+- A column that goes away HIDES its header; it does not destroy it
+- Every header sits exactly over the column it labels, from the same layout
+- The Player header is a Button like every other, not a label with a gap beside it
+- The strip background and the per-column ones are mutually exclusive, both ways
+
+### test_window_header_sort.lua (16)
+
 - The sort column shows an arrow and the others do not
 - The arrow flips with the direction
 - The sort arrow prefers the collection's own art over the Blizzard atlas
@@ -1079,33 +1162,6 @@ badge and any count quoted in the docs must agree with it.
 - The Player header is the ONE that still refuses while restricted
 - Mid-pull the arrow sits on the column the rows are ACTUALLY ordered by
 - The sort arrow moves to the Player header in name mode
-- Test mode is marked in RED in the title, and clears when it is off
-- Building a window sets no text on a fontless FontString
-- Header art falls back to ASCII on a client with none of the atlases
-- Header art prefers an atlas where the client has one
-- Column headers take their own font, not the cells'
-- Column headers have their own color and background
-- Per-statistic mode leaves the Player header white, not the sort column's color
-- The Player header's sort arrow is white too, in per-statistic mode
-- Minimise hides everything below the title bar
-- Minimise actually shrinks the window
-- Minimise leaves the STORED height alone, so expanding restores it
-- A collapsed window does not aggregate or render
-- A collapsed window keeps the notice hidden
-- Header shadow reaches every line of the strip
-- Column header shadow is its OWN setting, not the header's
-- The header's text answers TWO modes, and the custom one is the picker
-- The header's text takes the CLASS color, keeping the configured alpha
-- The header's text mode offers class and custom, and NOT per-statistic
-- The header color survives a sort change, having nothing to do with it
-- The window NAME takes the header's color
-- Column header class color is the local player's too
-- A profile written before minimise existed is not collapsed
-- Header buttons are created ONCE per index and re-pointed, never rebuilt
-- A column that goes away HIDES its header; it does not destroy it
-- Every header sits exactly over the column it labels, from the same layout
-- The Player header is a Button like every other, not a label with a gap beside it
-- The strip background and the per-column ones are mutually exclusive, both ways
 - The sort arrow follows the LABEL, rather than sitting at a fixed offset
 - The atlas rung flips ONE texture with SetTexCoord, and only for ascending
 - With no art and no atlas the arrow is an ASCII character, and a legible one
@@ -1146,6 +1202,17 @@ badge and any count quoted in the docs must agree with it.
 - SaveSize applies the config ONCE per resize-stop, and still applies when the seam refuses
 - A resize logs one [Set] line per dimension, not a row count
 
+### test_window_lifecycle.lua (8)
+
+- Suspend takes the OnUpdate away and Resume puts it back
+- Destroy takes the window off screen and off the bus
+- Each window owns a PRIVATE bus target, so two windows cannot clobber each other
+- RegisterBus subscribes exactly the twelve messages a window answers
+- Every data message marks the window dirty
+- CONFIG_CHANGED for ANOTHER window leaves this one alone
+- Destroy takes the window off EVERY message, not just the meter
+- SetConfig re-points the window at a new config without rebuilding it
+
 ### test_window_segment.lua (10)
 
 - Segment row: the pin is a hidden window row whose default is no pin
@@ -1159,7 +1226,7 @@ badge and any count quoted in the docs must agree with it.
 - Segment: the labels and the export read the sentinel as no pin
 - Segment: Database.PinnedSegment answers nil for every spelling of no pin
 
-### test_headercontrols.lua (65)
+### test_headercontrols.lua (66)
 
 - HeaderControls: every control this addon builds is attached
 - HeaderControls: a control turned off is not placed at all
@@ -1181,11 +1248,12 @@ badge and any count quoted in the docs must agree with it.
 - HeaderControls: an atlas beats the ASCII rung
 - HeaderControls: an unlocked padlock is drawn at the same weight as its neighbors
 - HeaderControls: the padlock's two states do not draw the same
-- HeaderControls: minimise shows the opposite of the state it is in
+- HeaderControls: minimize shows the opposite of the state it is in
 - HeaderControls: a glyph is never given text before a font
 - HeaderControls: reset asks before it wipes anything
 - HeaderControls: the reset confirmation opens in the CENTER of the screen
-- HeaderControls: minimise writes through the settings seam
+- HeaderControls: minimize writes through the settings seam
+- HeaderControls: the minimize control writes frame.minimized and draws the library's own art
 - HeaderControls: the lock button toggles this window only
 - HeaderControls: only the control under the pointer is revealed
 - HeaderControls: the title bar itself reveals nothing
@@ -1227,7 +1295,7 @@ badge and any count quoted in the docs must agree with it.
 - HeaderControls: close hides the window AS a deliberate close
 - HeaderControls: only the two toggles write to the settings seam
 
-### test_row.lua (77)
+### test_row.lua (62)
 
 - Row.OffsetFor is a pure function of the index and the row config
 - Cell:ApplyLayout places every cell from the layout table
@@ -1287,21 +1355,6 @@ badge and any count quoted in the docs must agree with it.
 - The mouseover overlay is driven from the CELLS, and honors the setting
 - On the grid the mouse goes to every cell, including the name cell
 - Release blanks the row without destroying a widget
-- Hovering a stat cell asks the tooltip the narrow question
-- Clicking a stat cell routes to the drill-down; the name cell does not
-- A cell with no entry does nothing under the cursor
-- Hovering a breakdown ROW shows the client's spell tooltip
-- A breakdown row takes the mouse, and its cells give theirs up
-- Hovering a breakdown row lights its highlight, since no cell can
-- Crossing a cell boundary does NOT blink the breakdown tooltip
-- Leaving the row hides the breakdown tooltip
-- On the GRID a cell still owns its own tooltip
-- A breakdown row with no resolvable spell still says which spell it is
-- A left click inside a breakdown does nothing
-- A right click leaves the breakdown
-- A right click on the ROW ITSELF leaves the breakdown
-- A right click on the GRID is a harmless no-op
-- Cells register for BOTH buttons, or the right click never arrives
 - Row: a cell renders displayText in place of its number
 - Row: displayText wins over BOTH slots
 - Row: a cell with no displayText is completely unaffected
@@ -1339,6 +1392,28 @@ badge and any count quoted in the docs must agree with it.
 - A narrow name column still leaves the string a width of at least one
 - A window config with no icons group at all draws a name and does not raise
 - Re-laying the icons out does not stack anchors on the texture or the name
+
+### test_row_cells.lua (1)
+
+- Update never touches a cell the layout hid, and the live list is reused in place
+
+### test_row_mouse.lua (15)
+
+- Hovering a stat cell asks the tooltip the narrow question
+- Clicking a stat cell routes to the drill-down; the name cell does not
+- A cell with no entry does nothing under the cursor
+- Hovering a breakdown ROW shows the client's spell tooltip
+- A breakdown row takes the mouse, and its cells give theirs up
+- Hovering a breakdown row lights its highlight, since no cell can
+- Crossing a cell boundary does NOT blink the breakdown tooltip
+- Leaving the row hides the breakdown tooltip
+- On the GRID a cell still owns its own tooltip
+- A breakdown row with no resolvable spell still says which spell it is
+- A left click inside a breakdown does nothing
+- A right click leaves the breakdown
+- A right click on the ROW ITSELF leaves the breakdown
+- A right click on the GRID is a harmless no-op
+- Cells register for BOTH buttons, or the right click never arrives
 
 ### test_targets.lua (24)
 
@@ -1516,7 +1591,7 @@ badge and any count quoted in the docs must agree with it.
 - Tooltip: a stat key the catalog does not know heads with the key itself
 - Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block
 
-### test_drilldown.lua (58)
+### test_drilldown.lua (60)
 
 - DrillDown.IsActive is a PLAIN BOOLEAN, in both directions
 - Enter captures PLAIN identity fields, never a reference to the row
@@ -1548,6 +1623,8 @@ badge and any count quoted in the docs must agree with it.
 - The back button exits the drill-down
 - A meter reset leaves every drill-down
 - Deleting a window leaves the drill-down that belonged to it
+- Renaming a window keeps its drill-down open
+- Copying settings onto a window still leaves its drill-down
 - A bulk registry change sweeps views whose window is gone
 - A Deaths click on a player who died enters the DEATHS view
 - The deaths view lists one row per death, newest first
@@ -1577,7 +1654,7 @@ badge and any count quoted in the docs must agree with it.
 - The exit toggle is answered BEFORE the Deaths ladder is climbed
 - Switching out of a deaths view replaces the state, it does not merge into it
 
-### test_export.lua (86)
+### test_export.lua (89)
 
 - Export is a plain table on NS, not an AceAddon module
 - Export.Available says yes out of combat, with nothing to explain
@@ -1651,6 +1728,9 @@ badge and any count quoted in the docs must agree with it.
 - Export.Send hands one message per line to the client
 - Export.Send sends every line at once on a client with no C_Timer
 - Export.Send prints locally for SELF and sends nothing to any channel
+- Export.Send sends through C_ChatInfo when the client has both senders
+- Export.Send names a missing sender once before printing a channel export to self
+- Export.Send prints SELF with no notice even when the client has no sender
 - Export.SendDelay takes an extra second every batch, to duck the message counter
 - Export.NeedsHardwareEvent is true for Say outdoors and false inside an instance
 - Say outdoors sends the WHOLE dump inside the click, not off timers
@@ -1700,7 +1780,7 @@ badge and any count quoted in the docs must agree with it.
 - Reopening with the metric unchanged writes nothing and announces nothing
 - A metric the seam refuses is not stored around it
 
-### test_visibility.lua (41)
+### test_visibility.lua (43)
 
 - GetContext translates Blizzard's instance token to the setting's name
 - A delve reads as `delve`, not as the scenario it reports itself to be
@@ -1728,6 +1808,8 @@ badge and any count quoted in the docs must agree with it.
 - Refresh is Evaluate under the name a caller thinks in
 - Evaluate publishes NOTHING
 - Forget drops every remembered answer
+- Evaluate runs no ladder on a ZONE edge while debug is off
+- Evaluate runs the ladder on a ZONE edge under debug, and LastResult answers
 - Evaluate copes with a database that is not up yet
 - A window that should not show never reaches the provider at all
 - The refusal lifts the moment the context does
@@ -1744,7 +1826,7 @@ badge and any count quoted in the docs must agree with it.
 - A visibility field that is not a table reads as `no rules`, not as hide
 - The master enable, test mode and perf suspend are NOT read here
 
-### test_windowmanager.lua (44)
+### test_windowmanager.lua (47)
 
 - WindowManager is published under the flat name every caller uses
 - Init builds one live instance per stored config, and is idempotent
@@ -1790,6 +1872,9 @@ badge and any count quoted in the docs must agree with it.
 - CopyFrom goes through each row's validate, and stores nothing on a refusal
 - CopyFrom sends the sort through the seam, carries the pin, and never the position
 - SetLocked writes each window through the seam, tagged with its own id
+- Toggle of an unknown window names the window, not a setting
+- Delete, Duplicate and CopyFrom of an unknown window name it too
+- Rename to an empty name answers a sentence, not the row's label
 
 ### test_schema.lua (40)
 
@@ -1885,6 +1970,22 @@ badge and any count quoted in the docs must agree with it.
 - Picking Current or Overall writes the session type through the seam (issue #50)
 - The sort and segment batches log one [Set] line per row they write
 
+### test_schema_batch.lua (13)
+
+- SetByPaths (a): one refused entry stores NO entry, and answers false with a reason
+- SetByPaths (b): a three-row batch sends exactly ONE CONFIG_CHANGED
+- SetByPaths (c): a bulk act logs exactly one '[Set] <summary>: N rows' line
+- SetByPaths (d): a window id writes THAT window, not the active one
+- SetByPaths (e): window.columns is written whole, normalized and copied; a path into it is refused
+- SetByPaths (f): the minimap row reads SHOWN and stores hide, inverted
+- SetByPaths (g): every entry is stored before the first row reacts
+- Minimap path (a): `/mm get global.minimap.shown` answers true while hide is false
+- Minimap path (b): `/mm set global.minimap.shown false` stores hide = true and hides the button
+- Minimap path (c): the old `global.minimap.hide` path is an unknown setting
+- Minimap path (d): no `shown` key is ever stored, raw, after a set
+- Minimap path (e): a legacy global store carries over, button hidden, position untouched
+- Minimap path (f): a pre-v15 profile-scoped store, migrated, reads shown = false
+
 ### test_schema_defaults.lua (18)
 
 - Schema defaults: the two trees the validator compares are both present
@@ -1906,7 +2007,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: answers 0 when there is no profile tree to compare against
 - ValidateSchema: counts every failure, in schema order, with nothing listening
 
-### test_slash.lua (73)
+### test_slash.lua (75)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -1932,6 +2033,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: accepting the `resetall` popup resets the profile and logs ONE line
 - Slash: declining the `resetall` popup does nothing
 - Slash: `list` groups by the row's PAGE, the same key the panel pages use
+- Slash: the column array lists and reads as how many columns are shown
 - Slash: `perf` is declared in NS.COMMANDS and routed to NS.Perf.OnCommand
 - Slash: `export` opens the modal on the window the player named
 - Slash: `export` with no name falls back to a window rather than to nothing
@@ -1948,6 +2050,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `test` sets and toggles through the registry
 - Slash: `lock` moves the lock and NOTHING else
 - Slash: `window new` and `window delete` act on the registry
+- Slash: a bare `window delete` says nothing is selected, not a blank name
 - Slash: `window list` prints one line per window
 - Slash: `window` with an unknown sub-verb prints the usage
 - Slash: `toggle` reaches the registry and reports its refusal
@@ -1982,7 +2085,15 @@ badge and any count quoted in the docs must agree with it.
 - Slash: nothing refuses on an install whose store has not been built
 - Slash: `set window.name` keeps every word of a multi-word name
 
-### test_disabled.lua (18)
+### test_slash_refusal.lua (5)
+
+- Slash refusal: `set` a value the row's validate refuses prints the refusal, not the old value
+- Slash refusal: `reset` on a row with no default prints NO_DEFAULT and keeps the value
+- Slash locale: every feature-verb acknowledgment reads its whole-sentence key
+- Slash locale: `debug tooltip` reads the key for the state it landed in
+- Slash locale: reset-positions says its plural through two distinct keys
+
+### test_disabled.lua (22)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -1992,7 +2103,7 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 6: every event fired anyway writes nothing, prints nothing, shows nothing
 - Disabled 7: every reserved verb and the bare command answer normally
 - Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam
-- Disabled 8: left-click refuses and writes nothing; right-click still opens the panel
+- Disabled 8: left-click opens the panel and writes nothing, in either state
 - Disabled 9: re-enabling restores the registration set it had
 - Disabled 9: the rebuild reflects a setting changed WHILE disabled
 - Disabled 10: releasing one hold does not resurrect an addon the other holds down
@@ -2002,8 +2113,12 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 11: a receiver that subscribes while disabled hears the bus once enabled
 - Disabled 11: a subscription made while disabled is recorded, not made
 - Disabled 11: standUp brings the bus up FIRST, before any module re-enables
+- Disabled 10: unticking Test mode while disabled re-shows nothing
+- Disabled 10: an explicit WindowProto:Show while stood down refuses and shows nothing
+- Disabled 11: /mm toggle under a perf suspend shows nothing and says why
+- Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it
 
-### test_options_panel.lua (43)
+### test_options_panel.lua (44)
 
 - Options: General is the FIRST page, above Windows
 - Options: every window page is marked as nested, and the two that are not are not
@@ -2031,7 +2146,7 @@ badge and any count quoted in the docs must agree with it.
 - Options: the Profiles page SHOWS the container AceConfigDialog fills, even a pooled (hidden) one
 - Options: a widget's set() routes through NS.SetByPath
 - Options: a checkbox's set() routes through NS.SetByPath too
-- Options: applyDefault routes through NS.SetByPath, not around it
+- Options: applyDefault routes through the write seam, not around it
 - Options: the panel and the CLI resolve a page's rows through the SAME function
 - Options: skipRestoreAll vetoes the profiles page from a global reset
 - Options: a global reset restores window POSITIONS, which no schema row owns
@@ -2048,6 +2163,7 @@ badge and any count quoted in the docs must agree with it.
 - Panel: every window sub-page banners the active window, and Windows has no second picker
 - Panel: choosing a window in the banner retargets every page and keeps the tab
 - Panel: Reset all settings' tooltip says it is the same act as Profiles -> Reset Profile
+- scheduleTimer schedules once through C_Timer.After with the given delay
 
 ### test_columnblocks.lua (35)
 
@@ -2087,7 +2203,7 @@ badge and any count quoted in the docs must agree with it.
 - Blocks: the release is announced on the debug log, with the count
 - Blocks: the returned list and the list parked on the ctx are two tables, same contents
 
-### test_columns.lua (11)
+### test_columns.lua (14)
 
 - Columns: the page draws one block per statistic in the catalog
 - Columns: the blocks are in the STORED order, ticked ones first
@@ -2100,8 +2216,11 @@ badge and any count quoted in the docs must agree with it.
 - Columns: a refused write is REPORTED and the page is not repainted
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
+- Columns: the page draws three tabs, Columns then Header text then Header background
+- Columns: the Header text tab renders exactly its group's rows, with no headings
+- Columns: leaving the Columns tab mid-drag cancels the reorder BEFORE the scroll clear
 
-### test_degraded.lua (31)
+### test_degraded.lua (38)
 
 - Degraded: the library really is absent, so every case below is measuring a stub
 - Degraded: every seam soft-optionals its major, so a missing library is not a load error
@@ -2133,85 +2252,103 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: every NS.Perf member the addon actually reaches exists on the stub
 - Degraded: the export modal refuses to open with no dropdown widget
 - Degraded: the addon still enables end to end with no library
+- Degraded: a refused event name costs only itself with no library, and is recorded
 - Degraded: the bus stub still hands every receiver a target, untracked
+- Degraded: with only LibKa0s-Slash missing, a disabled left click opens the panel and raises nothing
+- Degraded: the stub's disabled-line format is the library's, byte for byte
+- Degraded: /mm disable stores enabled=false and stands the addon down with no library
+- Degraded: /mm enable after /mm disable restores the registrations with no library
+- Degraded: with only the Options majors missing, /mm disable and /mm enable still work
+- Degraded: the stub refuses a row-less path it was not told to write through
 
-### test_surface_parity.lua (3)
+### test_surface_parity.lua (4)
 
 - parity: the Options stub carries every public member of the live Helpers surface
 - parity: NS.Compat and NS.Secrets carry every LibKa0s-Compat-1.0 member between them
 - parity: the bus stub carries the LibKa0s-Bus-1.0 surface, and its record the instance's
+- parity: the Schema stub carries the live runtime's surface, and a degraded batch lands
 
 ### test_eol.lua (2)
 
 - eol: every tracked file carries the terminator .gitattributes declares for it
-- eol: .gitattributes is line-endings-5's canonical body for this repo kind
+- eol: .gitattributes is line-endings-§5's canonical body for this repo kind
 
 ## Totals
 
 | Suite | Cases |
 |-------|------:|
-| test_loadorder.lua | 8 |
+| test_loadorder.lua | 10 |
 | test_layout_cap.lua | 13 |
 | test_complexity_register.lua | 4 |
 | test_deviation_register.lua | 1 |
-| test_texture_paths.lua | 5 |
+| test_texture_paths.lua | 6 |
 | test_docmap.lua | 1 |
-| test_doc_structure.lua | 5 |
+| test_doc_structure.lua | 6 |
 | test_lintconfig.lua | 4 |
 | test_prose.lua | 15 |
 | test_constants.lua | 25 |
 | test_secrets.lua | 38 |
-| test_compat.lua | 39 |
+| test_compat.lua | 40 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
-| test_database.lua | 76 |
-| test_diagnostics.lua | 21 |
+| test_database.lua | 28 |
+| test_database_migrations.lua | 48 |
+| test_migrations.lua | 8 |
+| test_diagnostics.lua | 23 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
-| test_perfsetup.lua | 24 |
+| test_perfsetup.lua | 26 |
 | test_debuglogsetup.lua | 30 |
 | test_mediasetup.lua | 7 |
-| test_envsetup.lua | 11 |
-| test_launchersetup.lua | 38 |
-| test_lifecycle.lua | 34 |
+| test_envsetup.lua | 12 |
+| test_launchersetup.lua | 50 |
+| test_lifecycle.lua | 38 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
-| test_provider.lua | 78 |
-| test_roster.lua | 42 |
+| test_provider.lua | 41 |
+| test_provider_recap.lua | 26 |
+| test_provider_fields.lua | 11 |
+| test_roster.lua | 45 |
 | test_feign.lua | 27 |
-| test_aggregator.lua | 61 |
+| test_aggregator.lua | 62 |
 | test_aggregator_identity.lua | 27 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 59 |
-| test_window_header.lua | 73 |
+| test_window.lua | 62 |
+| test_window_header.lua | 57 |
+| test_window_header_sort.lua | 16 |
 | test_window_placement.lua | 33 |
+| test_window_lifecycle.lua | 8 |
 | test_window_segment.lua | 10 |
-| test_headercontrols.lua | 65 |
-| test_row.lua | 77 |
+| test_headercontrols.lua | 66 |
+| test_row.lua | 62 |
 | test_row_namecell.lua | 30 |
+| test_row_cells.lua | 1 |
+| test_row_mouse.lua | 15 |
 | test_targets.lua | 24 |
 | test_tooltip.lua | 20 |
 | test_tooltip_lines.lua | 37 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
-| test_drilldown.lua | 58 |
-| test_export.lua | 86 |
+| test_drilldown.lua | 60 |
+| test_export.lua | 89 |
 | test_export_modal.lua | 31 |
-| test_visibility.lua | 41 |
-| test_windowmanager.lua | 44 |
+| test_visibility.lua | 43 |
+| test_windowmanager.lua | 47 |
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 48 |
+| test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
-| test_slash.lua | 73 |
-| test_disabled.lua | 18 |
-| test_options_panel.lua | 43 |
+| test_slash.lua | 75 |
+| test_slash_refusal.lua | 5 |
+| test_disabled.lua | 22 |
+| test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
-| test_columns.lua | 11 |
-| test_degraded.lua | 31 |
-| test_surface_parity.lua | 3 |
+| test_columns.lua | 14 |
+| test_degraded.lua | 38 |
+| test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| **Total** | **1948** |
+| **Total** | **2045** |

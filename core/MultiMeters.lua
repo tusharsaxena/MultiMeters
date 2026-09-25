@@ -73,7 +73,7 @@ function NS:OnInitialize()
     self:InitDB()
 
     -- THE `disabled` HOLD, re-taken from the stored path the moment there is a
-    -- store to read it from (slash-commands-\194\1677). Surviving a /reload is the
+    -- store to read it from (slash-commands-§7). Surviving a /reload is the
     -- entire point of that setting, and this is where it does: before OnEnable,
     -- so an addon the player switched off never registers anything in the first
     -- place rather than registering and being torn down a frame later.
@@ -114,47 +114,28 @@ function NS:OnInitialize()
     end
 end
 
---- Register `event` only if this client has heard of it.
----
---- C_EventUtils.IsEventValid is the cheap ask; where even that is missing the
---- registration is attempted under pcall, because the failure mode being avoided
---- is a hard error at load on a client one patch behind, not a wrong answer.
----
---- @return boolean  whether the registration took
-local function registerIfValid(target, event, handler)
-    local utils = _G.C_EventUtils
-    if utils and utils.IsEventValid then
-        if not utils.IsEventValid(event) then return false end
-        target:RegisterEvent(event, handler)
-        return true
-    end
-    return pcall(target.RegisterEvent, target, event, handler)
-end
-
-function NS:OnEnable()
-    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-\194\1677).
-    -- AceAddon runs this cascade at load whether or not the player has the addon
-    -- switched off, so without this the stand-down taken in OnInitialize would be
-    -- undone one function call later. It is NOT a gate on a handler: no handler
-    -- early-returns anywhere in this addon any more, and there is nothing
-    -- registered for one to be called from. core/LifecycleSetup.lua's `standUp`
-    -- calls this function again, and the latch is already up by then -- the hold
-    -- set is mutated before the callback runs -- so the rebuild reads `false`
-    -- here and registers from the settings AS THEY ARE NOW (performance-\194\1676).
-    if NS.IsStoodDown and NS.IsStoodDown() then return end
-
+-- EVERY GAME EVENT THIS ADDON LISTENS TO, as `{ event, handler }` pairs, in
+-- registration order. One array rather than a block of RegisterEvent calls
+-- because each entry is registered through NS.SafeRegisterEvent
+-- (core/CoreSetup.lua, events-frames-taint-§1): an unknown event name RAISES on
+-- the client, and a bare block loses every line after the one that raised —
+-- here that is the meter events, which come last. Each entry now costs only
+-- itself, and a refused name lands in NS.State.rejectedEvents, which
+-- `/mm debug diag` prints.
+local EVENTS = {
     -- Lifecycle and context. PLAYER_ENTERING_WORLD covers login, /reload and
     -- every zone-in; ZONE_CHANGED_NEW_AREA covers the sub-zone moves that change
     -- an instance's visibility answer without a loading screen.
-    self:RegisterEvent("PLAYER_ENTERING_WORLD",  "OnEnteringWorld")
-    self:RegisterEvent("GROUP_ROSTER_UPDATE",    "OnRosterUpdate")
-    self:RegisterEvent("ZONE_CHANGED_NEW_AREA",  "OnZoneChanged")
+    { "PLAYER_ENTERING_WORLD",  "OnEnteringWorld" },
+    { "GROUP_ROSTER_UPDATE",    "OnRosterUpdate" },
+    { "ZONE_CHANGED_NEW_AREA",  "OnZoneChanged" },
 
     -- The secret-value transition signal. Registered even on a client without
-    -- C_RestrictedActions: an event that never fires costs nothing, and the
-    -- alternative is a version check that would have to be kept in step with the
-    -- one in core/Secrets.lua.
-    self:RegisterEvent("ADDON_RESTRICTION_STATE_CHANGED", "OnRestrictionChanged")
+    -- C_RestrictedActions rather than behind a version check that would have to
+    -- be kept in step with the one in core/Secrets.lua. That is safe only
+    -- because the registration is pcalled: an unknown name RAISES, it does not
+    -- cost nothing, and on such a client the name is refused and recorded.
+    { "ADDON_RESTRICTION_STATE_CHANGED", "OnRestrictionChanged" },
 
     -- The player's own state, for modules/Visibility.lua's rules. Registering
     -- them here rather than in that module is architecture-§4: one place where
@@ -167,50 +148,77 @@ function NS:OnEnable()
     -- NS.ShouldShow, so a rule whose edge nothing announces takes effect on the
     -- next zone change, group change or settings write and never on its own. A
     -- missed edge here is a rule that looks broken.
-    self:RegisterEvent("PLAYER_REGEN_DISABLED", "OnCombatChanged")
-    self:RegisterEvent("PLAYER_REGEN_ENABLED",  "OnCombatChanged")
+    { "PLAYER_REGEN_DISABLED", "OnCombatChanged" },
+    { "PLAYER_REGEN_ENABLED",  "OnCombatChanged" },
 
-    self:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED", "OnPlayerStateChanged")
+    { "PLAYER_MOUNT_DISPLAY_CHANGED", "OnPlayerStateChanged" },
     -- The vehicle pair. These arrived with the rest of the player-state block
     -- rather than with `hideInVehicle` itself, which shipped in 0.1.0 with no
     -- edge at all: the rule only ever took effect if a zone change happened to
     -- follow the player into the turret. They fire for EVERY unit, so the
     -- handler filters to the player.
-    self:RegisterEvent("UNIT_ENTERED_VEHICLE",         "OnPlayerStateChanged")
-    self:RegisterEvent("UNIT_EXITED_VEHICLE",          "OnPlayerStateChanged")
-    self:RegisterEvent("UPDATE_SHAPESHIFT_FORM",       "OnPlayerStateChanged")
-    self:RegisterEvent("PLAYER_CAN_GLIDE_CHANGED",     "OnPlayerStateChanged")
-    self:RegisterEvent("PET_BATTLE_OPENING_START",     "OnPlayerStateChanged")
-    self:RegisterEvent("PET_BATTLE_CLOSE",             "OnPlayerStateChanged")
-    self:RegisterEvent("PLAYER_DEAD",                  "OnPlayerStateChanged")
-    self:RegisterEvent("PLAYER_ALIVE",                 "OnPlayerStateChanged")
-    self:RegisterEvent("PLAYER_UNGHOST",               "OnPlayerStateChanged")
+    { "UNIT_ENTERED_VEHICLE",         "OnPlayerStateChanged" },
+    { "UNIT_EXITED_VEHICLE",          "OnPlayerStateChanged" },
+    { "UPDATE_SHAPESHIFT_FORM",       "OnPlayerStateChanged" },
+    { "PLAYER_CAN_GLIDE_CHANGED",     "OnPlayerStateChanged" },
+    { "PET_BATTLE_OPENING_START",     "OnPlayerStateChanged" },
+    { "PET_BATTLE_CLOSE",             "OnPlayerStateChanged" },
+    { "PLAYER_DEAD",                  "OnPlayerStateChanged" },
+    { "PLAYER_ALIVE",                 "OnPlayerStateChanged" },
+    { "PLAYER_UNGHOST",               "OnPlayerStateChanged" },
 
-    -- Taking off and landing while staying mounted is its own edge, and it is
-    -- PROBED rather than registered outright: it is newer than the rest and a
-    -- client that does not have it raises on RegisterEvent. Losing it is
-    -- survivable where losing the whole block is not: PLAYER_CAN_GLIDE_CHANGED
-    -- still fires when the mount itself changes, which is the edge the skyriding
-    -- rule actually turns on.
-    registerIfValid(self, "PLAYER_IS_GLIDING_CHANGED", "OnPlayerStateChanged")
+    -- Taking off and landing while staying mounted is its own edge, and the
+    -- newest of the set: a client that does not have it raises on
+    -- RegisterEvent. Losing it is survivable where losing the whole block is
+    -- not: PLAYER_CAN_GLIDE_CHANGED still fires when the mount itself changes,
+    -- which is the edge the skyriding rule actually turns on. It used to be the
+    -- one PROBED entry; every entry is probed now.
+    { "PLAYER_IS_GLIDING_CHANGED",    "OnPlayerStateChanged" },
 
     -- Feign Death, and nothing else on this event. It is the busiest thing this
     -- addon listens to — every cast by every unit in a raid — and it is
     -- registered because the meter reports a feign as a real death and there is
     -- no other edge that tells us it was one. See modules/Feign.lua.
-    self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED", "OnSpellSucceeded")
+    { "UNIT_SPELLCAST_SUCCEEDED", "OnSpellSucceeded" },
 
     -- System chat, for one line of it: the server's answer to a whisper aimed at
     -- a name nobody is playing. modules/Export.lua sends a chat dump one line at
     -- a time, so a mistyped whisper target is that error repeated once per line
     -- with no way to stop it — and the client is the last to know the name is
     -- bad, because only the server can say. See OnSystemMessage.
-    self:RegisterEvent("CHAT_MSG_SYSTEM", "OnSystemMessage")
+    { "CHAT_MSG_SYSTEM", "OnSystemMessage" },
 
     -- The meter itself.
-    self:RegisterEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED", "OnMeterUpdated")
-    self:RegisterEvent("DAMAGE_METER_COMBAT_SESSION_UPDATED",  "OnMeterSession")
-    self:RegisterEvent("DAMAGE_METER_RESET",                   "OnMeterReset")
+    { "DAMAGE_METER_CURRENT_SESSION_UPDATED", "OnMeterUpdated" },
+    { "DAMAGE_METER_COMBAT_SESSION_UPDATED",  "OnMeterSession" },
+    { "DAMAGE_METER_RESET",                   "OnMeterReset" },
+}
+
+function NS:OnEnable()
+    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-§7).
+    -- AceAddon runs this cascade at load whether or not the player has the addon
+    -- switched off, so without this the stand-down taken in OnInitialize would be
+    -- undone one function call later. It is NOT a gate on a handler: no handler
+    -- early-returns anywhere in this addon any more, and there is nothing
+    -- registered for one to be called from. core/LifecycleSetup.lua's `standUp`
+    -- calls this function again, and the latch is already up by then -- the hold
+    -- set is mutated before the callback runs -- so the rebuild reads `false`
+    -- here and registers from the settings AS THEY ARE NOW (performance-§6).
+    if NS.IsStoodDown and NS.IsStoodDown() then return end
+
+    -- Target stays `self`, so every entry is an AceEvent registration on the
+    -- addon object and the stand-down's UnregisterAllEvents takes it down. The
+    -- list is REPLACED rather than appended to, so a disable/enable cycle
+    -- reports what this enable refused and nothing older.
+    local rejected = {}
+    if NS.State then NS.State.rejectedEvents = rejected end
+    local register = NS.SafeRegisterEvent
+    for i = 1, #EVENTS do
+        register(self, EVENTS[i][1], EVENTS[i][2], rejected)
+    end
+    if #rejected > 0 and NS.Debug then
+        NS.Debug("Init", "rejected events: %s", table.concat(rejected, ", "))
+    end
 
     -- Seed the restriction mirror from the live state rather than assuming
     -- "inactive". A /reload taken mid-pull re-enables the addon inside an active
@@ -359,22 +367,11 @@ end
 --- honest answer when the comparison is refused is to record nothing: that
 --- counts the feign as a death, which is exactly the behavior that shipped
 --- before the filter existed and the safe direction to fail in.
---- CHAT_MSG_SYSTEM -> modules/Export.lua, and NOTHING onto the bus.
 ---
---- The second handler in this file that does not republish, and it is here for
---- the same reason OnSpellSucceeded is: the event is chatty, exactly one file
---- cares, and the filter is a string match that belongs with the thing holding
---- the queue it cancels. Export answers a bare `false` when no chat dump is in
---- flight, which is every system message but a handful.
----
---- @param message string|nil
-function NS:OnSystemMessage(_, message)
-    local E = NS.Export
-    if not (E and E.NoteSystemMessage) then return end
-    E.NoteSystemMessage(message)
-end
-
-function NS:OnSpellSucceeded(_, unit, _castGUID, spellID)
+--- The body is a file-local rather than the method itself so the handler below
+--- can bracket it with ONE entry and ONE exit: six early returns each carrying
+--- their own `Perf.Note` would be six places for the next edit to miss one.
+local function noteFeignCast(unit, spellID)
     if unit == nil or spellID == nil then return end
     if not (NS.Secrets and NS.Secrets.CanCompare(spellID)) then return end
     if spellID ~= FEIGN_DEATH_SPELL then return end
@@ -385,6 +382,47 @@ function NS:OnSpellSucceeded(_, unit, _castGUID, spellID)
     local getGUID = _G.UnitGUID
     if not getGUID then return end
     F.Note(getGUID(unit), unit)
+end
+
+--- CHAT_MSG_SYSTEM -> modules/Export.lua, and NOTHING onto the bus.
+---
+--- The second handler in this file that does not republish, and it is here for
+--- the same reason OnSpellSucceeded is: the event is chatty, exactly one file
+--- cares, and the filter is a string match that belongs with the thing holding
+--- the queue it cancels. Export answers a bare `false` when no chat dump is in
+--- flight, which is every system message but a handful.
+---
+--- @param message string|nil
+local function offerSystemMessage(message)
+    local E = NS.Export
+    if not (E and E.NoteSystemMessage) then return end
+    E.NoteSystemMessage(message)
+end
+
+-- BOTH HANDLERS ARE MEASURED, AND ONLY MEASURED (MultiMeters-R-17). Each event
+-- stays registered all session for one narrow use, and UNIT_SPELLCAST_SUCCEEDED
+-- is the busiest thing this addon listens to. Whether either registration is
+-- worth narrowing is a decision for a capture's numbers, so each carries its own
+-- top-level bucket — `spellEvent` and `systemEvent` in core/PerfSetup.lua — with
+-- the same call-time NS.Perf lookup and gated shape as the meterEvent brackets
+-- below. The bracket covers the whole body, early returns included: the early
+-- return is what nearly every cast in a raid takes, and it is the cost in question.
+
+--- CHAT_MSG_SYSTEM(message). The body and its reasons are offerSystemMessage above.
+function NS:OnSystemMessage(_, message)
+    local Perf = NS.Perf
+    local t0 = Perf and Perf.on and debugprofilestop()
+    offerSystemMessage(message)
+    if t0 then Perf.Note("systemEvent", debugprofilestop() - t0) end
+end
+
+--- UNIT_SPELLCAST_SUCCEEDED(unit, castGUID, spellID). The body and its reasons are
+--- noteFeignCast above.
+function NS:OnSpellSucceeded(_, unit, _castGUID, spellID)
+    local Perf = NS.Perf
+    local t0 = Perf and Perf.on and debugprofilestop()
+    noteFeignCast(unit, spellID)
+    if t0 then Perf.Note("spellEvent", debugprofilestop() - t0) end
 end
 
 --- ADDON_RESTRICTION_STATE_CHANGED(type, state).
@@ -456,11 +494,6 @@ end
 -- ladder runs on context transitions (zone-in, roster change, settings change),
 -- not per frame, so the lookup is not in a measured path.
 
---- Whether `window` should be on screen right now.
----
---- @param window table  a window config from the profile
---- @return boolean show, string reason  the reason names the step that decided,
----   which is what `/mm debug diag` prints and what a test asserts on.
 --- Is the player fighting?
 ---
 --- UnitAffectingCombat and never InCombatLockdown -- modules/Visibility.lua's rule,
@@ -496,6 +529,11 @@ local function masterVisibilityAllows()
     return true
 end
 
+--- Whether `window` should be on screen right now.
+---
+--- @param window table  a window config from the profile
+--- @return boolean show, string reason  the reason names the step that decided,
+---   which is what `/mm debug diag` prints and what a test asserts on.
 function NS.ShouldShow(window)
     -- STEP 0 — THE LATCH, and it now answers for BOTH reasons this addon can be
     -- inert: the player's master switch and a perf capture's suspended arm
@@ -519,7 +557,7 @@ function NS.ShouldShow(window)
 
     if type(window) ~= "table" then return false, "no window" end
 
-    -- STEP 2 — test mode. A window in test mode shows regardless of context: the
+    -- STEP 1 — test mode. A window in test mode shows regardless of context: the
     -- whole point is to lay a layout out wherever the player happens to be
     -- standing, which is rarely a place the visibility rules would allow.
     --
@@ -530,19 +568,19 @@ function NS.ShouldShow(window)
     -- and "hide this window" the same keystroke.
     if NS.State and NS.State.testMode then return true, "test" end
 
-    -- STEP 3 — General visibility, the ADDON-WIDE context answer, ahead of the
+    -- STEP 2 — General visibility, the ADDON-WIDE context answer, ahead of the
     -- per-window rules because it is the wider statement of the same thing.
     --
     -- BELOW TEST MODE, which is what keeps test mode usable: a player laying a
     -- window out at a target dummy under "Only in combat" would otherwise be
-    -- looking at nothing, and step 2's one-way force is the documented way that is
+    -- looking at nothing, and step 1's one-way force is the documented way that is
     -- avoided for every other rule too. `never` is still not something an explicit
     -- `/mm toggle` may overrule -- see modules/Window.lua's UNFORCEABLE, which
     -- names its reason.
     local allowed, why = masterVisibilityAllows()
     if not allowed then return false, why end
 
-    -- STEP 4 — context. modules/Visibility.lua owns the instance / solo /
+    -- STEP 3 — context. modules/Visibility.lua owns the instance / solo /
     -- vehicle rules; it is consulted rather than reimplemented, and its absence
     -- (a partial install) fails OPEN so a broken module cannot make the addon
     -- look uninstalled.

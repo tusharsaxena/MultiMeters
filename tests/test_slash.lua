@@ -256,9 +256,9 @@ test("Slash: NOTHING reads the raw `enabled` key any more", function()
     -- What makes the case above structural rather than a lucky observation: the STORED PATH is read
     -- in exactly one place, and it is not on any path that could reach the dispatcher.
     --
-    -- THE EXPECTED ANSWER IS NOW *NOTHING AT ALL*, and the move is the stand-down (slash-commands
-    -- \194\1677). `NS.ShouldShow` used to read `db.profile.enabled` directly as one rung of its
-    -- show ladder -- which was this addon's draw gate, and anti-pattern #85. The one reader left is
+    -- THE EXPECTED ANSWER IS NOW *NOTHING AT ALL*, and the move is the stand-down
+    -- (slash-commands-§7). `NS.ShouldShow` used to read `db.profile.enabled` directly as one rung
+    -- of its show ladder -- which was this addon's draw gate, and anti-pattern #85. The one reader left is
     -- core/LifecycleSetup.lua's NS.SyncEnabledHold, and it goes through NS.GetSetting, the read
     -- seam, exactly as the checkbox and `/mm get enabled` do. What this case forbids is any reader
     -- of the RAW profile key -- a place the addon can decide for itself what "off" means without
@@ -454,6 +454,24 @@ test("Slash: `list` groups by the row's PAGE, the same key the panel pages use",
     -- and the panel cannot disagree about where a row belongs.
     assertTrue(text:find("window.frame.width", 1, true) ~= nil, text)
     assertTrue(text:lower():find("frame") ~= nil, text)
+end)
+
+test("Slash: the column array lists and reads as how many columns are shown", function()
+    -- `window.columns` is a row since issue #52 (hidden, written whole), so `/mm list` and
+    -- `/mm get` reach it. A table has no formatter of the library's own, and its generic
+    -- renderer masks anything it cannot concatenate, so without the descriptor's `format` the
+    -- listing printed the secret sentinel for a value that is not secret at all.
+    -- red under: no `format` on the Slash descriptor.
+    local inst = T.load()
+    local shown = 0
+    for _, c in ipairs(inst.NS.GetSetting("window.columns")) do
+        if c.enabled then shown = shown + 1 end
+    end
+    local want = ("%d shown"):format(shown)
+    local got = joined(say(inst, "get window.columns"))
+    assertTrue(got:find("window.columns", 1, true) ~= nil and got:find(want, 1, true) ~= nil, got)
+    local listed = joined(say(inst, "list"))
+    assertTrue(listed:find("window.columns|r = |cFFFFFFFF" .. want, 1, true) ~= nil, listed)
 end)
 
 -- ---------------------------------------------------------------------------
@@ -733,6 +751,16 @@ test("Slash: `window new` and `window delete` act on the registry", function()
         "a window name is user data and keeps its case and its spacing")
     say(inst, "window delete Raid Frame")
     assertEqual(#NSi.Database.GetWindows(), 1)
+end)
+
+test("Slash: a bare `window delete` says nothing is selected, not a blank name", function()
+    -- red under: WINDOW_VERBS.delete passing doWindow's "" tail to Delete, and
+    -- unknownWindow formatting it into "No window named ''." (MM-06 review).
+    local inst = T.load()
+    local text = joined(say(inst, "window delete"))
+    assertTrue(text:find("No window is selected.", 1, true) ~= nil, text)
+    assertTrue(text:find("No window named", 1, true) == nil, text)
+    assertEqual(#inst.NS.Database.GetWindows(), 1, "and nothing was deleted")
 end)
 
 test("Slash: `window list` prints one line per window", function()
@@ -1177,10 +1205,10 @@ local LIVE_WHILE_DISABLED = {
 
 --- The rendered refusal, READ OUT OF THE LOCALE TABLE rather than retyped, so a reworded line
 --- moves the case with it instead of quietly making it match nothing.
--- slash-commands-\194\1677's ONE refusal line, collection-wide, built from the library's own format
+-- slash-commands-§7's ONE refusal line, collection-wide, built from the library's own format
 -- string rather than re-typed here: the wording is not this addon's to spell, and a literal in the
 -- suite would be a second copy free to drift from the one the dispatcher prints. The brand name is
--- the plain-text `Ka0s <Name>` the LDB object also wears (launcher-\194\1671).
+-- the plain-text `Ka0s <Name>` the LDB object also wears (launcher-§1).
 local REFUSAL = T.load().mocks.LibStub("LibKa0s-Slash-1.0").DISABLED_LINE_FORMAT
     :format(NS.L["Ka0s Multi Meters"], "/mm enable")
 

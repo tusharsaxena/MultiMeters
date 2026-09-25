@@ -24,7 +24,7 @@ local test, assertEqual, assertTrue = T.test, T.assertEqual, T.assertTrue
 
 local WINDOW_PREFIX = "window"
 local GLOBAL_PREFIX = "global"
-local MINIMAP_PATH  = "global.minimap.hide"
+local MINIMAP_PATH  = "global.minimap.shown"
 
 -- ---------------------------------------------------------------------------
 -- The independent comparison
@@ -79,7 +79,7 @@ local function defaultsRootFor(parts)
     if parts[1] == WINDOW_PREFIX then
         return NS.WINDOW_TEMPLATE, 2
     end
-    -- ONE ROW NAMES ITS STORE, and it is the only one: `global.minimap.hide` is LibDBIcon's
+    -- ONE ROW NAMES ITS STORE, and it is the only one: `global.minimap.shown` reads LibDBIcon's
     -- own table, which launcher-§3 fixes in the GLOBAL store so a profile switch does not
     -- move the player's buttons and options-ui-§12's profile reset does not un-hide one.
     if parts[1] == GLOBAL_PREFIX then
@@ -96,9 +96,15 @@ end
 --- row that differs was checked at all.
 local function shippedFor(row, parts)
     local root, first = defaultsRootFor(parts)
-    local shipped = readFrom(root, parts, first)
-    if row.path == MINIMAP_PATH and type(shipped) == "boolean" then return not shipped end
-    return shipped
+    if row.path == MINIMAP_PATH then
+        -- The PATH says `shown`; the STORED key is LibDBIcon's `hide`. Read the key that is
+        -- stored, never one named after the path: a `shown` key does not exist (anti-pattern #81).
+        local minimap = type(root) == "table" and root.minimap or nil
+        local shipped = type(minimap) == "table" and minimap.hide
+        if type(shipped) == "boolean" then return not shipped end
+        return nil
+    end
+    return readFrom(root, parts, first)
 end
 
 -- ---------------------------------------------------------------------------
@@ -143,9 +149,12 @@ test("Schema defaults: every non-session row resolves against defaults/Profile.l
 end)
 
 test("Schema defaults: every row's default equals the shipped default, compared deeply", function()
+    -- The column array's row is exempt BY NAME: it carries no `default` on purpose, because no
+    -- reset may reach it -- the Columns page's Defaults button writes the shipped array itself
+    -- (settings/Schema_Paths.lua, COLUMNS_ROW). NS.ValidateSchema holds it to resolution alone.
     local problems = {}
     for _, row in ipairs(NS.Schema) do
-        if not row.sessionOnly then
+        if not row.sessionOnly and row.path ~= "window.columns" then
             local parts = split(row.path)
             diff(row.default, shippedFor(row, parts), row.path, problems)
         end

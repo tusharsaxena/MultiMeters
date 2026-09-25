@@ -440,6 +440,7 @@ end)
 test("Evaluate records the last answer per window and counts the changes", function()
     local inst = T.load()
     local NS = inst.NS
+    NS.State.debug = true
     inst.mocks.setInstance("party")
     inst.mocks.setGroup{
         { guid = "Player-1-00000001", name = "A", class = "MAGE" },
@@ -479,6 +480,7 @@ test("Evaluate publishes NOTHING", function()
         bus:RegisterMessage(message, function() heard = heard + 1 end)
     end
 
+    NS.State.debug = true  -- the pass runs only under debug; make it run
     NS.Visibility:Evaluate()
     assertEqual(heard, 0)
 end)
@@ -486,6 +488,7 @@ end)
 test("Forget drops every remembered answer", function()
     local inst = T.load()
     local NS = inst.NS
+    NS.State.debug = true
     inst.mocks.setInstance("party")
     local cfg = NS.Database.GetWindows()[1]
 
@@ -498,8 +501,60 @@ test("Forget drops every remembered answer", function()
     assertNil(NS.Visibility.LastResult(cfg.id))
 end)
 
+--- Count the calls Visibility.ShouldShow takes while `fn` runs. Evaluate looks
+--- the predicate up on the module table at call time, so wrapping the field is
+--- enough to see every pass it makes.
+local function countLadderRuns(NS, fn)
+    local V = NS.Visibility
+    local real, calls = V.ShouldShow, 0
+    V.ShouldShow = function(...)
+        calls = calls + 1
+        return real(...)
+    end
+    fn()
+    V.ShouldShow = real
+    return calls
+end
+
+test("Evaluate runs no ladder on a ZONE edge while debug is off", function()
+    -- The pass publishes nothing and nothing outside debug reads what it
+    -- remembers, so outside debug running every window's rules on every context
+    -- edge is pure cost (MultiMeters-R-09). The window runs its own ladder off
+    -- the same messages; this module's copy is only for the debug line and
+    -- `/mm debug diag`.
+    -- red under: an Evaluate with no debug gate at its head.
+    local inst = T.load()
+    local NS = inst.NS
+    inst.mocks.setInstance("party")
+    NS.Visibility:OnEnable()
+    NS.State.debug = false
+
+    local calls = countLadderRuns(NS, function()
+        NS:SendMessage(NS.Constants.MSG.ZONE_CHANGED)
+    end)
+    assertEqual(calls, 0, "Evaluate ran the ladder with debug off")
+    assertNil(NS.Visibility.LastResult(NS.Database.GetWindows()[1].id))
+end)
+
+test("Evaluate runs the ladder on a ZONE edge under debug, and LastResult answers", function()
+    local inst = T.load()
+    local NS = inst.NS
+    inst.mocks.setInstance("party")
+    NS.Visibility:OnEnable()
+    NS.State.debug = true
+
+    local calls = countLadderRuns(NS, function()
+        NS:SendMessage(NS.Constants.MSG.ZONE_CHANGED)
+    end)
+    assertTrue(calls > 0, "the debug pass must run the ladder")
+    local show, reason = NS.Visibility.LastResult(NS.Database.GetWindows()[1].id)
+    assertTrue(show ~= nil, "LastResult must answer after a debug pass")
+    assertEqual(type(reason), "string")
+end)
+
 test("Evaluate copes with a database that is not up yet", function()
     local inst = T.load{ initDB = false, options = false }
+    inst.NS.State.debug = true  -- past the debug gate, onto the database guard
     assertEqual(inst.NS.Visibility:Evaluate(), 0)
 end)
 
@@ -652,6 +707,7 @@ end)
 test("A profile change forgets the old answers and re-evaluates", function()
     local inst = T.load()
     local NS = inst.NS
+    NS.State.debug = true
     inst.mocks.setInstance("party")
     local cfg = NS.Database.GetWindows()[1]
 
@@ -885,7 +941,7 @@ test("The master enable, test mode and perf suspend are NOT read here", function
     assertEqual(show, true, "a per-window predicate must not read the addon-wide flags")
     assertEqual(reason, "dungeon")
 
-    -- And test mode's one-way force belongs to step 2 as well: it can show a
+    -- And test mode's one-way force belongs to step 1 as well: it can show a
     -- window the rules would hide, but it does that in the ladder, above this
     -- function, and never by making this function lie about the rules.
     local rules = defaultRules()

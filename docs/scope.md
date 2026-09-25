@@ -58,8 +58,10 @@ Retail only · English only.
 - **Test mode** (the General page's Master controls box, or `/mm test`; combat ends it) and an
   unlock/drag cycle, so a window can be laid out anywhere between pulls.
 - **A launcher** — one LibDataBroker object drawn as a minimap button and in any broker display,
-  from `LibKa0s-Launcher-1.0`. Left-click toggles the windows (`launcher-§2` rung (a)), right-click
-  opens the settings. Its visibility is the Master-controls **Minimap button** row, stored in the
+  from `LibKa0s-Launcher-1.0`. Left-click opens the settings; right-click opens an options menu
+  with Enabled, Locked, Test mode and Show window, each running its slash verb (`launcher-§2`,
+  v2.67.0). Hovering it shows the library's status tooltip (version, Enabled, Locked, Test mode,
+  both click hints), disabled or not. Its visibility is the Master-controls **Minimap button** row, stored in the
   global store so a profile switch does not move it.
 - **A perf harness** (`/mm perf`) and an on-screen debug console (`/mm debug`), both LibKa0s's.
 

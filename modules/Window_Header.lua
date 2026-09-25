@@ -748,7 +748,7 @@ end
 
 --- Title, session line, and the column headers — the whole header strip, in the
 --- order it is stacked on screen.
---- Show or hide everything below the title bar, per `frame.minimised`.
+--- Show or hide everything below the title bar, per `frame.minimized`.
 ---
 --- APPLIED FROM CONFIG AT THE TAIL OF ApplyConfig, not from the click. Any
 --- CONFIG_CHANGED re-runs ApplyConfig, which unconditionally restores the body's
@@ -764,11 +764,11 @@ end
 --- Four things hang below the title, not one: the body carries the rows, but the
 --- column-header strip, the notice and the grip are parented to the FRAME and
 --- would go on drawing over a collapsed window.
-function WindowProto:ApplyMinimised()
+function WindowProto:ApplyMinimized()
     local frameCfg = self.config.frame or {}
     -- `and true or false`, never `~= false`: a profile stored before this
     -- existed has no key at all, and `~= false` would collapse every one of them.
-    local down = frameCfg.minimised and true or false
+    local down = frameCfg.minimized and true or false
 
     -- THE WINDOW ACTUALLY SHRINKS. Hiding the children alone left a full-height
     -- empty frame sitting there, which is not what "collapse to the title bar"

@@ -124,9 +124,13 @@ local CONTROLS = {
     -- by desaturating it, but the ASCII rung has no such trick -- so a control
     -- whose icon IS its state needs a second character or the bottom rung draws
     -- the same thing both ways and the control stops meaning anything.
-    { key = "minimise", setting = "showMinimise",  art = "minimise", state = true,
+    -- `art` keeps the British spelling on purpose: it is LibKa0s-Media-1.0's
+    -- catalog key (libs/LibKa0s/media/icons/minimise.tga), a library field
+    -- name this repository does not own (localization-§5, waived per file and
+    -- word in tests/prose_waivers.lua). The control and its setting are ours.
+    { key = "minimize", setting = "showMinimize",  art = "minimise", state = true,
       atlas = { "common-icon-forwardarrow" },   ascii = "-", asciiAlt = "+" },
-    -- Two characters, for the reason minimise has two: the atlas rung tells the
+    -- Two characters, for the reason minimize has two: the atlas rung tells the
     -- states apart by desaturating, and the ASCII rung has no such trick.
     { key = "lock",     setting = "showLock",      art = "lock",     state = true,
       atlas = { "Garr_LockedBuilding" },        ascii = "#", asciiAlt = "-" },
@@ -282,9 +286,9 @@ local function artFor(control, frameCfg)
         return locked and "lock" or "unlock", not locked,
                (locked and control.ascii or control.asciiAlt)
     end
-    if control.key == "minimise" then
-        local down = frameCfg.minimised and true or false
-        return (down and "expand" or "minimise"), false,
+    if control.key == "minimize" then
+        local down = frameCfg.minimized and true or false
+        return (down and "expand" or control.art), false,
                (down and control.asciiAlt or control.ascii)
     end
     return control.art, false, control.ascii
@@ -299,7 +303,7 @@ end
 --- `window.<key>` rather than `windows[n].frame.<key>`: NS.SetByPath resolves a
 --- `window.` prefix against whichever window the panel has selected, and the
 --- window a control was clicked on is by definition the one in front of the
---- player. Resolved at CALL time because settings/ loads ahead of modules/.
+--- player. Resolved at CALL time because settings/ loads after modules/.
 local function write(window, key, value)
     local set = NS.SetByPath
     if not set then return end
@@ -307,7 +311,7 @@ local function write(window, key, value)
     -- POINT THE SEAM AT THIS WINDOW FIRST. `window.`-prefixed paths resolve
     -- against ONE integer -- the active window id -- and NS.SetByPath takes only
     -- (path, value): a third argument is silently ignored. Without this line a
-    -- click on window 2's minimise wrote to whichever window the settings panel
+    -- click on window 2's minimize wrote to whichever window the settings panel
     -- was last left on, which is a control doing something to a window the
     -- player is not looking at.
     --
@@ -334,13 +338,13 @@ local ACTIONS = {
         window:Hide("closed")
     end,
 
-    minimise = function(window, frameCfg)
+    minimize = function(window, frameCfg)
         -- THROUGH THE WRITE SEAM, never by poking the config table. NS.SetByPath
         -- is what publishes CONFIG_CHANGED, and it is what the settings panel's
         -- own checkbox writes through -- so a button that wrote directly would
         -- leave the panel showing the opposite of what the window is doing until
         -- something else happened to refresh it.
-        write(window, "minimised", not (frameCfg.minimised and true or false))
+        write(window, "minimized", not (frameCfg.minimized and true or false))
     end,
 
     lock = function(window, frameCfg)
@@ -369,7 +373,7 @@ local ACTIONS = {
         -- second copy of that sentence is a second place for it to go stale,
         -- and the more dangerous the warning the worse that is.
         -- Through settings/General.lua, which owns the dialog and centers it on
-        -- the screen. Resolved at call time because settings/ loads ahead of
+        -- the screen. Resolved at call time because settings/ loads after
         -- modules/; the bare StaticPopup_Show behind it is the degraded path,
         -- where an uncenterd confirmation still beats no confirmation.
         if NS.ShowResetMeterData then

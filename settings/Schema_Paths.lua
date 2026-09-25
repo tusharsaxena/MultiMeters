@@ -1,14 +1,17 @@
 -- settings/Schema_Paths.lua
 --
--- THE PATH MACHINERY behind settings/Schema.lua, and the seams every reader and
--- writer of a setting lands on: path resolution, window resolution, the one
--- minimap carve-out, the index, the read seam, the write seam, the columns carve-out
--- and the page and validation surfaces.
+-- THE SETTINGS RUNTIME'S DESCRIPTOR, and the seams every reader and writer of a
+-- setting lands on. The machinery itself -- path splitting and walking, the row
+-- index, the single write seam, the all-or-nothing batch and the bulk bracket --
+-- is LibKa0s-Schema-1.0's (minor 2, LibKa0s v1.56.0; issue #52). What stays here
+-- is what is genuinely this addon's: where a path lives (the window-relative
+-- model below), what a write announces, the one row whose value is an array, the
+-- page and validation surfaces, and the stub a library-less install runs on.
 --
 -- A SEPARATE FILE because settings/Schema.lua was 3080 lines against layout-§1's
 -- 1500-line cap, and this is the seam issue #27 names: nothing in this file names
--- a single setting. The array is the part that grows; this is the part that is
--- read when something is wrong.
+-- a single setting but the two carve-outs. The array is the part that grows; this
+-- is the part that is read when something is wrong.
 --
 -- THE WINDOW-RELATIVE PATH MODEL — the one thing that is not standard-issue
 -- ---------------------------------------------------------------------------
@@ -20,13 +23,13 @@
 -- the panel both read.
 --
 -- Resolution (design §8): a window row's path is RELATIVE to a window and is
--- spelled `window.frame.width`. NS.GetSetting and NS.SetByPath resolve the
--- `window.` prefix against the session's ACTIVE window — NS.State.activeWindowId,
--- which the panel's window picker moves and which defaults to the first window in
--- the registry. Global rows keep absolute paths (`enabled`, `minimap.hide`),
--- resolved against db.profile -- except `global.minimap.hide`, which names its store because it
--- is LibDBIcon's table and launcher-§3 puts that one in the global store (see "The minimap
--- carve-out").
+-- spelled `window.frame.width`. The runtime's `resolveRoot` resolves the
+-- `window.` prefix against the window id it is handed, or, with none, against the
+-- session's ACTIVE window — NS.State.activeWindowId, which the panel's window
+-- picker moves and which defaults to the first window in the registry. Global
+-- rows keep absolute paths (`enabled`, `master.scale`), resolved against
+-- db.profile -- except `global.minimap.shown`, whose row stores itself (see "The
+-- minimap row").
 --
 -- What that buys: ONE schema, ONE write seam, and `/mm set window.frame.width 300`
 -- means "the window I am editing" on the CLI exactly as it does in the panel. The
@@ -34,41 +37,35 @@
 -- by rewriting every path.
 --
 -- ---------------------------------------------------------------------------
--- WHY THE COLUMNS ARE NOT ROWS
+-- THE COLUMNS ROW
 -- ---------------------------------------------------------------------------
 --
--- `window.columns` is an ORDERED ARRAY of `{ stat, width, showBar }` whose length
--- is the user's, not the schema's. A path model addresses named leaves; it has no
--- vocabulary for "insert a column before index 2". So the columns subtree is a
--- documented CARVE-OUT rather than a row: `/mm get window.columns` reads (the
--- generic resolver reaches it like any other node), and a WRITE to
--- `window.columns` is accepted WHOLE-ARRAY — settings/Columns.lua builds the array
--- it wants and hands the seam all of it, which is the only granularity a path can
--- honestly express.
---
--- The seam still owns the write. It structurally validates the array (every entry
--- names a stat this build has, exactly once, at a width the Columns page's own
--- slider can produce, with a real boolean show-bar), rebuilds it entry by entry so
--- nothing downstream shares a table with the caller, and then takes the SAME debug
--- line, CONFIG_CHANGED message and panel re-sync every scalar write takes. A
--- direct table write in the page would be a second seam that looks identical and
--- announces nothing.
+-- `window.columns` is an ORDERED ARRAY of `{ stat, enabled }` whose order is the
+-- user's, not the schema's. A path model addresses named leaves; it has no
+-- vocabulary for "move this column above that one". So the array is ONE hidden
+-- row, written WHOLE: settings/Columns.lua builds the array it wants and hands
+-- the seam all of it, which is the only granularity a path can honestly express.
+-- The row's `validate` refuses what is not a table and its `normalize` (Schema
+-- minor 2) repairs the rest into the catalog; the library then stores a copy,
+-- logs, reacts and announces exactly as for any other row. `hidden` keeps it off
+-- the panel, whose Columns page draws the array its own way.
 --
 -- What is still refused is a write to a path INSIDE the array —
--- `window.columns.2.width`. Addressing one column by ordinal is exactly the
--- vocabulary a path model does not have: the ordinal moves the moment a column is
--- added, removed or reordered, so a stored reference to it is wrong by the next
--- edit.
+-- `window.columns.2.enabled`. No row declares that path, so the library refuses
+-- it; NS.SetByPath says why in words that point at the Columns page. Addressing
+-- one column by ordinal is exactly the vocabulary a path model does not have: the
+-- ordinal moves the moment a column is reordered, so a stored reference to it is
+-- wrong by the next edit.
 --
--- TOC POSITION: LAST of the three Schema files, and LOAD-BEARING: the index is
--- built from NS.Schema at FILE SCOPE, so there has to be an array to index --
--- settings/Schema_Compose.lua then settings/Schema.lua must both have run. Still
--- ahead of settings/Slash.lua and settings/OptionsSetup.lua, both of which point
--- their seams at NS.SetByPath / NS.GetSetting / NS.FindSchemaRow /
--- NS.ApplyDefault at load, and ahead of every settings/<page>.lua.
+-- TOC POSITION: LAST of the three Schema files, and LOAD-BEARING: the runtime's
+-- index is built from NS.Schema at FILE SCOPE, so there has to be an array to
+-- index -- settings/Schema_Compose.lua then settings/Schema.lua must both have
+-- run. Still ahead of settings/Slash.lua and settings/OptionsSetup.lua, both of
+-- which point their seams at NS.SetByPath / NS.GetSetting / NS.FindSchemaRow /
+-- NS.ApplyDefault, and ahead of every settings/<page>.lua.
 --
 -- Nothing here is captured across the load boundary: NS.Helpers, NS.db,
--- NS.WindowManager and NS.Visibility are all resolved at CALL time, because this
+-- NS.WindowManager and NS.Database are all resolved at CALL time, because this
 -- file loads before all four.
 
 local _, NS = ...
@@ -77,64 +74,201 @@ local L     = NS.L
 local Const = NS.Constants
 local MSG   = Const.MSG
 
--- ---------------------------------------------------------------------------
--- Path plumbing
--- ---------------------------------------------------------------------------
-
--- Split results are memoized because the set of paths is CLOSED and small — it is
--- the schema's own key set plus whatever the CLI is handed — while a panel drag
--- re-resolves one path many times a second. The cache is keyed on the path
--- string, so it can never grow beyond the paths that were actually asked for.
-local splitCache = {}
-
 -- Read-only stand-in for an absent tree, so ValidateSchema indexes one shape rather than
 -- branching on nil at every step.
 local EMPTY_TREE = {}
 
---- "window.frame.width" -> { "window", "frame", "width" }, memoized.
---- @param path string
---- @return table  array of segments (shared; callers must not mutate it)
-local function splitPath(path)
-    local parts = splitCache[path]
-    if parts then return parts end
-    parts = {}
-    for segment in tostring(path):gmatch("[^%.]+") do
-        parts[#parts + 1] = segment
+-- ---------------------------------------------------------------------------
+-- The runtime's library, or the stub that stands in for it
+-- ---------------------------------------------------------------------------
+
+local SchemaLib = LibStub and LibStub("LibKa0s-Schema-1.0", true)
+
+if not SchemaLib then
+    -- Degraded: the payload is missing. THIS STUB IS A DELIBERATE, DOCUMENTED DUPLICATION -- the
+    -- runtime-completing stub LibKa0s docs/api/Schema/version-2-docs.md prescribes in "The
+    -- degradation stub", modeled on BankLedger's (settings/Schema.lua) and trimmed to what this
+    -- addon calls. The settings are written by more than the panel and the CLI: the header
+    -- controls, the window placement, the copy-from, the lock sweep and the degraded Reset All in
+    -- settings/OptionsSetup.lua all go through this seam, and slash-commands-§1 says the host verbs
+    -- keep working without the library. So reads, writes, `validate`, `normalize`, the row's
+    -- `onChange`, the announce, the batch, the sweep veto and `writeThrough` are real here.
+    --
+    -- LOG-SILENT, on purpose: no [Set] line and no bracket tally. The degraded DebugLog stub
+    -- (core/DebugLogSetup.lua) discards every line anyway.
+    --
+    -- TRIMMED, each with no caller in this addon: STRINGS (the refusals are the descriptor's own
+    -- words), AllRows (both descriptors read NS.Schema), Reindex (nothing splices by hand),
+    -- Default, BulkAdd, InBulk, CountOffDefault, ResetCounted and ConsumeResetCount (the profile
+    -- reset logs its own line without a count; core/Database.lua), and Validate (ValidateSchema
+    -- below is this addon's own check). tests/test_surface_parity.lua names each one.
+    local stub = {}
+
+    local function copy(v)
+        if type(v) ~= "table" then return v end
+        local out = {}
+        for k, x in pairs(v) do out[k] = copy(x) end
+        return out
     end
-    splitCache[path] = parts
-    return parts
+    function stub.SplitPath(path)
+        local parts = {}
+        if path ~= nil then
+            for seg in tostring(path):gmatch("[^%.]+") do parts[#parts + 1] = seg end
+        end
+        return parts
+    end
+    local function partsOf(p) return type(p) == "table" and p or stub.SplitPath(p) end
+    function stub.Read(root, p, first)
+        local parts, node = partsOf(p), root
+        first = first or 1
+        if type(root) ~= "table" or #parts < first then return nil end
+        for i = first, #parts do
+            if type(node) ~= "table" then return nil end
+            node = node[parts[i]]
+        end
+        return node
+    end
+    function stub.Write(root, p, value, first)
+        local parts, node = partsOf(p), root
+        first = first or 1
+        if type(root) ~= "table" or #parts < first then return end
+        for i = first, #parts - 1 do
+            if type(node[parts[i]]) ~= "table" then node[parts[i]] = {} end
+            node = node[parts[i]]
+        end
+        node[parts[#parts]] = value
+    end
+    function stub.SameValue(a, b)
+        if a == b then return true end
+        if type(a) ~= "table" or type(b) ~= "table" then return false end
+        for k, v in pairs(a) do if not stub.SameValue(v, b[k]) then return false end end
+        for k in pairs(b) do if a[k] == nil then return false end end
+        return true
+    end
+
+    function stub.New(_, d)   -- colon-called, as the library's New is
+        local R, depth, rows = {}, 0, d.rows
+        local function words(key, path) return (d.L[key]):format(tostring(path)) end
+        -- writeThrough, as the library reads it: once, here, one synthetic row per listed path,
+        -- handed out by identity. A listed path with no row is stored raw (no validate, no
+        -- normalize, no onChange) and announced with that row; every other row-less path is
+        -- still refused, and FindRow never answers one.
+        local through = {}
+        for _, p in ipairs(type(d.writeThrough) == "table" and d.writeThrough or {}) do
+            if type(p) == "string" and p ~= "" then through[p] = { path = p, writeThrough = true } end
+        end
+
+        function R.FindRow(path)
+            if type(path) ~= "string" then return nil end
+            for _, row in ipairs(rows) do
+                if type(row) == "table" and row.path == path then return row end
+            end
+        end
+        function R.AddRows(list, at)
+            if type(list) ~= "table" then return 0 end
+            at = type(at) == "number" and math.floor(at) or #rows + 1
+            if at > #rows + 1 then at = #rows + 1 elseif at < 1 then at = 1 end
+            for i, row in ipairs(list) do table.insert(rows, at + i - 1, row) end
+            return #list
+        end
+        function R.Get(path, id)
+            local row = R.FindRow(path)
+            if row and type(row.get) == "function" then return row.get(id) end
+            if type(path) ~= "string" or (row and row.sessionOnly) then return nil end
+            local parts = stub.SplitPath(path)
+            local root, first = d.resolveRoot(parts, id)
+            return stub.Read(root, parts, first)
+        end
+        -- The value half of the seam: validate, then normalize (its answer is what is stored;
+        -- nil refuses). Answers the value to store, or nil and the refusal.
+        local function checked(row, path, value, rid)
+            if type(row.validate) == "function" then
+                local ok, why = row.validate(value, rid)
+                if not ok then return nil, words("INVALID", path), why end
+            end
+            if type(row.normalize) ~= "function" then return value end
+            local out, why = row.normalize(value, rid)
+            if out == nil then return nil, words("INVALID", path), why end
+            return out
+        end
+        -- Everything the seam checks before it stores, shared by Set and SetMany: a plan, or
+        -- nil and the refusal. A missing root is refused after a bad value, as the library does.
+        local function prepare(path, value, id)
+            local row = R.FindRow(path) or (type(path) == "string" and through[path] or nil)
+            if not row then return nil, words("NOT_FOUND", path) end
+            local stored = type(row.set) ~= "function" and not row.sessionOnly
+            local parts, root, first, rid, reason = nil, nil, nil, id, nil
+            if stored then
+                parts = stub.SplitPath(path)
+                root, first, rid = d.resolveRoot(parts, id)
+                if type(root) ~= "table" then reason, rid = first, id end
+                if rid == nil then rid = id end
+            end
+            local v, err, why = checked(row, path, value, rid)
+            if err then return nil, err, why end
+            if stored and type(root) ~= "table" then return nil, reason or words("NO_ROOT", path) end
+            return { row = row, path = path, value = v, rid = rid, parts = parts, root = root, first = first }
+        end
+        local function store(p)
+            if type(p.row.set) == "function" then
+                p.row.set(p.value)
+            elseif p.root then
+                stub.Write(p.root, p.parts, copy(p.value), p.first)
+            end
+        end
+        local function react(p)
+            if type(p.row.onChange) == "function" then p.row.onChange(p.value, p.rid) end
+        end
+        -- The seam's order without its log and tally: refuse, store, react, announce.
+        function R.Set(path, value, id)
+            local p, err, why = prepare(path, value, id)
+            if not p then return false, err, why end
+            store(p)
+            react(p)
+            d.announce(p.row, p.path, p.value, p.rid)
+            return true
+        end
+        local function commit(plans)
+            for _, p in ipairs(plans) do store(p) end
+            for _, p in ipairs(plans) do react(p) end
+        end
+        -- All or nothing: every entry prepared before any is stored; then every store, every
+        -- onChange, and one announceBatch. `opts.act` holds the depth the sweep veto reads.
+        function R.SetMany(entries, opts)
+            opts = type(opts) == "table" and opts or {}
+            local plans = {}
+            for i, e in ipairs(type(entries) == "table" and entries or {}) do
+                local p, err, why = prepare(type(e) == "table" and e.path or nil,
+                    type(e) == "table" and e.value or nil, opts.instanceId)
+                if not p then return false, err, why, i end
+                plans[i] = p
+            end
+            if opts.act ~= nil then R.BulkRun(opts.act, opts.scope, function() commit(plans) end)
+            else commit(plans) end
+            if plans[1] then d.announceBatch(plans, plans[1].rid) end
+            return true
+        end
+        function R.ApplyDefault(row, id)
+            if type(row) ~= "table" or type(row.path) ~= "string" or row.default == nil then return false end
+            if depth > 0 and d.resetExempt[row.path] then return false end
+            return R.Set(row.path, copy(row.default), id)
+        end
+        -- The bracket keeps its depth, because the sweep veto above reads it; it counts nothing.
+        function R.BulkBegin() depth = depth + 1 end
+        function R.BulkEnd() if depth > 0 then depth = depth - 1 end end
+        function R.BulkRun(_, _, walk)
+            R.BulkBegin()
+            local ok, err = pcall(walk, { profileReset = false })
+            R.BulkEnd()
+            if not ok then error(err, 0) end
+        end
+        return R
+    end
+    SchemaLib = stub
 end
 
---- Walk `parts` from `first` and return the leaf, or nil if any step is missing.
-local function readFrom(root, parts, first)
-    local node = root
-    for i = first, #parts do
-        if type(node) ~= "table" then return nil end
-        node = node[parts[i]]
-    end
-    return node
-end
-
---- Walk `parts` from `first`, creating missing tables, and write the leaf.
-local function writeInto(root, parts, first, value)
-    local node = root
-    for i = first, #parts - 1 do
-        local key = parts[i]
-        if type(node[key]) ~= "table" then node[key] = {} end
-        node = node[key]
-    end
-    node[parts[#parts]] = value
-end
-
---- Recursive copy. A table default (every color) must never be handed out by
---- reference: two profiles reset to the same default would then share one table,
---- and editing one window's bar color would silently edit the other's.
-local function copy(v)
-    if type(v) ~= "table" then return v end
-    local out = {}
-    for k, x in pairs(v) do out[k] = copy(x) end
-    return out
-end
+-- Published for introspection only: tests/test_surface_parity.lua holds the stub to the live major.
+NS.__schemaLib = SchemaLib
 
 -- ---------------------------------------------------------------------------
 -- Window resolution
@@ -166,8 +300,9 @@ local function activeWindow()
     return nil, nil
 end
 
---- Where a path lives: its root table, the index of its first segment inside that
---- root, and the id of the window it landed in (nil for a global row).
+--- The runtime's `resolveRoot`: where a path lives, as its root table, the index
+--- of its first segment inside that root, and the id of the window it landed in
+--- (nil for a global row) -- or nil and the refusal when there is nowhere.
 ---
 --- An EXPLICIT window id is taken literally. It is never swapped for the active
 --- window when it names nothing: a writer that asked for window 7 and quietly got
@@ -175,168 +310,83 @@ end
 ---
 --- @param parts table  the split path
 --- @param windowId number|nil  the window a `window.*` path addresses; nil means the active one
---- @return table|nil root, number first, number|nil windowId
+--- @return table|nil root, number|string first_or_reason, number|nil windowId
 local function resolveRoot(parts, windowId)
+    local root, first, id
     if parts[1] == WINDOW_PREFIX then
+        first = 2
         if windowId ~= nil then
-            local w = NS.Database and NS.Database.FindWindow(windowId)
-            return w, 2, w and windowId or nil
+            root = NS.Database and NS.Database.FindWindow(windowId)
+            id = root and windowId or nil
+        else
+            root, id = activeWindow()
         end
-        local w, id = activeWindow()
-        return w, 2, id
+    else
+        local db = NS.db
+        root, first = db and db.profile or nil, 1
     end
-    local db = NS.db
-    return db and db.profile or nil, 1, nil
+    if not root then return nil, L["No window is selected."] end
+    return root, first, id
 end
 
 -- ---------------------------------------------------------------------------
--- The minimap carve-out: LibDBIcon's own table, in the GLOBAL store
+-- The minimap row
 -- ---------------------------------------------------------------------------
 --
--- ONE ROW IS NEITHER PROFILE-SCOPED NOR STORED IN ITS OWN SENSE, and it is the one the
--- `MasterControls` composer emits when it is handed `minimapPath` (settings/Schema_Compose.lua).
--- Two things about it are the library's rather than this addon's, and both land here rather than
--- anywhere a caller can see:
+-- ONE ROW IS NEITHER PROFILE-SCOPED NOR STORED IN ITS OWN SENSE: the one the `MasterControls`
+-- composer emits for `minimapPath`. launcher-§3 fixes LibDBIcon's `minimap` table at
+-- `db.global.minimap`, and LibDBIcon's key says HIDDEN while the checkbox says SHOWN. Both facts
+-- live in the row's own get/set pair, declared with the row in settings/Schema_Compose.lua: the
+-- runtime hands a row carrying `set` its value and stores nothing itself, so `/mm set`, the
+-- checkbox and `/mm reset` all reach the inversion (and the button's immediate show or hide) by
+-- one route.
 --
---   THE SCOPE. `launcher-§3` fixes LibDBIcon's `minimap` table at `db.global.minimap` -- a button
---   belongs to the installation, so a profile switch must not move it. Every other row in this
---   schema resolves against `db.profile`, so the path is spelled with its store in it and resolved
---   here instead of by resolveRoot. The scope is NOT what keeps a reset off the row: that is a
---   property of the setting, and its one exemption is in settings/OptionsSetup.lua.
---
---   THE SENSE. The row's boolean says SHOWN; LibDBIcon's key says HIDDEN. A checkbox labeled
---   with a negative is the classic settings-panel double-negative everyone mis-clicks once, and
---   the alternative -- a second `minimap.show` key beside the library's own -- would be two
---   records of one state, free to disagree the first time the player used LibDBIcon's own menu
---   (anti-pattern #81). So the row inverts, in exactly two places: the read seam below and
---   putWrite.
---
--- THE `set` ALSO MOVES THE BUTTON. NS.Launcher:SetShown is called from putWrite, with every other
--- write, so the button follows the checkbox immediately rather than at the next reload -- and so
--- `/mm set global.minimap.hide false` and the checkbox do the identical thing.
---
--- This replaced a generic `row.invert` flag that exactly one row ever carried. A two-line concept
--- with one user reads as a facility; named for what it is, the next reader knows there is no
--- second inverted row to find.
+-- THE PATH READS IN THE ROW'S OWN SENSE, `global.minimap.shown` (launcher-§3, standard v2.65.0):
+-- the CLI name says what the checkbox says, and `/mm set global.minimap.shown false` hides the
+-- button. `global.` is kept so the CLI name says where it lives. The PATH IS NOT A STORAGE KEY:
+-- what is stored is still LibDBIcon's own `db.global.minimap.hide`, so a player's choice saved
+-- under the old `global.minimap.hide` path carries over with no SavedVariables step, and no
+-- `shown` key is ever written (a second record of one state is anti-pattern #81). The old path
+-- is simply an unknown setting now.
 
-local MINIMAP_PATH = "global.minimap.hide"
+local MINIMAP_PATH = "global.minimap.shown"
 
---- PUBLISHED, because one more file has to name this row. settings/OptionsSetup.lua exempts
+--- PUBLISHED, because more files have to name this row. settings/OptionsSetup.lua exempts
 --- exactly this path from the settings panel's two resets (launcher-§3's survival property), and
---- it loads after this file, so it reads the constant instead of spelling the string a third time.
---- Nothing else about the row becomes public: the store and the inversion stay behind the seams.
+--- it loads after this file, so it reads the constant instead of spelling the string again.
 NS.MINIMAP_PATH = MINIMAP_PATH
 
---- LibDBIcon's own table, or nil before NS:InitDB() has run.
---- @return table|nil
-local function minimapTable()
-    local db = NS.db
-    return db and db.global and db.global.minimap or nil
-end
-
 -- ---------------------------------------------------------------------------
--- The index
+-- The enabled path, written through
 -- ---------------------------------------------------------------------------
 --
--- path -> row, so a lookup is a hash hit rather than a walk of ~75 rows. Rebuilt
--- rather than appended to, so it cannot fall out of step with the array after a
--- late registration.
-
-local index = {}
-
-local function reindex()
-    for k in pairs(index) do index[k] = nil end
-    for _, row in ipairs(NS.Schema) do
-        index[row.path] = row
-    end
-end
-
-reindex()
-
---- The row for `path`, or nil.
---- @param path string
---- @return table|nil
-function NS.FindSchemaRow(path)
-    if type(path) ~= "string" then return nil end
-    return index[path]
-end
-
---- Append rows declared elsewhere (a page file with a row whose `values` cannot be
---- expressed until that page's helpers exist) and rebuild the index.
----
---- The append seam exists so such a row still lands in THIS array — the one the
---- CLI, the panel and the reset all read — rather than in a second list one of the
---- three would inevitably miss.
----
---- @param rows table  array of rows
---- TEST-ONLY TODAY: no in-addon caller; the seam is exercised by
---- tests/test_schema_defaults.lua:244,:293 and tests/test_options_panel.lua:776.
-function NS.RegisterSchemaRows(rows)
-    if type(rows) ~= "table" then return end
-    for _, row in ipairs(rows) do
-        NS.Schema[#NS.Schema + 1] = row
-    end
-    reindex()
-end
+-- `enabled` is a composed Master-controls row: LibKa0s-Options-1.0's MasterControls declares
+-- it (settings/Schema_Compose.lua), so a load without that major has no row, and options-ui-§1
+-- forbids a host copy of the composer. `/mm enable` and `/mm disable` still have to work there.
+-- Route (a): the descriptor below names the path in `writeThrough`, as data, and the seam (the
+-- library or the stub above) stores it raw when no row claims it. On a full load the composed
+-- row claims it and nothing here applies. It is the ONLY composed row a host verb writes:
+-- `/mm lock` writes each window's hand-written `window.frame.locked`, and `/mm test` goes
+-- through modules/WindowManager.lua.
+local ENABLED_PATH = "enabled"
 
 -- ---------------------------------------------------------------------------
--- The read seam
+-- The announce
 -- ---------------------------------------------------------------------------
 
---- The current value of `path`, in DISPLAY terms (inverted rows are un-inverted
---- here, which is why the panel and the CLI both agree with the label).
----
---- Also resolves paths that are not rows — `window.columns`, or a sub-table like
---- `window.frame` — because `/mm get` is a debugging tool as much as a settings
---- reader and refusing to show a node that plainly exists helps nobody.
----
---- `windowId` reads a named window instead of the active one, exactly as it
---- writes one in NS.SetByPath; an id that names no window reads nil.
----
---- @param path string
---- @param windowId number|nil
---- @return any
-function NS.GetSetting(path, windowId)
-    if type(path) ~= "string" then return nil end
-
-    if path == MINIMAP_PATH then
-        -- SHOWN is the answer, because that is what the row says. `not nil` is `true`, which is
-        -- also the right answer before the store exists: the button ships shown.
-        local t = minimapTable()
-        return not (t and t.hide)
+--- The window a write moved: its resolved id for a `window.` path, nil for any
+--- other. A global row is handed the caller's id by the runtime when one was
+--- passed; no window moved, so none is announced.
+local function windowOf(path, rid)
+    if type(path) == "string" and path:sub(1, #WINDOW_PREFIX + 1) == WINDOW_PREFIX .. "." then
+        return rid
     end
-
-    local row = index[path]
-    if row and row.sessionOnly then
-        -- Returned rather than `and`-ed through: a session row answering `false` is
-        -- a real answer, and `row.get() or nil` would turn every "off" into "no
-        -- such setting" — which reads to the CLI as a missing row.
-        if row.get then return row.get() end
-        return nil
-    end
-
-    local parts = splitPath(path)
-    local root, first = resolveRoot(parts, windowId)
-    if not root then return nil end
-
-    return readFrom(root, parts, first)
+    return nil
 end
 
--- ---------------------------------------------------------------------------
--- The write seam
--- ---------------------------------------------------------------------------
-
-local COLUMNS_PREFIX = WINDOW_PREFIX .. ".columns"
-
---- The tail EVERY write shares: announce once, re-sync the panel. The log line
---- is the caller's, because a single write and a batch log differently.
+--- The tail EVERY write shares: announce once, re-sync the panel.
 ---
---- Factored out because the columns carve-out below is a second writer into the
---- same config tree, and a carve-out that skipped the announcement would be a
---- setting that changes without any window hearing about it — which is precisely
---- the failure the single-seam rule exists to prevent.
----
---- @param page string      the CONFIG_CHANGED section
+--- @param page string|nil  the CONFIG_CHANGED section
 --- @param windowId number|nil
 local function announceWrite(page, windowId)
     -- The ONE sender of CONFIG_CHANGED (architecture-§4). `section` is the row's
@@ -355,26 +405,55 @@ local function announceWrite(page, windowId)
     if H and H.RefreshScalars then H.RefreshScalars() end
 end
 
+--- The runtime's `announce`, after a single write's onChange.
+---
+--- A WRITTEN-THROUGH `enabled` IS THE ONE WRITE THAT REACTS HERE. On a load without
+--- LibKa0s-Options-1.0 (the library absent, or a partial payload) the composed
+--- `enabled` row does not exist, so its onChange -- the latch -- is not there either;
+--- the seam stores the path raw through `writeThrough` (options-ui-§1 route (a)) and
+--- hands this function a synthetic row flagged `writeThrough`. The latch is pulled
+--- here instead, in the same place the row's onChange would have run: after the
+--- store, before the message.
+local function announceOne(row, path, _, rid)
+    if row.writeThrough and path == ENABLED_PATH and NS.SyncEnabledHold then
+        NS.SyncEnabledHold()
+    end
+    announceWrite(row.page, windowOf(path, rid))
+end
+
+--- The runtime's `announceBatch`: a batch announces ONCE, naming the page when
+--- every row shares one and none when they do not, because a subscriber skipping
+--- a section must not skip part of a change. The same for the window.
+local function announceMany(writes)
+    local page, id = writes[1].row.page, windowOf(writes[1].path, writes[1].rid)
+    local latch = false
+    for _, w in ipairs(writes) do
+        latch = latch or (w.row.writeThrough and w.path == ENABLED_PATH)
+        if w.row.page ~= page then page = nil end
+        if windowOf(w.path, w.rid) ~= id then id = nil end
+    end
+    -- The batch half of announceOne's latch: a written-through `enabled` among the writes.
+    if latch and NS.SyncEnabledHold then NS.SyncEnabledHold() end
+    announceWrite(page, id)
+end
+
 -- ---------------------------------------------------------------------------
--- The columns carve-out
+-- The columns row
 -- ---------------------------------------------------------------------------
 --
--- See "WHY THE COLUMNS ARE NOT ROWS" at the top of this file. A column array has
--- no schema row, so it gets none of a row's `validate` — which means the check
--- has to live here and has to be at least as strict. Everything downstream
--- (modules/Row.lua's cell builder, modules/Window.lua's header) indexes
--- `stat`, `width` and `showBar` without re-checking any of them.
+-- See "THE COLUMNS ROW" at the top of this file. Everything downstream
+-- (modules/Row.lua's cell builder, modules/Window.lua's header) indexes `stat`
+-- and `enabled` without re-checking either, so the row's normalize is the check.
+
+local COLUMNS_PATH = WINDOW_PREFIX .. ".columns"
 
 --- Repair a candidate column array into the catalog, in the caller's order.
 ---
---- REPAIRING RATHER THAN REJECTING, and that is the change. The array used to be
---- a SUBSET the player assembled, so an entry naming a statistic this build does
---- not have was a real editing problem and was surfaced as one: stored, listed on
---- the page, and removable. There is nothing to surface now. The array IS the
---- catalog, there is no remove button, and a row for a statistic that does not
---- exist is a row nobody can act on. So an unknown statistic is DROPPED and one
---- this build gained is APPENDED disabled, and a profile carried back from a
---- newer build heals itself instead of growing a dead row.
+--- REPAIRING RATHER THAN REJECTING. The array IS the catalog, there is no remove
+--- button, and a row for a statistic that does not exist is a row nobody can act
+--- on. So an unknown statistic is DROPPED and one this build gained is APPENDED
+--- disabled, and a profile carried back from a newer build heals itself instead
+--- of growing a dead row.
 ---
 --- ENABLED-FIRST IS ENFORCED HERE, WHICH IS WHY THE PAGE DOES NOT HAVE TO. The
 --- Columns page sinks a disabled block below its rule, but `/mm set
@@ -383,10 +462,10 @@ end
 --- agree, and the two-list build below is a STABLE partition: relative order
 --- inside each group is exactly the caller's.
 ---
---- Rebuilding rather than accepting the caller's table also means the stored
---- array can never share a sub-table with whoever handed it over (the classic
---- profile-aliasing bug), and any extra key someone smuggled in is dropped
---- rather than persisted into a profile the renderer will not read.
+--- Rebuilding rather than accepting the caller's table means any extra key
+--- someone smuggled in is dropped rather than persisted into a profile the
+--- renderer will not read. (The runtime then stores a copy of the answer, so the
+--- stored array never shares a table with anyone either.)
 ---
 --- @param value any
 --- @return table|nil columns, string|nil err
@@ -449,238 +528,20 @@ end
 
 --- Published because core/Database.lua's migration ladder needs this same rule and
 --- cannot reach a local in a file that loads eighteen TOC entries after it. Read
---- at MIGRATION time rather than at load time, which is the pattern `migrations[1]`
---- already uses for `NS.WINDOW_TEMPLATE`: the ladder runs on Init, long after
+--- at MIGRATION time rather than at load time: the ladder runs on Init, long after
 --- every file is in memory. A second implementation of "what shape is a column
 --- array" is how the migration and the write seam end up disagreeing about it.
 NS.NormalizeColumns = normalizeColumns
 
--- ---------------------------------------------------------------------------
--- One write, in two halves
--- ---------------------------------------------------------------------------
---
--- PREPARE decides whether a write may happen and where it lands, and stores
--- nothing. STORE and REACT then do it. Split so the batch entry below can check
--- EVERY write before committing ANY of them -- a batch that stored half its rows
--- and then refused one would leave a window that matches neither the source nor
--- what it was before -- while the single-row entry is the same three steps back
--- to back, and so cannot drift from the batch.
-
---- Everything a write needs before it touches the tree, or why it may not happen.
----
---- @param path string
---- @param value any
---- @param windowId number|nil  the window a `window.*` path addresses; nil means the active one
---- @return table|nil plan, string|nil err
-local function prepareWrite(path, value, windowId)
-    if type(path) ~= "string" then return nil, L["Setting not found: %s"]:format(tostring(path)) end
-
-    -- The columns carve-out. The array as a WHOLE is writable — that is the only
-    -- granularity a path can express — while a path INTO it is refused, because the
-    -- ordinal it would address moves on the next add, remove or reorder.
-    if path == COLUMNS_PREFIX then
-        local cols, err = normalizeColumns(value)
-        if not cols then return nil, err end
-        local w, _, id = resolveRoot(splitPath(path), windowId)
-        if not w then return nil, L["No window is selected."] end
-        return { columns = cols, root = w, windowId = id, page = "columns" }
-    end
-    if path:sub(1, #COLUMNS_PREFIX + 1) == COLUMNS_PREFIX .. "." then
-        return nil, L["A single column is not a setting — edit columns on the Columns page."]
-    end
-
-    local row = index[path]
-    if not row then return nil, L["Setting not found: %s"]:format(path) end
-    if row.validate and not row.validate(value) then
-        return nil, L["Invalid value for %s"]:format(path)
-    end
-
-    local plan = { row = row, path = path, value = value, page = row.page }
-    -- The minimap row resolves against the GLOBAL store and stores the negation of what it
-    -- displays, so it takes neither resolveRoot nor writeInto. See "The minimap carve-out".
-    if path == MINIMAP_PATH then
-        plan.minimap = true
-        return plan
-    end
-    if not row.sessionOnly then
-        local parts = splitPath(path)
-        local root, first, id = resolveRoot(parts, windowId)
-        if not root then return nil, L["No window is selected."] end
-        plan.parts, plan.root, plan.first, plan.windowId = parts, root, first, id
-    end
-    return plan
+--- The row's `validate`: the one refusal that needs no repair attempt.
+local function isColumnList(value)
+    if type(value) == "table" then return true end
+    return false, L["Columns must be a list of columns, not %s."]:format(type(value))
 end
 
--- ---------------------------------------------------------------------------
--- The bulk bracket (debug-logging-§10)
--- ---------------------------------------------------------------------------
---
--- A BULK COPY OR RESET IS ONE [Set] LINE. An act whose purpose is to rewrite a
--- set of rows wholesale -- a page's Defaults button, a copy from one window onto
--- another -- is logged as `[Set] <act> <scope>: N rows` and never as a line per
--- row. Validation and each row's onChange still run per row; only the log
--- collapses. Every other batch (a sort, a resize, a segment pick) logs per row,
--- because a reader needs its values.
---
--- ONE MUTE FOR EVERY BULK ACT. The library's walks reach it through the
--- descriptors' bulkBegin / bulkEnd (Options minor 16, Slash minor 8); the
--- Columns page, the degraded reset-all and NS.SetByPaths' copy reach it through
--- NS.Bulk.run. A DEPTH, not a flag: the Columns page brackets its array write
--- around the library's page bracket, so brackets nest, and only the close that
--- brings the depth back to 0 emits -- once, with what every level wrote.
---
--- N IS COUNTED HERE, NOT TAKEN FROM bulkEnd. The library's `count` is the rows
--- its applyDefault returned, and a row already at its default is one of them;
--- the rule is the rows the act actually WROTE. So while a bracket is open the
--- seam reads each row's stored value before and after its write and counts the
--- row -- once, however often it is written -- only when the value moved. The
--- column array, which no applyDefault reaches, is counted the same way.
---
--- A PROFILE RESET IS NOT OURS TO LOG. When a level says the act included a
--- whole-profile reset, core/Database.lua's OnProfileReset has already logged
--- `[Set] reset profile '<name>' to defaults (N rows)`, and a line from here
--- would be a second one. The close emits nothing; the mute is still released.
---
--- AN ACT AN ERROR STOPPED STILL LOGS ITS ONE LINE, ending " (stopped by an
--- error)", so the console never reads a half-finished reset as a clean one. Any
--- level that closes with an error marks the whole bracket; a bracket opened at
--- depth 0 starts unmarked. Re-raising the error is the caller's job, and both
--- callers do it after the close, so the mute is released first.
-local STOPPED = " (stopped by an error)"
-local bulk = { depth = 0, label = nil, seen = {}, changed = 0, profileReset = false, failed = false }
-
-local function bulkOpen(label)
-    if bulk.depth == 0 then
-        bulk.label, bulk.seen, bulk.changed = label, {}, 0
-        bulk.profileReset, bulk.failed = false, false
-    end
-    bulk.depth = bulk.depth + 1
-end
-
---- Close one level. Only the outermost close emits, and not after a profile reset.
-local function bulkClose(profileReset, failed)
-    if bulk.depth == 0 then return end   -- an unpaired close must not go negative
-    bulk.depth = bulk.depth - 1
-    if profileReset then bulk.profileReset = true end
-    if failed then bulk.failed = true end
-    if bulk.depth > 0 or bulk.profileReset then return end
-    if NS.Debug then
-        NS.Debug("Set", "%s: %d rows" .. (bulk.failed and STOPPED or ""), bulk.label, bulk.changed)
-    end
-end
-
---- Run `fn` inside a bracket that always closes, then re-raise what it raised,
---- unwrapped -- the library's own rule, so a raising row cannot leave the seam
---- muted for the rest of the session. `fn` answers true when it reset the whole
---- profile, which silences the close.
-local function runBulk(label, fn)
-    bulkOpen(label)
-    local ok, res = pcall(fn)
-    bulkClose(ok and res == true, not ok)
-    if not ok then error(res, 0) end
-end
-
---- Equal all the way down. A color is `{ r, g, b, a }` and the column array is
---- a list of `{ stat, enabled }`, so one level is not deep enough.
-local function sameValue(a, b)
-    if a == b then return true end
-    if type(a) ~= "table" or type(b) ~= "table" then return false end
-    for k, v in pairs(a) do
-        if not sameValue(v, b[k]) then return false end
-    end
-    for k in pairs(b) do
-        if a[k] == nil then return false end
-    end
-    return true
-end
-
---- What a write replaces, read where the write lands. A session row is read
---- through its own getter, and `false` and `nil` read alike there: the debug
---- console's getter answers either one for "closed".
-local function storedOf(plan)
-    if plan.columns then return plan.root.columns end
-    if plan.minimap then
-        local t = minimapTable()
-        return t and t.hide
-    end
-    if plan.row.sessionOnly then
-        return plan.row.get and plan.row.get() or nil
-    end
-    return readFrom(plan.root, plan.parts, plan.first)
-end
-
---- Count one write toward the open bracket: once per row, and only if it moved.
-local function tally(plan, before)
-    local key = tostring(plan.windowId) .. "|" .. tostring(plan.path or COLUMNS_PREFIX)
-    if bulk.seen[key] or sameValue(before, storedOf(plan)) then return end
-    bulk.seen[key] = true
-    bulk.changed = bulk.changed + 1
-end
-
--- The pair both library majors take as bulkBegin / bulkEnd. The library hands
--- bulkEnd the error its walk raised, then re-raises it itself.
-local function bulkBegin(act, scope) bulkOpen(tostring(act) .. " " .. tostring(scope)) end
-local function bulkEnd(_, _, _, err, info)
-    bulkClose(type(info) == "table" and info.profileReset == true, err ~= nil)
-end
-
--- A bracket of the host's own. Named the way the library names a page reset, so
--- both read `[Set] reset <scope>: N rows`.
-local function bulkRun(act, scope, fn) runBulk(tostring(act) .. " " .. tostring(scope), fn) end
-
--- Built from named locals rather than function literals in the constructor:
--- lizard 1.24.0's Lua reader raises on anonymous functions in a table assigned
--- to a dotted name, and a crashed complexity run measures nothing.
-NS.Bulk = { begin = bulkBegin, finish = bulkEnd, run = bulkRun }
-
---- Put a prepared write into the tree.
-local function putWrite(plan)
-    if plan.columns then
-        -- No copy() on the way in: normalizeColumns already returned a table
-        -- built here, held by nobody else.
-        plan.root.columns = plan.columns
-        return
-    end
-    if plan.minimap then
-        -- INVERTED on the way in: the row says shown, LibDBIcon's key says hidden.
-        local t = minimapTable()
-        if t then t.hide = not plan.value end
-        -- And the button follows the checkbox NOW rather than at the next reload. Answering
-        -- `false` is the normal state of a build with no broker library, not an error, so nothing
-        -- here reads the result.
-        if NS.Launcher and NS.Launcher.SetShown then NS.Launcher:SetShown(plan.value) end
-        return
-    end
-    local row = plan.row
-    if row.sessionOnly then
-        -- No db write by definition; the row's own set() IS the storage.
-        if row.set then row.set(plan.value) end
-        return
-    end
-    -- copy() on the way in: a color table handed straight from a widget (or
-    -- from a row's default) would otherwise be shared with whoever else holds
-    -- it, and editing one window's color would edit theirs.
-    writeInto(plan.root, plan.parts, plan.first, copy(plan.value))
-end
-
---- Put a prepared write into the tree, and count it when a bulk act is open.
---- Outside a bracket nothing is read back, so a lone write costs what it did.
-local function storeWrite(plan)
-    if bulk.depth == 0 then return putWrite(plan) end
-    local before = storedOf(plan)
-    putWrite(plan)
-    tally(plan, before)
-end
-
---- Fire a stored write's `onChange`, told which window moved.
-local function reactWrite(plan)
-    local row = plan.row
-    if row and row.onChange then row.onChange(plan.value, plan.windowId) end
-end
-
---- HOW MANY ARE SHOWN, not how many there are. Every array is the catalog now,
---- so `#cols` is the same number on every write, and a log line that never
---- changes is a log line nobody can read a change out of.
+--- HOW MANY ARE SHOWN, not how many there are. Every array is the catalog, so
+--- `#cols` is the same number on every write, and a log line that never changes
+--- is a log line nobody can read a change out of.
 local function shownCount(cols)
     local shown = 0
     for _, c in ipairs(cols) do
@@ -689,139 +550,168 @@ local function shownCount(cols)
     return shown
 end
 
---- The `[Set] <path> = <value>` line for one stored write (debug-logging-§10).
----
---- Logged ONCE, here. Downstream reactors must not re-echo the same value: a
---- settings change that appears three times in the log is three changes as far
---- as a reader can tell. The format is DEFERRED into NS.Debug rather than built
---- here, so a disabled log costs nothing.
-local function logWrite(plan)
-    -- Muted inside a bulk bracket: the act logs its one line when it closes.
-    if bulk.depth > 0 or not NS.Debug then return end
-    if plan.columns then
-        NS.Debug("Set", "%s = %d shown", COLUMNS_PREFIX, shownCount(plan.columns))
-    else
-        NS.Debug("Set", "%s = %s", plan.path, plan.value)
+-- The row itself. `hidden` keeps it off the panel (NS.SchemaForPage); it has NO
+-- `default`, so no reset reaches it -- the Columns page's Defaults button writes
+-- the shipped array itself (settings/Columns.lua), inside the page's bracket.
+local COLUMNS_ROW = {
+    path      = COLUMNS_PATH,
+    page      = "columns",
+    group     = L["Columns"],
+    label     = L["Columns"],
+    hidden    = true,
+    validate  = isColumnList,
+    normalize = normalizeColumns,
+}
+NS.Schema[#NS.Schema + 1] = COLUMNS_ROW
+
+-- ---------------------------------------------------------------------------
+-- The runtime
+-- ---------------------------------------------------------------------------
+
+--- The [Set] line's value (debug-logging-§10). Handed back AS IS for every row but
+--- one, so NS.Debug's own deferred, secret-safe formatting renders it exactly as
+--- it did before the adoption; the column array logs how many are shown.
+local function formatValue(row, value)
+    if row == COLUMNS_ROW and type(value) == "table" then
+        return ("%d shown"):format(shownCount(value))
     end
+    return value
 end
+
+--- The debug sink, resolved at CALL time so a suite that swaps NS.Debug hears it.
+local function debugSink(tag, fmt, ...)
+    if NS.Debug then NS.Debug(tag, fmt, ...) end
+end
+
+-- ONE INSTANCE FOR THE ADDON: the bracket and the index are per instance. The
+-- descriptor is read at CALL time, which is why nothing below captures NS.db.
+--
+-- No `debugEnabled`: NS.Debug is already the gated sink, and `formatValue` hands
+-- the value through untouched, so there is nothing to spare while logging is off.
+local S = SchemaLib:New({
+    rows          = NS.Schema,
+    resolveRoot   = resolveRoot,
+    announce      = announceOne,
+    announceBatch = announceMany,
+    debug         = debugSink,
+    format        = formatValue,
+    resetExempt   = { [MINIMAP_PATH] = true },
+    writeThrough  = { ENABLED_PATH },
+    L = {
+        NOT_FOUND = L["Setting not found: %s"],
+        INVALID   = L["Invalid value for %s"],
+        NO_ROOT   = L["No window is selected."],
+    },
+})
+NS.SchemaRuntime = S
+
+-- ---------------------------------------------------------------------------
+-- The public seams, kept by name so no caller moves
+-- ---------------------------------------------------------------------------
+
+--- The row for `path`, or nil.
+NS.FindSchemaRow = S.FindRow
+
+--- Append rows declared elsewhere (a page file with a row whose `values` cannot be
+--- expressed until that page's helpers exist), so such a row still lands in THIS
+--- array — the one the CLI, the panel and the reset all read.
+--- TEST-ONLY TODAY: no in-addon caller; the seam is exercised by
+--- tests/test_schema_defaults.lua and tests/test_options_panel.lua.
+function NS.RegisterSchemaRows(rows) S.AddRows(rows) end
+
+--- The current value of `path`, in DISPLAY terms (the minimap row reads SHOWN).
+--- Also resolves paths that are not rows — a sub-table like `window.frame` —
+--- because `/mm get` is a debugging tool as much as a settings reader. `windowId`
+--- reads a named window instead of the active one; an id that names no window
+--- reads nil.
+function NS.GetSetting(path, windowId) return S.Get(path, windowId) end
 
 --- Write one setting. THE single write seam (architecture-§5): the panel's
---- widgets, `/mm set`, `/mm reset` and the defaults restore all land here, so
---- validation, the debug line, the row's reaction and the refresh cannot be
---- skipped by whichever caller forgot one.
+--- widgets, `/mm set`, `/mm reset` and the defaults restore all land here.
+--- The runtime's order: refuse an unknown path, validate, normalize, refuse a
+--- missing root, store (a copy), log once, react, announce.
 ---
---- Order is load-bearing: write, then react, then log ONCE, then announce, then
---- re-sync the panel. Reacting before the write would hand a refresher the old
---- value; logging in the reactor would log it per subscriber.
+--- `windowId` IS THE INSTANCE ARGUMENT (architecture-§5, issue #49). Omitted, a
+--- `window.*` path means the active window. Given, it means THAT window and never
+--- another: an id that names no window is refused. Ignored by a global row.
 ---
---- `windowId` IS THE INSTANCE ARGUMENT (architecture-§5, issue #49). Omitted,
---- a `window.*` path means the active window, which is what the panel and
---- `/mm set` want. Given, it means THAT window and never another: an id that
---- names no window is refused rather than quietly redirected to the active one.
---- It is how modules/WindowManager.lua renames, copies into and locks a window
---- the picker is not pointed at, and how a resize drag saves the window that was
---- dragged. Moving NS.State.activeWindowId so the seam points at the target
---- would be going around the seam, so nothing does. Ignored by a global row.
+--- One refusal is this addon's own: a path INTO the column array names the page
+--- that can do it, rather than falling through to "not a row". No row matches
+--- such a path, so no reset or batch can reach it; the gate is wording only.
 ---
---- @param path string
---- @param value any
---- @param windowId number|nil
---- @return boolean ok, string|nil err
+--- @return boolean ok, string|nil err, string|nil why
 function NS.SetByPath(path, value, windowId)
-    local plan, err = prepareWrite(path, value, windowId)
-    if not plan then return false, err end
-
-    storeWrite(plan)
-    reactWrite(plan)
-    logWrite(plan)
-    announceWrite(plan.page, plan.windowId)
-    return true
+    if type(path) == "string" and path:sub(1, #COLUMNS_PATH + 1) == COLUMNS_PATH .. "." then
+        return false, L["A single column is not a setting — edit columns on the Columns page."]
+    end
+    return S.Set(path, value, windowId)
 end
 
---- Write several settings as ONE change: every write is checked first, then all
---- are stored, then each row reacts and is logged, then the change is announced
---- once.
+--- Write several settings as ONE change, through the runtime's SetMany: every
+--- entry is checked first and one refusal stores nothing (ALL OR NOTHING, the
+--- refusal naming its path); then every entry is stored, every row reacts, and
+--- the change is announced ONCE -- a copy-from touches seventy-odd rows of one
+--- window, and seventy CONFIG_CHANGED messages would be seventy re-applies.
 ---
---- THE SAME SEAM, NOT A SECOND ONE. Each entry goes through exactly what
---- NS.SetByPath does -- the columns carve-out, the row lookup, the row's
---- `validate`, the deep copy on the way in, the row's `onChange` -- and the
---- difference is the tail. A copy-from touches seventy-odd rows of one window,
---- and seventy CONFIG_CHANGED messages would be seventy re-applies of that
---- window for a single click. So the batch announces ONCE, naming the page when
---- every row shares one and none when they do not, because a subscriber
---- skipping a section must not skip part of a change.
----
---- THE LOG FOLLOWS debug-logging-§10 (ruled 2026-09-12). A batch logs every row
---- it writes as its own `[Set] <path> = <value>` line: a sort, a resize or a
---- segment pick is two or three settings, and a reader needs their values, not
---- a count. A BULK copy or reset is the one exception, and `summary` is how the
---- caller says it is one: the batch runs inside a bulk bracket, which mutes
---- the per-row line and logs ONE `[Set] <summary>: N rows` when it closes --
---- `[Set] copy from 'A' to 'B': 42 rows` -- with N the rows whose stored value
---- moved (see "The bulk bracket" above). The tag is [Set], never a tag of its
---- own (standard v2.44.0). Seventy per-row lines for one click would evict the
---- rest of the log.
----
---- ALL OR NOTHING. One refused entry stores no entry at all, and the refusal
---- names its path.
+--- THE LOG FOLLOWS debug-logging-§10. A batch logs every row it writes as its own
+--- `[Set] <path> = <value>` line. A BULK copy or reset is the one exception, and
+--- `summary` is how the caller says it is one: its first word is the act and the
+--- rest the scope, so `copy from 'A' to 'B'` logs one `[Set] copy from 'A' to 'B':
+--- N rows` line, N the rows whose stored value moved.
 ---
 --- @param writes table         array of `{ path, value }`
 --- @param windowId number|nil  as NS.SetByPath's
---- @param summary string|nil   ONLY for a bulk copy or reset: the act, naming
----                             its source and target, e.g. "copy from 'A' to 'B'"
---- @return boolean ok, string|nil err
+--- @param summary string|nil   ONLY for a bulk copy or reset, e.g. "copy from 'A' to 'B'"
+--- @return boolean ok, string|nil err, string|nil why  (`why`: the row's own reason, e.g. a column
+---                                                    array's repair refusal)
 function NS.SetByPaths(writes, windowId, summary)
     if type(writes) ~= "table" then return false, L["Setting not found: %s"]:format(tostring(writes)) end
-
-    local plans = {}
-    for i, entry in ipairs(writes) do
-        local plan, err = prepareWrite(entry[1], entry[2], windowId)
-        if not plan then return false, err end
-        plans[i] = plan
+    local entries = {}
+    for i, entry in ipairs(writes) do entries[i] = { path = entry[1], value = entry[2] } end
+    local opts = { instanceId = windowId }
+    if summary then
+        local act, scope = tostring(summary):match("^(%S+)%s+(.*)$")
+        opts.act, opts.scope = act or tostring(summary), scope or ""
     end
-    if plans[1] == nil then return true end
-
-    local page, id = plans[1].page, plans[1].windowId
-    local function apply()
-        for _, plan in ipairs(plans) do storeWrite(plan) end
-        for _, plan in ipairs(plans) do
-            reactWrite(plan)
-            logWrite(plan)
-            if plan.page ~= page then page = nil end
-            if plan.windowId ~= id then id = nil end
-        end
-    end
-    if summary then runBulk(summary, apply) else apply() end
-
-    announceWrite(page, id)
-    return true
+    local ok, err, why = S.SetMany(entries, opts)
+    if ok then return true end
+    return false, err, why
 end
 
 --- Restore one row to its shipped default, through the same seam everything else
---- writes through.
+--- writes through (the runtime deep-copies a table default on the way in).
 ---
---- Takes the ROW rather than the path because both library majors hand the row,
---- and because the deep copy a table default needs belongs on this side of the
---- seam: two profiles restored to the same color default must not end up holding
---- one table between them.
+--- A row with no `default` is NOT written and answers exactly false, which is what
+--- LibKa0s-Slash-1.0 (minor 15) reads to print its NO_DEFAULT line. A refusal
+--- answers nil, err -- never false, which would read as NO_DEFAULT.
+---
+--- A RESTORE IS NOT A CLICK, and one row cares: the Frame page's meta color mode
+--- broadcasts to ten rows on three other pages when it is SET, and must not when
+--- the page's own Defaults button walks it. NS.__restoring is set around the write
+--- rather than passed, because every other row is indifferent to the difference.
 ---
 --- @param row table
-function NS.ApplyDefault(row)
-    if type(row) ~= "table" or row.path == nil then return end
-    -- A RESTORE IS NOT A CLICK, and one row cares: the Frame page's meta color
-    -- mode broadcasts to ten rows on three other pages when it is SET, which is
-    -- the point of it -- and must not when the page's own Defaults button walks
-    -- it, or that button silently resets settings on pages it has no business
-    -- reaching. Set around the write rather than passed as an argument, because
-    -- every other row and every other seam is indifferent to the difference.
+--- @param windowId number|nil
+--- @return boolean|nil ok, string|nil err
+function NS.ApplyDefault(row, windowId)
     local was = NS.__restoring
     NS.__restoring = true
-    -- `default` is what a user would have clicked, which for every row but one is also the
-    -- stored value. The minimap row is the exception -- its default is SHOWN and what it stores
-    -- is `hide` -- and the seam inverts it on the way in, so nothing is owed here.
-    NS.SetByPath(row.path, copy(row.default))
+    local ok, err = S.ApplyDefault(row, windowId)
     NS.__restoring = was
+    if ok == false and err ~= nil then return nil, err end
+    return ok
 end
+
+-- The bulk bracket (debug-logging-§10): the runtime's, handed to both library
+-- majors' descriptors (bulkBegin / bulkEnd) and to the host's own bulk acts --
+-- the Columns page's Defaults, the degraded Reset All -- through `run`, whose
+-- walk is handed `info` and sets `info.profileReset` when it reset the profile.
+-- One `[Set] <act> <scope>: N rows` at the outermost close, N the rows whose
+-- read-back moved; nothing after a profile reset (core/Database.lua logs that).
+-- Built from named members rather than function literals in the constructor:
+-- lizard 1.24.0's Lua reader raises on anonymous functions in a table assigned
+-- to a dotted name, and a crashed complexity run measures nothing.
+NS.Bulk = { begin = S.BulkBegin, finish = S.BulkEnd, run = S.BulkRun }
 
 -- ---------------------------------------------------------------------------
 -- Page and validation surfaces
@@ -845,8 +735,8 @@ function NS.SchemaForPage(pageKey, filter)   -- luacheck: ignore 212/filter
         -- `hidden` rows are skipped HERE and nowhere else, so they stay writable
         -- through NS.SetByPath, listable through `/mm list` and comparable by the
         -- schema-vs-defaults validator, and only ever miss the panel. A row is
-        -- hidden when it is per-window STATE that something else in the UI already
-        -- writes -- `frame.minimised` is the one -- rather than a preference.
+        -- hidden when something else in the UI already writes it: per-window STATE
+        -- (`frame.minimized`) or the column array the Columns page draws itself.
         if row.page == pageKey and not row.hidden then rows[#rows + 1] = row end
     end
     return rows
@@ -867,8 +757,8 @@ end
 --- the row's default is SHOWN and the tree ships HIDDEN, so "agreement" here means they
 --- are opposites -- which is the one comparison a reader would otherwise have to work
 --- out from two files, and the one a copy-paste of this row into a second addon gets
---- wrong. It sits out here rather than inline so the loop below reads as two cases
---- handed to two judges rather than one body carrying both.
+--- wrong. It sits out here rather than inline so the loop below reads as cases handed
+--- to judges rather than one body carrying all of them.
 ---
 --- @param row table
 --- @param out function|nil  NS.Print when something is listening, nil when nothing is
@@ -893,7 +783,8 @@ end
 --- Judge an ordinary row against the defaults tree -- window rows against
 --- WINDOW_TEMPLATE, everything else against defaults.profile. The caller has already
 --- decided the row is neither the minimap row nor `sessionOnly`; this one only picks
---- the root the path hangs off and runs the two checks.
+--- the root the path hangs off and runs the two checks. The column row has no
+--- `default` by design (see COLUMNS_ROW), so it is held to resolution alone.
 ---
 --- @param row table
 --- @param profile table   defaults.profile, the root for a global path
@@ -901,7 +792,7 @@ end
 --- @param out function|nil  NS.Print when something is listening, nil when nothing is
 --- @return number  1 when the row failed, 0 when it passed
 local function checkTreeRow(row, profile, template, out)
-    local parts = splitPath(row.path)
+    local parts = SchemaLib.SplitPath(row.path)
     local root, first
     if parts[1] == WINDOW_PREFIX then
         root, first = template, 2
@@ -909,11 +800,11 @@ local function checkTreeRow(row, profile, template, out)
         root, first = profile, 1
     end
 
-    local shipped = readFrom(root, parts, first)
+    local shipped = SchemaLib.Read(root, parts, first)
     if shipped == nil then
         if out then out("schema path does not resolve against the defaults: " .. row.path) end
         return 1
-    elseif not sameDefault(shipped, row.default) then
+    elseif row ~= COLUMNS_ROW and not sameDefault(shipped, row.default) then
         if out then out("schema default disagrees with defaults/Profile.lua: " .. row.path) end
         return 1
     end

@@ -1,7 +1,7 @@
 -- tests/test_texture_paths.lua — the hard-coded texture-path census gate (library-stack-§8).
 --
 -- WHAT IT PROVES. That every hard-coded `Interface\` path in the `.lua` this repository authors is
--- named in docs/ARCHITECTURE.md's "Hard-coded texture paths" census, and that no census row
+-- named in docs/texture-paths.md's "Hard-coded texture paths" census, and that no census row
 -- outlives the path it records. It reads the tracked set from git and the table from the doc, and
 -- compares them in BOTH directions.
 --
@@ -30,7 +30,7 @@
 -- moves on every ordinary edit while the arrival of a NEW path is the only event the rule has an
 -- opinion about.
 --
--- IT FAILS RATHER THAN PASSES WHEN IT CANNOT LOOK. No io.popen, no git, no ARCHITECTURE.md, no
+-- IT FAILS RATHER THAN PASSES WHEN IT CANNOT LOOK. No io.popen, no git, no census doc, no
 -- census heading -- every one of those is a failure, not a skip. A gate that goes quiet when it is
 -- blind reports success, which is worse than not existing. Same bargain the layout cap gate strikes
 -- (tests/_kit/test_layout_cap.lua since kit revision 25; this file was built to the shape of the
@@ -40,12 +40,18 @@ local T = _G.MULTIMETERS_TEST
 local test, fail = T.test, T.fail
 local ROOT = T.root or "."
 
-local CENSUS_HEADING = "### Hard-coded texture paths"
+-- The census and the register live in two files, and that split is the point rather than an
+-- accident: the census is a Tier 3 topic doc (docs/texture-paths.md, moved out of the hub on
+-- 2026-09-24 to bring the hub under its line budget), while a ratified deviation has exactly one
+-- home, the hub's register, which CLAUDE.md and documentation-§3 both name.
+local CENSUS_FILE = "docs/texture-paths.md"
+local CENSUS_HEADING = "## The census"
+local REGISTER_FILE = "docs/ARCHITECTURE.md"
 local REGISTER_HEADING = "## Documented deviations"
 
 -- The rule the two ColumnBlocks rows defer to. Spelled as the register writes it, so a row
 -- retired by deletion cannot leave the reference dangling quietly.
-local COLUMNBLOCKS_RULE = "library-stack §8"
+local COLUMNBLOCKS_RULE = "library-stack-§8"
 
 -- The site that row argues about, and the pair it declines the catalog for. Spelled here in the
 -- de-escaped form `pathsIn` answers in, so both spellings a Lua source may use are matched by one
@@ -54,6 +60,18 @@ local COLUMNBLOCKS_FILE = "settings/ColumnBlocks.lua"
 local READYCHECK_PAIR = {
     "Interface\\RaidFrame\\ReadyCheck-Ready",
     "Interface\\RaidFrame\\ReadyCheck-NotReady",
+}
+
+-- The two further sites where the catalog HAS a candidate and the addon declines it
+-- (library-stack-§8's `target` and `resize`), each backed by its own register row since
+-- 2026-09-23. Keyed by file, because each row argues about the paths of one file: the tooltip's
+-- TARGET glyph, and the window's two-state size-grabber pair.
+local DECLINED_SITES = {
+    { file = "modules/Tooltip.lua", paths = { "Interface\\ICONS\\Ability_Hunter_FocusedAim" } },
+    { file = "modules/Window.lua", paths = {
+        "Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up",
+        "Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight",
+    } },
 }
 
 --- Split a NUL-delimited blob. `git ls-files -z` because a path may contain anything but NUL, and
@@ -130,14 +148,14 @@ local function slurp(path)
     return (body:gsub("\r\n", "\n"))
 end
 
---- Every `| ... |` row under `heading` in docs/ARCHITECTURE.md, as arrays of trimmed cells.
+--- Every `| ... |` row under `heading` in the repo-relative `file`, as arrays of trimmed cells.
 ---
 --- Reading stops at the next heading of any level, so a later section growing a table of its own
 --- cannot leak into this one. The header row and the `|---|` separator come back too; callers
 --- filter them by asking for the shape they want.
-local function rowsUnder(heading)
-    local body = slurp("docs/ARCHITECTURE.md")
-    if not body then fail("docs/ARCHITECTURE.md could not be opened") end
+local function rowsUnder(file, heading)
+    local body = slurp(file)
+    if not body then fail(file .. " could not be opened") end
 
     local rows, inside, found = {}, false, false
     for line in (body .. "\n"):gmatch("([^\n]*)\n") do
@@ -155,7 +173,7 @@ local function rowsUnder(heading)
     end
 
     if not found then
-        fail("docs/ARCHITECTURE.md carries no '" .. heading .. "' section; it is where this " ..
+        fail(file .. " carries no '" .. heading .. "' section; it is where this " ..
              "repository's decision about each hard-coded path is written down, and it must " ..
              "not be removed")
     end
@@ -166,7 +184,7 @@ end
 --- each a single backticked value; the header and separator have no backticks and fall out.
 local function censusRows()
     local out = {}
-    for _, cells in ipairs(rowsUnder(CENSUS_HEADING)) do
+    for _, cells in ipairs(rowsUnder(CENSUS_FILE, CENSUS_HEADING)) do
         local file = cells[1] and cells[1]:match("^`([^`]+)`$")
         local path = cells[2] and cells[2]:match("^`([^`]+)`$")
         if file and path then
@@ -180,7 +198,7 @@ end
 -- The two directions, then the two things a row has to be good for
 -- ---------------------------------------------------------------------------
 
-test("texturepaths: every hard-coded path in authored source is named in the ARCHITECTURE.md census",
+test("texturepaths: every hard-coded path in authored source is named in the texture-paths.md census",
 function()
     local listed = {}
     for _, row in ipairs(censusRows()) do listed[row.file .. "|" .. row.path] = true end
@@ -202,7 +220,7 @@ function()
         table.sort(unremarked)
         fail("hard-coded texture paths remarked on nowhere: " .. table.concat(unremarked, ", ") ..
              " -- library-stack-§8 wants the catalog's mark where the catalog has one. Use it, " ..
-             "or add the row to docs/ARCHITECTURE.md's 'Hard-coded texture paths' census saying " ..
+             "or add the row to docs/texture-paths.md's census saying " ..
              "why the catalog cannot answer here")
     end
 end)
@@ -226,7 +244,7 @@ test("texturepaths: no census row outlives the path it records", function()
     end
 
     if #spent > 0 then
-        fail("docs/ARCHITECTURE.md's texture-path census carries rows for paths that are gone: " ..
+        fail("docs/texture-paths.md's census carries rows for paths that are gone: " ..
              table.concat(spent, ", ") .. " -- delete the row, and retire the register row that " ..
              "backs it if it had one. The register must not become a graveyard")
     end
@@ -260,9 +278,9 @@ function()
     -- one row whose disposition is a promise about another table rather than an argument in
     -- itself. If that row is ever retired -- ConsumableMaster adopts the catalog, or the color
     -- and degraded-install arguments are answered upstream -- this is what says so out loud
-    -- instead of leaving "Register row above" pointing at nothing.
+    -- instead of leaving "Register row" pointing at nothing.
     local ratified = false
-    for _, cells in ipairs(rowsUnder(REGISTER_HEADING)) do
+    for _, cells in ipairs(rowsUnder(REGISTER_FILE, REGISTER_HEADING)) do
         if cells[1] and cells[1]:find(COLUMNBLOCKS_RULE, 1, true) then ratified = true end
     end
 
@@ -312,7 +330,7 @@ function()
     end
 
     local cited
-    for _, cells in ipairs(rowsUnder(REGISTER_HEADING)) do
+    for _, cells in ipairs(rowsUnder(REGISTER_FILE, REGISTER_HEADING)) do
         if cells[1] and cells[1]:find(COLUMNBLOCKS_RULE, 1, true) then
             for _, cell in ipairs(cells) do
                 local from, to = cell:match("settings/ColumnBlocks%.lua:(%d+)%-(%d+)")
@@ -330,5 +348,70 @@ function()
         fail(("the '%s' register row cites %s:%d-%d, but the pair it argues about is declared at " ..
               "%d-%d. Move the citation, not the code"):format(
              COLUMNBLOCKS_RULE, COLUMNBLOCKS_FILE, cited[1], cited[2], first, last))
+    end
+end)
+
+--- The first and last line of `file` that opens a string with any of `paths`, or nil.
+local function declaredSpan(file, paths)
+    local body = slurp(file)
+    if not body then fail(file .. " could not be opened; a register row's citation points into it") end
+    local first, last, lineNo = nil, nil, 0
+    for line in (body .. "\n"):gmatch("([^\n]*)\n") do
+        lineNo = lineNo + 1
+        local opened = pathsIn(line)
+        for _, path in ipairs(paths) do
+            if opened[path] then
+                first = first or lineNo
+                last = lineNo
+            end
+        end
+    end
+    return first, last
+end
+
+--- The `library-stack-§8` register row whose What-differs cell cites `file:<line>[-<line>]`, as
+--- { cells, from, to }, or nil. A row with no Decided date or no trigger is not a ratification.
+local function registerRowCiting(file)
+    local pattern = file:gsub("%p", "%%%0") .. ":(%d+)%-?(%d*)"
+    for _, cells in ipairs(rowsUnder(REGISTER_FILE, REGISTER_HEADING)) do
+        if cells[1] and cells[1]:find(COLUMNBLOCKS_RULE, 1, true) and cells[2] then
+            local from, to = cells[2]:match(pattern)
+            if from then
+                return { cells = cells, from = tonumber(from), to = tonumber(to) or tonumber(from) }
+            end
+        end
+    end
+    return nil
+end
+
+test("texturepaths: the register carries a library-stack-§8 row for the Tooltip and Window declines",
+function()
+    -- The ColumnBlocks decline was the only one with a register row; the tooltip's TARGET glyph
+    -- and the window's size-grabber pair were declined in the census alone, with no Decided date
+    -- and no trigger (MultiMeters-A-25). A census disposition is an argument; the register row is
+    -- what makes it a decision an audit can find. Each row must also cite the lines the paths are
+    -- declared on, for the reason the ColumnBlocks case below gives.
+    local problems = {}
+    for _, site in ipairs(DECLINED_SITES) do
+        local row = registerRowCiting(site.file)
+        local first, last = declaredSpan(site.file, site.paths)
+        if not row then
+            problems[#problems + 1] = "no '" .. COLUMNBLOCKS_RULE .. "' register row cites " ..
+                site.file .. ":<line>"
+        elseif not (row.cells[4] or ""):match("^%d%d%d%d%-%d%d%-%d%d$") then
+            problems[#problems + 1] = site.file .. "'s row carries no Decided date"
+        elseif (row.cells[5] or "") == "" then
+            problems[#problems + 1] = site.file .. "'s row carries no re-check trigger"
+        elseif not first then
+            problems[#problems + 1] = site.file .. " no longer opens a string with the declined " ..
+                "path; retire the register row and the census rows in the same commit"
+        elseif row.from ~= first or row.to ~= last then
+            problems[#problems + 1] = ("%s's row cites :%d-%d but the paths are declared at %d-%d")
+                :format(site.file, row.from, row.to, first, last)
+        end
+    end
+    if #problems > 0 then
+        fail("library-stack-§8 declines without a sound register row: " ..
+             table.concat(problems, "; "))
     end
 end)

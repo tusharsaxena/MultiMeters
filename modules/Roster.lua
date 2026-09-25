@@ -70,6 +70,32 @@
 -- rebuilds. The message keeps exactly one sender; it is just not this file.
 --
 -- ---------------------------------------------------------------------------
+-- THE REMEMBERED MAP IS BOUNDED BY A PRUNE, NOT FORGOTTEN AT LOGIN (SM-06)
+-- ---------------------------------------------------------------------------
+--
+-- The remembered map below (db.global.roster) is cleared only by a meter reset,
+-- so between resets it grew with every player the account ever grouped with
+-- (MultiMeters-R-08). Two bounds were on the table, and an in-client
+-- observation chose between them: SM-06 in docs/smoke-tests.md, walked
+-- 2026-09-24. After a fight, a full logout and a fresh login, the meter STILL
+-- SHOWED the previous data -- the same two Cleave Training Dummy segments (1:09
+-- with 128.8K damage, and 1:13) in window #1. C_DamageMeter's data outlives the
+-- session, so forgetting the map at login (branch A) would have thrown away
+-- the owners of numbers still on screen.
+--
+-- So it is branch B. In build(), after recording, when the remembered member
+-- count passes 4 * Const.MAX_ROWS, every remembered member who is not in the
+-- live group is dropped, together with every pet link to one of them. Every
+-- live member survives. The count is a number kept beside the map
+-- (db.global.roster.count) rather than a walk, and never `#` on a hash. A
+-- PARTIAL build does not prune: its live map is missing members still in the
+-- group, and the retry on the next read is what completes it.
+--
+-- No SavedVariables write comes from a game event while disabled. Every writer
+-- here runs from a build, which a read triggers, or from a bus message, and the
+-- stand-down tears the bus down with everything else.
+--
+-- ---------------------------------------------------------------------------
 -- CACHING
 -- ---------------------------------------------------------------------------
 --
@@ -117,7 +143,8 @@ local cache = State.Cache("Roster")
 -- unit API, and there is no `party3pet` once you have left the party.
 --
 -- `seen` is the fix. Every member and every pet-owner link the live build learns
--- is ALSO written here, and nothing removes an entry — this table only grows.
+-- is ALSO written here, and only two things remove an entry: a meter reset, and
+-- the prune above 4 * MAX_ROWS members (the SM-06 section in the header).
 --
 -- ITS LIFETIME IS THE METER'S DATA, not the group's and not the session's — so
 -- it is PERSISTED, in `db.global.roster`, and not in the session cache where it
@@ -133,7 +160,7 @@ local cache = State.Cache("Roster")
 -- meter whether or not they are still grouped, and whether or not you have
 -- reloaded since.
 ---
---- @return table  { byGuid = {...}, pets = {...} }
+--- @return table  { byGuid = {...}, pets = {...}, count = n }
 local function remembered()
     local db = NS.db
     local g = db and db.global
@@ -141,12 +168,50 @@ local function remembered()
         -- Before InitDB, or on an install broken enough to have no database. A
         -- throwaway table keeps every caller below branch-free; nothing is lost
         -- that was not already lost.
-        return { byGuid = {}, pets = {} }
+        return { byGuid = {}, pets = {}, count = 0 }
     end
-    g.roster = g.roster or {}
-    g.roster.byGuid = g.roster.byGuid or {}
-    g.roster.pets   = g.roster.pets or {}
-    return g.roster
+    local seen = g.roster or {}
+    g.roster = seen
+    seen.byGuid = seen.byGuid or {}
+    seen.pets   = seen.pets or {}
+    if type(seen.count) ~= "number" then
+        -- An account stored before the counter existed: count it once, by walk.
+        -- The counter is NOT in the AceDB defaults on purpose -- a declared 0
+        -- would be backfilled over a populated legacy map and read as empty.
+        local n = 0
+        for _ in pairs(seen.byGuid) do n = n + 1 end
+        seen.count = n
+    end
+    return seen
+end
+
+-- The bound on the remembered map, in members: four full windows' worth. Past
+-- it, build() keeps only the live group (the SM-06 section in the header).
+local REMEMBER_CAP = 4 * Const.MAX_ROWS
+
+--- Drop every remembered member who is not in the live group, and every pet
+--- link to a member who is gone. Recounts as it walks, so the counter beside
+--- the map is exact again afterwards whatever it drifted to.
+---
+--- Assigning nil to a key during `pairs` is legal in Lua; adding one is not,
+--- and nothing here adds.
+local function pruneRemembered(seenMap, live)
+    local kept, dropped = 0, 0
+    for guid in pairs(seenMap.byGuid) do
+        if live[guid] == nil then
+            seenMap.byGuid[guid] = nil
+            dropped = dropped + 1
+        else
+            kept = kept + 1
+        end
+    end
+    for petGuid, owner in pairs(seenMap.pets) do
+        if seenMap.byGuid[owner] == nil then seenMap.pets[petGuid] = nil end
+    end
+    seenMap.count = kept
+    if State.debug then
+        NS.Debug("Roster", "pruned the remembered roster: dropped %d, kept %d", dropped, kept)
+    end
 end
 
 -- Unit APIs are reached through _G at CALL time rather than captured at load.
@@ -315,6 +380,25 @@ local function linkPetOf(unit, guid, pets, seenMap)
     return 1
 end
 
+--- Record one live member in the remembered map, counting a new GUID.
+---
+--- Remembered for the life of the meter's DATA, not the group's and not the
+--- session's. Stored as a plain copy rather than as the live entry: this goes
+--- to SavedVariables, and the entry is shared with the live map that gets
+--- wiped on every regroup. The counter moves only for a GUID the map did not
+--- hold, so a member seen on every build is counted once.
+local function rememberMember(seenMap, entry)
+    local guid = entry.guid
+    if seenMap.byGuid[guid] == nil then seenMap.count = seenMap.count + 1 end
+    seenMap.byGuid[guid] = {
+        guid          = guid,
+        name          = entry.name,
+        classFilename = entry.classFilename,
+        role          = entry.role,
+        isPlayer      = entry.isPlayer,
+    }
+end
+
 --- Rebuild the group array, the GUID index and the pet-owner map.
 ---
 --- One pass, three outputs, because they are derived from the same unit walk and
@@ -348,17 +432,7 @@ local function build()
                 }
                 group[#group + 1] = entry
                 byGuid[guid] = entry
-                -- Remembered for the life of the meter's DATA, not the group's
-                -- and not the session's. Stored as a plain copy rather than as
-                -- the live entry: this goes to SavedVariables, and the entry is
-                -- shared with the live map that gets wiped on every regroup.
-                seenMap.byGuid[guid] = {
-                    guid          = guid,
-                    name          = entry.name,
-                    classFilename = entry.classFilename,
-                    role          = entry.role,
-                    isPlayer      = entry.isPlayer,
-                }
+                rememberMember(seenMap, entry)
 
                 -- Inside the member guard on purpose: see linkPetOf.
                 petCount = petCount + linkPetOf(unit, guid, pets, seenMap)
@@ -394,6 +468,13 @@ local function build()
     -- build again on the next read instead of trusting it.
     local expected = numGroupMembers()
     cache.partial = (expected > 1 and #group < expected) or nil
+
+    -- The bound, on a COMPLETE build only: a short live map is missing members
+    -- still in the group, and pruning against it would forget them.
+    if not cache.partial and seenMap.count > REMEMBER_CAP then
+        pruneRemembered(seenMap, byGuid)
+    end
+
     if cache.partial then
         -- A partial build logs the partial line and NOT "built members=", which
         -- is what makes that string a reliable grep for a build that stuck.
@@ -556,7 +637,8 @@ end
 
 --- Forget everyone — live and remembered.
 ---
---- The meter-reset path, and the ONLY thing that clears the remembered map. A
+--- The meter-reset path, and the only thing that clears the remembered map
+--- WHOLE (build()'s prune above 4 * MAX_ROWS trims it to the live group). A
 --- reset is the moment the numbers those GUIDs belonged to stopped existing,
 --- which is precisely when remembering them stops being useful and starts being
 --- a list of strangers. Reached from METER_RESET (OnEnable below).
@@ -578,7 +660,7 @@ function Roster.Forget()
         NS.Debug("Roster", "forgot the remembered roster: %d members, %d pets",
             count(seen.byGuid), count(seen.pets))
     end
-    db.global.roster = { byGuid = {}, pets = {} }
+    db.global.roster = { byGuid = {}, pets = {}, count = 0 }
 end
 
 -- ---------------------------------------------------------------------------
@@ -603,7 +685,7 @@ end
 -- same bug reversed: the mocked group stayed cached and every REAL source was
 -- dropped until the next regroup.
 function Roster:OnEnable()
-    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-\194\1677).
+    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-§7).
     -- AceAddon runs this cascade at load whether or not the player has the addon
     -- switched off, so without this the stand-down taken in OnInitialize would be
     -- undone one function call later. It is NOT a gate on a handler: no handler
@@ -611,7 +693,7 @@ function Roster:OnEnable()
     -- registered for one to be called from. core/LifecycleSetup.lua's `standUp`
     -- calls this function again, and the latch is already up by then -- the hold
     -- set is mutated before the callback runs -- so the rebuild reads `false`
-    -- here and registers from the settings AS THEY ARE NOW (performance-\194\1676).
+    -- here and registers from the settings AS THEY ARE NOW (performance-§6).
     if NS.IsStoodDown and NS.IsStoodDown() then return end
     self:RegisterMessage(MSG.ROSTER_CHANGED,    "OnRosterChanged")
     self:RegisterMessage(MSG.ENTERING_WORLD,    "OnRosterChanged")

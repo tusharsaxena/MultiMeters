@@ -56,11 +56,11 @@ local addonName, NS = ...
 -- Measured on this addon. `throttle = 0.25` is four passes a second, each
 -- emitting an `[Aggregator]` line and a `[Render]` line, plus a second
 -- `[Aggregator]` line while restricted — twelve lines a second, into a buffer
--- capped at 500 (§1). THE CONSOLE HOLDS FORTY SECONDS. A live capture showed
--- `identity rows=2 keys=3 collisions=0 filled=3/10` repeating byte-identically
--- for forty-one seconds: roughly 160 passes, ~480 lines, one string. That single
--- steady state evicts the entire history behind it, which is exactly the harm §9
--- names ("it EVICTS it") arriving by a route §9 does not cover.
+-- then capped at 500 (debug-logging-§1; 1500 since LibKa0s v1.15.0, as §9 now
+-- quotes). THE CONSOLE HELD FORTY SECONDS. A live capture showed `identity rows=2
+-- keys=3 collisions=0 filled=3/10` byte-identical for forty-one seconds: ~160
+-- passes, ~480 lines, one string. That steady state evicts the history behind it,
+-- the harm §9 names ("it EVICTS it") arriving by a route §9 does not cover.
 --
 -- So the pass is coalesced one step further, and the shape is chosen so that
 -- nothing a reader wants is ever the thing that goes missing:

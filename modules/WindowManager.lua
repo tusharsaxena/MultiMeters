@@ -166,6 +166,20 @@ local function defaultName()
     return NS.Database.WindowName(n)
 end
 
+--- The error for a window key that resolved to nothing. A nil key is the
+--- settings panel with nothing picked, and a blank one is `/mm window delete`
+--- with no name typed (doWindow's tail is "", not nil): both answer "nothing
+--- is selected". Any other key is a name or index the caller typed, and the
+--- answer names it back rather than blaming the panel.
+--- @param key any
+--- @return string
+local function unknownWindow(key)
+    if key == nil or tostring(key):match("^%s*$") then
+        return L["No window is selected."]
+    end
+    return L["No window named '%s'."]:format(tostring(key))
+end
+
 --- A name no existing window is using, derived from `base`.
 --- An empty base is not an error: it is the caller asking for the default,
 --- which is what settings/Windows.lua's "New window" button and `/mm window
@@ -212,7 +226,7 @@ function M:Init()
 end
 
 function M:OnEnable()
-    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-\194\1677).
+    -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-§7).
     -- AceAddon runs this cascade at load whether or not the player has the addon
     -- switched off, so without this the stand-down taken in OnInitialize would be
     -- undone one function call later. It is NOT a gate on a handler: no handler
@@ -220,7 +234,7 @@ function M:OnEnable()
     -- registered for one to be called from. core/LifecycleSetup.lua's `standUp`
     -- calls this function again, and the latch is already up by then -- the hold
     -- set is mutated before the callback runs -- so the rebuild reads `false`
-    -- here and registers from the settings AS THEY ARE NOW (performance-\194\1676).
+    -- here and registers from the settings AS THEY ARE NOW (performance-§6).
     if NS.IsStoodDown and NS.IsStoodDown() then return end
     -- The registry is built from the profile, so it cannot be built before
     -- core/Database.lua has one. OnEnable runs after OnInitialize's InitDB.
@@ -269,7 +283,7 @@ end
 --- @return boolean ok, string|nil err
 function M:Delete(key)
     local cfg, index = M.Resolve(key)
-    if not cfg then return false, L["No window is selected."] end
+    if not cfg then return false, unknownWindow(key) end
 
     local list = windows()
     if #list <= 1 then return false, L["The last window cannot be deleted."] end
@@ -304,9 +318,9 @@ end
 --- @return boolean ok, string|nil err
 function M:Rename(key, newName)
     local cfg = M.Resolve(key)
-    if not cfg then return false, L["No window is selected."] end
+    if not cfg then return false, unknownWindow(key) end
     newName = tostring(newName or ""):match("^%s*(.-)%s*$")
-    if newName == "" then return false, L["Window name"] end
+    if newName == "" then return false, L["A window name cannot be empty."] end
 
     local ok, err = NS.SetByPath("window.name", uniqueName(newName), cfg.id)
     if not ok then return false, err end
@@ -321,7 +335,7 @@ end
 --- @return boolean ok, string|nil err
 function M:Duplicate(key)
     local src = M.Resolve(key)
-    if not src then return false, L["No window is selected."] end
+    if not src then return false, unknownWindow(key) end
 
     local id = NS.Database.NextWindowId()
     local cfg = deepcopy(src)
@@ -387,8 +401,8 @@ local UNCOPIED = { ["window.frame.position"] = true }
 --- seam with the target's, so every value the copy lands is validated, deep
 --- copied on the way in and reacted to exactly as if the player had set it
 --- (architecture-§5: a copy-from that touches rows goes through the helper even
---- when the registry is the caller). `columns` is the seam's whole-array
---- carve-out, so it goes as one write and is normalized there.
+--- when the registry is the caller). `columns` is one whole-array row, so it
+--- goes as one write and is normalized there.
 ---
 --- @param src table
 --- @param key string   a COPY_GROUPS key
@@ -468,8 +482,8 @@ end
 function M:CopyFrom(source, target, groups)
     local src = M.Resolve(source)
     local dst = M.Resolve(target)
-    if not src then return false, L["No window is selected."] end
-    if not dst then return false, L["No window is selected."] end
+    if not src then return false, unknownWindow(source) end
+    if not dst then return false, unknownWindow(target) end
     if src == dst then return true end
 
     local wanted = requestedGroups(groups)
@@ -645,8 +659,10 @@ end
 --- ordinary visibility rules hid a window the player was looking at — so
 --- `/mm test` read as a close button with a confusing name. Whatever was on
 --- screen for test stays on screen for real data, and `/mm toggle` is how you
---- close it. NOT during a perf suspend: Show skips the ladder, and a suspended
---- capture must be inert (performance-§6).
+--- close it. NOT while stood down, disabled or perf-suspended: Show skips the
+--- ladder, and a stood-down addon must be inert (slash-commands-§7,
+--- performance-§6). WindowProto:Show refuses on its own too; this keeps the
+--- intent visible at the call site.
 ---
 --- @param enabled boolean
 --- @return boolean applied  false when the start was refused
@@ -656,7 +672,7 @@ function M:SetTestMode(enabled)
         if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
         return false
     end
-    applyTestMode(enabled, not enabled and not (NS.Perf and NS.Perf.suspended))
+    applyTestMode(enabled, not enabled and not (NS.IsStoodDown and NS.IsStoodDown()))
     return true
 end
 
@@ -678,6 +694,18 @@ function M:IsTest()
     return (NS.State and NS.State.testMode) and true or false
 end
 
+--- Whether any window is on screen: the question a bare `/mm toggle` asks before it
+--- decides to hide them all or show them all, published so the launcher menu's
+--- *Show window* box reads the same answer the click it drives acts on
+--- (core/LauncherSetup.lua, launcher-§2).
+--- @return boolean
+function M:AnyShown()
+    for _, inst in ipairs(M.All()) do
+        if inst:IsShown() then return true end
+    end
+    return false
+end
+
 --- `/mm toggle` with no name flips every window; with a name, one.
 ---
 --- "Toggle" here means SHOWN, not enabled: it hides a window that is on screen
@@ -685,14 +713,19 @@ end
 --- put it back at the next zone change. That is what a player who typed
 --- `/mm toggle` in the middle of a pull wants.
 ---
+--- NOTHING SHOWS WHILE STOOD DOWN. The disabled case never gets here -- the slash
+--- gate refuses first, naming `/mm enable`, and the launcher menu grays its *Show
+--- window* entry -- so the caller this refusal answers is the perf hold, and its
+--- line says so (performance-§6).
+---
 --- @param name string|nil
 --- @return boolean ok, string|nil err
 function M:Toggle(name)
+    if NS.IsStoodDown and NS.IsStoodDown() then
+        return false, L["Windows are suspended while a performance capture runs."]
+    end
     if name == nil then
-        local anyShown = false
-        for _, inst in ipairs(M.All()) do
-            if inst:IsShown() then anyShown = true end
-        end
+        local anyShown = M:AnyShown()
         for _, inst in ipairs(M.All()) do
             if anyShown then inst:Hide("toggled") else inst:Show() end
         end
@@ -701,7 +734,7 @@ function M:Toggle(name)
 
     local inst = M.Get(name)
     if not inst then
-        return false, (L["Setting not found: %s"]):format(tostring(name))
+        return false, unknownWindow(name)
     end
     if inst:IsShown() then inst:Hide("toggled") else inst:Show() end
     return true
@@ -750,7 +783,7 @@ function M:Suspend()
     -- re-ask on its own. This is the pass that makes it ask.
     --
     -- IT CANNOT BE LEFT TO CONFIG_CHANGED any more, and that is the stand-down
-    -- (slash-commands-\194\1677). The write seam publishes that message AFTER the row's
+    -- (slash-commands-§7). The write seam publishes that message AFTER the row's
     -- onChange has run, and by then the whole bus is unregistered -- so the
     -- message the old draw gate relied on to hide the windows now reaches nobody,
     -- correctly, because the addon is off.

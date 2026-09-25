@@ -79,6 +79,20 @@
 local repoRoot = ... or "."
 local kitMockBase = dofile(repoRoot .. "/tests/_kit/mock_base.lua")
 
+-- The manifest version the mock's C_AddOns answers with (see `M.__toc`). Read
+-- once per load from the real TOC so a release bump carries the harness along.
+-- "0.0.0" is the LOUD fallback: no real release is ever that, so a missing or
+-- unparseable `## Version:` line shows up in tests/test_envsetup.lua's
+-- default-fixture case and in tests/perf.lua's printed version, not silently.
+local tocVersion = (function()
+    local fh = io.open(repoRoot .. "/MultiMeters.toc", "r")
+    if not fh then return "0.0.0" end
+    local body = fh:read("*a")
+    fh:close()
+    local v = ("\n" .. body .. "\n"):match("\n## Version:%s*([^\r\n]-)%s*[\r\n]")
+    return (v and v ~= "") and v or "0.0.0"
+end)()
+
 -- The two halves this file was peeled into (layout-§1's 1500-line cap; issue #34).
 -- Neither is a SUITE -- Kit.assertSuiteInventory never sees them and tests/run.lua's
 -- SUITES list must not name them -- and both are resolved through `repoRoot` for the
@@ -973,13 +987,18 @@ local function build()
         return group.delve or group.delveSignal == "delvesui"
     end
 
-    -- Event-name validation, which core/MultiMeters.lua asks before registering
-    -- PLAYER_IS_GLIDING_CHANGED. Everything is valid unless a case says
-    -- otherwise, so the probe's failure path has to be opted into.
+    -- Event-name validation, the front gate NS.SafeRegisterEvent asks before
+    -- every registration core/MultiMeters.lua makes. Everything is valid unless a
+    -- case says otherwise, so the refusal path has to be opted into. A name in the
+    -- kit's `M.__badEvents` (the one the registration RAISES for) is invalid
+    -- here too, read at call time as the kit reads it, because the client's
+    -- answer and the client's raise never disagree.
     M.__invalidEvents = {}
     function M.setEventInvalid(name) M.__invalidEvents[name] = true end
     M.C_EventUtils = M.C_EventUtils or {}
     M.C_EventUtils.IsEventValid = function(name)
+        local bad = M.__badEvents
+        if type(bad) == "table" and bad[name] then return false end
         return not M.__invalidEvents[name]
     end
     M.IsLoggedIn          = function() return true end
@@ -1083,8 +1102,12 @@ local function build()
     -- Stubbed HERE and not in the base (whose header explains why). Clear
     -- `mocks.C_AddOns` — not `_G.C_AddOns` — to drive core/EnvSetup.lua's
     -- deprecated-global rung; `mocks._G` resolves through this table.
+    --
+    -- Version is READ from MultiMeters.toc's `## Version:` line, not typed in:
+    -- a literal went stale at every release bump and stamped the wrong version
+    -- on every perf record the harness wrote. Title and Notes stay literals.
     M.__toc = {
-        Version = "0.1.0",
+        Version = tocVersion,
         Title   = "Ka0s Multi Meters",
         Notes   = "One grid, one row per group member, one column per stat.",
     }
@@ -1187,7 +1210,7 @@ local function build()
 
     -- AceEvent-3.0 and AceAddon-3.0 are THE KIT'S, whole (kit revision 17). This
     -- file carried its own message half -- one registry, `UnregisterAllMessages`
-    -- for modules/Provider.lua's Suspend and modules/Window.lua's UnregisterBus,
+    -- for modules/Provider.lua's Suspend and Window_Lifecycle.lua's UnregisterBus,
     -- a string method resolved on the target at dispatch -- and its own module
     -- layer, because the kit had neither. It has both now, taken from the real
     -- CallbackHandler and AceAddon-3.0, so the copies are gone. What a suite

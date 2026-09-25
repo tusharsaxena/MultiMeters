@@ -248,7 +248,7 @@ local ROLE_COLORS = {
 -- no class art and library-stack-§8 says a mark it lacks is added UPSTREAM rather
 -- than drawn locally -- but twelve class circles are the game's own data, not a
 -- Ka0s glyph, and they change when the game's classes do. Recorded in
--- docs/ARCHITECTURE.md's "Hard-coded texture paths" census.
+-- docs/texture-paths.md's "Hard-coded texture paths" census.
 local CLASS_TEXTURE = [[Interface\TargetingFrame\UI-Classes-Circles]]
 
 --- The bar color for one cell, per the window's `bars.colorMode`.
@@ -339,8 +339,8 @@ end
 --- reach LSM through core/MediaSetup.lua's RegisterLSM, so the only load that
 --- gets here with nothing is one where the payload is absent -- and on that load
 --- no catalog texture reached LSM either. A fallback that needs the thing that is
---- missing is not a fallback (library-stack-§8; docs/ARCHITECTURE.md's
---- "Hard-coded texture paths").
+--- missing is not a fallback (library-stack-§8; docs/texture-paths.md's
+--- "Hard-coded texture paths" census).
 local function barTexture(name)
     local media = lsm()
     local path = media and name and media:Fetch("statusbar", name, true)
@@ -1224,6 +1224,8 @@ NS.RowInternals = {
     Cell           = Cell,
     cellBackground = cellBackground,
     CLASS_TEXTURE  = CLASS_TEXTURE,
+    -- modules/Row_Cells.lua grows a row's cell set from here, at CALL time.
+    newCell        = newCell,
 }
 
 -- ---------------------------------------------------------------------------
@@ -1232,6 +1234,8 @@ NS.RowInternals = {
 
 local RowProto = {}
 RowProto.__index = RowProto
+-- modules/Row_Cells.lua hangs BindLiveCells and Release on this prototype.
+NS.RowInternals.RowProto = RowProto
 
 --- Build a row and its cells. Called by the window's pool when it grows, never
 --- on a refresh.
@@ -1254,7 +1258,8 @@ function Row.New(window)
     local row = setmetatable({
         window = window,
         frame  = frame,
-        cells  = {},   -- [statKey] = cell
+        cells  = {},   -- [statKey] = cell, every cell the row has ever had
+        liveCells = {}, -- the ones the layout shows, in order (Row_Cells.lua)
     }, RowProto)
 
     -- The scripts above read the row back off the frame rather than closing over
@@ -1305,26 +1310,9 @@ function RowProto:ApplyLayout(layout)
     self.nameCell:ApplyLayout(layout, layout.nameColumn)
     self.nameCell:ApplyIcons(layout)
 
-    -- Grow the cell set to match the enabled columns, and hide any cell whose
-    -- column was removed. Cells are never destroyed: a column toggled off and on
-    -- again re-uses the widget it had before.
-    local live = {}
-    for _, col in ipairs(layout.columns) do
-        local cell = self.cells[col.key]
-        if not cell then
-            cell = newCell(self, col.key)
-            self.cells[col.key] = cell
-        end
-        cell:ApplyLayout(layout, col)
-        cell.frame:Show()
-        live[col.key] = true
-    end
-    for key, cell in pairs(self.cells) do
-        if not live[key] then
-            cell.frame:Hide()
-            cell:Clear()
-        end
-    end
+    -- Grow the cell set to the enabled columns, rebuild self.liveCells in place
+    -- and hide what the layout dropped (modules/Row_Cells.lua).
+    self:BindLiveCells(layout)
 
     local rows = self.window.config.rows or {}
     -- Full opacity: it is three pixels wide, and a three-pixel marker at 12%
@@ -1373,8 +1361,10 @@ function RowProto:Update(entry, index)
 
     self.nameCell:SetPlayer(entry, self.window.sortColumn)
 
-    for _, cell in pairs(self.cells) do
-        cell:SetValue(entry)
+    -- The LIVE cells only: a hidden column's cell is not written (Row_Cells.lua).
+    local live = self.liveCells
+    for i = 1, #live do
+        live[i]:SetValue(entry)
     end
 
     -- After the entry is set, because who takes the mouse depends on what kind
@@ -1437,22 +1427,9 @@ end
 --- The pooled object here is this TABLE, not the frame it wraps, and LibKa0s-Pool-1.0 asks a
 --- pooled object for exactly two methods — `:Show()` and `:Hide()`. Forwarding them is the whole
 --- of what the row had to grow to be poolable by the library; everything else the pool does to a
---- row it does through the `before` hook, which calls `Release` below.
+--- row it does through the `before` hook, which calls `Release` (modules/Row_Cells.lua).
 function RowProto:Show() self.frame:Show() end
 function RowProto:Hide() self.frame:Hide() end
-
---- Return the row to the pool: hidden, blank, and holding no reference to the
---- player it was drawing.
-function RowProto:Release()
-    self.entry = nil
-    self.index = nil
-    self.frame:Hide()
-    self.mouseHighlight:Hide()
-    self.selfHighlight:Hide()
-    self.bg:Hide()
-    self.nameCell:Clear()
-    for _, cell in pairs(self.cells) do cell:Clear() end
-end
 
 --- Where the row at `index` sits, as a distance from the body's growth edge.
 ---

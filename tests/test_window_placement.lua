@@ -219,7 +219,7 @@ test("ShouldShow's ladder reads master enable, then test mode, then context", fu
     local cfg = NS.Database.GetWindows()[1]
 
     -- Through the write seam: the ladder reads the LATCH now, and only the seam's
-    -- onChange takes the `disabled` hold (slash-commands-\194\1677).
+    -- onChange takes the `disabled` hold (slash-commands-§7).
     assertTrue(NS.SetByPath("enabled", false))
     assertEqual(select(2, NS.ShouldShow(cfg)), "disabled")
     assertTrue(NS.SetByPath("enabled", true))
@@ -668,12 +668,12 @@ test("`resizeGrip` is gone from the code, not just from the panel", function()
 end)
 
 test("Unlocking does not resurrect the grip on a collapsed window", function()
-    -- ApplyLock and ApplyMinimised are two authors of one property, so whichever
+    -- ApplyLock and ApplyMinimized are two authors of one property, so whichever
     -- runs last wins unless they ask the same question. `/mm lock off` was the
     -- path that put the grip back.
     -- red under: ApplyLock doing grip:SetShown(not locked).
     local _, window, cfg = scene()
-    cfg.frame.minimised = true
+    cfg.frame.minimized = true
     cfg.frame.locked = false
     window:ApplyConfig()
     window:ApplyLock()

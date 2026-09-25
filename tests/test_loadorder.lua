@@ -290,3 +290,65 @@ test("loadorder: core/MultiMeters.lua loads after every core/ setup file", funct
     assertTrue(index["core/envsetup.lua"] < index["core/namespace.lua"],
         "core/Namespace.lua reads the TOC manifest through NS.Meta at LOAD time")
 end)
+
+-- ── the at-line annotations (toc-file-§5) ───────────────────────────────────
+
+--- Index of every addon file in TOC load order, keyed lower-case and forward-slashed.
+local function tocIndex()
+    local index = {}
+    for i, rel in ipairs(T.loadedAddonFiles) do index[rel:lower()] = i end
+    return index
+end
+
+test("loadorder: the file-scope readers of CoreSetup, EnvSetup and OptionsSetup load after them", function()
+    -- These pairs are the constraints the three LOAD-BEARING notes in the TOC state.
+    -- red under: swapping any pair in MultiMeters.toc.
+    local index = tocIndex()
+    local function before(a, b, why)
+        assertTrue(index[a] ~= nil and index[b] ~= nil, a .. " and " .. b .. " are both in the TOC")
+        assertTrue(index[a] < index[b], a .. " must load before " .. b .. ": " .. why)
+    end
+    -- NS.LIBKA0S_MISSING is concatenated at file scope in both seams' degraded branch.
+    before("core/coresetup.lua", "core/debuglogsetup.lua", "reads NS.LIBKA0S_MISSING at load")
+    before("core/coresetup.lua", "core/launchersetup.lua", "reads NS.LIBKA0S_MISSING at load")
+    -- The perf descriptor calls NS.Version() at file scope and takes `lifecycle`.
+    before("core/envsetup.lua", "core/perfsetup.lua", "the descriptor calls NS.Version() at load")
+    before("core/lifecyclesetup.lua", "core/perfsetup.lua", "the descriptor takes lifecycle at load")
+    -- Aggregator captures both modules as upvalues at file scope.
+    before("modules/provider.lua", "modules/aggregator.lua", "captures NS.Provider at load")
+    before("modules/roster.lua", "modules/aggregator.lua", "captures NS.Roster at load")
+    -- Every page file captures NS.Helpers, or registers through its seam, at load.
+    for _, page in ipairs({
+        "general", "windows", "frame", "header", "bars", "tooltip", "visibility",
+        "columnblocks", "columns", "profiles",
+    }) do
+        before("settings/optionssetup.lua", "settings/" .. page .. ".lua", "the page reads NS.Helpers at load")
+    end
+end)
+
+test("loadorder: each load-bearing seam line carries a LOAD-BEARING comment at the line", function()
+    -- toc-file-§5: a load-bearing position MUST say so at the line. The comment
+    -- block is the run of `#` lines directly above the entry.
+    -- red under: deleting the note above any of these lines in MultiMeters.toc.
+    local src = readFile(ROOT .. "/MultiMeters.toc")
+    assertTrue(src ~= nil, "MultiMeters.toc could not be read")
+    local lines = {}
+    for line in (src or ""):gmatch("([^\n]*)\n?") do lines[#lines + 1] = (line:gsub("\r$", "")) end
+    for _, entry in ipairs({
+        "core\\CoreSetup.lua", "core\\PerfSetup.lua", "modules\\Aggregator.lua",
+        "settings\\OptionsSetup.lua",
+    }) do
+        local at
+        for i, line in ipairs(lines) do
+            if line == entry then at = i end
+        end
+        assertTrue(at ~= nil, "MultiMeters.toc names " .. entry)
+        local block, i = {}, (at or 1) - 1
+        while i >= 1 and lines[i]:match("^#") do
+            block[#block + 1] = lines[i]
+            i = i - 1
+        end
+        assertTrue(table.concat(block, "\n"):find("LOAD-BEARING", 1, true) ~= nil,
+            entry .. " is load-bearing but carries no LOAD-BEARING comment directly above it")
+    end
+end)

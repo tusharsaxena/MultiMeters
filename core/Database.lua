@@ -50,12 +50,21 @@ NS.Database = Database
 -- v14 carries the addon-wide `master.locked` onto every window's own lock and
 --     prunes it.
 -- v15 moves LibDBIcon's `minimap` table from the profile to the global store.
-local CURRENT_DB_VERSION = 15
+-- v16 spells the window's minimize keys the US way.
+--
+-- The defaults declare `global.schemaVersion = 0`, which means UNSTAMPED: a fresh
+-- install or an account from before the runner stamped anything. It is never the
+-- current version (savedvariables-§1); see defaults/Profile.lua for why.
+local CURRENT_DB_VERSION = 16
+
+--- The runner's target, published under the name savedvariables-§1 gives it.
+--- Raising it means registering the step that reaches it; the defaults' 0 never moves.
+NS.SCHEMA_VERSION = CURRENT_DB_VERSION
 
 -- The ONE Ka0s_MultiMeters_ProfileChanged emitter (architecture-§4: one sender
 -- per message). Every path that makes the active profile a different thing — a
 -- swap, a copy, a reset — routes here rather than writing its own SendMessage,
--- so the bus catalog in docs/ARCHITECTURE.md names one site and stays true.
+-- so the bus catalog in docs/message-bus.md names one site and stays true.
 local function fireProfileChanged(key)
     if NS.SendMessage then
         NS:SendMessage(NS.Constants.MSG.PROFILE_CHANGED, { newProfileKey = key })
@@ -114,9 +123,10 @@ end
 --- and safe to run on every login and every profile swap.
 ---
 --- Shape-driven rather than version-gated on purpose. AceDB's defaults merge
---- backfills `db.global.schemaVersion` to the CURRENT value the moment
---- `db.global` is first touched, which masks an older account as already-current
---- and would skip a version-gated step entirely. Keying on "is this key missing"
+--- backfills the declared `db.global.schemaVersion` default, 0, onto an account
+--- that stored no stamp, so the version says only "unstamped" and nothing about
+--- which keys a stored window already has. A window also arrives from a copy, a
+--- reset or a hand edit whatever the stamp says. Keying on "is this key missing"
 --- asks the only question that has a reliable answer.
 ---
 --- @param w table
@@ -248,12 +258,28 @@ end
 -- Migrations
 -- ---------------------------------------------------------------------------
 --
--- Each step is idempotent, reads and writes db, and walks
--- db.global.schemaVersion forward by exactly one. Adding a v2 means appending
--- `[1] = function(db) ... db.global.schemaVersion = 2 end` and bumping
--- CURRENT_DB_VERSION. No bootstrap change is required.
+-- The savedvariables-§1 rules (WowAddonStandards v2.65.0), which every step and
+-- the runner below keep:
+--
+--   * `migrations[N]` takes the account from vN to vN+1. It reads and writes db
+--     and NEVER writes `schemaVersion`: the RUNNER owns the stamp, and advances it
+--     to N+1 only after the step returned without raising. A step that raises
+--     leaves the stamp at N, so the next load retries it.
+--   * A profile-scoped step walks EVERY stored profile through allProfiles(db),
+--     never db.profile alone: the stamp is account-wide, so a profile the step
+--     skipped would never get a second chance.
+--   * Every step is idempotent against a fresh default profile. An unstamped
+--     account (0) walks the whole ladder from v1, and a fresh install is one.
+--
+-- Adding a step means appending `migrations[N] = function(db) ... end` and
+-- raising CURRENT_DB_VERSION to N+1. No bootstrap change is required.
 --
 local migrations = {}
+
+--- The step table, a test seam: tests/test_migrations.lua replaces a step in a
+--- freshly loaded instance to prove the runner's stamp ownership. Nothing in the
+--- addon reads it.
+Database.__migrations = migrations
 
 --- Every profile in the account, active or not.
 ---
@@ -342,8 +368,6 @@ migrations[1] = function(db)
             v2WidenFrameForGrid(w.frame, #columns, defaultPad)
         end
     end
-
-    db.global.schemaVersion = 2
 end
 
 --- v2 -> v3: the three row-icon toggles collapse into one.
@@ -374,8 +398,6 @@ migrations[2] = function(db)
             end
         end
     end
-
-    db.global.schemaVersion = 3
 end
 
 --- v3 -> v4: THE "AUTO" EXPORT CHANNEL IS RETIRED.
@@ -398,8 +420,6 @@ migrations[3] = function(db)
             export.channel = "SELF"
         end
     end
-
-    db.global.schemaVersion = 4
 end
 
 -- The two keys v5 moves off the window and onto the profile. Built once here at
@@ -488,8 +508,6 @@ migrations[4] = function(db)
         -- had anything to give.
         v5PruneWindowData(windows)
     end
-
-    db.global.schemaVersion = 5
 end
 
 --- v5 -> v6: THE TWO DEAD ROW-BACKGROUND KEYS ARE PRUNED.
@@ -516,8 +534,6 @@ migrations[5] = function(db)
             end
         end
     end
-
-    db.global.schemaVersion = 6
 end
 
 --- v6 -> v7: FOUR CLASS-COLOR BOOLEANS BECOME COLOR MODES.
@@ -553,8 +569,6 @@ migrations[6] = function(db)
             end
         end
     end
-
-    db.global.schemaVersion = 7
 end
 
 --- v7 -> v8: THE HEADER'S FOUR REDUNDANT KEYS ARE PRUNED.
@@ -590,8 +604,6 @@ migrations[7] = function(db)
             end
         end
     end
-
-    db.global.schemaVersion = 8
 end
 
 --- v8 -> v9: THE TITLE BAR'S BACKGROUND LOSES ITS COLOR MODE.
@@ -613,8 +625,6 @@ migrations[8] = function(db)
             if type(header) == "table" then header.bgColorMode = nil end
         end
     end
-
-    db.global.schemaVersion = 9
 end
 
 --- v9 -> v10: THE "At cursor" TOOLTIP ANCHOR IS RETIRED.
@@ -637,8 +647,6 @@ migrations[9] = function(db)
             end
         end
     end
-
-    db.global.schemaVersion = 10
 end
 
 --- v10 -> v11: THE TITLE BAR'S TEXT LOSES ITS THREE-MODE COLOR SETTING.
@@ -672,8 +680,6 @@ migrations[10] = function(db)
             if type(header) == "table" then header.colorMode = nil end
         end
     end
-
-    db.global.schemaVersion = 11
 end
 
 --- v11 -> v12: THE COLUMN ARRAY BECOMES THE CATALOG.
@@ -722,8 +728,6 @@ migrations[11] = function(db)
             end
         end
     end
-
-    db.global.schemaVersion = 12
 end
 
 -- v13's two control-color pairs: the stored boolean, and the mode key it
@@ -800,8 +804,6 @@ migrations[12] = function(db)
             end
         end
     end
-
-    db.global.schemaVersion = 13
 end
 
 --- Lock every window of one profile, through the lock each window owns.
@@ -843,8 +845,6 @@ migrations[13] = function(db)
             master.locked = nil
         end
     end
-
-    db.global.schemaVersion = 14
 end
 
 --- The `minimap` table a profile still carries, preferring the ACTIVE one.
@@ -924,8 +924,48 @@ migrations[14] = function(db)
     for _, profile in ipairs(allProfiles(db)) do
         profile.minimap = nil
     end
+end
 
-    db.global.schemaVersion = 15
+--- The two stored frame keys v16 renames, old spelling -> US spelling.
+---
+--- The old names are the player's SavedVariables, matched verbatim off disk: the
+--- step has to spell them the way the file on disk does or it reads nothing
+--- (localization-§5, waived per file and word in tests/prose_waivers.lua).
+local V16_FRAME_KEYS = {
+    { from = "minimised",    to = "minimized" },
+    { from = "showMinimise", to = "showMinimize" },
+}
+
+--- Move one window frame's keys onto their US spelling.
+---
+--- A US key already present WINS: it is the one the addon has been reading, so an
+--- old key beside it is a leftover, dropped rather than copied over it.
+local function v16RenameFrameKeys(frame)
+    if type(frame) ~= "table" then return end
+    for _, key in ipairs(V16_FRAME_KEYS) do
+        if frame[key.to] == nil then frame[key.to] = frame[key.from] end
+        frame[key.from] = nil
+    end
+end
+
+--- v15 -> v16: THE WINDOW'S MINIMIZE KEYS, SPELLED THE US WAY.
+---
+--- `window.frame.minimized` (the collapsed state the header's control writes) and
+--- `window.frame.showMinimize` (whether that control is drawn) were stored under
+--- their British spelling. Renaming only the defaults would orphan every stored
+--- value: a collapsed window would come back open and a hidden control would come
+--- back drawn, while the old keys sat in the file read by nothing.
+---
+--- Every window of every profile, for the reason allProfiles gives. Idempotent: a
+--- frame with no old key is left exactly as it was.
+migrations[15] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" then v16RenameFrameKeys(w.frame) end
+            end
+        end
+    end
 end
 
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every
@@ -935,22 +975,31 @@ function NS:RunMigrations()
     if not (db and db.global) then return end
     local g = db.global
 
-    g.schemaVersion = g.schemaVersion or 1
+    -- 0 (or nothing) is UNSTAMPED: a fresh install or a legacy account. v1 is
+    -- the shipped shape and every step is idempotent against a fresh default
+    -- profile, so both start the walk at v1.
+    local v = tonumber(g.schemaVersion) or 0
+    if v < 1 then v = 1 end
 
-    while g.schemaVersion < CURRENT_DB_VERSION do
-        local from = g.schemaVersion
-        local step = migrations[from]
+    while v < CURRENT_DB_VERSION do
+        local step = migrations[v]
         if not step then
-            -- No registered migrator for this jump. Bump to the current version
+            -- No registered migrator for this jump. Stamp the current version
             -- rather than spinning: a real schema change would have registered
             -- its step before CURRENT_DB_VERSION moved.
+            if NS.State and NS.State.debug then
+                NS.Debug("Migrate", "no step registered at v%d; stamped v%d", v, CURRENT_DB_VERSION)
+            end
             g.schemaVersion = CURRENT_DB_VERSION
             break
         end
         step(db)
+        -- Reached only when the step returned: the runner owns the stamp.
+        g.schemaVersion = v + 1
         if NS.State and NS.State.debug then
-            NS.Debug("Migrate", "v%d -> v%d", from, from + 1)
+            NS.Debug("Migrate", "v%d -> v%d", v, v + 1)
         end
+        v = v + 1
     end
 
     -- Shape normalization runs AFTER the version walk and unconditionally, so a
@@ -976,7 +1025,7 @@ end
 --
 -- A reset-all accepted from the General page's popup, which `/mm resetall`
 -- opens too, reaches the reset line from inside the library's bulk bracket,
--- which then adds nothing (NS.Bulk, in settings/Schema_Paths.lua). The three
+-- which then adds nothing (NS.Bulk, the settings runtime's bracket). The three
 -- share one rebuild. The reset line is logged after it, and ends " (stopped by
 -- an error)" when it raised.
 --
@@ -1003,7 +1052,7 @@ local function debugOn() return NS.State and NS.State.debug end
 --- direct call from here (architecture-§4).
 --- Re-take or release the `disabled` hold for the profile now active.
 ---
---- slash-commands-\194\1677 names this explicitly: `enabled` is a stored setting like any
+--- slash-commands-§7 names this explicitly: `enabled` is a stored setting like any
 --- other and A PROFILE SWITCH CAN FLIP IT, with no verb and no checkbox touched.
 --- A player switching to a profile where the addon is enabled expects it to come
 --- up, so the latch has to be re-evaluated on all three AceDB callbacks -- which
@@ -1053,7 +1102,7 @@ function Database:OnProfileReset(_, db)
     reseedQuietly = false
     -- Logged AFTER the rebuild, so a line never reads as a finished reset when
     -- the rebuild then raised: that one ends " (stopped by an error)", the
-    -- marker NS.Bulk's line carries in settings/Schema_Paths.lua.
+    -- marker NS.Bulk's line carries (LibKa0s-Schema-1.0's bracket).
     if debugOn() then
         NS.Debug("Set", "reset profile '%s' to defaults%s", tostring(key),
             ok and "" or " (stopped by an error)")

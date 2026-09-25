@@ -8,7 +8,7 @@ shim degrades to a stated default rather than erroring at the call site.
 It is first in the TOC's core block. Nothing depends on that any more — the TOC-manifest reader that
 made it load-bearing is `core/EnvSetup.lua`'s now — but it costs nothing and it reads correctly.
 
-**Twenty-nine shims**, counted the way `documentation-§3` counts them: entry points published on
+**Thirty shims**, counted the way `documentation-§3` counts them: entry points published on
 this addon's own `Compat` table, over this file alone. The threshold is three. This addon's
 "might not exist" surface is unusually large because `C_DamageMeter` — its entire data source — is
 new in 12.0, so a client one patch behind has none of it and a PTR build can carry the namespace
@@ -28,13 +28,14 @@ without one of its members.
 | Icon art | `FirstTexture`, `FirstAtlas` | `nil` |
 | Player context | `IsInDelve`, `IsSkyriding`, `IsInHousing` | `false` |
 | Bar animation | `BarInterpolation` | `nil`, and the caller omits the argument, so the bar snaps as it did on every client before 12.0 |
+| Chat sending | `ChatSender` (`C_ChatInfo.SendChatMessage`, else the deprecated `SendChatMessage` global) | `nil`, and `modules/Export.lua` prints the export to the player, after one notice line when a real channel was asked for |
 
 Callers, by weight: `modules/Provider.lua` (the meter, the four `C_DeathRecap` readers and the
 recap-discovery probe), `modules/DrillDown.lua` and `modules/Tooltip_Lines.lua`
 (`Compat.GetSpellInfo`) with `modules/Tooltip_Builders.lua` (`Compat.GetSpellTexture`),
 `modules/Visibility.lua` (player context), `modules/HeaderControls.lua` (`FirstTexture` and
 `FirstAtlas`) and `modules/Window_Header.lua` (`FirstAtlas`, and the only caller `OpenContextMenu`
-has), `modules/Format.lua` (the formatters), and `modules/Row.lua` (`BarInterpolation`, from `Cell:SetValue`). `modules/Tooltip.lua` and `modules/Window.lua`
+has), `modules/Format.lua` (the formatters), `modules/Row.lua` (`BarInterpolation`, from `Cell:SetValue`), and `modules/Export.lua` (`ChatSender`, the chat export's only sender). `ChatSender` is a host member rather than a `LibKa0s-Compat-1.0` one because it has one consumer in the collection (anti-pattern #55). `modules/Tooltip.lua` and `modules/Window.lua`
 themselves name nothing in this file any more: the CCN peel took the spell shims across to the
 tooltip's builder and line files, and the header art and the menu across to
 `modules/Window_Header.lua`. `modules/Roster.lua` reaches `Compat.GetSpecialization` for the local
@@ -42,7 +43,7 @@ player's fallback role. It read the deprecated global directly until LibKa0s v1.
 
 ## What `LibKa0s-Compat-1.0` answers
 
-Since LibKa0s v1.55.0, four of the twenty-nine are the library's:
+Since LibKa0s v1.55.0, four of the thirty are the library's:
 
 - `GetSpellInfo`
 - `GetSpellTexture`

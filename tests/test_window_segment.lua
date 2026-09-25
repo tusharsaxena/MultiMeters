@@ -1,7 +1,7 @@
 -- tests/test_window_segment.lua — `window.data.sessionID`, the pinned segment,
 -- as a schema row.
 --
--- A new file rather than more of tests/test_window_header.lua, which sits at the
+-- A new file rather than more of tests/test_window_header.lua, which then sat at the
 -- 1500-line cap's edge (layout-§1). The segment MENU's own cases stay there; this
 -- file holds what the row changed.
 --

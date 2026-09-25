@@ -315,7 +315,7 @@ test("Constants: every declared bus message is sent somewhere in the addon", fun
     -- A declared-but-unsent message is a subscriber that can never fire, and the
     -- catalog is the only place the name exists — so nothing else would catch it.
     -- REGISTERING for a message is not evidence it is sent, which is why this
-    -- looks only at SendMessage call sites: modules/Window.lua subscribes to
+    -- looks only at SendMessage call sites: modules/Window_Lifecycle.lua subscribes to
     -- DRILLDOWN_CHANGED, and a check that merely grepped for the key would have
     -- been satisfied by the subscriber alone.
     -- red under: deleting a SendMessage call site without deleting its constant.

@@ -87,7 +87,10 @@ arrives on the list the moment the library publishes it and stays there until th
 loud why the stub does not carry it. `tests/run.lua` registers where the live half is looked up
 (`Kit.setSurfaceSource`), because this stub mirrors the **instance** `lib:New(descriptor)` returned
 and not the four-member library table LibStub answers for the same name. The other six seams are
-not compared by name, and the suite's header gives the reason for each.
+not compared by name, and the suite's header gives the reason for each. The settings runtime's
+stub (`settings/Schema_Paths.lua`, issue #52) is pinned there too, in the two-table form the
+library's docs prescribe for an instance: a live `NS.SchemaRuntime` against a degraded one and the
+stub library against the live one, both from real loads, plus a degraded batch landing in the store.
 
 ### One environment detail worth knowing
 
@@ -134,19 +137,32 @@ to duplicate — the tooltip found no source, the drill-down opened on nothing, 
 applied twice.
 
 `modules/Window.lua` split into the band across the top and the geometry underneath.
-`tests/test_window_header.lua` is the title strip, the column header buttons and the sort hand-off,
-the segment picker and the minimise collapse that takes the body away and leaves the strip behind;
-its sort-arrow cases exist once per rung of the three-rung ladder, so an arrow assertion that fails
-on one rung may be perfectly correct on another and the first thing to read in a failure is which
-rung the case forced. `tests/test_window_placement.lua` is where a window sits, how big it is, and
+`tests/test_window_header.lua` is the title strip, the column header buttons, the segment picker and
+the minimize collapse that takes the body away and leaves the strip behind. The sort hand-off went
+to `tests/test_window_header_sort.lua` on 2026-09-24, when the header suite sat six lines under the
+cap: which header wears the arrow, what a header click does to the order in and out of combat, and
+the arrow ladder itself. Its sort-arrow cases exist once per rung of the three-rung ladder, so an
+arrow assertion that fails on one rung may be perfectly correct on another and the first thing to
+read in a failure is which rung the case forced. `tests/test_window_placement.lua` is where a window sits, how big it is, and
 whether it is drawn at all. Its save cases **poison** `GetPoint`, `GetWidth` and `GetHeight` on the
 value-carrying frame and then drive a save through them, so a rule-R3 read that crept back in is a
-stack trace rather than something a reviewer has to notice.
+stack trace rather than something a reviewer has to notice. When the bus wiring and the lifecycle
+tail left for `modules/Window_Lifecycle.lua`, their cases left with them, names unchanged, for
+`tests/test_window_lifecycle.lua`: the exact twelve subscriptions on a private target, the dirty flag
+every data message sets, `SetConfig`, `Suspend` / `Resume` and `Destroy`.
 
 `tests/test_row_namecell.lua` covers the one cell in the row that never holds a figure. Because it
 holds no meter value it stays **out** of the secret set, its geometry stays readable through a
 restricted pull, and that is why its icon and truncation cases can assert on widths at all; the value
-cell and the shared color, media and mouse parts stay in `tests/test_row.lua`.
+cell and the shared color, media, highlight and pool parts stay in `tests/test_row.lua`.
+`tests/test_row_mouse.lua` took the row's mouse hand-off on 2026-09-24, names unchanged: a stat cell
+asks the tooltip the narrow question and a click routes to the drill-down, while inside a breakdown
+the row is a spell, the row owns the mouse and a right click leaves.
+
+`tests/test_database_migrations.lua` took `core/Database.lua`'s migration runner and every step it
+walks out of `tests/test_database.lua` on the same day, mirroring the module's own `Migrations`
+section; the AceDB instance, the `== nil` merge, the window registry and the profile callbacks stay
+behind. Who owns the schema stamp is still `tests/test_migrations.lua`'s subject.
 
 `modules/Tooltip.lua` is the bent seam — two modules, three suites. `tests/test_tooltip_lines.lua`
 covers one pooled line as a widget, including the minimum width, which is **computed** from character
@@ -173,7 +189,10 @@ redirected, and the picker never moves. `NS.SetByPaths` is held to all-or-nothin
 `[Set]` line per row, and one `CONFIG_CHANGED` per batch. A bulk copy is the exception: one
 `[Set] <act>: N rows` line, where N counts only the rows that changed. The same suite pins
 `NS.Bulk`'s bracket: nesting, the changed-only count, silence after a profile reset, and a raise
-that still closes the bracket. `tests/test_windowmanager.lua` and
+that still closes the bracket. `tests/test_schema_batch.lua` pins `NS.SetByPaths` by what a caller
+observes -- all or nothing, one announce, one bulk line, the window id, the column array, the
+minimap inversion and store-then-react order -- written green against the host seam first and kept
+green across the move onto `LibKa0s-Schema-1.0`'s `SetMany`. `tests/test_windowmanager.lua` and
 `tests/test_window_placement.lua` prove that `Rename`, `CopyFrom`, `SetLocked` and `SaveSize` reach
 the seam ([schema.md](schema.md#the-window-registry-and-its-writer)).
 `settings/Schema_Compose.lua` is the one new module with no suite of its own, and deliberately: it
@@ -193,6 +212,12 @@ out along the seams its own header had already drawn: the **secret simulator** t
 What stayed is the builder, the meter and group fixtures, `C_AddOns`, the AceDB string-method
 callbacks and the control surface, which still lists everything in one block including the two halves
 that no longer live there.
+
+A third sibling, `tests/mock_menu.lua`, is not loaded by the builder at all: it is the launcher
+options menu's `MenuUtil` fake (`CreateCheckbox`, grayed entries that refuse a click), modeled on
+LibKa0s's own `tests/mock_menu.lua`, which is repo-local to the library and not in the kit.
+`tests/test_launchersetup.lua` installs it per case over the builder's simpler `MenuUtil`, which
+still serves the window header's segment selector.
 
 **AceEvent and AceAddon are the kit's, whole** (kit revision 17, LibKa0s v1.31.0). The file used to
 replace both: the message half, for `UnregisterAllMessages` and string-method dispatch, and AceAddon,
@@ -401,16 +426,19 @@ in the hub for the same reason it did the first time.
 
 `tests/test_texture_paths.lua` is the third register, and the same bargain a third time. It reads
 every hard-coded `Interface\` path out of the `.lua` this repository authors and the table under
-*Hard-coded texture paths* in [ARCHITECTURE.md](ARCHITECTURE.md), and compares them in both
+*The census* in [texture-paths.md](texture-paths.md#the-census), and compares them in both
 directions: a new path nobody argued for is a red, and so is a row for a path that has gone.
 
 `library-stack-§8` makes LibKa0s-Media's catalog the addon's vocabulary for marks, so a red is
 cleared one of two ways — use `NS.Icon`, or add the row saying why the catalog cannot answer at that
-site. Twelve rows say why today; two of them — the pair in `settings/ColumnBlocks.lua` — defer to a single
-deviation-register row rather than arguing in place, and two further cases hold that pointer honest — a fourth asserting the
-register row is still there, so *"register row above"* cannot quietly become a phrase, and a
-fifth asserting the row's `settings/ColumnBlocks.lua:72-73` citation still names the lines the
-two declarations are on.
+site. Twelve rows say why today. Five of them decline a mark the catalog does carry and defer to
+deviation-register rows in [ARCHITECTURE.md](ARCHITECTURE.md#documented-deviations) rather than
+arguing in place: the pair in `settings/ColumnBlocks.lua`, the tooltip's TARGET glyph and the
+window's size-grabber pair. Three further cases hold those pointers honest: a fourth asserting the
+ColumnBlocks register row is still there, so *"register row"* cannot quietly become a phrase, a fifth
+asserting that row's `settings/ColumnBlocks.lua:72-73` citation still names the lines the two
+declarations are on, and a sixth asserting the same of the `modules/Tooltip.lua` and
+`modules/Window.lua` rows, each with a Decided date and a re-check trigger.
 
 **The quote is part of the pattern.** An occurrence counts when it opens a string, in either form
 Lua has — `"Interface\\…"` or the long-bracket `[[Interface\…]]` — and not otherwise, because a
@@ -560,6 +588,14 @@ which is a signal rather than a stop.
 **The RELEASE is gated on all four.** The tag requires all four suites at `pass` **plus zero
 functions above CCN 15**, evaluated by `/wow-addon:bump-version` from the `manifest.json` the release
 run writes — not by the runner, whose exit code is unchanged.
+
+**The next release goes through `/wow-addon:bump-version`, never a bare tag.** `1.0.1-release` was
+cut without one: it re-published 1.0.0 unchanged to trigger a rebuild, so its TOC still read
+`1.0.0` and no release run was recorded for it (README Version History now carries the row). The
+next version is **1.1.0**, not 1.0.2, because the v16 schema migration (the US-spelled `minimize`
+keys) has landed since. The bump runs the four-suite battery first and refuses unless all four are at
+`pass` with zero functions above CCN 15 — that battery passes before the tag, not after. Which
+release and when is the owner's call; nothing here bumps a version.
 
 **A missing tool is a SKIP recorded with its reason, never a pass.** A green run that measured
 nothing must not be mistakable for a green run that measured everything, so an absent `lizard` or

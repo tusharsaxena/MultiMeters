@@ -62,11 +62,11 @@ that filter drops `hidden` rows before grouping runs).
 | 1 | General | `general` | 22 (18 visible + 4 `hidden`) | 3 — **Master controls**, **Behavior**, **Statistic colors** | yes | no | **Master controls** — `options-ui-§15`'s canonical set, first on this page in every Ka0s addon and [composed rather than written out](#the-composed-blocks): Enable Multi Meters, General visibility, Master scale, Master alpha, Lock frame, Debug console, Minimap button, Test mode — and nothing of this addon's own after them, closed by the **Reset position** / **Reset all settings** button pair the composer hands back, with no explanatory prose under it. **Behavior** holds the two rows that used to sit on Master controls, **Merge pets** and **Refresh interval** (both addon-wide since schemaVersion 5): `options-ui-§15` fixes Master controls' set, and neither of those is canonical or about turning the addon up and down — one says what a pet's damage IS, the other is a refresh rate. Master scale and Master alpha are ADDON-WIDE multipliers, not the per-window scale and opacity on the Frame page, and **Lock frame** is a session-only view over every window's own lock rather than a second lock — see [The Master controls tab](#the-master-controls-tab). **Statistic colors** — one swatch per entry of `Constants.STAT_COLORS`, [generated rather than written out](#the-statistic-palette), read back through `NS.StatColor`, with a note under the grid saying where those colors are actually worn (drawn through the same `afterGroup` hook, keyed to this tab). A fourth schema group, **Export**, holds the export modal's four remembered choices — all four `hidden`, so the group is real for `/mm list` and the schema-vs-defaults validator and never appears as a tab: this is the one *section that is not a tab*, and a wholly hidden group is not a strip-less page. General is not a window page, so it draws no banner. |
 | 2 | Windows | `windows` | 1 (`window.name`) | 2 bespoke — **Window**, **Copy from** | no | yes | The picker, New / Duplicate / Delete, and Copy settings from, on the Window tab; the source picker, group filter and Copy button on Copy from. Content is bespoke rather than schema rows, so the strip is drawn directly with `H.TabStrip` rather than `RenderTabbedSchema`, which has nothing here to partition. |
 | 3 | `  - `Frame | `frame` | 26 | 4 — General, Size and position, Background and border, Row | yes | yes | **General** — the two window-wide toggles under a *Window* heading, then the four **meta rows** (Color mode, Bar texture, Font, Font outline, each "(all surfaces)") under an *All surfaces* heading, which broadcast one value to every surface with a setting of that kind and are read by nothing. The two headings are what stop a broadcast being mistaken for a font group. **Size and position** — geometry, scale, opacity, strata and padding. **Background and border** — the fill inside the window under a *Background* heading and the LSM edge around it under a *Border* heading, both composed; the merge is deliberate and the headings are what `options-ui-§7` adds to it. **Row** — height, count, spacing and growth, then always-show-self, highlight-self, mouseover highlight and the alternating stripe. |
-| 4 | `  - `Header | `header` | 36 (30 visible + 6 `hidden`) | 4 — Title bar, Title text, Controls, Button style | yes | yes | **Title bar** — three headings: *Layout* (whether it draws, its alignment and its height), *Background* (the one swatch in the addon with no color mode beside it — a [documented deviation](ARCHITECTURE.md#documented-deviations)), and *Divider* (on/off, thickness, color and a mode whose default `skin` writes nothing at all, so the shared skin still owns the line unless the player takes it). **Title text** — `options-ui-§16`'s composed font block, all six axes, with the color mode (class or custom, never per-statistic) immediately right of the swatch. **Controls** — every toggle for the icon strip, **in the order the strip reads left to right** and each carrying **its own icon in front of its label** (`controlLabel`), plus six `hidden` rows the window's own header controls write: `window.frame.minimised`, the sort and session type (`window.data.sessionType`, `.sortColumn`, `.sortMode`, `.sortAscending`, issue #50) and the pinned segment (`window.data.sessionID`). **Button style** — three headings: *Icon* (reveal and size), *Color* (rest color + its mode, then hover color + its mode — each state one line, so the swatch and its companion can never be split), *Opacity* (rest and hover, read across). |
+| 4 | `  - `Header | `header` | 36 (30 visible + 6 `hidden`) | 4 — Title bar, Title text, Controls, Button style | yes | yes | **Title bar** — three headings: *Layout* (whether it draws, its alignment and its height), *Background* (the one swatch in the addon with no color mode beside it — a [documented deviation](ARCHITECTURE.md#documented-deviations)), and *Divider* (on/off, thickness, color and a mode whose default `skin` writes nothing at all, so the shared skin still owns the line unless the player takes it). **Title text** — `options-ui-§16`'s composed font block, all six axes, with the color mode (class or custom, never per-statistic) immediately right of the swatch. **Controls** — every toggle for the icon strip, **in the order the strip reads left to right** and each carrying **its own icon in front of its label** (`controlLabel`), plus six `hidden` rows the window's own header controls write: `window.frame.minimized`, the sort and session type (`window.data.sessionType`, `.sortColumn`, `.sortMode`, `.sortAscending`, issue #50) and the pinned segment (`window.data.sessionID`). **Button style** — three headings: *Icon* (reveal and size), *Color* (rest color + its mode, then hover color + its mode — each state one line, so the swatch and its companion can never be split), *Opacity* (rest and hover, read across). |
 | 5 | `  - `Bars | `bars` | 29 | 6 — Bar, Background, Border, Text content, Text style, Icons | yes | yes | **Everything drawn inside a cell**, and four of the six tabs are composed blocks. **Bar** — `options-ui-§16`'s bar group (texture, opacity, color, mode) plus fill direction and **Animate bar fills** (issue #23) appended after it. **Background** — a backdrop with no fill texture, so a color pair and its opacity, never a bar group. **Border** — the *Show border* toggle leading `options-ui-§16`'s border group, whose color mode is new here. **Text content** — the two text slots, number format, death timestamps and max name length. **Text style** — the composed font block plus text opacity. **Icons** — the row icon, its size and which side of the name it sits on. |
 | 6 | `  - `Tooltip | `tooltip` | 30 | 6 — General, Bar, Bar background, Bar border, Text, Contents | yes | yes | **General** — anchor, scale, the two offsets and hide-in-combat. **Bar** / **Bar background** / **Bar border** — the spell line's own surfaces, configured separately from the grid's and kept adjacent because they are read together; all three are composed, and the bar border's color mode is new here. **Text** — the composed font block. **Contents**, last because it is the tab you set once — spell breakdown and max spells (0 = all), targets and max targets, the two **death-line** switches, and summarize-on-name. |
 | 7 | `  - `Visibility | `visibility` | 17 | 3 — Where to show this window, When to hide this window, Combat | yes | yes | **Where to show this window** — dungeon / raid / arena / battleground / delve / scenario / world, all on. **When to hide this window** — solo, vehicles, mounted, skyriding, flight paths, player housing, pet battles, while dead, all off. **Combat** — hide in combat, hide out of combat, both off. |
-| 8 | `  - `Columns | `columns` | 8 (Header text 6, Header background 2) | 3 — **Columns** (bespoke block editor), Header text, Header background | yes | yes | **Columns** — one block per statistic, a drag handle, a tick/cross toggle and a name; ticked ones are the columns, in block order. The row's **bounded box and its handle are the library's** (`options-ui-§18`), not this addon's. This is the *page that is not tabbed by `RenderTabbedSchema`*: its Columns tab holds no schema rows at all, so the strip is drawn directly with `H.TabStrip` and each tab renders its own filtered row list. **Header text** (the composed font block) and **Header background** (a composed color pair) are the `window.columnHeader.*` rows that used to sit on the Header page. |
+| 8 | `  - `Columns | `columns` | 8 (Header text 6, Header background 2) | 3 — **Columns** (bespoke block editor), Header text, Header background | yes | yes | **Columns** — one block per statistic, a drag handle, a tick/cross toggle and a name; ticked ones are the columns, in block order. The row's **bounded box and its handle are the library's** (`options-ui-§18`), not this addon's. This is the *page that is not tabbed by `RenderTabbedSchema`*: the strip is drawn directly with `H.TabStrip` and each tab renders its own filtered row list. Options minor 4's host tabs (`opts.tabs`) could carry the block editor, but the library's tab click clears the scroll itself and never re-enters this page's render, so the reorder cancel could no longer run before the clear. Declined in [issue #53](https://github.com/tusharsaxena/MultiMeters/issues/53). **Header text** (the composed font block) and **Header background** (a composed color pair) are the `window.columnHeader.*` rows that used to sit on the Header page. |
 | 9 | Profiles | `profiles` | 0 | none | no | no | AceDBOptions' create / switch / copy / reset / delete. The one page with no tab strip at all — see [Profiles — the one place AceConfigDialog is permitted](#profiles--the-one-place-aceconfigdialog-is-permitted). |
 
 **169 schema rows total.** Five of the nine pages — Frame, Header, Bars, Tooltip, Visibility — draw
@@ -163,7 +163,7 @@ how do I make it smaller, how do I put it back — is in the same place under th
 | Enable Multi Meters (`enabled`) | General visibility (`master.visibility`) |
 | Master scale (`master.scale`) | Master alpha (`master.alpha`) |
 | Lock frame (`master.locked`, session-only: every window's own lock) | Debug console (`state.debugConsole`, session-only) |
-| Minimap button (`global.minimap.hide`, the GLOBAL store, [inverted](schema.md#the-minimap-carve-out--exactly-one-row)) | Test mode (`state.testMode`, session-only) |
+| Minimap button (`global.minimap.shown`, the GLOBAL store, [inverted](schema.md#the-minimap-row--exactly-one-inverted-row)) | Test mode (`state.testMode`, session-only) |
 | Reset position | Reset all settings |
 
 **This tab is now EXACTLY the canonical set, and this addon has no rows of its own on it.** All
@@ -197,7 +197,33 @@ and consults no veto at all, so until this exemption landed, pressing it to rese
 General put a deliberately hidden button back on the minimap at the library's default angle. The
 exemption is one clause on the options descriptor's `applyDefault` (`settings/OptionsSetup.lua`) —
 see [schema.md → `minimap`](schema.md#minimap--and-it-lives-under-global). Nothing else on the page
-changes, and `/mm reset global.minimap.hide` still resets the row.
+changes, and `/mm reset global.minimap.shown` still resets the row.
+
+**The button the row shows answers a hover with the library's status tooltip**, including while the
+addon is disabled (`launcher-§1`, standard v2.66.0; `LibKa0s-Launcher-1.0` minor 3). The library draws
+it and `core/LauncherSetup.lua` only answers its questions: the title is *Ka0s Multi Meters* and the
+TOC's version; **Enabled** reads the `enabled` row (`not NS.IsDisabled()`); **Locked** reads this
+page's *Lock frame* accessor (`WindowManager:IsLocked()`, so Yes only while every window is locked);
+**Test mode** reads the *Test mode* row's `state.testMode`; then the fixed hints *Left-click: Open
+settings* and *Right-click: Options menu* (minor 4). The addon adds no lines of its own. Every value
+is read on each show, so the tooltip and this page cannot disagree.
+
+**Its clicks are `launcher-§2`'s (standard v2.67.0, Launcher minor 4).** Left-click opens this panel,
+in either state, through `NS.OpenOptionsPanel` (the `config` verb's seam, with its combat refusal).
+Right-click opens the client's context menu, titled *Ka0s Multi Meters*, with the four entries
+`ADDONS.md` records for this addon:
+
+| Entry | Checked when | Clicking it runs | Grayed while disabled |
+|---|---|---|---|
+| **Enabled** | the `enabled` row is on | `/mm enable` or `/mm disable` | no |
+| **Locked** | every window is locked (the *Lock frame* row's accessor) | `/mm lock` | yes |
+| **Test mode** | `state.testMode` is on (the *Test mode* row) | `/mm test` | yes |
+| **Show window** | any meter window is on screen (`WindowManager:AnyShown()`) | `/mm toggle` | yes |
+
+Each entry calls the verb's own handler out of `NS.COMMANDS`, so the chat acknowledgment, the write
+through this page's seam and any refusal (test mode will not start in combat; `/mm toggle` answers a
+perf capture with its suspend line) are the verb's. A grayed entry reads *(enable the addon first)*
+and does nothing. With no context-menu API, right-click opens this panel instead.
 
 **The `master.*` rows are ADDON-WIDE, and none of them is a promoted per-window row.** A window
 here is an instance (design §6), and its own **Lock window**, **Scale** and **Opacity** stay on the
@@ -438,7 +464,8 @@ visibly different from every other AceGUI widget on the player's screen, and onl
 
 `H.SetRenderer(ctx, fn)` hands both problems to the library, which owns **when** a page draws: on
 first show, and again after a refresh marked it dirty while it was hidden. Every page file in this
-addon uses it, the Profiles page included — see below for the one thing it needs on top.
+addon uses it, the Profiles page included — [profiles.md](profiles.md#the-profiles-page--the-one-place-aceconfigdialog-is-permitted)
+has the one thing it needs on top.
 
 ### Why the Defaults button is lazy for reason two only
 
@@ -583,7 +610,7 @@ Details that are the page's rather than the module's:
 `H.ActionDropdown` and `H.Relayout` are decorated onto the library instance by this page because
 `settings/Columns.lua` needs both. The library's own dropdown maker reads and writes a stored path,
 which is right for a setting and wrong for everything on these two pages: the picker writes
-**session state**, and the column editor writes one element of an array through a carve-out. Neither
+**session state**, and the column editor rewrites a whole array through its one hidden row. Neither
 has a scalar path to name.
 
 ---
@@ -664,7 +691,7 @@ so none of them can be a schema row. The two on the General page are drawn by th
 | **Reset meter data** | *the window header, not a page* | — | Confirms, then `NS.Provider.Reset()`. Irreversible and reaches **outside** this addon: `C_DamageMeter.ResetAllCombatSessions` wipes the data Blizzard's own meter is showing too. Routed through the provider and never straight at the Compat shim — the provider is the only permitted caller of the meter shims, and it also forgets the memoized availability answer and announces `METER_RESET`. |
 | **Reset all settings** | General | Master controls | Confirms through `NS.ShowResetAll`, the opener `/mm resetall` calls too, then runs `Helpers.RestoreAllDefaults()` on accept, so the two cannot drift. The descriptor's `resetProfile` hands the profile to `db:ResetProfile()`, which makes this the **equivalent of a new profile**: every setting back to shipped, extra windows **deleted**, names reset, one fresh window left. Other profiles are untouched. The debug console shows one line, `[Set] reset profile '<name>' to defaults`, from `OnProfileReset`. See *Reset all settings vs Reset Profile* below. |
 | **Test mode** | General | Master controls | The composed `sessionOnly` row `H.MasterControls` emits from `testModePath = "state.testMode"`, directly after Debug console on a line of its own. The composer call hands in its label and `default = false`, so Reset all settings ends it; its `dress()` entry adds the description and both accessors, which read `NS.State.testMode` and write through `WindowManager:SetTestMode`, the same switch `/mm test` uses. Fills every window with placeholder rows so columns can be laid out without being in combat. Session-only: persisting it would mean logging in to a screen full of fake numbers. **Combat ends it, and will not start it**: at `PLAYER_REGEN_DISABLED`, `core/MultiMeters.lua` calls `WindowManager:EndTestModeForCombat`, which turns the mode off (the flag, `TEST_MODE_CHANGED`, a panel repaint) and prints *Test mode off — combat started*, then leaves every window to the show ladder, so a window set to hide in combat hides. Only a manual turn-off (`/mm test off`, unticking the box) keeps windows on screen. Ticking the box, `/mm test on` or a bare `/mm test` while the player is fighting (read with `UnitAffectingCombat`, as the ladder reads it) is refused with *Cannot start test mode during combat*, and the panel repaints so the box redraws unticked; turning it off in combat stays allowed. Every start and stop repaints the panel, so the box follows `/mm test` and the combat ending, not only its own click. **Not** implied by unlocking a window any more — `WindowManager:SetLocked` used to also switch it on, which made `/mm lock off` silently turn placeholder data on and made unchecking Test mode a no-op while any window was unlocked; locking is now about movement and nothing else, and a player who wants a grid to aim at asks for one with `/mm test`. |
-| **Debug console** | General | Master controls | The console **window's** visibility, not the logging flag. Logging runs with the console closed so a bug can be reproduced first and the log read afterwards; the flag itself is `/mm debug on\|off`'s and is never written to SavedVariables (`debug-logging-§5`). The row is emitted by `H.MasterControls` under the path `state.debugConsole`, and this repo dresses the rest back on — the label in the composer call's `labels` table (`settings/Schema_Compose.lua:679`), and the description and both accessors in the `dress()` block at `settings/Schema_Compose.lua:751-759`, where `get` asks `NS.DebugLog:IsShown` and `set` calls `Show`/`Hide`. `LibKa0s-DebugLog-1.0`'s own `D:ConsoleCheckbox()` is no longer what draws it: nothing under `settings/` calls it, and the only `ConsoleCheckbox` left in this repo is the degraded stub's at `core/DebugLogSetup.lua:295`, kept so a library-less load still answers the member. |
+| **Debug console** | General | Master controls | The console **window's** visibility, not the logging flag. Logging runs with the console closed so a bug can be reproduced first and the log read afterwards; the flag itself is `/mm debug on\|off`'s and is never written to SavedVariables (`debug-logging-§5`). The row is emitted by `H.MasterControls` under the path `state.debugConsole`, and this repo dresses the rest back on — the label in the composer call's `labels` table (`settings/Schema_Compose.lua:688`), and the description and both accessors in the `dress()` block at `settings/Schema_Compose.lua:772-779`, where `get` asks `NS.DebugLog:IsShown` and `set` calls `Show`/`Hide`. `LibKa0s-DebugLog-1.0`'s own `D:ConsoleCheckbox()` is no longer what draws it: nothing under `settings/` calls it, and the only `ConsoleCheckbox` left in this repo is the degraded stub's at `core/DebugLogSetup.lua:295`, kept so a library-less load still answers the member. |
 
 Both Master controls toggles are composed `sessionOnly` schema rows (`state.testMode`, `state.debugConsole`) so that
 `/mm list` and `/mm get` can reach them — a toggle that exists only in the panel is a toggle the CLI
@@ -677,32 +704,9 @@ row's accessors dressed back on.
 
 ## Profiles — the one place AceConfigDialog is permitted
 
-Every other page is drawn by `LibKa0s-Options-1.0` from `NS.Schema`, and AceConfig is not in the
-picture at all. This page is the documented exception for one reason: **the options table is not
-ours.** AceDBOptions generates it — every scope dropdown, every confirmation, every profile-list
-refresh — and re-expressing that as schema rows would mean maintaining a copy of AceDB's own profile
-model that goes stale the first time AceDB adds a scope.
-
-The exception is scoped to **content**. The canvas, the header, the breadcrumb and the registration
-are still `Helpers.CreatePanel`, so this page looks like the other eight rather than like a bolted-on
-Ace window. An AceGUI `SimpleGroup` is parented to `ctx.body` and `AceConfigDialog:Open` targets it,
-which lands the widgets inside this canvas instead of opening a second floating window over the
-settings panel.
-
-**It draws through `SetRenderer`, like every other page.** That is where its combat lock comes
-from: the Blizzard AddOns sidebar reaches a canvas without going through `NS.OpenOptionsPanel`, and a
-page carrying its own copy of the lock has one that drifts from the other eight the moment the
-library's moves. This page hand-rolled that copy until the `CX03` sweep, and paid for it by being the
-one page the library did not draw.
-
-`SetRenderer` is one draw short here, though, and the shortfall is real: the widget tree belongs to
-AceConfigDialog, which re-reads the active profile only when the dialog is fed again, so "draw once,
-and again when the library says you are dirty" would show a profile switch made from the slash
-command as a stale profile list. The page therefore takes a private bus target and calls
-`H.RefreshPanel(ctx, true)` on `PROFILE_CHANGED` — the library's own seam for a page that repaints
-off its host's message bus. Shown, it redraws now; hidden, it is marked dirty and redraws on its next
-show. Changes made *on* the page need nothing: AceConfigDialog re-`Open`s the container itself after
-every control it activates.
+The ninth page hosts AceDBOptions-3.0's own tree, rendered by AceConfigDialog into this addon's canvas.
+It draws through `SetRenderer` like every other page and repaints on `PROFILE_CHANGED`. Why it is the
+exception, and how it stays fresh: [profiles.md](profiles.md#the-profiles-page--the-one-place-aceconfigdialog-is-permitted).
 
 ---
 
@@ -869,6 +873,7 @@ the active window alone.
 library's reset sweep walks the schema **once**, so "Reset all settings" reset the window you happened
 to have selected and left every other one untouched, while `afterRestoreAll`'s `ResetPositions`
 re-centered **all** of them: one action with two different scopes, and nothing on the button to say
-which you would get. Column arrays were missed entirely, because `window.columns` is a
-`NS.SetByPath` carve-out rather than a schema row and no `ApplyDefault` can address it.
+which you would get. Column arrays were missed entirely, because `window.columns` carries no
+`default` (it was a seam carve-out then, and is a hidden row with no default now), so no
+`ApplyDefault` can address it.
 

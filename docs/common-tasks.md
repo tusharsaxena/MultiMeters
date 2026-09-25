@@ -559,7 +559,7 @@ SESSION_PICKED = "Ka0s_MultiMeters_SessionPicked",   -- { windowId, sessionID }
 The key is SCREAMING_SNAKE, and the wire string is `Ka0s_MultiMeters_` followed by a **PascalCase**
 event (naming-cheatsheet). `LibKa0s-Bus-1.0`'s `Catalog` validates the table at load and refuses
 anything else, naming the key it refused. Every name is declared here so that the catalog in
-`ARCHITECTURE.md` has one place to be checked against. Because `Catalog` hands back a strict table,
+[message-bus.md](message-bus.md) has one place to be checked against. Because `Catalog` hands back a strict table,
 a mistyped key raises at the call site, and that holds for a sender as well as a subscriber.
 
 **2. Send it from exactly one place**, and say so in that file's header. The existing owners:

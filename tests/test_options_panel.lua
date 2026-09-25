@@ -730,16 +730,20 @@ test("Options: a checkbox's set() routes through NS.SetByPath too", function()
     assertFalse(inst.NS.GetSetting("window.header.show"))
 end)
 
-test("Options: applyDefault routes through NS.SetByPath, not around it", function()
+test("Options: applyDefault routes through the write seam, not around it", function()
+    -- The seam is the settings runtime's Set (LibKa0s-Schema-1.0; NS.SetByPath is it too), and
+    -- its ApplyDefault writes through that member rather than through the host's name, so the
+    -- spy sits on the member.
     local inst = T.load()
+    local S = inst.NS.SchemaRuntime
     local seen = {}
-    local real = inst.NS.SetByPath
-    inst.NS.SetByPath = function(path, value)
+    local real = S.Set
+    S.Set = function(path, value, id)
         seen[#seen + 1] = path
-        return real(path, value)
+        return real(path, value, id)
     end
     inst.NS.Helpers.RestoreDefaults("frame", nil)
-    inst.NS.SetByPath = real
+    S.Set = real
 
     assertTrue(#seen > 0, "the page reset wrote nothing")
     for _, path in ipairs(seen) do
@@ -779,14 +783,16 @@ test("Options: skipRestoreAll vetoes the profiles page from a global reset", fun
           get = function() return false end, set = function() end },
     })
 
+    -- Spied on the runtime's Set, the member every reset writes through (see above).
+    local S = inst.NS.SchemaRuntime
     local seen = {}
-    local real = inst.NS.SetByPath
-    inst.NS.SetByPath = function(path, value)
+    local real = S.Set
+    S.Set = function(path, value, id)
         seen[path] = (seen[path] or 0) + 1
-        return real(path, value)
+        return real(path, value, id)
     end
     inst.NS.Helpers.RestoreAllDefaults()
-    inst.NS.SetByPath = real
+    S.Set = real
 
     assertEqual(seen["state.pretendProfileRow"], nil,
         "a profiles row was reset — the veto is not wired to the descriptor")
@@ -1088,7 +1094,7 @@ end)
 test("Panel: every window sub-page banners the active window, and Windows has no second picker",
 function()
     -- The banner is the ONLY picker (options-ui-§14). A page that kept its own would be a
-    -- second writer of one piece of session state -- a synchronisation problem invented by the
+    -- second writer of one piece of session state -- a synchronization problem invented by the
     -- design, which would then have to be solved forever.
     -- red under: leaving the Active window dropdown on the Windows page, or bannering only some
     -- of the sub-pages.
@@ -1175,4 +1181,30 @@ test("Panel: Reset all settings' tooltip says it is the same act as Profiles -> 
     assertTrue(ok, tostring(err))
     assertEqual(#lines, 1, "one tooltip body line")
     assertEqual(lines[1], RESET_ALL_TIP)
+end)
+
+-- The color picker's drag throttle and the slider's live commit run through the
+-- descriptor's scheduleTimer. From LibKa0s-Options-1.0 24.31.x (OptionsWidgets
+-- minor 31) the library keeps its own armed flag and never reads the return, so a
+-- plain C_Timer.After wrapper is the whole contract. The library's throttle is
+-- pinned by LibKa0s's own test_options_throttle and is not repeated (testing-§8).
+test("scheduleTimer schedules once through C_Timer.After with the given delay", function()
+    -- red under: a scheduleTimer that switches to NewTimer, schedules twice, drops
+    -- the delay, or starts returning a handle some future edit expects to be used.
+    local inst = T.load()
+    local calls, handle = {}, {}
+    local saved = inst.mocks.C_Timer.After
+    inst.mocks.C_Timer.After = function(delay, fn)
+        calls[#calls + 1] = { delay = delay, fn = fn }
+        return handle
+    end
+    local fn = function() end
+    local ok, ret = pcall(inst.NS.OptionsDescriptor.scheduleTimer, fn, 0.05)
+    inst.mocks.C_Timer.After = saved
+    assertTrue(ok, tostring(ret))
+    assertEqual(#calls, 1, "one C_Timer.After call per scheduleTimer")
+    assertEqual(calls[1].delay, 0.05)
+    assertTrue(calls[1].fn == fn, "the callback is handed through unwrapped")
+    assertEqual(ret, nil, "the return is unused by the library (OptionsWidgets minor 31); "
+        .. "nothing here may start depending on a handle")
 end)

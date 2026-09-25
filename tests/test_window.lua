@@ -11,12 +11,15 @@
 -- them. A read that crept back in is a failure with a stack trace, not a comment
 -- somebody has to notice.
 --
--- modules/Window.lua was peeled three ways, and so was this suite. The header
--- band — the title strip, the column-header buttons and the sort hand-off, the
--- segment selector — is proved in tests/test_window_header.lua; position, size,
--- the lock and the show ladder in tests/test_window_placement.lua. What stays
--- here is the refresh chain the other two hang off: the layout arithmetic, the
--- throttle, the row pool, the render loop and the scroll offset.
+-- modules/Window.lua was peeled four ways, and so was this suite. The header
+-- band — the title strip, the column-header buttons, the segment selector — is
+-- proved in tests/test_window_header.lua, and the sort hand-off in
+-- tests/test_window_header_sort.lua; position, size,
+-- the lock and the show ladder in tests/test_window_placement.lua; the bus
+-- wiring, Suspend / Resume, SetConfig and Destroy in
+-- tests/test_window_lifecycle.lua. What stays here is the refresh chain the
+-- others hang off: the layout arithmetic, the throttle, the row pool, the render
+-- loop and the scroll offset.
 --
 -- THE FIXTURE IS DUPLICATED, DELIBERATELY. `scene()` and the two lines of group
 -- data under it are ~50 lines that all three files need; publishing them would
@@ -348,7 +351,7 @@ test("Rows come from a POOL: no CreateFrame on a second refresh", function()
     assertEqual(#inst.mocks.__frames, framesBefore,
         "WoW never truly frees a frame; a reshuffling raid must not churn them")
     assertEqual(#window.pool.all, Const.POOL_GROW_STEP)
-    assertEqual(#window.pool.active, 2, "released and re-acquired, not recreated")
+    assertEqual(#window.pool.active, 2, "kept bound in their slots, not recreated")
 end)
 
 test("HideAll returns every active row to the free list", function()
@@ -599,47 +602,6 @@ test("A drilled-in window draws the breakdown, decided by the ROWS not the title
 end)
 
 -- ---------------------------------------------------------------------------
--- Suspend and teardown
--- ---------------------------------------------------------------------------
-
-test("Suspend takes the OnUpdate away and Resume puts it back", function()
-    local _, window = scene()
-
-    window:Suspend()
-    assertNil(window.frame:GetScript("OnUpdate"),
-        "a pass already queued must not fire once more inside a measurement window")
-
-    window:Resume()
-    assertTrue(window.frame:GetScript("OnUpdate") ~= nil)
-end)
-
-test("Destroy takes the window off screen and off the bus", function()
-    local inst, window = scene()
-    window:Refresh()
-    window:Destroy()
-
-    assertEqual(window:IsShown(), false)
-    assertEqual(#window.pool.active, 0)
-    assertNil(window.frame:GetScript("OnUpdate"))
-
-    local MSG = inst.NS.Constants.MSG
-    assertNil((inst.mocks.__msgRegistry[MSG.METER_UPDATED] or {})[window.bus])
-end)
-
-test("Each window owns a PRIVATE bus target, so two windows cannot clobber each other", function()
-    local inst, first, cfg = scene()
-    local second = inst.NS.Window.New(cfg)
-
-    assertFalse(first.bus == second.bus,
-        "CallbackHandler keys callbacks by (message, target); a shared target loses all but one")
-
-    first.dirty, second.dirty = false, false
-    inst.NS:SendMessage(inst.NS.Constants.MSG.METER_UPDATED)
-    assertEqual(first.dirty, true)
-    assertEqual(second.dirty, true, "both windows heard it")
-end)
-
--- ---------------------------------------------------------------------------
 -- Scrolling
 -- ---------------------------------------------------------------------------
 --
@@ -738,6 +700,66 @@ test("A list that fits entirely cannot be scrolled", function()
     window:Render(rows, false)
     assertEqual(window.scrollOffset, 0, "a window with room to spare still scrolled")
     assertEqual(#drawnNames(window), 3, "and it still drew every row it had")
+end)
+
+-- ---------------------------------------------------------------------------
+-- "Always show yourself" against the rows the window actually draws
+-- ---------------------------------------------------------------------------
+--
+-- modules/Aggregator.lua's ApplyRowLimit pins the player against its own cap,
+-- which is MAX_ROWS (40) whenever `rows.maxRows` is 0 — the shipped default. The
+-- window then draws only what fits (10 rows at the shipped 220px), so a player at
+-- rank 15 was never on screen. The pin that counts is the one Render makes
+-- against `layout.maxRows` and the scroll offset (review F-001).
+
+--- The shipped window (maxRows = 0, so the height decides) and `total` entries
+--- with the player at rank `me`.
+local function selfScene(total, me, alwaysShowSelf)
+    local inst, window, cfg = scene{ configure = function(c)
+        c.rows.maxRows = 0
+        c.rows.alwaysShowSelf = alwaysShowSelf
+    end }
+    local rows = {}
+    for i = 1, total do
+        rows[i] = { guid = string.format("Player-1-%08X", i), name = "Mock" .. i,
+                    classFilename = "MAGE", values = {}, cells = {},
+                    isPlayer = (i == me) }
+    end
+    return inst, window, cfg, rows
+end
+
+test("alwaysShowSelf pins the player into the last row the default window draws", function()
+    -- red under: pinning only in ApplyRowLimit, against the 40-row ceiling.
+    local _, window, _, rows = selfScene(20, 15, true)
+    assertEqual(window.layout.maxRows, 10, "the shipped window no longer fits ten rows")
+    window:Render(rows, false)
+
+    local names = drawnNames(window)
+    assertEqual(#names, 10, "the pin changed how many rows are drawn")
+    assertEqual(names[9], "Mock9", "the rows above the pin moved")
+    assertEqual(names[10], "Mock15", "self-in-view=false: the player is not in the last slot")
+    assertEqual(window.pool.active[10].index, 10,
+        "the pinned row keeps its slot's stripe parity")
+end)
+
+test("alwaysShowSelf pins nothing once the scroll puts the player in view", function()
+    -- red under: a pin that ignores the scroll offset, which would draw the
+    -- player twice.
+    local _, window, _, rows = selfScene(20, 15, true)
+    window:ScrollBy(6)
+    window:Render(rows, false)
+
+    local names = drawnNames(window)
+    assertEqual(names[1], "Mock7", "the fixture did not scroll")
+    assertEqual(names[9], "Mock15", "the player is not in their natural place")
+    assertEqual(names[10], "Mock16", "the last slot was spent on a player already in view")
+end)
+
+test("alwaysShowSelf off leaves the last slot to its own rank", function()
+    -- red under: a pin that does not read the flag.
+    local _, window, _, rows = selfScene(20, 15, false)
+    window:Render(rows, false)
+    assertEqual(drawnNames(window)[10], "Mock10")
 end)
 
 test("The body takes the wheel, or the handler is never called in game", function()
@@ -1237,4 +1259,91 @@ test("BuildLayout survives a config with the sub-tables missing, on the shipped 
     assertEqual(layout.nameColumn.width, Const.NAME_COLUMN_WIDTH,
         "no cap means the shipped name column")
     assertTrue(layout.maxRows > 1, "and the shipped height fits more than one row")
+end)
+
+-- ---------------------------------------------------------------------------
+-- Rows stay BOUND across passes (review F-007 / MultiMeters-R-07)
+-- ---------------------------------------------------------------------------
+--
+-- Render used to release every row and re-acquire, re-anchor and refill it four
+-- times a second in combat. A drawn row now stays in its slot from one pass to
+-- the next: the pool is asked only when the list grows, only the surplus past
+-- `drawn` goes back, and a row is re-anchored only when the layout moved.
+
+--- A window that fits ten rows, and `n` grid-shaped entries to draw into it.
+local function boundScene(n)
+    local _, window, cfg = scene{ configure = function(c)
+        c.frame.height = 600
+        c.rows.maxRows = 10
+    end }
+    local entries = {}
+    for i = 1, n do
+        entries[i] = { guid = string.format("Player-1-%08X", i), name = "Mock" .. i,
+                       classFilename = "MAGE", values = {}, cells = {} }
+    end
+    return window, cfg, entries
+end
+
+test("Two passes over the same ten entries ask the pool for nothing the second time", function()
+    -- red under: a Render that opens with HideAll, which empties the active set
+    -- and re-acquires every row, every pass.
+    local window, _, entries = boundScene(10)
+    window:Render(entries)
+    assertEqual(#window.pool.active, 10)
+
+    local real, calls = window.Acquire, 0
+    window.Acquire = function(self) calls = calls + 1; return real(self) end
+    window:Render(entries)
+    window.Acquire = nil
+
+    assertEqual(calls, 0, "every slot was already bound, so the pool is not asked")
+    assertEqual(#window.pool.active, 10)
+end)
+
+test("A pass with fewer entries releases exactly the surplus, and keeps the rest bound", function()
+    -- red under: a Render that releases everything and re-acquires what it needs.
+    local window, _, entries = boundScene(10)
+    window:Render(entries)
+    local before = {}
+    for i, row in ipairs(window.pool.active) do before[i] = row end
+
+    local released = {}
+    for _, row in ipairs(window.pool.all) do
+        local real = row.Release
+        row.Release = function(self) released[#released + 1] = self; return real(self) end
+    end
+
+    local fewer = {}
+    for i = 1, 6 do fewer[i] = entries[i] end
+    window:Render(fewer)
+
+    assertEqual(#released, 4, "only the four rows past `drawn` go back")
+    for _, row in ipairs(released) do
+        assertEqual(row.frame:IsShown(), false)
+        assertNil(row.entry, "a released row holds no reference to the player it drew")
+    end
+    assertEqual(#window.pool.active, 6)
+    for i = 1, 6 do
+        assertTrue(window.pool.active[i] == before[i], "rank " .. i .. " kept its widget")
+    end
+    assertEqual(#window.pool.free + #window.pool.active, #window.pool.all)
+end)
+
+test("A second pass re-anchors nothing until ApplyConfig moves the layout", function()
+    -- red under: a Render that ClearAllPoints/SetPoints every row every pass.
+    local window, _, entries = boundScene(10)
+    window:Render(entries)
+
+    local anchors = 0
+    for _, row in ipairs(window.pool.all) do
+        local real = row.frame.SetPoint
+        row.frame.SetPoint = function(...) anchors = anchors + 1; return real(...) end
+    end
+
+    window:Render(entries)
+    assertEqual(anchors, 0, "the layout did not move, so no row was re-anchored")
+
+    window:ApplyConfig()
+    window:Render(entries)
+    assertEqual(anchors, 10, "ApplyConfig bumped layoutVersion, so every drawn row re-anchored once")
 end)

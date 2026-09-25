@@ -82,14 +82,21 @@ overlap, and **a parent must never be summed with its children**.
 
 | Bucket | Inside | What it brackets | Call sites |
 |---|---|---|---|
-| `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:422`, `:432`, `:440` |
-| `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1107`, `:1117`, `:1140`, `:1147` (every exit) |
+| `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:460`, `:470`, `:478` |
+| `spellEvent` | — | one `UNIT_SPELLCAST_SUCCEEDED` handler — the Feign Death check, early returns included | `core/MultiMeters.lua:425` |
+| `systemEvent` | — | one `CHAT_MSG_SYSTEM` handler — the whisper-to-nobody check offered to `modules/Export.lua` | `core/MultiMeters.lua:416` |
+| `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1144`, `:1154`, `:1177`, `:1184` (every exit) |
 | `providerRead` | — (observed: `aggregate`, `targets`) | one `C_DamageMeter` column read | `modules/Provider.lua:357` |
 | `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1258`, `modules/DrillDown.lua:700`, `:732` |
-| `render` | `refresh` | the window's draw | `modules/Window.lua:1252` |
-| `renderRow` | `render` | one row's cells | `modules/Row.lua:1387` |
+| `render` | `refresh` | the window's draw | `modules/Window.lua:1315` |
+| `renderRow` | `render` | one row's cells | `modules/Row.lua:1377` |
 | `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:925`, `:943`, `:1004`, `:1018`, `:1032` |
 | `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:396`, `:404`, `:418` |
+
+`spellEvent` and `systemEvent` are **measurement only** (MultiMeters-R-17). Both events stay
+registered for the whole session for one narrow use apiece, and `UNIT_SPELLCAST_SUCCEEDED` fires for
+every cast in the group. Whether either registration should narrow — to a feign-capable group, or to
+the seconds a whisper dump is in flight — is decided from a capture's numbers, not assumed.
 
 The buckets under `refresh` exist to answer "which third of the pass is it" — reading the columns
 off `C_DamageMeter`, joining them by GUID and ordering them, or drawing.
@@ -246,6 +253,7 @@ and every column backed by a real session.
 | `applyConfig` | a settings change re-applying config and re-laying every row | recorded only |
 | `probeOverheadOff` / `probeOverheadOn` | the same refresh with brackets dormant, then armed | the zero-overhead assertions below |
 | `suspended` | a refresh with the provider suspended | **zero** meter API calls — suspend stops the reads at the source |
+| `spellEventOff` / `spellEventOn` | `OnSpellSucceeded` with a spell that is **not** Feign Death — the early return nearly every cast in a raid takes — brackets dormant, then armed | the dormant arm allocates **exactly 0** bytes/iter; neither arm reaches the meter API |
 | `feignTraceAbsent` / `feignTraceOff` | a **Deaths-only** refresh with `core/Diagnostics_Feign.lua`'s `TraceFeign` removed, then present and disarmed | the disarmed trace is **never called** and allocates **nothing** measurable against the absent arm |
 
 **A restricted pass costs about 36% more than an unrestricted one** — 412373.3 bytes against
@@ -288,6 +296,9 @@ because the call is where the tables are built. The byte comparison carries a 16
 tolerance rather than demanding equality, because two measurements of an identical path in this
 harness land within a byte of each other. On the run that closed this, both arms measured 71224.1
 bytes/iter exactly, against 77944.1 and 71224.1 before the fix.
+
+Re-measured 2026-09-24 with `tests/perf.lua`: `feignTraceAbsent` and `feignTraceOff` both 71544.1
+bytes/iter; the arms are still equal. The figures above are the closing run's and stay as recorded.
 
 ### The zero-overhead pair
 

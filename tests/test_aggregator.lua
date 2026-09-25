@@ -425,6 +425,30 @@ test("alwaysShowSelf does nothing when the player is already visible", function(
     assertEqual(kept[3].guid, "g3", "nothing is displaced")
 end)
 
+test("SelfPinIndex answers the player's index only when they are outside the slice", function()
+    -- The window's half of alwaysShowSelf: the slice is the rows it draws,
+    -- `first .. first + visible - 1`, scroll offset included.
+    local SelfPinIndex = T.NS.Aggregator.SelfPinIndex
+    local rows = {}
+    for i = 1, 20 do rows[i] = { guid = "g" .. i, isPlayer = (i == 15) } end
+    local on = { alwaysShowSelf = true }
+
+    assertNil(SelfPinIndex(rows, 7, 10, on), "in view: nothing to pin")
+    assertEqual(SelfPinIndex(rows, 1, 10, on), 15, "below the slice")
+    assertEqual(SelfPinIndex(rows, 16, 5, on), 15, "above the slice")
+    assertNil(SelfPinIndex(rows, 1, 10, { alwaysShowSelf = false }), "flag off")
+    assertNil(SelfPinIndex(rows, 1, 10, nil), "no rows config")
+    assertNil(SelfPinIndex(rows, 1, 0, on), "no visible rows")
+
+    -- Called once per render on the hot path: it must not allocate.
+    collectgarbage("stop")
+    local before = collectgarbage("count")
+    for _ = 1, 1000 do SelfPinIndex(rows, 1, 10, on) end
+    local after = collectgarbage("count")
+    collectgarbage("restart")
+    assertEqual(after, before, "SelfPinIndex allocated")
+end)
+
 test("Aggregator applies the cap before dividing, not after", function()
     local inst = loaded()
     install(inst, { src(ALPHA, 60), src(BETA, 30), src(GAMMA, 10) },

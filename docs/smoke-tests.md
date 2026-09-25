@@ -99,7 +99,7 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
 **Steps:** hover the title bar; click each control in turn; turn some off in Settings → Frame.
 
 **Pass.**
-- **Seven controls, right to left:** close, minimise, lock, settings, segment, reset, export. They
+- **Seven controls, right to left:** close, minimize, lock, settings, segment, reset, export. They
   are drawn from this addon's own art — white glyphs that take the header's text color. A control
   that is a plain letter (`*`, `#`, `>`) means the art AND the atlas both failed: the ladder is
   working, but say so, because it means a texture did not load.
@@ -138,7 +138,7 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
   to `controlColorMode` / `controlHoverColorMode` at schemaVersion 12 → 13.)
 - **`Reveal controls on hover` OFF keeps every control at full alpha** — and the hover **color**
   must still say which one the pointer is on, because it is the only channel left.
-- **Minimise collapses to the title bar** and the plus/minus flips. The column headers, the rows,
+- **Minimize collapses to the title bar** and the plus/minus flips. The column headers, the rows,
   the "Waiting for combat data…" notice and the resize grip all go — anything still drawn over a
   collapsed window is parented to the frame rather than the body.
 - **A collapsed window stops updating.** Verify during a pull: it must not tick. It is a real clause
@@ -179,7 +179,7 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
   `NS.ValidateSchema` runs from the options descriptor at panel creation; a line here means a schema
   row's path does not resolve against `defaults/Profile.lua`, or its default disagrees with the tree.
 - After `/reload`, `MultiMetersDB` exists on disk with `profileKeys`, `profiles.Default`,
-  `global.schemaVersion = 1`, a one-entry `profile.windows` array whose window has `id = 1`, and
+  `global.schemaVersion = 16` (the runner's target; the declared default is 0), a one-entry `profile.windows` array whose window has `id = 1`, and
   `profile.nextWindowId = 2`.
 
 ### 2. `/reload` integrity
@@ -194,6 +194,18 @@ without errors — `NS:OnEnable` seeds `NS.State.restricted` from `Secrets.IsRes
 assuming "inactive", because `ADDON_RESTRICTION_STATE_CHANGED` has already fired and there is no
 second edge to catch.
 
+- **SM-06.** Fight (a target dummy will do), then `/logout` fully, log back in and look at the meter.
+
+**Pass.**
+- **SM-06: the meter's data survives a fresh login, and so do the people in it.** Observed
+  2026-09-24: after a fight, a full logout and a fresh login, window #1 still showed the previous
+  data, the same two Cleave Training Dummy segments (1:09 with 128.8K damage, and 1:13). That
+  observation chose the bound on `db.global.roster` (`modules/Roster.lua`'s header): a prune above
+  `4 * MAX_ROWS` remembered members, not a forget at login. So a `/reload` keeps the roster, a fresh
+  login keeps it too, and a player who left the group still has their row on data from before the
+  logout. If a fresh login ever shows an EMPTY meter, the observation has changed and the bound
+  should be revisited.
+
 ### 3. Lock, drag, resize, Test mode
 
 **Steps.**
@@ -206,8 +218,19 @@ second edge to catch.
 - Turn Test mode on again and start a fight (a target dummy will do). Repeat with the window's
   **hide in combat** rule ticked on its Visibility page.
 - While still in combat, tick the Test mode box, then type `/mm test`.
+- **SM-01.** `/mm disable`, then on **General → Master controls** tick and untick **Test mode**.
+- **SM-02.** `/mm perf start`, and during the suspended arm type `/mm toggle`.
+- **SM-03.** `/mm disable`, create a window from the **Windows** page, then `/mm enable`.
 
 **Pass.**
+- **SM-01: nothing comes back while disabled.** Unticking Test mode on a disabled addon puts no
+  window on screen. The manual turn-off keeps windows up through an explicit show, and that show
+  asks the stand-down latch first.
+- **SM-02: `/mm toggle` refuses during a capture's suspended arm.** No window appears, and chat
+  prints one line: *Windows are suspended while a performance capture runs.*
+- **SM-03: a window made while disabled comes up live.** After `/mm enable` the new window refreshes
+  like the others (in Test mode or in a fight its rows move), so its refresh clock was armed at
+  stand-up rather than at creation.
 - **Locking and Test mode are independent — not coupled.** `WindowManager:SetLocked` used to also
   switch Test mode on, on the theory that someone positioning a window wants a full grid to aim at;
   that coupling is gone. `/mm lock off` no longer fills the window with placeholder rows on its own,
@@ -361,8 +384,8 @@ second edge to catch.
   General**, and *Font outline (all surfaces)* there shows **None** on a fresh profile. Each tab label appears **once**; a heading printed twice means a row is
   filed under a tab the page has already left. There is **no** *Header controls* tab here — those
   rows are on **Header** — and **no** "Reset position" button, which is on **General**'s **Master
-  controls** tab. There is also **no** "Show resize grip" checkbox and **no** "Minimised" checkbox: the lock
-  governs the grip, and the header's own minimise button governs the collapse. Whether the title bar
+  controls** tab. There is also **no** "Show resize grip" checkbox and **no** "Minimized" checkbox: the lock
+  governs the grip, and the header's own minimize button governs the collapse. Whether the title bar
   draws at all (`window.header.show`) is a **Header** page setting now, on its **Title bar** tab, not
   a Frame row.
 - **The Bars page's shape.** Six tabs, outside in: *Bar*, *Background*, *Border*, *Text content*,
@@ -381,7 +404,7 @@ second edge to catch.
 - **The Controls tab reads like the header strip.** Every checkbox draws **the control's own icon**
   between the tick box and the words, and the rows run in the order the strip runs **left to right**:
   the segment line first (no icon — it is text, not a glyph), then export, reset, segment picker,
-  settings, lock, minimise, close. Check each icon against the one in the header above it; a missing
+  settings, lock, minimize, close. Check each icon against the one in the header above it; a missing
   icon means `NS.Icon` answered nil for that art name, which is a media-payload problem rather than a
   settings one, and the label falls back to its plain words.
 - **The Visibility page's shape.** Three tabs: *Where to show this window* (the seven context
@@ -515,9 +538,9 @@ second edge to catch.
   Width slider moves to 640 **without being reopened** (`RefreshScalars`). Conversely, move a slider
   and `/mm get window.frame.width` reports the new value.
 - `/mm list` groups every setting under the same page keys the panel uses. It lists
-  `window.frame.minimised`, which the **panel does not draw** — that row is `hidden`, because it is
-  state the header's own minimise button writes rather than a preference. `/mm set
-  window.frame.minimised true` must still collapse the window.
+  `window.frame.minimized`, which the **panel does not draw** — that row is `hidden`, because it is
+  state the header's own minimize button writes rather than a preference. `/mm set
+  window.frame.minimized true` must still collapse the window.
 - **An open page locks when combat starts.** With a tabbed page already open, enter combat (a dummy
   is fine). A cover falls over the **whole** page — banner and tab strip included — reading
   *Settings are locked during combat.* in gray, and one gray chat line says settings are locked. A
@@ -605,6 +628,22 @@ pool, which is where every leftover in this page's history has come from.
 Also check: every column draws its **bar** (there is no numbers-only column any more), and the
 columns share the frame width evenly (there is no per-column width to set).
 
+**The three tabs.** The strip reads **Columns**, **Header text**, **Header background**, in that
+order, and the page opens on Columns. Click each tab. Header text shows only the header-font rows and
+Header background only its color pair, neither with a section heading of its own. Back on Columns,
+the blocks are all there. Then drag a block, drop it, and click **Header text** straight away: the
+list's reorder controller is live for as long as Columns is showing. **Pass:** no drag handle or block
+survives onto the schema tab, and with `/mm debug` the `[Blocks] released N blocks` line comes before
+the tab's repaint.
+The strip is hand-built on purpose (issue #53, pinned by `tests/test_columns.lua`).
+
+**The library drag (LK-21).** The reorder is LibKa0s-Widgets' `ReorderList` drag. Drag a block **from
+the middle of the ticked group** by its handle and drop it lower. **Pass:** the insertion line is drawn
+in the list's own color, the order changes in the page and in the window, and a second drag in
+**another window's** Columns page (change the window banner's selection) draws its own line, not a
+leftover from the first. After the drop nothing stutters: no row's `OnUpdate` stays armed, so frame
+time with the page open and idle is what it was before the drag.
+
 **Combat lock.** Leave the Columns page **open**, then pull. Click a glyph and drag a handle.
 
 **Pass.** The library's gray cover is over the page, so neither lands: the columns do not change,
@@ -622,8 +661,11 @@ are holding secret values is precisely what must not happen.
    column.
 3. Change a setting on window 2 and confirm window 1 does **not** move.
 4. Windows page → **Copy settings from** → source = window 1, group = **Bars** → Copy.
-5. Repeat with group = **Everything**.
+5. Repeat with group = **Everything**, with `/mm debug on` and the console open.
 6. **Duplicate window**, then **Delete** one.
+7. The settings runtime (LibKa0s-Schema-1.0, issue #52): with the picker on window **1**, resize
+   window **2** by its grip and click one of its column headers, then toggle **Minimap button** on
+   General twice.
 
 **Pass.**
 - Both windows draw independently, each with its own columns, sorting and refresh interval.
@@ -641,6 +683,12 @@ are holding secret values is precisely what must not happen.
   first surviving window rather than showing empty widgets.
 - `/mm window list` lists both, with shown/hidden state and column count. `/mm window new`,
   `delete`, `copy <source> <target>` do the same things the panel does.
+- The resize and the sort land on window 2 only (its Frame page shows the new width once the
+  picker moves to it), and the picker stays on window 1.
+- A copy-from redraws the target **once** and logs **one** `[Set] copy from '<src>' to '<dst>': N
+  rows` line in the console, never a line per row.
+- The Minimap button checkbox hides and shows the button immediately; `/mm get global.minimap.shown`
+  reads `true` while it is shown, and `/mm list` shows `window.columns = N shown`.
 
 ### 7. Visibility matrix
 
@@ -692,8 +740,9 @@ die · pull a target dummy.
   addon down** — every window hidden immediately, every game event unregistered, every timer
   canceled, nothing read from the meter. `/mm toggle`, `/mm lock`, `/mm test`, `/mm window`,
   `/mm reset-positions` and `/mm export` each answer one line naming `/mm enable` and do nothing
-  else, and a LEFT-click on the minimap button answers the same line; `/mm` still opens the settings
-  panel, the whole schema CLI still reads and writes, and a RIGHT-click still opens the panel. See
+  else; `/mm` still opens the settings panel, the whole schema CLI still reads and writes, a
+  LEFT-click on the minimap button still opens the panel, and its RIGHT-click menu grays everything
+  but Enabled. See
   [disabled-state.md](disabled-state.md).
 - **Test mode overrides context**: with Test mode on, the window shows wherever you are standing.
 
@@ -782,8 +831,15 @@ class AND spec** — that second run is the whole point of this case.
 1. Between packs, note the row order top to bottom.
 2. Pull. Watch the order, and watch the columns other than Damage, for the whole fight.
 3. Kill the pack. Watch again.
+4. **SM-04.** In a raid, on the shipped window (**Max rows** 0, so the height decides how many rows
+   show), with **Always show yourself** on, be ranked below the last visible row. Then scroll the
+   window with the wheel until your natural row is in view.
 
 **Pass.**
+- **SM-04: your row sits in the last slot.** Ranked below the visible rows, the last row drawn is you,
+  and the rows above it are the top of the list in order. Scrolled so your natural row is in view,
+  the last slot goes back to its own rank and you appear exactly once. Untick **Always show
+  yourself** and the last slot is its own rank throughout.
 - **Rows keep coming, and they re-rank live.** `sourceGUID` is secret for the whole of a pull, so the
   grid is built by identity correlation and its order is the game's own ranking of the sort column.
   Someone overtaking someone else moves up *during* the fight.
@@ -865,6 +921,9 @@ a raider most wants to know what killed them is the moment they are still fighti
   stops at both ends, survives the refresh tick rather than snapping back, and resets to the top when
   you enter or leave a breakdown. Shrink the window until rows are hidden to test it.
 - The drill-down **does not reshuffle** while you watch it, in or out of combat.
+- **Renaming a drilled window keeps its breakdown open.** Open a spell breakdown, then rename the
+  window from the Windows page: the breakdown stays up under the new title. Copying settings onto
+  that window still returns it to the grid, because a copy can replace the column it drilled.
 - **Settings → Text → Death timestamps** offers two styles — time of day, and how long ago — and the
   Deaths cell tooltip and the death list must agree on whichever is picked: the first is the index
   into the second, and two labelings would make one list look like two. A third style, "time into
@@ -1115,6 +1174,28 @@ is why the popup exists. Every open drill-down closes and this module's caches a
   settings landing page; a verb that disappeared from either while the addon was off would be a
   second way to lose it.
 
+**Then the minimap button, enabled, disabled and mid-capture (SM-11, and SM-02's launcher half).**
+The clicks and the menu are LibKa0s-Launcher minor 4's (`launcher-§2`, standard v2.67.0); each menu
+entry runs this addon's own slash verb.
+
+- **SM-11a (enabled).** Hover the button: the tooltip ends *Left-click: Open settings* /
+  *Right-click: Options menu*. Left-click opens the settings panel. Right-click opens a menu titled
+  *Ka0s Multi Meters* with four checkboxes in this order: **Enabled** (ticked), **Locked**, **Test
+  mode**, **Show window**, each ticked to match the current state. Click **Locked**: chat prints
+  *Windows are locked.*, the same line `/mm lock` prints, and reopening the menu shows it ticked.
+  Click **Test mode**: placeholder rows appear, as with `/mm test`; click it again to end it. Click
+  **Show window**: every meter window hides (or shows, if none was up), as with `/mm toggle`. In
+  combat, **Test mode** refuses with the same line `/mm test` prints there.
+- **SM-11b (disabled).** `/mm disable`, or untick **Enabled** in the menu (chat prints
+  `enabled = false`). Left-click still opens the settings panel and prints nothing. Right-click: the
+  menu shows **Enabled** unticked and clickable, and **Locked**, **Test mode** and **Show window**
+  grayed, each reading *(enable the addon first)*. The grayed entries cannot be clicked. Tick
+  **Enabled**: the addon comes back, as with `/mm enable`.
+- **SM-02 (launcher half).** `/mm enable`, then `/mm perf start`, and during the suspended arm
+  right-click the button. **Enabled** is still ticked and nothing is grayed. Click **Show window**:
+  chat prints *Windows are suspended while a performance capture runs.* and no window appears.
+  Left-click still opens the settings panel.
+
 ### 15. Profiles
 
 **Steps.** Profiles page → create "Test" → switch to it → change several settings and add a window →
@@ -1194,6 +1275,9 @@ switch back to Default → copy from Test → reset.
   library. `/mm perf` says performance measurement is unavailable.
 - **The host verbs still work**: `/mm lock`, `/mm test`, `/mm toggle`, `/mm window list`,
   `/mm reset-positions`. They never went to the library.
+- **`/mm disable` and `/mm enable` still work.** `/mm disable` prints `enabled = false` and the
+  windows go away; `/mm enable` prints `enabled = true` and they come back. Neither says anything is
+  unavailable.
 - **`/mm resetall` still works.** It opens the same popup, and accepting resets the profile. The
   user whose panel will not open is exactly the user who needs "reset everything", and the schema
   loaded fine.
@@ -1231,7 +1315,8 @@ Then complete a pull, watch the log, and run a capture:
 - The A/B run makes the addon **inert** during its B window without a `/reload`: the provider stops
   reading, the coalescing timers stop, and every window is refused at the source. **Nothing** — a
   combat transition, a roster change, a settings write — may bring a window back while suspended.
-- After `finish`, the report names the declared buckets: `meterEvent`, `refresh` with `aggregate`
+- After `finish`, the report names the declared buckets: `meterEvent`, `spellEvent` and
+  `systemEvent` (each with calls and ms after a raid pull), `refresh` with `aggregate`
   and `render` under it, `renderRow` under `render`, and `tooltip` with `targets` under it, plus
   `providerRead`. The nesting note says **observed inside** for every nested bucket, never
   *declares itself within X — not observed* (issue #47).

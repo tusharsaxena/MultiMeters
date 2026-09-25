@@ -506,7 +506,7 @@ end
 -- Modules talk to each other through AceEvent messages named
 -- "Ka0s_MultiMeters_<Event>" and never by reaching into another module's table
 -- (architecture-§4). Every name is declared here so the catalog in
--- docs/ARCHITECTURE.md has one place to be checked against.
+-- docs/message-bus.md has one place to be checked against.
 --
 -- `<Event>` IS PascalCase (naming-cheatsheet, MUST) and the KEY is
 -- SCREAMING_SNAKE. Until LibKa0s v1.55.0 this addon let the key's casing leak
