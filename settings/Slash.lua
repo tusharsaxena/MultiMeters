@@ -131,10 +131,11 @@ NS.COMMANDS = {
 --
 --   * `isEnabled` is asked at DISPATCH TIME, never cached, so the command after
 --     `/mm enable` works.
---   * the live set is `lib.LIVE_VERBS` -- the standard's TWELVE reserved verbs --
---     and this host DELIBERATELY PASSES NO `liveVerbs` TO NARROW IT. The library
---     defaults to the right set, a narrowing here would be this addon deciding for
---     itself which half of the standard to keep, and v2.57.0 reversed exactly such
+--   * the live set is `lib.LIVE_VERBS` -- the standard's THIRTEEN reserved verbs,
+--     `diagnostics` added at Slash minor 16 -- and this host DELIBERATELY PASSES
+--     NO `liveVerbs` TO NARROW IT. The library defaults to the right set, a
+--     narrowing here would be this addon deciding for itself which half of the
+--     standard to keep, and v2.57.0 reversed exactly such
 --     a narrowing after the owner hit `/mm` on a disabled addon and got a refusal
 --     instead of the settings panel he was trying to reach.
 --   * the refusal line is `cli:DisabledLine()`, built from `brandName` and the
@@ -143,7 +144,9 @@ NS.COMMANDS = {
 --
 -- WHAT STILL ANSWERS WHILE DISABLED: `help`, `config`, `version`, `enable`,
 -- `disable`, `debug`, `perf`, `get`, `set`, `list`, `reset`, `resetall`, and the
--- BARE `/mm`, which opens the settings panel through the host's `config` verb. A
+-- BARE `/mm`, which opens the settings panel through the host's `config` verb.
+-- (`diagnostics` is in the live set too, but until this addon registers it the
+-- word answers `unknown command` and the index, as any unregistered verb does.) A
 -- player must be able to read and repair settings and reach the panel while the
 -- addon is off -- which is exactly when they are most likely to need to -- and
 -- `enable` above all, or the pair is one-way.
@@ -291,7 +294,7 @@ cli = SlashLib:New({
     -- escapes.
     brandName = L["Ka0s Multi Meters"],
 
-    -- NO `liveVerbs`. The library's default IS the standard's twelve reserved
+    -- NO `liveVerbs`. The library's default IS the standard's thirteen reserved
     -- verbs; naming a set here could only narrow it, and narrowing it is what
     -- standard v2.57.0 reversed.
 

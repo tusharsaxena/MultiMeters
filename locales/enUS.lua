@@ -974,6 +974,11 @@ L["tooltip logging off."] = "tooltip logging off."
 -- The degradation stub's own lines (settings/Slash.lua, LibKa0s-Slash-1.0 absent). The first
 -- `%s` is the verb (`/mm list`), the second core/CoreSetup.lua's shared cause clause.
 L["%s is unavailable. %s."] = "%s is unavailable. %s."
+-- The DebugLog stub's `RunDiagnostics` (core/DebugLogSetup.lua, LibKa0s-DebugLog-1.0 absent). The
+-- collection's one placeholder line for the report, fixed by debug-logging-§14; `%s` is
+-- `/mm diagnostics`.
+L["%s is unavailable: the LibKa0s library did not load."] =
+    "%s is unavailable: the LibKa0s library did not load."
 L["v%s"] = "v%s"
 L["v%s slash commands"] = "v%s slash commands"
 L["unknown command '%s'"] = "unknown command '%s'"

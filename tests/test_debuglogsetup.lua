@@ -233,6 +233,25 @@ test("DebugLogSetup degraded: the flag still works, and says so once", function(
         "the degraded seam never named its own consequence")
 end)
 
+test("DebugLogSetup degraded: RunDiagnostics prints the placeholder, writes nothing, answers 0", function()
+    -- debug-logging-§14 (STD-14): with no library there is no report, and the stub
+    -- says so in the collection's one placeholder line naming `/mm diagnostics`.
+    -- red under: a stub RunDiagnostics that is silent, returns nil, or buffers a line.
+    local inst = T.load{ libFiles = {} }
+    local D = inst.NS.DebugLog
+    local before = #inst.mocks.__chat
+    local n = D:RunDiagnostics()
+    assertEqual(n, 0, "the degraded report must answer 0 lines")
+    assertEqual(#D.buffer, 0, "the degraded report wrote into the stub's buffer")
+    local said = table.concat(inst.mocks.__chat, "\n", before + 1)
+    assertTrue(said:find("/mm diagnostics is unavailable: the LibKa0s library did not load.", 1, true)
+        ~= nil, "the placeholder line was not printed: " .. said)
+    assertFalse(inst.NS.State.debug, "the degraded report touched the debug flag")
+    assertFalse(D:DebugVerb("diagnostics"), "the stub's DebugVerb must answer not-mine")
+    local built = D:BuildDiagnostics()
+    assertEqual(#built.lines, 0, "the stub's BuildDiagnostics must be the empty report")
+end)
+
 test("DebugLogSetup degraded: the honest missing-console line is said ONCE", function()
     -- Stapling it to every debug action turns a one-time fact into noise on a
     -- ticker.

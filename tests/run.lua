@@ -327,6 +327,10 @@ local SUITES = {
     -- is declared with its own `dir`. Kit.assertSuiteInventory fails the run until it
     -- is declared, so it cannot arrive with a re-vendor and then quietly run nothing.
     { name = "test_eol", dir = "tests/_kit/" },
+    -- The diagnostics dump's dispatcher contract (debug-logging-§14), since kit revision
+    -- 27. Declared here so the inventory stays green; until `Kit.diagnostics` is wired to
+    -- this addon's dispatcher it registers one declared skip that names the rule.
+    { name = "test_diagnostics_contract", dir = "tests/_kit/" },
 }
 
 -- ---------------------------------------------------------------------------
