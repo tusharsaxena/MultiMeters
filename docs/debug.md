@@ -14,7 +14,7 @@ this addon's own surface on top of it.
 | `/mm debug` | Toggle the console window. Never touches a flag. |
 | `/mm debug on` / `off` | Set the session logging flag. Works with the window closed. |
 | `/mm debug tooltip` | Toggle the tooltip log channel. Off by default; prints the state it landed in. |
-| `/mm debug diag` | Print the diagnostic report. |
+| `/mm diagnostics`, `/mm debug diagnostics` | Write the diagnostics report into the console, after whatever is already there (`debug-logging-§14`). Both forms run the same report; `diag`, its old name, is an unknown word now. |
 | `/mm debug recap` | Print the death-recap probe alone (issue #1). |
 | `/mm debug identity` | Print the mid-pull correlation capture (issue #22). |
 | `/mm debug feign on` / `off` | Arm and disarm the feign-death recording (issue #25). |
@@ -120,7 +120,7 @@ peeled out of `core/Diagnostics.lua` on 2026-09-09 for `layout-§1`, one file ap
 
 | File | Verb | Issue | Prints |
 |---|---|---|---|
-| `core/Diagnostics.lua` | `diag` | — | the general report, and the `out` seam the siblings share |
+| `core/Diagnostics.lua` | `diagnostics` | — | the sections of the diagnostics report, and the `out` seam the siblings share |
 | `core/Diagnostics_DeathRecap.lua` | `recap` | #1 | whether this client can read a death recap, searched two ways |
 | `core/Diagnostics_Identity.lua` | `identity` | #22 | the correlation rectangle, the seat probe, the secret-GUID lookup verdict and the source-field audit |
 | `core/Diagnostics_Feign.lua` | `feign` | #25 | the armed feign-death recording |

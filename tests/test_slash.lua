@@ -98,13 +98,14 @@ test("Slash: no verb is declared twice", function()
 end)
 
 test("Slash: every reserved verb is present, in the order the standard fixes", function()
-    -- TWELVE now. `enable` and `disable` are reserved across the collection (slash-commands-§2)
+    -- THIRTEEN now. `enable` and `disable` are reserved across the collection (slash-commands-§2)
     -- and sit where the standard's own COMMANDS example puts them: after `config`, ahead of the
     -- schema verbs. They are ALIASES for the `enabled` row -- the assertions below pin that they
-    -- hold no state of their own.
+    -- hold no state of their own. `diagnostics` (debug-logging-§14) follows `debug`, where the
+    -- standard's example puts it.
     local RESERVED = {
         "help", "config", "enable", "disable", "list", "get", "set",
-        "reset", "resetall", "debug", "perf", "version",
+        "reset", "resetall", "debug", "diagnostics", "perf", "version",
     }
     local names = verbNames(NS.COMMANDS)
     for i, want in ipairs(RESERVED) do
@@ -903,60 +904,96 @@ test("Slash: `debug feign of` names the rejected argument and leaves the trace a
 end)
 
 -- ---------------------------------------------------------------------------
--- `/mm debug`: the read verbs, the feign recording, and the console toggle
+-- `/mm debug`: the report, the read verbs, the feign recording, the console toggle
 -- ---------------------------------------------------------------------------
 --
 -- doDebug is a ladder over one word, and its arms are NOT interchangeable.
--- `diag`, `recap` and `identity` sit ABOVE the `NS.DebugLog` guard on purpose —
--- they are what a player is asked to type when something looks wrong, and a
--- console they have to open first is one more step between a bug and its report.
--- The comment in settings/Slash.lua says so three times, once per verb, which is
--- how much the ordering is worth. The cases below pin each arm to its own
--- outcome, so a ladder rewritten as a lookup cannot cross-wire two verbs, drop
--- one below the guard, or turn the final toggle into a refusal.
+-- `diagnostics` is tested FIRST (debug-logging-§14): it is the same report the
+-- `diagnostics` verb runs, through the same LibKa0s helper. `recap` and
+-- `identity` sit ABOVE the `NS.DebugLog` guard on purpose -- they are what a
+-- player is asked to type when something looks wrong, and a console they have
+-- to open first is one more step between a bug and its report. The cases below
+-- pin each arm to its own outcome, so a ladder rewritten as a lookup cannot
+-- cross-wire two verbs, drop one below the guard, or turn the final toggle into
+-- a refusal.
+--
+-- `diag` is GONE. It was this report's old name, and the standard now forbids any
+-- other name for it (debug-logging-§14; the owner's Q7 ruling (a)): it is an
+-- ordinary unknown word, which toggles the console like any other, with no hint.
 
---- Replace the three report entry points with counters and hand back the tally.
+--- Replace the report entry points with counters and hand back the tally.
 ---
 --- Spied rather than run: each real report prints dozens of lines into the
 --- console sink, and what is being pinned here is WHICH report a verb reaches,
---- not what that report says.
+--- not what that report says. The full report is the DebugLog instance's own
+--- `RunDiagnostics`, so that is what is spied for it.
 local function spyReports(inst)
-    local calls = { diag = 0, recap = 0, identity = 0 }
+    local calls = { diagnostics = 0, recap = 0, identity = 0 }
     local D = inst.NS.Diagnostics
-    D.Report           = function() calls.diag     = calls.diag     + 1 end
     D.ReportDeathRecap = function() calls.recap    = calls.recap    + 1 end
     D.ReportIdentity   = function() calls.identity = calls.identity + 1 end
+    inst.NS.DebugLog.RunDiagnostics = function()
+        calls.diagnostics = calls.diagnostics + 1
+        return 0
+    end
     return calls
 end
 
-test("Slash: `diag`, `recap` and `identity` each reach their OWN report and no other", function()
-    -- Three verbs, three entry points, and the three reports are different
+test("Slash: `diagnostics`, `recap` and `identity` each reach their OWN report and no other", function()
+    -- Three words, three entry points, and the three reports are different
     -- lengths for a reason: `recap` is the issue #1 probe on its own and
     -- `identity` the issue #22 capture, both extracted precisely so a player
-    -- mid-pull is not handed the forty lines of atlas and font output `diag`
-    -- carries. A lookup table that maps two of them to the same member would
-    -- undo that and still print something plausible.
+    -- mid-pull is not handed the whole diagnostics report. A lookup table that
+    -- maps two of them to the same member would undo that and still print
+    -- something plausible.
     local inst = T.load()
     local calls = spyReports(inst)
 
-    say(inst, "debug diag")
-    assertEqual(calls.diag, 1, "`diag` runs the full report")
+    say(inst, "debug diagnostics")
+    assertEqual(calls.diagnostics, 1, "`debug diagnostics` runs the full report")
     assertEqual(calls.recap + calls.identity, 0, "and reaches nothing else")
+
+    say(inst, "diagnostics")
+    assertEqual(calls.diagnostics, 2, "the `diagnostics` verb runs the same report")
 
     say(inst, "debug recap")
     assertEqual(calls.recap, 1, "`recap` runs the death-recap probe alone")
-    assertEqual(calls.diag + calls.identity, 1, "the full report must not run a second time")
+    assertEqual(calls.diagnostics + calls.identity, 2, "the full report must not run again")
 
     say(inst, "debug identity")
     assertEqual(calls.identity, 1, "`identity` runs the mid-pull correlation capture alone")
-    assertEqual(calls.diag + calls.recap, 2, "and neither of the other two again")
+    assertEqual(calls.diagnostics + calls.recap, 3, "and neither of the other two again")
 end)
 
-test("Slash: the three read verbs run with no debug console seam at all", function()
+test("Slash: `diag` is an ordinary unknown word now, and runs no report", function()
+    -- debug-logging-§14 allows exactly two forms, and the owner ruled Q7 (a): the
+    -- retired name gets no hint and no special case, because a word the ladder
+    -- still recognizes is one edit away from an alias. So `debug diag` does what
+    -- `debug wibble` does -- toggles the window -- and `/mm diag` is an unknown
+    -- verb.
+    -- red under: `diag` kept in the debug ladder, as a report or as a hint.
+    local inst = T.load()
+    local calls = spyReports(inst)
+    local D = inst.NS.DebugLog
+    local shownBefore = D:IsShown()
+
+    say(inst, "debug diag")
+    assertEqual(calls.diagnostics, 0, "`debug diag` ran the report")
+    assertTrue(D:IsShown() ~= shownBefore, "`debug diag` toggles the window, as any unknown word does")
+
+    local text = joined(say(inst, "diag"))
+    assertEqual(calls.diagnostics, 0, "`/mm diag` ran the report")
+    assertTrue(text:lower():find("unknown", 1, true) ~= nil,
+        "`/mm diag` answers as an unknown verb: " .. text)
+end)
+
+test("Slash: the two read verbs run with no debug console seam at all", function()
     -- THE ORDERING THE COMMENTS CALL LOAD-BEARING, asserted rather than trusted.
-    -- All three sit above `if not NS.DebugLog then return end`; move any of them
-    -- below it and the verb a player was asked to type answers with silence on
-    -- exactly the broken install where the answer matters most.
+    -- Both sit above `if not NS.DebugLog then return end`; move either below it
+    -- and the verb a player was asked to type answers with silence on exactly
+    -- the broken install where the answer matters most. `diagnostics` needs the
+    -- console seam (the report is its method), so with no seam at all it goes
+    -- quiet rather than raising.
     -- red under: folding the read verbs into the console-toggle ladder.
     local inst = T.load()
     local calls = spyReports(inst)
@@ -964,29 +1001,30 @@ test("Slash: the three read verbs run with no debug console seam at all", functi
     local realLog = inst.NS.DebugLog
     inst.NS.DebugLog = nil
     local ok, err = pcall(function()
-        say(inst, "debug diag")
+        say(inst, "debug diagnostics")
         say(inst, "debug recap")
         say(inst, "debug identity")
     end)
     inst.NS.DebugLog = realLog
 
-    assertTrue(ok, "a read verb must not raise when the console seam is absent: " .. tostring(err))
-    assertEqual(calls.diag, 1, "`diag` ran without the console")
+    assertTrue(ok, "a debug word must not raise when the console seam is absent: " .. tostring(err))
     assertEqual(calls.recap, 1, "`recap` ran without the console")
     assertEqual(calls.identity, 1, "`identity` ran without the console")
 end)
 
-test("Slash: a read verb moves neither the console window nor the logging flag", function()
-    -- The other half of the same ordering: the read verbs `return`, so none of
-    -- them may fall through to the toggle at the bottom of the ladder. A `diag`
-    -- that also opened or closed the console would be a report the player has to
-    -- undo a window change to read.
+test("Slash: a report word moves neither the console window nor the logging flag", function()
+    -- The other half of the same ordering: the report words `return`, so none of
+    -- them may fall through to the toggle at the bottom of the ladder. A report
+    -- that also closed the console would be a report the player has to undo a
+    -- window change to read. (The real `diagnostics` report OPENS a hidden
+    -- console, which is the library's doing and pinned in test_diagnostics; the
+    -- ladder itself adds nothing on top.)
     local inst = T.load()
     spyReports(inst)
     local D = inst.NS.DebugLog
     local shownBefore = D:IsShown()
 
-    say(inst, "debug diag")
+    say(inst, "debug diagnostics")
     say(inst, "debug recap")
     say(inst, "debug identity")
 
@@ -999,8 +1037,8 @@ test("Slash: the debug sub-verb is matched case-insensitively", function()
     -- they were sent in a chat message gets the report rather than the toggle.
     local inst = T.load()
     local calls = spyReports(inst)
-    say(inst, "debug DIAG")
-    assertEqual(calls.diag, 1, "`DIAG` is `diag`")
+    say(inst, "debug DIAGNOSTICS")
+    assertEqual(calls.diagnostics, 1, "`DIAGNOSTICS` is `diagnostics`")
     say(inst, "debug Identity")
     assertEqual(calls.identity, 1, "`Identity` is `identity`")
 end)
@@ -1070,7 +1108,7 @@ end)
 
 test("Slash: with core/Diagnostics.lua absent the debug verbs go quiet, not through", function()
     -- Every one of the four guards on the module and returns either way. On a
-    -- half-installed addon a `diag` must not fall through to the console toggle
+    -- half-installed addon a `recap` must not fall through to the console toggle
     -- and move a window the player never asked about — the failure would look
     -- like the command working.
     local inst = T.load()
@@ -1080,7 +1118,7 @@ test("Slash: with core/Diagnostics.lua absent the debug verbs go quiet, not thro
     local shownBefore = D:IsShown()
 
     local ok, err = pcall(function()
-        for _, tail in ipairs({ "diag", "recap", "identity", "feign", "feign on" }) do
+        for _, tail in ipairs({ "recap", "identity", "feign", "feign on" }) do
             say(inst, "debug " .. tail)
         end
     end)
@@ -1199,7 +1237,7 @@ end)
 local LIVE_WHILE_DISABLED = {
     help = true, config = true, version = true,
     enable = true, disable = true,
-    debug = true, perf = true,
+    debug = true, diagnostics = true, perf = true,
     get = true, set = true, list = true, reset = true, resetall = true,
 }
 
@@ -1265,7 +1303,7 @@ end)
 test("Slash: EVERY verb off the live list refuses, so a new one is gated by default", function()
     -- THE STRUCTURAL HALF. The gate is the LIBRARY's, sitting on the one dispatch path rather than
     -- as a guard pasted into each handler, and the polarity is the point: a verb is refused unless
-    -- it is on the standard's twelve-verb live list, so the next verb this addon adds is refused
+    -- it is on the standard's thirteen-verb live list, so the next verb this addon adds is refused
     -- while it is off without anyone remembering to say so.
     -- red under: passing a `liveVerbs` that names this addon's feature verbs.
     local inst = T.load{ enable = true }
@@ -1299,7 +1337,7 @@ test("Slash: every verb on the live list still answers with the addon off", func
 
     for _, command in ipairs({
         "version", "config", "list", "get enabled", "set master.alpha 0.5",
-        "reset master.scale", "debug", "perf help",
+        "reset master.scale", "debug", "perf help", "diagnostics",
     }) do
         local lines = say(inst, command)
         for _, line in ipairs(lines) do

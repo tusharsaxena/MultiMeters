@@ -702,7 +702,7 @@ Mythic+ dungeon vehicle encounter).
   window away until the player asks. A window missing anywhere on a fresh profile is a bug.
 - Turn **Open world** off: it hides outdoors and still shows in the dungeon.
 - Turn **Hide when solo** on and drop group: it hides. Group up: it returns.
-- A **delve** → shown, and `/mm debug diag` reports `type=scenario resolved=delve`. This is the one
+- A **delve** → shown, and `/mm diagnostics` reports `type=scenario resolved=delve`. This is the one
   context where Blizzard's token and the addon's answer deliberately disagree: delves have no
   instance type of their own. Turn **Delves** off and the window hides while **Scenarios** stays on —
   if it hides in both, the delve probe is not firing and both contexts have collapsed into one.
@@ -733,9 +733,9 @@ die · pull a target dummy.
   what it is for. Switched on, the window goes on death and comes back on release or resurrection.
 - **Hide in combat** / **Hide out of combat** are independent. Each hides on its own side of a pull
   and the window returns on the other side, promptly rather than a refresh tick late — both edges
-  are announced on the bus. Ticking **both** is a window that never shows; `/mm debug diag` still
+  are announced on the bus. Ticking **both** is a window that never shows; `/mm diagnostics` still
   reports `ShouldShow -> false (in combat)` or `(out of combat)` depending on where you are standing.
-- After every one of these, `/mm debug diag` names the rule that decided in its `ShouldShow` line.
+- After every one of these, `/mm diagnostics` names the rule that decided in its `ShouldShow` line.
 - **Master enable off** (`/mm set enabled false`, or General → Enable Multi Meters) **stands the
   addon down** — every window hidden immediately, every game event unregistered, every timer
   canceled, nothing read from the meter. `/mm toggle`, `/mm lock`, `/mm test`, `/mm window`,
@@ -992,7 +992,7 @@ false, the correction is confined to `modules/Provider.lua`**: a sort inside `Ge
 of combat, which is the only time `value` mode would have needed it anyway. No other file changes.
 
 **The addon now measures it for you.** Out of combat the amounts are plain and `<` is legal, so
-`/mm debug diag` walks each column in the order the API returned it and prints a verdict per stat:
+`/mm diagnostics` walks each column in the order the API returned it and prints a verdict per stat:
 
 ```
 -- provider order --
@@ -1008,7 +1008,7 @@ what confirms its verdict against a second meter.**
 
 **Procedure.**
 
-0. Out of combat, after at least one pull: `/mm debug diag`, and read the **provider order** section.
+0. Out of combat, after at least one pull: `/mm diagnostics`, and read the **provider order** section.
    If any stat says `NOT ranked`, paste that section into issue #14 — that is the deliverable, and
    the steps below are then confirmation rather than discovery.
 1. In a Mythic+ dungeon or a raid, with a full group and at least one completed pull, stand **out of
@@ -1058,7 +1058,7 @@ elemental and a shaman's elementals are also good, and are the cases the unit-fr
 - **No ENEMY ever gets a row.** This is the half that can go badly wrong: `None` is admitted when the
   source carries a real player class, so a mob flagged `None` with a class filename is the one thing
   that could put trash on the grid. If a mob's name appears as a row, stop and report it — and run
-  `/mm debug diag`, whose targets section prints the enemy column's display types for exactly this.
+  `/mm diagnostics`, whose targets section prints the enemy column's display types for exactly this.
 - **Out of combat, pet damage folds into the owner.** Compare the hunter's Damage figure against
   Blizzard's own meter, which also attributes pet damage to the owner. They should agree.
 - **In combat the owner's number is low by whatever the pet contributed**, and that is correct
@@ -1364,7 +1364,7 @@ on is not knowable from the headless harness, and rung 3 renders a window full o
    **in combat**. It must be a whole number (`411`), never its float (`411.90476…`). If it shows its
    digits, turn `/mm debug on`, change any setting (which rebuilds the formatter), and report the
    `[Format]` line the console prints, which names the rung the client accepted, together with the
-   `-- number formatting --` block from `/mm debug diag`. **Unconfirmed in game:** the fix gives every
+   `-- number formatting --` block from `/mm diagnostics`. **Unconfirmed in game:** the fix gives every
    fallback a rule below 1000, but which fallback the reporting client actually lands on has only
    been modeled headlessly.
 
@@ -1537,9 +1537,9 @@ odd-looking cells mid-pull" would be a much worse outcome than "it said no".
 - **The atlas rung is still unconfirmed.** `poi-scrollofresonance` and `UI-HUD-MicroMenu-Questlog-Up`
   are candidates that have **never been seen resolving on a live client**, which is the mistake the
   art-ladder note in `modules/HeaderControls.lua` records happening twice before. They are only
-  reachable now on a client that cannot load our TGA, so confirming one is a `/mm debug diag` job,
+  reachable now on a client that cannot load our TGA, so confirming one is a `/mm diagnostics` job,
   not something a normal run will show you.
-- **`/mm debug diag` answers this for you.** Both candidates are in its atlas probe list and the
+- **`/mm diagnostics` answers this for you.** Both candidates are in its atlas probe list and the
   export control is in its header dump, so one command reports what the client has and what the
   control actually drew.
 - **Hovering it shows a tooltip** reading *Export a segment to CSV or to chat*. It is the only
@@ -2158,7 +2158,7 @@ seam, and that an account saved without the key backfills to 0. It cannot prove 
 sentinel rests on: **that the live client never hands out a stored session whose id is 0.** If it
 did, that fight could not be pinned.
 
-1. Run three or four pulls, then `/mm debug diag` and read the stored-session list it prints.
+1. Run three or four pulls, then `/mm diagnostics` and read the stored-session list it prints.
    **Every `sessionID` is a positive integer.** None is 0.
 2. Log out and back in, run another pull, and read the list again. **Still no 0.** A counter that
    restarts at login is the case that could mint one.

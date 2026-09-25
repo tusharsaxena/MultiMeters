@@ -1157,7 +1157,7 @@ NS.Schema = {
         onChange = refreshVisibility,
     },
     -- Two independent rules rather than one tri-state control. Ticking both is a
-    -- window that never shows, which is the player's business; `/mm debug diag` still
+    -- window that never shows, which is the player's business; `/mm diagnostics` still
     -- names the side of the pull that decided.
     {
         path = "window.visibility.hideInCombat", type = "bool", default = false,

@@ -210,7 +210,7 @@ only place a correction would land: `value` mode orders by the values themselves
 group position, and neither depends on it. If it proves false in-game the fix is a sort inside
 `GetColumn` — legal out of combat, which is the only time `value` mode would have needed it anyway.
 
-**It is now measured rather than assumed.** `/mm debug diag` carries a **provider order** section:
+**It is now measured rather than assumed.** `/mm diagnostics` carries a **provider order** section:
 out of combat the amounts are plain and `<` is legal, so the probe walks each column in the order the
 API returned it and reports `ranked, descending`, or `NOT ranked` with the index where the order
 broke. A break disproves the assumption outright. A clean walk is strong evidence for it and not
@@ -400,7 +400,7 @@ Identity mode is built out of the fields Blizzard annotates `NeverSecret`:
   on a raw source row. See `docs/testing.md` → *Capturing an identity-correlation run*.
 - Enemies are filtered on `sourceDisplayType`, because the roster cannot answer for a source it
   cannot key on — but **that field is secret for the whole of a pull**, measured on a live client
-  (`/mm debug diag` mid-pull printed `display types: <secret> x5` over a five-enemy column). So the
+  (`/mm diagnostics` mid-pull printed `display types: <secret> x5` over a five-enemy column). So the
   filter answers "not an enemy" for everything while restricted, and identity mode is what keeps
   mobs off the grid: it builds rows from the *sort* column's source list, which holds allies. The
   companion admission in `modules/Aggregator.lua` guards on the same secrecy and therefore runs only

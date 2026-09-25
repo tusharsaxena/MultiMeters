@@ -340,6 +340,17 @@ NS.DebugLog = lib:New({
     addonName = addonName,
     -- The library appends its own " — Debug", giving "Ka0s Multi Meters — Debug".
     title = "Ka0s Multi Meters",
+    -- The brand both diagnostics markers carry (debug-logging-§14). The same string
+    -- as `title` today, spelled out so the markers do not depend on the window title.
+    brandName = "Ka0s Multi Meters",
+    -- The report's sections, from core/Diagnostics.lua. Asked for each time a report
+    -- runs, never here: that file loads after this one, and a list captured now would
+    -- be empty. A missing module answers no sections, so the report still carries the
+    -- markers and the library's identity header.
+    diagnostics = function()
+        local Diag = NS.Diagnostics
+        return Diag and Diag.Sections and Diag.Sections() or {}
+    end,
     font  = NS.Constants and NS.Constants.FONT_MONO,
     slash = "/mm",
     -- fontSize omitted: 10 is the library's default and is this addon's value.

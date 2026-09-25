@@ -93,7 +93,7 @@ local SESSION_LINE_WIDTH = 220
 -- The FALLBACK IS NOT A PLACEHOLDER. `v`, `^`, `*`, `#` and `>` are what this draws on
 -- a client where nothing else resolves, and that is a legible header rather than
 -- a row of boxes.
--- CONFIRMED PRESENT on a live 12.x client via `/mm debug diag`, which is the
+-- CONFIRMED PRESENT on a live 12.x client via `/mm diagnostics`, which is the
 -- only reason any of these names is here. `common-dropdown-icon-sortdown`,
 -- `common-icon-settings` and `common-icon-lock` were all probed and all absent —
 -- they are the names that looked right and were not.

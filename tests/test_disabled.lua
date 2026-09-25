@@ -26,13 +26,11 @@ local test, assertEqual, assertTrue, assertFalse =
 
 -- slash-commands-§2's reserved verbs that this addon REGISTERS: the whole live set
 -- while disabled. Spelled out rather than read off the library so a narrowing there
--- is caught here rather than ratified by it. The library's set has a thirteenth,
--- `diagnostics` (LibKa0s-Slash minor 16), which is not listed yet because this
--- addon does not register the verb yet: an unregistered reserved verb answers
--- `unknown command` and the index, which carries the disabled notice under its
--- header exactly as `help` does. It joins this list with the report itself.
+-- is caught here rather than ratified by it. All thirteen: `diagnostics` (LibKa0s-Slash
+-- minor 16, debug-logging-§14) joined with the report, and the kit's shared
+-- diagnostics contract dispatches both of its forms while disabled on top of this.
 local RESERVED = {
-    "help", "config", "version", "enable", "disable", "debug", "perf",
+    "help", "config", "version", "enable", "disable", "debug", "diagnostics", "perf",
     "get", "set", "list", "reset", "resetall",
 }
 

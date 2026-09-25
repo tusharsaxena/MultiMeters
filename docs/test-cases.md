@@ -332,10 +332,13 @@ badge and any count quoted in the docs must agree with it.
 - migrations: the v16 step run twice is a no-op, and never overwrites a US key
 - migrations: a fresh install stores frame.minimized and no British key
 
-### test_diagnostics.lua (23)
+### test_diagnostics.lua (25)
 
-- Diagnostics: the report is published and reachable
-- Diagnostics: `/mm debug diag` reaches it without the debug log
+- Diagnostics: the sections are handed to the LibKa0s helper, not run by hand
+- Diagnostics: the report carries both markers with the addon's brand
+- Diagnostics: the report is plain text, with no color escapes left in it
+- Diagnostics: the report prints exactly one chat line, naming Copy
+- Diagnostics: with LibKa0s absent both forms print the placeholder and nothing else
 - Diagnostics: every section appears
 - Diagnostics: the rejected event names are printed, or `none`
 - Diagnostics: it reports what the CLIENT has, not what the addon wants
@@ -346,7 +349,6 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: with no window it says so rather than erroring
 - Diagnostics: the report lands in the debug console, not in chat
 - Diagnostics: the console is OPENED, so the report is not written out of sight
-- Diagnostics: with no console the report falls back to chat
 - Diagnostics: a font size read back as 10.000000953674 is not called a failure
 - Diagnostics: a font the layout reverted is named as such
 - Diagnostics: a walk that never reached a spell does not blame the build
@@ -2008,7 +2010,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: answers 0 when there is no profile tree to compare against
 - ValidateSchema: counts every failure, in schema order, with nothing listening
 
-### test_slash.lua (75)
+### test_slash.lua (76)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -2062,9 +2064,10 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `debug tooltip` touches neither the logging flag nor the console
 - Slash: `debug feign` with no argument prints the recording
 - Slash: `debug feign of` names the rejected argument and leaves the trace alone
-- Slash: `diag`, `recap` and `identity` each reach their OWN report and no other
-- Slash: the three read verbs run with no debug console seam at all
-- Slash: a read verb moves neither the console window nor the logging flag
+- Slash: `diagnostics`, `recap` and `identity` each reach their OWN report and no other
+- Slash: `diag` is an ordinary unknown word now, and runs no report
+- Slash: the two read verbs run with no debug console seam at all
+- Slash: a report word moves neither the console window nor the logging flag
 - Slash: the debug sub-verb is matched case-insensitively
 - Slash: `debug feign on` arms the recording and says exactly what to do next
 - Slash: `debug feign off` stops the recording and says so
@@ -2274,9 +2277,15 @@ badge and any count quoted in the docs must agree with it.
 - eol: every tracked file carries the terminator .gitattributes declares for it
 - eol: .gitattributes is line-endings-§5's canonical body for this repo kind
 
-### test_diagnostics_contract.lua (1)
+### test_diagnostics_contract.lua (7)
 
-- diagnostics contract: debug-logging-§14 (skipped: Kit.diagnostics is not set in the runner, so this repo's dispatcher is not wired to the shared contract yet. Every Ka0s addon owes debug-logging-§14's report; wire Kit.diagnostics once the report exists)
+- diagnostics contract: both forms run the report
+- diagnostics contract: the debug word is matched in any case
+- diagnostics contract: both markers carry the brand and the end counts the report
+- diagnostics contract: the report appends after what the console already holds
+- diagnostics contract: the report lands with logging off and leaves it off
+- diagnostics contract: both forms run while the addon is disabled
+- diagnostics contract: no other name runs the report
 
 ## Totals
 
@@ -2299,7 +2308,7 @@ badge and any count quoted in the docs must agree with it.
 | test_database.lua | 28 |
 | test_database_migrations.lua | 48 |
 | test_migrations.lua | 8 |
-| test_diagnostics.lua | 23 |
+| test_diagnostics.lua | 25 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
@@ -2347,7 +2356,7 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_paths.lua | 48 |
 | test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
-| test_slash.lua | 75 |
+| test_slash.lua | 76 |
 | test_slash_refusal.lua | 5 |
 | test_disabled.lua | 22 |
 | test_options_panel.lua | 44 |
@@ -2356,5 +2365,5 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
-| test_diagnostics_contract.lua | 1 |
-| **Total** | **2047** |
+| test_diagnostics_contract.lua | 7 |
+| **Total** | **2056** |

@@ -68,7 +68,7 @@ local _, NS = ...
 -- last enable (events-frames-taint-§1). core/MultiMeters.lua's OnEnable is its
 -- only writer: it REPLACES the list with a fresh one on every enable and hands it
 -- to NS.SafeRegisterEvent, which appends each refused name once. nil until the
--- first enable. `/mm debug diag` is where a player reads it.
+-- first enable. `/mm diagnostics` is where a player reads it.
 local State = {
     debug          = false,
     debugTooltip   = false,

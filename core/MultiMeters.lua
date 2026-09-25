@@ -121,7 +121,7 @@ end
 -- the client, and a bare block loses every line after the one that raised —
 -- here that is the meter events, which come last. Each entry now costs only
 -- itself, and a refused name lands in NS.State.rejectedEvents, which
--- `/mm debug diag` prints.
+-- `/mm diagnostics` prints.
 local EVENTS = {
     -- Lifecycle and context. PLAYER_ENTERING_WORLD covers login, /reload and
     -- every zone-in; ZONE_CHANGED_NEW_AREA covers the sub-zone moves that change
@@ -512,7 +512,7 @@ end
 --- FOUR VALUES, and three of them can refuse. `never` is the master switch said a
 --- quieter way and answers `hidden`; the two combat values answer with the side of
 --- the pull the player is standing on, in the same words modules/Visibility.lua's
---- per-window pair uses, so `/mm debug diag` reads the same either way.
+--- per-window pair uses, so `/mm diagnostics` reads the same either way.
 ---
 --- Its own function rather than four branches inside NS.ShouldShow: that ladder
 --- sat one point under the complexity ceiling before this rule existed, and a
@@ -533,7 +533,7 @@ end
 ---
 --- @param window table  a window config from the profile
 --- @return boolean show, string reason  the reason names the step that decided,
----   which is what `/mm debug diag` prints and what a test asserts on.
+---   which is what `/mm diagnostics` prints and what a test asserts on.
 function NS.ShouldShow(window)
     -- STEP 0 — THE LATCH, and it now answers for BOTH reasons this addon can be
     -- inert: the player's master switch and a perf capture's suspended arm
@@ -549,7 +549,7 @@ function NS.ShouldShow(window)
     -- path is now read in exactly one place — NS.SyncEnabledHold — and what it
     -- drives is the teardown, of which this step is the visible half.
     --
-    -- The reason is still told apart, because a player reading `/mm debug diag`
+    -- The reason is still told apart, because a player reading `/mm diagnostics`
     -- wants to know WHICH switch is down.
     if NS.IsStoodDown and NS.IsStoodDown() then
         return false, NS.IsDisabled and NS.IsDisabled() and "disabled" or "suspended"

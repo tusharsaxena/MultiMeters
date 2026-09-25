@@ -70,14 +70,15 @@ Sl.Version = NS.Version
 -- these is assigned below the verb table that references it.
 local cli
 local doLock, doTest, doToggle, doWindow, doResetPositions, doExport, doDebug, doPerf, doResetAll
+local doDiagnostics
 local doEnabled
 
 -- ---------------------------------------------------------------------
 -- The verb table
 -- ---------------------------------------------------------------------
 --
--- The ten reserved verbs first, in the order slash-commands-§2 fixes, then this
--- addon's own. Every sub-verb a handler accepts is named in its own `desc`,
+-- The thirteen reserved verbs first, in the order slash-commands-§3's example
+-- fixes, then this addon's own. Every sub-verb a handler accepts is named in its own `desc`,
 -- because the generated help index, the settings landing page and the README's
 -- command table all read these strings and nothing else — a sub-verb missing here
 -- is a sub-verb nobody can discover (slash-commands-§4).
@@ -96,8 +97,14 @@ NS.COMMANDS = {
     { "set",      "Write one setting: /mm set <path> <value>", function(a) cli:CliSet(a) end },
     { "reset",    "Reset one setting: /mm reset <path>",   function(a) cli:CliReset(a) end },
     { "resetall", "Reset all settings (asks first; deletes extra windows)", function() doResetAll() end },
-    { "debug",    "Console; 'on'/'off' set logging, 'tooltip' toggles the noisy tooltip channel, 'diag' a diagnostic report, 'recap' the death-recap probe, 'identity' the mid-pull correlation capture, 'feign on|off' the feign recording",
+    { "debug",    "Console; 'on'/'off' set logging, 'diagnostics' the diagnostics report, 'tooltip' toggles the noisy tooltip channel, 'recap' the death-recap probe, 'identity' the mid-pull correlation capture, 'feign on|off' the feign recording",
                                                                      function(a) doDebug(a) end },
+    -- debug-logging-§14: the diagnostics report, the same one `/mm debug diagnostics`
+    -- runs. Reserved in every addon (slash-commands-§2), live while disabled, and the
+    -- only other name the report has: `diag` was this report's old debug word and is
+    -- retired, with no alias and no hint.
+    { "diagnostics", "Write the diagnostics report to the debug console",
+                                                                     function() doDiagnostics() end },
     { "perf",     "Performance capture; try /mm perf help", function(a) doPerf(a) end },
     { "version",  "Print the addon version",   function() cli:CliVersion() end },
 
@@ -143,13 +150,11 @@ NS.COMMANDS = {
 --     differently is the drift the shared printer exists to end.
 --
 -- WHAT STILL ANSWERS WHILE DISABLED: `help`, `config`, `version`, `enable`,
--- `disable`, `debug`, `perf`, `get`, `set`, `list`, `reset`, `resetall`, and the
--- BARE `/mm`, which opens the settings panel through the host's `config` verb.
--- (`diagnostics` is in the live set too, but until this addon registers it the
--- word answers `unknown command` and the index, as any unregistered verb does.) A
--- player must be able to read and repair settings and reach the panel while the
--- addon is off -- which is exactly when they are most likely to need to -- and
--- `enable` above all, or the pair is one-way.
+-- `disable`, `debug`, `diagnostics`, `perf`, `get`, `set`, `list`, `reset`,
+-- `resetall`, and the BARE `/mm`, which opens the settings panel through the host's
+-- `config` verb. A player must be able to read and repair settings and reach the
+-- panel while the addon is off -- which is exactly when they are most likely to
+-- need to -- and `enable` above all, or the pair is one-way.
 --
 -- WHAT IS REFUSED: this addon's own six feature verbs -- `lock`, `test`,
 -- `toggle`, `window`, `reset-positions`, `export`. Taking the SHOULD is a
@@ -668,7 +673,7 @@ end
 -- The two harness verbs
 -- ---------------------------------------------------------------------
 
---- The three READ verbs, one entry each, reaching the report that verb names.
+--- The two READ verbs, one entry each, reaching the report that verb names.
 --- Built once at file scope: this is a slash path, but a table rebuilt per call
 --- is an allocation the branches it replaced never made (performance-§11).
 ---
@@ -683,14 +688,13 @@ end
 --- another, so a typo here cross-wires two commands while still printing
 --- something plausible.
 local DEBUG_REPORTS = {
-    diag     = function(D) return D.Report() end,
     recap    = function(D) return D.ReportDeathRecap() end,
     identity = function(D) return D.ReportIdentity() end,
 }
 
 --- `feign` is the issue #25 recording, and it is the only debug verb here that
 --- takes an argument, because it is the only one that is not a read. The other
---- three ask the client a question at the moment they are typed; a feign is over
+--- reports ask the client a question at the moment they are typed; a feign is over
 --- before a player finishes typing, so this one has to be armed before the run
 --- and printed after it.
 ---
@@ -732,13 +736,22 @@ end
 function doDebug(rest)
     local word = tostring(rest or ""):lower():match("^%s*(%S*)") or ""
 
-    -- The three read verbs run WITHOUT the debug log, deliberately, which is why
+    -- `diagnostics` FIRST (debug-logging-§14), before every other word, and the
+    -- same report as the `diagnostics` verb. `diag`, its retired name, is not
+    -- matched anywhere below, so it falls to the window toggle like any other
+    -- word the ladder does not know (the owner's Q7 ruling (a): no hint).
+    if word == "diagnostics" then
+        doDiagnostics()
+        return
+    end
+
+    -- The two read verbs run WITHOUT the debug log, deliberately, which is why
     -- this lookup sits ABOVE the `NS.DebugLog` guard below. They are what a
     -- player is asked to run when something looks wrong, and requiring them to
     -- enable a console first is one more step between a bug and its report.
     --
-    -- `recap` is the issue #1 probe on its own — the same report the full `diag`
-    -- carries, without the forty lines of atlas and font output around it.
+    -- `recap` is the issue #1 probe on its own — the same section the full
+    -- diagnostics report carries, without everything else around it.
     --
     -- `identity` is the issue #22 capture, and it is typed mid-pull, by a player
     -- who was asked to type it, so a console they must open first is a step
@@ -790,6 +803,19 @@ function doDebug(rest)
         -- `feign` refuses one, because only `feign` reads one.
         NS.DebugLog:Toggle()
     end
+end
+
+--- `/mm diagnostics` and `/mm debug diagnostics`: the one report, written by
+--- LibKa0s-DebugLog-1.0 into the console after whatever trace is already there
+--- (debug-logging-§14). The sections are core/Diagnostics.lua's, handed over
+--- through the descriptor in core/DebugLogSetup.lua. With LibKa0s absent the
+--- stub's RunDiagnostics prints the collection's placeholder line instead.
+---
+--- It never reads the enabled flag, the debug flag or anything else first: the
+--- verb is live while disabled, and the report lands with logging off.
+function doDiagnostics()
+    local D = NS.DebugLog
+    if D and D.RunDiagnostics then D:RunDiagnostics() end
 end
 
 --- `perf` is registered HERE, by the addon, and never by the harness. The library

@@ -1029,7 +1029,7 @@ habit. A key missing from a stored window has to read as "nothing objects"; a sh
 a setting its owner never touched. `Database.EnsureWindowShape` backfills the shape, but on a
 schedule `modules/Visibility.lua` cannot see and must not depend on. `hideInCombat` and
 `hideOutOfCombat` are therefore two independent rules rather than one tri-state; ticking both is a
-window that never shows, and `/mm debug diag` still names the side of the pull that decided.
+window that never shows, and `/mm diagnostics` still names the side of the pull that decided.
 
 The order of evaluation is context first, then every veto, then combat. Running it the other way
 round would report `solo` as the reason a window is hidden in the open world, when the real reason

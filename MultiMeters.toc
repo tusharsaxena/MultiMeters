@@ -75,7 +75,7 @@ core\DebugLogSetup.lua
 core\LauncherSetup.lua
 core\MultiMeters.lua
 core\Database.lua
-# `/mm debug diag`. Last in the block: it reads modules at CALL time and owns no
+# `/mm diagnostics`. Last in the block: it reads modules at CALL time and owns no
 # state, so nothing depends on where it loads.
 core\Diagnostics.lua
 # The long-lived probes peeled out of core\Diagnostics.lua (layout-§1). LOAD-BEARING:

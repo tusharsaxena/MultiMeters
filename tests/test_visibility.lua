@@ -119,7 +119,7 @@ test("The reason token is stable and unlocalized", function()
     inst.mocks.setInstance("party")
     inst.mocks.setSolo()
 
-    -- `/mm debug diag` prints it and the tests assert on it; both break the moment a
+    -- `/mm diagnostics` prints it and the tests assert on it; both break the moment a
     -- translator gets hold of it.
     local rules = defaultRules()
     rules.hideWhenSolo = true   -- ships off; this case is about the reason it gives
@@ -346,7 +346,7 @@ test("Both combat rules on is a window that never shows, and says which side", f
 
     -- Not a state to defend against — a player who ticks both has asked for a
     -- window that never appears — but the reason must still name the side of the
-    -- pull they are standing on, or `/mm debug diag` cannot explain it.
+    -- pull they are standing on, or `/mm diagnostics` cannot explain it.
     assertEqual(select(2, inst.NS.Visibility.ShouldShow(windowWith(rules))), "out of combat")
     inst.mocks.setInCombat(true)
     assertEqual(select(2, inst.NS.Visibility.ShouldShow(windowWith(rules))), "in combat")
@@ -521,7 +521,7 @@ test("Evaluate runs no ladder on a ZONE edge while debug is off", function()
     -- remembers, so outside debug running every window's rules on every context
     -- edge is pure cost (MultiMeters-R-09). The window runs its own ladder off
     -- the same messages; this module's copy is only for the debug line and
-    -- `/mm debug diag`.
+    -- `/mm diagnostics`.
     -- red under: an Evaluate with no debug gate at its head.
     local inst = T.load()
     local NS = inst.NS
@@ -732,7 +732,7 @@ end)
 -- eight-line if-chain. Any rewrite that turns those eight lines into a table and
 -- a loop -- and one is planned -- reorders them the moment a row is typed out of
 -- sequence, and every per-veto case above still passes, because each of those
--- drives exactly one state at a time. `/mm debug diag` would then start naming
+-- drives exactly one state at a time. `/mm diagnostics` would then start naming
 -- the wrong reason for a player with two states live at once, which is the one
 -- question that tool exists to answer.
 
@@ -822,7 +822,7 @@ test("Each context switched off hides with its own name, and only its own", func
     -- returns the same name it was keyed by, for every context, on both answers.
     -- A refactor that keyed the lookup off the instance token instead of the
     -- player-facing name would still pass every map case and would report
-    -- "party" to `/mm debug diag` where the settings page says "dungeon".
+    -- "party" to `/mm diagnostics` where the settings page says "dungeon".
     local CASES = {
         { "dungeon",      function(m) m.setDelve(false) m.setInstance("party") end    },
         { "raid",         function(m) m.setDelve(false) m.setInstance("raid") end     },
@@ -890,7 +890,7 @@ end)
 
 test("Anything that is not a table is `no window`, whatever it is", function()
     -- The ladder in core/MultiMeters.lua makes the same check, so this one only
-    -- ever fires for a direct caller -- `/mm debug diag`, a test, a future module.
+    -- ever fires for a direct caller -- `/mm diagnostics`, a test, a future module.
     -- It still has to answer the same way for every shape, because "no window" is
     -- the token the diagnostic prints and a nil-only guard would let a string
     -- through to index `window.visibility` and raise.

@@ -44,7 +44,7 @@
 --
 -- Evaluate() therefore exists for its RETURN VALUE and its debug line, not to
 -- prime a cache the predicate reads. What it keeps is the LAST answer per
--- window, so `/mm debug diag` and the tests can say what changed and why.
+-- window, so `/mm diagnostics` and the tests can say what changed and why.
 --
 -- COMBAT: read with UnitAffectingCombat("player") and never InCombatLockdown().
 -- Lockdown is about whether SECURE writes are legal, and nothing here writes
@@ -260,7 +260,7 @@ local VETOES = {
 --- shape, but on a schedule this module cannot see and must not depend on.
 ---
 --- The second return names the step that decided. It is a stable, UNLOCALIZED
---- token — `/mm debug diag` prints it and the tests assert on it, and both of those
+--- token — `/mm diagnostics` prints it and the tests assert on it, and both of those
 --- break the moment a translator gets hold of it.
 ---
 --- Note what is NOT here: the master enable, preview mode and the perf suspend
@@ -295,7 +295,7 @@ function Visibility.ShouldShow(window)
     -- Combat last, and read as two independent rules rather than one tri-state.
     -- Ticking both is a window that never shows; that is the player's business,
     -- and the reason still names the side of the pull they are standing on so
-    -- `/mm debug diag` can explain it.
+    -- `/mm diagnostics` can explain it.
     if inCombat() then
         if rules.hideInCombat then return false, "in combat" end
     elseif rules.hideOutOfCombat then
@@ -365,7 +365,7 @@ local function describeResult(id, show, reason)
 end
 
 --- The last answer computed for a window id, or nil if it has never been
---- evaluated. Read by `/mm debug diag` (core/Diagnostics.lua) and the tests; the
+--- evaluated. Read by `/mm diagnostics` (core/Diagnostics.lua) and the tests; the
 --- render path uses the predicate directly and never this. Only a debug-on pass
 --- writes it (see Evaluate), so nil also means "debug was off".
 ---
@@ -386,7 +386,7 @@ end
 --- path to the same decision and would let two windows disagree about the
 --- current zone for one frame.
 ---
---- RUNS ONLY UNDER DEBUG. Nothing but the debug line and `/mm debug diag` reads
+--- RUNS ONLY UNDER DEBUG. Nothing but the debug line and `/mm diagnostics` reads
 --- what this pass computes, and modules/Window_Lifecycle.lua already runs each window's
 --- ladder off the same edges, so a debug-off pass would evaluate every window's
 --- rules a second time per edge for no reader (MultiMeters-R-09). Every caller
@@ -471,7 +471,7 @@ function Visibility:OnEnable()
     self:RegisterMessage(MSG.ENTERING_WORLD,   "OnContextChanged")
     self:RegisterMessage(MSG.ROSTER_CHANGED,   "OnContextChanged")
     -- The player-state edges. This module's own subscription exists for the
-    -- debug-gated Evaluate pass (its debug line and `/mm debug diag`) ONLY — it is not what makes a window
+    -- debug-gated Evaluate pass (its debug line and `/mm diagnostics`) ONLY — it is not what makes a window
     -- react. modules/Window_Lifecycle.lua subscribes to the same two messages and re-runs
     -- the show ladder there, because this module publishes nothing and a window
     -- has no other reason to ask again.

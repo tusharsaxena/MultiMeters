@@ -11,7 +11,7 @@
 -- issue, and can therefore be deleted with that issue — which it could not be
 -- while it was a block in the middle of an 1800-line file.
 --
--- It is NOT part of `/mm debug diag`, and it carries STATE the rest of the report
+-- It is NOT part of `/mm diagnostics`, and it carries STATE the rest of the report
 -- does not: the ring, its write index, and the armed flag modules/Aggregator.lua
 -- and modules/Feign.lua read through `NS.Diagnostics` at call time.
 --
@@ -287,7 +287,7 @@ end
 
 --- `/mm debug feign` — the issue #25 recording, printed.
 ---
---- Not part of `/mm debug diag`, for the reason `identity` is not: this says
+--- Not part of `/mm diagnostics`, for the reason `identity` is not: this says
 --- nothing at all unless it was armed before the run it describes.
 function Diagnostics.ReportFeign()
     local D = NS.DebugLog

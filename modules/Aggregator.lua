@@ -733,7 +733,7 @@ end
 --- humanoid mob that happens to reach this function.
 ---
 --- THE SECRECY GUARD IS NOT DEFENSIVE PADDING. `sourceDisplayType` is SECRET for
---- the whole of a pull — a live `/mm debug diag` mid-pull printed `display types:
+--- the whole of a pull — a live `/mm diagnostics` mid-pull printed `display types:
 --- <secret> x5` across a five-enemy column — which nothing in this file or its
 --- docs had recorded until it was measured. `==` against a secret is permitted
 --- and simply answers false, so the comparison below would refuse a companion

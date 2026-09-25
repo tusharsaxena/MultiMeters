@@ -21,24 +21,20 @@ local assertNil   = T.assertNil
 --- Run the FULL report and hand back everything it printed, as one string.
 ---
 --- The same helper test_diagnostics.lua opens with, duplicated rather than
---- published, because it is four lines of buffer arithmetic and a shared copy
---- would tie two suites together for no gain. BOTH SINKS are drained, because
---- the report has two and picks between them at run time: the debug console when
---- one is open, and chat when it is not. Three cases below assert that the recap
+--- published, because it is a few lines of buffer arithmetic and a shared copy
+--- would tie two suites together for no gain. The full report is the LibKa0s
+--- helper's `RunDiagnostics` (debug-logging-§14), which writes into the console
+--- buffer, so that is what is drained. Three cases below assert that the recap
 --- probe rides along in the full report, and those are the ones that need it.
 local function report(inst)
     local D      = inst.NS.DebugLog
-    local buffer = D and D.buffer
-    local chatN  = #inst.mocks.__chat
-    local bufN   = buffer and #buffer or 0
+    local buffer = D.buffer
+    local bufN   = #buffer
 
-    inst.NS.Diagnostics.Report()
+    D:RunDiagnostics()
 
     local lines = {}
-    if buffer then
-        for i = bufN + 1, #buffer do lines[#lines + 1] = buffer[i] end
-    end
-    for i = chatN + 1, #inst.mocks.__chat do lines[#lines + 1] = inst.mocks.__chat[i] end
+    for i = bufN + 1, #buffer do lines[#lines + 1] = buffer[i] end
     return table.concat(lines, "\n"), lines
 end
 
@@ -105,7 +101,7 @@ local function death(guid, name, isLocal, recapID, when)
 end
 
 test("Diagnostics: `/mm debug recap` reaches the probe without the debug log", function()
-    -- Same reasoning as `diag`: it is what a player is asked to run, and making
+    -- Same reasoning as `identity`: it is what a player is asked to run, and making
     -- them open a console first is one more step between us and the answer.
     -- red under: hanging the verb off the DebugLog branch in doDebug.
     local inst = T.load{ enable = true }
@@ -230,7 +226,7 @@ test("Diagnostics: a secret id is described rather than called", function()
 end)
 
 test("Diagnostics: the recap probe also rides along in the full report", function()
-    -- A player running `/mm debug diag` after a dungeon hands over the evidence
+    -- A player running `/mm diagnostics` after a dungeon hands over the evidence
     -- for free, which is worth more than a tidier report.
     local inst = T.load{ enable = true }
     local text = report(inst)

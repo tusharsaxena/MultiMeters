@@ -77,7 +77,7 @@ test("Diagnostics: the identity report is published and reachable", function()
 end)
 
 test("Diagnostics: `/mm debug identity` reaches it without the debug log", function()
-    -- Same reason `diag` does: it is what a player is asked to run, and a
+    -- Same reason `recap` does: it is what a player is asked to run, and a
     -- console they must open first is a step between us and the answer.
     -- red under: the verb falling through to the DebugLog branch.
     local inst = T.load{ enable = true }

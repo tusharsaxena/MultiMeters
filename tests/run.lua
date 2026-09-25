@@ -328,9 +328,35 @@ local SUITES = {
     -- is declared, so it cannot arrive with a re-vendor and then quietly run nothing.
     { name = "test_eol", dir = "tests/_kit/" },
     -- The diagnostics dump's dispatcher contract (debug-logging-§14), since kit revision
-    -- 27. Declared here so the inventory stays green; until `Kit.diagnostics` is wired to
-    -- this addon's dispatcher it registers one declared skip that names the rule.
+    -- 27: both forms, while disabled, append, ungated, the markers, and `diag` running
+    -- nothing. Wired to this addon's own dispatcher through `Kit.diagnostics` below.
     { name = "test_diagnostics_contract", dir = "tests/_kit/" },
+}
+
+-- ---------------------------------------------------------------------------
+-- The diagnostics contract's consumer facts (kit revision 27)
+-- ---------------------------------------------------------------------------
+--
+-- ITS OWN INSTANCE, ENABLED, built on first use. The contract disables and re-enables
+-- the addon and writes several reports into the console, and the shared instance is
+-- neither enabled nor anybody's to stand down. Built lazily, from the first case's
+-- `reset`, so no suite that runs before it sees a second instance's load.
+local contractInst
+local function contract()
+    contractInst = contractInst or loadInstance{ enable = true }
+    return contractInst
+end
+
+Kit.diagnostics = {
+    -- The descriptor's `brandName` in core/DebugLogSetup.lua, which both markers carry.
+    brand       = "Ka0s Multi Meters",
+    -- Through the real dispatcher, exactly as `/mm <line>` arrives from the client.
+    dispatch    = function(line) contract().NS.Slash:OnSlash(line) end,
+    console     = function() return contract().NS.DebugLog end,
+    -- The flag is NS.State.debug (session-only), written directly: no chat ack.
+    setDebug    = function(on) contract().NS.State.debug = on and true or false end,
+    -- The `enabled` row, through the one write seam the checkbox and `/mm disable` use.
+    setDisabled = function(off) contract().NS.SetByPath("enabled", not off) end,
 }
 
 -- ---------------------------------------------------------------------------

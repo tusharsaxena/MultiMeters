@@ -1,6 +1,7 @@
 -- core/Diagnostics.lua
 --
--- `/mm debug diag` — what the CLIENT actually reports, printed as facts.
+-- The sections of `/mm diagnostics` (debug-logging-§14) — what the CLIENT
+-- actually reports, printed as facts.
 --
 -- ---------------------------------------------------------------------------
 -- WHY THIS FILE EXISTS
@@ -35,6 +36,12 @@
 --
 -- TOC POSITION: last in the core block. It reaches modules at CALL time and owns
 -- no state, so nothing depends on where it loads.
+--
+-- THE REPORT ITSELF IS THE LIBRARY'S. LibKa0s-DebugLog-1.0 (DebugLogDiagnostics,
+-- vendored since v1.60.0) writes the markers, the identity header, the per-section
+-- pcall, the line cap, the escape strip and the ungated append into the console
+-- (debug-logging-§14). This file hands it SECTIONS, through the descriptor's
+-- `diagnostics` field in core/DebugLogSetup.lua, and runs none of that itself.
 --
 -- THE LONG-LIVED PROBES ARE SIBLINGS. layout-§1 caps a file at 1500 lines and
 -- this one was over it; the seam is the probe, so the three probes that answer
@@ -94,7 +101,9 @@ local NUMBER_PROBES = {
     { value = 12400000,        want = "12.4M" },
 }
 
---- Where this run's report goes. Set by Report(), cleared when it finishes.
+--- Where the current report's lines go. Pointed at the library's section writer
+--- for the length of one section of the full report (see `hosted` below), and at
+--- the console by the three topic probes' own entry points; nil otherwise.
 ---
 --- The console is the right home: a diagnostic is forty lines that a player has
 --- to hand back verbatim, and the console already has the buffer, the scrollback
@@ -103,12 +112,13 @@ local NUMBER_PROBES = {
 --- with combat spam.
 local emit = nil
 
---- Print one line, to the console when there is one and to chat otherwise.
+--- Print one line, to the current sink when there is one and to chat otherwise.
 ---
---- The fallback is not decoration. With LibKa0s absent, `NS.DebugLog` is a stub
---- whose `Add` is a NO-OP — so routing there unconditionally would make the one
---- command a player runs when something is wrong print absolutely nothing, on
---- exactly the broken install where they need it most.
+--- The fallback is not decoration, for the topic probes (`recap`, `identity`,
+--- `feign`). With LibKa0s absent, `NS.DebugLog` is a stub whose `Add` is a NO-OP —
+--- so routing there unconditionally would make the one command a player runs when
+--- something is wrong print absolutely nothing, on exactly the broken install
+--- where they need it most.
 local function out(line)
     if emit then emit(line) return end
     if NS.Print then NS.Print(line) else print(line) end
@@ -424,15 +434,6 @@ local function reportHeader()
     end
 end
 
--- ---------------------------------------------------------------------------
--- Entry point
--- ---------------------------------------------------------------------------
-
---- Print the whole report. Called from `/mm debug diag`.
----
---- Every section is independent and wrapped, so one broken probe cannot take the
---- rest of the report with it — a diagnostic that dies halfway is worse than no
---- diagnostic, because it looks like the thing it was diagnosing.
 -- ---------------------------------------------------------------------------
 -- Tooltip font — did our SetFont stick, and did it survive the layout?
 -- ---------------------------------------------------------------------------
@@ -813,39 +814,70 @@ local function reportTargets()
     end
 end
 
-function Diagnostics.Report()
-    -- Open the console and route into it — but only once it has actually opened.
-    -- `IsShown` is asked rather than the library's presence assumed, because the
-    -- degraded stub answers every member and shows nothing, and a report that
-    -- vanished into a no-op sink would look exactly like a report with nothing
-    -- to say.
-    local D = NS.DebugLog
-    if D and D.Add and D.Show and D.IsShown then
-        pcall(function() D:Show() end)
-        if D:IsShown() then
-            emit = function(line) D:Add("Diag", line) end
-        end
-    end
+-- ---------------------------------------------------------------------------
+-- The section list, handed to the library
+-- ---------------------------------------------------------------------------
 
-    out("|cffffd100Ka0s Multi Meters — diagnostics|r  v" .. tostring(NS.version))
+--- Every section of the full report, in the order it prints.
+---
+--- The recap section is reached through the shared table because it lives in
+--- core/Diagnostics_DeathRecap.lua, which loads after this file; it is resolved
+--- when the section RUNS, so a sibling that failed to load costs its one
+--- `section death recap failed` line and nothing else.
+local SECTIONS = {
+    { "events",           reportEvents },
+    { "atlases",          reportAtlases },
+    { "number formatting", reportFormatter },
+    { "visibility",       reportVisibility },
+    { "header",           reportHeader },
+    { "name column",      reportNameColumn },
+    { "cells",            reportCells },
+    { "tooltip font",     reportTooltipFont },
+    { "tooltip width",    reportTooltipWidth },
+    { "targets",          reportTargets },
+    { "provider order",   reportProviderOrder },
+    { "death recap",      function() return Diagnostics.reportDeathRecap() end },
+}
 
-    -- The recap section is reached through the shared table because it now lives
-    -- in core/Diagnostics_DeathRecap.lua; every other section is still a local
-    -- here. The list is built at CALL time, so the lookup costs nothing extra.
-    for _, section in ipairs({
-        reportEvents, reportAtlases, reportFormatter, reportVisibility, reportHeader,
-        reportNameColumn, reportCells, reportTooltipFont, reportTooltipWidth,
-        reportTargets, reportProviderOrder, Diagnostics.reportDeathRecap,
-    }) do
-        local ok, err = pcall(section)
-        if not ok then out("  |cffff2020section failed:|r " .. tostring(err)) end
+--- One section, run against the library's writer.
+---
+--- The sections print through `out` above, which the three topic probes share,
+--- so rather than rewrite every line of them this points `emit` at the writer's
+--- `add` for the length of the section. Each line is already built and already
+--- passed through `shown` / `probe`, so it goes in as one `%s` argument; the
+--- writer stringifies it again, strips the color escapes the sections still use,
+--- and drops it past the cap.
+---
+--- THE SINK IS PUT BACK EVEN WHEN THE SECTION RAISES, and the raise is passed on.
+--- The library's pcall around each section is what turns it into the one
+--- `section <name> failed: <err>` line (debug-logging-§14); swallowing it here
+--- would print nothing, and leaving `emit` on a finished writer would send the
+--- next topic probe's lines into a report that has already been written.
+---
+--- @param fn function  a section printing through `out`
+--- @return function    fn(w), the shape the library calls
+local function hosted(fn)
+    return function(w)
+        local previous = emit
+        emit = function(line) w:add("Diag", "%s", line) end
+        local ok, err = pcall(fn)
+        emit = previous
+        if not ok then error(err, 0) end
     end
+end
 
-    if emit then
-        out("Copy the block above into the bug report — the console's copy button")
-        out("takes the whole buffer.")
-    else
-        out("Copy the block above into the bug report.")
+--- The full report's sections, as LibKa0s-DebugLog-1.0's descriptor field
+--- `diagnostics` wants them: `{ { name, fn(w) }, ... }`.
+---
+--- Built per call, like the list it replaced, so nothing is held between reports.
+--- `/mm diagnostics` and `/mm debug diagnostics` both reach it through
+--- `NS.DebugLog:RunDiagnostics()`; nothing in this file runs a report.
+---
+--- @return table
+function Diagnostics.Sections()
+    local list = {}
+    for i, section in ipairs(SECTIONS) do
+        list[i] = { section[1], hosted(section[2]) }
     end
-    emit = nil
+    return list
 end
