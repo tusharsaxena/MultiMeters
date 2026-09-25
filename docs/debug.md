@@ -44,7 +44,7 @@ Both live on `NS.State`, both are session-only, and neither ever reaches SavedVa
 
 ### Why the tooltip channel has a switch of its own
 
-One channel can drown the log it shares. The buffer is capped — 1500 lines as of LibKa0s v1.15.0 —
+One channel can drown the log it shares. The buffer is capped — 3000 lines as of LibKa0s v1.60.0 —
 and three call sites write on the `Tooltip` channel:
 
 | Site | Fires on |

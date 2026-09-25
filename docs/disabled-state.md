@@ -95,7 +95,7 @@ and is untouched.
 
 **The gate is the library's, not this file's.** `settings/Slash.lua` passes `isEnabled` and
 `brandName` on the descriptor and **deliberately passes no `liveVerbs`**: the library's default is
-the standard's twelve reserved verbs, and naming a set here could only narrow it. The hand-rolled
+the standard's thirteen reserved verbs, and naming a set here could only narrow it. The hand-rolled
 `ALWAYS_LIVE` wrap this addon carried, and its own spelling of the refusal line, are both gone — the
 line is `cli:DisabledLine()`, built from the format string every addon in the collection shares.
 `isEnabled` is asked at dispatch time and never cached, so the command after `/mm enable` works.
