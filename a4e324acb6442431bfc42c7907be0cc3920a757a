@@ -1,0 +1,1 @@
+clean: docs match code and lib v1.60.0 (section order, 1200/MAX_BUFFER-100 cap, markers, never-list, diag gone), counts 19/thirteen fixed, smoke 35 covers S1-S5/S7-S9/S11, CRLF kept; comment-only Lua; gate re-run 2074/0, luacheck 0/0, lizard clean, max 1446
