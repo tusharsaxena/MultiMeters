@@ -246,6 +246,9 @@ local function drawIcon(button, control, art, style, dimmed, ascii)
             button.tex:SetAlpha(1)
             button.tex:Show()
             button.glyph:Hide()
+            -- Remembered for the diagnostics report, which cannot ask the
+            -- texture: a live client may answer a file ID rather than the path.
+            button.mmArt = path
             return "art"
         end
     end

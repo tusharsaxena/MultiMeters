@@ -396,6 +396,33 @@ local function reportVisibility()
     reportLastPass(V)
 end
 
+--- Which rung a header control drew on, and the thing that rung drew.
+---
+--- Read off `button.mmRung`, which modules/HeaderControls.lua records at draw
+--- time. This used to print the atlas and the glyph whatever the rung, so a
+--- strip drawn from the collection's own texture art -- rung one, the usual
+--- case -- reported `atlas=nil glyph="nil"` for every control while every
+--- control was plainly on screen.
+---
+--- @param button table
+--- @return string
+local function drawnBy(button)
+    local rung = button.mmRung
+    if rung == "art" then
+        local loaded = button.tex and button.tex.GetTexture and button.tex:GetTexture()
+        return string.format("rung=art texture=%s%s",
+            tostring(button.mmArt):gsub("^.*[\\/]", ""),
+            loaded == nil and " (NOT LOADED)" or "")
+    elseif rung == "atlas" then
+        return string.format("rung=atlas atlas=%s",
+            tostring(button.tex and button.tex.GetAtlas and button.tex:GetAtlas()))
+    elseif rung == "ascii" then
+        return string.format("rung=ascii glyph=%q",
+            tostring(button.glyph and button.glyph:GetText()))
+    end
+    return "rung=" .. tostring(rung) .. " (never drawn)"
+end
+
 local function reportHeader()
     out("|cff00ff00-- header --|r")
     local M = NS.WindowManager
@@ -403,9 +430,12 @@ local function reportHeader()
     if not inst then out("  no window") return end
 
     local header = inst.config.header or {}
-    out(string.format("  showSessionName=%s showDuration=%s showTotals=%s align=%s",
-        tostring(header.showSessionName), tostring(header.showDuration),
-        tostring(header.showTotals), tostring(header.align)))
+    -- showSessionName, showDuration and showTotals were deleted by migration
+    -- v7 -> v8, and printing them printed `nil` three times for every player.
+    -- What governs the session line now is the frame's showSegmentText.
+    out(string.format("  showSegmentText=%s align=%s",
+        tostring((inst.config.frame or {}).showSegmentText ~= false),
+        tostring(header.align)))
     out(string.format("  title=%q", shown(inst.frame.title:GetText())))
     -- The session line carries the header TOTALS, which are secret for the
     -- whole of a pull. Printed through `shown` the line still says so; printed
@@ -429,10 +459,8 @@ local function reportHeader()
         if not button then
             out(string.format("  %-9s absent", key))
         else
-            out(string.format("  %-9s atlas=%s glyph=%q shown=%s alpha=%s",
-                key,
-                tostring(button.tex and button.tex.GetAtlas and button.tex:GetAtlas()),
-                tostring(button.glyph and button.glyph:GetText()),
+            out(string.format("  %-9s %s shown=%s alpha=%s",
+                key, drawnBy(button),
                 tostring(button:IsShown()),
                 tostring(button.GetAlpha and button:GetAlpha())))
         end
@@ -531,18 +559,35 @@ end
 -- Targets — where the enemy cross-reference stops
 -- ---------------------------------------------------------------------------
 
---- What the client flags the enemy column's sources as.
+--- How many of the enemy column's sources carry a class RAID_CLASS_COLORS knows.
 ---
---- THE BELT ON A LOOSENED GATE. modules/Aggregator.lua used to admit an unowned
---- source only on an explicit `Ally`, and a delve companion filed under `None`
---- was dropped for the whole of a run because of it. `None` is now admitted when
---- the source carries a real player class — which is safe exactly as long as
---- enemies keep reporting `Enemy`, and that is an assumption about a live client
---- rather than a fact about the code.
+--- @param column table
+--- @return number
+local function classedEnemies(column)
+    local classes, n = _G.RAID_CLASS_COLORS, 0
+    if type(classes) ~= "table" then return 0 end
+    for _, src in ipairs(column.sources) do
+        local class = src.classFilename
+        if type(class) == "string" and NS.Secrets.CanAccess(class) and classes[class] then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+--- What the client flags the enemy column's sources as, and whether they carry
+--- a player class.
 ---
---- So it is printed rather than assumed. A `None` in this tally is the warning
---- that the class test is the only thing standing between a trash pack and the
---- grid, and it arrives in a report instead of as a wrong row nobody can explain.
+--- modules/Aggregator.lua admits an unowned source flagged `None` when it
+--- carries a class RAID_CLASS_COLORS knows (the delve companion rule). This
+--- section used to call a `None` here the sign that a mob could reach the grid,
+--- on the belief that enemies report `Enemy`. MEASURED 2026-09-26, out of
+--- combat: every source of a live enemy column read `None` (0), 28 of 28. And a
+--- `None` here reaches no grid row: the grid never reads EnemyDamageTaken
+--- (modules/Aggregator.lua keeps only `STAT_BY_KEY` columns, and this one is in
+--- `OFF_CATALOG_STATS`). So the tally is stated as the client fact it is, and
+--- the question that would matter if a mob ever did land in a grid column --
+--- does it carry a player class -- is counted instead of assumed.
 ---
 --- @param column table
 local function reportEnemyDisplayTypes(column)
@@ -573,10 +618,11 @@ local function reportEnemyDisplayTypes(column)
     -- 2 is Enemy. Naming the number rather than the enum keeps this readable
     -- against a raw log line, which is the form it is pasted back in.
     if tally["0"] then
-        out("  |cffff2020an enemy is flagged None (0)|r — the aggregator admits a")
-        out("  None source that carries a real player class, so a mob with a class")
-        out("  filename could now reach the grid. Report this line.")
+        out("  the client files this column's enemies under None (0), not Enemy (2);")
+        out("  the grid never reads this column, so that puts no row on it.")
     end
+    out(string.format("  enemies carrying a player class: %d of %d",
+        classedEnemies(column), #column.sources))
 end
 
 -- ---------------------------------------------------------------------------
@@ -746,10 +792,10 @@ local function reportTargets()
         -- own render path — see modules/Targets.lua.
         local creatureID = enemy.creatureID
         local safeID = Secrets and Secrets.IsSafeKey(creatureID)
-        out(string.format("  [%d] name=%s guid=%s creatureID=%s display=%s",
+        out(string.format("  [%d] name=%s guid=%s creatureID=%s display=%s class=%s",
             i, shown(enemy.name), plainGUID and "plain" or "secret/absent",
             safeID and tostring(creatureID) or "secret/absent",
-            shown(enemy.sourceDisplayType)))
+            shown(enemy.sourceDisplayType), shown(enemy.classFilename)))
 
         local source = (plainGUID or safeID)
             and P:GetSourceDetail(sessionType, "EnemyDamageTaken",

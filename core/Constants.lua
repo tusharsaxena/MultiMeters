@@ -148,9 +148,10 @@ Constants.SESSION_TYPE = {
 --- into "no pin" for every consumer.
 Constants.NO_SEGMENT = 0
 
---- Enum.DamageMeterSourceDisplayType. Rows are filtered to Ally; Enemy rows are
---- what the enemy column modules/Targets.lua reads is made of, and None is the
---- "not a displayable source" marker.
+--- Enum.DamageMeterSourceDisplayType. Rows are filtered to Ally, plus None with
+--- a player class (a delve companion). The enemy column modules/Targets.lua
+--- reads is NOT filed under Enemy: measured out of combat, its sources read None
+--- (docs/midnight-quirks.md).
 Constants.SOURCE_DISPLAY_TYPE = {
     None  = enumValue("DamageMeterSourceDisplayType", "None",  0),
     Ally  = enumValue("DamageMeterSourceDisplayType", "Ally",  1),

@@ -321,8 +321,11 @@ default to total and rate.
   bar's color out of `RAID_CLASS_COLORS` itself (through `NS.ClassRGB`), and
   `modules/Row_NameCell.lua` keys the class icon on the same filename in `CLASS_ICON_TCOORDS`. What
   this refuses could only ever have drawn as an uncolored, iconless row. A mob would have to report
-  `None` *and* carry a genuine class filename to slip through, and `/mm diagnostics` prints the enemy
-  column's display types so that a `None` there is reported rather than inferred from a wrong row.
+  `None` *and* carry a genuine class filename to slip through. Enemies do report `None`: measured
+  out of combat, every source of the EnemyDamageTaken column reads `None` (see
+  [midnight-quirks.md](midnight-quirks.md)). That column is never a grid column, so it puts no mob
+  on the grid, but it means the class test is the one that counts. `/mm diagnostics` prints each
+  enemy's class and counts those that carry a player class.
 - **`data.mergePets` is off by default, and has no effect during a pull.** A pet gets its own row,
   which needs no arithmetic and is exact in both states. Merging is addition and needs the owner
   link, so it runs only where GUIDs are plain — out of combat.

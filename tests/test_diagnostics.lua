@@ -230,6 +230,69 @@ test("Diagnostics: with no window it says so rather than erroring", function()
 end)
 
 -- ---------------------------------------------------------------------------
+-- The header probe
+-- ---------------------------------------------------------------------------
+
+--- The report's line for one header control, or nil.
+local function controlLine(lines, key)
+    for _, line in ipairs(lines) do
+        if line:find("  " .. key .. " ", 1, true) and line:find("rung=", 1, true) then
+            return line
+        end
+    end
+    return nil
+end
+
+local ICON_PATH = "Interface\\AddOns\\MultiMeters\\libs\\LibKa0s\\media\\icons\\"
+
+test("Diagnostics: the header probe names the rung each control drew and what it drew", function()
+    -- THE BUG THIS EXISTS FOR: a live report printed `atlas=nil glyph="nil"` for
+    -- all seven controls while all seven were plainly on screen. They were on
+    -- rung one, the collection's own texture art, and the probe asked only the
+    -- atlas and the glyph -- the two rungs that had NOT drawn. A probe that reads
+    -- the wrong rung reports a blank strip over a working one.
+    -- red under: the probe reading GetAtlas and the glyph text and never mmRung.
+    local inst = T.load{ enable = true }
+    local _, lines = report(inst)
+    local close = controlLine(lines, "close")
+    assertTrue(close ~= nil, "no rung line for the close control")
+    assertTrue(close:find("rung=art", 1, true) ~= nil, "rung one is ours: " .. close)
+    assertTrue(close:find("texture=close", 1, true) ~= nil,
+        "and the line names the file it drew: " .. close)
+
+    -- Rung two and rung three each name their OWN drawn thing: close falls to
+    -- the atlas it has, settings past the atlas it lacks to its character.
+    for _, name in ipairs({ "close", "settings" }) do
+        inst.mocks.setTextureLoadable(ICON_PATH .. name, false)
+    end
+    inst.mocks.setAtlases({ ["common-icon-redx"] = true })
+    local window = inst.NS.WindowManager.All()[1]
+    inst.NS.HeaderControls:Apply(window)
+    _, lines = report(inst)
+    close = controlLine(lines, "close")
+    assertTrue(close:find("rung=atlas atlas=common-icon-redx", 1, true) ~= nil,
+        "the atlas rung names its atlas: " .. close)
+    local settings = controlLine(lines, "settings")
+    assertTrue(settings:find("rung=ascii glyph=", 1, true) ~= nil,
+        "the ASCII rung names its character: " .. settings)
+end)
+
+test("Diagnostics: the header probe prints no setting the migrations deleted", function()
+    -- showSessionName, showDuration and showTotals went in migration v7 -> v8,
+    -- so a report printing them prints `nil` three times for every player and
+    -- reads as if the header had lost its settings. What governs the session
+    -- line now is `frame.showSegmentText`.
+    -- red under: the old `showSessionName=%s showDuration=%s showTotals=%s` line.
+    local inst = T.load{ enable = true }
+    local text = report(inst)
+    for _, key in ipairs({ "showSessionName", "showDuration", "showTotals" }) do
+        assertTrue(text:find(key, 1, true) == nil, "a retired key is still printed: " .. key)
+    end
+    assertTrue(text:find("showSegmentText=true", 1, true) ~= nil,
+        "the setting that governs the session line is printed")
+end)
+
+-- ---------------------------------------------------------------------------
 -- Where the report goes
 -- ---------------------------------------------------------------------------
 
@@ -360,7 +423,7 @@ end)
 
 
 --- An enemy column holding one source with the given display type.
-local function enemyColumn(inst, displayType)
+local function enemyColumn(inst, displayType, class)
     local mocks = inst.mocks
     mocks.setSession(1, mocks.Enum.DamageMeterType.EnemyDamageTaken, {
         combatSources = { {
@@ -369,6 +432,7 @@ local function enemyColumn(inst, displayType)
             sourceCreatureID  = 6001,
             creatureID        = 6001,
             name              = "Cleave Training Dummy",
+            classFilename     = class,
             totalAmount       = 1,
             sourceDisplayType = displayType,
         } },
@@ -378,10 +442,8 @@ local function enemyColumn(inst, displayType)
 end
 
 test("Diagnostics: the enemy column's display types are printed, not assumed", function()
-    -- THE BELT ON A LOOSENED GATE. modules/Aggregator.lua now admits a source
-    -- flagged None when it carries a real player class, which is safe exactly as
-    -- long as enemies keep reporting Enemy — an assumption about a live client,
-    -- not a fact about the code. So the client is asked and the answer printed.
+    -- What the client files the enemy column under is a fact about the live
+    -- client, so it is asked and the answer printed rather than assumed.
     -- red under: no display-type line in the targets section.
     local inst = T.load{ enable = true }
     enemyColumn(inst, inst.mocks.Enum.DamageMeterSourceDisplayType.Enemy)
@@ -391,18 +453,48 @@ test("Diagnostics: the enemy column's display types are printed, not assumed", f
         "the enemy column's display types are missing from the report")
 end)
 
-test("Diagnostics: an enemy flagged None is called out, because it defeats the class gate", function()
-    -- The one reading that turns the aggregator's new branch from narrow into
-    -- dangerous. If a mob is ever filed under None, the class filename is the
-    -- only thing between a trash pack and the grid — and that is a sentence a
-    -- player should read in a report rather than infer from a wrong row.
-    -- red under: printing the tally without checking it.
+test("Diagnostics: an enemy column filed under None is described, not called a grid risk", function()
+    -- MEASURED 2026-09-26, out of combat: all 28 sources of a live enemy column
+    -- read `display types: 0 x28`, and the report then claimed "a mob with a
+    -- class filename could now reach the grid". It could not. The grid never
+    -- reads the EnemyDamageTaken column (modules/Aggregator.lua keeps only
+    -- STAT_BY_KEY columns, and this one is off the catalog), so what the client
+    -- files THIS column's sources under says nothing about a grid row. The line
+    -- was an alarm on every out-of-combat report, over a client fact.
+    -- red under: the old "an enemy is flagged None ... could now reach the grid".
     local inst = T.load{ enable = true }
     enemyColumn(inst, inst.mocks.Enum.DamageMeterSourceDisplayType.None)
 
     local text = report(inst)
-    assertTrue(text:find("flagged None", 1, true) ~= nil,
-        "a None-flagged enemy passed without comment")
+    assertFalse(text:find("could now reach the grid", 1, true) ~= nil,
+        "the report still calls the enemy column's None a grid risk")
+    assertTrue(text:find("None (0), not Enemy (2)", 1, true) ~= nil,
+        "the client's filing is not stated")
+    assertTrue(text:find("the grid never reads this column", 1, true) ~= nil,
+        "and the report does not say why it is harmless")
+end)
+
+test("Diagnostics: the enemies carrying a real player class are counted and named", function()
+    -- What WOULD decide the risk. The aggregator admits an unowned None source
+    -- that carries a class RAID_CLASS_COLORS knows (the delve companion rule),
+    -- and enemies read None. So whether a mob's class filename is a player
+    -- class is the one fact left standing between a mob and that rule, should a
+    -- mob ever appear in a grid column. The report measures it rather than
+    -- leaving it to be guessed.
+    -- red under: no class on the per-enemy line, and no count.
+    local inst = T.load{ enable = true }
+    enemyColumn(inst, inst.mocks.Enum.DamageMeterSourceDisplayType.None, "MAGE")
+
+    local text = report(inst)
+    assertTrue(text:find("class=MAGE", 1, true) ~= nil,
+        "the per-enemy line does not carry the class filename")
+    assertTrue(text:find("enemies carrying a player class: 1 of 1", 1, true) ~= nil,
+        "the classed enemies are not counted")
+
+    enemyColumn(inst, inst.mocks.Enum.DamageMeterSourceDisplayType.None, nil)
+    text = report(inst)
+    assertTrue(text:find("enemies carrying a player class: 0 of 1", 1, true) ~= nil,
+        "an enemy with no class was counted as classed")
 end)
 
 test("Diagnostics: a display-type check that could not run says so", function()
