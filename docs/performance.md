@@ -89,7 +89,7 @@ overlap, and **a parent must never be summed with its children**.
 | `providerRead` | — (observed: `aggregate`, `targets`) | one `C_DamageMeter` column read | `modules/Provider.lua:357` |
 | `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1151`, `modules/DrillDown.lua:700`, `:732` |
 | `render` | `refresh` | the window's draw | `modules/Window.lua:1315` |
-| `renderRow` | `render` | one row's cells | `modules/Row.lua:1377` |
+| `renderRow` | `render` | one row's cells | `modules/Row.lua:1157` |
 | `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:925`, `:943`, `:1004`, `:1018`, `:1032` |
 | `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:396`, `:404`, `:418` |
 
