@@ -1,0 +1,1 @@
+fixed: NR-MM-02 matches its task section and the spec; all 10 new cases fail without the change (mutations pin the cancel-before-clear, click-time Defaults and per-entry tab); the committed tree was red (prose gate: 'cancelling' in the new suite), fixed with two stale docstrings in NR-MM-02R
