@@ -69,3 +69,8 @@ end
 if NS.RegisterOptionsPage then
     NS.RegisterOptionsPage(PAGE, L["Frame"], Build)
 end
+
+-- The Frame entry of the Windows page (MultiMeters#55).
+NS.RegisterWindowSection(PAGE, L["Frame"], {
+    tooltip = L["This window's size, position, background, border and rows."],
+})

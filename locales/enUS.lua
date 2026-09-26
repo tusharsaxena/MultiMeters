@@ -163,6 +163,23 @@ L["Copy every setting, or just one group."] = "Copy every setting, or just one g
 L["Everything"] = "Everything"
 L["Copy"] = "Copy"
 L["The last window cannot be deleted."] = "The last window cannot be deleted."
+L["Source window"] = "Source window"
+L["General has no settings to restore. The window's name is kept."] =
+    "General has no settings to restore. The window's name is kept."
+L["Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."] =
+    "Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."
+-- The Windows page's rail (MultiMeters#55): one tooltip per entry.
+L["Rename, create, duplicate or delete windows, and copy settings from another window."] =
+    "Rename, create, duplicate or delete windows, and copy settings from another window."
+L["This window's size, position, background, border and rows."] =
+    "This window's size, position, background, border and rows."
+L["This window's title bar, its text and its buttons."] = "This window's title bar, its text and its buttons."
+L["How this window's bars, their text and their icons look."] =
+    "How this window's bars, their text and their icons look."
+L["What this window's tooltip shows, and how it looks."] = "What this window's tooltip shows, and how it looks."
+L["Where and when this window is shown."] = "Where and when this window is shown."
+L["Which statistics this window shows, in what order, and how the column headers look."] =
+    "Which statistics this window shows, in what order, and how the column headers look."
 L["Window '%s' created."] = "Window '%s' created."
 L["Window '%s' deleted."] = "Window '%s' deleted."
 L["Copied %s from '%s'."] = "Copied %s from '%s'."

@@ -59,3 +59,8 @@ end
 if NS.RegisterOptionsPage then
     NS.RegisterOptionsPage(PAGE, L["Header"], Build)
 end
+
+-- The Header entry of the Windows page (MultiMeters#55).
+NS.RegisterWindowSection(PAGE, L["Header"], {
+    tooltip = L["This window's title bar, its text and its buttons."],
+})

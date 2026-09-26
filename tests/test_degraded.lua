@@ -626,7 +626,8 @@ function()
                             "ApplySkin", "MakeCloseButton", "Debug",
                             "SafeRegisterEvent", "SafeRegisterUnitEvent", "SafeRegisterEvents",
                             "RegisterOptionsPage", "RefreshOptionsPanel",
-                            "CreateOptionsPanel", "OpenOptionsPanel" }) do
+                            "CreateOptionsPanel", "OpenOptionsPanel",
+                            "RegisterWindowSection", "WindowSection" }) do
         assertEqual(type(degraded[name]), type(full[name]),
             "NS." .. name .. " is " .. type(full[name]) .. " live and "
             .. type(degraded[name]) .. " degraded")

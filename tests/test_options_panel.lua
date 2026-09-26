@@ -284,8 +284,9 @@ test("Options: EnsureDefaultsButton runs OUTSIDE the already-rendered guard", fu
 end)
 
 test("Options: a page that declines a Defaults button never grows one", function()
-    -- The Profiles page's rows are user data, and the Windows page's are the registry -- restoring
-    -- either would delete something the player made rather than reset a preference.
+    -- The Profiles page's rows are user data: restoring them would delete something the player made
+    -- rather than reset a preference. The Windows page offers Defaults since MultiMeters#55 (the
+    -- active entry's rows for the active window; tests/test_windows_rail.lua).
     --
     -- COLUMNS IS NO LONGER AMONG THEM. It declined for as long as its list was a subset the player
     -- assembled, when there was nothing per-row to restore and the library's row walk would have
@@ -293,7 +294,7 @@ test("Options: a page that declines a Defaults button never grows one", function
     -- statistics that ship ticked, in their shipped order -- and the page supplies its own handler
     -- for it, because a row walk still cannot reach an array.
     local inst = T.load()
-    for _, key in ipairs({ "profiles", "windows" }) do
+    for _, key in ipairs({ "profiles" }) do
         local ctx = showPage(inst, key)
         assertFalse(ctx.panel.wantsDefaultsButton, key .. " asked for a Defaults button")
         assertEqual(ctx.panel.defaultsBtn, nil, key .. " grew a Defaults button anyway")
@@ -921,7 +922,7 @@ local TABBED = {
     -- Ka0s addon, so that "how do I turn this off, how do I make it smaller, how
     -- do I put it back" is one place under one name.
     general    = "Master controls",
-    windows    = "Window",
+    windows    = "General",
     frame      = "General",
     header     = "Title bar",
     bars       = "Bar",

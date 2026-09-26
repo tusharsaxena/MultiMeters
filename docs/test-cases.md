@@ -2249,6 +2249,19 @@ badge and any count quoted in the docs must agree with it.
 - Columns: the Header text tab renders exactly its group's rows, with no headings
 - Columns: leaving the Columns tab mid-drag cancels the reorder BEFORE the scroll clear
 
+### test_windows_rail.lua (10)
+
+- Windows rail: the seven entries register under their page keys, on both builds
+- Windows rail: the band, then the rail General..Columns, 120 wide, opening on General
+- Windows rail: the draw order is PageBanner, NavRail, TabStrip
+- Windows rail: General is one General tab holding the window's acts and a Copy settings from block
+- Windows rail: a rail click draws that entry's own strip under the same band
+- Windows rail: each entry keeps its own tab, including one chosen by the library's own strip click
+- Windows rail: choosing another window in the band keeps the entry and its tab
+- Windows rail: leaving Columns on the rail mid-drag cancels the reorder BEFORE the scroll clear
+- Windows rail: Defaults restores the active entry's rows for the active window; General keeps the name; Columns restores both halves
+- Windows rail: the page offers one Defaults button whose tooltip fits every entry
+
 ### test_degraded.lua (38)
 
 - Degraded: the library really is absent, so every case below is measuring a stub
@@ -2388,8 +2401,9 @@ badge and any count quoted in the docs must agree with it.
 | test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
+| test_windows_rail.lua | 10 |
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2078** |
+| **Total** | **2088** |

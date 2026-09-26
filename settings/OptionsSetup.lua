@@ -150,6 +150,41 @@ local function survivesEveryReset(row)
     return row.path ~= nil and row.path == NS.MINIMAP_PATH
 end
 
+-- ---------------------------------------------------------------------
+-- The Windows page's entries (MultiMeters#55)
+-- ---------------------------------------------------------------------
+--
+-- ONE PAGE PER WINDOW. The Windows page draws the Active window band, a nav rail
+-- (LibKa0s-Options' O.NavRail, options-ui-§13) whose entries are registered here,
+-- and the selected entry's own tab strip. An entry IS a page key: its schema rows
+-- keep `page`, their window-relative paths and their defaults, so `/mm get`,
+-- `/mm set`, `/mm list`, profiles and every reset never see the rail. Each
+-- settings/<entry>.lua registers at FILE LOAD, so the registry lives HERE, above
+-- the fork: a library-absent load still knows the entries, and a page file never
+-- has to ask which build it is on.
+local sections = {}
+
+-- The rail's order. General first -- options-ui-§14's escape: the acts on the
+-- window whole live on the FIRST entry, named General, and the page opens on it --
+-- then the window's surfaces. Fixed here, not taken from the TOC.
+local GENERAL_SECTION = "windows"
+local SECTION_ORDER = { GENERAL_SECTION, "frame", "header", "bars", "tooltip", "visibility", "columns" }
+
+--- Register one entry of the Windows page.
+--- @param key string    the entry's page key: the `page` its schema rows carry
+--- @param label string  the rail entry's label
+--- @param spec table    { tooltip = the rail entry's tooltip,
+---                        render = fn(ctx), drawing the entry's strip and body under the band and
+---                                 the rail (default: H.RenderTabbedSchema(ctx, key)),
+---                        defaults = fn(ctx), the entry's Defaults (default: H.RestoreDefaults(key, ctx)) }
+function NS.RegisterWindowSection(key, label, spec)
+    spec = spec or {}
+    sections[key] = { key = key, label = label, tooltip = spec.tooltip, spec = spec }
+end
+
+--- The registered entry `key`, or nil. Read-only: for the suite and the Windows page.
+function NS.WindowSection(key) return sections[key] end
+
 local lib = LibStub and LibStub("LibKa0s-Options-1.0", true)
 
 local function helpers() return NS.Helpers end
@@ -411,6 +446,10 @@ if not lib then
         -- NavRail, new at LibKa0s v1.61.0 (OptionsNav minor 1): drawn only by the Windows page's
         -- render, which never runs with no library, so the same inert no-op applies.
         "NavRail",
+        -- The Windows page's own members (MultiMeters#55), decorated onto the live
+        -- instance below the fork. settings/Windows.lua's builder is their only caller,
+        -- and it never runs here; the degraded scan and the parity case read them anyway.
+        "RenderWindowPage", "RestoreActiveSection", "__bindWindowsPage",
     }) do
         Helpers[name] = function() end
     end
@@ -531,3 +570,105 @@ NS.OpenOptionsPanel = function() Helpers.OpenOptionsPanel() end
 -- AceDB profile changes call this so any open page re-reads its values, and so do
 -- `/mm set`, `/mm reset` and `/mm resetall` through the write seam.
 NS.RefreshOptionsPanel = function() Helpers.RefreshAllPanels() end
+
+-- ---------------------------------------------------------------------
+-- The Windows page: the band, the nav rail, the selected entry (#55)
+-- ---------------------------------------------------------------------
+--
+-- AuraMaster's Containers page (#6) is the pattern. The entry on screen and each
+-- entry's tab are session state on the ctx and never persisted (options-ui-§13);
+-- the band stays the only picker, and a window switch leaves both alone
+-- (options-ui-§14).
+
+-- The Windows page's ctx, bound by settings/Windows.lua's builder: the one page
+-- SelectSection moves (NR-MM-03).
+local windowsCtx
+
+--- The entries the rail lists, in rail order. Every window has every entry, so
+--- nothing is filtered by the window; an entry whose file did not load is absent.
+local function railSections()
+    local out = {}
+    for _, key in ipairs(SECTION_ORDER) do
+        if sections[key] then out[#out + 1] = sections[key] end
+    end
+    return out
+end
+
+--- The entry to draw: the one the page holds while the rail lists it, else General.
+local function settleSection(ctx, list)
+    for _, s in ipairs(list) do
+        if s.key == ctx.activeSection then return s end
+    end
+    return list[1]
+end
+
+--- Keep the tab the page is on for the entry it last drew. Called before ANYTHING
+--- moves the entry: the library's own strip click never calls back here
+--- (RenderTabbedSchema re-renders the strip and the rows itself), so leaving is the
+--- one moment the host sees the tab.
+local function stashTab(ctx)
+    local drawn = ctx.__renderedSection
+    if drawn then ctx.sectionTabs[drawn] = ctx.activeTab end
+    ctx.__renderedSection = nil
+end
+
+--- Bind the Windows page's ctx (settings/Windows.lua's builder). The page opens on General.
+function Helpers.__bindWindowsPage(ctx)
+    windowsCtx = ctx
+    ctx.sectionTabs = {}
+    ctx.activeSection = GENERAL_SECTION
+end
+
+--- Render the Windows page: the Active window band, the nav rail, then the entry's
+--- strip and body -- the library's draw order, PageBanner, NavRail, TabStrip.
+function Helpers.RenderWindowPage(ctx)
+    -- FIRST, before anything clears. The Columns entry's drag handles stay parented
+    -- to the scroll's pooled containers until the controller is canceled
+    -- (settings/ColumnBlocks.lua), and the seven entries share this one ctx: a rail
+    -- click, a window switch and Columns' own tab click all land here, and each
+    -- clears the scroll next. A no-op when nothing is being dragged.
+    if NS.CancelReorder then NS.CancelReorder(ctx) end
+    ctx.sectionTabs = ctx.sectionTabs or {}
+    stashTab(ctx)
+    local list = railSections()
+    local section = settleSection(ctx, list)
+    if not section then return end
+    ctx.activeSection = section.key
+    ctx.activeTab = ctx.sectionTabs[section.key]
+    -- Every window.* row resolves against the ACTIVE window; the id is also the
+    -- library's row filter (the descriptor's rowsForPage), as on the sub-pages.
+    ctx.unit = NS.State and NS.State.activeWindowId or nil
+    Helpers.ClearScroll(ctx)
+    Helpers.WindowBanner(ctx)
+    local entries = {}
+    for i, s in ipairs(list) do entries[i] = { key = s.key, label = s.label, tooltip = s.tooltip } end
+    Helpers.NavRail(ctx, {
+        entries  = entries,
+        value    = section.key,
+        onSelect = function(key)
+            stashTab(ctx)
+            ctx.activeSection = key
+            Helpers.RefreshPanel(ctx, true)
+        end,
+    })
+    if section.spec.render then
+        section.spec.render(ctx)
+    else
+        Helpers.RenderTabbedSchema(ctx, section.key)
+    end
+    Helpers.Relayout(ctx)
+    ctx.__renderedSection = section.key
+end
+
+--- The Windows page's Defaults: the entry on screen, read at CLICK time. The library
+--- builds the button once, at the first show, and captures this handler with it, so
+--- a closure that read the entry at build time would reset General's set from Frame.
+function Helpers.RestoreActiveSection(ctx)
+    local s = sections[ctx and ctx.activeSection] or sections[GENERAL_SECTION]
+    if not s then return end
+    if s.spec.defaults then return s.spec.defaults(ctx) end
+    Helpers.RestoreDefaults(s.key, ctx)
+end
+
+--- Test seam: the ctx the Windows page bound, or nil before its builder ran.
+function Helpers.__windowsCtx() return windowsCtx end

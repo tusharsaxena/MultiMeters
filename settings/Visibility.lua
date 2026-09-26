@@ -66,3 +66,8 @@ end
 if NS.RegisterOptionsPage then
     NS.RegisterOptionsPage(PAGE, L["Visibility"], Build)
 end
+
+-- The Visibility entry of the Windows page (MultiMeters#55).
+NS.RegisterWindowSection(PAGE, L["Visibility"], {
+    tooltip = L["Where and when this window is shown."],
+})

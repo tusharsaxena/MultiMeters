@@ -67,3 +67,8 @@ end
 if NS.RegisterOptionsPage then
     NS.RegisterOptionsPage(PAGE, L["Bars"], Build)
 end
+
+-- The Bars entry of the Windows page (MultiMeters#55).
+NS.RegisterWindowSection(PAGE, L["Bars"], {
+    tooltip = L["How this window's bars, their text and their icons look."],
+})

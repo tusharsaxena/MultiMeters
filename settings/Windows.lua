@@ -1,6 +1,10 @@
 -- settings/Windows.lua
 --
--- The Windows page: the window picker, the five registry actions (new, rename,
+-- The Windows page (MultiMeters#55): one page per window. The Active window
+-- picker is the band, the nav rail chooses General, Frame, Header, Bars,
+-- Tooltip, Visibility or Columns, and each entry keeps its own tab strip
+-- (settings/OptionsSetup.lua, Helpers.RenderWindowPage). This file owns the band
+-- (H.WindowBanner) and the General entry: the registry actions (new, rename,
 -- delete, duplicate) and "copy settings from", with a group filter.
 --
 -- ---------------------------------------------------------------------------
@@ -379,7 +383,7 @@ local function renderCopySource(_, parent, relativeWidth)
     if copySourceId ~= nil and list[copySourceId] == nil then copySourceId = nil end
 
     return H.ActionDropdown(parent, relativeWidth, {
-        label   = L["Copy settings from"],
+        label   = L["Source window"],
         tooltip = L["Copy another window's settings onto this one. Choose which group of settings to copy below."],
         list    = list,
         order   = order,
@@ -441,58 +445,55 @@ local function renderCopyTab(ctx)
     }, nil)
 end
 
--- The page's content is bespoke rather than schema rows -- a name box, three registry buttons,
--- a source picker, a group filter and a Copy button -- so H.RenderTabbedSchema, which partitions
--- SCHEMA ROWS by `group`, has nothing here to drive. The strip is drawn directly with
--- H.TabStrip and the page branches on ctx.activeTab itself, same as it always resolved which
--- half of the page to draw, only now the split is a click instead of a scroll.
-local function render(ctx)
-    H.ClearScroll(ctx)
-
-    H.WindowBanner(ctx)
+--- The General entry: ONE tab, named General (options-ui-§14's escape -- the acts on
+--- the window whole live on the rail's first entry), holding two headed blocks: the
+--- window itself, and "Copy settings from", which was a tab of its own before
+--- MultiMeters#55 folded it in. Bespoke rather than schema rows -- a name box,
+--- registry buttons, a source picker, a group filter and a Copy button -- so the
+--- one-tab strip is drawn directly with H.TabStrip. The band, the rail, the clear
+--- and the relayout are the page renderer's.
+local function renderGeneral(ctx)
     H.TabStrip(ctx, {
-        tabs = {
-            { key = L["Window"],    label = L["Window"] },
-            { key = L["Copy from"], label = L["Copy from"] },
-        },
-        value = ctx.activeTab or L["Window"],
-        onSelect = function(key)
-            if key == ctx.activeTab then return end
-            ctx.activeTab = key
-            -- No H.ClearScroll here: RefreshPanel(ctx, true) re-enters render(), which already
-            -- clears the scroll itself. Matches Columns.lua's tab onSelect, the one page where the
-            -- ordering is load-bearing (a live reorder controller); this page reads the same way.
-            H.RefreshPanel(ctx, true)
-        end,
+        tabs     = { { key = L["General"], label = L["General"] } },
+        value    = L["General"],
+        onSelect = function() end,
     })
-    ctx.activeTab = ctx.activeTab or L["Window"]
+    ctx.activeTab = L["General"]
 
-    if ctx.activeTab == L["Window"] then
-        renderWindowTab(ctx)
-    else
-        renderCopyTab(ctx)
-    end
-
-    H.Relayout(ctx)
+    H.Section(ctx, L["Window"])
+    renderWindowTab(ctx)
+    H.Section(ctx, L["Copy settings from"])
+    renderCopyTab(ctx)
 end
 
 local function Build(mainCategory)
     if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
     if not (H and H.CreatePanel) then return nil end
 
-    -- No Defaults button: nothing on this page is a schema row, so there is
-    -- nothing for "restore this page's defaults" to restore. Deleting the
-    -- registry back to one seed window is not what a player clicking Defaults
-    -- expects, and it is what the button would have to mean.
+    -- DEFAULTS FOR THE ENTRY ON SCREEN (MultiMeters#55). The button is page-wide in
+    -- the sense options-ui-§13 means on a railed page: the active entry's set, which
+    -- is what that entry's own sub-page button restored -- for the active window only,
+    -- because every row resolves against it. General's set is empty (the Windows page
+    -- had no button), and its Defaults says so rather than renaming the window.
     local ctx = H.CreatePanel("MultiMetersWindowsPanel", L["Windows"], {
-        pageKey        = PAGE,
-        defaultsButton = false,
+        pageKey         = PAGE,
+        defaultsButton  = true,
+        defaultsTooltip = L["Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."],
     })
+    ctx.panel.defaultsOnClick = function() H.RestoreActiveSection(ctx) end
 
-    H.SetRenderer(ctx, render)
+    H.__bindWindowsPage(ctx)
+    H.SetRenderer(ctx, H.RenderWindowPage)
 
     return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, L["Windows"])
 end
+
+-- The General entry of the Windows page (MultiMeters#55), first on the rail.
+NS.RegisterWindowSection(PAGE, L["General"], {
+    tooltip  = L["Rename, create, duplicate or delete windows, and copy settings from another window."],
+    render   = renderGeneral,
+    defaults = function() print_(L["General has no settings to restore. The window's name is kept."]) end,
+})
 
 if NS.RegisterOptionsPage then
     NS.RegisterOptionsPage(PAGE, L["Windows"], Build)
