@@ -295,7 +295,7 @@ local function shareSlotWidth(path, size, flags)
     return (w > SHARE_SLOT_WIDTH) and w or SHARE_SLOT_WIDTH
 end
 
---- The terms the minimum width is built from, for `/mm debug diag`.
+--- The terms the minimum width is built from, for `/mm diagnostics`.
 ---
 --- Split out so the diagnostic reports the SAME arithmetic the tooltip runs
 --- rather than a restatement of it that can drift. Every term comes from config

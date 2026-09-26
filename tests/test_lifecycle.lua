@@ -406,7 +406,7 @@ end)
 -- calls loses every line after the one that raised. The three meter events are
 -- registered LAST, so a single retired name anywhere above them used to take
 -- every number this addon draws with it. Each registration now costs only itself,
--- and the names the client refused are kept where `/mm debug diag` can read them.
+-- and the names the client refused are kept where `/mm diagnostics` can read them.
 
 --- The events live on `inst.NS` as AceEvent registrations, read off the kit's survey.
 local function liveEvents(inst)
@@ -583,7 +583,7 @@ end)
 -- ── the show ladder ─────────────────────────────────────────────────────────
 
 test("ShouldShow: the ladder answers a reason that names the step that decided", function()
-    -- `/mm debug diag` prints it and these tests assert on it, so it is a stable
+    -- `/mm diagnostics` prints it and these tests assert on it, so it is a stable
     -- unlocalized token rather than a sentence.
     local inst = T.load{ enable = true }
     inst.mocks.setInstance("party")
@@ -621,7 +621,7 @@ end)
 test("ShouldShow: General visibility set to Never refuses every window", function()
     -- options-ui-§15's dropdown, and `never` is the master switch said a quieter
     -- way -- so it answers its own reason rather than borrowing "disabled", which
-    -- would make `/mm debug diag` name a control the player did not touch.
+    -- would make `/mm diagnostics` name a control the player did not touch.
     -- red under: not reading `master.visibility` at all, which is the whole rule.
     local inst = T.load{ enable = true }
     inst.mocks.setInstance("party")
@@ -637,7 +637,7 @@ end)
 test("ShouldShow: General visibility's two combat answers follow the pull", function()
     -- They are CONTEXT rules -- the addon-wide statement of the per-window
     -- `hideInCombat` pair -- and they answer in the same words, so a player reading
-    -- `/mm debug diag` gets one vocabulary either way.
+    -- `/mm diagnostics` gets one vocabulary either way.
     -- red under: inverting either comparison, or reading InCombatLockdown, which is
     -- wrong at both edges of a pull.
     local inst = T.load{ enable = true }

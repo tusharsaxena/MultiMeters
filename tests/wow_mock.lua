@@ -1021,7 +1021,7 @@ local function build()
     -- anything. The known set is deliberately SMALL and settable: the bug this
     -- guards against is art that does not exist on the live client, so the
     -- default here is "almost nothing exists" rather than "everything does".
-    -- The set a live 12.x client reported through `/mm debug diag`. Small on
+    -- The set a live 12.x client reported through `/mm diagnostics`. Small on
     -- purpose: the bug this guards against is art that does not exist, so the
     -- default is "almost nothing exists" rather than "everything does".
     M.__atlases = {

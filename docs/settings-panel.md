@@ -248,7 +248,7 @@ choosing between them; the lock works differently:
 - `master.visibility` is read by `core/MultiMeters.lua`'s show ladder, **below test mode** so a
   layout can still be made anywhere: `never` answers `hidden` and cannot be overridden by an explicit
   `/mm toggle`, and the two combat values answer in the same words the per-window `hideInCombat` pair
-  uses, so `/mm debug diag` reads one vocabulary either way.
+  uses, so `/mm diagnostics` reads one vocabulary either way.
 
 **`enabled`, `state.debugConsole` and `state.testMode` MOVED here** and are declared nowhere else —
 two controls over one setting is the thing this pass removed. None of the three paths changed,

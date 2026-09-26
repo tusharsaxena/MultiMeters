@@ -1,7 +1,7 @@
 # Debug surface
 
 Everything `/mm debug` reaches: the console, the two session flags behind it, the channels that write
-into it, and the four probes that print a report instead.
+into it, the diagnostics report, and the three probes that print a report of their own.
 
 The console itself is `LibKa0s-DebugLog-1.0`'s window — its buffer, its copy window and its
 formatters are the library's, configured in `core/DebugLogSetup.lua`. What is documented here is
@@ -14,7 +14,7 @@ this addon's own surface on top of it.
 | `/mm debug` | Toggle the console window. Never touches a flag. |
 | `/mm debug on` / `off` | Set the session logging flag. Works with the window closed. |
 | `/mm debug tooltip` | Toggle the tooltip log channel. Off by default; prints the state it landed in. |
-| `/mm debug diag` | Print the diagnostic report. |
+| `/mm diagnostics`, `/mm debug diagnostics` | Write the diagnostics report into the console, after whatever is already there (`debug-logging-§14`). Both forms run the same report; `diag`, its old name, is an unknown word now. |
 | `/mm debug recap` | Print the death-recap probe alone (issue #1). |
 | `/mm debug identity` | Print the mid-pull correlation capture (issue #22). |
 | `/mm debug feign on` / `off` | Arm and disarm the feign-death recording (issue #25). |
@@ -113,6 +113,46 @@ rebuild, as `[Set] reset profile '<name>' to defaults (stopped by an error)` whe
 raised. A reset-all whose `ResetProfile` itself raised never reaches that handler, so its bracket
 logs `[Set] reset all: N rows (stopped by an error)` instead.
 
+## The diagnostics report
+
+`/mm diagnostics` and `/mm debug diagnostics` run one report (`debug-logging-§14`). It is what the
+README's `## Reporting a bug` asks a player to copy, so it has to work from any state: logging off,
+the console closed, the addon disabled, or mid-pull under the restriction.
+
+**The frame is the library's.** `LibKa0s-DebugLog-1.0`'s `RunDiagnostics` writes the begin and end
+markers carrying the brand (`Ka0s Multi Meters`), the identity header, a pcall around each section
+(a raise costs one `section <name> failed` line), the plain-text strip and the line cap: 1200
+lines or the buffer's 3000 less 100, whichever is smaller, ending in a `truncated` line and then the end
+marker when a report runs past it. It appends after the trace already in the buffer, clears
+nothing, and writes whether or not logging is on. The flag is left as it was.
+
+**The sections are this addon's,** handed over by `core/Diagnostics.lua`'s `Sections()` through the
+descriptor field `diagnostics`, in this order:
+
+| Section | File | Prints |
+|---|---|---|
+| `state` | `core/Diagnostics_Runtime.lua` | the stored enable flag, disabled and stood down, the Lifecycle holds, both schema stamps, the profile and its list, the restriction as mirror, authority and raw state, test mode, the tooltip channel, the lock view, the provider's suspend flag |
+| `settings` | same | the profile's rows that differ from their defaults, plus `enabled`, `master.visibility` and `data.mergePets` always |
+| `window settings` | same | each window diffed against its default; colors and position as one value each, from config |
+| `windows` | same | the resolved context, then per window: built, shown, minimized, locked, rows drawn, `ShouldShow`'s answer and the rule behind it, size and position from config |
+| `sessions` | same | the sessions the client holds, each window's pin, and the fallback a stale pin takes |
+| `aggregator` | same | the last render pass per window |
+| `roster and caches` | same | the cached group, the remembered map, every `State.cache` table's size |
+| `atlases` … `death recap` | `core/Diagnostics.lua`, `core/Diagnostics_DeathRecap.lua` | the client probes: atlases, number formatting, visibility, header, name column, cells, tooltip font and width, targets, provider order, death recap |
+| `events` | `core/Diagnostics.lua` | the event registrations the client refused, last |
+
+**It reads and never changes.** Nothing it reaches takes or releases a hold, registers an event,
+arms a timer, builds the roster, dirties a window or moves the settings panel's window pointer
+(`tests/test_diagnostics_runtime.lua` lists the calls it must never make). While the addon is stood
+down, `sessions` and `aggregator` say `stood down` rather than printing empty data.
+
+**Secrets print as `<secret>`.** Every session figure, name and duration goes through the writer's
+`str`, and a window's size and position come from its config, never from the frame, whose geometry
+is secret once it has been handed a secret (R3 in [ARCHITECTURE.md](ARCHITECTURE.md)).
+
+`diag`, the report's old debug word, is an unknown word now: `/mm debug diag` toggles the console
+as any unknown word does and `/mm diag` answers `unknown command`. No other name runs the report.
+
 ## The probes
 
 Each answers to one issue and is self-contained so it can be deleted with that issue. They were
@@ -120,10 +160,11 @@ peeled out of `core/Diagnostics.lua` on 2026-09-09 for `layout-§1`, one file ap
 
 | File | Verb | Issue | Prints |
 |---|---|---|---|
-| `core/Diagnostics.lua` | `diag` | — | the general report, and the `out` seam the siblings share |
+| `core/Diagnostics.lua` | `diagnostics` | — | the sections of the diagnostics report, and the `out` seam the siblings share |
 | `core/Diagnostics_DeathRecap.lua` | `recap` | #1 | whether this client can read a death recap, searched two ways |
 | `core/Diagnostics_Identity.lua` | `identity` | #22 | the correlation rectangle, the seat probe, the secret-GUID lookup verdict and the source-field audit |
 | `core/Diagnostics_Feign.lua` | `feign` | #25 | the armed feign-death recording |
+| `core/Diagnostics_Runtime.lua` | `diagnostics` | — | the addon-state sections that open the report (not a probe: no issue, no topic word) |
 
 `identity` is the one typed **mid-pull**, by a player who was asked to type it. It reports what it
 needs — the flag on, and a pull running — rather than going quiet when it has neither, and it says

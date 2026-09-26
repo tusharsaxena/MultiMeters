@@ -16,8 +16,8 @@ A bare `/mm` (empty, or whitespace only) runs the `config` verb with `""` and op
 panel on its landing page; `/mm help` prints the index (`slash-commands-§4`, LibKa0s-Slash minor 11).
 The library-absent stub in `settings/Slash.lua` mirrors the rule, so there `config` answers that the
 panel is unavailable.
-`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **18 verbs**, the
-twelve reserved ones first in the order the standard fixes, then this addon's six. The dispatcher, the
+`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **19 verbs**, the
+thirteen reserved ones first in the order the standard fixes, then this addon's six. The dispatcher, the
 help renderer and the schema CLI are LibKa0s-Slash-1.0's; the verb table stays this addon's and is
 passed *in*, because the settings landing page renders the same rows and library ownership would make
 that a load-time cycle between two majors.
@@ -32,7 +32,8 @@ that a load-time cycle between two majors.
 | `set <path> <value>` | Write one setting |
 | `reset <path>` | Reset one setting to its default |
 | `resetall` | Reset the active profile to the shipped defaults, **after a confirmation**. It opens the General page's "Reset all settings?" popup (`MULTIMETERS_RESET_ALL`, through `NS.ShowResetAll`, the opener the button calls), and only accepting resets; No or Escape changes nothing. The reset is a **profile reset**, so it is the equivalent of a new profile: extra windows are deleted and one fresh window is left. The same act as Profiles → Reset Profile; other profiles are never touched. Until 2026-09-12 it went to the library's `CliResetAll`, which reset only the active window's rows, and then, until the owner's decision the same day, it reset without asking. See [settings-panel.md](settings-panel.md#reset-all-settings-vs-reset-profile) |
-| `debug` | Toggle the console window; `on` / `off` set session logging; **`tooltip`** toggles the tooltip log channel, off by default because a tooltip is rebuilt on every mouse-over and would evict the buffer; **`diag`** prints the diagnostic report; **`recap`** prints the death-recap probe alone; **`identity`** prints the mid-pull identity-correlation capture (issue #22); **`feign on`** / **`feign off`** arm and disarm the feign-death recording and **`feign`** prints it (issue #25) |
+| `debug` | Toggle the console window; `on` / `off` set session logging; **`tooltip`** toggles the tooltip log channel, off by default because a tooltip is rebuilt on every mouse-over and would evict the buffer; **`diagnostics`** writes the diagnostics report, the same one as the `diagnostics` verb; **`recap`** prints the death-recap probe alone; **`identity`** prints the mid-pull identity-correlation capture (issue #22); **`feign on`** / **`feign off`** arm and disarm the feign-death recording and **`feign`** prints it (issue #25) |
+| `diagnostics` | Write the diagnostics report into the debug console, after whatever trace is already there (`debug-logging-§14`). The report is LibKa0s-DebugLog-1.0's `RunDiagnostics`: the markers, the identity header, the per-section pcall, the line cap and the escape strip are the library's, and the sections are `core/Diagnostics.lua`'s. `/mm debug diagnostics` runs the same report. It is on the live list, so it answers while the addon is disabled, and it lands with logging off. With LibKa0s absent it prints the collection's placeholder line |
 | `perf` | Performance capture — `/mm perf help` for the run's own verbs |
 | `version` | Print the addon version, read from the TOC manifest |
 | `lock` | Lock or unlock every window for dragging. It governs movement and nothing else: unlocking no longer switches Test mode on. General → Master controls' **Lock frame** box is the same switch |
@@ -75,11 +76,13 @@ member a sub-verb needs, or a `copy` with only one name.
 
 ### The `debug` words
 
-`debug` takes seven words: `on`, `off`, `tooltip`, `diag`, `recap`, `identity` and `feign`, which takes
-`on` / `off` of its own. `tooltip` is a pure toggle of a session flag on `NS.State` and always prints
-the state it landed in. The three reports and `feign` answer without the console seam; any word the
+`debug` takes seven words: `diagnostics`, `on`, `off`, `tooltip`, `recap`, `identity` and `feign`,
+which takes `on` / `off` of its own. `diagnostics` is tested first and runs the same report as the
+`diagnostics` verb. `tooltip` is a pure toggle of a session flag on `NS.State` and always prints the
+state it landed in. `recap`, `identity` and `feign` answer without the console seam; any word the
 ladder does not know toggles the console, exactly as a bare `/mm debug` does, and only `feign`
-refuses an argument, because only `feign` reads one. What each one prints is in
+refuses an argument, because only `feign` reads one. `diag`, the report's old name, is one of those
+unknown words: `debug-logging-§14` allows the report no other name, so it gets no alias and no hint. What each one prints is in
 [debug.md](debug.md).
 
 ## Disabled — total, and the slash surface is not
@@ -90,19 +93,20 @@ nothing written from a game event. It is one `LibKa0s-Lifecycle-1.0` latch with 
 `disabled` from the stored `enabled` path, `perf` from the capture harness — and releasing one never
 stands up an addon the other still holds down. It replaced a draw gate.
 
-**The command surface is deliberately unchanged.** All twelve reserved verbs answer, and the bare
+**The command surface is deliberately unchanged.** All thirteen reserved verbs answer, and the bare
 `/mm` opens the settings panel; only this addon's own six feature verbs refuse, on one line naming
 `/mm enable`. Full detail, the teardown table and the launcher's options menu while disabled:
 [disabled-state.md](disabled-state.md).
 
-**The gate is the library's, and the live set is its data** (LibKa0s-Slash minor 13). The host passes
+**The gate is the library's, and the live set is its data** (LibKa0s-Slash minor 13; the thirteenth verb, `diagnostics`, from minor 16). The host passes
 two descriptor fields. `isEnabled` asks `NS.IsDisabled` at dispatch time and never caches it, so the
 command after `/mm enable` works. The live set is the library's `LIVE_VERBS`, the standard's thirteen
 reserved verbs, and this host passes no `liveVerbs` to narrow it. `diagnostics` is in that set
-but not yet in `NS.COMMANDS`, so for now it answers `unknown command` and the index.
+and in `NS.COMMANDS`, so the report runs with the addon off, which is when a player is most likely
+to need it (`debug-logging-§14`).
 
-- **Still answers while disabled:** `help`, `config`, `version`, `enable`, `disable`, `debug`, `perf`,
-  `get`, `set`, `list`, `reset`, `resetall`, and the bare `/mm`.
+- **Still answers while disabled:** `help`, `config`, `version`, `enable`, `disable`, `debug`,
+  `diagnostics`, `perf`, `get`, `set`, `list`, `reset`, `resetall`, and the bare `/mm`.
 - **Refused while disabled:** `lock`, `test`, `toggle`, `window`, `reset-positions`, `export`.
 
 It asks `NS.IsDisabled`, not `NS.IsStoodDown`. A perf-suspended addon is stood down but not disabled,

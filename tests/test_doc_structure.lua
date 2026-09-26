@@ -79,6 +79,7 @@ local README_ORDER = {
     { pattern = "^How .+ works?$",              required = true,  name = "## How <it> works" },
     { pattern = "^FAQ$",                        required = false, name = "## FAQ" },
     { pattern = "^Troubleshooting$",            required = false, name = "## Troubleshooting" },
+    { pattern = "^Reporting a bug$",            required = true,  name = "## Reporting a bug" },
     { pattern = "^Issues and feature requests$",required = true,  name = "## Issues and feature requests" },
     { pattern = "^Version History$",            required = true,  name = "## Version History" },
     { pattern = "^Credits$",                    required = false, name = "## Credits" },

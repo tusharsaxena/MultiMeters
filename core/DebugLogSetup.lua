@@ -2,7 +2,7 @@ local addonName, NS = ...
 
 -- core/DebugLogSetup.lua — wires the addon into LibKa0s-DebugLog-1.0.
 --
--- The console window, the copy window, the two formatters, the 1500-line buffer,
+-- The console window, the copy window, the two formatters, the 3000-line buffer,
 -- the scrollbar sync, the line counter and the enable seam live in
 -- libs/LibKa0s/DebugLog.lua and are shared across every Ka0s addon. This file
 -- supplies only the part that is ours: the frame-name prefix, the title, the
@@ -56,11 +56,12 @@ local addonName, NS = ...
 -- Measured on this addon. `throttle = 0.25` is four passes a second, each
 -- emitting an `[Aggregator]` line and a `[Render]` line, plus a second
 -- `[Aggregator]` line while restricted — twelve lines a second, into a buffer
--- then capped at 500 (debug-logging-§1; 1500 since LibKa0s v1.15.0, as §9 now
--- quotes). THE CONSOLE HELD FORTY SECONDS. A live capture showed `identity rows=2
--- keys=3 collisions=0 filled=3/10` byte-identical for forty-one seconds: ~160
--- passes, ~480 lines, one string. That steady state evicts the history behind it,
--- the harm §9 names ("it EVICTS it") arriving by a route §9 does not cover.
+-- then capped at 500 (debug-logging-§1; 1500 from LibKa0s v1.15.0, and 3000 from
+-- v1.60.0, the figure §9 now quotes). THE CONSOLE HELD FORTY SECONDS. A live
+-- capture showed `identity rows=2 keys=3 collisions=0 filled=3/10` byte-identical
+-- for forty-one seconds: ~160 passes, ~480 lines, one string. That steady state
+-- evicts the history behind it, the harm §9 names ("it EVICTS it") arriving by a
+-- route §9 does not cover.
 --
 -- So the pass is coalesced one step further, and the shape is chosen so that
 -- nothing a reader wants is ever the thing that goes missing:
@@ -83,10 +84,10 @@ local addonName, NS = ...
 
 --- How long an unchanged run may stay silent before it re-announces itself.
 ---
---- Ten seconds is one line per tag per ten seconds in a steady state — about four
---- hours of history in the same 1500-line buffer that held two minutes, and
---- still frequent enough that a reader who grabs the log mid-pull sees the
---- current state rather than inferring it from a line five minutes old.
+--- Ten seconds is one line per tag per ten seconds in a steady state — about eight
+--- hours of history in the 3000-line buffer (LibKa0s v1.60.0) that held four
+--- minutes, and still frequent enough that a reader who grabs the log mid-pull
+--- sees the current state rather than inferring it from a line five minutes old.
 local STEADY_HEARTBEAT = 10
 
 --- Per FORMAT STRING, per key: the last arguments emitted and how the run stands.
@@ -340,6 +341,17 @@ NS.DebugLog = lib:New({
     addonName = addonName,
     -- The library appends its own " — Debug", giving "Ka0s Multi Meters — Debug".
     title = "Ka0s Multi Meters",
+    -- The brand both diagnostics markers carry (debug-logging-§14). The same string
+    -- as `title` today, spelled out so the markers do not depend on the window title.
+    brandName = "Ka0s Multi Meters",
+    -- The report's sections, from core/Diagnostics.lua. Asked for each time a report
+    -- runs, never here: that file loads after this one, and a list captured now would
+    -- be empty. A missing module answers no sections, so the report still carries the
+    -- markers and the library's identity header.
+    diagnostics = function()
+        local Diag = NS.Diagnostics
+        return Diag and Diag.Sections and Diag.Sections() or {}
+    end,
     font  = NS.Constants and NS.Constants.FONT_MONO,
     slash = "/mm",
     -- fontSize omitted: 10 is the library's default and is this addon's value.

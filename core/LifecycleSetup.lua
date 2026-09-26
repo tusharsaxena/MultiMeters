@@ -99,7 +99,7 @@ local function standDownExport()
     if export and export.CancelSend then export.CancelSend() end
 end
 
--- 7. Re-run the visibility pass so its debug line and `/mm debug diag` record
+-- 7. Re-run the visibility pass so its debug line and `/mm diagnostics` record
 --    the stood-down answer now rather than at the next edge. It hides NOTHING:
 --    Evaluate publishes nothing, touches no frame and runs only under debug.
 --    The windows already on screen go in step 4: WindowManager:Suspend re-runs

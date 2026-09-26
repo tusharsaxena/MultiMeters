@@ -11,7 +11,7 @@
 -- issue, and can therefore be deleted with that issue — which it could not be
 -- while it was a block in the middle of an 1800-line file.
 --
--- It is NOT part of `/mm debug diag`, so nothing in the frame file reaches into
+-- It is NOT part of `/mm diagnostics`, so nothing in the frame file reaches into
 -- it: the entry point at the foot of this file is the only way in.
 --
 -- NOTHING WAS REWRITTEN ON THE WAY OUT. What follows is the block that used to
@@ -475,7 +475,7 @@ end
 
 --- `/mm debug identity` — the issue #22 capture on its own.
 ---
---- NOT part of `/mm debug diag`. That report is what a player runs when
+--- NOT part of `/mm diagnostics`. That report is what a player runs when
 --- something looks wrong and is read once; this one is a MEASUREMENT, taken
 --- twice in one pull and compared, and it says nothing at all outside a pull.
 function Diagnostics.ReportIdentity()

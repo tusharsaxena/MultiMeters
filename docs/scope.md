@@ -150,7 +150,7 @@ These have been considered and explicitly declined.
 
   This is **not** a license to be locale-*dependent*, which is a different thing. Nothing persisted
   or compared is derived from a localized string: stat keys are the English enum names, the visibility
-  contexts are unlocalized tokens, and `Visibility.ShouldShow`'s second return — which `/mm debug diag`
+  contexts are unlocalized tokens, and `Visibility.ShouldShow`'s second return — which `/mm diagnostics`
   prints and the tests assert on — is a stable token by design.
 - **Classic support.** A single `## Interface` line, targeting Midnight. `C_DamageMeter` does not
   exist on any Classic client, so there is nothing to read.
@@ -321,7 +321,7 @@ default to total and rate.
   bar's color out of `RAID_CLASS_COLORS` itself (through `NS.ClassRGB`), and
   `modules/Row_NameCell.lua` keys the class icon on the same filename in `CLASS_ICON_TCOORDS`. What
   this refuses could only ever have drawn as an uncolored, iconless row. A mob would have to report
-  `None` *and* carry a genuine class filename to slip through, and `/mm debug diag` prints the enemy
+  `None` *and* carry a genuine class filename to slip through, and `/mm diagnostics` prints the enemy
   column's display types so that a `None` there is reported rather than inferred from a wrong row.
 - **`data.mergePets` is off by default, and has no effect during a pull.** A pet gets its own row,
   which needs no arithmetic and is exact in both states. Merging is addition and needs the owner
@@ -348,7 +348,7 @@ default to total and rate.
   follows `applied` rather than the request, so it never marks a column the rows are not in.
 - **The provider-order assumption is measured, not proven.** The engine's ranking is what identity
   mode calls "the order", and nothing in Blizzard's documentation says `combatSources` arrives
-  ranked. `/mm debug diag`'s **provider order** section checks it out of combat, where comparison is
+  ranked. `/mm diagnostics`'s **provider order** section checks it out of combat, where comparison is
   legal, and refuses inside a pull rather than reporting an all-clear it did not earn.
 - **Percentage text slots render empty in combat.** By design; the slots default to total and rate.
 - **Exporting is unavailable for the whole of a pull.** Both halves — the CSV and the chat dump —
@@ -433,7 +433,7 @@ from how the built-in meter displays, and it is isolated in `modules/Provider.lu
 that file is the only place a correction would land — `value` and `roster` modes do not depend on it.
 If it proves false in-game, the fix is a sort inside `GetColumn` and no other file changes.
 
-It is now **measured rather than left standing**: `/mm debug diag`'s **provider order** section walks
+It is now **measured rather than left standing**: `/mm diagnostics`'s **provider order** section walks
 each column out of combat, where the amounts are plain, and reports `ranked, descending` or
 `NOT ranked` with the index where the order broke. Inside a pull it refuses with `cannot be checked`
 rather than reporting an all-clear it could not earn. Identity mode takes row *identity* from

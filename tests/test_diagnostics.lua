@@ -1,4 +1,5 @@
--- tests/test_diagnostics.lua — core/Diagnostics.lua, the `/mm debug diag` report.
+-- tests/test_diagnostics.lua — core/Diagnostics.lua, the sections of the
+-- `/mm diagnostics` report (debug-logging-§14).
 --
 -- The report exists because three display bugs in a row were caused by assuming
 -- something about the running client and never checking it. So the property that
@@ -21,48 +22,94 @@ local assertEqual = T.assertEqual
 local assertTrue  = T.assertTrue
 local assertFalse = T.assertFalse
 
---- Run the report and hand back everything it printed, as one string.
+--- Run the report and hand back everything it wrote, as one string.
 ---
---- BOTH SINKS are drained, because the report has two and picks between them at
---- run time: the debug console when one is open, and chat when it is not. A
---- helper that read only chat reported "the report printed nothing" for a report
---- that printed forty lines into the console — so the content cases below would
---- all have to be rewritten every time the routing changed. Draining both keeps
---- every content assertion about CONTENT, and leaves the routing itself to the
---- two cases that actually test it.
+--- The report is the LibKa0s helper's (`RunDiagnostics`, debug-logging-§14): it
+--- writes every line into the debug console buffer, after whatever is already
+--- there, and prints ONE chat line naming the count. The content cases below read
+--- the buffer; the routing is left to the cases that actually test it.
 local function report(inst)
     local D      = inst.NS.DebugLog
-    local buffer = D and D.buffer
-    local chatN  = #inst.mocks.__chat
-    local bufN   = buffer and #buffer or 0
+    local buffer = D.buffer
+    local bufN   = #buffer
 
-    inst.NS.Diagnostics.Report()
+    D:RunDiagnostics()
 
     local lines = {}
-    if buffer then
-        for i = bufN + 1, #buffer do lines[#lines + 1] = buffer[i] end
-    end
-    for i = chatN + 1, #inst.mocks.__chat do lines[#lines + 1] = inst.mocks.__chat[i] end
+    for i = bufN + 1, #buffer do lines[#lines + 1] = buffer[i] end
     return table.concat(lines, "\n"), lines
 end
 
-test("Diagnostics: the report is published and reachable", function()
+local BRAND = "Ka0s Multi Meters"
+
+test("Diagnostics: the sections are handed to the LibKa0s helper, not run by hand", function()
+    -- debug-logging-§14 (STD-16): the host writes SECTIONS only. The line buffer,
+    -- the per-section pcall, the markers and the cap are the library's, so this
+    -- file publishes a section list and nothing that runs it.
+    -- red under: a host-written Report() that loops, pcalls and prints itself.
     local inst = T.load{ enable = true }
-    assertEqual(type(inst.NS.Diagnostics), "table")
-    assertEqual(type(inst.NS.Diagnostics.Report), "function")
+    local Diag = inst.NS.Diagnostics
+    assertEqual(type(Diag.Sections), "function", "the section list is published")
+    assertEqual(Diag.Report, nil, "the hand-rolled entry point is retired")
+    local list = Diag.Sections()
+    assertTrue(#list >= 12, "every existing section is on the list: " .. #list)
+    for _, entry in ipairs(list) do
+        assertEqual(type(entry[1]), "string", "each section is named")
+        assertEqual(type(entry[2]), "function", "each section is a function of the writer")
+    end
 end)
 
-test("Diagnostics: `/mm debug diag` reaches it without the debug log", function()
-    -- It is what a player is asked to run when something looks wrong, and
-    -- requiring them to enable a console first is one more step between a bug and
-    -- its report.
-    -- red under: an early `if not NS.DebugLog then return end` in doDebug.
+test("Diagnostics: the report carries both markers with the addon's brand", function()
+    -- STD-08: the first line is the begin marker and the last the end marker with
+    -- the line count, both naming `Ka0s Multi Meters`.
+    -- red under: a descriptor with no `brandName`, which falls back to the title.
     local inst = T.load{ enable = true }
-    inst.NS.DebugLog = nil
+    local _, lines = report(inst)
+    assertTrue(lines[1]:find("[Diag] ==== " .. BRAND .. " diagnostics begin ====", 1, true) ~= nil,
+        "the first line is the begin marker: " .. tostring(lines[1]))
+    local last = lines[#lines]
+    assertTrue(last:find("[Diag] ==== " .. BRAND .. " diagnostics end: " .. #lines
+        .. " line(s) ====", 1, true) ~= nil, "the last line is the end marker: " .. tostring(last))
+end)
 
-    local n = #inst.mocks.__chat
-    inst.NS.Slash:OnSlash("debug diag")
-    assertTrue(#inst.mocks.__chat > n, "the report printed nothing")
+test("Diagnostics: the report is plain text, with no color escapes left in it", function()
+    -- STD-11: the sections still color their headings and verdicts, and the
+    -- helper strips every escape so the Copy text pastes clean.
+    -- red under: sections written straight to the console, around the helper.
+    local inst = T.load{ enable = true }
+    local _, lines = report(inst)
+    for _, line in ipairs(lines) do
+        assertTrue(line:find("|c%x%x%x%x%x%x%x%x") == nil and line:find("|r", 1, true) == nil,
+            "a color escape survived: " .. line)
+    end
+end)
+
+test("Diagnostics: the report prints exactly one chat line, naming Copy", function()
+    -- STD-09: the lines go to the console, and chat gets one tagged line with the
+    -- count. Chat interleaves everything with combat spam, so the report itself
+    -- never lands there.
+    local inst = T.load{ enable = true }
+    local chatN = #inst.mocks.__chat
+    local _, lines = report(inst)
+    assertEqual(#inst.mocks.__chat, chatN + 1, "the report spammed chat, or said nothing")
+    local said = inst.mocks.__chat[#inst.mocks.__chat]
+    assertTrue(said:find(tostring(#lines), 1, true) ~= nil, "the line names the count: " .. said)
+    assertTrue(said:find("Copy", 1, true) ~= nil, "and names Copy: " .. said)
+end)
+
+test("Diagnostics: with LibKa0s absent both forms print the placeholder and nothing else", function()
+    -- STD-14: the DebugLog stub has no console to write into, so the report is the
+    -- collection's one placeholder line, naming `/mm diagnostics`, from either form.
+    -- red under: a form that bypasses the stub's RunDiagnostics.
+    local inst = T.load{ libFiles = {} }
+    for _, form in ipairs({ "diagnostics", "debug diagnostics" }) do
+        local n = #inst.mocks.__chat
+        inst.NS.Slash:OnSlash(form)
+        assertEqual(#inst.mocks.__chat, n + 1, "`/mm " .. form .. "` printed one line")
+        assertTrue(inst.mocks.__chat[#inst.mocks.__chat]:find(
+            "/mm diagnostics is unavailable: the LibKa0s library did not load.", 1, true) ~= nil,
+            "`/mm " .. form .. "` printed the placeholder")
+    end
 end)
 
 test("Diagnostics: every section appears", function()
@@ -114,30 +161,37 @@ end)
 
 test("Diagnostics: one broken section cannot take the report down", function()
     -- A diagnostic that dies halfway is worse than none, because it looks like
-    -- the thing it was diagnosing.
-    -- red under: dropping the pcall around each section.
+    -- the thing it was diagnosing. STD-12: a raise costs exactly ONE line,
+    -- `section <name> failed: <err>`, and the next section runs.
+    -- red under: a section adapter that swallows the raise, or one that leaves
+    -- the sink pointed at the dead section's writer.
     local inst = T.load{ enable = true }
-    inst.NS.WindowManager.All = function() error("boom", 2) end
+    inst.NS.Tooltip.WidthParts = function() error("boom", 2) end
 
     local text, lines = report(inst)
-    assertTrue(#lines > 4, "the report stopped at the broken section")
-    assertTrue(text:find("section failed", 1, true) ~= nil,
-        "and it must SAY which section broke rather than going quiet")
-    assertTrue(text:find("atlases", 1, true) ~= nil,
-        "sections before the break still ran")
+    local failed = 0
+    for _, line in ipairs(lines) do
+        if line:find("section tooltip width failed:", 1, true) then failed = failed + 1 end
+    end
+    assertEqual(failed, 1, "the broken section says so, on exactly one line")
+    assertTrue(text:find("boom", 1, true) ~= nil, "and the line carries the error")
+    assertTrue(text:find("atlases", 1, true) ~= nil, "sections before the break still ran")
+    assertTrue(text:find("targets cross-reference", 1, true) ~= nil,
+        "and sections after it still ran")
 end)
 
 test("Diagnostics: it never renders a meter value", function()
     -- It reports on widgets and APIs, never on numbers. A cell's stored figure is
     -- described rather than read: rendering it would be legal and INSPECTING it to
-    -- describe it would not (rule R1). The simulator raises on an inspection, so
-    -- reaching the end is the proof.
+    -- describe it would not (rule R1). The simulator raises on an inspection, and
+    -- every section runs under the helper's pcall, so the proof is that NO section
+    -- reports a failure.
     local inst = T.load{ enable = true }
     inst.mocks.setRestricted(true)
     inst.mocks.setSecretValues(true)
 
-    local ok, err = pcall(inst.NS.Diagnostics.Report)
-    assertTrue(ok, "the report inspected a secret: " .. tostring(err))
+    local text = report(inst)
+    assertTrue(text:find(" failed: ", 1, true) == nil, "a section inspected a secret: " .. text)
 end)
 
 test("Diagnostics: one visibility line per window, from the debug pass's last answer", function()
@@ -183,15 +237,15 @@ test("Diagnostics: the report lands in the debug console, not in chat", function
     -- Forty lines a player has to hand back verbatim belong in the window that
     -- has a buffer, scrollback and a copy button. Chat interleaves them with
     -- combat spam, so a report pasted out of it arrives shuffled.
-    -- red under: `out` printing straight to NS.Print.
+    -- red under: a section adapter that leaves `out` on NS.Print.
     local inst = T.load{ enable = true }
     local D = inst.NS.DebugLog
 
     local chatN, bufN = #inst.mocks.__chat, #D.buffer
-    inst.NS.Diagnostics.Report()
+    D:RunDiagnostics()
 
     assertTrue(#D.buffer > bufN + 10, "the report did not reach the console buffer")
-    assertEqual(#inst.mocks.__chat, chatN, "the report also spammed chat")
+    assertEqual(#inst.mocks.__chat, chatN + 1, "only the one count line goes to chat")
 end)
 
 test("Diagnostics: the console is OPENED, so the report is not written out of sight", function()
@@ -202,31 +256,8 @@ test("Diagnostics: the console is OPENED, so the report is not written out of si
     inst.NS.DebugLog:Hide()
     assertFalse(inst.NS.DebugLog:IsShown(), "the console was already open")
 
-    inst.NS.Diagnostics.Report()
+    inst.NS.DebugLog:RunDiagnostics()
     assertTrue(inst.NS.DebugLog:IsShown(), "the report never opened the console")
-end)
-
-test("Diagnostics: with no console the report falls back to chat", function()
-    -- THE ONE THAT MATTERS. With LibKa0s absent, NS.DebugLog is a stub whose Add
-    -- is a NO-OP and whose IsShown always answers false — so routing there
-    -- unconditionally makes the one command a player runs when something is
-    -- wrong print absolutely nothing, on exactly the broken install where they
-    -- need it most.
-    -- red under: `emit` set without checking IsShown.
-    local inst = T.load{ enable = true }
-    local swallowed = 0
-    inst.NS.DebugLog = {
-        buffer    = {},
-        Add       = function() swallowed = swallowed + 1 end,
-        Show      = function() end,
-        IsShown   = function() return false end,
-    }
-
-    local n = #inst.mocks.__chat
-    inst.NS.Diagnostics.Report()
-
-    assertTrue(#inst.mocks.__chat > n + 10, "the report vanished into a no-op sink")
-    assertEqual(swallowed, 0, "the report was written to a console that never opened")
 end)
 
 test("Diagnostics: a font size read back as 10.000000953674 is not called a failure", function()

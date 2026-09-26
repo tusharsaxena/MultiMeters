@@ -11,7 +11,7 @@
 -- issue, and can therefore be deleted with that issue — which it could not be
 -- while it was a block in the middle of an 1800-line file.
 --
--- It also rides along in `/mm debug diag`, so the section function is published
+-- It also rides along in `/mm diagnostics`, so the section function is published
 -- back onto the shared table at the foot of the block — see the comment there.
 --
 -- NOTHING WAS REWRITTEN ON THE WAY OUT. What follows is the block that used to
@@ -521,7 +521,7 @@ Diagnostics.reportDeathRecap = reportDeathRecap
 
 --- `/mm debug recap` — the probe on its own.
 ---
---- It rides along in the full report too, so a player running `/mm debug diag`
+--- It rides along in the full report too, so a player running `/mm diagnostics`
 --- after a dungeon hands the evidence over for free. The dedicated verb exists
 --- because the answer wanted here is specific enough to ask for on its own, and
 --- forty lines of atlas and font output around it makes it harder to read.

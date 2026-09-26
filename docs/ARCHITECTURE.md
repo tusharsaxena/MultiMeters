@@ -11,7 +11,7 @@ that outgrows a screen belongs in its topic doc with a summary and a link left b
 ## Overview
 
 
-Sixty non-vendored source files: 1 locale, 19 `core/`, 1 `defaults/`, 24 `modules/`, 15 `settings/`.
+Sixty-one non-vendored source files: 1 locale, 20 `core/`, 1 `defaults/`, 24 `modules/`, 15 `settings/`.
 
 The addon is built on the **private namespace** WoW hands each file. `core/MultiMeters.lua` calls
 `AceAddon-3.0:NewAddon(NS, addonName, …)`, which promotes that table in place — so **`NS` *is* the
@@ -54,7 +54,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `core/` the rule | `Secrets.lua` | **The only file that inspects a meter value.** Its guards `IsSecret` / `CanAccess` / `IsSafeKey` are `LibKa0s-Compat-1.0`'s, with a guard arm that re-implements each body when the library is absent. |
 | `core/` seams | `MediaSetup`, `CoreSetup`, `LifecycleSetup`, `PerfSetup`, `DebugLogSetup`, `PoolSetup`, `LauncherSetup` | LibKa0s wiring, the art and font seam, and the window row pool. `LifecycleSetup` is the ONE latch and the ONE teardown — `disabled` and `perf` are two holds on it — and it loads **before** `PerfSetup`, which raises without a `lifecycle`. The `LSM30_Border` fixup that used to make a seventh file here is `lib.__PatchLSM30Border()` now, called from `settings/OptionsSetup.lua`: AceGUI's widget registry is process-global, so a re-registration belongs to the library the whole collection shares. `LauncherSetup` hands `LibKa0s-Launcher-1.0` the descriptor for the one LDB object. The library owns the clicks and draws the status tooltip and, since Launcher minor 4 (`launcher-§2`, v2.67.0), the options menu: left-click opens the settings panel, right-click opens the menu (Enabled · Locked · Test mode · Show window). The descriptor only answers: `version`, and four accessor-and-toggle pairs whose toggles are the `enable`/`disable`, `lock`, `test` and `toggle` verbs' own `NS.COMMANDS` handlers. No host tooltip lines. |
 | `core/` runtime | `MultiMeters.lua`, `Database.lua` | The single game-event listener and the show ladder; AceDB and migrations. |
-| `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm debug diag` and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
+| `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_Runtime`, `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm diagnostics`, its addon-state sections (`_Runtime`), and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
 | `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret. |
 | `modules/` display | `WindowManager`, `Window` (+ `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window, one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
@@ -142,14 +142,14 @@ with sender, consumers and payload, the two `METER_RESET` paths and the stand-do
 ## Slash commands
 
 `/mm` and `/multimeters` dispatch `NS.COMMANDS` (`settings/Slash.lua`) through LibKa0s-Slash-1.0:
-**18 verbs**, the twelve reserved ones then this addon's six, plus the `window` sub-tree. A bare `/mm`
+**19 verbs**, the thirteen reserved ones then this addon's six, plus the `window` sub-tree. A bare `/mm`
 opens the settings panel. The verb table, the sub-tree, the `debug` words, the degraded behavior and
 every refusal line: **[slash-dispatch.md](slash-dispatch.md)**.
 
 ### Disabled — total, and the slash surface is not
 
 `slash-commands-§7`. Disabled means the addon is not running, and the command surface stays: all
-twelve reserved verbs answer and only the six feature verbs refuse, on one line naming `/mm enable`.
+thirteen reserved verbs answer and only the six feature verbs refuse, on one line naming `/mm enable`.
 The gate and its live list: [slash-dispatch.md](slash-dispatch.md#disabled--total-and-the-slash-surface-is-not);
 the teardown: [disabled-state.md](disabled-state.md).
 
@@ -163,7 +163,7 @@ decides anything, which is what lets that section be read as a wiring diagram.
 
 Every registration goes through `NS.SafeRegisterEvent` (`core/CoreSetup.lua`, LibKa0s-Core minor 8,
 `events-frames-taint-§1`), walked off the module-level `EVENTS` array, so one name the client does
-not know costs only itself and lands in `NS.State.rejectedEvents`, which `/mm debug diag` prints.
+not know costs only itself and lands in `NS.State.rejectedEvents`, which `/mm diagnostics` prints.
 
 | Event | Handler | Becomes |
 |---|---|---|
@@ -353,8 +353,8 @@ the verdict beside it.
 | `perf-analysis/README.md` | Present | **The performance harness is wired** — `core/PerfSetup.lua` plus `Perf` brackets in eight modules (`performance-§12`). The doc says what a recorded in-game capture bundle is and how to produce one; `docs/perf-analysis/20260909-014604/` is the standing example. |
 | `compat-layer.md` | Present | **`core/Compat.lua` is 770 lines and 30 shims** (4 of them the spell and spec readers bound to `LibKa0s-Compat-1.0` since LibKa0s v1.55.0, 8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap` the bar-animation read `BarInterpolation` and the chat sender `ChatSender`), each a guarded namespace check around one passthrough, with no feature decisions, no state, and nothing there inspecting a meter value. The row read *re-measure — the trigger now fires* from the day this addon's Compat passed KickCD's, which ships the doc: 389 lines and 18 shims when the row was last written, 777 and 29 at the v1.55.0 adoption, 746 and 29 after it (`wc -l core/Compat.lua`; the four readers kept their names), and 770 and 30 once `ChatSender` took the chat export off the deprecated global. `documentation-§3` has since given the trigger a number — **three or more** addon-specific shims, counted over this file alone — which settles it at any reading. Written, and registered on this row. |
 | `midnight-quirks.md` | Present | **At least one client-version workaround of the addon's own** — the trigger as §3 states it, and this addon carries four: the isolated event registrations (the newest, `PLAYER_IS_GLIDING_CHANGED`, the likeliest refused), `ADDON_RESTRICTION_STATE_CHANGED` registered against a namespace a client may not have, the settle pass over client state that lags its own event, and the secret-value model itself. It was read as Not applicable on the argument that a third copy of the secret-value rules would be the one that drifts — which was an argument against DUPLICATING them, not against the doc. The detail was MOVED here rather than copied: [Taint notes](#taint-notes) keeps the constraint, the operation lists and R1–R3, and nothing is stated twice. |
-| `debug.md` | Present | The console is `LibKa0s-DebugLog-1.0`'s window; this addon's own surface is the four probe verbs, the `tooltip` channel flag and the eighteen `NS.Debug` channels. **Written 2026-09-09, when this row's own re-check trigger fired.** It had read "Not applicable — print statements with no state and no options for a doc to describe", which was true until `/mm debug tooltip` added a session flag on `NS.State`. The trigger was recorded on the row and the doc followed in the same changeset. |
-| `slash-dispatch.md` | Present | **18 verbs in `NS.COMMANDS` and a sub-command tree**, against a trigger of eight or more commands or any sub-command tree. Twelve verbs are the standard's reserved set; this addon's own six include `window` with its four sub-verbs (list/new/delete/copy), `debug` takes seven words, and `export` an optional window name. The row used to waive it as "carried in a screen", which the trigger does not accept; the hub's `## Slash commands` section was MOVED into the doc (2026-09-24, MultiMeters-A-03) and a summary and link left behind. |
+| `debug.md` | Present | The console is `LibKa0s-DebugLog-1.0`'s window; this addon's own surface is the diagnostics report (`/mm diagnostics`, `debug-logging-§14`), the three probe verbs, the `tooltip` channel flag and the eighteen `NS.Debug` channels. **Written 2026-09-09, when this row's own re-check trigger fired.** It had read "Not applicable — print statements with no state and no options for a doc to describe", which was true until `/mm debug tooltip` added a session flag on `NS.State`. The trigger was recorded on the row and the doc followed in the same changeset. |
+| `slash-dispatch.md` | Present | **19 verbs in `NS.COMMANDS` and a sub-command tree**, against a trigger of eight or more commands or any sub-command tree. Thirteen verbs are the standard's reserved set (`diagnostics` joined it with standard v2.68.0); this addon's own six include `window` with its four sub-verbs (list/new/delete/copy), `debug` takes seven words, and `export` an optional window name. The row used to waive it as "carried in a screen", which the trigger does not accept; the hub's `## Slash commands` section was MOVED into the doc (2026-09-24, MultiMeters-A-03) and a summary and link left behind. |
 | `message-bus.md` | Present | **14 distinct messages**, against a trigger of more than ten. All are declared in one catalog (`core/Constants.lua` `MSG`) with one sender each. The row used to waive it as "one table carries it", which the trigger does not accept; the hub's `## Message bus` section was MOVED into the doc (2026-09-24, MultiMeters-A-03) and a summary and link left behind. |
 | `profiles.md` | Present | **User-visible profiles**: `settings/Profiles.lua` registers AceDBOptions-3.0's tree as a settings page. The row used to waive it as "no profile semantics of its own"; the trigger is the visible profiles, not the semantics. The Profiles page moved in from settings-panel.md and the lifecycle from schema.md (2026-09-24, MultiMeters-A-03), with the `PROFILE_CHANGED` fan-out, the reset-all veto, the global-vs-profile split and the migration runner's every-profile rule beside them. |
 

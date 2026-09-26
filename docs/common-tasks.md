@@ -499,7 +499,7 @@ to `WINDOW_TEMPLATE` **and** to `COPY_GROUPS` in `modules/WindowManager.lua` and
 
 ## Add a slash verb
 
-**1. `settings/Slash.lua`** — append to `NS.COMMANDS`, after the twelve reserved verbs
+**1. `settings/Slash.lua`** — append to `NS.COMMANDS`, after the thirteen reserved verbs
 (`slash-commands-§2` fixes their order).
 
 ```lua

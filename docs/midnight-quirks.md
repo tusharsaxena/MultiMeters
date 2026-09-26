@@ -94,7 +94,7 @@ block of bare calls loses every line after the one that raised — here that was
 `core/MultiMeters.lua` through `NS.SafeRegisterEvent` (LibKa0s-Core minor 8: the
 `C_EventUtils.IsEventValid` front gate, a probe frame, then a `pcall`; the no-library stub keeps the
 `pcall` alone). A refused name costs only itself and is recorded in `NS.State.rejectedEvents`, which
-is replaced on every enable. Read it with `/mm debug diag` (the `events` section says
+is replaced on every enable. Read it with `/mm diagnostics` (the `events` section says
 `rejected events: none` on a healthy client), or with the debug log on, where `[Init]` carries one
 `rejected events:` line when the list is not empty.
 

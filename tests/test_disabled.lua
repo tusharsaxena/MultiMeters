@@ -26,13 +26,11 @@ local test, assertEqual, assertTrue, assertFalse =
 
 -- slash-commands-§2's reserved verbs that this addon REGISTERS: the whole live set
 -- while disabled. Spelled out rather than read off the library so a narrowing there
--- is caught here rather than ratified by it. The library's set has a thirteenth,
--- `diagnostics` (LibKa0s-Slash minor 16), which is not listed yet because this
--- addon does not register the verb yet: an unregistered reserved verb answers
--- `unknown command` and the index, which carries the disabled notice under its
--- header exactly as `help` does. It joins this list with the report itself.
+-- is caught here rather than ratified by it. All thirteen: `diagnostics` (LibKa0s-Slash
+-- minor 16, debug-logging-§14) joined with the report, and the kit's shared
+-- diagnostics contract dispatches both of its forms while disabled on top of this.
 local RESERVED = {
-    "help", "config", "version", "enable", "disable", "debug", "perf",
+    "help", "config", "version", "enable", "disable", "debug", "diagnostics", "perf",
     "get", "set", "list", "reset", "resetall",
 }
 
@@ -380,6 +378,34 @@ test("Disabled 7: every reserved verb and the bare command answer normally", fun
     -- a setting is the whole reason it stays live.
     assertEqual(NS.GetSetting("master.alpha"), 0.5)
     assertEqual(NS.GetSetting("master.scale"), NS.FindSchemaRow("master.scale").default)
+end)
+
+test("Disabled 7: both diagnostics forms reach RunDiagnostics, each once, with no refusal",
+    function()
+    -- debug-logging-§14 and the audit's diagnostics check: the report is what a
+    -- player runs BECAUSE something is wrong, and "disabled" is one of the states
+    -- they report from. The walk above proves only that `/mm diagnostics` is not
+    -- refused; this pins that BOTH forms, `/mm diagnostics` and
+    -- `/mm debug diagnostics`, land in the one helper while the addon is down. The
+    -- kit's contract case checks what the report writes; this checks the route.
+    -- red under: a `liveVerbs` that drops `diagnostics`, a host gate in front of the
+    -- dispatcher, or a `debug` handler that no longer tests `diagnostics` first.
+    local inst, NS = scene()
+    assertTrue(NS.SetByPath("enabled", false))
+
+    local refusal = refusalLine(inst)
+    local calls = 0
+    NS.DebugLog.RunDiagnostics = function() calls = calls + 1 return 0 end
+
+    for _, form in ipairs({ "diagnostics", "debug diagnostics" }) do
+        local before = calls
+        local lines = say(inst, form)
+        assertEqual(calls - before, 1, "`/mm " .. form .. "` must run the report once while disabled")
+        for _, line in ipairs(lines) do
+            assertTrue(line:find(refusal, 1, true) == nil,
+                "`/mm " .. form .. "` was refused: " .. line)
+        end
+    end
 end)
 
 test("Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam", function()

@@ -81,10 +81,12 @@ handler's return value, because an early return is what a draw gate does.
 
 `slash-commands-§7`'s own ruling, and it is the half that does **not** change. **Every reserved verb
 answers normally** with the addon off: `help`, `config`, `version`, `enable`, `disable`, `debug`,
-`perf`, `get`, `set`, `list`, `reset`, `resetall` — and the bare `/mm` opens the settings panel,
+`diagnostics`, `perf`, `get`, `set`, `list`, `reset`, `resetall` — and the bare `/mm` opens the settings panel,
 which is the case that settled it. A player must be able to read and repair settings and reach the
 panel with the addon off, which is exactly when they are most likely to need to, and `enable` above
-all or the pair is one-way.
+all or the pair is one-way. The diagnostics report is live under both its forms, `/mm diagnostics`
+and `/mm debug diagnostics`, and `tests/test_disabled.lua` pins that each one reaches
+`RunDiagnostics` exactly once with the addon off.
 
 **Only this addon's own six feature verbs refuse** — `lock`, `test`, `toggle`, `window`,
 `reset-positions`, `export` — on exactly one line, in the collection's one wording, naming
