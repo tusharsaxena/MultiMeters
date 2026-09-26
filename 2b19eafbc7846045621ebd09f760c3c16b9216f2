@@ -1,0 +1,1 @@
+clean: README ## Reporting a bug is verbatim the v2.68.0 documentation-§1 item 9 text with /mm (no destination, no link); Troubleshooting row matches STD-18 and keeps the debug tooltip advice; README_ORDER case red on old README, green on new; gate re-run 2074/0, luacheck 0/0, lizard clean, max 1446 lines; CRLF kept
