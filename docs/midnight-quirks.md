@@ -81,6 +81,25 @@ enforcement begins and access is still permitted during that dispatch, which is 
 listens for that edge: it existed to take one last value-sort and freeze the result, and a frozen
 `guid → position` map cannot be applied to rows that have no GUID.
 
+## Enemies are filed under `None`, not `Enemy`
+
+`sourceDisplayType` has three values: `None` (0), `Ally` (1) and `Enemy` (2). The addon assumed that
+enemies report `Enemy`, and nothing had ever measured it. The first plain reading did: on
+2026-09-26, out of combat, after a PvP Training Dummy and some open-world pulls, `/mm diagnostics`
+printed `display types: 0 x28` for the EnemyDamageTaken column. All 28 enemies were `None`. The
+field is read correctly (`modules/Provider.lua` copies `src.sourceDisplayType`, and an absent field
+would have printed `nil`, not `0`). Before that, the only live readings were `<secret>` mid-pull
+and a delve companion's `display=0`.
+
+Nothing on the grid changes because of it. The grid never reads EnemyDamageTaken, which sits in
+`Constants.OFF_CATALOG_STATS` rather than `Constants.STATS`, and `modules/Targets.lua` builds the
+enemy list without consulting the display type. What it does change is the weight of the `Enemy`
+gate in `modules/Aggregator.lua` (`isEnemySource` and `unownedAllyRow`): that gate cannot be relied
+on to recognize a mob. If a mob ever reached a grid column out of combat, the companion rule
+(`None` plus a class `RAID_CLASS_COLORS` knows) would be the only test in its way. So the targets
+section of `/mm diagnostics` now prints each enemy's `class=` and counts the enemies that carry a
+player class, rather than raising an alarm over the column's `None`.
+
 ## Client-version workarounds on the event edges
 
 The events themselves are tabulated in `docs/ARCHITECTURE.md` →

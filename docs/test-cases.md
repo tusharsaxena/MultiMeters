@@ -332,7 +332,7 @@ badge and any count quoted in the docs must agree with it.
 - migrations: the v16 step run twice is a no-op, and never overwrites a US key
 - migrations: a fresh install stores frame.minimized and no British key
 
-### test_diagnostics.lua (27)
+### test_diagnostics.lua (28)
 
 - Diagnostics: the sections are handed to the LibKa0s helper, not run by hand
 - Diagnostics: the report carries both markers with the addon's brand
@@ -356,7 +356,8 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: a walk that never reached a spell does not blame the build
 - Diagnostics: the number probes expect what the SHIPPING ladder renders
 - Diagnostics: the enemy column's display types are printed, not assumed
-- Diagnostics: an enemy flagged None is called out, because it defeats the class gate
+- Diagnostics: an enemy column filed under None is described, not called a grid risk
+- Diagnostics: the enemies carrying a real player class are counted and named
 - Diagnostics: a display-type check that could not run says so
 - Diagnostics: the provider-order probe reports a RANKED column as ranked
 - Diagnostics: the probe NAMES the position where the order breaks
@@ -2332,7 +2333,7 @@ badge and any count quoted in the docs must agree with it.
 | test_database.lua | 28 |
 | test_database_migrations.lua | 48 |
 | test_migrations.lua | 8 |
-| test_diagnostics.lua | 27 |
+| test_diagnostics.lua | 28 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
@@ -2391,4 +2392,4 @@ badge and any count quoted in the docs must agree with it.
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2077** |
+| **Total** | **2078** |

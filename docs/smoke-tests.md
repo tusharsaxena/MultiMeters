@@ -1058,8 +1058,10 @@ elemental and a shaman's elementals are also good, and are the cases the unit-fr
   another meter — the row's figure plus yours should equal the header total.
 - **No ENEMY ever gets a row.** This is the half that can go badly wrong: `None` is admitted when the
   source carries a real player class, so a mob flagged `None` with a class filename is the one thing
-  that could put trash on the grid. If a mob's name appears as a row, stop and report it — and run
-  `/mm diagnostics`, whose targets section prints the enemy column's display types for exactly this.
+  that could put trash on the grid. Enemies do report `None` (the enemy column reads `0` for every
+  source out of combat), so the class filename is the test that holds. If a mob's name appears as a
+  row, stop and report it, and run `/mm diagnostics` out of combat: its targets section prints each
+  enemy's `class=` and the line `enemies carrying a player class: N of M`.
 - **Out of combat, pet damage folds into the owner.** Compare the hunter's Damage figure against
   Blizzard's own meter, which also attributes pet damage to the owner. They should agree.
 - **In combat the owner's number is low by whatever the pet contributed**, and that is correct
