@@ -84,6 +84,7 @@ in-client.
 | 32 | **Bar animation** | [**Bar fills slide between refreshes (issue #23)**](#32-bar-fills-slide-between-refreshes-issue-23) |
 | 33 | **Segments** | [**The pinned segment's none**](#33-the-pinned-segments-none) |
 | 34 | Migration | [v13 → v14 Lock frame migration](#34-v13--v14-lock-frame-migration) |
+| 35 | **Diagnostics** | [**The diagnostics report**](#35-the-diagnostics-report) |
 
 ---
 
@@ -2194,6 +2195,39 @@ controls → Lock frame** ticked, so do this before wiping SavedVariables — sa
 
 **Record:** client build.
 
+### 35. The diagnostics report
+
+`debug-logging-§14`. The report is what the README's `## Reporting a bug` asks a player for, so it
+must land from any state. The headless suite proves the section order, the never-list and the
+markers against a mocked client; only a live client proves the restriction, the copy and a real
+buffer. [debug.md](debug.md#the-diagnostics-report) describes what each section prints.
+
+1. **Both forms, while disabled.** `/mm disable`, then `/mm diagnostics`, then
+   `/mm debug diagnostics`. **Both write a full report**, and its `state` section reads
+   `stored enabled=false` and `stood down=true`. Then `/multimeters diagnostics` and
+   `/multimeters debug diagnostics`: **the same report** under the long slash.
+   `/mm enable` afterwards.
+2. **It appends.** `/mm debug on`, change a setting or two, then `/mm diagnostics`. The trace lines
+   are **still above** the `==== Ka0s Multi Meters diagnostics begin ====` line. Nothing was cleared.
+3. **Under the restriction.** Mid-pull in a Mythic+ dungeon or a raid, `/mm diagnostics`. **No Lua
+   error.** Session figures, names and durations read `<secret>` where the client hid them, and every
+   window's size and position still print, because they come from config.
+4. **The copy.** After step 2, press **Copy** in the console and paste into a text editor. The paste
+   holds the trace, the begin marker and the `==== Ka0s Multi Meters diagnostics end ====` line, and
+   **no `|c` color escapes** anywhere in the report.
+5. **Ungated.** `/mm debug off`, then `/mm diagnostics`. The report lands in full. Afterwards the
+   console header still reads `Debug: OFF`, and the next setting change writes no `[Set]` line.
+6. **The buffer cap.** With `/mm debug on`, leave a window refreshing through a few pulls, or run
+   `/mm diagnostics` a few times, until the console passes its cap. The counter reads
+   `N / 3000 lines`, stops at 3000, and **Copy** opens without a noticeable hitch.
+7. **The old name is gone.** `/mm debug diag` toggles the console the way any unknown word does, and
+   `/mm diag` answers `unknown command`. **Neither runs the report.**
+8. **The README, word for word.** From a fresh `/reload` with the console closed, follow
+   `## Reporting a bug` in the README exactly as written. Every step works as written, and the paste
+   holds the trace and the whole report.
+
+**Record:** client build, whether step 3 ran in a key or a raid, and the line count step 6 settled at.
+
 ---
 
 ## What to report
@@ -2207,6 +2241,9 @@ For any failure, the minimum useful report is:
   and therefore the file that broke it.
 - **Window config**: sort mode, sort column, session type, throttle, and the column list. `/mm list`
   dumps all of it.
+- **The diagnostics report**, taken right after the failure: `/mm diagnostics`, then **Copy** in the
+  console. It carries the window config, the restriction state and the addon's own view of what it
+  was doing.
 - **Whether it reproduces with one window**, and whether it reproduces with `sortMode = "roster"` —
   which takes the value-comparison path out of the picture entirely and is the fastest way to tell a
   sorting bug from a rendering one.

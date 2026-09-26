@@ -1,7 +1,7 @@
 # Debug surface
 
 Everything `/mm debug` reaches: the console, the two session flags behind it, the channels that write
-into it, and the four probes that print a report instead.
+into it, the diagnostics report, and the three probes that print a report of their own.
 
 The console itself is `LibKa0s-DebugLog-1.0`'s window — its buffer, its copy window and its
 formatters are the library's, configured in `core/DebugLogSetup.lua`. What is documented here is
@@ -112,6 +112,46 @@ next bracket starts unmarked. `OnProfileReset` works the same way: it logs its l
 rebuild, as `[Set] reset profile '<name>' to defaults (stopped by an error)` when the rebuild
 raised. A reset-all whose `ResetProfile` itself raised never reaches that handler, so its bracket
 logs `[Set] reset all: N rows (stopped by an error)` instead.
+
+## The diagnostics report
+
+`/mm diagnostics` and `/mm debug diagnostics` run one report (`debug-logging-§14`). It is what the
+README's `## Reporting a bug` asks a player to copy, so it has to work from any state: logging off,
+the console closed, the addon disabled, or mid-pull under the restriction.
+
+**The frame is the library's.** `LibKa0s-DebugLog-1.0`'s `RunDiagnostics` writes the begin and end
+markers carrying the brand (`Ka0s Multi Meters`), the identity header, a pcall around each section
+(a raise costs one `section <name> failed` line), the plain-text strip and the line cap: 1200
+lines or the buffer's 3000 less 100, whichever is smaller, ending in a `truncated` line and then the end
+marker when a report runs past it. It appends after the trace already in the buffer, clears
+nothing, and writes whether or not logging is on. The flag is left as it was.
+
+**The sections are this addon's,** handed over by `core/Diagnostics.lua`'s `Sections()` through the
+descriptor field `diagnostics`, in this order:
+
+| Section | File | Prints |
+|---|---|---|
+| `state` | `core/Diagnostics_Runtime.lua` | the stored enable flag, disabled and stood down, the Lifecycle holds, both schema stamps, the profile and its list, the restriction as mirror, authority and raw state, test mode, the tooltip channel, the lock view, the provider's suspend flag |
+| `settings` | same | the profile's rows that differ from their defaults, plus `enabled`, `master.visibility` and `data.mergePets` always |
+| `window settings` | same | each window diffed against its default; colors and position as one value each, from config |
+| `windows` | same | the resolved context, then per window: built, shown, minimized, locked, rows drawn, `ShouldShow`'s answer and the rule behind it, size and position from config |
+| `sessions` | same | the sessions the client holds, each window's pin, and the fallback a stale pin takes |
+| `aggregator` | same | the last render pass per window |
+| `roster and caches` | same | the cached group, the remembered map, every `State.cache` table's size |
+| `atlases` … `death recap` | `core/Diagnostics.lua`, `core/Diagnostics_DeathRecap.lua` | the client probes: atlases, number formatting, visibility, header, name column, cells, tooltip font and width, targets, provider order, death recap |
+| `events` | `core/Diagnostics.lua` | the event registrations the client refused, last |
+
+**It reads and never changes.** Nothing it reaches takes or releases a hold, registers an event,
+arms a timer, builds the roster, dirties a window or moves the settings panel's window pointer
+(`tests/test_diagnostics_runtime.lua` lists the calls it must never make). While the addon is stood
+down, `sessions` and `aggregator` say `stood down` rather than printing empty data.
+
+**Secrets print as `<secret>`.** Every session figure, name and duration goes through the writer's
+`str`, and a window's size and position come from its config, never from the frame, whose geometry
+is secret once it has been handed a secret (R3 in [ARCHITECTURE.md](ARCHITECTURE.md)).
+
+`diag`, the report's old debug word, is an unknown word now: `/mm debug diag` toggles the console
+as any unknown word does and `/mm diag` answers `unknown command`. No other name runs the report.
 
 ## The probes
 

@@ -93,19 +93,20 @@ nothing written from a game event. It is one `LibKa0s-Lifecycle-1.0` latch with 
 `disabled` from the stored `enabled` path, `perf` from the capture harness — and releasing one never
 stands up an addon the other still holds down. It replaced a draw gate.
 
-**The command surface is deliberately unchanged.** All twelve reserved verbs answer, and the bare
+**The command surface is deliberately unchanged.** All thirteen reserved verbs answer, and the bare
 `/mm` opens the settings panel; only this addon's own six feature verbs refuse, on one line naming
 `/mm enable`. Full detail, the teardown table and the launcher's options menu while disabled:
 [disabled-state.md](disabled-state.md).
 
-**The gate is the library's, and the live set is its data** (LibKa0s-Slash minor 13). The host passes
+**The gate is the library's, and the live set is its data** (LibKa0s-Slash minor 13; the thirteenth verb, `diagnostics`, from minor 16). The host passes
 two descriptor fields. `isEnabled` asks `NS.IsDisabled` at dispatch time and never caches it, so the
 command after `/mm enable` works. The live set is the library's `LIVE_VERBS`, the standard's thirteen
 reserved verbs, and this host passes no `liveVerbs` to narrow it. `diagnostics` is in that set
-but not yet in `NS.COMMANDS`, so for now it answers `unknown command` and the index.
+and in `NS.COMMANDS`, so the report runs with the addon off, which is when a player is most likely
+to need it (`debug-logging-§14`).
 
-- **Still answers while disabled:** `help`, `config`, `version`, `enable`, `disable`, `debug`, `perf`,
-  `get`, `set`, `list`, `reset`, `resetall`, and the bare `/mm`.
+- **Still answers while disabled:** `help`, `config`, `version`, `enable`, `disable`, `debug`,
+  `diagnostics`, `perf`, `get`, `set`, `list`, `reset`, `resetall`, and the bare `/mm`.
 - **Refused while disabled:** `lock`, `test`, `toggle`, `window`, `reset-positions`, `export`.
 
 It asks `NS.IsDisabled`, not `NS.IsStoodDown`. A perf-suspended addon is stood down but not disabled,
