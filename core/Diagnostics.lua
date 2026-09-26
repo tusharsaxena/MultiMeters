@@ -396,6 +396,33 @@ local function reportVisibility()
     reportLastPass(V)
 end
 
+--- Which rung a header control drew on, and the thing that rung drew.
+---
+--- Read off `button.mmRung`, which modules/HeaderControls.lua records at draw
+--- time. This used to print the atlas and the glyph whatever the rung, so a
+--- strip drawn from the collection's own texture art -- rung one, the usual
+--- case -- reported `atlas=nil glyph="nil"` for every control while every
+--- control was plainly on screen.
+---
+--- @param button table
+--- @return string
+local function drawnBy(button)
+    local rung = button.mmRung
+    if rung == "art" then
+        local loaded = button.tex and button.tex.GetTexture and button.tex:GetTexture()
+        return string.format("rung=art texture=%s%s",
+            tostring(button.mmArt):gsub("^.*[\\/]", ""),
+            loaded == nil and " (NOT LOADED)" or "")
+    elseif rung == "atlas" then
+        return string.format("rung=atlas atlas=%s",
+            tostring(button.tex and button.tex.GetAtlas and button.tex:GetAtlas()))
+    elseif rung == "ascii" then
+        return string.format("rung=ascii glyph=%q",
+            tostring(button.glyph and button.glyph:GetText()))
+    end
+    return "rung=" .. tostring(rung) .. " (never drawn)"
+end
+
 local function reportHeader()
     out("|cff00ff00-- header --|r")
     local M = NS.WindowManager
@@ -403,9 +430,12 @@ local function reportHeader()
     if not inst then out("  no window") return end
 
     local header = inst.config.header or {}
-    out(string.format("  showSessionName=%s showDuration=%s showTotals=%s align=%s",
-        tostring(header.showSessionName), tostring(header.showDuration),
-        tostring(header.showTotals), tostring(header.align)))
+    -- showSessionName, showDuration and showTotals were deleted by migration
+    -- v7 -> v8, and printing them printed `nil` three times for every player.
+    -- What governs the session line now is the frame's showSegmentText.
+    out(string.format("  showSegmentText=%s align=%s",
+        tostring((inst.config.frame or {}).showSegmentText ~= false),
+        tostring(header.align)))
     out(string.format("  title=%q", shown(inst.frame.title:GetText())))
     -- The session line carries the header TOTALS, which are secret for the
     -- whole of a pull. Printed through `shown` the line still says so; printed
@@ -429,10 +459,8 @@ local function reportHeader()
         if not button then
             out(string.format("  %-9s absent", key))
         else
-            out(string.format("  %-9s atlas=%s glyph=%q shown=%s alpha=%s",
-                key,
-                tostring(button.tex and button.tex.GetAtlas and button.tex:GetAtlas()),
-                tostring(button.glyph and button.glyph:GetText()),
+            out(string.format("  %-9s %s shown=%s alpha=%s",
+                key, drawnBy(button),
                 tostring(button:IsShown()),
                 tostring(button.GetAlpha and button:GetAlpha())))
         end

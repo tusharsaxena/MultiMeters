@@ -230,6 +230,69 @@ test("Diagnostics: with no window it says so rather than erroring", function()
 end)
 
 -- ---------------------------------------------------------------------------
+-- The header probe
+-- ---------------------------------------------------------------------------
+
+--- The report's line for one header control, or nil.
+local function controlLine(lines, key)
+    for _, line in ipairs(lines) do
+        if line:find("  " .. key .. " ", 1, true) and line:find("rung=", 1, true) then
+            return line
+        end
+    end
+    return nil
+end
+
+local ICON_PATH = "Interface\\AddOns\\MultiMeters\\libs\\LibKa0s\\media\\icons\\"
+
+test("Diagnostics: the header probe names the rung each control drew and what it drew", function()
+    -- THE BUG THIS EXISTS FOR: a live report printed `atlas=nil glyph="nil"` for
+    -- all seven controls while all seven were plainly on screen. They were on
+    -- rung one, the collection's own texture art, and the probe asked only the
+    -- atlas and the glyph -- the two rungs that had NOT drawn. A probe that reads
+    -- the wrong rung reports a blank strip over a working one.
+    -- red under: the probe reading GetAtlas and the glyph text and never mmRung.
+    local inst = T.load{ enable = true }
+    local _, lines = report(inst)
+    local close = controlLine(lines, "close")
+    assertTrue(close ~= nil, "no rung line for the close control")
+    assertTrue(close:find("rung=art", 1, true) ~= nil, "rung one is ours: " .. close)
+    assertTrue(close:find("texture=close", 1, true) ~= nil,
+        "and the line names the file it drew: " .. close)
+
+    -- Rung two and rung three each name their OWN drawn thing: close falls to
+    -- the atlas it has, settings past the atlas it lacks to its character.
+    for _, name in ipairs({ "close", "settings" }) do
+        inst.mocks.setTextureLoadable(ICON_PATH .. name, false)
+    end
+    inst.mocks.setAtlases({ ["common-icon-redx"] = true })
+    local window = inst.NS.WindowManager.All()[1]
+    inst.NS.HeaderControls:Apply(window)
+    _, lines = report(inst)
+    close = controlLine(lines, "close")
+    assertTrue(close:find("rung=atlas atlas=common-icon-redx", 1, true) ~= nil,
+        "the atlas rung names its atlas: " .. close)
+    local settings = controlLine(lines, "settings")
+    assertTrue(settings:find("rung=ascii glyph=", 1, true) ~= nil,
+        "the ASCII rung names its character: " .. settings)
+end)
+
+test("Diagnostics: the header probe prints no setting the migrations deleted", function()
+    -- showSessionName, showDuration and showTotals went in migration v7 -> v8,
+    -- so a report printing them prints `nil` three times for every player and
+    -- reads as if the header had lost its settings. What governs the session
+    -- line now is `frame.showSegmentText`.
+    -- red under: the old `showSessionName=%s showDuration=%s showTotals=%s` line.
+    local inst = T.load{ enable = true }
+    local text = report(inst)
+    for _, key in ipairs({ "showSessionName", "showDuration", "showTotals" }) do
+        assertTrue(text:find(key, 1, true) == nil, "a retired key is still printed: " .. key)
+    end
+    assertTrue(text:find("showSegmentText=true", 1, true) ~= nil,
+        "the setting that governs the session line is printed")
+end)
+
+-- ---------------------------------------------------------------------------
 -- Where the report goes
 -- ---------------------------------------------------------------------------
 
