@@ -404,7 +404,7 @@ local function renderCopyGroup(_, parent, relativeWidth)
     })
 end
 
---- The Window tab: the name row and the three registry buttons.
+--- The General entry's Window block: the name row and the three registry buttons.
 local function renderWindowTab(ctx)
     H.RenderGrid(ctx, {
         { make = renderNameBox },
@@ -432,7 +432,7 @@ local function renderWindowTab(ctx)
     }, nil)
 end
 
---- The Copy from tab: the source picker, the group filter and the Copy button.
+--- The General entry's Copy settings from block: the source picker, the group filter and the Copy button.
 local function renderCopyTab(ctx)
     H.RenderGrid(ctx, {
         { make = renderCopySource },

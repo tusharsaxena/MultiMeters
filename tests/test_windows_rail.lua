@@ -258,7 +258,7 @@ test("Windows rail: leaving Columns on the rail mid-drag cancels the reorder BEF
 
     assertEqual(ctx.activeSection, "frame", "the rail click did not switch entries")
     -- red under: the page renderer clearing the scroll before it cancels (a live handle handed to a
-    -- pooled frame), or cancelling only when the Columns entry is the one being drawn
+    -- pooled frame), or canceling only when the Columns entry is the one being drawn
     assertEqual(order[1], "cancel-live", "the first thing the switch did was not the cancel: " .. table.concat(order, ","))
     assertEqual(order[2], "clear", "no scroll clear followed the cancel: " .. table.concat(order, ","))
     assertTrue(ctx.mmReorder == nil, "the reorder controller survived the rail switch")
