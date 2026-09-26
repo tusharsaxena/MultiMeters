@@ -1,0 +1,1 @@
+fixed: NR-MM-04 matches its task; one R15 miss (master.visibility desc named the retired Visibility page) fixed in NR-MM-04R with a pinning test; gate 2092/0, luacheck 0/0, lizard clean
