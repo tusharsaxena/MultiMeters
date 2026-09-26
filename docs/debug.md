@@ -58,7 +58,7 @@ position, so a few seconds of hovering evicts the `[Aggregator]` and `[Render]` 
 actually reading. Gating it costs nothing — the tooltips themselves are unaffected, only the log is.
 
 **A half-gated channel reads exactly like a gated one from the console**, which is how the first cut
-of this shipped with `modules/Row.lua` missed. `tests/test_slash.lua` scans the source for
+of this shipped with `modules/Row.lua` missed. `tests/test_slash_diagnostics.lua` scans the source for
 `Debug("Tooltip"` call sites not preceded by the flag, so a fourth site added without the guard fails
 the suite rather than quietly restoring the flood.
 

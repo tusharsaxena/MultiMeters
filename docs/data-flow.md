@@ -230,6 +230,9 @@ mid-pull. The stakes are higher than a sort: identity mode takes row **identity*
 4. Order, per the window's `sortMode`.
 5. Cap to `rows.maxRows`, honoring `rows.alwaysShowSelf`.
 
+The orderings step 4 chooses among, and the cap in step 5, sit in `modules/Aggregator_Order.lua`;
+the ladder that makes the choice stays in `modules/Aggregator.lua` with the rest of the steps.
+
 The roster half is the other data source, and it is entirely plain: `C_DamageMeter` reports
 **sources**, not group members, and carries no owner link and no statement of membership. So
 `modules/Roster.lua` builds the group array, the GUID index and the pet→owner map from `UnitGUID` /
@@ -518,7 +521,8 @@ is not a missing feature — it is a thing this data source cannot express while
 position data secret too**, and that propagates to anything anchored to it. So:
 
 - There is not one `GetWidth` / `GetHeight` / `GetLeft` / `GetPoint` call in `modules/Row.lua`,
-  nor in `modules/Row_NameCell.lua`, which carries the leading cell's icons and name text.
+  nor in `modules/Row_NameCell.lua`, which carries the leading cell's icons and name text, nor in
+  `modules/Row_Border.lua`, which draws the cell outline.
 - `WindowProto:BuildLayout()` computes every coordinate the window will use from **config only** —
   padding, row height, spacing, each column's `x` and `width`, and `maxRows` from the frame height.
   Recomputed on a settings change, never on a refresh.

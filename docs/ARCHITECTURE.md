@@ -11,7 +11,7 @@ that outgrows a screen belongs in its topic doc with a summary and a link left b
 ## Overview
 
 
-Sixty-one non-vendored source files: 1 locale, 20 `core/`, 1 `defaults/`, 24 `modules/`, 15 `settings/`.
+Sixty-three non-vendored source files: 1 locale, 20 `core/`, 1 `defaults/`, 26 `modules/`, 15 `settings/`.
 
 The addon is built on the **private namespace** WoW hands each file. `core/MultiMeters.lua` calls
 `AceAddon-3.0:NewAddon(NS, addonName, …)`, which promotes that table in place — so **`NS` *is* the
@@ -56,8 +56,8 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `core/` runtime | `MultiMeters.lua`, `Database.lua` | The single game-event listener and the show ladder; AceDB and migrations. |
 | `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_Runtime`, `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm diagnostics`, its addon-state sections (`_Runtime`), and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
-| `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret. |
-| `modules/` display | `WindowManager`, `Window` (+ `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window, one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
+| `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`, `_Order`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret; `Aggregator_Order` holds the orderings and the row cap. |
+| `modules/` display | `WindowManager`, `Window` (+ `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Border`, `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window, one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
 | `settings/` | `Schema_Compose` → `Schema` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 3 pages and 6 Windows-page entries | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, and the path and write seams. `ColumnBlocks` is the Columns entry's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
 
@@ -252,7 +252,7 @@ Three design rules follow, and they are enforced in one place each rather than r
 - **R3 — layout is computed from config, never read back off a frame.** `SetValue(secret)` marks a
   frame `HasSecretValues`, which makes its position data secret and propagates that to anything
   anchored to it. There is not one `GetPoint` / `GetWidth` / `GetLeft` in `modules/Row.lua`, in
-  `modules/Row_NameCell.lua`, the name cell peeled out of it, or in `modules/Row_Cells.lua`; a window keeps drag and resize on a
+  `modules/Row_NameCell.lua`, the name cell peeled out of it, in `modules/Row_Border.lua` or in `modules/Row_Cells.lua`; a window keeps drag and resize on a
   bare `inst.anchor` frame that never holds a value.
 
 Two consequences worth stating once, because both look like bugs: **percentage text slots go quiet in
@@ -480,9 +480,13 @@ losing its heading is red as well.
 The **1000–1500 on-notice band** is busier than it has ever been, because a peel lands a file wherever
 its seam falls. `modules/Window.lua` reached 1490 after the bound-slot render (review F-007) and was peeled
 first, as ruled: the bus wiring and the lifecycle tail went to `modules/Window_Lifecycle.lua`,
-leaving it at 1321. The one to watch now is `modules/Row.lua` at 1446 after its live-cell set and
-`Release` left for `modules/Row_Cells.lua`: source, on the refresh path, and the file every identity,
-spec-icon and pet-fold change has historically landed in. The band's figures are
+leaving it at 1321. `modules/Row.lua` reached 1446 after its live-cell set and `Release` left for
+`modules/Row_Cells.lua`, and was peeled again in the 2026-09-26 automated-tests sweep: the cell outline — the flat
+edges, the edge-art backdrop and the per-row re-tint — went to `modules/Row_Border.lua`, leaving it
+at 1226. It is still source, on the refresh path, and the file every identity, spec-icon and
+pet-fold change has historically landed in. `modules/Aggregator.lua` had grown back to 1432 and was
+peeled in the same sweep: the orderings and the row cap went to `modules/Aggregator_Order.lua`, leaving
+it at 1230, while the ladder that picks an ordering stayed with the rest of the pipeline. The band's figures are
 tabulated in [automated-tests/RESULTS.md](automated-tests/RESULTS.md#files-by-layout-1-band), not
 here: `automated-tests-§4` makes that one overwritten file their home, and two copies of a
 measurement stay equal only by there being one.
@@ -544,7 +548,7 @@ per-file reasoning in [module-map.md](module-map.md#load-order). The binding con
 9. `defaults/Profile.lua` after `core/Constants.lua`, whose stat catalog it captures at load.
 10. `modules/Format.lua` first in the module block; `modules/Row.lua` resolves `Tooltip` and
    `DrillDown` at *call* time because both load after it. `modules/Targets.lua` loads before
-   `modules/Tooltip.lua`, its only caller. **Each of the ten `modules/` peels follows the parent it
+   `modules/Tooltip.lua`, its only caller. **Each of the twelve `modules/` peels follows the parent it
    was cut from, and every one of those positions is load-bearing**: each resolves at *file scope*
    something its parent publishes, so a peel loading first captures nil and stays nil for the
    session. `modules/Export.lua` was the one file in the block whose position carried no constraint

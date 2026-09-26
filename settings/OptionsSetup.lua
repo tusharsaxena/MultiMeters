@@ -398,7 +398,8 @@ if not lib then
     }) do
         Helpers[name] = function() end
     end
-    -- The id-picker's pure lookups (Options minor 18). No page calls them yet; with no
+    -- The id-picker's pure lookups (Options minor 18; in their own file, OptionsIds.lua, from
+    -- LibKa0s v1.62.0, with no member change). No page calls them yet; with no
     -- library there is nothing to resolve against, so nil ("no id") is the inert answer,
     -- and an empty hint table the inert vocabulary. No copy of the library's kinds.
     Helpers.ResolveId         = function() return nil end

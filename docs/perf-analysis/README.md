@@ -144,10 +144,10 @@ addon now passes it:
 | `spellEvent` | — | `core/MultiMeters.lua:425` | — |
 | `systemEvent` | — | `core/MultiMeters.lua:416` | — |
 | `refresh` | — | `modules/Window.lua:1144`, `:1154`, `:1177`, `:1184` | — |
-| `providerRead` | — (more than one real parent) | `modules/Provider.lua:357` | Its caller's: `"aggregate"` from `modules/Aggregator.lua:1035` and `modules/Aggregator_Identity.lua:216`, `"targets"` from `modules/Targets.lua:277`, none from `core/Diagnostics.lua` or `core/Diagnostics_DeathRecap.lua` |
-| `aggregate` | `refresh` | `modules/Aggregator.lua:1258`, `modules/DrillDown.lua:700`, `:732` | Its caller's at `modules/Aggregator.lua:1258`; `"refresh"` at both `DrillDown` sites |
+| `providerRead` | — (more than one real parent) | `modules/Provider.lua:357` | Its caller's: `"aggregate"` from `modules/Aggregator.lua:903` and `modules/Aggregator_Identity.lua:216`, `"targets"` from `modules/Targets.lua:277`, none from `core/Diagnostics.lua` or `core/Diagnostics_DeathRecap.lua` |
+| `aggregate` | `refresh` | `modules/Aggregator.lua:1151`, `modules/DrillDown.lua:700`, `:732` | Its caller's at `modules/Aggregator.lua:1151`; `"refresh"` at both `DrillDown` sites |
 | `render` | `refresh` | `modules/Window.lua:1315` | `"refresh"` |
-| `renderRow` | `render` | `modules/Row.lua:1377` | `"render"` |
+| `renderRow` | `render` | `modules/Row.lua:1157` | `"render"` |
 | `tooltip` | — | `modules/Tooltip_Builders.lua:788`, `:925`, `:943`, `:1004`, `:1018`, `:1032` | — |
 | `targets` | `tooltip` | `modules/Targets.lua:396`, `:404`, `:418` | `"tooltip"` |
 

@@ -61,7 +61,8 @@ suite happily measures the stub — green, and testing nothing. Five seams in th
 way (`core/CoreSetup.lua`, `core/PerfSetup.lua`, `core/DebugLogSetup.lua`, `settings/Slash.lua`,
 `settings/OptionsSetup.lua`), so `tests/run.lua` also asserts by name that
 `Core.lua`, `DebugLog.lua`, `Slash.lua`, `Options.lua`, `OptionsWidgets.lua`, `OptionsCompose.lua`,
-`OptionsScroll.lua`, `Perf.lua` and `PerfPanel.lua` are all present. A re-vendor that drops one
+`OptionsScroll.lua`, `OptionsTabs.lua`, `OptionsRegistry.lua`, `OptionsCombat.lua`, `OptionsNav.lua`,
+`Launcher.lua`, `Perf.lua`, `PerfPanel.lua`, `Lifecycle.lua` and `Schema.lua` are all present. A re-vendor that drops one
 fails there, with a name. `OptionsCompose.lua` is on that list for a reason the runner argues in
 place rather than leaving to the reader: `settings/Schema.lua` **composes** the master controls tab
 and every font, border and bar group out of it, so a re-vendor that dropped it would take fifty-odd
@@ -200,6 +201,15 @@ the seam ([schema.md](schema.md#the-window-registry-and-its-writer)).
 `settings/Schema_Compose.lua` is the one new module with no suite of its own, and deliberately: it
 holds the vocabularies, validators and composers that build the row array, and
 `tests/test_schema.lua` asserts them where it asserts the array they produce.
+
+`tests/test_slash.lua` was peeled on 2026-09-26 (MM-ATS-01), when it passed its line-cap re-check,
+and this one is a test file peeled along its own seam rather than a module's: `settings/Slash.lua`
+stayed one file. `tests/test_slash_diagnostics.lua` took the diagnostics verbs — `perf` and the
+whole `/mm debug` ladder, from `on` / `off` and the `tooltip` channel through the `feign` recording,
+the `diagnostics`, `recap` and `identity` reports and the console toggle. The disabled state's
+refusal cases (`slash-commands-§2`) joined the schema-seam refusals in
+`tests/test_slash_refusal.lua`. The parent keeps the verb table's shape, dispatch, the host verbs,
+`resetall` and registration. Case bodies and names moved unchanged, so the suite total did not move.
 
 ## What the mock models, and what it admits it cannot
 

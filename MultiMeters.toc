@@ -104,6 +104,10 @@ modules\Aggregator.lua
 # helper seam Aggregator.lua publishes, at FILE SCOPE. Either loading first would resolve nil.
 modules\Aggregator_Identity.lua
 modules\Aggregator_Preview.lua
+# The orderings and the row cap, peeled out of Aggregator under layout-§1 (ATS-12). LOAD-BEARING
+# POSITION: it resolves the module table and the Aggregator._order seam at FILE SCOPE, so it follows
+# modules\Aggregator.lua. Loading first would resolve nil.
+modules\Aggregator_Order.lua
 modules\WindowManager.lua
 modules\Window.lua
 # The bus wiring and lifecycle tail (Window.New, SetConfig, Destroy, Suspend, Resume), peeled out
@@ -120,6 +124,9 @@ modules\Window_Header.lua
 modules\Window_Placement.lua
 modules\HeaderControls.lua
 modules\Row.lua
+# The cell outline (flat edges, edge art, per-row re-tint), peeled out of Row.lua (layout-§1).
+# LOAD-BEARING POSITION: it resolves Cell and three helpers off NS.RowInternals at FILE SCOPE.
+modules\Row_Border.lua
 # The live-cell set and Release, peeled out of Row.lua (layout-§1). LOAD-BEARING POSITION: it
 # resolves RowProto and newCell off NS.RowInternals at FILE SCOPE, so it must follow it.
 modules\Row_Cells.lua

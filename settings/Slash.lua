@@ -729,6 +729,28 @@ local function doDebugFeign(rest)
     end
 end
 
+--- `tooltip` is a CHANNEL switch, not a report and not the console. It sits
+--- above the DebugLog guard with the read verbs because it is a flag on
+--- NS.State, which exists whether or not the console seam loaded -- and a
+--- player who types it on a degraded client should get the same answer as
+--- anybody else rather than silence.
+---
+--- A PURE TOGGLE, and it always prints the state it landed in. `feign` reads
+--- an argument because it is armed before a run and read after one; this is
+--- flipped and observed in the same second, so an argument would be a word to
+--- remember for no benefit. Printing the result is what makes it unambiguous
+--- without one.
+local function doDebugTooltip()
+    local S = NS.State
+    if not S then return end
+    S.debugTooltip = not S.debugTooltip
+    if NS.Print then
+        NS.Print(S.debugTooltip
+            and L["tooltip logging ON \226\128\148 mouse over a row and read the console."]
+            or  L["tooltip logging off."])
+    end
+end
+
 --- `/mm debug` toggles the WINDOW only; `/mm debug on|off` sets the session-only
 --- logging flag through the DebugLog seam. They are separate on purpose: logging
 --- runs with the console closed, so a bug can be reproduced first and the log
@@ -768,27 +790,10 @@ function doDebug(rest)
         return
     end
 
-    -- `tooltip` is a CHANNEL switch, not a report and not the console. It sits
-    -- above the DebugLog guard with the read verbs because it is a flag on
-    -- NS.State, which exists whether or not the console seam loaded -- and a
-    -- player who types it on a degraded client should get the same answer as
-    -- anybody else rather than silence.
-    --
-    -- A PURE TOGGLE, and it always prints the state it landed in. `feign` reads
-    -- an argument because it is armed before a run and read after one; this is
-    -- flipped and observed in the same second, so an argument would be a word to
-    -- remember for no benefit. Printing the result is what makes it unambiguous
-    -- without one.
+    -- `tooltip` sits above the DebugLog guard with the read verbs; its helper,
+    -- doDebugTooltip above, says why.
     if word == "tooltip" then
-        local S = NS.State
-        if S then
-            S.debugTooltip = not S.debugTooltip
-            if NS.Print then
-                NS.Print(S.debugTooltip
-                    and L["tooltip logging ON \226\128\148 mouse over a row and read the console."]
-                    or  L["tooltip logging off."])
-            end
-        end
+        doDebugTooltip()
         return
     end
 

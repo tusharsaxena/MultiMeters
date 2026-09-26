@@ -850,7 +850,7 @@ function WindowProto:SortByColumn(key)
     --     the engine's own ordering for the new stat.
     --   * Reversing compares nothing either — it is a permutation of an array
     --     this addon built, and the aggregator applies it without touching a
-    --     value (see reverseRows there).
+    --     value (see reverseRows in modules/Aggregator_Order.lua).
     --
     -- The Player column is the genuine refusal. Ordering by name compares a
     -- ConditionalSecret, which raises, and unlike a stat column there is no

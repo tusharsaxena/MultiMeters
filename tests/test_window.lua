@@ -706,7 +706,7 @@ end)
 -- "Always show yourself" against the rows the window actually draws
 -- ---------------------------------------------------------------------------
 --
--- modules/Aggregator.lua's ApplyRowLimit pins the player against its own cap,
+-- modules/Aggregator_Order.lua's ApplyRowLimit pins the player against its own cap,
 -- which is MAX_ROWS (40) whenever `rows.maxRows` is 0 — the shipped default. The
 -- window then draws only what fits (10 rows at the shipped 220px), so a player at
 -- rank 15 was never on screen. The pin that counts is the one Render makes

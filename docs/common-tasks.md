@@ -32,8 +32,8 @@ and there is no way to unwind a partially sorted array.
 **R3 — layout is computed from config, never read back off a frame.** A frame handed a secret via
 `SetValue` is marked `HasSecretValues`, which makes its own position and size data secret and
 propagates that to everything anchored to it. There is not one `GetWidth` / `GetHeight` /
-`GetLeft` / `GetPoint` call anywhere in `modules/Row.lua` or in `modules/Row_NameCell.lua`, the
-sibling that draws the leading cell. The single exception in the addon is
+`GetLeft` / `GetPoint` call anywhere in `modules/Row.lua`, in `modules/Row_Border.lua` or in
+`modules/Row_NameCell.lua`, the sibling that draws the leading cell. The single exception in the addon is
 `modules/Window.lua`'s `inst.anchor`, which `modules/Window_Placement.lua` reads: an empty,
 invisible, childless frame the visible window is anchored *to*, upstream of everything, which can
 therefore never receive a value.
@@ -755,11 +755,12 @@ which is why bumping one without the other fails the suite. **Bump the line and 
 commit.**
 
 **3. Check the load list.** `tests/run.lua` derives `LIB_FILES` from `libs/LibKa0s/LibKa0s.xml` and
-then asserts the nine expected files are present by name:
+then asserts the sixteen expected files are present by name:
 
 ```
-Core.lua  DebugLog.lua  Slash.lua  Options.lua
-OptionsWidgets.lua  OptionsCompose.lua  OptionsScroll.lua  Perf.lua  PerfPanel.lua
+Core.lua  DebugLog.lua  Slash.lua  Options.lua  OptionsWidgets.lua  OptionsCompose.lua
+OptionsScroll.lua  OptionsTabs.lua  OptionsRegistry.lua  OptionsCombat.lua  OptionsNav.lua
+Launcher.lua  Perf.lua  PerfPanel.lua  Lifecycle.lua  Schema.lua
 ```
 
 That assertion is not decoration. A short load list does not raise — it leaves the dependent major

@@ -3,7 +3,7 @@
 Where each responsibility lives, what each file publishes, and what it consumes. `MultiMeters.toc`
 is the source of truth for load order — check this map against it before editing.
 
-Sixty-one non-vendored source files: 1 locale, 20 `core/`, 1 `defaults/`, 24 `modules/`,
+Sixty-three non-vendored source files: 1 locale, 20 `core/`, 1 `defaults/`, 26 `modules/`,
 15 `settings/`.
 
 Thirteen of those arrived on one day, 2026-09-09, and **not one of them is a new module.** They are
@@ -17,7 +17,7 @@ behavior into a peeled file is reading the block that used to sit under a banner
 That is also why so many of the new TOC lines are load-bearing and say so at the line. A peel hangs
 its functions on the **same** prototype or module table its parent builds, so the parent publishes
 what used to be a file-local — `NS.WindowProto`, `NS.RowInternals`, `NS.TooltipInternals`,
-`Aggregator._identity`, `Export.__cfgOf`, `NS.SchemaCompose` — and the child resolves it at **file
+`Aggregator._identity`, `Aggregator._order`, `Export.__cfgOf`, `NS.SchemaCompose` — and the child resolves it at **file
 scope**. A child that loaded first would not raise: it would freeze a table of nils in for the life
 of the session. Check a peel's position against `MultiMeters.toc` before moving it.
 
@@ -137,10 +137,10 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                     gives a Feign Death a valid deathRecapID, so a hunter's
 │   │                     feign is reported as a death; this holds the GUIDs that
 │   │                     are feigning. Cannot run mid-pull -- see its header.
-│   ├── Aggregator.lua  — the GUID join, group filtering, pet folding, the three
-│   │                     sort modes, the row cap, and the only two divisions in
-│   │                     the addon. Chooses per pass between the join and the
-│   │                     identity build below
+│   ├── Aggregator.lua  — the GUID join, group filtering, pet folding, the sort
+│   │                     ladder, and the only two divisions in the addon.
+│   │                     Chooses per pass between the join and the identity
+│   │                     build below
 │   ├── Aggregator_Identity.lua
 │   │                   — the grid drawn while sourceGUID is SECRET, and the
 │   │                     rectangle that measures how much of it got filled.
@@ -150,6 +150,10 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                   — the invented meter: the test rows a player laying out
 │   │                     columns at a target dummy sees. Reads nothing the
 │   │                     aggregator holds, which is what made it the cheap cut
+│   ├── Aggregator_Order.lua
+│   │                   — the orderings the sort ladder picks among, and the
+│   │                     row cap (ApplyRowLimit, SelfPinIndex). Takes UNRANKED
+│   │                     off Aggregator._order and hangs the orderings back
 │   ├── WindowManager.lua — the window REGISTRY: create / delete / rename /
 │                         duplicate / copy-from, lock, test mode, toggle. The ONE
 │                         WINDOWS_CHANGED emitter
@@ -178,6 +182,9 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                     the bar colors, the text styling, the mouse hand-off, and
 │   │                     the CELL DESCRIPTOR Tooltip.lua and DrillDown.lua read.
 │   │                     Nothing here looks at a number
+│   ├── Row_Border.lua  — the cell outline `bars.border` draws: four flat edge
+│   │                     textures or an LSM edge-art backdrop on the bar, and the
+│   │                     per-row re-tint the `class` color mode needs
 │   ├── Row_Cells.lua   — which of a row's cells are LIVE (the ordered liveCells
 │   │                     array Update walks), and Release back to the pool
 │   ├── Row_NameCell.lua — the LEADING column's cell alone: the icon strip, the name
@@ -308,16 +315,18 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 | `Provider.lua` | AceAddon | Every meter read, the memoized availability answer, and the suspend flag | `NS.Provider` — `GetColumn`, `GetSourceDetail`, `GetAvailableSessions`, `GetSessionDuration`, `IsAvailable`, `AvailabilityMemo`, `InvalidateAvailability`, `ProbeSourceByGuid`, `ProbeSourceLookup`, `ProbeSourceFields`, `Reset`, `Suspend` / `Resume` / `IsSuspended` | `NS.Compat`, `NS.Secrets`, `NS.Constants.STAT_BY_KEY`. Subscribes `METER_RESET`, `METER_SESSION`, `ENTERING_WORLD`. **Sends `METER_RESET`** from `Provider.Reset` |
 | `Roster.lua` | AceAddon | The group array, the GUID index, the pet→owner map, roles. Rebuilt lazily on first read after an invalidation | `NS.Roster` — `GetGroup`, `Get`, `IsGroupMember`, `OwnerOf`, `RoleOf`, `Refresh`, `Forget` | the unit API through `_G` at call time, the local player's spec index through `NS.Compat.GetSpecialization`, `NS.State.Cache("Roster")`, and the remembered map at `db.global.roster`, which it owns. Subscribes `ROSTER_CHANGED`, `ENTERING_WORLD`, `PROFILE_CHANGED`, `TEST_MODE_CHANGED`, and `METER_RESET`, which is what forgets the remembered map. A complete build past `4 * MAX_ROWS` remembered members prunes it to the live group (SM-06, branch B) |
 | `Feign.lua` | AceAddon | The set of GUIDs believed to be feigning rather than dead. `C_DamageMeter` hands a Feign Death a valid `deathRecapID`, so the Deaths column counts it. **Cannot run while restricted**: it joins a plain GUID against `sourceGUID`, which is secret for the whole of a pull | `NS.Feign` — `Note`, `IsFeigned`, `Prune`, `Clear` | the unit API through `_G` at call time, `NS.Roster.GetGroup`, `NS.Secrets`. Subscribes `METER_RESET`, `ENTERING_WORLD`, `ROSTER_CHANGED`. Fed by `core/MultiMeters.lua`'s `UNIT_SPELLCAST_SUCCEEDED` handler, which owns the only game event |
-| `Aggregator.lua` | AceAddon | The exact GUID join — filter, pet folding, ordering, the one-stage-at-a-time scan — the row cap and `percent`, and the choice, once per pass, between that join and the identity build next door. The build pipeline is **one algorithm** and issue #30 forbids cutting inside it, which is what decided where the peels went | `NS.Aggregator` — `Build`, `ApplyRowLimit`, `LastIdentityStats`, `LastPass` (the last render pass per window, for `/mm diagnostics`); plus `Aggregator._identity`, the private seam carrying the row-assembly helpers (`newRow`, `setCell`, `isEnemySource`, `plainTruth`, `UNRANKED`) the identity build shares with the join | `NS.Provider`, `NS.Roster`, `NS.Secrets`, `NS.State.Cache("Aggregator")`. Subscribes `METER_RESET`, `PROFILE_CHANGED` |
+| `Aggregator.lua` | AceAddon | The exact GUID join — filter, pet folding, the sort ladder, the one-stage-at-a-time scan — and `percent`, and the choice, once per pass, between that join and the identity build next door. The build pipeline is **one algorithm** and issue #30 forbids cutting inside it, which is what decided where the peels went | `NS.Aggregator` — `Build`, `LastIdentityStats`, `LastPass` (the last render pass per window, for `/mm diagnostics`); plus `Aggregator._identity`, the private seam carrying the row-assembly helpers (`newRow`, `setCell`, `isEnemySource`, `plainTruth`, `UNRANKED`) the identity build shares with the join, and `Aggregator._order`, the seam that carries `UNRANKED` out to the orderings and brings them back | `NS.Provider`, `NS.Roster`, `NS.Secrets`, `NS.State.Cache("Aggregator")`. Subscribes `METER_RESET`, `PROFILE_CHANGED` |
 | `Aggregator_Identity.lua` | — | The grid drawn while `sourceGUID` is secret, and the rectangle that measures how much of it got filled: the correlation pass, the collision bookkeeping and the per-pass identity statistics. It exists because the client stopped handing out GUIDs, and it asks a question the join never asks | `Aggregator._identity.buildByIdentity`, and `lastIdentityStats` on the same seam — the one private the peel had to publish, written at the end of a pass here and read by `Aggregator.LastIdentityStats` there | `NS.Aggregator`, `NS.Provider`, `NS.Roster`, `NS.Secrets`, `NS.Constants`, and the five `Aggregator._identity` helpers — all **at file scope**, which is what pins its TOC line after `modules/Aggregator.lua` |
 | `Aggregator_Preview.lua` | — | The invented meter: the placeholder group, spells and scaling a player sees when they unlock a window at a target dummy. Placeholder data is required of any addon with a positionable display | `NS.Aggregator.TestGroup`, `TestColumn`, `TestRecap`, `TestSourceDetail` | the module table, and nothing else. **No upvalue crosses the line in either direction** — which is what made this the cheapest second cut once the identity seam had not got the file under on its own. `Provider`, `Roster`, `Tooltip` and `DrillDown` reach these four at call time, behind an `and`, exactly as before |
+| `Aggregator_Order.lua` | — | The orderings (`reverseRows`, `orderByProvider`, `orderByValue`, `orderByName`, `orderByRoster`) and the row cap. Each ordering takes a row array and a direction and reads no pass table, which is why they could leave while the ladder that picks among them (`applySortMode`) and Build stayed: peeled in the 2026-09-26 automated-tests sweep (ATS-12), 1432 → 1230 | `NS.Aggregator.ApplyRowLimit`, `SelfPinIndex`; and `orderByProvider`, `orderByValue`, `orderByName`, `orderByRoster` on `Aggregator._order` | `NS.Aggregator`, `NS.Roster`, `NS.Secrets`, `NS.Constants`, and `UNRANKED` off `Aggregator._order` — all **at file scope**, which is what pins its TOC line after `modules/Aggregator.lua` |
 | `WindowManager.lua` | AceAddon | The live instance registry and every runtime mutation of the window list: the `architecture-§5` registry writer, with the load pass (`Database.SeedWindows`) the only other writer. Deep-copies on duplicate and copy-from | `NS.WindowManager` — `Resolve`, `Get`, `All`, `Init`, `Create`, `Delete`, `Rename`, `Duplicate`, `CopyFrom`, `RefreshAll`, `MarkAllDirty`, `ResetPosition(s)`, `SetLocked` / `IsLocked`, `SetTestMode` / `IsTest`, `Toggle` / `AnyShown`, `BuildListLines`, `Suspend` / `Resume`, `COPY_GROUPS` | `NS.Database`, `NS.Window`, `NS.State`, `NS.DefaultWindow`. Subscribes `PROFILE_CHANGED`. **The one `WINDOWS_CHANGED` sender** |
 | `Window.lua` | plain table + prototype | One instance and its **loop**: the anchor/visible frame pair, `BuildLayout` (R3), `RefreshUpvalues`, `BuildFrame`, `ApplyConfig`, `ApplyBorder`, the row pool, the scroll, the `OnUpdate` throttle, `Refresh` and `Render`. Issue #29 names that chain as one causal sequence and forbids cutting inside it — splitting it would put a reader on two files to follow one frame | `NS.Window` and the loop's `WindowProto` methods; and, for the three files below, `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor`, `NS.WindowModule` and `NS.WindowInternals` (the row pool's constructor and the `OnUpdate` clock) | `NS.Constants`, `NS.Row`, `NS.Provider`, `NS.Aggregator`, `NS.DrillDown`, `NS.ShouldShow`, `NS.Format`, `NS.ApplySkin` |
 | `Window_Lifecycle.lua` | — | How a window is born, re-pointed, stood down and put away, and the bus wiring that keeps it listening in between. Peeled out of `Window.lua` for layout-§1 along the seam the automated-test disposition named: it arms the clock and marks the window dirty, and never decides what is drawn, so it sits outside issue #29's refresh chain | `NS.Window.New(config)`, `WindowProto:RegisterBus`, `UnregisterBus`, `SetConfig`, `Destroy`, `Suspend`, `Resume` | `NS.Window`, `NS.WindowProto` and `NS.WindowInternals`, all at file scope; `NS.NewBusTarget` and `NS.IsStoodDown` at call time. Each instance subscribes 12 messages on **its own** private bus target |
 | `Window_Header.lua` | — | The header **band**: the sort art and its ladder, the title bar, the session line, the column labels above the grid, the sort a click on one of those labels performs, the segment dropdown, the session label, the restricted notice and the unavailable notice. The band is computed from config and read back from nothing at all, which is why it separates from the loop cleanly | `NS.HeaderStyle(window)` (the header's font and color, read by `modules/HeaderControls.lua` at call time), and the band's `WindowProto` methods — `ApplyHeader`, `ApplyTitle`, `ApplyHeaderStrip`, `ApplySessionLine`, `ApplyColumnHeaders`, `ApplyMinimized`, `SortByColumn`, `SetSegment`, `SetSessionType`, `OpenSegmentMenu`, `UpdateHeaderText`, `ShowNotice`, and `TitleRowTop(h)` — the one center line the title, the session line and the control strip are all placed against | `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor`, `NS.WindowModule`, `NS.Constants`, `NS.L`, `NS.PlayerClassRGB`, `NS.RGBA` — the first four **at file scope**, which is what makes its TOC position load-bearing |
 | `Window_Placement.lua` | — | Where a window sits, how big it is, whether it is locked, and whether it is on screen at all — everything the player's hands and the visibility ladder do to the frame, as against what the loop draws inside it. **R3 did not weaken on this side of the seam**: `SavePosition` and `SaveSize` ask `inst.anchor`, the bare frame that has never held a meter value, and never `inst.frame` | the placement `WindowProto` methods — `ApplyPosition`, `SavePosition`, `SaveSize`, `ApplyResizeBounds`, `ApplyLock`, `RefreshVisibility`, `Show`, `ClearForcedShow`, `Hide`, `IsShown` | `NS.WindowProto`, **at file scope** |
 | `HeaderControls.lua` | plain table | The window's own control strip: which controls exist, where each sits (right-to-left, indexed, a hidden one yields its slot), what art each draws from (our TGA -> Blizzard atlas -> ASCII) and when the set fades | `NS.HeaderControls` — `Attach`, `Apply`, `HookHover`, `WidthUsed` | `NS.Compat.FirstTexture` / `FirstAtlas`, `NS.SetByPath`, `NS.HeaderStyle`, `NS.ShowResetMeterData`. Every control in the strip is built here, close included, so the strip is the same seven controls with or without LibKa0s. Owns no state and registers no event |
-| `Row.lua` | plain table + prototype | Row and cell widgets, **the cell descriptor** — the contract `modules/Tooltip.lua` and `modules/DrillDown.lua` both read, documented once here so neither the peel nor they restate it — the bar skin and border, the four color rules, the text style, `SetValue`, and the mouse hand-off | `NS.Row.New(window)`, `NS.Row.OffsetFor(layout, index)`, and `NS.RowInternals` (`Cell`, `cellBackground`, `CLASS_TEXTURE`, `newCell`, `RowProto`) for the two files below | `NS.Constants`, `NS.RGBA`, `NS.Format` / `NS.NumberFormat`, and `NS.Tooltip` / `NS.DrillDown` resolved at call time |
+| `Row.lua` | plain table + prototype | Row and cell widgets, **the cell descriptor** — the contract `modules/Tooltip.lua` and `modules/DrillDown.lua` both read, documented once here so neither the peel nor they restate it — the bar skin, the four color rules, the text style, `SetValue`, and the mouse hand-off | `NS.Row.New(window)`, `NS.Row.OffsetFor(layout, index)`, and `NS.RowInternals` (`Cell`, `cellBackground`, `CLASS_TEXTURE`, `newCell`, `RowProto`, `RGBA`, `ClassRGB`, `borderEdge`) for the three files below | `NS.Constants`, `NS.RGBA`, `NS.Format` / `NS.NumberFormat`, and `NS.Tooltip` / `NS.DrillDown` resolved at call time |
+| `Row_Border.lua` | — | The cell outline `bars.border` asks for. Two mutually exclusive paths: four flat edge textures at OVERLAY sublevel 7 (the shipped default, built on first use and kept), or an LSM edge file drawn as the bar's **own** backdrop, never a child frame (R3). One color rule (`bars.borderColorMode`, `class` being this row's player) and one clamped thickness serve both. Peeled out of `Row.lua` for layout-§1; `Row.lua` calls its two methods by name at call time | `Cell:ApplyBorder`, `Cell:ApplyEntryBorderColor` | `NS.RowInternals`' `Cell`, `RGBA`, `ClassRGB` and `borderEdge` **at file scope** — the reason its TOC line sits right after `modules\Row.lua` |
 | `Row_Cells.lua` | — | Which of a row's cells are live, and handing the row back. `BindLiveCells` grows the cell set to the layout's columns and rebuilds `row.liveCells` **in place** — cleared with a numeric loop, never reallocated — hiding and blanking the cells the layout dropped; `RowProto:Update` walks that array rather than every cell the row ever had (review F-007). `Release` blanks every cell when a row leaves the screen | `RowProto:BindLiveCells`, `RowProto:Release` | `NS.RowInternals.RowProto` and `.newCell` **at file scope** — the reason its TOC line sits right after `modules\Row.lua` |
 | `Row_NameCell.lua` | — | The leading column's cell alone: the icon strip, the name string, and the two decisions that keep them clear of each other. A sibling rather than a new widget — it hangs two more methods on the **same** `Cell` prototype — and the block that grows, since every identity, spec-icon and pet-fold change lands in it. `Row.lua`'s rules bind unchanged: no arithmetic on a meter value, and no `GetWidth` / `GetLeft` / `GetPoint` anywhere (R3) | `Cell:ApplyIcons`, `Cell:SetPlayer`, `NS.ICON_TEXT_GAP` | `NS.RowInternals`' three members **at file scope** — the reason its TOC line sits after `modules\Row.lua` — and `NS.Secrets`, for exactly one question: may this GUID be looked at |
 | `Targets.lua` | plain table | The enemy cross-reference. One walk over every `EnemyDamageTaken` source's spells builds **every** player's target list at once, keyed on `combatSpellDetails.unitName` and cached per session. **All-or-nothing**: one unreadable amount abandons the whole build | `NS.Targets` — `ForPlayer`, `Total`, `Invalidate` | `NS.Provider.GetColumn` / `GetSourceDetail`, `NS.Secrets`, `NS.State.Cache("Targets")`. Subscribes `METER_RESET`, `METER_SESSION`, `METER_UPDATED`, `PROFILE_CHANGED` on a private bus target |
@@ -412,17 +421,17 @@ for the same "a flat path model has no vocabulary for this shape" reason.
 4. **`defaults/Profile.lua`** — after `core/Constants.lua`, whose stat catalog it captures at load.
 5. **`modules/`** — `Format` first (nothing reads another module, and `Row` and `Tooltip` both format
    on their first render), then `Provider` → `Roster` → `Feign` → `Aggregator` →
-   **`Aggregator_Identity` → `Aggregator_Preview`** → `WindowManager` → `Window` →
-   **`Window_Lifecycle` → `Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_Cells`** → **`Row_NameCell`** →
+   **`Aggregator_Identity` → `Aggregator_Preview` → `Aggregator_Order`** → `WindowManager` → `Window` →
+   **`Window_Lifecycle` → `Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_Border`** → **`Row_Cells`** → **`Row_NameCell`** →
    `Targets` → `Tooltip` → **`Tooltip_Lines` → `Tooltip_Builders`** → `DrillDown` → `Export` →
    **`Export_Modal`** → `Visibility`.
 
-   The ten in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
+   The twelve in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
    for the same reason: each resolves something its parent publishes at *file scope*, so a peel
    ahead of its parent captures nil and stays nil for the session.
    `modules/Aggregator_Identity.lua` takes the five row-assembly helpers off `Aggregator._identity`;
    `Aggregator_Preview.lua` needs only the module table, but is kept beside its sibling because that
-   is where the reading order puts it.
+   is where the reading order puts it. `Aggregator_Order.lua` takes `UNRANKED` off `Aggregator._order`.
    `Window_Lifecycle.lua` resolves `NS.Window`, `NS.WindowProto` and `NS.WindowInternals`,
    `Window_Header.lua` resolves `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor` and
    `NS.WindowModule`, and `Window_Placement.lua` resolves `NS.WindowProto` — all three after
@@ -430,8 +439,9 @@ for the same "a flat path model has no vocabulary for this shape" reason.
    `HeaderControls.lua`, which reads the `NS.HeaderStyle` it publishes; that read is at *call* time,
    so this half is order by intent rather than a load-time requirement, and the TOC says which is
    which.
-   `Row_Cells.lua` resolves `NS.RowInternals.RowProto` and `.newCell`, and `Row_NameCell.lua`
-   `NS.RowInternals`' other three members, both after `modules/Row.lua`.
+   `Row_Border.lua` resolves `NS.RowInternals.Cell`, `.RGBA`, `.ClassRGB` and `.borderEdge`,
+   `Row_Cells.lua` `.RowProto` and `.newCell`, and `Row_NameCell.lua` `.Cell`, `.cellBackground` and
+   `.CLASS_TEXTURE`, all three after `modules/Row.lua`.
    `Tooltip_Lines.lua` resolves `NS.TooltipInternals` after `modules/Tooltip.lua`, and
    `Tooltip_Builders.lua` must follow **both**, because the second half of that table is not filled
    until `Tooltip_Lines.lua` has run. `Export_Modal.lua` resolves `Export.__EM_DASH`, `__cfgOf` and
