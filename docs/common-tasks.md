@@ -32,8 +32,8 @@ and there is no way to unwind a partially sorted array.
 **R3 — layout is computed from config, never read back off a frame.** A frame handed a secret via
 `SetValue` is marked `HasSecretValues`, which makes its own position and size data secret and
 propagates that to everything anchored to it. There is not one `GetWidth` / `GetHeight` /
-`GetLeft` / `GetPoint` call anywhere in `modules/Row.lua` or in `modules/Row_NameCell.lua`, the
-sibling that draws the leading cell. The single exception in the addon is
+`GetLeft` / `GetPoint` call anywhere in `modules/Row.lua`, in `modules/Row_Border.lua` or in
+`modules/Row_NameCell.lua`, the sibling that draws the leading cell. The single exception in the addon is
 `modules/Window.lua`'s `inst.anchor`, which `modules/Window_Placement.lua` reads: an empty,
 invisible, childless frame the visible window is anchored *to*, upstream of everything, which can
 therefore never receive a value.

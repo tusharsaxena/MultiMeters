@@ -518,7 +518,8 @@ is not a missing feature — it is a thing this data source cannot express while
 position data secret too**, and that propagates to anything anchored to it. So:
 
 - There is not one `GetWidth` / `GetHeight` / `GetLeft` / `GetPoint` call in `modules/Row.lua`,
-  nor in `modules/Row_NameCell.lua`, which carries the leading cell's icons and name text.
+  nor in `modules/Row_NameCell.lua`, which carries the leading cell's icons and name text, nor in
+  `modules/Row_Border.lua`, which draws the cell outline.
 - `WindowProto:BuildLayout()` computes every coordinate the window will use from **config only** —
   padding, row height, spacing, each column's `x` and `width`, and `maxRows` from the frame height.
   Recomputed on a settings change, never on a refresh.

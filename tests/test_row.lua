@@ -119,20 +119,26 @@ test("modules/Row.lua contains no geometry getter at all", function()
     -- The static half of rule R3. There is not one GetWidth / GetHeight /
     -- GetLeft / GetPoint call in this file, and there must not be: the layout
     -- table the window hands in is the whole geometry story.
-    local fh = assert(io.open(T.root .. "/modules/Row.lua", "r"))
-    local n, offenders = 0, {}
-    for line in fh:lines() do
-        n = n + 1
-        if not line:match("^%s*%-%-") then
-            local code = line:gsub("%s%-%-.*$", "")
-            for _, getter in ipairs{ "GetWidth", "GetHeight", "GetLeft", "GetPoint" } do
-                if code:find(":" .. getter .. "%(") then
-                    offenders[#offenders + 1] = "modules/Row.lua:" .. n .. " " .. getter
+    --
+    -- modules/Row_Border.lua is scanned too: the cell outline was peeled out of
+    -- this file (layout-§1), and a peel must not carry its code out of the gate.
+    local offenders = {}
+    for _, path in ipairs{ "modules/Row.lua", "modules/Row_Border.lua" } do
+        local fh = assert(io.open(T.root .. "/" .. path, "r"))
+        local n = 0
+        for line in fh:lines() do
+            n = n + 1
+            if not line:match("^%s*%-%-") then
+                local code = line:gsub("%s%-%-.*$", "")
+                for _, getter in ipairs{ "GetWidth", "GetHeight", "GetLeft", "GetPoint" } do
+                    if code:find(":" .. getter .. "%(") then
+                        offenders[#offenders + 1] = path .. ":" .. n .. " " .. getter
+                    end
                 end
             end
         end
+        fh:close()
     end
-    fh:close()
     assertEqual(#offenders, 0, table.concat(offenders, ", "))
 end)
 
