@@ -1,0 +1,1 @@
+clean: header probe now reports mmRung + drawn art/atlas/glyph and showSegmentText; both new tests red with the change reverted (scratch); gate 2078/0, luacheck 0/0, lizard clean
