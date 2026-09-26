@@ -61,7 +61,8 @@ suite happily measures the stub — green, and testing nothing. Five seams in th
 way (`core/CoreSetup.lua`, `core/PerfSetup.lua`, `core/DebugLogSetup.lua`, `settings/Slash.lua`,
 `settings/OptionsSetup.lua`), so `tests/run.lua` also asserts by name that
 `Core.lua`, `DebugLog.lua`, `Slash.lua`, `Options.lua`, `OptionsWidgets.lua`, `OptionsCompose.lua`,
-`OptionsScroll.lua`, `Perf.lua` and `PerfPanel.lua` are all present. A re-vendor that drops one
+`OptionsScroll.lua`, `OptionsTabs.lua`, `OptionsRegistry.lua`, `OptionsCombat.lua`, `OptionsNav.lua`,
+`Launcher.lua`, `Perf.lua`, `PerfPanel.lua`, `Lifecycle.lua` and `Schema.lua` are all present. A re-vendor that drops one
 fails there, with a name. `OptionsCompose.lua` is on that list for a reason the runner argues in
 place rather than leaving to the reader: `settings/Schema.lua` **composes** the master controls tab
 and every font, border and bar group out of it, so a re-vendor that dropped it would take fifty-odd

@@ -70,6 +70,14 @@ do
         -- no member, so nothing here calls it BY NAME -- which is exactly why it is listed: a
         -- re-vendor that dropped it would leave every page tab-less with nothing to read.
         "OptionsTabs.lua",
+        -- Three more attachment files the shell calls only when present (`if lib.__AttachX
+        -- then`), so a payload missing one raises nothing and the suite would go on green:
+        -- OptionsRegistry.lua (v1.62.0) defines RegisterOptionsPage, CreateOptionsPanel and
+        -- OpenOptionsPanel, which settings/OptionsSetup.lua and every page file reach for;
+        -- OptionsCombat.lua (v1.62.0) is the tab strip's combat lock and its cover; and
+        -- OptionsNav.lua (v1.61.0) is O.NavRail, which the Windows page draws. OptionsIds.lua
+        -- and OptionsIdList.lua are not listed: this addon draws no id widget.
+        "OptionsRegistry.lua", "OptionsCombat.lua", "OptionsNav.lua",
         -- core/LauncherSetup.lua takes its degradation stub without this one, so the whole
         -- launcher suite would measure the stub and pass.
         "Launcher.lua",
