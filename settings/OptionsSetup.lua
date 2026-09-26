@@ -408,6 +408,9 @@ if not lib then
         -- SelectTab, new at LibKa0s v1.36.0: reached only from a tab click on an already-rendered
         -- page. This addon does not adopt tab-scoped refresh, so the same inert no-op applies.
         "SelectTab",
+        -- NavRail, new at LibKa0s v1.61.0 (OptionsNav minor 1): drawn only by the Windows page's
+        -- render, which never runs with no library, so the same inert no-op applies.
+        "NavRail",
     }) do
         Helpers[name] = function() end
     end
