@@ -11,7 +11,7 @@ that outgrows a screen belongs in its topic doc with a summary and a link left b
 ## Overview
 
 
-Sixty non-vendored source files: 1 locale, 19 `core/`, 1 `defaults/`, 24 `modules/`, 15 `settings/`.
+Sixty-one non-vendored source files: 1 locale, 20 `core/`, 1 `defaults/`, 24 `modules/`, 15 `settings/`.
 
 The addon is built on the **private namespace** WoW hands each file. `core/MultiMeters.lua` calls
 `AceAddon-3.0:NewAddon(NS, addonName, …)`, which promotes that table in place — so **`NS` *is* the
