@@ -2150,8 +2150,8 @@ badge and any count quoted in the docs must agree with it.
 ### test_options_panel.lua (44)
 
 - Options: General is the FIRST page, above Windows
-- Options: every window page is marked as nested, and the two that are not are not
-- Options: the page HEADING keeps the plain name, mark or no mark
+- Options: the tree is General, Windows, Profiles, with no nesting mark
+- Options: no row's text sends the player to a retired window page
 - Options: the parent category is registered at CreateOptionsPanel time
 - Options: every page's subcategory is registered eagerly, before any panel is shown
 - Options: a page's ctx carries its page key
@@ -2189,7 +2189,7 @@ badge and any count quoted in the docs must agree with it.
 - Panel: the Master controls tab draws four pairs, Test mode beside Minimap button
 - Panel: the Master controls tab closes with the composer's two reset buttons
 - Panel: the Statistic colors tab says where its colors are actually worn
-- Panel: every window sub-page banners the active window, and Windows has no second picker
+- Panel: every Windows entry sits under the Active window band, and General has no second picker
 - Panel: choosing a window in the banner retargets every page and keeps the tab
 - Panel: Reset all settings' tooltip says it is the same act as Profiles -> Reset Profile
 - scheduleTimer schedules once through C_Timer.After with the given delay
@@ -2248,6 +2248,23 @@ badge and any count quoted in the docs must agree with it.
 - Columns: the page draws three tabs, Columns then Header text then Header background
 - Columns: the Header text tab renders exactly its group's rows, with no headings
 - Columns: leaving the Columns tab mid-drag cancels the reorder BEFORE the scroll clear
+
+### test_windows_rail.lua (14)
+
+- Windows rail: the seven entries register under their page keys, on both builds
+- Windows rail: the band, then the rail General..Columns, 120 wide, opening on General
+- Windows rail: the draw order is PageBanner, NavRail, TabStrip
+- Windows rail: General is one General tab holding the window's acts and a Copy settings from block
+- Windows rail: a rail click draws that entry's own strip under the same band
+- Windows rail: each entry keeps its own tab, including one chosen by the library's own strip click
+- Windows rail: choosing another window in the band keeps the entry and its tab
+- Windows rail: leaving Columns on the rail mid-drag cancels the reorder BEFORE the scroll clear
+- Windows rail: Defaults restores the active entry's rows for the active window; General keeps the name; Columns restores both halves
+- Windows rail: the page offers one Defaults button whose tooltip fits every entry
+- Windows rail: a former sub-page key opens Windows on that entry, drawn on its next show
+- Windows rail: SelectTab on an entry key selects the entry and its tab; the addon page stays the library's
+- Windows rail: selecting an entry is refused in combat and moves nothing
+- Windows rail: OpenOptionsPage in combat opens nothing and selects nothing
 
 ### test_degraded.lua (38)
 
@@ -2388,8 +2405,9 @@ badge and any count quoted in the docs must agree with it.
 | test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
+| test_windows_rail.lua | 14 |
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2078** |
+| **Total** | **2092** |

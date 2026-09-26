@@ -128,8 +128,8 @@ L["Layout"] = "Layout"
 L["Color"] = "Color"
 L["Icon"] = "Icon"
 L["All surfaces"] = "All surfaces"
-L["These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Bars), the numbers on it (Bars > Text style), and the column header strip (Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."] =
-    "These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Bars), the numbers on it (Bars > Text style), and the column header strip (Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."
+L["These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Windows > Bars), the numbers on it (Windows > Bars > Text style), and the column header strip (Windows > Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."] =
+    "These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Windows > Bars), the numbers on it (Windows > Bars > Text style), and the column header strip (Windows > Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."
 L["Profiles"] = "Profiles"
 
 -- ---------------------------------------------------------------------------
@@ -137,8 +137,8 @@ L["Profiles"] = "Profiles"
 -- ---------------------------------------------------------------------------
 
 L["Active window"] = "Active window"
-L["Which window the settings on every other page apply to. Each window is configured independently."] =
-    "Which window the settings on every other page apply to. Each window is configured independently."
+L["Which window every section of this page applies to. Each window is configured independently."] =
+    "Which window every section of this page applies to. Each window is configured independently."
 L["Window"] = "Window"
 L["Window name"] = "Window name"
 -- A rename to a blank (or all-whitespace) name, answered by WindowManager:Rename.
@@ -163,6 +163,23 @@ L["Copy every setting, or just one group."] = "Copy every setting, or just one g
 L["Everything"] = "Everything"
 L["Copy"] = "Copy"
 L["The last window cannot be deleted."] = "The last window cannot be deleted."
+L["Source window"] = "Source window"
+L["General has no settings to restore. The window's name is kept."] =
+    "General has no settings to restore. The window's name is kept."
+L["Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."] =
+    "Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."
+-- The Windows page's rail (MultiMeters#55): one tooltip per entry.
+L["Rename, create, duplicate or delete windows, and copy settings from another window."] =
+    "Rename, create, duplicate or delete windows, and copy settings from another window."
+L["This window's size, position, background, border and rows."] =
+    "This window's size, position, background, border and rows."
+L["This window's title bar, its text and its buttons."] = "This window's title bar, its text and its buttons."
+L["How this window's bars, their text and their icons look."] =
+    "How this window's bars, their text and their icons look."
+L["What this window's tooltip shows, and how it looks."] = "What this window's tooltip shows, and how it looks."
+L["Where and when this window is shown."] = "Where and when this window is shown."
+L["Which statistics this window shows, in what order, and how the column headers look."] =
+    "Which statistics this window shows, in what order, and how the column headers look."
 L["Window '%s' created."] = "Window '%s' created."
 L["Window '%s' deleted."] = "Window '%s' deleted."
 L["Copied %s from '%s'."] = "Copied %s from '%s'."
@@ -340,8 +357,8 @@ L["Color of the hairline under the title bar, used when the mode above is Custom
     "Color of the hairline under the title bar, used when the mode above is Custom color."
 L["How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."] =
     "How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."
-L["Color drawn behind the title bar. The column-header strip has its own, on the Columns page."] =
-    "Color drawn behind the title bar. The column-header strip has its own, on the Columns page."
+L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns."] =
+    "Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns."
 L["Alignment"] = "Alignment"
 L["Where the header text sits horizontally."] = "Where the header text sits horizontally."
 
@@ -648,8 +665,6 @@ L["A window must keep at least one column."] =
 L["Click to hide this column"] = "Click to hide this column"
 L["Click to show this column"] = "Click to show this column"
 L["Drag to reorder"] = "Drag to reorder"
-L["Restore the statistics this window ships with, ticked and in their shipped order."] =
-    "Restore the statistics this window ships with, ticked and in their shipped order."
 L["Every statistic this build offers. Ticked ones are the columns this window shows, left to right, top to bottom. Drag a block by its handle to reorder them. Columns can only be changed out of combat."] =
     "Every statistic this build offers. Ticked ones are the columns this window shows, left to right, top to bottom. Drag a block by its handle to reorder them. Columns can only be changed out of combat."
 
@@ -716,19 +731,19 @@ L["Enable Multi Meters"] = "Enable Multi Meters"
 L["Master switch for the addon. When off, no window is drawn and no data is read."] =
     "Master switch for the addon. When off, no window is drawn and no data is read."
 L["General visibility"] = "General visibility"
-L["When this addon's windows are shown at all, whatever one window's own Visibility page says. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."] =
-    "When this addon's windows are shown at all, whatever one window's own Visibility page says. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."
+L["When this addon's windows are shown at all, whatever one window's own settings under Windows > Visibility say. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."] =
+    "When this addon's windows are shown at all, whatever one window's own settings under Windows > Visibility say. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."
 L["Only in combat"] = "Only in combat"
 L["Only out of combat"] = "Only out of combat"
 L["Master scale"] = "Master scale"
-L["Scale multiplier for every window, multiplied into each window's own Scale on the Frame page. A window at 0.80 under a master of 0.50 draws at 0.40."] =
-    "Scale multiplier for every window, multiplied into each window's own Scale on the Frame page. A window at 0.80 under a master of 0.50 draws at 0.40."
+L["Scale multiplier for every window, multiplied into each window's own Scale under Windows > Frame. A window at 0.80 under a master of 0.50 draws at 0.40."] =
+    "Scale multiplier for every window, multiplied into each window's own Scale under Windows > Frame. A window at 0.80 under a master of 0.50 draws at 0.40."
 L["Master alpha"] = "Master alpha"
-L["Opacity multiplier for every window, multiplied into each window's own Opacity on the Frame page."] =
-    "Opacity multiplier for every window, multiplied into each window's own Opacity on the Frame page."
+L["Opacity multiplier for every window, multiplied into each window's own Opacity under Windows > Frame."] =
+    "Opacity multiplier for every window, multiplied into each window's own Opacity under Windows > Frame."
 L["Lock frame"] = "Lock frame"
-L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Frame page, or the lock button in its header) still locks it on its own."] =
-    "Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Frame page, or the lock button in its header) still locks it on its own."
+L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Windows > Frame, or the lock button in its header) still locks it on its own."] =
+    "Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Windows > Frame, or the lock button in its header) still locks it on its own."
 -- Said once, appended to every non-palette color swatch's tooltip
 -- (settings/Schema.lua's SWATCH_NOTE). options-ui-§17 forbids graying a swatch
 -- out under a non-custom mode, because its ALPHA is still read.

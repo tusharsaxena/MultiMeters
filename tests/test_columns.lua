@@ -37,7 +37,7 @@ local T = _G.MULTIMETERS_TEST
 local test = T.test
 local assertEqual, assertTrue, assertFalse = T.assertEqual, T.assertTrue, T.assertFalse
 
-local PANEL = "MultiMetersColumnsPanel"
+local PANEL = "MultiMetersWindowsPanel"
 
 local function columnsPanel(inst)
     for _, ctx in ipairs(inst.NS.Helpers.__panels()) do
@@ -87,11 +87,14 @@ end
 local function openPage(inst)
     inst = inst or T.load()
     local ctx = columnsPanel(inst)
-    assertTrue(ctx ~= nil, "the Columns page did not register a panel")
+    assertTrue(ctx ~= nil, "the Windows page did not register a panel")
 
     ctx.panel:Hide()
     ctx.panel:Show()
-    assertTrue(ctx._rendered, "the Columns page did not render; the renderer raised "
+    -- The editor is the Windows page's Columns entry (MultiMeters#55).
+    assertTrue(inst.NS.Helpers.SelectSection("columns"), "the Windows page lists no Columns entry")
+    assertEqual(ctx.activeSection, "columns")
+    assertTrue(ctx._rendered, "the Windows page did not render; the renderer raised "
         .. "and was swallowed by pcall")
 
     return inst, ctx, blocksNow(inst)

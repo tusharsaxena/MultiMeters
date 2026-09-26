@@ -1,6 +1,6 @@
 -- settings/Columns.lua
 --
--- The Columns page: one block per statistic, ticked or not, in the order the
+-- The Windows page's Columns entry: one block per statistic, ticked or not, in the order the
 -- window draws them left to right.
 --
 -- ---------------------------------------------------------------------------
@@ -302,27 +302,23 @@ end
 --
 -- NOT H.RenderTabbedSchema's host tabs (issue #53, declined). Options minor 4's opts.tabs could
 -- carry the block editor, but that function's tab click runs its own ClearScroll and then
--- re-enters itself, not this render(), so NS.CancelReorder could no longer run before the clear
--- (see the top of render below). It needs a hook that runs before the clear, and it has none.
+-- re-enters itself, not the Windows page's renderer, so NS.CancelReorder could no longer run
+-- before the clear (Helpers.RenderWindowPage cancels first). It needs a hook that runs before
+-- the clear, and it has none.
 -- tests/test_columns.lua pins the three tabs and the cancel-then-clear order.
 local TAB_COLUMNS = L["Columns"]
 local TAB_HEADER_TEXT = L["Header text"]
 local TAB_HEADER_BG = L["Header background"]
 
-local function render(ctx)
-    -- BEFORE ClearScroll, not after. ClearScroll hands every AceGUI container on this page back to
-    -- a process-wide pool, and a drag handle is parented to one of them until the controller is
-    -- canceled -- so canceling afterwards means some unrelated widget has already been handed a
-    -- frame with a live handle on it.
-    if NS.CancelReorder then NS.CancelReorder(ctx) end
-    H.ClearScroll(ctx)
-
+--- The Columns entry's strip and body, drawn under the band and the rail by the
+--- Windows page's renderer (settings/OptionsSetup.lua, Helpers.RenderWindowPage).
+--- The reorder cancel and the scroll clear are the renderer's, in that order.
+local function renderSection(ctx)
     if NS.State and NS.State.debug and NS.Debug then
         local w0 = activeWindow()
         NS.Debug("Columns", "paint window=%s", tostring(w0 and w0.id))
     end
 
-    H.WindowBanner(ctx)
     H.TabStrip(ctx, {
         tabs = {
             { key = TAB_COLUMNS,    label = TAB_COLUMNS },
@@ -333,10 +329,9 @@ local function render(ctx)
         onSelect = function(key)
             if key == ctx.activeTab then return end
             ctx.activeTab = key
-            -- No H.ClearScroll here: RefreshPanel(ctx, true) re-enters render(), which clears the
-            -- scroll AFTER canceling the reorder controller (see the comment at the top of render
-            -- above). Clearing here too would run BEFORE the cancel on a tab click -- the one path
-            -- that matters, since this is the page with a live reorder controller.
+            -- No H.ClearScroll here: RefreshPanel(ctx, true) re-enters the page's
+            -- renderer, which cancels the reorder controller and THEN clears the
+            -- scroll. Clearing here too would run BEFORE the cancel on a tab click.
             H.RefreshPanel(ctx, true)
         end,
     })
@@ -349,54 +344,27 @@ local function render(ctx)
     else
         renderBlockEditor(ctx)
     end
-
-    H.Relayout(ctx)
 end
 
-local function Build(mainCategory)
-    if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
-    if not (H and H.CreatePanel) then return nil end
-
-    -- A DEFAULTS BUTTON THAT DOES ITS OWN WORK. The page carried none for as long
-    -- as the column list was a subset the player assembled: it is not a set of
-    -- schema rows, so H.RestoreDefaults -- which walks the rows of a page -- would
-    -- have found nothing to restore and done nothing at all.
-    --
-    -- The array is the catalog now, and that gives the button something exact to
-    -- mean: the statistics that ship ticked, in the order they ship in. Which is
-    -- a thing a player can want and previously could only get by making a whole
-    -- new window.
-    local ctx = H.CreatePanel("MultiMetersColumnsPanel", L["Columns"], {
-        pageKey          = PAGE,
-        defaultsButton   = true,
-        defaultsTooltip  = L["Restore the statistics this window ships with, ticked and in their shipped order, and the header text and background settings on this page to their shipped values."],
-    })
-
-    -- TWO RESETS BEHIND ONE BUTTON, because this page carries both a bespoke array (the column
-    -- list, addressable only as a whole -- see restoreShippedColumns above) and eight
-    -- window.columnHeader.* schema rows on its other two tabs. options-ui-§13 makes the Defaults
-    -- button page-wide, not tab-wide, so both halves have to come back regardless of which tab is
-    -- showing when it is clicked.
-    --
-    -- ONE LOG LINE FOR BOTH (debug-logging-§10). The page brackets the pair itself, so the array
-    -- write sits in the same bracket as the library's page walk -- whose own bracket nests inside
-    -- this one -- and the press logs a single `[Set] reset columns: N rows`, the array counted as
-    -- one row when it moved. Left outside, the array logged a `[Set] window.columns` line of its own.
-    ctx.panel.defaultsOnClick = function()
-        NS.Bulk.run("reset", PAGE, function()
-            restoreShippedColumns()
-            H.RestoreDefaults(PAGE, ctx)
-        end)
-    end
-
-    H.SetRenderer(ctx, function(c)
-        c.unit = NS.State and NS.State.activeWindowId or nil
-        render(c)
+--- The Columns Defaults: TWO RESETS BEHIND ONE BUTTON, because this entry carries both a bespoke
+--- array (the column list, addressable only as a whole -- see restoreShippedColumns above) and
+--- eight window.columnHeader.* schema rows on its other two tabs. The button restores the whole
+--- entry, not the visible tab (options-ui-§13), so both halves come back whichever tab is showing.
+---
+--- ONE LOG LINE FOR BOTH (debug-logging-§10). The pair is bracketed here, so the array write sits
+--- in the same bracket as the library's page walk -- whose own bracket nests inside this one --
+--- and the press logs a single `[Set] reset columns: N rows`, the array counted as one row when it
+--- moved.
+local function restoreDefaults(ctx)
+    NS.Bulk.run("reset", PAGE, function()
+        restoreShippedColumns()
+        H.RestoreDefaults(PAGE, ctx)
     end)
-
-    return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, NS.SubPageLabel(L["Columns"]))
 end
 
-if NS.RegisterOptionsPage then
-    NS.RegisterOptionsPage(PAGE, L["Columns"], Build)
-end
+-- The Columns entry of the Windows page (MultiMeters#55).
+NS.RegisterWindowSection(PAGE, L["Columns"], {
+    tooltip  = L["Which statistics this window shows, in what order, and how the column headers look."],
+    render   = renderSection,
+    defaults = restoreDefaults,
+})

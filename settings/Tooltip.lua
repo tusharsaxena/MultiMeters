@@ -1,6 +1,6 @@
 -- settings/Tooltip.lua
 --
--- The Tooltip page: the per-cell spell breakdown, the all-statistics summary on
+-- The Windows page's Tooltip entry: the per-cell spell breakdown, the all-statistics summary on
 -- a player's name, and where the tooltip anchors.
 --
 -- Pure schema — every widget is a `window.tooltip.*` row in NS.Schema.
@@ -23,30 +23,9 @@ local _, NS = ...
 
 local L = NS.L
 
-local PAGE = "tooltip"
-
-local function Build(mainCategory)
-    if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
-
-    local H = NS.Helpers
-    if not (H and H.CreatePanel) then return nil end
-
-    local ctx = H.CreatePanel("MultiMetersTooltipPanel", L["Tooltip"], {
-        pageKey        = PAGE,
-        defaultsButton = true,
-    })
-    ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end
-
-    H.SetRenderer(ctx, function(c)
-        c.unit = NS.State and NS.State.activeWindowId or nil
-        H.ClearScroll(c)
-        H.WindowBanner(c)
-        H.RenderTabbedSchema(c, PAGE)
-    end)
-
-    return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, NS.SubPageLabel(L["Tooltip"]))
-end
-
-if NS.RegisterOptionsPage then
-    NS.RegisterOptionsPage(PAGE, L["Tooltip"], Build)
-end
+-- The Tooltip entry of the Windows page (MultiMeters#55). Its rows are drawn by the page's
+-- renderer (settings/OptionsSetup.lua, Helpers.RenderWindowPage) through
+-- H.RenderTabbedSchema(ctx, "tooltip"): the entry's tabs are the rows' groups.
+NS.RegisterWindowSection("tooltip", L["Tooltip"], {
+    tooltip = L["What this window's tooltip shows, and how it looks."],
+})

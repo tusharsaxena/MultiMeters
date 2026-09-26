@@ -59,7 +59,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret. |
 | `modules/` display | `WindowManager`, `Window` (+ `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window, one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
-| `settings/` | `Schema_Compose` → `Schema` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 9 pages | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, and the path and write seams. `ColumnBlocks` is the Columns page's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
+| `settings/` | `Schema_Compose` → `Schema` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 3 pages and 6 Windows-page entries | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, and the path and write seams. `ColumnBlocks` is the Columns entry's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
 
 Thirteen of those files were created on 2026-09-09 and **none of them is a new module.** They are
 `layout-§1` peels of the seven source files that stood over the 1500-line cap, each cut along a seam
@@ -337,7 +337,7 @@ issue needs a picture, and expect it to empty itself again.
 | `scope.md` | What the addon does and deliberately does not, including why scoring cannot be computed in combat |
 | `module-map.md` | Every non-vendored file, its responsibility, TOC load order, the AceAddon lifecycle |
 | `schema.md` | The persisted shape, every default, and the migration seam |
-| `settings-panel.md` | The nine pages, per-option behavior, and the write seam |
+| `settings-panel.md` | The three pages (the Windows page carries seven entries on a nav rail), per-option behavior, and the write seam |
 | `data-flow.md` | `C_DamageMeter` → pixel, and the secret-value rules that shape every hop |
 | `common-tasks.md` | Recipes for the changes made most often here |
 

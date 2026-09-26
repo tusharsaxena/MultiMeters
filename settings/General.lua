@@ -235,7 +235,7 @@ local function Build(mainCategory)
     local function afterStatColors(c)
         local scroll = H.EnsureScroll and H.EnsureScroll(c)
         if scroll and H.AddSpacer then H.AddSpacer(scroll, NOTE_GAP) end
-        H.TextRow(c, L["These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Bars), the numbers on it (Bars > Text style), and the column header strip (Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."])
+        H.TextRow(c, L["These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Windows > Bars), the numbers on it (Windows > Bars > Text style), and the column header strip (Windows > Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."])
         if H.Relayout then H.Relayout(c) end
     end
 

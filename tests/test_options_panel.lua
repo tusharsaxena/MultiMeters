@@ -34,12 +34,9 @@ local NS = T.NS
 -- registering is a failure rather than a shorter list that still agrees with
 -- itself.
 -- GENERAL IS FIRST, above Windows, because it is the only page that is not
--- about one window. The order here is the TOC's registration order, which is the
--- order the tree draws.
-local PAGES = {
-    "general", "windows", "frame", "header", "bars",
-    "tooltip", "visibility", "columns", "profiles",
-}
+-- about one window. The order here is the TOC's registration order, which is the order the tree
+-- draws; the six window pages are entries of Windows since MultiMeters#55.
+local PAGES = { "general", "windows", "profiles" }
 
 -- The canvas frame name each page builds under. It dates from the years
 -- `ctx.pageKey` was unset (see the `carries its page key` case below), when
@@ -49,12 +46,6 @@ local PAGES = {
 -- case exists to check.
 local PANEL_NAME = {
     windows    = "MultiMetersWindowsPanel",
-    frame      = "MultiMetersFramePanel",
-    header     = "MultiMetersHeaderPanel",
-    bars       = "MultiMetersBarsPanel",
-    tooltip    = "MultiMetersTooltipPanel",
-    visibility = "MultiMetersVisibilityPanel",
-    columns    = "MultiMetersColumnsPanel",
     general    = "MultiMetersGeneralPanel",
     profiles   = "MultiMetersProfilesPanel",
 }
@@ -99,6 +90,15 @@ local function showPage(inst, pageKey)
     return ctx
 end
 
+--- Show the Windows page on one of its entries (MultiMeters#55): the six window pages are entries of
+--- it now, so a case that drove a sub-page drives its entry.
+local function showSection(inst, key)
+    local ctx = showPage(inst, "windows")
+    assertTrue(inst.NS.Helpers.SelectSection(key), "the Windows page lists no entry " .. key)
+    assertEqual(ctx.activeSection, key)
+    return ctx
+end
+
 -- ---------------------------------------------------------------------------
 -- Eager registration
 -- ---------------------------------------------------------------------------
@@ -113,46 +113,32 @@ test("Options: General is the FIRST page, above Windows", function()
     assertEqual(built[2] and built[2].key, "windows")
 end)
 
-test("Options: every window page is marked as nested, and the two that are not are not", function()
-    -- Blizzard's Settings tree draws every canvas subcategory at the SAME depth,
-    -- so nine pages that silently retarget when the Windows picker moves would
-    -- read as peers of the two that never do. The mark is typography, prefixed
-    -- to the TREE LABEL only.
-    -- red under: marking General or Profiles, or dropping the mark from a page
-    -- the picker retargets.
-    -- INDENT PLUS HYPHEN, and the exact string matters: it shipped once as
-    -- U+21B3 (Friz Quadrata drew a hollow box) and once as "|- " (which read as
-    -- a bulleted list rather than as nesting). Leading whitespace is also the
-    -- one part of this a toolkit could silently TRIM, so this is the case that
-    -- would notice a mark that stopped arriving whole.
-    local MARK = "  - "
-    local NESTED = {
-        frame = true, header = true, bars = true,
-        tooltip = true, visibility = true, columns = true,
-    }
-
-    local labels = T.mocks.__subcategories
-    for _, page in ipairs(NS.Helpers.__pages()) do
-        local marked = labels[MARK .. page.name] ~= nil
-        local plain  = labels[page.name] ~= nil
-        if NESTED[page.key] then
-            assertTrue(marked, page.key .. " is edited against the selected window and is not marked")
-            assertFalse(plain, page.key .. " registered an unmarked label as well")
-        else
-            assertTrue(plain, page.key .. " must keep its plain label")
-            assertFalse(marked, page.key .. " is not about one window and must not be marked")
-        end
-    end
+test("Options: the tree is General, Windows, Profiles, with no nesting mark", function()
+    -- MultiMeters#55: the six window pages are entries of the Windows page, so nothing is nested and
+    -- the D6 mark ("  - ") went with them.
+    -- red under: a window page still registering a Blizzard category of its own.
+    local names = {}
+    for name in pairs(T.mocks.__subcategories) do names[#names + 1] = name end
+    table.sort(names)
+    local want = { NS.L["General"], NS.L["Windows"], NS.L["Profiles"] }
+    table.sort(want)
+    assertEqual(table.concat(names, "|"), table.concat(want, "|"))
 end)
 
-test("Options: the page HEADING keeps the plain name, mark or no mark", function()
-    -- The mark is an indent in a tree. Written across the top of the page it
-    -- reads as a typo, and the breadcrumb inherits the panel's own title.
-    -- red under: passing SubPageLabel to CreatePanel as well.
-    local ctx = panelFor(T, "frame")
-    assertTrue(ctx ~= nil)
-    assertEqual(ctx.panel.name, NS.L["Frame"],
-        "the canvas panel's own name carries the mark")
+test("Options: no row's text sends the player to a retired window page", function()
+    -- MultiMeters#55 (02_SPEC R15): Frame, Header, Bars, Tooltip, Visibility and Columns are
+    -- entries of the Windows page, so a desc that says "the Visibility page" names a place the tree
+    -- no longer has. The wording is "Windows > <Entry>".
+    -- red under: master.visibility's desc still saying "one window's own Visibility page".
+    local RETIRED = { "Frame", "Header", "Bars", "Tooltip", "Visibility", "Columns" }
+    for _, row in ipairs(NS.Schema) do
+        for _, text in ipairs({ row.label or "", row.desc or "" }) do
+            for _, name in ipairs(RETIRED) do
+                assertTrue(not text:find(name .. " page", 1, true),
+                    tostring(row.path) .. " names the retired " .. name .. " page: " .. text)
+            end
+        end
+    end
 end)
 
 test("Options: the parent category is registered at CreateOptionsPanel time", function()
@@ -207,7 +193,7 @@ end)
 
 test("Options: the body is NOT built until the panel's first OnShow", function()
     local inst = T.load()
-    local ctx = panelFor(inst, "frame")
+    local ctx = panelFor(inst, "windows")
     assertFalse(ctx._rendered, "the body rendered at registration time")
     assertEqual(ctx.scroll, nil, "the AceGUI ScrollFrame was created before the panel had a width")
 
@@ -222,7 +208,7 @@ end)
 
 test("Options: a second OnShow does NOT re-render an already-rendered page", function()
     local inst = T.load()
-    local ctx = showPage(inst, "frame")
+    local ctx = showSection(inst, "frame")
     local after = #aceGUI(inst).__created
 
     ctx.panel:Hide()
@@ -234,7 +220,7 @@ end)
 
 test("Options: a hidden page is marked dirty and re-renders on its NEXT show", function()
     local inst = T.load()
-    local ctx = showPage(inst, "frame")
+    local ctx = showSection(inst, "frame")
     ctx.panel:Hide()
 
     inst.NS.Helpers.RefreshAllPanels()
@@ -252,8 +238,8 @@ end)
 
 test("Options: the Defaults button is built on first show, not at registration", function()
     local inst = T.load()
-    local ctx = panelFor(inst, "frame")
-    assertTrue(ctx.panel.wantsDefaultsButton, "the Frame page asks for a Defaults button")
+    local ctx = panelFor(inst, "windows")
+    assertTrue(ctx.panel.wantsDefaultsButton, "the Windows page asks for a Defaults button")
     assertEqual(ctx.panel.defaultsBtn, nil,
         "a button built inside the load window misses every skinning hook installed after it")
 
@@ -265,7 +251,7 @@ end)
 
 test("Options: EnsureDefaultsButton runs OUTSIDE the already-rendered guard", function()
     local inst = T.load()
-    local ctx = showPage(inst, "frame")
+    local ctx = showSection(inst, "frame")
     assertTrue(ctx.panel.defaultsBtn ~= nil)
 
     -- Drop the button and show the page again. The body is already rendered and
@@ -284,8 +270,9 @@ test("Options: EnsureDefaultsButton runs OUTSIDE the already-rendered guard", fu
 end)
 
 test("Options: a page that declines a Defaults button never grows one", function()
-    -- The Profiles page's rows are user data, and the Windows page's are the registry -- restoring
-    -- either would delete something the player made rather than reset a preference.
+    -- The Profiles page's rows are user data: restoring them would delete something the player made
+    -- rather than reset a preference. The Windows page offers Defaults since MultiMeters#55 (the
+    -- active entry's rows for the active window; tests/test_windows_rail.lua).
     --
     -- COLUMNS IS NO LONGER AMONG THEM. It declined for as long as its list was a subset the player
     -- assembled, when there was nothing per-row to restore and the library's row walk would have
@@ -293,8 +280,8 @@ test("Options: a page that declines a Defaults button never grows one", function
     -- statistics that ship ticked, in their shipped order -- and the page supplies its own handler
     -- for it, because a row walk still cannot reach an array.
     local inst = T.load()
-    for _, key in ipairs({ "profiles", "windows" }) do
-        local ctx = showPage(inst, key)
+    for _, key in ipairs({ "profiles" }) do
+        local ctx = key == "profiles" and showPage(inst, key) or (key == "general" and showPage(inst, key) or showSection(inst, key))
         assertFalse(ctx.panel.wantsDefaultsButton, key .. " asked for a Defaults button")
         assertEqual(ctx.panel.defaultsBtn, nil, key .. " grew a Defaults button anyway")
     end
@@ -306,7 +293,7 @@ test("Options: the Columns page's Defaults button restores the SHIPPED column li
     -- red under: defaultsOnClick left pointing at H.RestoreDefaults.
     local inst = T.load()
     local NSi = inst.NS
-    local ctx = showPage(inst, "columns")
+    local ctx = showSection(inst, "columns")
 
     assertTrue(ctx.panel.wantsDefaultsButton, "the Columns page must offer a Defaults button")
     assertTrue(ctx.panel.defaultsOnClick ~= nil, "and wire a handler to it")
@@ -337,7 +324,7 @@ function()
     -- are not the tab on screen. red under: defaultsOnClick pointed only at restoreShippedColumns.
     local inst = T.load()
     local NSi = inst.NS
-    local ctx = showPage(inst, "columns")
+    local ctx = showSection(inst, "columns")
 
     assertTrue(ctx.panel.defaultsOnClick ~= nil, "the Columns page must wire a Defaults handler")
 
@@ -393,7 +380,7 @@ function()
     local inst = T.load()
     local NSi = inst.NS
     for _, key in ipairs({ "general", "frame", "header", "bars", "tooltip", "visibility" }) do
-        local ctx = showPage(inst, key)
+        local ctx = key == "profiles" and showPage(inst, key) or (key == "general" and showPage(inst, key) or showSection(inst, key))
         local dirty
         for _, row in ipairs(NSi.SchemaForPage(key)) do
             if row.type == "bool" and not row.sessionOnly and not row.hidden then
@@ -424,7 +411,7 @@ function()
     -- `[Set] window.columns = N shown`), or a nested close that emits (two lines).
     local inst = T.load()
     local NSi = inst.NS
-    local ctx = showPage(inst, "columns")
+    local ctx = showSection(inst, "columns")
 
     local shipped = NSi.DefaultWindow(NSi.Database.GetWindows()[1].id).columns
     local scrambled = {}
@@ -446,7 +433,7 @@ end)
 test("Options: the canvas footer's Defaults control reaches the same handler as the header button",
 function()
     local inst = T.load()
-    local ctx = showPage(inst, "frame")
+    local ctx = showSection(inst, "frame")
     local clicks = 0
     ctx.panel.defaultsOnClick = function() clicks = clicks + 1 end
     ctx.panel.OnDefault()
@@ -522,7 +509,7 @@ test("Options: a page reached from the Blizzard sidebar mid-combat is COVERED an
     -- window; that close ran Blizzard's close-and-commit path from addon code, tainted. Now the page
     -- is covered, nothing renders, the window is left alone, and the user reads one gray line.
     local inst = T.load()
-    local ctx = panelFor(inst, "frame")
+    local ctx = panelFor(inst, "windows")
     local spy = spyWindowClose(inst)
     inst.mocks.setRestricted(true)
     local chatBefore = #inst.mocks.__chat
@@ -672,9 +659,7 @@ end)
 
 test("Options: a widget's set() routes through NS.SetByPath", function()
     local inst = T.load()
-    local ctx = panelFor(inst, "frame")
-    ctx.panel:Hide()
-    ctx.panel:Show()
+    local ctx = showSection(inst, "frame")
 
     -- Width is on Size and position, the page's SECOND tab, so the tab is clicked and the
     -- widgets counted after it: the strip re-renders on select, and anything created before
@@ -708,10 +693,9 @@ test("Options: a checkbox's set() routes through NS.SetByPath too", function()
     -- case used before the settings redesign moved it off Frame, now at its new path -- matching
     -- the file's own idiom above (panelFor, capture `before`, THEN render) rather than showPage,
     -- which renders before `before` is captured and would leave nothing in widgetsSince.
-    local ctx = panelFor(inst, "header")
+    showPage(inst, "windows")
     local before = #aceGUI(inst).__created
-    ctx.panel:Hide()
-    ctx.panel:Show()
+    assertTrue(inst.NS.Helpers.SelectSection("header"), "the Windows page lists no Header entry")
 
     local cb = findWidget(widgetsSince(inst, before), "CheckBox", inst.NS.L["Show title bar"])
     assertTrue(cb ~= nil)
@@ -921,7 +905,7 @@ local TABBED = {
     -- Ka0s addon, so that "how do I turn this off, how do I make it smaller, how
     -- do I put it back" is one place under one name.
     general    = "Master controls",
-    windows    = "Window",
+    windows    = "General",
     frame      = "General",
     header     = "Title bar",
     bars       = "Bar",
@@ -936,7 +920,7 @@ test("Panel: every tabbed page opens on its first tab and draws a strip", functi
     local inst = T.load()
     local L = inst.NS.L
     for page, firstTab in pairs(TABBED) do
-        local ctx = showPage(inst, page)
+        local ctx = page == "general" and showPage(inst, page) or showSection(inst, page)
         assertEqual(ctx.activeTab, L[firstTab], page .. ": opens on its first tab")
         assertTrue(#(ctx.__tabKids or {}) >= 2, page .. ": drew a strip")
     end
@@ -960,7 +944,7 @@ function()
     -- red under: rendering the new group without ClearScroll, which appends it under the old.
     local inst = T.load()
     local L = inst.NS.L
-    local ctx = showPage(inst, "frame")
+    local ctx = showSection(inst, "frame")
 
     local function labeled(name)
         for _, w in ipairs(ctx.scroll and ctx.scroll.children or {}) do
@@ -1078,7 +1062,7 @@ test("Panel: the Statistic colors tab says where its colors are actually worn", 
         return table.concat(out, "\n")
     end
 
-    local note = L["These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Bars), the numbers on it (Bars > Text style), and the column header strip (Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."]
+    local note = L["These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Windows > Bars), the numbers on it (Windows > Bars > Text style), and the column header strip (Windows > Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."]
     assertTrue(textOnPage():find(note, 1, true) == nil,
         "the note is on the Master controls tab, which is not the tab it describes")
 
@@ -1091,7 +1075,7 @@ test("Panel: the Statistic colors tab says where its colors are actually worn", 
         "the Statistic colors tab drew no note saying where its colors are worn")
 end)
 
-test("Panel: every window sub-page banners the active window, and Windows has no second picker",
+test("Panel: every Windows entry sits under the Active window band, and General has no second picker",
 function()
     -- The banner is the ONLY picker (options-ui-§14). A page that kept its own would be a
     -- second writer of one piece of session state -- a synchronization problem invented by the
@@ -1099,9 +1083,9 @@ function()
     -- red under: leaving the Active window dropdown on the Windows page, or bannering only some
     -- of the sub-pages.
     local inst = T.load()
-    local SUBPAGES = { "windows", "frame", "header", "bars", "tooltip", "visibility", "columns" }
-    for _, page in ipairs(SUBPAGES) do
-        local ctx = showPage(inst, page)
+    local ENTRIES = { "windows", "frame", "header", "bars", "tooltip", "visibility", "columns" }
+    for _, page in ipairs(ENTRIES) do
+        local ctx = page == "general" and showPage(inst, page) or showSection(inst, page)
         assertTrue(ctx.__bannerHeight ~= nil and ctx.__bannerHeight > 0,
             page .. ": drew no banner")
     end
@@ -1128,7 +1112,7 @@ test("Panel: choosing a window in the banner retargets every page and keeps the 
     assertTrue(inst.NS.WindowManager:Create("Second"))
     local list = inst.NS.Database.GetWindows()
 
-    local ctx = showPage(inst, "bars")
+    local ctx = showSection(inst, "bars")
     ctx.__tabKids[3]:__fire("OnClick")
     assertEqual(ctx.activeTab, inst.NS.L["Border"])
 

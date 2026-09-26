@@ -59,25 +59,32 @@ that filter drops `hidden` rows before grouping runs).
 
 | # | Page | Panel key | Schema rows | Tabs | Defaults | Banner | What is on it |
 |---|---|---|---|---|---|---|---|
-| 1 | General | `general` | 22 (18 visible + 4 `hidden`) | 3 — **Master controls**, **Behavior**, **Statistic colors** | yes | no | **Master controls** — `options-ui-§15`'s canonical set, first on this page in every Ka0s addon and [composed rather than written out](#the-composed-blocks): Enable Multi Meters, General visibility, Master scale, Master alpha, Lock frame, Debug console, Minimap button, Test mode — and nothing of this addon's own after them, closed by the **Reset position** / **Reset all settings** button pair the composer hands back, with no explanatory prose under it. **Behavior** holds the two rows that used to sit on Master controls, **Merge pets** and **Refresh interval** (both addon-wide since schemaVersion 5): `options-ui-§15` fixes Master controls' set, and neither of those is canonical or about turning the addon up and down — one says what a pet's damage IS, the other is a refresh rate. Master scale and Master alpha are ADDON-WIDE multipliers, not the per-window scale and opacity on the Frame page, and **Lock frame** is a session-only view over every window's own lock rather than a second lock — see [The Master controls tab](#the-master-controls-tab). **Statistic colors** — one swatch per entry of `Constants.STAT_COLORS`, [generated rather than written out](#the-statistic-palette), read back through `NS.StatColor`, with a note under the grid saying where those colors are actually worn (drawn through the same `afterGroup` hook, keyed to this tab). A fourth schema group, **Export**, holds the export modal's four remembered choices — all four `hidden`, so the group is real for `/mm list` and the schema-vs-defaults validator and never appears as a tab: this is the one *section that is not a tab*, and a wholly hidden group is not a strip-less page. General is not a window page, so it draws no banner. |
-| 2 | Windows | `windows` | 1 (`window.name`) | 2 bespoke — **Window**, **Copy from** | no | yes | The picker, New / Duplicate / Delete, and Copy settings from, on the Window tab; the source picker, group filter and Copy button on Copy from. Content is bespoke rather than schema rows, so the strip is drawn directly with `H.TabStrip` rather than `RenderTabbedSchema`, which has nothing here to partition. |
-| 3 | `  - `Frame | `frame` | 26 | 4 — General, Size and position, Background and border, Row | yes | yes | **General** — the two window-wide toggles under a *Window* heading, then the four **meta rows** (Color mode, Bar texture, Font, Font outline, each "(all surfaces)") under an *All surfaces* heading, which broadcast one value to every surface with a setting of that kind and are read by nothing. The two headings are what stop a broadcast being mistaken for a font group. **Size and position** — geometry, scale, opacity, strata and padding. **Background and border** — the fill inside the window under a *Background* heading and the LSM edge around it under a *Border* heading, both composed; the merge is deliberate and the headings are what `options-ui-§7` adds to it. **Row** — height, count, spacing and growth, then always-show-self, highlight-self, mouseover highlight and the alternating stripe. |
-| 4 | `  - `Header | `header` | 36 (30 visible + 6 `hidden`) | 4 — Title bar, Title text, Controls, Button style | yes | yes | **Title bar** — three headings: *Layout* (whether it draws, its alignment and its height), *Background* (the one swatch in the addon with no color mode beside it — a [documented deviation](ARCHITECTURE.md#documented-deviations)), and *Divider* (on/off, thickness, color and a mode whose default `skin` writes nothing at all, so the shared skin still owns the line unless the player takes it). **Title text** — `options-ui-§16`'s composed font block, all six axes, with the color mode (class or custom, never per-statistic) immediately right of the swatch. **Controls** — every toggle for the icon strip, **in the order the strip reads left to right** and each carrying **its own icon in front of its label** (`controlLabel`), plus six `hidden` rows the window's own header controls write: `window.frame.minimized`, the sort and session type (`window.data.sessionType`, `.sortColumn`, `.sortMode`, `.sortAscending`, issue #50) and the pinned segment (`window.data.sessionID`). **Button style** — three headings: *Icon* (reveal and size), *Color* (rest color + its mode, then hover color + its mode — each state one line, so the swatch and its companion can never be split), *Opacity* (rest and hover, read across). |
-| 5 | `  - `Bars | `bars` | 29 | 6 — Bar, Background, Border, Text content, Text style, Icons | yes | yes | **Everything drawn inside a cell**, and four of the six tabs are composed blocks. **Bar** — `options-ui-§16`'s bar group (texture, opacity, color, mode) plus fill direction and **Animate bar fills** (issue #23) appended after it. **Background** — a backdrop with no fill texture, so a color pair and its opacity, never a bar group. **Border** — the *Show border* toggle leading `options-ui-§16`'s border group, whose color mode is new here. **Text content** — the two text slots, number format, death timestamps and max name length. **Text style** — the composed font block plus text opacity. **Icons** — the row icon, its size and which side of the name it sits on. |
-| 6 | `  - `Tooltip | `tooltip` | 30 | 6 — General, Bar, Bar background, Bar border, Text, Contents | yes | yes | **General** — anchor, scale, the two offsets and hide-in-combat. **Bar** / **Bar background** / **Bar border** — the spell line's own surfaces, configured separately from the grid's and kept adjacent because they are read together; all three are composed, and the bar border's color mode is new here. **Text** — the composed font block. **Contents**, last because it is the tab you set once — spell breakdown and max spells (0 = all), targets and max targets, the two **death-line** switches, and summarize-on-name. |
-| 7 | `  - `Visibility | `visibility` | 17 | 3 — Where to show this window, When to hide this window, Combat | yes | yes | **Where to show this window** — dungeon / raid / arena / battleground / delve / scenario / world, all on. **When to hide this window** — solo, vehicles, mounted, skyriding, flight paths, player housing, pet battles, while dead, all off. **Combat** — hide in combat, hide out of combat, both off. |
-| 8 | `  - `Columns | `columns` | 8 (Header text 6, Header background 2) | 3 — **Columns** (bespoke block editor), Header text, Header background | yes | yes | **Columns** — one block per statistic, a drag handle, a tick/cross toggle and a name; ticked ones are the columns, in block order. The row's **bounded box and its handle are the library's** (`options-ui-§18`), not this addon's. This is the *page that is not tabbed by `RenderTabbedSchema`*: the strip is drawn directly with `H.TabStrip` and each tab renders its own filtered row list. Options minor 4's host tabs (`opts.tabs`) could carry the block editor, but the library's tab click clears the scroll itself and never re-enters this page's render, so the reorder cancel could no longer run before the clear. Declined in [issue #53](https://github.com/tusharsaxena/MultiMeters/issues/53). **Header text** (the composed font block) and **Header background** (a composed color pair) are the `window.columnHeader.*` rows that used to sit on the Header page. |
-| 9 | Profiles | `profiles` | 0 | none | no | no | AceDBOptions' create / switch / copy / reset / delete. The one page with no tab strip at all — see [Profiles — the one place AceConfigDialog is permitted](#profiles--the-one-place-aceconfigdialog-is-permitted). |
+| 1 | General | `general` | 22 (18 visible + 4 `hidden`) | 3 — **Master controls**, **Behavior**, **Statistic colors** | yes | no | **Master controls** — `options-ui-§15`'s canonical set, first on this page in every Ka0s addon and [composed rather than written out](#the-composed-blocks): Enable Multi Meters, General visibility, Master scale, Master alpha, Lock frame, Debug console, Minimap button, Test mode — and nothing of this addon's own after them, closed by the **Reset position** / **Reset all settings** button pair the composer hands back, with no explanatory prose under it. **Behavior** holds the two rows that used to sit on Master controls, **Merge pets** and **Refresh interval** (both addon-wide since schemaVersion 5): `options-ui-§15` fixes Master controls' set, and neither of those is canonical or about turning the addon up and down — one says what a pet's damage IS, the other is a refresh rate. Master scale and Master alpha are ADDON-WIDE multipliers, not the per-window scale and opacity under Windows > Frame, and **Lock frame** is a session-only view over every window's own lock rather than a second lock — see [The Master controls tab](#the-master-controls-tab). **Statistic colors** — one swatch per entry of `Constants.STAT_COLORS`, [generated rather than written out](#the-statistic-palette), read back through `NS.StatColor`, with a note under the grid saying where those colors are actually worn (drawn through the same `afterGroup` hook, keyed to this tab). A fourth schema group, **Export**, holds the export modal's four remembered choices — all four `hidden`, so the group is real for `/mm list` and the schema-vs-defaults validator and never appears as a tab: this is the one *section that is not a tab*, and a wholly hidden group is not a strip-less page. General is not a window page, so it draws no banner. |
+| 2 | Windows | `windows` | 1 (`window.name`) | 1 — **General**, the rail's first entry; every other entry keeps its own strip ([The Windows page](#the-windows-page-band-rail-entry)) | yes — the active entry's rows, for the active window | yes | One page per window (MultiMeters#55): the Active window band, a nav rail, and the selected entry's own strip. **General** holds the name box, New / Duplicate / Delete, and a *Copy settings from* block (the source window, the group filter and Copy). Bespoke rather than schema rows, so its one tab is drawn directly with `H.TabStrip`. |
+| 3 | Profiles | `profiles` | 0 | none | no | no | AceDBOptions' create / switch / copy / reset / delete. The one page with no tab strip at all — see [Profiles — the one place AceConfigDialog is permitted](#profiles--the-one-place-aceconfigdialog-is-permitted). |
 
-**169 schema rows total.** Five of the nine pages — Frame, Header, Bars, Tooltip, Visibility — draw
-their entire body from one `H.WindowBanner(c)` plus one `H.RenderTabbedSchema(c, PAGE)` call and
-nothing else. Adding an option to any of them means adding one row in `settings/Schema.lua` — with
-the `group` you want it to land on — and touching no page file at all; adding an option to a *new*
+### The Windows page's entries
+
+| Entry | Key | Schema rows | Tabs | What is on it |
+|---|---|---|---|---|
+| General | `windows` | 1 (`window.name`) | 1 — **General** | The window acts and Copy settings from; see row 2 above. |
+| Frame | `frame` | 26 | 4 — General, Size and position, Background and border, Row | **General** — the two window-wide toggles under a *Window* heading, then the four **meta rows** (Color mode, Bar texture, Font, Font outline, each "(all surfaces)") under an *All surfaces* heading, which broadcast one value to every surface with a setting of that kind and are read by nothing. The two headings are what stop a broadcast being mistaken for a font group. **Size and position** — geometry, scale, opacity, strata and padding. **Background and border** — the fill inside the window under a *Background* heading and the LSM edge around it under a *Border* heading, both composed; the merge is deliberate and the headings are what `options-ui-§7` adds to it. **Row** — height, count, spacing and growth, then always-show-self, highlight-self, mouseover highlight and the alternating stripe. |
+| Header | `header` | 36 (30 visible + 6 `hidden`) | 4 — Title bar, Title text, Controls, Button style | **Title bar** — three headings: *Layout* (whether it draws, its alignment and its height), *Background* (the one swatch in the addon with no color mode beside it — a [documented deviation](ARCHITECTURE.md#documented-deviations)), and *Divider* (on/off, thickness, color and a mode whose default `skin` writes nothing at all, so the shared skin still owns the line unless the player takes it). **Title text** — `options-ui-§16`'s composed font block, all six axes, with the color mode (class or custom, never per-statistic) immediately right of the swatch. **Controls** — every toggle for the icon strip, **in the order the strip reads left to right** and each carrying **its own icon in front of its label** (`controlLabel`), plus six `hidden` rows the window's own header controls write: `window.frame.minimized`, the sort and session type (`window.data.sessionType`, `.sortColumn`, `.sortMode`, `.sortAscending`, issue #50) and the pinned segment (`window.data.sessionID`). **Button style** — three headings: *Icon* (reveal and size), *Color* (rest color + its mode, then hover color + its mode — each state one line, so the swatch and its companion can never be split), *Opacity* (rest and hover, read across). |
+| Bars | `bars` | 29 | 6 — Bar, Background, Border, Text content, Text style, Icons | **Everything drawn inside a cell**, and four of the six tabs are composed blocks. **Bar** — `options-ui-§16`'s bar group (texture, opacity, color, mode) plus fill direction and **Animate bar fills** (issue #23) appended after it. **Background** — a backdrop with no fill texture, so a color pair and its opacity, never a bar group. **Border** — the *Show border* toggle leading `options-ui-§16`'s border group, whose color mode is new here. **Text content** — the two text slots, number format, death timestamps and max name length. **Text style** — the composed font block plus text opacity. **Icons** — the row icon, its size and which side of the name it sits on. |
+| Tooltip | `tooltip` | 30 | 6 — General, Bar, Bar background, Bar border, Text, Contents | **General** — anchor, scale, the two offsets and hide-in-combat. **Bar** / **Bar background** / **Bar border** — the spell line's own surfaces, configured separately from the grid's and kept adjacent because they are read together; all three are composed, and the bar border's color mode is new here. **Text** — the composed font block. **Contents**, last because it is the tab you set once — spell breakdown and max spells (0 = all), targets and max targets, the two **death-line** switches, and summarize-on-name. |
+| Visibility | `visibility` | 17 | 3 — Where to show this window, When to hide this window, Combat | **Where to show this window** — dungeon / raid / arena / battleground / delve / scenario / world, all on. **When to hide this window** — solo, vehicles, mounted, skyriding, flight paths, player housing, pet battles, while dead, all off. **Combat** — hide in combat, hide out of combat, both off. |
+| Columns | `columns` | 8 (Header text 6, Header background 2) | 3 — **Columns** (bespoke block editor), Header text, Header background | **Columns** — one block per statistic, a drag handle, a tick/cross toggle and a name; ticked ones are the columns, in block order. The row's **bounded box and its handle are the library's** (`options-ui-§18`), not this addon's. This is the *entry that is not tabbed by `RenderTabbedSchema`*: the strip is drawn directly with `H.TabStrip` and each tab renders its own filtered row list. Options minor 4's host tabs (`opts.tabs`) could carry the block editor, but the library's tab click clears the scroll itself and never re-enters the page's renderer, so the reorder cancel could no longer run before the clear. Declined in [issue #53](https://github.com/tusharsaxena/MultiMeters/issues/53). **Header text** (the composed font block) and **Header background** (a composed color pair) are the `window.columnHeader.*` rows that used to sit under Windows > Header. |
+
+**169 schema rows total.** Five of the Windows page's seven entries — Frame, Header, Bars, Tooltip,
+Visibility — draw their entire body from one `H.RenderTabbedSchema(c, key)` call, made by the page's
+renderer under the band and the rail, and nothing else. Adding an option to any of them means adding
+one row in `settings/Schema.lua` — with the `group` you want it to land on — and touching no entry
+file at all; adding an option to a *new*
 tab on one of them means adding one row with a `group` no existing row uses, and nothing else either.
 
-Three pages are not schema-driven bodies:
+Three surfaces are not schema-driven bodies:
 
-- **Windows** and **Columns**' block editor act on the *registry* and on an *array*, neither of which
+- **The General entry** and **Columns**' block editor act on the *registry* and on an *array*, neither of which
   a flat path addresses, so both are bespoke — Columns' other two tabs are ordinary schema rows.
 - **Profiles** hosts an options table this addon does not own.
 
@@ -227,7 +234,7 @@ and does nothing. With no context-menu API, right-click opens this panel instead
 
 **The `master.*` rows are ADDON-WIDE, and none of them is a promoted per-window row.** A window
 here is an instance (design §6), and its own **Lock window**, **Scale** and **Opacity** stay on the
-Frame page where the banner says which window they mean — promoting one would give the General page,
+Frame entry where the banner says which window they mean — promoting one would give the General page,
 which draws no banner, a control that retargeted silently every time the picker moved. The scale and
 opacity pairs are different settings, and `modules/Window.lua` **composes** each pair rather than
 choosing between them; the lock works differently:
@@ -280,6 +287,58 @@ in `core/Namespace.lua` — the grid's bars and cell text (`modules/Row.lua`), t
 the shipped palette and the **fallback**: it answers for a key nothing has stored, for a stat added to
 the catalog after a profile was written, and for a degraded install with no database to read.
 
+## The Windows page: band, rail, entry
+
+The Windows page is **one page per window** (MultiMeters#55, `options-ui-§13` and `options-ui-§14`).
+It has three pinned pieces, drawn in the library's order on every full render: `PageBanner`,
+`NavRail`, `TabStrip`.
+
+- **The band** is `H.WindowBanner` (`settings/Windows.lua`), the Active window picker. It is the
+  page's only picker, full width above the rail and the strip. It writes `NS.State.activeWindowId`
+  through `NS.State.SetActiveWindow` and forces a structural refresh.
+- **The rail** (LibKa0s `O.NavRail`, 120 wide) lists the page's **entries**: General · Frame ·
+  Header · Bars · Tooltip · Visibility · Columns. The order is `SECTION_ORDER`
+  (`settings/OptionsSetup.lua`), not the TOC's. An entry **is** a page key (`windows`, `frame`,
+  `header`, `bars`, `tooltip`, `visibility`, `columns`). Its schema rows keep `page`, their
+  window-relative paths and their defaults, so `/mm get`, `/mm set`, `/mm list`, profiles and the
+  resets never see the rail. Each file registers its entry at load with
+  `NS.RegisterWindowSection(key, label, spec)`. The registry sits above the library fork, so a
+  library-absent load knows the entries too.
+- **The strip** is the entry's own. Frame, Header, Bars, Tooltip and Visibility use
+  `H.RenderTabbedSchema(ctx, key)`. General (one **General** tab) and Columns (Columns, Header text,
+  Header background) draw their bespoke strips through the entry's `spec.render`.
+
+`Helpers.RenderWindowPage` draws the page. Its **first** statement is `NS.CancelReorder(ctx)`. The
+seven entries share one ctx, and a rail click, a window switch and Columns' own tab click all
+re-render the page. A live drag handle must be released before `ClearScroll` hands the Columns
+containers back to AceGUI's pool (see [Column editing](#column-editing-is-settings-panel-only-and-out-of-combat-only)).
+
+**Session state, never persisted.** `ctx.activeSection` is the entry on screen, and
+`ctx.sectionTabs[entry]` holds each entry's tab. The tab is stashed **before anything moves the
+entry**, because the library's own strip click never calls back into the host. So Frame -> Size and
+position, then Bars, then Frame again lands on Size and position. Picking another window in the band
+keeps the entry and its tab (`options-ui-§14`: the rail is not a picker).
+
+**Defaults** reads the entry **at click time** (`Helpers.RestoreActiveSection`), because the library
+captures the handler once, at the first show:
+
+| Entry | What Defaults restores |
+|---|---|
+| Frame, Header, Bars, Tooltip, Visibility | The entry's rows (`H.RestoreDefaults(entry, ctx)`), for the **active window** only, because the rows are window-relative. |
+| Columns | The shipped column list **and** the `window.columnHeader.*` rows, in one bulk bracket, so the press logs one `[Set] reset columns: N rows` line. |
+| General | Nothing. Its one schema row is the window's name, which a reset would overwrite. It prints *General has no settings to restore. The window's name is kept.* |
+
+The button carries one tooltip that fits every entry. `tests/test_windows_rail.lua` pins all of it.
+
+**Deep links.** `NS.OpenOptionsPage(key)` opens the settings window at one page. A former sub-page
+key (`frame`, `bars`, …) opens Windows **on that entry**, and `windows` itself keeps the entry the
+player left. `Helpers.SelectSection(key, tab)` is the one seam that moves the entry, and the host's
+`Helpers.SelectTab` routes an entry key to it, so a link written against a page key still lands. A
+hidden page is marked owed a render and draws the entry on its next show. Both refuse under combat,
+through the library's refusal. Each page's Blizzard category is captured by the
+`NS.RegisterOptionsPage` wrapper, because the library's registry drops the builder's return value.
+Nothing in the addon calls `OpenOptionsPage` yet: the header gear still opens the main panel.
+
 ## The tab strip and the banner
 
 **One tab is exactly one group.** `RenderTabbedSchema(ctx, pageKey)` reads `rowsForPage(pageKey,
@@ -287,9 +346,9 @@ ctx.unit)`, collects the distinct `group` values in the order their first row ap
 `H.TabStrip` tab per group — there is deliberately no second field naming a tab; the group heading
 that used to sit over a scrolling section *is* the tab label now. **A page with a single group draws a
 one-tab strip** — the `#groups < 2` fallback to the library's plain `RenderSchema` is gone as of
-LibKa0s v1.24.0 (`options-ui-§13`), so no page in this addon can render strip-less. Windows' single
-schema row (the `Window` group) is not an exception to that: its page is bespoke and draws its own
-two-tab `H.TabStrip` alongside the picker.
+LibKa0s v1.24.0 (`options-ui-§13`), so no page in this addon can render strip-less. The General entry's
+single schema row is not an exception to that: the entry is bespoke and draws its own one-tab
+`H.TabStrip` under the band and the rail.
 
 **A tab that mixes kinds of control carries a subsection heading per kind** (`options-ui-§7`), drawn
 by the flow engine whenever a row's `subgroup` changes within a group — declared by the row, exactly
@@ -318,51 +377,12 @@ carries a tab guard of its own, and none may: a second guard is a second place f
 disagree with itself. See
 [Combat lockdown: the panel refuses, it never defers](#combat-lockdown-the-panel-refuses-it-never-defers).
 
-**The banner is the only window picker left on a window sub-page.** Frame, Header, Bars, Tooltip,
-Visibility, Columns and Windows itself each open with `H.WindowBanner(ctx)` before their tab strip —
-a dropdown naming the window the rest of the page edits, backed by `H.PageBanner` (`options-ui-§14`).
-Moving it on any one of those seven pages moves it on all seven, because they all read the same
-`NS.State.activeWindowId` the banner writes. The Windows page's own "Active window" dropdown, which
-used to be the *only* picker, was **deleted** in this redesign — the banner does the job now, on every
-page a window setting can appear on, not just the one that used to own it. General and Profiles are
-not window pages and draw no banner.
-
-### The indent, and why the tree needs one
-
-Blizzard's Settings tree draws every canvas subcategory of one addon at the **same depth**, and these
-pages are not one flat set. Seven of them edit *the window the banner is pointed at*; General and
-Profiles edit the addon. Nine pages that silently retarget when a picker on a different page moves,
-presented as peers of the two that never do, is the tree lying about what a click will change.
-
-**The banner is now half of what the indent was faking on its own.** Before this redesign the indent
-was the *only* signal that a page's content depended on something set elsewhere — a typographic hint
-standing in for the fact the page never said out loud. The banner says it directly, in the page's own
-body, in a place a player is already looking: which window this page edits. What the banner does not
-and cannot fix is the **tree** itself — Blizzard's Settings sidebar still draws Frame, Header, Bars,
-Tooltip, Visibility, Columns and Windows as peers of General and Profiles, at the same depth, with no
-API for a third level. That structural fact is still real, which is why the indent stays: it is no
-longer the only place the dependency is visible, but it is still the only place the **tree** says so.
-
-There is no API for a third level, so the mark is **typography**: two spaces, a hyphen and a space,
-prefixed by `NS.SubPageLabel` (`settings/OptionsSetup.lua`) to the **tree label only**. The canvas
-heading and the breadcrumb keep the plain name — a page heading that starts indented reads as a
-layout bug. It is not a locale string: it is furniture, and a translator handed two spaces and a
-hyphen has nothing to translate and one more chance to drop a space.
-
-**The indent does the nesting; the hyphen marks the item.** Two earlier spellings got one of those
-and not the other, and both are recorded because each failed in its own way:
-
-| Tried | Why it went |
-|---|---|
-| `U+21B3` (↳) | Exactly the right character; Friz Quadrata does not have it. The client drew a **hollow box** in front of all six indented pages, and the settings tree offers no way to hand the player a font that does have it. |
-| `\|- ` | Draws on any font, and reads as a bulleted **list** rather than as nesting: with nothing indenting it, the mark sat where the page name should start and competed with it for the eye. |
-| `    ` (four spaces) | Nests correctly and marks nothing — confirmed in the client, which is what made the hyphen safe to add on top. |
-| `  - ` | Both jobs, each done by the part that is good at it. |
-
-**Leading whitespace is the kind of thing a UI toolkit trims**, and this one was checked in-client
-rather than assumed. That check is also why the hyphen is decoration rather than load-bearing: if a
-future client does start trimming, the six pages keep a visible `- ` and degrade to a flat bulleted
-list rather than to nothing at all.
+**The band is the only window picker.** The Windows page opens with `H.WindowBanner(ctx)` above the
+rail and the entry's tab strip — a dropdown naming the window every entry edits, backed by
+`H.PageBanner` (`options-ui-§14`). Every entry reads the same `NS.State.activeWindowId` the band
+writes, so moving it retargets the Windows page's seven entries at once. The Windows page's old
+"Active window" dropdown, which used to be the *only* picker, was **deleted** in the banner redesign.
+General and Profiles are not about a window and draw no band.
 
 ### Where a setting is edited is not where it is stored
 
@@ -384,7 +404,7 @@ Two groups make the point, and both are deliberate:
   `sessionType`, and one click on a column header writes all three sort fields
   (`modules/Window_Header.lua`'s `SortByColumn`). They were deleted then, because the click wrote
   those fields directly and a CLI beside it was a second writer. **They are back as `hidden` rows
-  on the Header page** (issue #50): the click and the segment menu choose them, which makes them
+  under Windows > Header** (issue #50): the click and the segment menu choose them, which makes them
   preferences, so both now write through `NS.SetByPath` with the window's id and `/mm set
   window.data.sortColumn` reaches the same row. No control draws for them on the panel.
   Merge pets and Refresh interval moved to General and became addon-wide; the page's
@@ -394,9 +414,9 @@ Two groups make the point, and both are deliberate:
   header's own reset control still opens it — which is the deliberate way to reach it, on the window
   whose numbers you are looking at.
 
-### The two pages with no Defaults button, and why each
+### The page with no Defaults button
 
-Columns is **not** one of these any more: the array became the whole catalog (every statistic ships
+The Columns entry once declined one and **no longer does**: the array became the whole catalog (every statistic ships
 on the page; only which are ticked, and in what order, can differ from the shipped list), which gives
 "restore this page's defaults" something exact to mean, so the page now carries its own Defaults
 button that ticks and orders the block editor back to the shipped list. Its `defaultsOnClick` is
@@ -413,9 +433,9 @@ seam mutes its per-row `[Set]` line. At the close it logs `[Set] reset <page>: N
 the rows whose stored value actually moved, so a second press on a page already at its defaults
 reads `0 rows`. Each row's validation and `onChange` still run.
 
-- **Windows** — nothing on it is a schema row except the name. "Restore this page's defaults" would
-  have to mean deleting the registry back to one seed window, which is not what a player clicking
-  Defaults expects.
+The Windows page has Defaults since MultiMeters#55. It restores the active entry's rows, for the active
+window; see [The Windows page](#the-windows-page-band-rail-entry).
+
 - **Profiles** — restoring here would delete the player's profiles, which is not what anyone means
   by restoring a default (`options-ui-§3`). This is enforced **twice**: the button is suppressed on
   the page, and `settings/OptionsSetup.lua`'s `skipRestoreAll` predicate
@@ -503,7 +523,7 @@ line and stops.
 v1.46.0+). The Blizzard AddOns sidebar reaches a page's `OnShow` without passing through
 `NS.OpenOptionsPanel`. Through LibKa0s v1.45 that `OnShow` closed the Settings window, which ran
 Blizzard's close-and-commit path from addon code, tainted. Now the library puts a cover over the whole
-page — header, banner and tab strip included — draws nothing under it, prints one gray line
+page — header, band, rail and tab strip included — draws nothing under it, prints one gray line
 (`settings are locked during combat …`) per combat, and refuses every write, Defaults press and tab
 click until `PLAYER_REGEN_ENABLED`, when the cover lifts and the page on screen renders from current
 state. The same cover falls over a page already open when a pull starts. The Settings window itself
@@ -532,12 +552,11 @@ moment they are still fighting.
 ## The window picker
 
 `settings/Windows.lua` is the **only writer** of `NS.State.activeWindowId`, and that single integer
-is what every other page resolves against. The picker itself is `H.WindowBanner`, decorated onto the
-library instance by `settings/Windows.lua` and drawn by all **seven** window pages (Frame, Header,
-Bars, Tooltip, Visibility, Columns and Windows itself) at the top of their body, before the tab
-strip — it replaced a dropdown that used to sit on the Windows page alone. The Windows page's own
-"Window" tab keeps the name box and the registry buttons; the "Active window" dropdown is the banner
-now, same on every page it appears on, and there is no second picker anywhere in the panel.
+is what every entry resolves against. The picker itself is `H.WindowBanner`, decorated onto the
+library instance by `settings/Windows.lua` and drawn at the top of the Windows page for the Windows
+page's seven entries (General, Frame, Header, Bars, Tooltip, Visibility and Columns), above the rail
+and the entry's tab strip. The band is drawn once, above the rail: every entry edits the window it
+names. The General entry keeps the name box and the registry buttons.
 
 ```
 picker OnValueChanged
@@ -546,7 +565,7 @@ picker OnValueChanged
 ```
 
 Every `window.`-prefixed schema row resolves through `NS.GetSetting` / `NS.SetByPath` against that
-id (see [schema.md](schema.md#the-window-relative-path-model)). Move the picker and seven pages
+id (see [schema.md](schema.md#the-window-relative-path-model)). Move the picker and the Windows page's seven entries
 retarget together, along with `/mm set window.frame.width 300` typed in chat. **No path is
 rewritten, and no page filters rows per window** — the panel moves the window the rows resolve
 against.
@@ -560,8 +579,8 @@ This is the one place the distinction matters, and getting it wrong is invisible
 | A slider moved, `/mm set` ran | a **value** | `Helpers.RefreshScalars()` — re-read widget values in place |
 | The picker moved, a window was created / deleted / renamed / duplicated, columns were edited | the **subject**, or which rows exist | `NS.RefreshOptionsPanel()` → `Helpers.RefreshAllPanels()` — rebuild |
 
-A scalar refresh after a picker move would leave every widget on seven pages showing the previous
-window's numbers under the new window's name. A structural refresh after a slider move would rebuild
+A scalar refresh after a picker move would leave every widget on the Windows page's seven entries
+showing the previous window's numbers under the new window's name. A structural refresh after a slider move would rebuild
 the page under the cursor mid-drag.
 
 Each page's renderer also stamps `c.unit = NS.State.activeWindowId`. That is the library's `ctx.unit`
@@ -596,8 +615,8 @@ Details that are the page's rather than the module's:
 - **Rename fires on `OnEnterPressed` only**, never `OnTextChanged` — renaming fires
   `WINDOWS_CHANGED` and rebuilds the picker, and doing that per keystroke would pull focus out of
   the box the player is typing in.
-- **Delete confirms** through a `StaticPopup`, because it discards every setting on seven pages and
-  cannot be undone. The last window is not deletable, refused in both the page and the module: an
+- **Delete confirms** through a `StaticPopup`, because it discards every setting on the Windows
+  page's seven entries and cannot be undone. The last window is not deletable, refused in both the page and the module: an
   empty registry would leave every window-relative path unresolvable and the panel would render
   pages of dead widgets.
 - **The active window is removed from its own "Copy settings from" list.** Copying a window onto
@@ -729,7 +748,7 @@ private bus target from `NS.NewBusTarget()` — CallbackHandler keys callbacks b
 would silently clobber each other and only the last one would ever refresh (anti-pattern #32).
 
 `NS.RefreshOptionsPanel` (→ `Helpers.RefreshAllPanels`) is called from three places and three only:
-the AceDB profile callbacks, the Windows page's registry actions and picker, and the Columns page
+the AceDB profile callbacks, the Windows page's registry actions and picker, and the Columns entry
 after a successful commit.
 
 ---

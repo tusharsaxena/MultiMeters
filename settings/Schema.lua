@@ -490,7 +490,7 @@ NS.Schema = {
         default = { r = 0, g = 0, b = 0, a = 0.5 },
         page = "header", group = L["Title bar"], subgroup = L["Background"],
         startsLine = true,
-        label = L["Header background"], desc = L["Color drawn behind the title bar. The column-header strip has its own, on the Columns page."],
+        label = L["Header background"], desc = L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns."],
     },
     -- THE HAIRLINE BETWEEN THE TITLE BAR AND THE COLUMN LABELS, and the one piece
     -- of the window's chrome that is a setting. It earns its keep when both

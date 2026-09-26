@@ -978,7 +978,7 @@ end)
 test("Master scale MULTIPLIES the window's own rather than replacing it", function()
     -- The two are different settings: `master.scale` is addon-wide and lives on the
     -- General page's Master controls tab, `frame.scale` is this window's and lives
-    -- on the Frame page. Composing them is what lets one control shrink a whole
+    -- under Windows > Frame. Composing them is what lets one control shrink a whole
     -- layout without flattening the differences a player set between its windows.
     -- red under: reading either one alone, or `math.min` instead of a product.
     local inst, window, cfg = scene()

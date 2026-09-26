@@ -100,8 +100,8 @@ test("parity: the Options stub carries every public member of the live Helpers s
 
         -- ── the chrome blocks this addon does not draw ──────────────────────────────────────────
         --
-        -- `grep -rn 'PageHeader\|SubTabStrip' core modules settings` returns nothing. The window
-        -- pages draw their own banner (`Helpers.WindowBanner`, decorated by settings/Frame.lua and
+        -- `grep -rn 'PageHeader\|SubTabStrip' core modules settings` returns nothing. The Windows
+        -- page draws its own band (`Helpers.WindowBanner`, decorated by settings/Windows.lua and
         -- carried by the stub), and no tab of any page holds a list of like subjects that would
         -- earn a sub-strip. A stub member with no caller is a copy waiting to go stale; each joins
         -- the stub on the commit that gives it a caller.

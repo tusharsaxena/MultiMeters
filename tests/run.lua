@@ -315,6 +315,7 @@ local SUITES = {
     "test_options_panel",
     "test_columnblocks",
     "test_columns",
+    "test_windows_rail",
     -- and the whole addon with LibKa0s absent
     "test_degraded",
     -- The stub-versus-live gate that sits beside it: test_degraded asks whether the stub

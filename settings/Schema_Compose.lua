@@ -618,8 +618,8 @@ local MASTERVIS_SORT = { "always", "inCombat", "outOfCombat", "never" }
 -- debug console, test mode, then the two resets as the tab's closing button pair.
 --
 -- WHAT IS NOT HERE, DELIBERATELY. `window.frame.locked`, `window.frame.scale` and
--- `window.frame.alpha` stay on the Frame page. They are PER-WINDOW, they are
--- reached through the window banner, and promoting one of them here would give the
+-- `window.frame.alpha` stay under Windows > Frame. They are PER-WINDOW, they are
+-- reached through the window band, and promoting one of them here would give the
 -- General page -- which draws no banner -- a control that silently retargeted
 -- whenever the picker moved two pages away. `master.scale` and `master.alpha` are
 -- the addon-wide answers the per-window pair does not have, and modules/Window.lua
@@ -729,16 +729,16 @@ dress(MASTER_ROWS, {
     },
     ["master.visibility"] = {
         values = MASTERVIS_VALUES, sorting = MASTERVIS_SORT,
-        desc = L["When this addon's windows are shown at all, whatever one window's own Visibility page says. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."],
+        desc = L["When this addon's windows are shown at all, whatever one window's own settings under Windows > Visibility say. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."],
         onChange = refreshVisibility,
     },
     ["master.scale"] = {
         fmt = "%.2fx",
-        desc = L["Scale multiplier for every window, multiplied into each window's own Scale on the Frame page. A window at 0.80 under a master of 0.50 draws at 0.40."],
+        desc = L["Scale multiplier for every window, multiplied into each window's own Scale under Windows > Frame. A window at 0.80 under a master of 0.50 draws at 0.40."],
         validate = isNumberIn(0.5, 2.0),
     },
     ["master.alpha"] = {
-        desc = L["Opacity multiplier for every window, multiplied into each window's own Opacity on the Frame page."],
+        desc = L["Opacity multiplier for every window, multiplied into each window's own Opacity under Windows > Frame."],
         validate = isNumberIn(0, 1),
     },
     -- LOCK FRAME IS A VIEW, NOT A LOCK OF ITS OWN (docs/ARCHITECTURE.md's deviation
@@ -754,7 +754,7 @@ dress(MASTER_ROWS, {
     -- partial install then answers unticked rather than freezing a nil in.
     ["master.locked"] = {
         sessionOnly = true,
-        desc = L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Frame page, or the lock button in its header) still locks it on its own."],
+        desc = L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Windows > Frame, or the lock button in its header) still locks it on its own."],
         get = function()
             local M = NS.WindowManager
             return M ~= nil and M.IsLocked ~= nil and M:IsLocked() or false

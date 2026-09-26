@@ -236,7 +236,7 @@ addresses it. That naming is the compliance; this is the detail behind it.
 
 `WindowManager:CopyFrom` is not a writer. Its rows go through the seam as one batch (#49), its leaf
 copy skips `frame.position` by name (`UNCOPIED`), and nothing puts a position back afterwards,
-because nothing took one away. `frame.width` and `frame.height` are **rows**, the Frame page's
+because nothing took one away. `frame.width` and `frame.height` are **rows**, the Frame entry's
 sliders, so they are not named state: the resize drag writes them through the seam by window id
 (`WindowProto:SaveSize`). A profile reset and AceDB's swap and copy replace positions with the rest
 of the profile.
@@ -300,7 +300,7 @@ row's own [get/set pair](#the-minimap-row--exactly-one-inverted-row).
 
 `options-ui-§15` fixes this set and its order across every Ka0s addon. `master.visibility`,
 `master.scale` and `master.alpha` are **addon-wide**, and none of them is a promoted per-window row: a
-window here is an instance, so its own `frame.scale` and `frame.alpha` stay on the Frame page where
+window here is an instance, so its own `frame.scale` and `frame.alpha` stay under Windows > Frame where
 the banner says which window they mean. `modules/Window.lua` **multiplies** each pair rather than
 choosing between them, so one control can shrink a whole layout without erasing the differences a
 player set between its windows. `master.visibility` is read by `core/MultiMeters.lua`'s show ladder,
@@ -323,7 +323,7 @@ bounds of the sliders that write it, because these paths are also reachable from
 hand-edited SavedVariables.
 
 **NEW rather than migrated.** This addon never shipped an addon-wide *show only in combat* checkbox —
-the per-window Visibility page has its own combat pair and keeps it — so there is no stored boolean to
+the per-window Visibility entry has its own combat pair and keeps it — so there is no stored boolean to
 lift and no `schemaVersion` step. AceDB's defaults merge supplies the subtree on first login.
 
 ### `data` — how the meter is read, addon-wide
@@ -475,7 +475,7 @@ having set all six by hand. Writing the config tree directly would be a second w
 windows would not repaint.
 
 **It does not fire during a reset.** `NS.ApplyDefault` raises `NS.__restoring` around its write,
-because the Frame page's Defaults button walks every row of that page — and a meta row that
+because the Frame entry's Defaults button walks every row of that page — and a meta row that
 broadcast from there would make that button silently reset six settings on three other pages, which
 is the one thing a per-page reset must not do.
 
@@ -567,7 +567,7 @@ verb and goes straight to `modules/WindowManager.lua`, which owns re-anchoring a
 `align = "LEFT"` · `height = 18` · `bgColor = { r=0, g=0, b=0, a=0.5 }`.
 
 **`show` moved here from `window.frame.titleBar` at `schemaVersion` 12 → 13** (`window.header.show`,
-not `window.frame.titleBar` — a path naming `frame` for the Header page's own master switch misled
+not `window.frame.titleBar` — a path naming `frame` for the Header entry's own master switch misled
 the next reader and read wrong in `/mm set`). `migrations[12]` in `core/Database.lua` copies a stored
 `frame.titleBar` into `header.show` and deletes the old key; a profile saved before this branch opens
 with its title bar exactly as it was.
@@ -591,7 +591,7 @@ that "the header" is the whole block a player points at — which meant `columnH
 drawn underneath it and could not be seen, and a color picked for the title bar restyled the grid's
 column labels too. Two strips, two settings, two rectangles.
 
-`show`, `align`, `height` and `bgColor` are edited on the Header page's **Title bar** tab — the strip's
+`show`, `align`, `height` and `bgColor` are edited under Windows > Header's **Title bar** tab — the strip's
 own shape; `font`, `size`, `outline`, `shadow` and `color` are the **Title text** tab — the face drawn
 on it. The two used to be one group ("Header text" and "Header background" before that, which put
 `align` and `height` — both properties of the text — under a heading that said background); splitting
@@ -644,7 +644,7 @@ pixel-identical after the upgrade — what changed is that the settings exist an
 `bgColor` is new capability rather than a moved one: the strip has never had a backdrop, which is why
 it defaults fully transparent.
 
-**Edited on the Columns page, not the Header page.** These eight rows carry `page = "columns"` —
+**Edited under Windows > Columns, not the Header entry.** These eight rows carry `page = "columns"` —
 **Header text** (`font`, `size`, `outline`, `shadow`, `color`, `colorMode`) and **Header background**
 (`bgColorMode`, `bgColor`) are two of that page's three tabs, alongside the bespoke block editor. They
 moved off Header because Columns is the page that labels the strip they style; the storage paths are
@@ -653,7 +653,7 @@ is stored, same as `frame`/`header` above.
 
 ### `rows` — one per group member
 
-Edited on the **Bars page**, at the top of it: how tall a row is, how many there are and which way
+Edited under **Windows > Bars**, at the top of it: how tall a row is, how many there are and which way
 they grow decide the shape of every bar drawn under them, so the two groups sit above the bar's own.
 The Rows page is gone; the paths did not move with it.
 
@@ -676,7 +676,7 @@ are painted, and `mouseoverHighlight` answers the *cursor* — it appears where 
 and leaves with them. Changing a default does not change a stored value: an existing profile that had
 either switched on keeps it, and only a profile that never touched the key follows the new default.
 
-**`alternatingBackground` lives here and is EDITED on the Bars page**, beside `bars.bgColorMode` —
+**`alternatingBackground` lives here and is EDITED under Windows > Bars**, beside `bars.bgColorMode` —
 the two of them decide what color sits behind a row, and choosing between them meant reading two
 pages. It stays a row-level key because it is a row-level fact: `RowProto:Update` draws it, not the
 cells.
@@ -764,7 +764,7 @@ color — a fact already on screen twice over.
 `showMinimize` · `showLock` · `showSettings` · `showSegment` · `showReset` · `showExport` — all
 `true`. Six of the seven controls; `closeButton` is the seventh and deliberately keeps its older
 name, because renaming it to `showClose` for symmetry would migrate every stored profile in exchange
-for a consistency nobody can see. All seven sit on the Header page, on one tab —
+for a consistency nobody can see. All seven sit under Windows > Header, on one tab —
 **Controls** — window-acting first (close, minimize, lock, settings), then meter-acting (segment
 picker, reset, export). Their size, hover reveal and colors sit in the tab below it, **Button
 style**.
@@ -1061,7 +1061,7 @@ reach the seam without ever drawing a block. The enabled prefix, in order, is wh
 left to right.
 
 It was a SUBSET the player assembled until schemaVersion 12. It is the catalog now because the
-Columns page is a fixed list of blocks you tick and drag rather than a list you add to and remove
+Columns entry is a fixed list of blocks you tick and drag rather than a list you add to and remove
 from — and a page with no add button needs every statistic already present to tick.
 `width` and `showBar` went with that change: width had been dead since the window began auto-sizing
 (`BuildLayout` divides the frame width evenly across the visible columns and never read `col.width`),
@@ -1078,7 +1078,7 @@ read fills both halves of the column.
 `sessionType = Const.SESSION_TYPE.Overall` · `sessionID = Const.NO_SEGMENT` · `sortMode = "value"` ·
 `sortColumn = "DamageDone"` · `sortAscending = false`.
 
-**All five are hidden schema rows** (issue #50), filed on the Header page beside `frame.minimized`.
+**All five are hidden schema rows** (issue #50), filed under Windows > Header beside `frame.minimized`.
 Every one of them is chosen by a control on the window itself: the header's segment menu picks
 `sessionType` or pins a stored segment in `sessionID`, and one click on a column header writes the three sort fields
 (`modules/Window_Header.lua`'s `SortByColumn`). `architecture-§5` reads a control that chooses a
@@ -1423,7 +1423,7 @@ counted; a row written twice in one act would count twice, which no act in this 
 Copy-from is the only `summary` caller. The library's reset walks reach the same bracket through
 the descriptors' `bulkBegin` / `bulkEnd`:
 - each page's **Defaults** button logs `[Set] reset <page>: N rows`;
-- the Columns page brackets its array write around the library's page walk, so the brackets nest
+- the Columns entry brackets its array write around the library's page walk, so the brackets nest
   and only the outermost close logs.
 
 A whole-profile reset adds no line from the bracket, because `OnProfileReset` logs it once.
@@ -1439,7 +1439,7 @@ Values are **deep-copied on the way in**. A color table handed straight from a w
 row's default) would otherwise be shared with whoever else holds it, and editing one window's color
 would edit theirs. `NS.ApplyDefault` copies for the same reason, and takes the **row** rather than
 the path because both library majors hand over the row. It sets `NS.__restoring` around the write
-(the Frame page's meta color mode reads it) and answers `nil, err` rather than `false` on a refusal,
+(the Frame entry's meta color mode reads it) and answers `nil, err` rather than `false` on a refusal,
 because exactly `false` is Slash minor 15's "no default".
 
 The announcement carries `{ section = row.page, windowId = <id or nil> }`. A window ignores a
@@ -1468,14 +1468,14 @@ addresses named leaves; it has no vocabulary for "move this column above that on
 |---|---|
 | `/mm get window.columns` | **reads** — through the row, like any other |
 | `NS.SetByPath("window.columns", array)` | **accepted whole-array** — the only granularity a path can honestly express |
-| `NS.SetByPath("window.columns.2.enabled", true)` | **refused** — no row declares the path, and `NS.SetByPath` says so in words that point at the Columns page; the ordinal moves on the next reorder, so a stored reference to it is wrong by the next edit |
+| `NS.SetByPath("window.columns.2.enabled", true)` | **refused** — no row declares the path, and `NS.SetByPath` says so in words that point at Windows > Columns; the ordinal moves on the next reorder, so a stored reference to it is wrong by the next edit |
 
 `validate` refuses what is not a table; `normalize` (Schema minor 2) does the rest, and its answer is
 what the runtime stores (as a copy), logs, reacts to and announces — exactly as for any scalar row.
 It proves the array shape before reading anything out of it (a hole or a string key would make
 `#value` an arbitrary answer), then rebuilds it entry by entry.
 
-The row has **no `default`**, so no reset reaches it: the Columns page's Defaults button writes the
+The row has **no `default`**, so no reset reaches it: the Columns entry's Defaults button writes the
 shipped array itself, inside the page's bracket (`settings/Columns.lua`). `NS.ValidateSchema` holds
 it to resolution alone.
 

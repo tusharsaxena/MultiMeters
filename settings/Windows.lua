@@ -1,6 +1,10 @@
 -- settings/Windows.lua
 --
--- The Windows page: the window picker, the five registry actions (new, rename,
+-- The Windows page (MultiMeters#55): one page per window. The Active window
+-- picker is the band, the nav rail chooses General, Frame, Header, Bars,
+-- Tooltip, Visibility or Columns, and each entry keeps its own tab strip
+-- (settings/OptionsSetup.lua, Helpers.RenderWindowPage). This file owns the band
+-- (H.WindowBanner) and the General entry: the registry actions (new, rename,
 -- delete, duplicate) and "copy settings from", with a group filter.
 --
 -- ---------------------------------------------------------------------------
@@ -10,7 +14,7 @@
 -- A window is an INSTANCE, not a singleton (design §6). There are no global
 -- display settings in this addon — frame, header, rows, bars, text, icons,
 -- tooltip, visibility, columns and data all live inside one window's config.
--- That makes every other settings page ambiguous on its own: "Width" is not a
+-- That makes every entry of this page ambiguous on its own: "Width" is not a
 -- setting, it is a setting OF something.
 --
 -- The resolution the design picked is one piece of session state rather than a
@@ -206,10 +210,11 @@ end
 
 --- The page banner: which window this page is editing, and the picker for it.
 ---
---- Decorated onto the instance rather than kept file-local because SEVEN pages draw it, and a
---- second copy is how two of them end up disagreeing about what the list contains. It stays
---- host-side rather than going upstream because the library's O.PageBanner is the generic half
---- -- the label, the anchoring and the band -- and this is the part that knows what a window is.
+--- Decorated onto the instance, and drawn once, as the Windows page's band above its rail
+--- (MultiMeters#55): the one picker, so the entries cannot disagree about which window they
+--- edit. It stays host-side rather than going upstream because the library's O.PageBanner is the
+--- generic half -- the label, the anchoring and the band -- and this is the part that knows what a
+--- window is.
 ---
 --- The onSelect RETARGETS the active window -- through NS.State.SetActiveWindow, never by
 --- assigning the pointer here -- and then forces a STRUCTURAL refresh, because the other pages
@@ -222,7 +227,7 @@ H.WindowBanner = function(ctx)
     local active = activeWindow()
     local dd = H.PageBanner(ctx, {
         label   = L["Active window"],
-        tooltip = L["Which window the settings on every other page apply to. Each window is configured independently."],
+        tooltip = L["Which window every section of this page applies to. Each window is configured independently."],
         list    = list,
         order   = order,
         value   = active and active.id,
@@ -379,7 +384,7 @@ local function renderCopySource(_, parent, relativeWidth)
     if copySourceId ~= nil and list[copySourceId] == nil then copySourceId = nil end
 
     return H.ActionDropdown(parent, relativeWidth, {
-        label   = L["Copy settings from"],
+        label   = L["Source window"],
         tooltip = L["Copy another window's settings onto this one. Choose which group of settings to copy below."],
         list    = list,
         order   = order,
@@ -400,7 +405,7 @@ local function renderCopyGroup(_, parent, relativeWidth)
     })
 end
 
---- The Window tab: the name row and the three registry buttons.
+--- The General entry's Window block: the name row and the three registry buttons.
 local function renderWindowTab(ctx)
     H.RenderGrid(ctx, {
         { make = renderNameBox },
@@ -428,7 +433,7 @@ local function renderWindowTab(ctx)
     }, nil)
 end
 
---- The Copy from tab: the source picker, the group filter and the Copy button.
+--- The General entry's Copy settings from block: the source picker, the group filter and the Copy button.
 local function renderCopyTab(ctx)
     H.RenderGrid(ctx, {
         { make = renderCopySource },
@@ -441,58 +446,55 @@ local function renderCopyTab(ctx)
     }, nil)
 end
 
--- The page's content is bespoke rather than schema rows -- a name box, three registry buttons,
--- a source picker, a group filter and a Copy button -- so H.RenderTabbedSchema, which partitions
--- SCHEMA ROWS by `group`, has nothing here to drive. The strip is drawn directly with
--- H.TabStrip and the page branches on ctx.activeTab itself, same as it always resolved which
--- half of the page to draw, only now the split is a click instead of a scroll.
-local function render(ctx)
-    H.ClearScroll(ctx)
-
-    H.WindowBanner(ctx)
+--- The General entry: ONE tab, named General (options-ui-§14's escape -- the acts on
+--- the window whole live on the rail's first entry), holding two headed blocks: the
+--- window itself, and "Copy settings from", which was a tab of its own before
+--- MultiMeters#55 folded it in. Bespoke rather than schema rows -- a name box,
+--- registry buttons, a source picker, a group filter and a Copy button -- so the
+--- one-tab strip is drawn directly with H.TabStrip. The band, the rail, the clear
+--- and the relayout are the page renderer's.
+local function renderGeneral(ctx)
     H.TabStrip(ctx, {
-        tabs = {
-            { key = L["Window"],    label = L["Window"] },
-            { key = L["Copy from"], label = L["Copy from"] },
-        },
-        value = ctx.activeTab or L["Window"],
-        onSelect = function(key)
-            if key == ctx.activeTab then return end
-            ctx.activeTab = key
-            -- No H.ClearScroll here: RefreshPanel(ctx, true) re-enters render(), which already
-            -- clears the scroll itself. Matches Columns.lua's tab onSelect, the one page where the
-            -- ordering is load-bearing (a live reorder controller); this page reads the same way.
-            H.RefreshPanel(ctx, true)
-        end,
+        tabs     = { { key = L["General"], label = L["General"] } },
+        value    = L["General"],
+        onSelect = function() end,
     })
-    ctx.activeTab = ctx.activeTab or L["Window"]
+    ctx.activeTab = L["General"]
 
-    if ctx.activeTab == L["Window"] then
-        renderWindowTab(ctx)
-    else
-        renderCopyTab(ctx)
-    end
-
-    H.Relayout(ctx)
+    H.Section(ctx, L["Window"])
+    renderWindowTab(ctx)
+    H.Section(ctx, L["Copy settings from"])
+    renderCopyTab(ctx)
 end
 
 local function Build(mainCategory)
     if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
     if not (H and H.CreatePanel) then return nil end
 
-    -- No Defaults button: nothing on this page is a schema row, so there is
-    -- nothing for "restore this page's defaults" to restore. Deleting the
-    -- registry back to one seed window is not what a player clicking Defaults
-    -- expects, and it is what the button would have to mean.
+    -- DEFAULTS FOR THE ENTRY ON SCREEN (MultiMeters#55). The button is page-wide in
+    -- the sense options-ui-§13 means on a railed page: the active entry's set, which
+    -- is what that entry's own sub-page button restored -- for the active window only,
+    -- because every row resolves against it. General's set is empty (the Windows page
+    -- had no button), and its Defaults says so rather than renaming the window.
     local ctx = H.CreatePanel("MultiMetersWindowsPanel", L["Windows"], {
-        pageKey        = PAGE,
-        defaultsButton = false,
+        pageKey         = PAGE,
+        defaultsButton  = true,
+        defaultsTooltip = L["Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."],
     })
+    ctx.panel.defaultsOnClick = function() H.RestoreActiveSection(ctx) end
 
-    H.SetRenderer(ctx, render)
+    H.__bindWindowsPage(ctx)
+    H.SetRenderer(ctx, H.RenderWindowPage)
 
     return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, L["Windows"])
 end
+
+-- The General entry of the Windows page (MultiMeters#55), first on the rail.
+NS.RegisterWindowSection(PAGE, L["General"], {
+    tooltip  = L["Rename, create, duplicate or delete windows, and copy settings from another window."],
+    render   = renderGeneral,
+    defaults = function() print_(L["General has no settings to restore. The window's name is kept."]) end,
+})
 
 if NS.RegisterOptionsPage then
     NS.RegisterOptionsPage(PAGE, L["Windows"], Build)
