@@ -1,0 +1,1 @@
+clean: enemy-column None no longer called a grid risk (verified: EnemyDamageTaken is OFF_CATALOG, never a grid column); class= and classed-enemy count added, secret-safe; both tests red when reverted; no aggregator change, owner decision pending
