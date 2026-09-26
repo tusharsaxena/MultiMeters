@@ -1,6 +1,6 @@
 -- settings/Columns.lua
 --
--- The Columns page: one block per statistic, ticked or not, in the order the
+-- The Windows page's Columns entry: one block per statistic, ticked or not, in the order the
 -- window draws them left to right.
 --
 -- ---------------------------------------------------------------------------
@@ -302,18 +302,17 @@ end
 --
 -- NOT H.RenderTabbedSchema's host tabs (issue #53, declined). Options minor 4's opts.tabs could
 -- carry the block editor, but that function's tab click runs its own ClearScroll and then
--- re-enters itself, not this render(), so NS.CancelReorder could no longer run before the clear
--- (see the top of render below). It needs a hook that runs before the clear, and it has none.
+-- re-enters itself, not the Windows page's renderer, so NS.CancelReorder could no longer run
+-- before the clear (Helpers.RenderWindowPage cancels first). It needs a hook that runs before
+-- the clear, and it has none.
 -- tests/test_columns.lua pins the three tabs and the cancel-then-clear order.
 local TAB_COLUMNS = L["Columns"]
 local TAB_HEADER_TEXT = L["Header text"]
 local TAB_HEADER_BG = L["Header background"]
 
 --- The Columns entry's strip and body, drawn under the band and the rail by the
---- Windows page's renderer (settings/OptionsSetup.lua, Helpers.RenderWindowPage) --
---- and, until the Columns sub-page retires, under the band by that page's own
---- renderer below. The reorder cancel and the scroll clear are the CALLER's, in
---- that order; both callers cancel first.
+--- Windows page's renderer (settings/OptionsSetup.lua, Helpers.RenderWindowPage).
+--- The reorder cancel and the scroll clear are the renderer's, in that order.
 local function renderSection(ctx)
     if NS.State and NS.State.debug and NS.Debug then
         local w0 = activeWindow()
@@ -347,19 +346,6 @@ local function renderSection(ctx)
     end
 end
 
---- The Columns sub-page's own renderer, until it retires.
-local function render(ctx)
-    -- BEFORE ClearScroll, not after. ClearScroll hands every AceGUI container on this page back to
-    -- a process-wide pool, and a drag handle is parented to one of them until the controller is
-    -- canceled -- so canceling afterwards means some unrelated widget has already been handed a
-    -- frame with a live handle on it.
-    if NS.CancelReorder then NS.CancelReorder(ctx) end
-    H.ClearScroll(ctx)
-    H.WindowBanner(ctx)
-    renderSection(ctx)
-    H.Relayout(ctx)
-end
-
 --- The Columns Defaults: TWO RESETS BEHIND ONE BUTTON, because this entry carries both a bespoke
 --- array (the column list, addressable only as a whole -- see restoreShippedColumns above) and
 --- eight window.columnHeader.* schema rows on its other two tabs. The button restores the whole
@@ -376,34 +362,9 @@ local function restoreDefaults(ctx)
     end)
 end
 
-local function Build(mainCategory)
-    if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
-    if not (H and H.CreatePanel) then return nil end
-
-    -- A DEFAULTS BUTTON THAT DOES ITS OWN WORK: the statistics that ship ticked, in the order they
-    -- ship in, and the header rows (restoreDefaults above).
-    local ctx = H.CreatePanel("MultiMetersColumnsPanel", L["Columns"], {
-        pageKey          = PAGE,
-        defaultsButton   = true,
-        defaultsTooltip  = L["Restore the statistics this window ships with, ticked and in their shipped order, and the header text and background settings on this page to their shipped values."],
-    })
-    ctx.panel.defaultsOnClick = function() restoreDefaults(ctx) end
-
-    H.SetRenderer(ctx, function(c)
-        c.unit = NS.State and NS.State.activeWindowId or nil
-        render(c)
-    end)
-
-    return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, NS.SubPageLabel(L["Columns"]))
-end
-
 -- The Columns entry of the Windows page (MultiMeters#55).
 NS.RegisterWindowSection(PAGE, L["Columns"], {
     tooltip  = L["Which statistics this window shows, in what order, and how the column headers look."],
     render   = renderSection,
     defaults = restoreDefaults,
 })
-
-if NS.RegisterOptionsPage then
-    NS.RegisterOptionsPage(PAGE, L["Columns"], Build)
-end

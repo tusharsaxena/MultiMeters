@@ -506,7 +506,7 @@ test("SetByPath: a path INTO the column array is refused by name", function()
     assertEqual(type(err), "string")
     -- The ordinal moves on the next toggle or drag, so a stored reference to it is
     -- wrong by the next edit. It must not fall through to "not a row".
-    assertTrue(err:find("Columns page", 1, true) ~= nil,
+    assertTrue(err:find("Windows > Columns", 1, true) ~= nil,
         "the refusal should point at the page that CAN do it, got: " .. err)
 end)
 

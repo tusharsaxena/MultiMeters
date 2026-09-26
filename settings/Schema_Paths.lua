@@ -642,7 +642,7 @@ function NS.GetSetting(path, windowId) return S.Get(path, windowId) end
 --- @return boolean ok, string|nil err, string|nil why
 function NS.SetByPath(path, value, windowId)
     if type(path) == "string" and path:sub(1, #COLUMNS_PATH + 1) == COLUMNS_PATH .. "." then
-        return false, L["A single column is not a setting — edit columns on the Columns page."]
+        return false, L["A single column is not a setting — edit columns under Windows > Columns."]
     end
     return S.Set(path, value, windowId)
 end

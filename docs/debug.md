@@ -87,7 +87,7 @@ as `[Set] <path> = <value>` (`debug-logging-§10`). Two kinds of act are logged 
 | One write: a widget, `/mm set`, `/mm reset <path>` | `[Set] <path> = <value>` |
 | A batch that is not a bulk act: a header sort, a resize, a segment pick | one `[Set] <path> = <value>` per row |
 | A page's **Defaults** button | `[Set] reset <page>: N rows` |
-| The Columns page's **Defaults** button (the array and the header rows) | `[Set] reset columns: N rows` |
+| The Columns entry's **Defaults** button (the array and the header rows) | `[Set] reset columns: N rows` |
 | Copy settings from one window onto another | `[Set] copy from '<source>' to '<target>': N rows` |
 | **Reset all settings** or `/mm resetall` once its popup is accepted, or Profiles → **Reset Profile** | `[Set] reset profile '<name>' to defaults` |
 | Profiles → **Copy From** | `[Set] copied profile '<source>' → '<name>'` |

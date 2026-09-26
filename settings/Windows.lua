@@ -14,7 +14,7 @@
 -- A window is an INSTANCE, not a singleton (design §6). There are no global
 -- display settings in this addon — frame, header, rows, bars, text, icons,
 -- tooltip, visibility, columns and data all live inside one window's config.
--- That makes every other settings page ambiguous on its own: "Width" is not a
+-- That makes every entry of this page ambiguous on its own: "Width" is not a
 -- setting, it is a setting OF something.
 --
 -- The resolution the design picked is one piece of session state rather than a
@@ -210,10 +210,11 @@ end
 
 --- The page banner: which window this page is editing, and the picker for it.
 ---
---- Decorated onto the instance rather than kept file-local because SEVEN pages draw it, and a
---- second copy is how two of them end up disagreeing about what the list contains. It stays
---- host-side rather than going upstream because the library's O.PageBanner is the generic half
---- -- the label, the anchoring and the band -- and this is the part that knows what a window is.
+--- Decorated onto the instance, and drawn once, as the Windows page's band above its rail
+--- (MultiMeters#55): the one picker, so the entries cannot disagree about which window they
+--- edit. It stays host-side rather than going upstream because the library's O.PageBanner is the
+--- generic half -- the label, the anchoring and the band -- and this is the part that knows what a
+--- window is.
 ---
 --- The onSelect RETARGETS the active window -- through NS.State.SetActiveWindow, never by
 --- assigning the pointer here -- and then forces a STRUCTURAL refresh, because the other pages
@@ -226,7 +227,7 @@ H.WindowBanner = function(ctx)
     local active = activeWindow()
     local dd = H.PageBanner(ctx, {
         label   = L["Active window"],
-        tooltip = L["Which window the settings on every other page apply to. Each window is configured independently."],
+        tooltip = L["Which window every section of this page applies to. Each window is configured independently."],
         list    = list,
         order   = order,
         value   = active and active.id,

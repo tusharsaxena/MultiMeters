@@ -1,6 +1,6 @@
 -- settings/Bars.lua
 --
--- The Bars page — THE GRID AND EVERYTHING DRAWN IN IT, in seven groups, from the
+-- The Windows page's Bars entry — THE GRID AND EVERYTHING DRAWN IN IT, in seven groups, from the
 -- outside in: the row (how tall, how many, which way they grow, who is pinned and
 -- highlighted), then the StatusBar itself (texture, color, opacity, fill
 -- direction), the tint behind it, its border, the two TEXT slots, and the name
@@ -40,35 +40,9 @@ local _, NS = ...
 
 local L = NS.L
 
-local PAGE = "bars"
-
-local function Build(mainCategory)
-    if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
-
-    local H = NS.Helpers
-    if not (H and H.CreatePanel) then return nil end
-
-    local ctx = H.CreatePanel("MultiMetersBarsPanel", L["Bars"], {
-        pageKey        = PAGE,
-        defaultsButton = true,
-    })
-    ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end
-
-    H.SetRenderer(ctx, function(c)
-        c.unit = NS.State and NS.State.activeWindowId or nil
-        H.ClearScroll(c)
-        H.WindowBanner(c)
-        H.RenderTabbedSchema(c, PAGE)
-    end)
-
-    return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, NS.SubPageLabel(L["Bars"]))
-end
-
-if NS.RegisterOptionsPage then
-    NS.RegisterOptionsPage(PAGE, L["Bars"], Build)
-end
-
--- The Bars entry of the Windows page (MultiMeters#55).
-NS.RegisterWindowSection(PAGE, L["Bars"], {
+-- The Bars entry of the Windows page (MultiMeters#55). Its rows are drawn by the page's
+-- renderer (settings/OptionsSetup.lua, Helpers.RenderWindowPage) through
+-- H.RenderTabbedSchema(ctx, "bars"): the entry's tabs are the rows' groups.
+NS.RegisterWindowSection("bars", L["Bars"], {
     tooltip = L["How this window's bars, their text and their icons look."],
 })

@@ -1,10 +1,10 @@
 -- settings/Header.lua
 --
--- The Header page: the strip above the rows — its title, what it reports about
+-- The Windows page's Header entry: the strip above the rows — its title, what it reports about
 -- the session, and how it is drawn.
 --
 -- Pure schema. Every widget is a `window.header.*` row in NS.Schema, so this
--- file is the registration and the lazy body and nothing else; adding a header
+-- file is the entry's registration and nothing else; adding a header
 -- option is one row in settings/Schema.lua.
 --
 -- Worth knowing while reading the rows this page renders: the two accents the
@@ -28,39 +28,9 @@ local _, NS = ...
 
 local L = NS.L
 
-local PAGE = "header"
-
-local function Build(mainCategory)
-    if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
-
-    local H = NS.Helpers
-    if not (H and H.CreatePanel) then return nil end
-
-    local ctx = H.CreatePanel("MultiMetersHeaderPanel", L["Header"], {
-        pageKey        = PAGE,
-        defaultsButton = true,
-    })
-    ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end
-
-    -- The library owns WHEN this draws — first show, and again when a refresh
-    -- marked it dirty while hidden. Building at registration time would lay the
-    -- widgets out against a zero-width body and lose the AceGUI skinning race
-    -- (options-ui-§5).
-    H.SetRenderer(ctx, function(c)
-        c.unit = NS.State and NS.State.activeWindowId or nil
-        H.ClearScroll(c)
-        H.WindowBanner(c)
-        H.RenderTabbedSchema(c, PAGE)
-    end)
-
-    return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, NS.SubPageLabel(L["Header"]))
-end
-
-if NS.RegisterOptionsPage then
-    NS.RegisterOptionsPage(PAGE, L["Header"], Build)
-end
-
--- The Header entry of the Windows page (MultiMeters#55).
-NS.RegisterWindowSection(PAGE, L["Header"], {
+-- The Header entry of the Windows page (MultiMeters#55). Its rows are drawn by the page's
+-- renderer (settings/OptionsSetup.lua, Helpers.RenderWindowPage) through
+-- H.RenderTabbedSchema(ctx, "header"): the entry's tabs are the rows' groups.
+NS.RegisterWindowSection("header", L["Header"], {
     tooltip = L["This window's title bar, its text and its buttons."],
 })

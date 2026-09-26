@@ -1,6 +1,6 @@
 -- settings/Visibility.lua
 --
--- The Visibility page: which contexts this window shows itself in, the extra
+-- The Windows page's Visibility entry: which contexts this window shows itself in, the extra
 -- rules that override a context that already said yes, and the two combat
 -- rules.
 --
@@ -39,35 +39,9 @@ local _, NS = ...
 
 local L = NS.L
 
-local PAGE = "visibility"
-
-local function Build(mainCategory)
-    if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
-
-    local H = NS.Helpers
-    if not (H and H.CreatePanel) then return nil end
-
-    local ctx = H.CreatePanel("MultiMetersVisibilityPanel", L["Visibility"], {
-        pageKey        = PAGE,
-        defaultsButton = true,
-    })
-    ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end
-
-    H.SetRenderer(ctx, function(c)
-        c.unit = NS.State and NS.State.activeWindowId or nil
-        H.ClearScroll(c)
-        H.WindowBanner(c)
-        H.RenderTabbedSchema(c, PAGE)
-    end)
-
-    return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, NS.SubPageLabel(L["Visibility"]))
-end
-
-if NS.RegisterOptionsPage then
-    NS.RegisterOptionsPage(PAGE, L["Visibility"], Build)
-end
-
--- The Visibility entry of the Windows page (MultiMeters#55).
-NS.RegisterWindowSection(PAGE, L["Visibility"], {
+-- The Visibility entry of the Windows page (MultiMeters#55). Its rows are drawn by the page's
+-- renderer (settings/OptionsSetup.lua, Helpers.RenderWindowPage) through
+-- H.RenderTabbedSchema(ctx, "visibility"): the entry's tabs are the rows' groups.
+NS.RegisterWindowSection("visibility", L["Visibility"], {
     tooltip = L["Where and when this window is shown."],
 })

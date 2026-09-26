@@ -85,6 +85,7 @@ in-client.
 | 33 | **Segments** | [**The pinned segment's none**](#33-the-pinned-segments-none) |
 | 34 | Migration | [v13 → v14 Lock frame migration](#34-v13--v14-lock-frame-migration) |
 | 35 | **Diagnostics** | [**The diagnostics report**](#35-the-diagnostics-report) |
+| 36 | **Settings panel** | [**The Windows page (MultiMeters#55)**](#36-the-windows-page-multimeters55) |
 
 ---
 
@@ -168,14 +169,8 @@ Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi
 - `/mm help` prints the help index. Every row carries the cyan `[MM]` banner; verb names are yellow.
 - A bare `/mm` opens the settings panel on the **Ka0s Multi Meters** landing page, the same as
   `/mm config`, and prints nothing to chat. `/mm` followed only by spaces does the same.
-- Settings → AddOns shows a **Ka0s Multi Meters** parent with **nine** subcategories in this
-  order: General · Windows · Frame · Header · Bars · Tooltip · Visibility · Columns · Profiles. **General is first**, and the six between Windows and Profiles read as
-  `  - Frame` — two spaces, a hyphen, a space — while General, Windows and Profiles sit flush.
-  Two failure modes to watch for: a **hollow box** in front of a page name means a non-ASCII glyph
-  has crept back in and the player's font does not have it, and a **flat list of hyphens** with no
-  indent means the client has started trimming leading whitespace — they are the pages the banner
-  retargets. General and Profiles do not carry it, and no page's own canvas heading does — the
-  indent is tree-label-only.
+- Settings → AddOns shows a **Ka0s Multi Meters** parent with **three** subcategories. The tree
+  reads General · Windows · Profiles. There are no nested entries.
 - **No `schema error:` line and no "schema path does not resolve" line appears at any point.**
   `NS.ValidateSchema` runs from the options descriptor at panel creation; a line here means a schema
   row's path does not resolve against `defaults/Profile.lua`, or its default disagrees with the tree.
@@ -217,7 +212,7 @@ second edge to catch.
   untick **Lock frame**, then tick it again. Then unlock one window from the padlock in its header.
 - `/mm test` on and off (or **General → Master controls → Test mode**), with the settings panel open.
 - Turn Test mode on again and start a fight (a target dummy will do). Repeat with the window's
-  **hide in combat** rule ticked on its Visibility page.
+  **hide in combat** rule ticked on its Visibility entry.
 - While still in combat, tick the Test mode box, then type `/mm test`.
 - **SM-01.** `/mm disable`, then on **General → Master controls** tick and untick **Test mode**.
 - **SM-02.** `/mm perf start`, and during the suspended arm type `/mm toggle`.
@@ -266,20 +261,21 @@ second edge to catch.
 
 ### 4. Settings panel sweep
 
-**Steps.** Open every one of the nine pages. On each, move one control of each type present
+**Steps.** Open every one of the three pages, and on Windows every one of the Windows page's seven
+entries. On each, move one control of each type present
 (checkbox, slider, dropdown, color, edit box) and watch the window.
 
 **Pass.**
-- **The banner, and switching windows.** Frame, Header, Bars, Tooltip, Visibility, Columns and
-  Windows each draw a banner naming the active window at the top of the page. Change the window from
-  the dropdown on any one of the seven and every other one of the seven reflects it the next time you
-  visit — the controls on that page now show the newly-picked window's values, not the old one's.
-  **The active tab survives the switch**: land on Bars → **Border**, change windows from the
-  banner, and you are still looking at *Border*, now for the new window — the active tab is
-  per-page UI state, not tied to which window is selected, and must not snap back to the first tab.
+- **The band, and switching windows.** The Windows page draws one band naming the active window
+  across the top, above the rail. Change the window from the band on any one of the Windows page's
+  seven entries and every other entry reflects it the next time you visit — the controls on that
+  entry now show the newly-picked window's values, not the old one's. **The active tab survives the
+  switch**: land on Bars → **Border**, change windows from the band, and you are still looking at
+  *Border*, now for the new window — the active tab is per-entry UI state, not tied to which window
+  is selected, and must not snap back to the first tab.
 - Every page draws on **first show** with correctly sized widgets — nothing squashed into a
   zero-width column, and every widget carries the same skin as the rest of your AceGUI addons. With a
-  skinning addon (ElvUI / AddOnSkins) loaded, this reaches the banner's window dropdown and the tab
+  skinning addon (ElvUI / AddOnSkins) loaded, this reaches the band's window dropdown and the tab
   strip too, not only the row controls — both are built lazily on first `OnShow`, like the Defaults
   button, and a skin that reaches everything else but not one of these three is the lazy-build rule
   failing for that one piece. (Both symptoms are the lazy-build rules failing; see
@@ -374,10 +370,10 @@ second edge to catch.
   Tooltip → *Text* and Header → *Title text* are each an explicit choice, because text is drawn on
   top of a surface the broadcast reaches and has to contrast with it. Then change **one** of the six
   back to Custom:
-  only that one changes, and the meta is not fought. Finally press the Frame page's **Defaults**
-  button and confirm the rest are **untouched** — a page's reset must not reach other pages, and this
-  page's own Defaults resets the **whole page**, every tab, not just the visible one.
-- **The Frame page's shape.** Four tabs, in order: *General* (lock, keep on screen, and the four
+  only that one changes, and the meta is not fought. Finally press the Frame entry's **Defaults**
+  button and confirm the rest are **untouched** — an entry's reset must not reach other entries, and
+  this entry's own Defaults resets the **whole entry**, every tab, not just the visible one.
+- **The Frame entry's shape.** Four tabs, in order: *General* (lock, keep on screen, and the four
   meta rows above), *Size and position* (width, height, scale, opacity, strata, padding),
   *Background and border* (border style and thickness, then the window's own fill color and its
   edge color), and *Row* (max rows, row height, spacing, growth direction, then always-show-self,
@@ -387,28 +383,28 @@ second edge to catch.
   rows are on **Header** — and **no** "Reset position" button, which is on **General**'s **Master
   controls** tab. There is also **no** "Show resize grip" checkbox and **no** "Minimized" checkbox: the lock
   governs the grip, and the header's own minimize button governs the collapse. Whether the title bar
-  draws at all (`window.header.show`) is a **Header** page setting now, on its **Title bar** tab, not
+  draws at all (`window.header.show`) is a **Header** entry setting now, on its **Title bar** tab, not
   a Frame row.
-- **The Bars page's shape.** Six tabs, outside in: *Bar*, *Background*, *Border*, *Text content*,
+- **The Bars entry's shape.** Six tabs, outside in: *Bar*, *Background*, *Border*, *Text content*,
   *Text style*, *Icons* — every tab here is about the bar, so the two that used to say so in their
   names no longer do. The Text and Icons pages folded in here, and their paths did not move with
-  them — `/mm get window.text.size` still answers; `window.rows.*` is on the **Frame** page's *Row*
+  them — `/mm get window.text.size` still answers; `window.rows.*` is on the **Frame** entry's *Row*
   tab now, not on Bars.
-- **The Header page's shape.** Four tabs, top to bottom in the order the strips are drawn: *Title
+- **The Header entry's shape.** Four tabs, top to bottom in the order the strips are drawn: *Title
   bar* — the strip's own shape: whether it draws, its background, alignment, height, and the divider
   under it (on/off, thickness and color) — then *Title text* — the face drawn on it, and the
   window's own name — then *Controls*, and *Button style* (the reveal beside the size, then rest and
   hover paired down three lines: mode, color, opacity). `showClose` and the rest are still **stored** at
   `window.frame.*` (`/mm get window.frame.showClose` answers), which is deliberate: a row's page is
   where it is edited, its path is where it is stored. There is **no** *Column headers* tab here any
-  more — that strip's rows moved to the **Columns** page, which is the page that labels it.
+  more — that strip's rows moved to the **Columns** entry, which is the entry that labels it.
 - **The Controls tab reads like the header strip.** Every checkbox draws **the control's own icon**
   between the tick box and the words, and the rows run in the order the strip runs **left to right**:
   the segment line first (no icon — it is text, not a glyph), then export, reset, segment picker,
   settings, lock, minimize, close. Check each icon against the one in the header above it; a missing
   icon means `NS.Icon` answered nil for that art name, which is a media-payload problem rather than a
   settings one, and the label falls back to its plain words.
-- **The Visibility page's shape.** Three tabs: *Where to show this window* (the seven context
+- **The Visibility entry's shape.** Three tabs: *Where to show this window* (the seven context
   checkboxes), *When to hide this window* (the mount/skyriding/housing/pet-battle/death/combat
   rules) and *Combat* (hide in/out of combat). Those first two are by a wide margin the longest tab
   labels in the whole panel, and the likeliest strip to wrap.
@@ -494,7 +490,7 @@ second edge to catch.
   There is deliberately
   **no** Reset meter data button here, or on any page; the header's own reset control is the one way
   to it. Reset position is the one control on the page that is **not** addon-wide — it moves the
-  window the banner is pointed at and nothing else, which the line under the pair says.
+  window the band is pointed at and nothing else, which the line under the pair says.
   **Nothing is drawn twice**: Test mode and the debug console are composed `sessionOnly` rows, so a
   second "Preview mode"/"Debug console" checkbox or a second *Debug* heading is the duplicate this
   redesign removed coming back.
@@ -535,7 +531,7 @@ second edge to catch.
   There is deliberately no per-statistic option — one strip over the whole window could only ever
   mean the sort column.
   The Settings window's own footer Defaults control works on the same tab.
-- **Panel ↔ CLI parity.** With a page open, run `/mm set window.frame.width 640`. The Frame page's
+- **Panel ↔ CLI parity.** With a page open, run `/mm set window.frame.width 640`. The Frame entry's
   Width slider moves to 640 **without being reopened** (`RefreshScalars`). Conversely, move a slider
   and `/mm get window.frame.width` reports the new value.
 - `/mm list` groups every setting under the same page keys the panel uses. It lists
@@ -543,7 +539,7 @@ second edge to catch.
   state the header's own minimize button writes rather than a preference. `/mm set
   window.frame.minimized true` must still collapse the window.
 - **An open page locks when combat starts.** With a tabbed page already open, enter combat (a dummy
-  is fine). A cover falls over the **whole** page — banner and tab strip included — reading
+  is fine). A cover falls over the **whole** page — band, rail and tab strip included — reading
   *Settings are locked during combat.* in gray, and one gray chat line says settings are locked. A
   tab click, a widget and the Defaults button all do nothing under it (`options-ui-§2`/`§13`). The
   Settings window stays open. When combat ends the cover lifts on its own and the page shows current
@@ -552,16 +548,18 @@ second edge to catch.
   message.
 - **Combat refusal.** Enter combat (a dummy is fine here). `/mm config` **refuses** and prints one
   gray notice. It must **not** queue the request and open the panel when combat ends.
-- **Every sub-page mid-combat, from the Blizzard sidebar.** With the Settings window closed, enter
+- **Every page mid-combat, from the Blizzard sidebar.** With the Settings window closed, enter
   combat, then open Settings → AddOns → Ka0s Multi Meters from the Blizzard sidebar and walk **every**
-  sub-page in the category, **Profiles included**. Each must show the gray combat cover with nothing
-  drawn under it, and the **Settings window must stay open** — no close, no `ADDON_ACTION_BLOCKED`,
-  no `C stack overflow` (anti-pattern #88, which the old close-the-window refusal caused). Exactly
-  one gray *settings are locked during combat* line for the whole walk. After combat, the page on
-  screen draws itself without a click. That route bypasses `/mm config` entirely, which is why the
-  lock lives on the page (in the library's `H.SetRenderer`) rather than on the slash command — and
-  the Profiles page gets it from the same place as the other eight, so the failure this step is for
-  is **eight pages covered and one rendering**. (LibKa0s v1.46.1; not yet run in a client.)
+  page in the category — General, Windows and **Profiles included**. Each must show the gray combat
+  cover with nothing drawn under it (on Windows, the band, the rail and the strip included, so no
+  rail entry can be clicked), and the **Settings window must stay open** — no close, no
+  `ADDON_ACTION_BLOCKED`, no `C stack overflow` (anti-pattern #88, which the old close-the-window
+  refusal caused). Exactly one gray *settings are locked during combat* line for the whole walk.
+  After combat, the page on screen draws itself without a click. That route bypasses `/mm config`
+  entirely, which is why the lock lives on the page (in the library's `H.SetRenderer`) rather than on
+  the slash command — and the Profiles page gets it from the same place as the other two, so the
+  failure this step is for is **two pages covered and one rendering**. (LibKa0s v1.46.1; not yet run
+  in a client.)
 
 ### 5. Column editor
 
@@ -569,7 +567,7 @@ The page is **one block per statistic** — a drag handle, a green tick or a red
 Ticked blocks are the columns, in block order, and they always sit above the rule; unticked ones sit
 below it. Nothing here can be driven offline, so every check below needs a client.
 
-**Steps.** Out of combat, on the Columns page:
+**Steps.** Out of combat, under Windows > Columns:
 
 1. **Drag** a block from the bottom of the ticked group to the top, by its handle.
 2. **Untick** a middle column.
@@ -641,11 +639,11 @@ The strip is hand-built on purpose (issue #53, pinned by `tests/test_columns.lua
 **The library drag (LK-21).** The reorder is LibKa0s-Widgets' `ReorderList` drag. Drag a block **from
 the middle of the ticked group** by its handle and drop it lower. **Pass:** the insertion line is drawn
 in the list's own color, the order changes in the page and in the window, and a second drag in
-**another window's** Columns page (change the window banner's selection) draws its own line, not a
+**another window's** Columns entry (change the band's selection) draws its own line, not a
 leftover from the first. After the drop nothing stutters: no row's `OnUpdate` stays armed, so frame
 time with the page open and idle is what it was before the drag.
 
-**Combat lock.** Leave the Columns page **open**, then pull. Click a glyph and drag a handle.
+**Combat lock.** Leave the Columns entry **open**, then pull. Click a glyph and drag a handle.
 
 **Pass.** The library's gray cover is over the page, so neither lands: the columns do not change,
 and the one chat line is the library's *settings are locked during combat*. **No Lua error.** Then,
@@ -656,12 +654,12 @@ are holding secret values is precisely what must not happen.
 ### 6. Multi-window
 
 **Steps.**
-1. Windows page → **New window**. Confirm the picker follows the new window, and that it is named
+1. Windows → General → **New window**. Confirm the picker follows the new window, and that it is named
    "Multi Meters #2" — the count of windows, not the window id.
 2. Give the two windows visibly different settings — different width, bar color, column set, sort
    column.
 3. Change a setting on window 2 and confirm window 1 does **not** move.
-4. Windows page → **Copy settings from** → source = window 1, group = **Bars** → Copy.
+4. Windows → General → **Copy settings from** → source = window 1, group = **Bars** → Copy.
 5. Repeat with group = **Everything**, with `/mm debug on` and the console open.
 6. **Duplicate window**, then **Delete** one.
 7. The settings runtime (LibKa0s-Schema-1.0, issue #52): with the picker on window **1**, resize
@@ -680,11 +678,11 @@ are holding secret values is precisely what must not happen.
 - The window picker is keyed by id: two windows both named "Raid" are still individually selectable.
 - **Delete** confirms first, and the **last** window cannot be deleted ("The last window cannot be
   deleted.").
-- After deleting the window the picker was pointed at, every settings page re-renders against the
+- After deleting the window the picker was pointed at, every Windows entry re-renders against the
   first surviving window rather than showing empty widgets.
 - `/mm window list` lists both, with shown/hidden state and column count. `/mm window new`,
   `delete`, `copy <source> <target>` do the same things the panel does.
-- The resize and the sort land on window 2 only (its Frame page shows the new width once the
+- The resize and the sort land on window 2 only (its Frame entry shows the new width once the
   picker moves to it), and the picker stays on window 1.
 - A copy-from redraws the target **once** and logs **one** `[Set] copy from '<src>' to '<dst>': N
   rows` line in the console, never a line per row.
@@ -1136,7 +1134,7 @@ is why the popup exists. Every open drill-down closes and this module's caches a
 - `/mm set window.frame.width 520` moves the **active** window — the one the picker is on — and
   `/mm get` reads it back. With two windows, select the other in the picker and confirm the same
   command now targets the other one **with no change to the path typed**.
-- `/mm set window.columns.2.width 90` is **refused** with a message pointing at the Columns page. A
+- `/mm set window.columns.2.width 90` is **refused** with a message pointing at Windows > Columns. A
   single column is not addressable by ordinal, because the ordinal moves on the next edit.
 - `/mm set window.frame.scale 5` is refused (validator: 0.5–2.0). `/mm set nonsense.path 1` is
   refused with "Setting not found".
@@ -1254,9 +1252,9 @@ switch back to Default → copy from Test → reset.
 - After an accepted `/mm resetall` the column list is back to the six shipped columns, in catalog
   order.
 - **Each reset is one line in the console.** Turn on `/mm debug on`, open the console and clear it.
-  - A page's **Defaults** press reads `[Set] reset <page>: N rows`, with no `[Set] <path> = …` line
+  - A page's or an entry's **Defaults** press reads `[Set] reset <page>: N rows`, with no `[Set] <path> = …` line
     under it, and a second press reads `0 rows`.
-  - The Columns page reads `[Set] reset columns: N rows`, with the column list counted as one row.
+  - Windows > Columns reads `[Set] reset columns: N rows`, with the column list counted as one row.
   - **Reset all settings** and an accepted `/mm resetall` each read exactly `[Set] reset profile
     '<name>' to defaults`, with no `reset all` line beside it. Showing or declining the popup logs
     nothing.
@@ -2229,6 +2227,28 @@ buffer. [debug.md](debug.md#the-diagnostics-report) describes what each section 
    holds the trace and the whole report.
 
 **Record:** client build, whether step 3 ran in a key or a raid, and the line count step 6 settled at.
+
+---
+
+### 36. The Windows page (MultiMeters#55)
+
+The Windows page is one page per window: the Active window band on top, the nav rail on the left and
+the entry's own tab strip to its right. Open the panel with `/mm config`. The owner fills the Result
+column.
+
+| # | Check | Expected | Source | Result |
+|---|---|---|---|---|
+| MM-S1 | Look at the Settings tree under Ka0s Multi Meters. | General · Windows · Profiles. There are no Frame, Header, Bars, Tooltip, Visibility or Columns entries, indented or not. | spec §A1; NR-MM-04 | |
+| MM-S2 | Open Windows. | The Active window picker is the band across the top, full width. The rail is on the left with General · Frame · Header · Bars · Tooltip · Visibility · Columns, and the page opens on General. The rail's top edge is level with the top of the tab art (the tab itself, not the empty space above it). | spec §A2; options-ui-§13, §14 | |
+| MM-S3 | Rail -> Bars, then scroll to the bottom of the Bar tab. | Only the controls move. The band, the rail and the tab strip stay where they are. | spec §A2 | |
+| MM-S4 | Frame -> Size and position, then Bars, then Frame again. | Frame opens on Size and position. Repeat with Columns -> Header background, then General, then Columns: Columns opens on Header background. | spec §A3 (per-entry tabs); NR-MM-02 | |
+| MM-S5 | On Bars -> Border, pick the other window in the band. | The page stays on Bars -> Border, and the values shown are the other window's. Pick the first window again: the same. | options-ui-§14 (the rail is not a picker); NR-MM-02 | |
+| MM-S6 | On General: rename the window in the name box and press Enter, click New window, Duplicate window, then Delete window and confirm. Then, under the Copy settings from heading, pick the other window as Source window, pick Bars under Settings to copy, and click Copy. | General shows one tab, named General. Each act does what it did on the old Window tab, and the band follows the new or duplicated window. The copy changes only the active window's Bars settings to the source's. | spec §A2 (Copy folded into General); R2 | |
+| MM-S7 | Columns -> Columns tab. Start dragging a block by its handle, and while the mouse is still down, click Frame on the rail. Release. Then go back to Columns. | The page moves to Frame with no drag handle left on any Frame row. Back on Columns, every block is there, in an order you can read, and dragging still works. | Review Focus 1; NR-MM-02 | |
+| MM-S8 | With the first window active: change a Frame setting (Size and position -> Width) and a Header setting (Title bar -> Header height). Select Frame and click Defaults. Then select General and click Defaults. Then change the column order on Columns, select Columns and click Defaults. | Frame's Defaults puts only the Frame rows back, on the active window only: Header height keeps your value, and the other window is unchanged. General's Defaults changes nothing and prints one line saying General has no settings to restore; the window keeps its name. Columns' Defaults restores the shipped column list and the header text and background settings. | Review Focus 2; spec §A3 (Defaults); R1 | |
+| MM-S9 | Open Windows, then enter combat (attack a training dummy). Try clicking a rail entry. Leave combat. | The whole page, rail included, is under the combat cover with "Settings are locked during combat." Nothing under it can be clicked, and one gray "locked" line prints. After combat the page draws normally, on the entry you were on. | options-ui-§2, §13 | |
+| MM-S10 | `/reload`, then open Windows as the first page of the session. | The tabs sit in one row to the right of the rail from the first frame. None is drawn under the rail, and none is stacked one per row. | Global Constraints; NR-MM-02 | |
+| MM-S11 | Hover each rail entry. | Each shows a tooltip saying what the entry holds. The rail looks like a tree pane (gold entries, the selected one white on a blue bar), visibly different from the gold tabs. | spec §A2 (rail tooltips) | |
 
 ---
 

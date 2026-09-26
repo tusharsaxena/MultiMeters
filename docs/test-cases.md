@@ -2147,11 +2147,10 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 11: /mm toggle under a perf suspend shows nothing and says why
 - Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it
 
-### test_options_panel.lua (44)
+### test_options_panel.lua (43)
 
 - Options: General is the FIRST page, above Windows
-- Options: every window page is marked as nested, and the two that are not are not
-- Options: the page HEADING keeps the plain name, mark or no mark
+- Options: the tree is General, Windows, Profiles, with no nesting mark
 - Options: the parent category is registered at CreateOptionsPanel time
 - Options: every page's subcategory is registered eagerly, before any panel is shown
 - Options: a page's ctx carries its page key
@@ -2189,7 +2188,7 @@ badge and any count quoted in the docs must agree with it.
 - Panel: the Master controls tab draws four pairs, Test mode beside Minimap button
 - Panel: the Master controls tab closes with the composer's two reset buttons
 - Panel: the Statistic colors tab says where its colors are actually worn
-- Panel: every window sub-page banners the active window, and Windows has no second picker
+- Panel: every Windows entry sits under the Active window band, and General has no second picker
 - Panel: choosing a window in the banner retargets every page and keeps the tab
 - Panel: Reset all settings' tooltip says it is the same act as Profiles -> Reset Profile
 - scheduleTimer schedules once through C_Timer.After with the given delay
@@ -2402,7 +2401,7 @@ badge and any count quoted in the docs must agree with it.
 | test_slash.lua | 76 |
 | test_slash_refusal.lua | 5 |
 | test_disabled.lua | 23 |
-| test_options_panel.lua | 44 |
+| test_options_panel.lua | 43 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 14 |
@@ -2410,4 +2409,4 @@ badge and any count quoted in the docs must agree with it.
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2092** |
+| **Total** | **2091** |

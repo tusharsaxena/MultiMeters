@@ -114,7 +114,7 @@ it *and* the order it lands in a new window if it ships enabled.
 |---|---|
 | `Constants.STAT_BY_KEY` | built from the array |
 | `Constants.DEFAULT_STAT_KEYS` | derived from `defaultEnabled`; chooses which of `NS.DefaultWindow`'s columns ship **ticked** — every catalog statistic gets an entry either way |
-| The Columns page | `settings/Columns.lua` draws one block per entry of the window's array, which normalizeColumns keeps equal to `Const.STATS` |
+| The Columns entry | `settings/Columns.lua` draws one block per entry of the window's array, which normalizeColumns keeps equal to `Const.STATS` |
 | The name tooltip's all-statistics list | `modules/Tooltip_Builders.lua` walks `Const.STATS` |
 | The aggregator's per-stat read | `columnKeys(window)` filters the window's columns through `STAT_BY_KEY` |
 
@@ -138,10 +138,10 @@ correct rather than broken, but it means two columns read alike.
 - `defaultEnabled = true` changes what a **new** window ships with. It does **not** appear in an
   existing profile: `Database.EnsureWindowShape` deliberately leaves the `columns` array alone,
   because key-filling it would re-add columns the user removed. Existing users add it from the
-  Columns page, or `/mm resetall`.
+  Columns entry, or `/mm resetall`.
 - Removing a stat from the catalog is safe: `WindowProto:BuildLayout` and
   `Aggregator.columnKeys` both drop a column whose key `STAT_BY_KEY` does not answer, and the
-  Columns page still **lists** it (labeled with its raw key) so the player can remove it.
+  Columns entry still **lists** it (labeled with its raw key) so the player can remove it.
 - Never add `Dps` or `Hps`. `amountPerSecond` ships on the same source row as `totalAmount`, so one
   `DamageDone` read fills both halves of the column; querying them would double the session reads
   for a number the addon already holds.
@@ -409,13 +409,14 @@ other row.
 
 ---
 
-## Add a settings page
+## Add a settings page (an addon-wide one)
 
-Only worth doing for a genuinely new group of settings; five of the nine existing pages are one
-`H.WindowBanner(c)` plus one `H.RenderTabbedSchema(c, PAGE)` call.
+Only worth doing for a genuinely new group of settings that is **not about one window**, like
+General. A group of settings about one window is an entry of the Windows page instead: see
+[Add an entry to the Windows page](#add-an-entry-to-the-windows-page). The tree is General, Windows,
+Profiles, and nothing nests under Windows since MultiMeters#55.
 
-**1. `settings/<Name>.lua`.** Copy `settings/Frame.lua` — it is the minimal shape for a page that
-edits the active window.
+**1. `settings/<Name>.lua`.** The minimal shape for a schema-driven, addon-wide page:
 
 ```lua
 -- `_` and not `addonName`: the first vararg is the folder name, and a page file has no use
@@ -437,13 +438,11 @@ local function Build(mainCategory)
     ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end
 
     H.SetRenderer(ctx, function(c)
-        c.unit = NS.State and NS.State.activeWindowId or nil
         H.ClearScroll(c)
-        H.WindowBanner(c)          -- omit this line for an addon-wide page (General has none)
         H.RenderTabbedSchema(c, PAGE)
     end)
 
-    return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, NS.SubPageLabel(L["<Name>"]))
+    return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, L["<Name>"])
 end
 
 if NS.RegisterOptionsPage then
@@ -463,37 +462,54 @@ group's first row appears. A page with only one visible group draws a **one-tab 
 `#groups < 2` fallback to a strip-less `RenderSchema` is gone as of LibKa0s v1.24.0
 (`options-ui-§13`), so there is nothing to opt into or out of and no page can render strip-less.
 
-**4. `defaults/Profile.lua`** — a new config group if the page owns one. If it is per-window, add it
-to `WINDOW_TEMPLATE` **and** to `COPY_GROUPS` in `modules/WindowManager.lua` and `COPY_GROUPS` in
-`settings/Windows.lua`. A group in the template but not in those lists simply never copies, silently.
+**4. `defaults/Profile.lua`** — a new config group if the page owns one.
 
 **5. `locales/enUS.lua`** — the page name, group (tab) headings, labels and descriptions.
+
+**6. `tests/test_options_panel.lua`** — add the key to `PAGES` and its frame name to `PANEL_NAME`,
+and the name to the tree case's expected list.
 
 **Gotchas.**
 - **Build lazily.** `SetRenderer` is not optional: a builder that runs at registration lays its
   children out against a zero-width body and loses the AceGUI skinning race (`options-ui-§5`).
 - **`H.ClearScroll(c)` first.** `RenderTabbedSchema`/`RenderSchema` append; they do not clear.
-  Without it, a re-render after the picker moved — or after a tab click — stacks a second copy of
-  the page under the first.
-- **`c.unit`** carries the active window id as the library's row filter. Set it on any page with
-  `window.` rows.
-- **`H.WindowBanner(c)`** is the window picker now — call it before the tab strip on any page with
-  `window.`-prefixed rows, and leave it out on an addon-wide page (General, Profiles). It is decorated
-  onto `H` by `settings/Windows.lua`, so that file has to have loaded first, same as every other
-  `settings/` file after `OptionsSetup.lua`.
+  Without it, a re-render after a tab click stacks a second copy of the page under the first.
+- **No `H.WindowBanner(c)` and no `c.unit`.** An addon-wide page has no `window.` rows. If the new
+  rows are about one window, they belong on the Windows page, under its band.
 - If you draw anything past the end of a `RenderTabbedSchema` call — a button, a bespoke control —
   end with `H.Relayout(c)`. `RenderRows` runs its own layout pass and `InlineButtonPair` appends
   after it, so the appended child has no measured height until you ask.
 - A page with **no** schema rows must pass `defaultsButton = false`. There is nothing for the button
-  to restore, and a button that appears to do nothing is worse than no button — unless, like Columns,
-  the page gives the button bespoke work to do (`ctx.panel.defaultsOnClick` can be any function, not
-  only `H.RestoreDefaults`).
+  to restore, and a button that appears to do nothing is worse than no button — unless the page
+  gives the button bespoke work to do (`ctx.panel.defaultsOnClick` can be any function, not only
+  `H.RestoreDefaults`).
 - A tab click needs no combat guard and none may be added — `options-ui-§2`/`§13`: the library
   locks a page shown in combat whole (cover, refused writes, refused tab clicks, one gray line) and
   a host guard beside it is a second place for the lock to disagree with itself.
 - If the page has destructive controls, add its key to `vetoedFromResetAll` in
   `settings/OptionsSetup.lua` — and remember that predicate is enforced twice, in the descriptor and
   in the degradation stub's own reset loop.
+
+---
+
+## Add an entry to the Windows page
+
+An entry is a page key whose rows are about one window (`window.*` paths).
+
+1. Declare the rows in `settings/Schema.lua` with `page = "<key>"` and a `group` each. The groups
+   become the entry's tabs, in declaration order.
+2. Create `settings/<Entry>.lua` and register the entry at file load:
+   `NS.RegisterWindowSection("<key>", L["<Label>"], { tooltip = L["<what the entry holds>"] })`.
+   A bespoke entry also passes `render = fn(ctx)` (it draws its own strip and body under the band and
+   the rail) and, if its Defaults is not the row walk, `defaults = fn(ctx)`.
+3. Add `settings\<Entry>.lua` to `MultiMeters.toc` below `settings\Windows.lua`, and the key to
+   `SECTION_ORDER` in `settings/OptionsSetup.lua`, where the rail should list it.
+4. Add the rail tooltip and the label to `locales/enUS.lua`, and a case to
+   `tests/test_windows_rail.lua`'s registry list.
+
+If the entry owns a new per-window config group, add it to `WINDOW_TEMPLATE` in
+`defaults/Profile.lua` **and** to `COPY_GROUPS` in `modules/WindowManager.lua` and `COPY_GROUPS` in
+`settings/Windows.lua`. A group in the template but not in those lists simply never copies, silently.
 
 ---
 

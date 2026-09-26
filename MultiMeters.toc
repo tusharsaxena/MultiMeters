@@ -161,6 +161,9 @@ settings\OptionsSetup.lua
 # builds pages in the order they register, and each file registers at load).
 settings\General.lua
 settings\Windows.lua
+# Conventional position: the Windows page's entries (MultiMeters#55) -- Frame, Header, Bars,
+# Tooltip, Visibility and Columns -- each registering its entry at load. The rail's order is
+# settings/OptionsSetup.lua's SECTION_ORDER, not this one.
 settings\Frame.lua
 settings\Header.lua
 settings\Bars.lua
