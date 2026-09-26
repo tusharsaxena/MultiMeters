@@ -202,9 +202,9 @@ NS.Schema = {
     -- the strip, which is the last place someone reaching for "make it all one
     -- font" would look.
     --
-    -- Locking implies preview mode: a player positioning a window at a target
-    -- dummy needs a full grid to aim at, which is why the two are one control here
-    -- and why modules/WindowManager.lua owns the coupling rather than this row.
+    -- Locking governs movement only -- dragging and resizing, on or off. It does
+    -- not touch test mode (modules/WindowManager.lua's SetLocked); a player who
+    -- wants a full grid to position against asks for one with Test mode.
     --
     -- NO `resizeGrip` ROW, and no setting behind it. The grip is drawn whenever
     -- the window is UNLOCKED and hidden whenever it is locked, which is the same

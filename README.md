@@ -34,21 +34,18 @@ The numbers are Blizzard's. Multi Meters asks the built-in meter for them and ar
 
 ## Usage
 
-The first time you run it after installing, you get a default window, already unlocked. Drag it by the title bar and pull the bottom-right corner to size it.
+The first time you run it after installing, you get a default window, already unlocked. Drag it by the title bar and pull the bottom-right corner to size it. Placing an empty meter between pulls is a pain, so `/mm test` fills every window with placeholder rows and prints TEST in the header while you work. It switches itself off the moment you pull, and `/mm lock` freezes everything once you're happy with the layout.
 
-Placing an empty meter between pulls is a pain, because there's nothing in it to look at. So `/mm test` fills every window with obvious placeholder rows and prints TEST in the header while you work. Run the same command again to turn it off, or untick the **Test mode** box on the General page. It also switches itself off the moment you pull, and it won't start while you're fighting. Once you're happy with the layout, `/mm lock` freezes everything (the **Lock frame** box on the General page does the same). If you ever drag something off the edge of the screen, `/mm reset-positions` brings it back.
+Setting a window up takes four steps. Most of it happens on the Windows page, where the Active window dropdown at the top picks the window you're working on and the list down the left side takes you through the rest.
 
-`/mm toggle` hides and shows windows by name or all at once, and the × in a title bar closes that window. You'll get more out of the visibility settings, though. Tell a window which contexts it belongs in (dungeons and raids and nothing else, say) and which situations it should get out of the way for, and you can stop thinking about it. There are ten hide rules: solo, mounted, dead, on a flight path, and six more.
+1. Pick your columns. The Columns entry lists every statistic the game offers, and the ticked ones are the columns this window shows. A new window starts with Damage, Healing, Interrupts, Dispels, Avoidable Damage and Deaths. Click a block to show or hide it and drag it by its handle to reorder. Columns only change out of combat.
+2. Decide when it shows. On Visibility you tell the window which content it belongs in (dungeons and raids and nothing else, say) and which situations it should get out of the way for. There are ten hide rules: solo, mounted, dead, on a flight path, and six more. Set it once and you can stop thinking about it.
+3. Choose your header controls. The title bar has room for seven: close, minimize, lock, settings, segment, reset and export, and the Header entry's Controls tab picks which ones this window draws. The segment control is the three horizontal lines, and it's the one people miss. It picks which fight the window shows, and your pick sticks through a reload.
+4. Dig into the numbers. Hover a cell to see the spells behind it, or hover a name to see everything tracked for that player. Click either one to drill in. Clicking a Deaths cell opens the recap instead, which is usually the more interesting trip.
 
-The title bar has room for seven controls: close, minimize, lock, settings, segment, reset and export. Each window draws the ones you pick. The segment control is the three horizontal lines, and it's the one people miss. It lists every fight the game still holds, by name and length, with Current and Overall at the bottom. Whatever you pick sticks until you change it, even through a reload.
+Want a second window? Click **New window** on the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you four switches: Enabled, Locked, Test mode and Show window.
 
-Each number in the grid has more behind it. Hover a cell to see the spells that make up that number, or hover a name to see everything tracked for that player. Click either one to drill in. Clicking a Deaths cell opens the recap instead, which is usually the more interesting trip.
-
-Want a second window? Run `/mm window new`, then copy the settings across from the first one instead of building them twice.
-
-Everything else is configuration, and there are two ways in: the addon's own page under Settings → AddOns in game, and the slash command. `/mm` (or `/multimeters`) on its own opens that page, and `/mm help` prints the full command list.
-
-The minimap button is a shortcut to both. Left-click it for the settings page. Right-click it for a small menu with four switches: Enabled, Locked, Test mode and Show window. They do exactly what `/mm enable` or `/mm disable`, `/mm lock`, `/mm test` and `/mm toggle` do. While the addon is turned off, Enabled is the only one you can click. Hover over the button to see the version and whether the addon is on, locked and in test mode.
+Everything else is on the addon's page under Settings → AddOns, and `/mm` (or `/multimeters`) on its own opens it. `/mm help` prints the full command list.
 
 ## How it works
 
