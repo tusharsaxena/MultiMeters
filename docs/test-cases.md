@@ -2147,10 +2147,11 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 11: /mm toggle under a perf suspend shows nothing and says why
 - Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it
 
-### test_options_panel.lua (43)
+### test_options_panel.lua (44)
 
 - Options: General is the FIRST page, above Windows
 - Options: the tree is General, Windows, Profiles, with no nesting mark
+- Options: no row's text sends the player to a retired window page
 - Options: the parent category is registered at CreateOptionsPanel time
 - Options: every page's subcategory is registered eagerly, before any panel is shown
 - Options: a page's ctx carries its page key
@@ -2401,7 +2402,7 @@ badge and any count quoted in the docs must agree with it.
 | test_slash.lua | 76 |
 | test_slash_refusal.lua | 5 |
 | test_disabled.lua | 23 |
-| test_options_panel.lua | 43 |
+| test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 14 |
@@ -2409,4 +2410,4 @@ badge and any count quoted in the docs must agree with it.
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2091** |
+| **Total** | **2092** |

@@ -729,7 +729,7 @@ dress(MASTER_ROWS, {
     },
     ["master.visibility"] = {
         values = MASTERVIS_VALUES, sorting = MASTERVIS_SORT,
-        desc = L["When this addon's windows are shown at all, whatever one window's own Visibility page says. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."],
+        desc = L["When this addon's windows are shown at all, whatever one window's own settings under Windows > Visibility say. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."],
         onChange = refreshVisibility,
     },
     ["master.scale"] = {

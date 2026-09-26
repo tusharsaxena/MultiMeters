@@ -125,6 +125,22 @@ test("Options: the tree is General, Windows, Profiles, with no nesting mark", fu
     assertEqual(table.concat(names, "|"), table.concat(want, "|"))
 end)
 
+test("Options: no row's text sends the player to a retired window page", function()
+    -- MultiMeters#55 (02_SPEC R15): Frame, Header, Bars, Tooltip, Visibility and Columns are
+    -- entries of the Windows page, so a desc that says "the Visibility page" names a place the tree
+    -- no longer has. The wording is "Windows > <Entry>".
+    -- red under: master.visibility's desc still saying "one window's own Visibility page".
+    local RETIRED = { "Frame", "Header", "Bars", "Tooltip", "Visibility", "Columns" }
+    for _, row in ipairs(NS.Schema) do
+        for _, text in ipairs({ row.label or "", row.desc or "" }) do
+            for _, name in ipairs(RETIRED) do
+                assertTrue(not text:find(name .. " page", 1, true),
+                    tostring(row.path) .. " names the retired " .. name .. " page: " .. text)
+            end
+        end
+    end
+end)
+
 test("Options: the parent category is registered at CreateOptionsPanel time", function()
     assertTrue(T.mocks.__mainPanel ~= nil, "no canvas category was registered")
     assertEqual(T.mocks.__mainPanel:GetName(), "MultiMetersMainPanel",
