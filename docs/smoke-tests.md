@@ -2236,6 +2236,8 @@ The Windows page is one page per window: the Active window band on top, the nav 
 the entry's own tab strip to its right. Open the panel with `/mm config`. The owner fills the Result
 column.
 
+**Owner run, 2026-09-26:** MM-S1 to MM-S11 all passed in the client; the owner then gave the go-ahead to merge.
+
 | # | Check | Expected | Source | Result |
 |---|---|---|---|---|
 | MM-S1 | Look at the Settings tree under Ka0s Multi Meters. | General · Windows · Profiles. There are no Frame, Header, Bars, Tooltip, Visibility or Columns entries, indented or not. | spec §A1; NR-MM-04 | |
