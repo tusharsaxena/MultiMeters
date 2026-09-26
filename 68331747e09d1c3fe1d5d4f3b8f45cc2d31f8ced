@@ -1,0 +1,1 @@
+fixed: DX-MM sections, accessors and STD-10 order check out (15 of 18 new cases fail with the change reverted); the stale 60/19 file inventory failed test_doc_structure at 6833174, corrected to 61/20 in 67e9ac9
