@@ -174,6 +174,16 @@ function Provider.IsAvailable(_)
     return memo.ok, memo.reason
 end
 
+--- The memo as it stands, WITHOUT asking the client: whether an answer is
+--- held, and what it was. Read by `/mm diagnostics` (core/Diagnostics_Runtime.lua),
+--- which must describe state rather than refresh it; IsAvailable above would fill
+--- the memo as a side effect.
+---
+--- @return boolean checked, boolean ok, any reason
+function Provider.AvailabilityMemo()
+    return memo.checked, memo.ok, memo.reason
+end
+
 --- Forget the memoized availability answer. Called from the meter's events.
 function Provider.InvalidateAvailability()
     memo.checked = false

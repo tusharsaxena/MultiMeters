@@ -441,6 +441,27 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: a cast line survives a full ring of judge rows
 - Diagnostics: the ring keeps its newest entries and reads them oldest first
 
+### test_diagnostics_runtime.lua (18)
+
+- Diagnostics runtime: the addon's state leads, the probes follow, rejected events close
+- Diagnostics runtime: the state section prints the latch, its holds and the schema stamps
+- Diagnostics runtime: while disabled the state section names the hold and says stood down
+- Diagnostics runtime: the restriction is printed as mirror, authority and raw state
+- Diagnostics runtime: profile settings print the three always-rows and only what changed
+- Diagnostics runtime: each window is diffed against NS.DefaultWindow, position from config
+- Diagnostics runtime: a window's column list diffs as one compact line
+- Diagnostics runtime: one inventory line per window, with the ladder's answer
+- Diagnostics runtime: the inventory never reads geometry off a window frame
+- Diagnostics runtime: the sessions the client holds are listed, and a stale pin names its fallback
+- Diagnostics runtime: secret session names and durations print as <secret>, not a failure
+- Diagnostics runtime: the aggregator's last render pass is reported per window
+- Diagnostics runtime: an export build does not overwrite the window's last render pass
+- Diagnostics runtime: roster and cache counts are printed without building the roster
+- Diagnostics runtime: the report resets, invalidates, refreshes and dirties nothing
+- Diagnostics runtime: while stood down the runtime sections say so instead of printing empty
+- Diagnostics runtime: an over-cap report ends in the truncated line, then the end marker
+- Diagnostics runtime: under the restriction with secret values no runtime section fails
+
 ### test_defaults.lua (24)
 
 - Defaults: DefaultWindow stamps the id and the name it is given
@@ -2312,6 +2333,7 @@ badge and any count quoted in the docs must agree with it.
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
+| test_diagnostics_runtime.lua | 18 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
 | test_perfsetup.lua | 26 |
@@ -2366,4 +2388,4 @@ badge and any count quoted in the docs must agree with it.
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2056** |
+| **Total** | **2074** |

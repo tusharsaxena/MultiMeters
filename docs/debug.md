@@ -124,6 +124,7 @@ peeled out of `core/Diagnostics.lua` on 2026-09-09 for `layout-§1`, one file ap
 | `core/Diagnostics_DeathRecap.lua` | `recap` | #1 | whether this client can read a death recap, searched two ways |
 | `core/Diagnostics_Identity.lua` | `identity` | #22 | the correlation rectangle, the seat probe, the secret-GUID lookup verdict and the source-field audit |
 | `core/Diagnostics_Feign.lua` | `feign` | #25 | the armed feign-death recording |
+| `core/Diagnostics_Runtime.lua` | `diagnostics` | — | the addon-state sections that open the report (not a probe: no issue, no topic word) |
 
 `identity` is the one typed **mid-pull**, by a player who was asked to type it. It reports what it
 needs — the flag on, and a pull running — rather than going quiet when it has neither, and it says

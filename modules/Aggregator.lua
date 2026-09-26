@@ -1162,6 +1162,31 @@ local function logPass(pass, keptCount)
         pass.mode, pass.applied, pass.reason or "ok")
 end
 
+--- The last RENDER pass per window id, for `/mm diagnostics` (DX-MM): one small
+--- table per window, overwritten in place, so a pass on a 0.25s timer allocates
+--- nothing after the first. Every field is a count or a string this file made --
+--- never a meter value -- so the report may print and compare them freely.
+local lastPass = {}
+
+--- Record one render pass. ONLY a pass whose perf parent is "refresh" counts:
+--- modules/Export.lua builds a synthetic config with no parent, and recording
+--- that would describe a grid nobody is looking at.
+local function recordPass(pass, keptCount, parentKey)
+    if parentKey ~= "refresh" or pass.windowId == nil then return end
+    local entry = lastPass[pass.windowId]
+    if entry == nil then entry = {} lastPass[pass.windowId] = entry end
+    entry.cols          = #pass.keys
+    entry.rows          = keptCount
+    entry.dropped       = pass.dropped
+    entry.unfolded      = pass.unfolded
+    entry.mode          = pass.mode
+    entry.applied       = pass.applied
+    entry.identityMode  = pass.identityMode and true or false
+    entry.ambiguousRows = pass.ambiguousRows or 0
+    entry.reason        = pass.reason
+    entry.at            = _G.GetTime and _G.GetTime() or 0
+end
+
 --- Hang the named result fields on the row array itself.
 ---
 --- The result table IS the row array (see the header), so `result.rows` and
@@ -1258,6 +1283,7 @@ function Aggregator.Build(a, b, c)
     if t0 then Perf.Note("aggregate", debugprofilestop() - t0, parentKey) end
 
     logPass(pass, #kept)
+    recordPass(pass, #kept, parentKey)
     return assembleResult(kept, pass)
 end
 
@@ -1275,6 +1301,18 @@ end
 --- @return table|nil
 function Aggregator.LastIdentityStats()
     return Aggregator._identity.lastIdentityStats
+end
+
+--- The last render pass recorded for a window id, or nil when none has run
+--- since load (the window is hidden, minimized, or has not drawn yet). Read by
+--- `/mm diagnostics` (core/Diagnostics_Runtime.lua); nothing on the render path
+--- reads it. The table is live and overwritten by the next pass: read, do not keep.
+---
+--- @param windowId number
+--- @return table|nil  { cols, rows, dropped, unfolded, mode, applied, identityMode,
+---                      ambiguousRows, reason, at }
+function Aggregator.LastPass(windowId)
+    return lastPass[windowId]
 end
 
 --- Apply rows.maxRows and rows.alwaysShowSelf.

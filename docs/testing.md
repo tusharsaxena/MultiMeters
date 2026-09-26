@@ -119,7 +119,9 @@ probe written for one issue is meant to be deleted with that issue, and that onl
 go out with it — so `tests/test_diagnostics_deathrecap.lua` (issue #1),
 `tests/test_diagnostics_identity.lua` (issue #22) and `tests/test_diagnostics_feign.lua` (issue #25)
 each sit beside the probe module they cover, and `tests/test_diagnostics.lua` keeps the frame, the
-entry point and the short probes. All four protect the same property, which is the one the report
+entry point and the short probes. `tests/test_diagnostics_runtime.lua` (added with the diagnostics
+rollout, DX-MM) covers `core/Diagnostics_Runtime.lua`, the addon-state sections, and pins that they
+stay read-only, secret-safe and off frame geometry. All four protect the same property, which is the one the report
 exists for: it must run to completion on a hostile client, print rather than raise, and never itself
 be the reason a player cannot describe what they are seeing.
 

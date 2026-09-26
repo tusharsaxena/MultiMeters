@@ -256,6 +256,7 @@ local SUITES = {
     "test_diagnostics_deathrecap",
     "test_diagnostics_identity",
     "test_diagnostics_feign",
+    "test_diagnostics_runtime",
     "test_defaults",
     -- the seven LibKa0s seams and the addon lifecycle
     "test_coresetup",

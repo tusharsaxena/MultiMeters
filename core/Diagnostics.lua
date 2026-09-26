@@ -51,6 +51,11 @@
 -- this file and resolve `NS.Diagnostics` and the four print helpers below at
 -- FILE SCOPE, which makes their TOC position load-bearing. What stayed here is
 -- the frame: the helpers, the sections, the short probes and the entry point.
+--
+-- THE ADDON-STATE SECTIONS ARE A FOURTH SIBLING. core/Diagnostics_Runtime.lua
+-- holds the sections that open the report (state, settings, windows, sessions,
+-- the aggregator's last pass, roster and caches); they read the addon rather than
+-- the client, and the section list below reaches them at run time.
 
 local _, NS = ...
 
@@ -818,14 +823,30 @@ end
 -- The section list, handed to the library
 -- ---------------------------------------------------------------------------
 
---- Every section of the full report, in the order it prints.
+--- The addon-state sections, in core/Diagnostics_Runtime.lua (DX-MM): they open
+--- the report, after the library's identity header, in debug-logging-§14's order:
+--- state flags, the settings that differ, then the domain state. They write to the
+--- library's writer directly, so they are not `hosted`; each is resolved through
+--- the shared table when it RUNS, because the sibling loads after this file.
+local RUNTIME = {
+    { "state",             "state" },
+    { "settings",          "settings" },
+    { "window settings",   "windowSettings" },
+    { "windows",           "windows" },
+    { "sessions",          "sessions" },
+    { "aggregator",        "aggregator" },
+    { "roster and caches", "rosterAndCaches" },
+}
+
+--- Every client-probe section of the full report, in the order it prints, after
+--- the runtime sections above. The rejected events close the report, where
+--- debug-logging-§14's content contract puts them (STD-10 (e)).
 ---
 --- The recap section is reached through the shared table because it lives in
 --- core/Diagnostics_DeathRecap.lua, which loads after this file; it is resolved
 --- when the section RUNS, so a sibling that failed to load costs its one
 --- `section death recap failed` line and nothing else.
 local SECTIONS = {
-    { "events",           reportEvents },
     { "atlases",          reportAtlases },
     { "number formatting", reportFormatter },
     { "visibility",       reportVisibility },
@@ -837,6 +858,7 @@ local SECTIONS = {
     { "targets",          reportTargets },
     { "provider order",   reportProviderOrder },
     { "death recap",      function() return Diagnostics.reportDeathRecap() end },
+    { "events",           reportEvents },
 }
 
 --- One section, run against the library's writer.
@@ -876,8 +898,12 @@ end
 --- @return table
 function Diagnostics.Sections()
     local list = {}
-    for i, section in ipairs(SECTIONS) do
-        list[i] = { section[1], hosted(section[2]) }
+    for _, section in ipairs(RUNTIME) do
+        local key = section[2]
+        list[#list + 1] = { section[1], function(w) return Diagnostics.Runtime[key](w) end }
+    end
+    for _, section in ipairs(SECTIONS) do
+        list[#list + 1] = { section[1], hosted(section[2]) }
     end
     return list
 end
