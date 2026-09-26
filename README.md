@@ -95,7 +95,15 @@ The one odd behavior falls out of that. Midnight hands addons combat numbers as 
 | I cannot open the settings while fighting | On purpose. Blizzard protects the settings machinery in combat and the panel would rather refuse than risk your action bars. It opens the second you drop out. |
 | A pet has its own row and I wanted it folded into its owner | Separate rows is the default because it is exact in and out of combat. **Merge pets into their owner** on the General page folds them in, with one catch that is exactly why it is not the default: merging is addition, and the game will not let an addon add two combat numbers together mid-fight. A merged pet's damage goes missing until the pull ends. |
 | I cannot find the window | `/mm reset-positions`. |
-| Something looks wrong and you want to report it | `/mm debug on`, reproduce it, `/mm debug` to open the console, then copy the log into the issue. Add `/mm debug tooltip` if a tooltip is involved — that channel is off by default because a tooltip redraws on every mouse-over and its lines bury everything else in the buffer within seconds. |
+| Something looks wrong and I want to report it | Follow [Reporting a bug](#reporting-a-bug) below. If a tooltip is involved, type `/mm debug tooltip` before you reproduce it. That channel is off by default because a tooltip redraws on every mouse-over, and its lines bury everything else in the buffer within seconds. |
+
+## Reporting a bug
+
+1. Type `/mm debug on` and reproduce the bug.
+2. Type `/mm diagnostics`.
+3. If the debug window isn't open, open it with `/mm debug`. Press **Copy**, copy the entire output, and include it with your bug report.
+
+The report is added after the debug trace in the same window, so one copy carries both.
 
 ## Issues and feature requests
 
