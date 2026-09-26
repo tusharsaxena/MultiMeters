@@ -380,6 +380,34 @@ test("Disabled 7: every reserved verb and the bare command answer normally", fun
     assertEqual(NS.GetSetting("master.scale"), NS.FindSchemaRow("master.scale").default)
 end)
 
+test("Disabled 7: both diagnostics forms reach RunDiagnostics, each once, with no refusal",
+    function()
+    -- debug-logging-§14 and the audit's diagnostics check: the report is what a
+    -- player runs BECAUSE something is wrong, and "disabled" is one of the states
+    -- they report from. The walk above proves only that `/mm diagnostics` is not
+    -- refused; this pins that BOTH forms, `/mm diagnostics` and
+    -- `/mm debug diagnostics`, land in the one helper while the addon is down. The
+    -- kit's contract case checks what the report writes; this checks the route.
+    -- red under: a `liveVerbs` that drops `diagnostics`, a host gate in front of the
+    -- dispatcher, or a `debug` handler that no longer tests `diagnostics` first.
+    local inst, NS = scene()
+    assertTrue(NS.SetByPath("enabled", false))
+
+    local refusal = refusalLine(inst)
+    local calls = 0
+    NS.DebugLog.RunDiagnostics = function() calls = calls + 1 return 0 end
+
+    for _, form in ipairs({ "diagnostics", "debug diagnostics" }) do
+        local before = calls
+        local lines = say(inst, form)
+        assertEqual(calls - before, 1, "`/mm " .. form .. "` must run the report once while disabled")
+        for _, line in ipairs(lines) do
+            assertTrue(line:find(refusal, 1, true) == nil,
+                "`/mm " .. form .. "` was refused: " .. line)
+        end
+    end
+end)
+
 test("Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam", function()
     -- This addon TAKES slash-commands-§2's SHOULD, and the suite pins that choice
     -- so it cannot drift silently: an addon that declined it would assert its

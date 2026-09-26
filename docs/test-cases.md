@@ -2118,7 +2118,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash locale: `debug tooltip` reads the key for the state it landed in
 - Slash locale: reset-positions says its plural through two distinct keys
 
-### test_disabled.lua (22)
+### test_disabled.lua (23)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -2127,6 +2127,7 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 5: every frame that was shown is hidden
 - Disabled 6: every event fired anyway writes nothing, prints nothing, shows nothing
 - Disabled 7: every reserved verb and the bare command answer normally
+- Disabled 7: both diagnostics forms reach RunDiagnostics, each once, with no refusal
 - Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam
 - Disabled 8: left-click opens the panel and writes nothing, in either state
 - Disabled 9: re-enabling restores the registration set it had
@@ -2380,7 +2381,7 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_defaults.lua | 18 |
 | test_slash.lua | 76 |
 | test_slash_refusal.lua | 5 |
-| test_disabled.lua | 22 |
+| test_disabled.lua | 23 |
 | test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
@@ -2388,4 +2389,4 @@ badge and any count quoted in the docs must agree with it.
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2074** |
+| **Total** | **2075** |
