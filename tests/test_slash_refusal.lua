@@ -1,7 +1,9 @@
 -- tests/test_slash_refusal.lua
 --
 -- The refusals settings/Slash.lua's schema seams hand back to LibKa0s-Slash-1.0
--- (minor 15). A sibling of tests/test_slash.lua, which is near the line cap.
+-- (minor 15), and the refusal a disabled addon gives a feature verb
+-- (slash-commands-§2, the last section below). A sibling of tests/test_slash.lua;
+-- the disabled-state cases moved here from it in MM-ATS-01.
 --
 -- ── WHY THE SEAMS ANSWER ─────────────────────────────────────────────────────
 --
@@ -16,7 +18,9 @@
 
 local T = _G.MULTIMETERS_TEST
 local test = T.test
-local assertEqual, assertTrue = T.assertEqual, T.assertTrue
+local assertEqual, assertTrue, assertFalse = T.assertEqual, T.assertTrue, T.assertFalse
+
+local NS = T.NS
 
 --- Every chat line one command produced, on a fresh instance.
 local function say(inst, msg)
@@ -138,4 +142,184 @@ test("Slash locale: reset-positions says its plural through two distinct keys", 
     shown = joined(say(inst, "reset-positions"))
     assertTrue((reads[MANY] or 0) > 0 and not reads[ONE], "three windows read the plural key, got: " .. shown)
     assertTrue(has(shown, MANY:format(3)), "and print the count: " .. shown)
+end)
+
+-- ---------------------------------------------------------------------------
+-- A disabled addon refuses a FEATURE verb, and refuses nothing else
+-- ---------------------------------------------------------------------------
+--
+-- slash-commands-§2. A verb that DRIVES THE ADDON'S FEATURES answers on ONE tagged line naming
+-- `/mm enable` and does nothing else: acting is the wrong answer twice over, because the player
+-- asked for something the addon is standing down from doing and a silent no-op leaves them with no
+-- clue why nothing happened.
+--
+-- THE LIVE LIST IS RESTATED HERE ON PURPOSE. settings/Slash.lua names it once as data and the
+-- cases below name it again, because this half is the STANDARD's list rather than this addon's
+-- choice: a verb moving between the two sets has to be a deliberate edit in two files rather than
+-- a quiet consequence of editing one. Read literally, "refuse while disabled" takes the entire
+-- command surface down with it, and what §2 does NOT leave to the addon is that these keep
+-- answering -- a player must be able to read and repair settings, and to reach the panel, while
+-- the addon is off, and `enable` above all or the pair is one-way again.
+local LIVE_WHILE_DISABLED = {
+    help = true, config = true, version = true,
+    enable = true, disable = true,
+    debug = true, diagnostics = true, perf = true,
+    get = true, set = true, list = true, reset = true, resetall = true,
+}
+
+--- The rendered refusal, READ OUT OF THE LOCALE TABLE rather than retyped, so a reworded line
+--- moves the case with it instead of quietly making it match nothing.
+-- slash-commands-§7's ONE refusal line, collection-wide, built from the library's own format
+-- string rather than re-typed here: the wording is not this addon's to spell, and a literal in the
+-- suite would be a second copy free to drift from the one the dispatcher prints. The brand name is
+-- the plain-text `Ka0s <Name>` the LDB object also wears (launcher-§1).
+local REFUSAL = T.load().mocks.LibStub("LibKa0s-Slash-1.0").DISABLED_LINE_FORMAT
+    :format(NS.L["Ka0s Multi Meters"], "/mm enable")
+
+--- Did this line refuse? Matched on the WHOLE sentence and not on `/mm enable` alone: the help
+--- index prints a row for that very verb, so the shorter match called every help block a refusal.
+local function isRefusal(line)
+    return line:find(REFUSAL, 1, true) ~= nil
+end
+
+local function refusedOnly(lines)
+    return #lines == 1 and isRefusal(lines[1])
+end
+
+test("Slash: a feature verb refuses while disabled AND does not act", function()
+    -- BOTH HALVES, because a case that only read the message would pass over a verb that printed
+    -- and then acted anyway -- which is the exact failure a refusal exists to prevent.
+    -- red under: dropping `isEnabled` from settings/Slash.lua's descriptor.
+    local inst = T.load{ enable = true }
+    local NSi = inst.NS
+    say(inst, "disable")
+
+    local toggled = 0
+    local realToggle = NSi.WindowManager.Toggle
+    NSi.WindowManager.Toggle = function(...) toggled = toggled + 1; return realToggle(...) end
+
+    local lines = say(inst, "toggle")
+    NSi.WindowManager.Toggle = realToggle
+
+    assertTrue(refusedOnly(lines), "expected one refusal line, got: " .. joined(lines))
+    assertEqual(toggled, 0, "`/mm toggle` refused and then reached the registry anyway")
+end)
+
+test("Slash: a refused verb leaves no side effect in the store", function()
+    -- The same rule against a verb whose act is a WRITE rather than a call: `window new` creates a
+    -- window, which outlives both the session and the message. "No partial work, no side effect."
+    local inst = T.load{ enable = true }
+    local NSi = inst.NS
+    local before = #NSi.Database.GetWindows()
+    say(inst, "disable")
+
+    local lines = say(inst, "window new Second")
+    assertTrue(refusedOnly(lines), joined(lines))
+    assertEqual(#NSi.Database.GetWindows(), before, "a window was created by a refused verb")
+
+    -- And the positions verb, whose act is neither a call into a module nor a row write.
+    local moved = 0
+    local realReset = NSi.WindowManager.ResetPositions
+    NSi.WindowManager.ResetPositions = function(...) moved = moved + 1; return realReset(...) end
+    assertTrue(refusedOnly(say(inst, "reset-positions")))
+    NSi.WindowManager.ResetPositions = realReset
+    assertEqual(moved, 0)
+end)
+
+test("Slash: EVERY verb off the live list refuses, so a new one is gated by default", function()
+    -- THE STRUCTURAL HALF. The gate is the LIBRARY's, sitting on the one dispatch path rather than
+    -- as a guard pasted into each handler, and the polarity is the point: a verb is refused unless
+    -- it is on the standard's thirteen-verb live list, so the next verb this addon adds is refused
+    -- while it is off without anyone remembering to say so.
+    -- red under: passing a `liveVerbs` that names this addon's feature verbs.
+    local inst = T.load{ enable = true }
+    say(inst, "disable")
+
+    local gated = 0
+    for _, entry in ipairs(inst.NS.COMMANDS) do
+        local verb = entry[1]
+        if not LIVE_WHILE_DISABLED[verb] then
+            gated = gated + 1
+            local lines = say(inst, verb)
+            assertTrue(refusedOnly(lines),
+                "`/mm " .. verb .. "` did not refuse on exactly one line: " .. joined(lines))
+        end
+    end
+    assertTrue(gated >= 6, "only " .. gated .. " feature verbs were found; the gate proves nothing")
+end)
+
+test("Slash: every verb on the live list still answers with the addon off", function()
+    -- THE OTHER SIDE OF THE SAME RULE, and the one that matters most: read literally, "refuse while
+    -- disabled" takes the whole command surface down, the verb that undoes the state included. Each
+    -- is driven with a real argument where it needs one, because a verb answering a usage line
+    -- would satisfy a weaker assertion while being just as broken.
+    local inst = T.load{ enable = true }
+    local NSi = inst.NS
+    assertTrue(NSi.SetByPath("master.scale", 1.5))
+    say(inst, "disable")
+
+    local opened = 0
+    NSi.OpenOptionsPanel = function() opened = opened + 1 end
+
+    for _, command in ipairs({
+        "version", "config", "list", "get enabled", "set master.alpha 0.5",
+        "reset master.scale", "debug", "perf help", "diagnostics",
+    }) do
+        local lines = say(inst, command)
+        for _, line in ipairs(lines) do
+            assertFalse(isRefusal(line), "`/mm " .. command .. "` was refused: " .. line)
+        end
+    end
+
+    -- `help` IS ON THE LIVE LIST AND IS NOT REFUSED, and it is driven apart from the rest because
+    -- it wears the refusal line as a NOTICE rather than as an answer (LibKa0s-Slash version 13).
+    -- The index prints in full -- the player has to be able to SEE `enable` in the list -- and the
+    -- line sits immediately under the header, unindented, because a reader scanning the rows needs
+    -- to know that most of what they are reading is standing down.
+    local help = say(inst, "help")
+    assertTrue(#help > 6, "the index must print in full, not collapse to the notice")
+    local refusals = 0
+    for _, line in ipairs(help) do if isRefusal(line) then refusals = refusals + 1 end end
+    assertEqual(refusals, 1, "exactly one notice, under the header")
+    assertTrue(joined(help):find("/mm enable", 1, true) ~= nil, "`enable` must still be listed")
+
+    assertEqual(opened, 1, "`/mm config` must still open the panel with the addon off")
+    -- The schema CLI really WROTE, rather than merely answering: repairing a setting is the whole
+    -- reason it stays live.
+    assertEqual(NSi.GetSetting("master.alpha"), 0.5)
+    assertEqual(NSi.GetSetting("master.scale"), NSi.FindSchemaRow("master.scale").default)
+
+    -- And `enable` above all, or the pair is one-way.
+    say(inst, "enable")
+    assertTrue(NSi.db.profile.enabled)
+end)
+
+test("Slash: enabling the addon again gives the feature verbs back", function()
+    -- A GATE RATHER THAN A REMOVAL. The verb keeps its row in the help index and on the settings
+    -- landing page throughout -- a verb that vanished from the help block while the addon was off
+    -- would be a second way to lose it -- so what changes is only what the handler does.
+    local inst = T.load{ enable = true }
+    local NSi = inst.NS
+    say(inst, "disable")
+    assertTrue(refusedOnly(say(inst, "window new Second")))
+
+    say(inst, "enable")
+    local before = #NSi.Database.GetWindows()
+    local lines = say(inst, "window new Second")
+    assertEqual(#NSi.Database.GetWindows(), before + 1, joined(lines))
+
+    -- The help index never lost the verb.
+    assertTrue(joined(say(inst, "help")):find("window", 1, true) ~= nil)
+end)
+
+test("Slash: nothing refuses on an install whose store has not been built", function()
+    -- The descriptor's `isEnabled` reaches NS.IsDisabled, which tests the seam for FALSE rather
+    -- than for truthiness: NS.GetSetting answers nil before NS:InitDB has run, and "nothing has
+    -- said otherwise" is not "off". A truthiness test would refuse every feature verb on a
+    -- half-loaded install, where the player is least equipped to work out why.
+    local inst = T.load{ initDB = false, options = false }
+    local lines = say(inst, "toggle")
+    for _, line in ipairs(lines) do
+        assertFalse(isRefusal(line), "a store-less install refused a feature verb: " .. line)
+    end
 end)

@@ -314,6 +314,7 @@ local SUITES = {
     "test_schema_batch",
     "test_schema_defaults",
     "test_slash",
+    "test_slash_diagnostics",
     "test_slash_refusal",
     -- slash-commands-§7's conformance suite: the disabled state is TOTAL. It asserts on
     -- the REGISTRATION SET rather than on a handler's return value, because an early

@@ -2034,7 +2034,7 @@ badge and any count quoted in the docs must agree with it.
 - ValidateSchema: answers 0 when there is no profile tree to compare against
 - ValidateSchema: counts every failure, in schema order, with nothing listening
 
-### test_slash.lua (76)
+### test_slash.lua (50)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -2061,12 +2061,10 @@ badge and any count quoted in the docs must agree with it.
 - Slash: declining the `resetall` popup does nothing
 - Slash: `list` groups by the row's PAGE, the same key the panel pages use
 - Slash: the column array lists and reads as how many columns are shown
-- Slash: `perf` is declared in NS.COMMANDS and routed to NS.Perf.OnCommand
 - Slash: `export` opens the modal on the window the player named
 - Slash: `export` with no name falls back to a window rather than to nothing
 - Slash: `export` names a window it cannot find rather than opening another
 - Slash: `export` refuses while the game restricts combat data
-- Slash: the library did not register `perf` behind the addon's back
 - Slash: a bare `/mm`, and a whitespace-only one, run the `config` verb with ""
 - Slash: a bare `/mm` opens the settings panel, the same act as `/mm config`
 - Slash: a bare `/mm` lands on the top-level category, not a sub-page
@@ -2082,6 +2080,17 @@ badge and any count quoted in the docs must agree with it.
 - Slash: `window` with an unknown sub-verb prints the usage
 - Slash: `toggle` reaches the registry and reports its refusal
 - Slash: `reset-positions` moves every window and says how many
+- Slash: registration goes through AceConsole, on both tokens
+- Slash: both registered tokens reach the SAME dispatcher
+- Slash: no raw SLASH_* global is claimed anywhere
+- Slash: Register is a no-op rather than a raise when there is no AceConsole
+- Slash: /mm list heads each block with the page AND the tab
+- Slash: `set window.name` keeps every word of a multi-word name
+
+### test_slash_diagnostics.lua (20)
+
+- Slash: `perf` is declared in NS.COMMANDS and routed to NS.Perf.OnCommand
+- Slash: the library did not register `perf` behind the addon's back
 - Slash: `debug on` / `debug off` set the logging flag; a bare `debug` moves the window
 - Slash: `debug tooltip` toggles the tooltip channel and says which way
 - Slash: EVERY tooltip-channel line is behind the flag, not just some
@@ -2100,26 +2109,20 @@ badge and any count quoted in the docs must agree with it.
 - Slash: a word the ladder does not know toggles the console, as a bare `debug` does
 - Slash: with core/Diagnostics.lua absent the debug verbs go quiet, not through
 - Slash: a Diagnostics too old to arm a trace reports off rather than promising one
-- Slash: registration goes through AceConsole, on both tokens
-- Slash: both registered tokens reach the SAME dispatcher
-- Slash: no raw SLASH_* global is claimed anywhere
-- Slash: Register is a no-op rather than a raise when there is no AceConsole
-- Slash: /mm list heads each block with the page AND the tab
-- Slash: a feature verb refuses while disabled AND does not act
-- Slash: a refused verb leaves no side effect in the store
-- Slash: EVERY verb off the live list refuses, so a new one is gated by default
-- Slash: every verb on the live list still answers with the addon off
-- Slash: enabling the addon again gives the feature verbs back
-- Slash: nothing refuses on an install whose store has not been built
-- Slash: `set window.name` keeps every word of a multi-word name
 
-### test_slash_refusal.lua (5)
+### test_slash_refusal.lua (11)
 
 - Slash refusal: `set` a value the row's validate refuses prints the refusal, not the old value
 - Slash refusal: `reset` on a row with no default prints NO_DEFAULT and keeps the value
 - Slash locale: every feature-verb acknowledgment reads its whole-sentence key
 - Slash locale: `debug tooltip` reads the key for the state it landed in
 - Slash locale: reset-positions says its plural through two distinct keys
+- Slash: a feature verb refuses while disabled AND does not act
+- Slash: a refused verb leaves no side effect in the store
+- Slash: EVERY verb off the live list refuses, so a new one is gated by default
+- Slash: every verb on the live list still answers with the addon off
+- Slash: enabling the addon again gives the feature verbs back
+- Slash: nothing refuses on an install whose store has not been built
 
 ### test_disabled.lua (23)
 
@@ -2399,8 +2402,9 @@ badge and any count quoted in the docs must agree with it.
 | test_schema_paths.lua | 48 |
 | test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
-| test_slash.lua | 76 |
-| test_slash_refusal.lua | 5 |
+| test_slash.lua | 50 |
+| test_slash_diagnostics.lua | 20 |
+| test_slash_refusal.lua | 11 |
 | test_disabled.lua | 23 |
 | test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
