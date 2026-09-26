@@ -323,6 +323,15 @@ captures the handler once, at the first show:
 
 The button carries one tooltip that fits every entry. `tests/test_windows_rail.lua` pins all of it.
 
+**Deep links.** `NS.OpenOptionsPage(key)` opens the settings window at one page. A former sub-page
+key (`frame`, `bars`, …) opens Windows **on that entry**, and `windows` itself keeps the entry the
+player left. `Helpers.SelectSection(key, tab)` is the one seam that moves the entry, and the host's
+`Helpers.SelectTab` routes an entry key to it, so a link written against a page key still lands. A
+hidden page is marked owed a render and draws the entry on its next show. Both refuse under combat,
+through the library's refusal. Each page's Blizzard category is captured by the
+`NS.RegisterOptionsPage` wrapper, because the library's registry drops the builder's return value.
+Nothing in the addon calls `OpenOptionsPage` yet: the header gear still opens the main panel.
+
 ## The tab strip and the banner
 
 **One tab is exactly one group.** `RenderTabbedSchema(ctx, pageKey)` reads `rowsForPage(pageKey,

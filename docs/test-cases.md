@@ -2249,7 +2249,7 @@ badge and any count quoted in the docs must agree with it.
 - Columns: the Header text tab renders exactly its group's rows, with no headings
 - Columns: leaving the Columns tab mid-drag cancels the reorder BEFORE the scroll clear
 
-### test_windows_rail.lua (10)
+### test_windows_rail.lua (14)
 
 - Windows rail: the seven entries register under their page keys, on both builds
 - Windows rail: the band, then the rail General..Columns, 120 wide, opening on General
@@ -2261,6 +2261,10 @@ badge and any count quoted in the docs must agree with it.
 - Windows rail: leaving Columns on the rail mid-drag cancels the reorder BEFORE the scroll clear
 - Windows rail: Defaults restores the active entry's rows for the active window; General keeps the name; Columns restores both halves
 - Windows rail: the page offers one Defaults button whose tooltip fits every entry
+- Windows rail: a former sub-page key opens Windows on that entry, drawn on its next show
+- Windows rail: SelectTab on an entry key selects the entry and its tab; the addon page stays the library's
+- Windows rail: selecting an entry is refused in combat and moves nothing
+- Windows rail: OpenOptionsPage in combat opens nothing and selects nothing
 
 ### test_degraded.lua (38)
 
@@ -2401,9 +2405,9 @@ badge and any count quoted in the docs must agree with it.
 | test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
-| test_windows_rail.lua | 10 |
+| test_windows_rail.lua | 14 |
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2088** |
+| **Total** | **2092** |

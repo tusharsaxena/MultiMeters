@@ -318,3 +318,80 @@ test("Windows rail: the page offers one Defaults button whose tooltip fits every
     assertEqual(ctx.panel.defaultsTooltip,
         P.L["Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."])
 end)
+
+-- ── deep links, SelectTab (NR-MM-03) ────────────────────────────────────────────────────────
+
+--- A fresh page whose subcategories answer GetID, as the client's do, recording by tree label the
+--- category every OpenToCategory lands on.
+local function recordingOpens()
+    local byId, opened, count = {}, {}, 0
+    local P = env{ mutate = function(mocks)
+        local register = mocks.Settings.RegisterCanvasLayoutSubcategory
+        mocks.Settings.RegisterCanvasLayoutSubcategory = function(parent, panel, name)
+            local cat = register(parent, panel, name) or {}
+            count = count + 1
+            local id = 100 + count
+            byId[id] = name
+            cat.GetID = function() return id end
+            return cat
+        end
+        mocks.Settings.OpenToCategory = function(id) opened[#opened + 1] = byId[id] or "main" end
+    end }
+    return P, opened
+end
+
+-- Review Focus 5's MultiMeters half.
+test("Windows rail: a former sub-page key opens Windows on that entry, drawn on its next show", function()
+    local P, opened = recordingOpens()
+    local ctx = P.show()
+    P.rail("frame")
+    ctx.panel:Hide()                                -- the settings window is closed
+    P.NS.OpenOptionsPage("bars")
+    -- red under: OpenOptionsPage looking the key up in the category table alone (the Bars sub-page
+    -- today, nothing once it retires)
+    assertEqual(opened[#opened], P.L["Windows"])
+    assertEqual(ctx.activeSection, "bars", "selected before the show")
+    ctx.panel:Show()
+    assertEqual(P.railValue(), "bars", "and drawn on it")
+    P.NS.OpenOptionsPage("windows")
+    -- red under: the page's own key dropping the player back on General
+    assertEqual(opened[#opened], P.L["Windows"])
+    assertEqual(ctx.activeSection, "bars", "Windows keeps the entry the player left")
+    P.NS.OpenOptionsPage("general")
+    assertEqual(opened[#opened], P.L["General"], "any other key opens its own page")
+end)
+
+test("Windows rail: SelectTab on an entry key selects the entry and its tab; the addon page stays the library's", function()
+    local P = env()
+    local ctx = P.show()
+    local L, H = P.L, P.NS.Helpers
+    -- red under: the call reaching the library's SelectTab, which moves the page's one scalar tab
+    -- (or finds no page once the sub-pages retire)
+    assertTrue(H.SelectTab("tooltip", L["Contents"]))
+    assertEqual(ctx.activeSection, "tooltip")
+    assertEqual(ctx.activeTab, L["Contents"])
+    assertTrue(H.SelectTab("general", L["Behavior"]), "the addon page is the library's")
+    assertEqual(H.__panelFor("general").activeTab, L["Behavior"])
+end)
+
+test("Windows rail: selecting an entry is refused in combat and moves nothing", function()
+    local P = env()
+    local ctx = P.show()
+    P.inst.mocks.setRestricted(true)
+    -- red under: SelectSection without the library's refusal (a structural render in combat)
+    local ok = P.NS.Helpers.SelectSection("header")
+    P.inst.mocks.setRestricted(false)
+    assertFalse(ok)
+    assertEqual(ctx.activeSection, "windows")
+end)
+
+test("Windows rail: OpenOptionsPage in combat opens nothing and selects nothing", function()
+    local P, opened = recordingOpens()
+    local ctx = P.show()
+    P.inst.mocks.setRestricted(true)
+    P.NS.OpenOptionsPage("columns")
+    P.inst.mocks.setRestricted(false)
+    -- red under: selecting the entry before asking whether the open is allowed
+    assertEqual(#opened, 0, "a category switch is protected: refused, never deferred")
+    assertEqual(ctx.activeSection, "windows")
+end)

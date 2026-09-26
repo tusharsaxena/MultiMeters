@@ -627,7 +627,7 @@ function()
                             "SafeRegisterEvent", "SafeRegisterUnitEvent", "SafeRegisterEvents",
                             "RegisterOptionsPage", "RefreshOptionsPanel",
                             "CreateOptionsPanel", "OpenOptionsPanel",
-                            "RegisterWindowSection", "WindowSection" }) do
+                            "RegisterWindowSection", "WindowSection", "OpenOptionsPage" }) do
         assertEqual(type(degraded[name]), type(full[name]),
             "NS." .. name .. " is " .. type(full[name]) .. " live and "
             .. type(degraded[name]) .. " degraded")

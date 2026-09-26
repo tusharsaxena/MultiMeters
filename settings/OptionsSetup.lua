@@ -449,7 +449,7 @@ if not lib then
         -- The Windows page's own members (MultiMeters#55), decorated onto the live
         -- instance below the fork. settings/Windows.lua's builder is their only caller,
         -- and it never runs here; the degraded scan and the parity case read them anyway.
-        "RenderWindowPage", "RestoreActiveSection", "__bindWindowsPage",
+        "RenderWindowPage", "RestoreActiveSection", "__bindWindowsPage", "SelectSection",
     }) do
         Helpers[name] = function() end
     end
@@ -499,6 +499,9 @@ if not lib then
     -- CreateOptionsPanel: there is nothing to create and nothing to open, and one
     -- honest line answers both.
     NS.OpenOptionsPanel = NS.CreateOptionsPanel
+    -- And the page-targeted open (MultiMeters#55): the same honest line, because
+    -- there is no page to open either.
+    NS.OpenOptionsPage = NS.CreateOptionsPanel
     return
 end
 
@@ -557,7 +560,19 @@ NS.Helpers = lib:New(descriptor)
 
 local Helpers = NS.Helpers
 
-NS.RegisterOptionsPage = function(key, name, builder) Helpers.RegisterOptionsPage(key, name, builder) end
+-- Every page's Blizzard category, by page key. The library's registry drops the
+-- builder's return value, and Settings.OpenToCategory takes the category's id --
+-- so NS.OpenOptionsPage (below) has no other way to send the player to one page.
+-- Captured here rather than in the builders, so a page added later gets it free.
+local categories = {}
+
+NS.RegisterOptionsPage = function(key, name, builder)
+    Helpers.RegisterOptionsPage(key, name, function(mainCategory)
+        local cat = builder(mainCategory)
+        if cat then categories[key] = cat end
+        return cat
+    end)
+end
 NS.CreateOptionsPanel  = function() Helpers.CreateOptionsPanel() end
 
 -- OpenOptionsPanel REFUSES under combat lockdown and never defers-and-replays —
@@ -672,3 +687,42 @@ end
 
 --- Test seam: the ctx the Windows page bound, or nil before its builder ran.
 function Helpers.__windowsCtx() return windowsCtx end
+
+--- Select entry `key` on the Windows page, and optionally its tab: the one seam a
+--- link, a deep link or a suite moves the entry through. A hidden page is marked
+--- owed a render and draws the entry on its next show. Refused in combat, as a tab
+--- switch is (options-ui-§2, §13).
+--- @return boolean  whether the entry was selected
+function Helpers.SelectSection(key, tabKey)
+    if Helpers.__combatRefused() then return false end
+    local ctx = windowsCtx
+    if not (ctx and sections[key]) then return false end
+    stashTab(ctx)
+    ctx.activeSection = key
+    if tabKey ~= nil then ctx.sectionTabs[key] = tabKey end
+    Helpers.RefreshPanel(ctx, true)
+    return true
+end
+
+-- The library's SelectTab moves one PAGE's tab. An entry key is no page of its own
+-- (MultiMeters#55): it routes to SelectSection, so a link written against a page
+-- key still lands. Any other key -- General, Profiles -- is the library's.
+local selectTab = Helpers.SelectTab
+function Helpers.SelectTab(pageKey, tabKey)
+    if sections[pageKey] then return Helpers.SelectSection(pageKey, tabKey) end
+    return selectTab(pageKey, tabKey)
+end
+
+--- Open the settings window at one page. An entry key opens the Windows page on
+--- that entry; "windows" itself keeps the entry the player left. Under combat
+--- lockdown the library's own open answers -- it refuses with its one line and
+--- never defers (options-ui-§2) -- and nothing is selected.
+function NS.OpenOptionsPage(pageKey)
+    local target = sections[pageKey] and GENERAL_SECTION or pageKey
+    local cat = categories[target]
+    if lib.__IsCombatLocked() or not (cat and cat.GetID and Settings and Settings.OpenToCategory) then
+        return Helpers.OpenOptionsPanel()
+    end
+    if pageKey ~= target then Helpers.SelectSection(pageKey) end
+    Settings.OpenToCategory(cat:GetID())
+end
