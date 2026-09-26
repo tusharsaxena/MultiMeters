@@ -87,7 +87,7 @@ overlap, and **a parent must never be summed with its children**.
 | `systemEvent` | — | one `CHAT_MSG_SYSTEM` handler — the whisper-to-nobody check offered to `modules/Export.lua` | `core/MultiMeters.lua:416` |
 | `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1144`, `:1154`, `:1177`, `:1184` (every exit) |
 | `providerRead` | — (observed: `aggregate`, `targets`) | one `C_DamageMeter` column read | `modules/Provider.lua:357` |
-| `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1258`, `modules/DrillDown.lua:700`, `:732` |
+| `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1151`, `modules/DrillDown.lua:700`, `:732` |
 | `render` | `refresh` | the window's draw | `modules/Window.lua:1315` |
 | `renderRow` | `render` | one row's cells | `modules/Row.lua:1377` |
 | `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:925`, `:943`, `:1004`, `:1018`, `:1032` |
