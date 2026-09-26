@@ -3,7 +3,7 @@
 Where each responsibility lives, what each file publishes, and what it consumes. `MultiMeters.toc`
 is the source of truth for load order — check this map against it before editing.
 
-Sixty-one non-vendored source files: 1 locale, 20 `core/`, 1 `defaults/`, 24 `modules/`,
+Sixty-two non-vendored source files: 1 locale, 20 `core/`, 1 `defaults/`, 25 `modules/`,
 15 `settings/`.
 
 Thirteen of those arrived on one day, 2026-09-09, and **not one of them is a new module.** They are

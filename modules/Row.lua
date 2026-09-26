@@ -534,7 +534,7 @@ Cell.__index = Cell
 local function newCell(row, key)
     -- BackdropTemplate so `bars.borderStyle` can put LSM edge art around the
     -- cell. It costs nothing until a border is actually set -- the template adds
-    -- the SetBackdrop methods, not a backdrop -- and the flat border below is
+    -- the SetBackdrop methods, not a backdrop -- and the flat border (modules/Row_Border.lua) is
     -- still four textures, so the DEFAULT install pays for no backdrop at all.
     local bar = CreateFrame("StatusBar", nil, row.frame, "BackdropTemplate")
     bar:SetMinMaxValues(0, 1)
