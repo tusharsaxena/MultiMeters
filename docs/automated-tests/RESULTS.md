@@ -32,6 +32,7 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 | Run | Commit | Tree | Version | Lint w/e | Files | Tests | Perf | NLOC | Funcs | Avg NLOC | Avg CCN | Max CCN | CCN warn | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| [`20260927-030445`](20260927-030445/) | `abbb29e` | clean | 1.0.1 → 1.1.0 | 0/0 | 144 | 2092/0/2092 | pass | 43863 | 4462 | 8.2 | 2.4 | 15 | 0 | **green** |
 | [`20260926-193124`](20260926-193124/) | `f53ca7a` | clean | 1.0.1 | 0/0 | 144 | 2092/0/2092 | pass | 43863 | 4462 | 8.2 | 2.4 | 15 | 0 | **green** |
 | [`20260926-160431`](20260926-160431/) | `c125001` | clean | 1.0.1 | 0/0 | 141 | 2092/0/2092 | pass | 43815 | 4459 | 8.2 | 2.4 | 15 | 0 | **green** |
 | [`20260924-163600`](20260924-163600/) | `a77688a` | clean | 1.0.0 | 0/0 | 137 | 2035/0/2035 | pass | 42513 | 4319 | 8.2 | 2.4 | 15 | 0 | **green** |
@@ -49,10 +50,11 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 ## Test suite
 
 **2092 cases** — 2092 passed, 0 failed, 0 skipped. The generated inventory
-[`20260926-193124/test-cases.md`](20260926-193124/test-cases.md) is the authority on which cases existed at this run;
+[`20260927-030445/test-cases.md`](20260927-030445/test-cases.md) is the authority on which cases existed at this run;
 `docs/test-cases.md` is that same list at HEAD.
 
-Unchanged from the previous run at 2092 cases.
+The count has been **flat at 2092 across the last 3 runs**. A suite that stopped growing while
+the addon did is a coverage gap, and it is the one thing the table above cannot show.
 
 No case reported a `skip`, so passed and total agree and nothing in this row claims coverage
 that was not exercised.
@@ -69,34 +71,34 @@ to whoever thinks to open `.luacheckrc`.
 ## Perf
 
 **17 scenarios** from `tests/perf.lua`; the measurements are in
-[`20260926-193124/perf.json`](20260926-193124/perf.json).
+[`20260927-030445/perf.json`](20260927-030445/perf.json).
 
 | `scenario` | `iters` | `ms/iter` | `api/iter` | `bytes/iter` |
 |---|---|---|---|---|
-| `refresh20x7` | 300 | 0.76653 | 8.00 | 297237.4 |
-| `refresh20x7Restricted` | 300 | 0.88886 | 8.00 | 406173.3 |
-| `throttleBurst` | 1 | 12.92900 | 8.00 | 317269.0 |
-| `throttleIdle` | 300 | 0.00061 | 0.00 | 0.0 |
-| `drillOpenClose` | 300 | 0.02462 | 1.00 | 12746.2 |
-| `refreshWhileDrilled` | 300 | 0.04957 | 1.00 | 16170.1 |
-| `rosterRebuild` | 300 | 0.64120 | 8.00 | 315144.1 |
-| `rosterBurst` | 1 | 6.91700 | 8.00 | 316951.0 |
-| `rosterCached` | 300 | 0.62340 | 8.00 | 297216.1 |
-| `applyConfig` | 300 | 0.13799 | 0.00 | 46232.3 |
-| `probeOverheadOff` | 300 | 0.60099 | 8.00 | 297216.1 |
-| `probeOverheadOn` | 300 | 0.61636 | 8.00 | 297220.9 |
-| `suspended` | 300 | 0.00021 | 0.00 | 0.0 |
-| `feignTraceAbsent` | 300 | 0.15266 | 2.00 | 65344.1 |
-| `feignTraceOff` | 300 | 0.14954 | 2.00 | 65344.1 |
+| `refresh20x7` | 300 | 0.88199 | 8.00 | 297237.4 |
+| `refresh20x7Restricted` | 300 | 1.11387 | 8.00 | 406173.3 |
+| `throttleBurst` | 1 | 18.42000 | 8.00 | 317269.0 |
+| `throttleIdle` | 300 | 0.00063 | 0.00 | 0.0 |
+| `drillOpenClose` | 300 | 0.03136 | 1.00 | 12746.2 |
+| `refreshWhileDrilled` | 300 | 0.06719 | 1.00 | 16170.1 |
+| `rosterRebuild` | 300 | 0.68814 | 8.00 | 315144.1 |
+| `rosterBurst` | 1 | 16.91300 | 8.00 | 316951.0 |
+| `rosterCached` | 300 | 0.77258 | 8.00 | 297216.1 |
+| `applyConfig` | 300 | 0.15089 | 0.00 | 46232.3 |
+| `probeOverheadOff` | 300 | 0.66024 | 8.00 | 297216.1 |
+| `probeOverheadOn` | 300 | 0.74572 | 8.00 | 297220.9 |
+| `suspended` | 300 | 0.00013 | 0.00 | 0.0 |
+| `feignTraceAbsent` | 300 | 0.17552 | 2.00 | 65344.1 |
+| `feignTraceOff` | 300 | 0.19675 | 2.00 | 65344.1 |
 | `spellEventOff` | 300 | 0.00020 | 0.00 | 0.0 |
-| `spellEventOn` | 300 | 0.00037 | 0.00 | 0.7 |
+| `spellEventOn` | 300 | 0.00054 | 0.00 | 0.7 |
 
 `perf` never fails a run and never blocks a commit — it is recorded, read and compared, not
 thresholded (`performance-§9`). It does gate the **tag** (`automated-tests-§3`).
 
 ## Complexity watch list
 
-Current as of [`20260926-193124`](20260926-193124/) — **this run's measurement, not its diff.** Max CCN **15** across 4462
+Current as of [`20260927-030445`](20260927-030445/) — **this run's measurement, not its diff.** Max CCN **15** across 4462
 functions, **0** of them warned on; 22 file(s) in the 1000–1500 band and 0 over the 1500 cap
 (`layout-§1`).
 
