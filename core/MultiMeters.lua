@@ -246,11 +246,31 @@ local MSG = NS.Constants.MSG
 -- and because the module may be absent on a degraded load.
 local FEIGN_DEATH_SPELL = 5384
 
-function NS:OnEnteringWorld(_, isLogin, isReload)
+-- THE [Event] TRACE (owner, 2026-09-29): one line per event that changes where
+-- a window may show or what the meters may read — world entry, a zone or group
+-- change, combat, and a restriction starting or stopping. Each names the event,
+-- lockdown and the addon's restricted flag (NS.State.restricted, as it stands
+-- when the line is written), then the event's own fields. Gated before anything
+-- is read or concatenated (debug-logging-§4). The sink stringifies every
+-- argument, so booleans go in raw, and the fields come last because only a
+-- trailing `...` passes all of its values. Left out: the player-state block
+-- (mount, vehicle, form, gliding, pet battle, death; owner ruling), and the
+-- spellcast, system-message and DAMAGE_METER_* traffic, which fires constantly.
+local function traceEvent(event, fmt, ...)
+    if not (NS.State and NS.State.debug) then return end
+    NS.Debug("Event", "%s lockdown=%s restricted=%s" .. (fmt or ""), event,
+        (InCombatLockdown and InCombatLockdown()) and true or false,
+        NS.State.restricted and true or false, ...)
+end
+
+function NS:OnEnteringWorld(event, isLogin, isReload)
+    traceEvent(event or "PLAYER_ENTERING_WORLD", " login=%s reload=%s",
+        isLogin and true or false, isReload and true or false)
     self:SendMessage(MSG.ENTERING_WORLD, { isLogin = isLogin, isReload = isReload })
 end
 
-function NS:OnRosterUpdate()
+function NS:OnRosterUpdate(event)
+    traceEvent(event or "GROUP_ROSTER_UPDATE")
     -- The roster cache is derived from a group that just changed shape, so it is
     -- dropped BEFORE the message goes out — a subscriber that rebuilds
     -- synchronously must not be handed the stale map.
@@ -258,7 +278,8 @@ function NS:OnRosterUpdate()
     self:SendMessage(MSG.ROSTER_CHANGED)
 end
 
-function NS:OnZoneChanged()
+function NS:OnZoneChanged(event)
+    traceEvent(event or "ZONE_CHANGED_NEW_AREA")
     self:SendMessage(MSG.ZONE_CHANGED)
 end
 
@@ -308,6 +329,7 @@ end
 ---
 --- @param event string|nil
 function NS:OnCombatChanged(event)
+    if event then traceEvent(event) end
     if event == "PLAYER_REGEN_DISABLED" then
         local M = NS.WindowManager
         if M and M.EndTestModeForCombat then M:EndTestModeForCombat() end
@@ -431,10 +453,12 @@ end
 --- begins, and access is still permitted during this dispatch. It is therefore
 --- the last moment a correct value-sort can be taken (design §5), which is why
 --- the raw state is forwarded rather than collapsed to a boolean here.
-function NS:OnRestrictionChanged(_, restrictionType, state)
+function NS:OnRestrictionChanged(event, restrictionType, state)
     if NS.State and NS.Secrets then
         NS.State.SetRestricted(NS.Secrets.IsRestricted())
     end
+    -- After the flag is refreshed, so `restricted=` is the answer this edge produced.
+    traceEvent(event or "ADDON_RESTRICTION_STATE_CHANGED", " type=%s state=%s", restrictionType, state)
     self:SendMessage(MSG.RESTRICTION_CHANGED, { type = restrictionType, state = state })
 end
 
