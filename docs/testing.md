@@ -92,6 +92,10 @@ not compared by name, and the suite's header gives the reason for each. The sett
 stub (`settings/Schema_Paths.lua`, issue #52) is pinned there too, in the two-table form the
 library's docs prescribe for an instance: a live `NS.SchemaRuntime` against a degraded one and the
 stub library against the live one, both from real loads, plus a degraded batch landing in the store.
+The Slash stub (`settings/Slash.lua`) joined it on 2026-09-29 (SP-MM-02) in the same two-table form:
+the file publishes its dispatcher as the `NS.Slash.__dispatcher` debug seam, and a live load's is
+compared member by member against a degraded load's, so dropping `CliProfile` or `ProfileSwitch`
+from the stub goes red.
 
 ### One environment detail worth knowing
 
