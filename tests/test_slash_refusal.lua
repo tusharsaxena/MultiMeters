@@ -156,7 +156,8 @@ end)
 -- THE LIVE LIST IS RESTATED HERE ON PURPOSE. settings/Slash.lua names it once as data and the
 -- cases below name it again, because this half is the STANDARD's list rather than this addon's
 -- choice: a verb moving between the two sets has to be a deliberate edit in two files rather than
--- a quiet consequence of editing one. Read literally, "refuse while disabled" takes the entire
+-- a quiet consequence of editing one. The one host verb on it is `profile` (LibKa0s-Slash minor
+-- 17), live because a profile switch can turn the addon back on. Read literally, "refuse while disabled" takes the entire
 -- command surface down with it, and what §2 does NOT leave to the addon is that these keep
 -- answering -- a player must be able to read and repair settings, and to reach the panel, while
 -- the addon is off, and `enable` above all or the pair is one-way again.
@@ -165,6 +166,7 @@ local LIVE_WHILE_DISABLED = {
     enable = true, disable = true,
     debug = true, diagnostics = true, perf = true,
     get = true, set = true, list = true, reset = true, resetall = true,
+    profile = true,
 }
 
 --- The rendered refusal, READ OUT OF THE LOCALE TABLE rather than retyped, so a reworded line
@@ -229,8 +231,8 @@ end)
 test("Slash: EVERY verb off the live list refuses, so a new one is gated by default", function()
     -- THE STRUCTURAL HALF. The gate is the LIBRARY's, sitting on the one dispatch path rather than
     -- as a guard pasted into each handler, and the polarity is the point: a verb is refused unless
-    -- it is on the standard's thirteen-verb live list, so the next verb this addon adds is refused
-    -- while it is off without anyone remembering to say so.
+    -- it is on the standard's thirteen-verb live list (plus the host's `profile`), so the next verb
+    -- this addon adds is refused while it is off without anyone remembering to say so.
     -- red under: passing a `liveVerbs` that names this addon's feature verbs.
     local inst = T.load{ enable = true }
     say(inst, "disable")
@@ -263,7 +265,7 @@ test("Slash: every verb on the live list still answers with the addon off", func
 
     for _, command in ipairs({
         "version", "config", "list", "get enabled", "set master.alpha 0.5",
-        "reset master.scale", "debug", "perf help", "diagnostics",
+        "reset master.scale", "debug", "perf help", "diagnostics", "profile",
     }) do
         local lines = say(inst, command)
         for _, line in ipairs(lines) do

@@ -33,7 +33,7 @@
 -- "LibKa0s-Options-1.0" resolves a four-member table (LAYOUT, New, PatchAlwaysShowScrollbar,
 -- STRINGS) and this case goes red for three reasons that have nothing to do with the stub.
 --
--- THE OTHER FIVE SEAMS ARE NOT HERE, and each has a reason rather than an omission:
+-- THE OTHER FOUR SEAMS ARE NOT HERE, and each has a reason rather than an omission:
 --
 --   * DebugLog — `tests/test_debuglogsetup.lua`'s "the stub carries the WHOLE live surface" already
 --     compares the two instances, built by two real loads. Restating it here in the by-name form
@@ -45,11 +45,12 @@
 --     the assertion that matches the contract.
 --   * Core — the seam's two halves are two blocks of one file of ours, and what they have in common
 --     is a set of names hung on NS, not a major's surface. There is no name to look up.
---   * Slash — `settings/Slash.lua` keeps its dispatcher as a file-scope local, so there is nothing
---     to compare without publishing an introspection member on shipped source. Out of CX02's scope,
---     which is the `settings/OptionsSetup.lua` arms; recorded rather than done.
 --   * Widgets — `modules/Export.lua` reaches the library table directly and degrades by REFUSING to
 --     open, not by standing in for a surface. There is no stub to check.
+
+-- SLASH IS HERE, in the two-table form (LibKa0s v1.63.0, SP-MM-02): `settings/Slash.lua` publishes
+-- its dispatcher as the `NS.Slash.__dispatcher` debug seam, and the case compares a live load's
+-- against a degraded load's. Not by name: the library table LibStub answers is not the instance.
 
 -- COMPAT IS HERE TOO (LibKa0s v1.55.0), as the two calls its API document prescribes for the two
 -- hosts that split its members across two tables. NS.Compat carries the readers and NS.Secrets the
@@ -207,4 +208,30 @@ test("parity: the Schema stub carries the live runtime's surface, and a degraded
     assertEqual(NS.Database.FindWindow(second).frame.width, 391)
     assertEqual(#seen, 1, "a degraded batch announces once")
     assertEqual(seen[1].windowId, second)
+end)
+
+-- ── LibKa0s-Slash-1.0 ───────────────────────────────────────────────────────────────────────────
+--
+-- settings/Slash.lua's stub stands in for what `lib:New(descriptor)` answers. Two real loads, the
+-- live dispatcher against the stub's, so a member the library adds to the instance goes red here
+-- until the stub carries it or the list below says why not. Slash minor 17 added two, CliProfile
+-- and ProfileSwitch, and the stub carries both (LibKa0s docs/api/Slash/version-17-docs.md, "The
+-- degradation stub").
+
+--- Live-only on purpose, each with no caller outside the dispatcher itself.
+local SLASH_INSTANCE_TRIMMED = {
+    "BuildListLines", -- the schema CLI's listing; the stub's CliList names the missing library
+    "HelpHeader",     -- the stub's PrintHelp prints its own plain header
+    "Text",           -- lib.STRINGS; a stub carries no library string but DISABLED_LINE_FORMAT
+}
+
+test("parity: the Slash stub carries the live dispatcher's surface", function()
+    -- red under: dropping CliProfile or ProfileSwitch (or any other member) from the stub's New in
+    -- settings/Slash.lua, or degrading one to a non-function.
+    local live, degraded = T.load{}, T.load{ libFiles = {} }
+    assertEqual(degraded.mocks.LibStub("LibKa0s-Slash-1.0", true), nil, "the library is not absent")
+    assertEqual(type(live.NS.Slash.__dispatcher), "table", "no live dispatcher published")
+    assertTrue(live.NS.Slash.__dispatcher ~= degraded.NS.Slash.__dispatcher)
+    T.assertSurfaceParity(live.NS.Slash.__dispatcher, degraded.NS.Slash.__dispatcher,
+        "NS.Slash.__dispatcher", SLASH_INSTANCE_TRIMMED)
 end)

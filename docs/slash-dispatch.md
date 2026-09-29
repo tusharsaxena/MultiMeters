@@ -16,8 +16,9 @@ A bare `/mm` (empty, or whitespace only) runs the `config` verb with `""` and op
 panel on its landing page; `/mm help` prints the index (`slash-commands-§4`, LibKa0s-Slash minor 11).
 The library-absent stub in `settings/Slash.lua` mirrors the rule, so there `config` answers that the
 panel is unavailable.
-`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **19 verbs**, the
-thirteen reserved ones first in the order the standard fixes, then this addon's six. The dispatcher, the
+`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **20 verbs**, the
+thirteen reserved ones first in the order the standard fixes, then this addon's seven: `profile`, then
+the six window verbs. The dispatcher, the
 help renderer and the schema CLI are LibKa0s-Slash-1.0's; the verb table stays this addon's and is
 passed *in*, because the settings landing page renders the same rows and library ownership would make
 that a load-time cycle between two majors.
@@ -36,6 +37,7 @@ that a load-time cycle between two majors.
 | `diagnostics` | Write the diagnostics report into the debug console, after whatever trace is already there (`debug-logging-§14`). The report is LibKa0s-DebugLog-1.0's `RunDiagnostics`: the markers, the identity header, the per-section pcall, the line cap and the escape strip are the library's, and the sections are `core/Diagnostics.lua`'s. `/mm debug diagnostics` runs the same report. It is on the live list, so it answers while the addon is disabled, and it lands with logging off. With LibKa0s absent it prints the collection's placeholder line |
 | `perf` | Performance capture — `/mm perf help` for the run's own verbs |
 | `version` | Print the addon version, read from the TOC manifest |
+| `profile [name]` | Bare, list the profiles with the current one marked. With a name, switch to that **existing** profile; an unknown name is refused and never created. See [The `profile` verb](#the-profile-verb) |
 | `lock` | Lock or unlock every window for dragging. It governs movement and nothing else: unlocking no longer switches Test mode on. General → Master controls' **Lock frame** box is the same switch |
 | `test` | Toggle test mode — placeholder rows, for positioning. The General page's Test mode box is the same switch. Combat starting ends it, and a start during combat is refused |
 | `toggle` | Show or hide one window by name, or all of them |
@@ -45,12 +47,13 @@ that a load-time cycle between two majors.
 
 ## The host verbs
 
-The six host verbs act on **windows** — instances the registry owns — rather than on schema rows, so
+Seven verbs are this addon's own. `profile` works on the profile store and has
+[its own section](#the-profile-verb). The other six act on **windows** — instances the registry owns — rather than on schema rows, so
 they are untouched by the library's absence and route straight into `modules/WindowManager.lua`
 rather than duplicating its rules. Window keys accept either an id or a name: a number is an id, a
 string is a name, matched case-insensitively but stored exactly as typed.
 
-`export` is the one of the six that ends somewhere other than the registry: it resolves a window the
+`export` is the one of the six window verbs that ends somewhere other than the registry: it resolves a window the
 same way `/mm toggle` does, then hands the **config** — not the live instance — to `NS.Export:Open`. A window in the registry that has never been built still points at a segment, and
 its numbers are as exportable as a drawn one's. Named with no argument it means the window the
 settings panel is pointed at, falling back to the first in the registry, because the CLI has no
@@ -85,6 +88,29 @@ refuses an argument, because only `feign` reads one. `diag`, the report's old na
 unknown words: `debug-logging-§14` allows the report no other name, so it gets no alias and no hint. What each one prints is in
 [debug.md](debug.md).
 
+### The `profile` verb
+
+`/mm profile` lists the profiles, sorted without regard to case, the current one marked `(current)`,
+then a hint line. `/mm profile <name>` switches to that profile. The behavior is LibKa0s-Slash-1.0's
+`CliProfile` (minor 17), shared across the collection; the row and the store are this addon's. The
+row's handler is `cli:CliProfile(rest)`, and the descriptor's `profiles` field answers `NS.db`, asked
+at call time because this file loads before `NS:InitDB` builds it.
+
+- **The name is taken whole.** Surrounding quotes are stripped (`/mm profile "Raid Team"`), and case
+  and inner spaces are kept, because AceDB's profile names are case-sensitive.
+- **Only an existing profile.** An unknown name is refused, with a did-you-mean when exactly one
+  stored name matches it ignoring case, and then the list. AceDB's `SetProfile` would create a
+  missing profile, so the library only calls it for a name the store already holds. Creating,
+  copying and deleting stay on the Profiles page.
+- **Naming the current profile** says so and switches nothing, so no window rebuilds for nothing.
+- **Refused in combat** (`InCombatLockdown`), like the Profiles page: a switch rebuilds every window and
+  wipes the caches. The list still answers.
+- **The switch is the ordinary one.** `SetProfile` fires `OnProfileChanged` in `core/Database.lua`,
+  which logs the one `[Profile] switched to '<name>'` line, re-evaluates the `disabled` hold and fires
+  `PROFILE_CHANGED`, so every window and an open settings panel follow
+  ([profiles.md](profiles.md#what-a-profile-change-does)). The library logs nothing of its own.
+- **Live while disabled.** See the next section.
+
 ## Disabled — total, and the slash surface is not
 
 `slash-commands-§7`. **Disabled means the addon is not running.** Every game event unregistered,
@@ -93,20 +119,23 @@ nothing written from a game event. It is one `LibKa0s-Lifecycle-1.0` latch with 
 `disabled` from the stored `enabled` path, `perf` from the capture harness — and releasing one never
 stands up an addon the other still holds down. It replaced a draw gate.
 
-**The command surface is deliberately unchanged.** All thirteen reserved verbs answer, and the bare
-`/mm` opens the settings panel; only this addon's own six feature verbs refuse, on one line naming
+**The command surface is deliberately unchanged.** All thirteen reserved verbs and `profile` answer,
+and the bare `/mm` opens the settings panel; only this addon's own six feature verbs refuse, on one line naming
 `/mm enable`. Full detail, the teardown table and the launcher's options menu while disabled:
 [disabled-state.md](disabled-state.md).
 
 **The gate is the library's, and the live set is its data** (LibKa0s-Slash minor 13; the thirteenth verb, `diagnostics`, from minor 16). The host passes
 two descriptor fields. `isEnabled` asks `NS.IsDisabled` at dispatch time and never caches it, so the
-command after `/mm enable` works. The live set is the library's `LIVE_VERBS`, the standard's thirteen
-reserved verbs, and this host passes no `liveVerbs` to narrow it. `diagnostics` is in that set
+command after `/mm enable` works. The live set is `liveVerbs`, which the host builds from the
+library's `LIVE_VERBS`, the standard's thirteen reserved verbs, plus `profile` and nothing else. It is
+read from the library rather than copied, so it never narrows the reserved set. `profile` is added
+because a profile switch can flip `enabled`: a player who turned the addon off in one profile must be
+able to reach one where it is on. `diagnostics` is in that set
 and in `NS.COMMANDS`, so the report runs with the addon off, which is when a player is most likely
 to need it (`debug-logging-§14`).
 
 - **Still answers while disabled:** `help`, `config`, `version`, `enable`, `disable`, `debug`,
-  `diagnostics`, `perf`, `get`, `set`, `list`, `reset`, `resetall`, and the bare `/mm`.
+  `diagnostics`, `perf`, `get`, `set`, `list`, `reset`, `resetall`, `profile`, and the bare `/mm`.
 - **Refused while disabled:** `lock`, `test`, `toggle`, `window`, `reset-positions`, `export`.
 
 It asks `NS.IsDisabled`, not `NS.IsStoodDown`. A perf-suspended addon is stood down but not disabled,
@@ -121,6 +150,10 @@ and a line telling someone mid-capture to type `/mm enable` would be the wrong a
 - **The schema CLI names the missing library.** `list`, `get`, `set`, `reset` and `resetall`'s CLI
   path each answer `/mm <verb> is unavailable. <cause>.`, where the cause is `NS.LIBKA0S_MISSING`
   (`core/CoreSetup.lua`). They never go quiet.
+- **`profile` names the missing library too.** The stub carries `CliProfile` and `ProfileSwitch`
+  because the live dispatcher has both; each answers `/mm profile is unavailable. <cause>.` and
+  switches nothing, since there is no library to check a name against. `tests/test_surface_parity.lua`
+  compares the stub with the live dispatcher member by member.
 - **`help` renders plainly.** The stub carries no copy of the library's row formatter.
 - **A bare `/mm` still runs `config`,** which then answers that the panel is unavailable.
 - **`enable` / `disable` keep working.** They write `NS.SetByPath("enabled", want)` directly (see the
@@ -136,7 +169,10 @@ Every refusal is one line in chat and changes nothing.
 |---|---|
 | A feature verb while the addon is disabled | `Ka0s Multi Meters is disabled — enable it with /mm enable` (the library's `cli:DisabledLine()`) |
 | An unknown verb, enabled or disabled | `unknown command '<verb>'`, then the index. A typo is not refused, so the disabled line never answers one |
-| A schema-CLI verb on a library-absent load | `/mm <verb> is unavailable. <cause>.` |
+| A schema-CLI verb or `profile` on a library-absent load | `/mm <verb> is unavailable. <cause>.` |
+| `/mm profile <name>` naming no stored profile | `No profile named '<name>'.`, then `Did you mean '<stored>'?` when exactly one stored name matches ignoring case, then the list. Nothing is created |
+| `/mm profile <name>` in combat | `Can't switch profiles in combat.` |
+| `/mm profile` with no profile store (AceDB missing) | `Profiles are not available.` |
 | `/mm set` or `/mm enable` rejected by the seam | `Invalid value for <path>`, then the seam's reason (Slash minor 15); on the direct `enabled` path, the seam's reason alone |
 | `/mm window` with an unknown sub-verb or a malformed `copy` | `Usage: /mm window list, new <name>, delete <name>, copy <source> <target>` |
 | A host verb with the window layer not loaded | `window management is unavailable — modules/WindowManager.lua did not load.` |
@@ -145,7 +181,8 @@ Every refusal is one line in chat and changes nothing.
 | `/mm debug feign <word>` with an unknown word | `unknown feign argument '<word>' — /mm debug feign on\|off, or /mm debug feign to print the recording.` |
 | `/mm test` during combat | `modules/WindowManager.lua`'s own line; nothing more is printed here |
 
-Every line goes through `NS.L`.
+Every line goes through `NS.L`, except the profile verb's, which are LibKa0s-Slash-1.0's `PROFILE_*`
+strings and reach a translation through the library's own `L` override.
 
 ## Related
 

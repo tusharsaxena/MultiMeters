@@ -81,7 +81,7 @@ handler's return value, because an early return is what a draw gate does.
 
 `slash-commands-§7`'s own ruling, and it is the half that does **not** change. **Every reserved verb
 answers normally** with the addon off: `help`, `config`, `version`, `enable`, `disable`, `debug`,
-`diagnostics`, `perf`, `get`, `set`, `list`, `reset`, `resetall` — and the bare `/mm` opens the settings panel,
+`diagnostics`, `perf`, `get`, `set`, `list`, `reset`, `resetall` — plus this addon's `profile` — and the bare `/mm` opens the settings panel,
 which is the case that settled it. A player must be able to read and repair settings and reach the
 panel with the addon off, which is exactly when they are most likely to need to, and `enable` above
 all or the pair is one-way. The diagnostics report is live under both its forms, `/mm diagnostics`
@@ -96,8 +96,10 @@ request), which says nothing about what `lock` *means* here — that is this add
 and is untouched.
 
 **The gate is the library's, not this file's.** `settings/Slash.lua` passes `isEnabled` and
-`brandName` on the descriptor and **deliberately passes no `liveVerbs`**: the library's default is
-the standard's thirteen reserved verbs, and naming a set here could only narrow it. The hand-rolled
+`brandName` on the descriptor, and a `liveVerbs` **built from the library's own `LIVE_VERBS`** (the
+standard's thirteen reserved verbs) **plus `profile`** and nothing else. Reading the reserved set from
+the library rather than copying it means it can never be narrowed here. `profile` is on it because a
+profile switch can flip `enabled`, so it is one of the ways back to an enabled addon. The hand-rolled
 `ALWAYS_LIVE` wrap this addon carried, and its own spelling of the refusal line, are both gone — the
 line is `cli:DisabledLine()`, built from the format string every addon in the collection shares.
 `isEnabled` is asked at dispatch time and never cached, so the command after `/mm enable` works.

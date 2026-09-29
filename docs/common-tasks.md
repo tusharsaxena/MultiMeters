@@ -541,13 +541,14 @@ page and the README's command table all read that string and nothing else — a 
 is a sub-verb nobody can discover (`slash-commands-§4`).
 
 **5. Decide nothing about the disabled state — the library already has.** `settings/Slash.lua` hands
-LibKa0s-Slash-1.0 an `isEnabled` and a `brandName` and **no `liveVerbs`**, so the live set is the
-library's default: the standard's thirteen reserved verbs. Any verb this addon ships that is *not* one
-of them is refused while the addon is off, on one tagged line naming `/mm enable`
+LibKa0s-Slash-1.0 an `isEnabled`, a `brandName` and a `liveVerbs` built from the library's own
+`LIVE_VERBS` (the standard's thirteen reserved verbs) plus `profile`. Any verb this addon ships that is
+*not* on that list is refused while the addon is off, on one tagged line naming `/mm enable`
 (`slash-commands-§2`). A new host verb is therefore gated by default and there is nothing to
-remember. **Do not add a `liveVerbs` array to narrow that set** — standard v2.57.0 reversed exactly
-such a narrowing. If a new verb genuinely must stay live, it is a reserved verb and it is already on
-the list; if it is not on the list, it is a feature.
+remember. **Never narrow the reserved set** — standard v2.57.0 reversed exactly such a narrowing, and
+the list reads it from the library for that reason. Widening it is a deliberate choice with a reason
+written beside it, as `profile` has (a profile switch can turn the addon back on); a verb without such
+a reason is a feature, and features refuse.
 
 **Gotchas.**
 - `perf` is a **reserved** verb across the collection and is already registered here. It is

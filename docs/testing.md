@@ -210,6 +210,8 @@ the `diagnostics`, `recap` and `identity` reports and the console toggle. The di
 refusal cases (`slash-commands-§2`) joined the schema-seam refusals in
 `tests/test_slash_refusal.lua`. The parent keeps the verb table's shape, dispatch, the host verbs,
 `resetall` and registration. Case bodies and names moved unchanged, so the suite total did not move.
+`tests/test_slash_profile.lua` (2026-09-29, SP-MM-02) is a fourth sibling, new rather than peeled: the
+`profile` verb's cases, driven through the real dispatcher and the real AceDB switch.
 
 ## What the mock models, and what it admits it cannot
 

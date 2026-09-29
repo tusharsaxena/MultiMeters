@@ -8,8 +8,8 @@ local Sl = NS.Slash
 -- builder and the type-aware value parser live in libs/LibKa0s/Slash.lua and are
 -- shared across every Ka0s addon. What stays ours is what is genuinely ours: the
 -- verb table, the six host verbs that act on windows rather than on schema rows,
--- and the adapters that point the library's schema seams at this addon's write
--- seam.
+-- the `profile` row that hands the library this addon's profile store, and the
+-- adapters that point the library's schema seams at this addon's write seam.
 --
 -- ── WHY NS.COMMANDS IS POSITIONAL ───────────────────────────────────────────────
 --
@@ -108,6 +108,16 @@ NS.COMMANDS = {
     { "perf",     "Performance capture; try /mm perf help", function(a) doPerf(a) end },
     { "version",  "Print the addon version",   function() cli:CliVersion() end },
 
+    -- THE PROFILE VERB (LibKa0s-Slash minor 17). A host verb, not a reserved one, so it sits
+    -- after the thirteen, beside the settings verbs it belongs with. The behavior is the
+    -- library's `CliProfile`: bare lists the profiles with the current one marked, a name
+    -- (surrounding quotes stripped, case and spaces kept) switches to an EXISTING profile only,
+    -- and the switch is refused in combat. What is ours is the store (the descriptor's
+    -- `profiles`), the one `[Profile]` switch line (core/Database.lua's OnProfileChanged), and
+    -- the verb staying live while disabled (`liveVerbs` below).
+    { "profile",  L["List profiles, or switch to one: profile <name>"],
+                                                                     function(a) cli:CliProfile(a) end },
+
     { "lock",     "Lock or unlock all windows for dragging",         function(a) doLock(a) end },
     { "test",     "Toggle test mode \226\128\148 placeholder rows for positioning",
                                                                      function(a) doTest(a) end },
@@ -139,21 +149,24 @@ NS.COMMANDS = {
 --   * `isEnabled` is asked at DISPATCH TIME, never cached, so the command after
 --     `/mm enable` works.
 --   * the live set is `lib.LIVE_VERBS` -- the standard's THIRTEEN reserved verbs,
---     `diagnostics` added at Slash minor 16 -- and this host DELIBERATELY PASSES
---     NO `liveVerbs` TO NARROW IT. The library defaults to the right set, a
---     narrowing here would be this addon deciding for itself which half of the
---     standard to keep, and v2.57.0 reversed exactly such
---     a narrowing after the owner hit `/mm` on a disabled addon and got a refusal
---     instead of the settings panel he was trying to reach.
+--     `diagnostics` added at Slash minor 16 -- WIDENED BY ONE HOST VERB, `profile`,
+--     and never narrowed. The host passes `liveVerbs` built FROM the library's own
+--     list, so a reserved verb the library adds later is live here without an edit;
+--     a hand-copied list would be this addon deciding for itself which half of the
+--     standard to keep, and v2.57.0 reversed exactly such a narrowing after the
+--     owner hit `/mm` on a disabled addon and got a refusal instead of the settings
+--     panel he was trying to reach. `profile` is added because a profile switch can
+--     flip `enabled` (core/Database.lua's resyncEnabledHold): a player who turned
+--     the addon off in one profile must still be able to reach one where it is on.
 --   * the refusal line is `cli:DisabledLine()`, built from `brandName` and the
 --     library's own format string. Eleven addons each wording it slightly
 --     differently is the drift the shared printer exists to end.
 --
 -- WHAT STILL ANSWERS WHILE DISABLED: `help`, `config`, `version`, `enable`,
 -- `disable`, `debug`, `diagnostics`, `perf`, `get`, `set`, `list`, `reset`,
--- `resetall`, and the BARE `/mm`, which opens the settings panel through the host's
--- `config` verb. A player must be able to read and repair settings and reach the
--- panel while the addon is off -- which is exactly when they are most likely to
+-- `resetall`, the host's `profile`, and the BARE `/mm`, which opens the settings
+-- panel through the host's `config` verb. A player must be able to read and
+-- repair settings and reach the panel while the addon is off -- which is exactly when they are most likely to
 -- need to -- and `enable` above all, or the pair is one-way.
 --
 -- WHAT IS REFUSED: this addon's own six feature verbs -- `lock`, `test`,
@@ -218,6 +231,13 @@ if not SlashLib then
         for _, verb in ipairs({ "List", "Get", "Set", "Reset", "ResetAll" }) do
             stub["Cli" .. verb] = absent(verb:lower())
         end
+        -- The profile verb's two members (Slash minor 17), because the live instance has both.
+        -- With no library there is nothing to check a name against, so neither switches: each
+        -- names `/mm profile` and the missing library, as the schema verbs above do.
+        -- ProfileSwitch answers false, the live member's "did not switch".
+        local profileAbsent = absent("profile")
+        stub.CliProfile = profileAbsent
+        stub.ProfileSwitch = function() profileAbsent(); return false end
         -- Formatted the way the live `cli:DisabledLine()` does: the plain-text brand, then
         -- `<slash> enable`. Through Launcher minor 3, core/LauncherSetup.lua's refused left click
         -- reached it through Sl:DisabledLine, so a stub without it raised there
@@ -299,9 +319,20 @@ cli = SlashLib:New({
     -- escapes.
     brandName = L["Ka0s Multi Meters"],
 
-    -- NO `liveVerbs`. The library's default IS the standard's thirteen reserved
-    -- verbs; naming a set here could only narrow it, and narrowing it is what
-    -- standard v2.57.0 reversed.
+    -- `liveVerbs`: the library's own thirteen reserved verbs, read from it, plus the
+    -- host's `profile`, and nothing else. See "The disabled gate" above. The stub
+    -- has no LIVE_VERBS and no gate, so there the list is `profile` alone and unread.
+    liveVerbs = (function()
+        local live = {}
+        for _, verb in ipairs(SlashLib.LIVE_VERBS or {}) do live[#live + 1] = verb end
+        live[#live + 1] = "profile"
+        return live
+    end)(),
+
+    -- The profile store for `CliProfile` (Slash minor 17), asked at CALL time: this
+    -- file loads before NS:InitDB builds NS.db, and NS.db stays nil when AceDB is
+    -- missing, which the library answers with its "not available" line.
+    profiles = function() return NS.db end,
 
     print   = function(line) out(line) end,
     version = NS.Version,
@@ -840,6 +871,12 @@ end
 -- ---------------------------------------------------------------------
 
 function Sl:OnSlash(msg)  return cli:OnSlash(msg)  end
+
+-- A DEBUG SEAM, not surface: the dispatcher itself, live instance or stub, so
+-- tests/test_surface_parity.lua can compare the stub against the live instance and
+-- tests/test_slash_profile.lua can reach the stub's ProfileSwitch, which no row
+-- calls. `__`-prefixed like `__stubFormat`, so the kit's parity walk skips it.
+Sl.__dispatcher = cli
 
 --- slash-commands-§7's one refusal line, built by the library from `brandName`
 --- and the collection's own format string.

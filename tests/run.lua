@@ -316,6 +316,7 @@ local SUITES = {
     "test_slash",
     "test_slash_diagnostics",
     "test_slash_refusal",
+    "test_slash_profile",
     -- slash-commands-§7's conformance suite: the disabled state is TOTAL. It asserts on
     -- the REGISTRATION SET rather than on a handler's return value, because an early
     -- return is what a draw gate does and a suite written that way certifies the shape

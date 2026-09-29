@@ -2,7 +2,7 @@
 --
 -- settings/Slash.lua's half of the CLI. The dispatcher, the help renderer, the
 -- row formatter and the value parser are LibKa0s-Slash-1.0's and are tested in
--- that repo (testing-§8); what is ours is the verb table, the five host verbs,
+-- that repo (testing-§8); what is ours is the verb table, the host verbs,
 -- the adapters that point the library's schema seams at NS.SetByPath, and the
 -- registration.
 --
@@ -103,7 +103,7 @@ test("Slash: every reserved verb is present, in the order the standard fixes", f
 end)
 
 test("Slash: the host verbs are declared and each carries a real handler", function()
-    for _, name in ipairs({ "lock", "test", "toggle", "window", "reset-positions" }) do
+    for _, name in ipairs({ "profile", "lock", "test", "toggle", "window", "reset-positions" }) do
         local entry = findVerb(NS.COMMANDS, name)
         assertTrue(entry ~= nil, "the host verb '" .. name .. "' is missing")
         assertEqual(type(entry[3]), "function")
