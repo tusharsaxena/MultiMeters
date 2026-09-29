@@ -240,11 +240,12 @@ right. Open the panel with `/mm config`.
   Result:
 - **PANEL-20. The five text controls, four surfaces.** Bars → Text style, Header → Title text, Columns
   → Header text and Tooltip → Text each carry a font picker, font outline, text shadow, text color and
-  a **Text color mode** of Class / Per-statistic / Custom. Walk all four modes on each page → only
-  that surface changes (the cells; the title and session line; the "Player | Damage | Healing" strip; a
-  hovered tooltip). Per-statistic means: each cell its own column's color, the title bar the sort
-  column's (change the sort and it follows), the tooltip the hovered column's, and each column label
-  its own column's. Columns → Header background has a Background color mode over the same three, where
+  a **Text color mode**: Class / Per-statistic / Custom on Bars, Columns and Tooltip; Class / Custom
+  only on Header → Title text (no Per-statistic, as in WIN-20). Walk each mode the surface offers on
+  each page → only that surface changes (the cells; the title and session line; the "Player | Damage
+  | Healing" strip; a hovered tooltip). Per-statistic means: each cell its own column's color, the
+  tooltip the hovered column's, and each column label its own column's. Columns → Header background
+  has a Background color mode of Class / Per-statistic / Custom, where
   Per-statistic paints one rectangle per label; Header → Title bar's background is a plain color with
   no mode. The configured opacity survives every mode (a tint, not a slab). A control that moves the
   wrong surface means two groups share a key. Result:
@@ -409,9 +410,10 @@ right. Open the panel with `/mm config`.
   then the list; nothing switches, and the Profiles page shows no new profile. `/mm profile test`
   (wrong case) → `No profile named 'test'.`, `Did you mean 'Test'?`, then the list; still no switch.
   Result:
-- **PROFILE-14. Quotes and spaces.** Create "Raid Team" on the Profiles page. `/mm profile "Raid
-  Team"` → switches to Raid Team; back on Default, `/mm profile 'Raid Team'` and `/mm profile Raid
-  Team` → each switches too (quotes stripped, inner space and case kept). Result:
+- **PROFILE-14. Quotes and spaces.** Create "Raid Team" on the Profiles page (creating it switches to
+  it), then `/mm profile Default`. `/mm profile "Raid Team"` → `Switched to profile 'Raid Team'.`;
+  `/mm profile Default`, then `/mm profile 'Raid Team'` → switches again; `/mm profile Default`, then
+  `/mm profile Raid Team` → switches again (quotes stripped, inner space and case kept). Result:
 - **PROFILE-15. The verb answers while disabled.** Make "Off" a profile with General → Enable Multi
   Meters unticked and switch to it (the addon stands down). `/mm profile` → the list, not the disabled
   refusal. `/mm profile Default` → switches, and since Default is enabled the addon stands back up:
@@ -533,9 +535,10 @@ right. Open the panel with `/mm config`.
   edge of any kind (a surviving 1px line is the skin's `frame.innerBorder`). None at a non-zero
   thickness → also no edge, not the Ka0s edge. Result:
 - **WIN-23. Drag.** `/mm lock off` (or untick Frame → General → Lock window), drag the window by its
-  body → it moves as one object; `/reload` → the position persists. Result:
-- **WIN-24. The resize grip follows the lock.** Unlocked → the bottom-right grip shows and resizing
-  persists across `/reload`; locked → no grip. There is no Show resize grip setting. Result:
+  body → it moves as one object (persistence across `/reload` is INSTALL-4). Result:
+- **WIN-24. The resize grip follows the lock.** Unlocked → the bottom-right grip shows and resizes the
+  window (persistence across `/reload` is INSTALL-4); locked → no grip. There is no Show resize grip
+  setting. Result:
 - **WIN-25. Locked windows hand the mouse to the cells.** `/mm lock on`, try to drag → it does not
   move, and hovering a cell shows a tooltip. Unlocked → the window drags and the cells do not respond.
   Result:
@@ -1163,4 +1166,5 @@ empty Result). Sign each on its own `Result:` line.
 | DIAG-10 | old §18, the group capture with the tooltip path (issue #47), "Unconfirmed in game" |
 | DIAG-11 | old §29, the perf strings after the v1.27.0 re-vendor, "NOT YET RUN" |
 | DIAG-12 | old §31, the perf panel's close control, "NOT YET RUN" |
+| DIAG-20 | old §26, the export control's atlas rung (`poi-scrollofresonance`, `UI-HUD-MicroMenu-Questlog-Up`), "still unconfirmed" |
 | DIAG-26 to DIAG-30 | old §37, MM-E1 to MM-E5, the event trace (2026-09-29), Result empty |
