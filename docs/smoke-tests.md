@@ -204,18 +204,32 @@ right. Open the panel with `/mm config`.
 - **PANEL-12. Tab art.** Look at any strip → a flat backing with the active tab drawn darker. Record
   whether it reads as tabs or wants Blizzard's tab atlas; changing it is a
   `LibKa0s/OptionsWidgets.lua` change, not a Multi Meters one. Result:
-- **PANEL-13. Entry shapes.** Visit each entry → the tabs read, in order:
-  **Frame**: General (lock, keep on screen, then the four *(all surfaces)* rows), Size and position,
-  Background and border, Row; it opens on General, where *Font outline (all surfaces)* shows **None**
-  on a fresh profile. **Bars**: Bar, Background, Border, Text content, Text style, Icons.
-  **Header**: Title bar (show, background, alignment, height, divider), Title text, Controls, Button
-  style. **Tooltip**: General (Tooltip anchor, Tooltip scale, Horizontal offset, Vertical offset, Hide
+- **PANEL-13. Entry shapes.** Visit each entry → the tabs read, in order, each holding the rows named:
+  **Frame**: General (Lock window, Keep on screen, then the four *(all surfaces)* rows), Size and
+  position (Width, Height, Scale, Opacity, Frame strata, Padding), Background and border (a
+  *Background* heading with Background color and Background color mode, then a *Border* heading with
+  Border style, Border thickness, Border color and Border color mode), Row (Maximum rows, Row height,
+  Row spacing, Growth direction, Always show yourself, Highlight yourself, Highlight on mouseover,
+  Alternating background); it opens on General, where *Font outline (all surfaces)* shows **None**
+  on a fresh profile. **Bars**: Bar, Background, Border, Text content, Text style, Icons; none of the
+  Row rows above appears on Bars (their paths are `window.rows.*`, and `/mm get window.rows.height`
+  answers). **Header**: Title bar (Show title bar, Alignment, Header height, Header background, then
+  the divider rows), Title text (the face the window's name is drawn in: Font, Font size, Text color,
+  Text color mode, Font outline, Text shadow; the name itself is typed on Windows → General), Controls,
+  Button style (an *Icon* heading with Reveal controls on hover beside Control size; a *Color* heading
+  with Control color and Control color mode on one line and Control hover color and Control hover
+  color mode on the next; an *Opacity* heading with Control opacity beside Control hover opacity).
+  **Tooltip**: General (Tooltip anchor, Tooltip scale, Horizontal offset, Vertical offset, Hide
   tooltips in combat), Bar, Bar background, Bar border, Text, Contents (Show spell breakdown, Maximum
   spells, Show targets, Maximum targets, Name the killer, Name the killing blow, Summarize on the name).
-  **Visibility**: Where to show this window, When to hide this window, Combat. Each tab label appears
-  once. Frame has no Header controls tab, no Reset position button, no Show resize grip and no
-  Minimized checkbox; Header has no Column headers tab. Stored paths did not move with the rows:
-  `/mm get window.text.size` and `/mm get window.frame.showClose` still answer. Result:
+  **Visibility**: Where to show this window (the seven contexts: Dungeons, Raids, Arenas,
+  Battlegrounds, Delves, Scenarios, Open world), When to hide this window (Hide when solo, Hide in
+  vehicles, Hide when mounted, Hide when skyriding, Hide on flight paths, Hide in player housing, Hide
+  in pet battles, Hide while dead), Combat (Hide in combat, Hide out of combat). Each tab label appears
+  once, and no row sits on a tab other than the one named here. Frame has no Header controls tab, no
+  Reset position button, no Show resize grip and no Minimized checkbox; Header has no Column headers
+  tab. Stored paths did not move with the rows: `/mm get window.text.size` and `/mm get
+  window.frame.showClose` still answer. Result:
 - **PANEL-14. The Controls tab reads like the strip.** Header → Controls → each checkbox draws its
   control's own icon between the tick box and the words, and the rows run in the strip's left-to-right
   order: the segment line (no icon), export, reset, segment picker, settings, lock, minimize, close.
@@ -473,9 +487,11 @@ right. Open the panel with `/mm config`.
   started*; the placeholders give way to the real (possibly empty) grid and the box unticks; the window
   stays up, or hides if its Visibility → Combat → hide in combat is ticked. Leaving combat does not turn
   Test mode back on. (`/mm test off` by hand always leaves the window on screen.) Result:
-- **STATE-11. Test mode cannot start in combat.** In combat, tick the Test mode box, type `/mm test`,
-  and click the minimap menu's **Test mode** → each prints one line *Cannot start test mode during
-  combat* and the box stays unticked. Result:
+- **STATE-11. Test mode cannot start in combat.** With Test mode off, enter combat (a dummy is fine),
+  type `/mm test`, then click the minimap menu's **Test mode** → each prints one line *Cannot start test
+  mode during combat* and no placeholder rows appear. (The General page's Test mode box is under the
+  combat cover then, PANEL-29, so it is not a route.) Leave combat → General → Master controls → Test
+  mode reads unticked. Result:
 
 ## WIN
 
@@ -680,8 +696,9 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   with no explanation. Result:
 - **GRID-20. The meter returns without a reload.** Re-enable the meter → within a few seconds (or after
   a zone change or meter event) the rows come back. Result:
-- **GRID-21. The two empty states differ.** With the meter enabled and no combat data (fresh login, or
-  after the header reset) → *Waiting for combat data...*, never the unavailable prompt. Result:
+- **GRID-21. The two empty states differ.** With the meter enabled and no combat data (click the
+  header's reset control and accept, WIN-17; a fresh login keeps the old fights, INSTALL-5) → *Waiting
+  for combat data...*, never the unavailable prompt. Result:
 - **GRID-22. Bar fills slide.** With Bars → Bar → **Animate bar fills** on (the default), at a dummy →
   each fill slides to its new length instead of stepping four times a second, and when the leader grows
   the other bars shrink smoothly. Result:
@@ -928,9 +945,11 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
   export was not sent.* and the other nineteen lines are dropped. Result:
 - **EXPORT-47. No line is cut.** A long NPC ally name on a line with a share → the line arrives whole.
   Result:
-- **EXPORT-48. An empty segment.** Fresh login, before any pull, **Print to Chat**, then **Export to
-  CSV** → each prints one line *There is nothing to export.*; nothing is sent, no copy window opens,
-  no error. Result:
+- **EXPORT-48. An empty segment.** Out of combat, click the header's reset control and accept (the
+  window reads *Waiting for combat data...*, WIN-17; a fresh login is no substitute, since the old
+  fights survive it, INSTALL-5), open the export modal, Channel **Self only**, **Print to Chat**, then
+  **Export to CSV** → each prints one line *There is nothing to export.*; nothing is sent, no copy
+  window opens, no error. Result:
 - **EXPORT-49. What is remembered.** Set Metric Healing, Channel Party, Lines 20 and a whisper name;
   close; `/reload`; re-open → Channel, Lines and the name are as you left them for every window (they
   are addon-wide); Metric reads the opening window's sort column. With `/mm debug on`, re-open on the
@@ -1196,13 +1215,16 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | ID | Origin | Why it is owed |
 |---|---|---|
 | INSTALL-4 | §2 | Corrected: the column set replaces a per-column width, which no longer exists |
+| INSTALL-6 | §22 step 4 | Corrected: `schemaVersion` has advanced, rather than being 2 |
 | INSTALL-7 | §23 step 4 | Corrected: the control color modes live on Header → Button style |
+| INSTALL-8 | §34 step 4 | Corrected: `schemaVersion` is at least 14, rather than exactly 14 |
 | SLASH-3 | §14 | New verbs in the sweep: `diagnostics`, `profile`, `export` and an unknown word |
 | SLASH-4 | §14, §26 `/mm export` | New: the `profile` row |
 | SLASH-7 | §14 | Corrected: the ordinal path answers *Setting not found*, and an out-of-range scale is clamped, not refused |
+| SLASH-9 | §14 | Corrected: the by-name example is `Multi Meters #1`; no window is named Meter |
 | SLASH-11 | §6 | Corrected: the list line's shape, the one-word copy source, no confirmation on the CLI delete |
 | PANEL-11 | §29 (`M4-01`) | "NOT YET RUN" |
-| PANEL-13 | §4 | Corrected: Tooltip's tab names and order |
+| PANEL-13 | §4 | Corrected: Tooltip's tab names and order; each tab's rows restated from the code (Title text holds the name's face, not the name; Button style's three headings; the hide rules add solo, vehicles and flight paths, and combat is its own tab) |
 | PANEL-15 | §4 | Corrected: the General page has three tabs |
 | PANEL-20 | §4 | Corrected: Header → Title text offers Class / Custom only |
 | PANEL-23 | §4 (`M3-02`) | "Not yet run" |
@@ -1216,6 +1238,7 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | PROFILE-10 to PROFILE-17 | New | The `/mm profile` verb (SP-MM-02), never run in a client |
 | STATE-1 | §14 | New: `/mm diagnostics` and `/mm profile` among the verbs that answer while disabled |
 | STATE-5 | §3 SM-02, §14 SM-02 | Corrected: the suspension starts at `/mm perf measure b`, not at `start` |
+| STATE-11 | §3 | Corrected: the General page's box is under the combat cover, so only `/mm test` and the minimap menu are routes |
 | WIN-5 | §1 header controls | Corrected: the Header control names |
 | WIN-12 | §26 control | Corrected: the toggle is on Header → Title bar |
 | WIN-28 | §6 | Corrected: the refresh interval is addon-wide, not a per-window difference |
@@ -1225,6 +1248,7 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | GRID-9 | §20 step 2 | Corrected: the default name cap is 15 |
 | GRID-12 | §9 SM-04 | Corrected: Frame → Row → Maximum rows and Always show yourself |
 | GRID-13 | §9 | Corrected: each sort mode is set with `/mm set window.data.sortMode` |
+| GRID-21 | §13 | Corrected: the empty state comes from the header reset; a fresh login keeps the old fights |
 | GRID-31 | §21 step 8 | Corrected: the meter reset is the header control's |
 | TIP-6 | §10 | Corrected: the row line also needs `/mm debug tooltip` |
 | TIP-11 | §10 | Corrected: Death timestamps is on Bars → Text content |
@@ -1233,7 +1257,10 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | EXPORT-20 | §26 whisper | Corrected: a blank whisper is refused with a line |
 | EXPORT-21 | §26 whisper | Corrected: a statement turned into a step |
 | EXPORT-29 | §26 file | Corrected: 24 columns, and the header row is compared with LOC-1's |
-| EXPORT-48 | §26 chat | Corrected: the *There is nothing to export.* line |
+| EXPORT-33 | §26 chat | Corrected: the channel is **Self only**; there is no *Print to myself* |
+| EXPORT-39 | §26 chat | Corrected: the list includes **Whisper my target** |
+| EXPORT-48 | §26 chat | Corrected: the *There is nothing to export.* line, and the empty segment comes from the header reset, not a fresh login |
+| EXPORT-53 | §26 `/mm export` | Corrected: the by-name example is `Multi Meters #1`; no window is named Meter |
 | EXPORT-54 | §26 `/mm export` | Corrected: *No window named '…'.* |
 | COMBAT-7 | §8 | Corrected: the step names the control and the command |
 | COMBAT-13 | §9, §27 | Corrected: the `N of M` header strings |
