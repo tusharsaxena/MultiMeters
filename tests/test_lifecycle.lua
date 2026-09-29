@@ -738,3 +738,61 @@ test("ShouldShow: a missing Visibility module fails OPEN", function()
     assertTrue(ok, "the ladder must fail open when the module is gone")
     assertEqual(reason, "shown")
 end)
+
+-- The [Event] trace (owner, 2026-09-29) -------------------------------------
+
+--- Capture every NS.Debug line under `tag`, each argument stringified first the
+--- way the sink does it.
+local function traceOf(ns, tag)
+    local lines = {}
+    ns.Debug = function(t, fmt, ...)
+        if t ~= tag then return end
+        local n = select("#", ...)
+        local args = { ... }
+        for i = 1, n do args[i] = tostring(args[i]) end
+        local count = #lines
+        lines[count + 1] = fmt:format(unpack(args, 1, n))
+    end
+    return lines
+end
+
+local function anyLine(lines, needle)
+    for _, l in ipairs(lines) do
+        if l:find(needle, 1, true) then return l end
+    end
+    return nil
+end
+
+test("Lifecycle: the context and restriction events each leave one [Event] line while logging is on", function()
+    local inst = T.load{ enable = true }
+    local ns = inst.NS
+    ns.State.debug = true
+    local lines = traceOf(ns, "Event")
+    ns:OnRestrictionChanged("ADDON_RESTRICTION_STATE_CHANGED", 1, 0)
+    ns:OnEnteringWorld("PLAYER_ENTERING_WORLD", false, true)
+    ns:OnZoneChanged("ZONE_CHANGED_NEW_AREA")
+    ns:OnRosterUpdate("GROUP_ROSTER_UPDATE")
+    ns:OnCombatChanged("PLAYER_REGEN_DISABLED")
+    ns:OnCombatChanged("PLAYER_REGEN_ENABLED")
+    -- red under: a handler with no trace line
+    assertTrue(anyLine(lines, "ADDON_RESTRICTION_STATE_CHANGED") ~= nil)
+    assertTrue(anyLine(lines, "type=1 state=0") ~= nil, "the raw type and state, after the flag")
+    assertTrue(anyLine(lines, "login=false reload=true") ~= nil)
+    assertTrue(anyLine(lines, "ZONE_CHANGED_NEW_AREA") ~= nil)
+    assertTrue(anyLine(lines, "GROUP_ROSTER_UPDATE") ~= nil)
+    assertTrue(anyLine(lines, "PLAYER_REGEN_DISABLED") ~= nil)
+    assertTrue(anyLine(lines, "PLAYER_REGEN_ENABLED") ~= nil)
+end)
+
+test("Lifecycle: player-state events and a quiet session leave no [Event] line", function()
+    local inst = T.load{ enable = true }
+    local ns = inst.NS
+    ns.State.debug = true
+    local lines = traceOf(ns, "Event")
+    ns:OnPlayerStateChanged("PLAYER_MOUNT_DISPLAY_CHANGED")
+    assertEqual(#lines, 0, "the owner ruled the mount/vehicle/form/death block out (2026-09-29)")
+    ns.State.debug = false
+    ns:OnZoneChanged("ZONE_CHANGED_NEW_AREA")
+    ns:OnRestrictionChanged("ADDON_RESTRICTION_STATE_CHANGED", 1, 0)
+    assertEqual(#lines, 0, "nothing is written while logging is off")
+end)

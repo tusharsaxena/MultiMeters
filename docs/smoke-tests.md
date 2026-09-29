@@ -2252,6 +2252,18 @@ column.
 | MM-S10 | `/reload`, then open Windows as the first page of the session. | The tabs sit in one row to the right of the rail from the first frame. None is drawn under the rail, and none is stacked one per row. | Global Constraints; NR-MM-02 | |
 | MM-S11 | Hover each rail entry. | Each shows a tooltip saying what the entry holds. The rail looks like a tree pane (gold entries, the selected one white on a blue bar), visibly different from the gold tabs. | spec §A2 (rail tooltips) | |
 
+### 37. The event trace (2026-09-29)
+
+`/mm debug on`, keep the console open. The owner fills the Result column.
+
+| # | Check | Expected | Result |
+|---|---|---|---|
+| MM-E1 | Zone into a dungeon (or take a portal). | `[Event] PLAYER_ENTERING_WORLD lockdown=false restricted=… login=false reload=false`, then `[Event] ZONE_CHANGED_NEW_AREA …` when the zone name changes without a loading screen. | |
+| MM-E2 | Pull a training dummy, then leave combat. | `[Event] PLAYER_REGEN_DISABLED …` at the pull and `[Event] PLAYER_REGEN_ENABLED …` when combat ends. | |
+| MM-E3 | Join or leave a group, or have someone join yours. | `[Event] GROUP_ROSTER_UPDATE …`, once or a few times. | |
+| MM-E4 | A boss pull and kill (a follower dungeon or LFR boss), or a Mythic+ key start and end. | `[Event] ADDON_RESTRICTION_STATE_CHANGED lockdown=… restricted=… type=<n> state=<n>` at each edge; `restricted=true` while it is active. Note every `type=`/`state=` pair seen, and at which moment. | |
+| MM-E5 | Mount, dismount, shapeshift, die and release. | No `[Event]` line for any of them. The windows still hide and show by your visibility rules. | |
+
 ---
 
 ## What to report

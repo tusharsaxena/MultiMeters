@@ -662,7 +662,7 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: with LibKa0s absent the stub still answers from the STORE
 - Degraded: core/LauncherSetup.lua passes the silent flag to LibStub
 
-### test_lifecycle.lua (38)
+### test_lifecycle.lua (40)
 
 - Lifecycle: NS IS the AceAddon object, promoted in place
 - Lifecycle: every module registers, and the enable cascade runs them all
@@ -702,6 +702,8 @@ badge and any count quoted in the docs must agree with it.
 - ShouldShow: test mode overrides context, so a window can be positioned anywhere
 - ShouldShow: the context rules are Visibility's, consulted rather than reimplemented
 - ShouldShow: a missing Visibility module fails OPEN
+- Lifecycle: the context and restriction events each leave one [Event] line while logging is on
+- Lifecycle: player-state events and a quiet session leave no [Event] line
 
 ### test_vendor_sync.lua (3)
 
@@ -2365,7 +2367,7 @@ badge and any count quoted in the docs must agree with it.
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 12 |
 | test_launchersetup.lua | 50 |
-| test_lifecycle.lua | 38 |
+| test_lifecycle.lua | 40 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
 | test_provider.lua | 41 |
@@ -2414,4 +2416,4 @@ badge and any count quoted in the docs must agree with it.
 | test_surface_parity.lua | 4 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2092** |
+| **Total** | **2094** |

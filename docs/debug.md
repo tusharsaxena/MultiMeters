@@ -65,9 +65,9 @@ the suite rather than quietly restoring the flood.
 ## The channels
 
 `NS.Debug(channel, format, ...)` is the sink; the channel is the bracketed name at the head of the
-line. Nineteen go through it: eighteen from this addon's own call sites, and `Cfg`, which the options
-library logs through the descriptor's `debug` hook. The nineteen do not include `Perf`, whose lines
-the perf harness writes straight to the buffer with `DebugLog:Add`, so the console can show twenty.
+line. Twenty go through it: nineteen from this addon's own call sites, and `Cfg`, which the options
+library logs through the descriptor's `debug` hook. The twenty do not include `Perf`, whose lines
+the perf harness writes straight to the buffer with `DebugLog:Add`, so the console can show twenty-one.
 The three that dominate a live capture are `Aggregator` (one summary line per refresh pass),
 `Render` (one per window per pass) and `Roster` (one per rebuild).
 
@@ -76,6 +76,15 @@ delayed and never dropped, and a repeat is collapsed to a heartbeat carrying `(x
 is a documented deviation from `debug-logging-§8` — see `## Documented deviations` in
 [ARCHITECTURE.md](ARCHITECTURE.md) — and it exists because four passes a second into a capped buffer
 otherwise leaves a console holding forty seconds of one repeated string.
+
+`Event` (owner, 2026-09-29) is one line per game event that changes where a window may show or what
+the meters may read: `[Event] <EVENT> lockdown=<bool> restricted=<bool>`, then the event's fields.
+`restricted=` is `NS.State.restricted` as the line is written; for
+`ADDON_RESTRICTION_STATE_CHANGED … type=<n> state=<n>` that is after the handler refreshed it. The
+others are `PLAYER_ENTERING_WORLD … login=<bool> reload=<bool>`, `ZONE_CHANGED_NEW_AREA`,
+`GROUP_ROSTER_UPDATE` and both `PLAYER_REGEN_` edges. The player-state block (mount, vehicle, form,
+gliding, pet battle, death) is left out by the owner's ruling, and the spellcast, system-message
+and `DAMAGE_METER_*` traffic because it fires constantly.
 
 ### Settings lines
 
