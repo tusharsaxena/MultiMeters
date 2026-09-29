@@ -17,9 +17,9 @@ secret-value rules the checks refer to.
 
 | ID range | Theme | What it covers |
 |---|---|---|
-| INSTALL-1 to INSTALL-8 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades |
+| INSTALL-1 to INSTALL-9 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades |
 | SLASH-1 to SLASH-14 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button |
-| PANEL-1 to PANEL-44 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor |
+| PANEL-1 to PANEL-46 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
 | WIN-1 to WIN-36 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window |
@@ -28,7 +28,7 @@ secret-value rules the checks refer to.
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
-| DIAG-1 to DIAG-30 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace |
+| DIAG-1 to DIAG-31 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events |
 | DEGRADED-1 to DEGRADED-9 | [LibKa0s absent](#degraded) | The library-absent install |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
@@ -43,7 +43,7 @@ secret-value rules the checks refer to.
 - **A pull** means a real one: a Mythic+ trash pack or a raid pull with the group fighting. A target
   dummy does not activate the restriction and is no substitute where a check says "a pull". Where a
   dummy is enough, the check says so.
-- **Old SavedVariables.** INSTALL-6 to INSTALL-8 need a `MultiMeters.lua` file saved by an older
+- **Old SavedVariables.** INSTALL-6 to INSTALL-9 need a `MultiMeters.lua` file saved by an older
   build; copy it aside before INSTALL-1 wipes it.
 - **Several windows.** Checks that say "two windows" start from Windows → General → **New window**.
 - **Reporting a failure.** Give where (dungeon and key level, raid or open world; solo or grouped and
@@ -92,6 +92,18 @@ secret-value rules the checks refer to.
   and unticking it unlocks every window; after `/reload` nothing moves and `schemaVersion` is at least
   14; `/mm get master.locked` answers whether every window is locked; a second, inactive profile with
   Lock frame ticked arrives locked; one with it unticked keeps each window's own lock. Result:
+- **INSTALL-9. Upgrade from v15 (minimize keys and the minimap button).** On a build from before v16
+  (`schemaVersion` 15 or earlier), hide the minimap button, collapse one window with its minimize
+  control, hide the minimize control on a second window (Header → Controls), log out; update and log
+  in → the button is still hidden and `/mm get global.minimap.shown` answers `false`;
+  `/dump MultiMetersDB.global.minimap` shows `hide = true` (plus `minimapPos` if the button was ever
+  dragged) and no `shown` key; the first window is still collapsed; the second still has no minimize
+  control and its Header → Controls → **Show minimize** box reads unticked;
+  `/dump MultiMetersDB.global.schemaVersion` prints `16`; in `/dump
+  MultiMetersDB.profiles.Default.windows` every window's `frame` keys are spelled the US way
+  (`minimized`, `showMinimize`; the v16 step renames the two British-spelled keys and drops them), and
+  the collapsed one reads `minimized = true`. A window back expanded, or a minimize control back on
+  screen, means the v16 step lost the old key. Result:
 
 ## SLASH
 
@@ -122,7 +134,9 @@ secret-value rules the checks refer to.
   window.columns.2.width* (a column has no path of its own; columns are edited under Windows →
   Columns); `/mm set window.frame.scale 5` → not refused but clamped to the top of the range, echoing
   `window.frame.scale = 2.00x`; `/mm set nonsense.path 1` → *Setting not found: nonsense.path*.
-  Result:
+  `/mm set window.data.sortMode bogus` (a value the parser takes and the row's check refuses) → one
+  line *Invalid value for window.data.sortMode* and no `window.data.sortMode = …` echo;
+  `/mm get window.data.sortMode` still reads `value`. Result:
 - **SLASH-8. `/mm list` and hidden rows.** `/mm list` → every setting grouped under the same page
   keys the panel uses, with the column list as `window.columns = N shown`; it includes
   `window.frame.minimized`, which the panel does not draw;
@@ -252,7 +266,10 @@ right. Open the panel with `/mm config`.
 - **PANEL-18. The Minimap button toggle.** Untick General → **Minimap button** → the button leaves
   the minimap immediately; tick it → it returns at the angle it was dragged to, and
   `/mm get global.minimap.shown` reads `true`. Switch profiles → the button neither moves nor
-  reappears. General → **Reset all settings** → it stays hidden if it was hidden. Result:
+  reappears. General → **Reset all settings** → it stays hidden if it was hidden. With Master
+  controls open, `/mm set global.minimap.shown false` → the button hides and the **Minimap button** box
+  unticks without a click; `/reload` → still hidden; `/mm set global.minimap.shown true` → it returns.
+  Result:
 - **PANEL-19. The statistic palette.** General → Statistic colors → one swatch per statistic in the
   catalog's colors, with a note saying where they are worn (check the note is true). Change Damage's
   swatch → all four palette surfaces move together: Bars → Bar color mode Per-statistic, Bars → Text
@@ -288,7 +305,8 @@ right. Open the panel with `/mm config`.
   texture and Bar border style, and the font picker on Bars → Text style, Header → Title text, Columns
   → Header text and Tooltip → Text → each list holds a name that could only have come from the pack. A
   plausible-looking stock list is not a pass: nine of these rows are built by LibKa0s-Options' schema
-  composers, and a composer holding a list built before the pack registered fails silently. Result:
+  composers, and a composer holding a list built before the pack registered fails silently. In each
+  font picker every name is drawn in its own face, not all in the default one. Result:
 - **PANEL-24. The Border dropdown is flush, whoever loaded last.** Open Frame → Border style and
   Tooltip → Bar border style → the closed control's left edge is flush with the controls stacked with
   it (no ~42px gap), and opening it still draws a border preview per row on hover. Then enable KickCD,
@@ -325,8 +343,10 @@ right. Open the panel with `/mm config`.
   combat, open Settings → AddOns → Ka0s Multi Meters from the Blizzard sidebar, walk General, Windows
   and Profiles → each shows the gray cover with nothing drawn under it (on Windows the band, rail and
   strip too); the Settings window stays open; no `ADDON_ACTION_BLOCKED` and no `C stack overflow`;
-  exactly one gray *settings are locked during combat* line for the whole walk. After combat the page
-  on screen draws without a click. "Two pages covered and one rendering" is the failure. Result:
+  exactly one gray *settings are locked during combat* line for the whole walk. Still in combat, with
+  the page open, click an action-bar button → it fires, with no *Interface action failed because of an
+  AddOn*. After combat the page on screen draws without a click. "Two pages covered and one rendering"
+  is the failure. Result:
 - **PANEL-31. The Windows → General entry.** Rename the window in the name box and press Enter, click
   **New window**, **Duplicate window**, then **Delete window** and confirm; then under *Copy settings
   from* pick the other window as Source window and Bars under Settings to copy, and click **Copy** → the
@@ -383,6 +403,16 @@ right. Open the panel with `/mm config`.
 - **PANEL-44. Columns: a drag held into combat.** Out of combat start a handle drag, pull a dummy while
   holding it, drop → refused with *Columns cannot be changed during combat.* and the columns do not
   change. No Lua error. Result:
+- **PANEL-45. A color drag is throttled.** With `/mm debug on` and the console open, set Bars → Bar →
+  Bar color mode to **Custom color**, click **Bar color** and drag around the picker for about three seconds →
+  the window's bars recolor while you drag, not only on release, with no per-frame stutter; the
+  console shows `[Set] window.bars.customColor = …` lines at about twenty a second, not one per frame.
+  **Cancel** → the color from before the drag returns at once. Result:
+- **PANEL-46. Switching windows does not leak.** With two windows, open Windows, then `/run
+  collectgarbage() print(collectgarbage("count"))`. Switch the band between the two windows 30
+  times and run the same line; repeat the 30 switches and read it again → the figure does not climb
+  with each round of 30 (a few KB of noise is fine). `/framestack` over the band → exactly one
+  Dropdown under it. No `SetParent` or `Release` error. Result:
 
 ## PROFILE
 
@@ -482,8 +512,9 @@ right. Open the panel with `/mm config`.
   stay locked and **Lock frame** reads unticked until that window is locked again. Result:
 - **STATE-8. The Test mode box follows the verb.** With General → Master controls open, `/mm test` on
   and off → the Test mode box ticks and unticks without a click. Result:
-- **STATE-9. Test mode rows.** `/mm test` → ten Ka0s-named placeholder members with plausible numbers
-  that do not change between refreshes. Result:
+- **STATE-9. Test mode rows.** `/mm test` → chat prints *test mode on — showing placeholder rows*
+  and ten Ka0s-named placeholder members appear, with plausible numbers that do not change between
+  refreshes; `/mm test` again → *test mode off*. Result:
 - **STATE-10. Combat ends Test mode.** Test mode on, pull a dummy → one line *Test mode off — combat
   started*; the placeholders give way to the real (possibly empty) grid and the box unticks; the window
   stays up, or hides if its Visibility → Combat → hide in combat is ticked. Leaving combat does not turn
@@ -572,9 +603,10 @@ right. Open the panel with `/mm config`.
   General → Lock window), drag the window by its title bar → it moves as one object (persistence
   across `/reload` is INSTALL-4). `/mm lock on`, drag the title bar again → it does not move. Locked
   and unlocked alike, hovering a cell shows its tooltip. Result:
-- **WIN-26. Resetting positions.** Move two windows off center. `/mm reset-positions` → every window
-  re-centers and chat says how many moved. General → Master controls → **Reset position** → only the
-  window the band is on re-centers. Result:
+- **WIN-26. Resetting positions.** With one window, `/mm reset-positions` → *Moved 1 window back to
+  the center.* Move two windows off center, `/mm reset-positions` → every window re-centers and chat
+  prints *Moved 2 windows back to the center.* (a raw locale key, or *1 windows*, is the failure).
+  General → Master controls → **Reset position** → only the window the band is on re-centers. Result:
 - **WIN-27. A new window.** Windows → General → **New window** → the band follows it and it is named
   **Multi Meters #2** (the count of windows, not the id). Result:
 - **WIN-28. Windows are independent.** Give two windows different width, bar color, column set and sort
@@ -919,8 +951,9 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
 - **EXPORT-32. Commas and quotes.** A name containing a comma or a quote → that field is wrapped in
   double quotes with inner quotes doubled, and reads as one cell. Result:
 - **EXPORT-33. Self only reaches nobody.** Do this before any other channel. Channel **Self only**,
-  Metric Damage, Lines 5, Print to Chat → the lines appear in your frame, each with the `[MM]` banner,
-  and a group member sees nothing (anything seen is a hard fail). Result:
+  Metric Damage, Lines 5, Print to Chat → the lines appear in your frame, each with the `[MM]` banner
+  and with no notice line before them, and a group member sees nothing (anything seen is a hard fail).
+  Result:
 - **EXPORT-34. The dump's shape.** A header line `Multi Meters — Damage — Current (2:14)` then ranked
   lines such as `1. Kaosz 4.8M (84.2K, 31.2%)`, abbreviated. Result:
 - **EXPORT-35. Only meaningful parentheses.** Metric Deaths or Interrupts → no per-second figure
@@ -930,7 +963,9 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
 - **EXPORT-37. The line cap.** Walk all five Lines choices; Lines 3 → four lines (header plus three);
   Lines 40 in a five-player group → six lines, not forty. Result:
 - **EXPORT-38. The channels.** Say reaches people nearby, Party and Raid the group, Instance a dungeon
-  or LFR group, Guild the guild; each sends the same lines without the `[MM]` banner. Result:
+  or LFR group, Guild the guild; each sends the same lines without the `[MM]` banner. A Party export
+  that only prints to you, after *This client has no way to send chat messages, so the export was
+  printed to you instead.*, is the failure. Result:
 - **EXPORT-39. The channel list.** Channel offers Say, Party, Raid, Instance, Guild, Whisper, Whisper my
   target and Self only; there is no Automatic. A profile that stored the retired `AUTO` opens on Self
   only. Result:
@@ -1085,15 +1120,22 @@ stayed empty; "no errors" from a dummy is not evidence here.
 - **DIAG-5. No tooltips on copy and clear.** Hover each → it turns gold and nothing pops up. Result:
 - **DIAG-6. Clear and copy work.** Clear → the log empties. Copy → the copy window opens with the same
   close icon; Ctrl+C then Esc work. Result:
-- **DIAG-7. A perf capture.** `/mm perf help`, `/mm perf start`, `/mm perf measure a`, fight a pack,
-  `/mm perf measure b`, fight another pack, `/mm perf finish` (it prints *perf run FINISHED — saved; …*
-  and no report), then `/mm perf report` → during the B window the addon is inert without a `/reload`
-  (no provider reads, timers stopped, every window refused) and nothing (combat, roster change, a
-  settings write) brings a window back. The report, written to the console with the JSON line after
-  it, names `meterEvent`, `spellEvent`, `systemEvent`, `refresh` with `aggregate` and `render` under
-  it, `renderRow` under `render`, `tooltip` with `targets` under it, and `providerRead`; every nested
-  bucket reads **observed inside**, never *declares itself within X — not observed*. Hand the report
-  and dump to `/wow-addon:perf-analysis`. Result:
+- **DIAG-7. A perf capture.** `/mm perf help`, `/mm perf start`, `/mm perf measure a`, then a raid
+  pull (a Mythic+ pack will do; a solo dummy records only your own casts). Still in combat in that A
+  window, whisper a name nobody is playing (`/w Zzqxvw hi`): the server's *No player named …* reply is
+  a system message, and no fight produces one on its own. After the pull, `/mm perf measure b`, fight
+  another pack, `/mm perf finish` (it prints *addon RESUMED — restored* and the windows come back, then
+  *perf run FINISHED — saved; …* and no report), then `/mm perf report` → during the B window the addon
+  is inert without a `/reload` (no provider reads, timers stopped, every window refused) and nothing
+  (combat, roster change, a settings write) brings a window back. The report, written to the console
+  with the JSON line after it, has a `meterEvent`, a `spellEvent` and a `systemEvent` row, each with
+  calls and total ms above zero (the brackets record only in window A's combat, and a bucket that
+  recorded nothing has no row: `meterEvent` counts the `DAMAGE_METER_*` events, `spellEvent` every
+  `UNIT_SPELLCAST_SUCCEEDED` from any unit, `systemEvent` each `CHAT_MSG_SYSTEM`); it also names
+  `refresh` with `aggregate` and `render` under it, `renderRow` under `render`, and `providerRead`,
+  plus `tooltip` (and `targets` under it) only if a cell was hovered in window A, which is DIAG-10's
+  run; every nested bucket reads **observed inside**, never *declares itself within X — not
+  observed*. Hand the report and dump to `/wow-addon:perf-analysis`. Result:
 - **DIAG-8. Captures carry the version.** Every capture record is stamped with the addon version, never
   `v?`. Result:
 - **DIAG-9. Perf output ignores the debug flag.** With `/mm debug off`, run a capture → its output
@@ -1123,7 +1165,8 @@ stayed empty; "no errors" from a dummy is not evidence here.
   header still reads `Debug: OFF` and the next setting change writes no `[Set]` line. Result:
 - **DIAG-17. The buffer cap.** With `/mm debug on`, refresh through a few pulls or repeat
   `/mm diagnostics` until the console passes its cap → the counter reads `N / 3000 lines`, stops at
-  3000, and Copy opens without a hitch. Record where it settled. Result:
+  3000, and nothing stalls as lines keep arriving; Copy opens without a hitch and holds the newest
+  lines in order, the oldest dropped. Record where it settled. Result:
 - **DIAG-18. The old name is gone.** `/mm debug diag` → toggles the console like any unknown word;
   `/mm diag` → `unknown command`. Neither runs the report. Result:
 - **DIAG-19. The README's bug-report steps.** From a fresh `/reload` with the console closed, follow
@@ -1180,6 +1223,11 @@ stayed empty; "no errors" from a dummy is not evidence here.
   at each edge, `restricted=true` while active. Note every `type=`/`state=` pair and when. Result:
 - **DIAG-30. Event trace: quiet events.** Mount, dismount, shapeshift, die and release → no `[Event]`
   line for any of them, and the windows still hide and show by your visibility rules. Result:
+- **DIAG-31. Rejected events.** On a current client, `/mm diagnostics` → the `-- events --` section,
+  the last in the report, reads `rejected events: none`. Then `/mm debug on`, `/mm disable`,
+  `/mm enable` → no `[Init] rejected events:` line in the console (the debug flag does not survive a
+  `/reload`, so the enable cycle is how to see the load's registrations logged). Any event named is a
+  finding: the client no longer knows it. Result:
 
 ## DEGRADED
 
@@ -1215,9 +1263,21 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 ## Pending sign-off
 
 Checks with no pass on record in their current form, with their origin in the previous suite (its
-`§n` sections). Two kinds: checks the old suite marked as never run, unconfirmed or with an empty
-Result, and checks this rewrite added or corrected against the code (a corrected check has not been
-run as written). Sign one off on its own `Result:` line, then remove its row here.
+`§n` sections) or in the 2026-09-23 remediation plan's in-client checklist (`06 <step>`, in
+Ka0sAddonsCommonTasks `docs/2026-09-23-REVIEW_AND_STANDARDS_AUDIT_REMEDIATION/06_SMOKE_TESTS.md`,
+whose `RESUME.md` §5 leaves its sessions owed). Two kinds: checks the old suite or that plan marked as
+never run, unconfirmed or with an empty Result, and checks this rewrite added or corrected against
+the code (a corrected check has not been run as written). Sign one off on its own `Result:` line, then
+remove its row here.
+
+From that plan, these have a pass on record and are not listed: 06 MM.12, the MM-20 after capture
+(PASS 2026-09-24); 06 P.6 and the `/reload` half of 06 MM.13 (INSTALL-5, and the `/reload` clause
+of INSTALL-4, which is listed only for its own correction; recorded 2026-09-24; the roster bound
+rests on MM-21's headless case); the Multi Meters half of 06 X1.3 (the clamp, recorded 2026-09-24);
+06 X1.4 and the disabled half of 06 MM.5 (SLASH-13, SLASH-14; PASS 2026-09-25 after M6); the tab
+half of 06 MM.10 (PANEL-4 and PANEL-42, the owner's 2026-09-26 run of the Windows page checks). 06
+Q.4 was the alternative to MM.12 and was not needed. 06 MM.14 asked for a full pass of the old suite;
+the steps that session added are listed here by ID.
 
 | ID | Origin | Why it is owed |
 |---|---|---|
@@ -1225,50 +1285,64 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | INSTALL-6 | §22 step 4 | Corrected: `schemaVersion` has advanced, rather than being 2 |
 | INSTALL-7 | §23 step 4 | Corrected: the control color modes live on Header → Button style |
 | INSTALL-8 | §34 step 4 | Corrected: `schemaVersion` is at least 14, rather than exactly 14 |
+| INSTALL-9 | 06 MM.1 (MM-16, MM-13, MM-12) | New: the v15 to v16 upgrade, never run |
 | SLASH-3 | §14 | New verbs in the sweep: `diagnostics`, `profile`, `export` and an unknown word |
 | SLASH-4 | §14, §26 `/mm export` | New: the `profile` row |
-| SLASH-7 | §14 | Corrected: the ordinal path answers *Setting not found*, and an out-of-range scale is clamped, not refused |
+| SLASH-7 | §14; 06 MM.4 (MM-09) | Corrected: the ordinal path answers *Setting not found*, and an out-of-range scale is clamped, not refused; new: a validated row's refusal, never run |
 | SLASH-9 | §14 | Corrected: the by-name example is `Multi Meters #1`; no window is named Meter |
+| SLASH-10 | §14; 06 MM.11 (MM-22) | Never run: the lock lines through the locale |
 | SLASH-11 | §6 | Corrected: the list line's shape, the one-word copy source, no confirmation on the CLI delete |
+| SLASH-12 | §4; 06 X1.6 | Never run: `/mm config` in combat |
 | PANEL-11 | §29 (`M4-01`) | "NOT YET RUN" |
 | PANEL-13 | §4 | Corrected: Tooltip's tab names and order; each tab's rows restated from the code (Title text holds the name's face, not the name; Button style's three headings; the hide rules add solo, vehicles and flight paths, and combat is its own tab); the close row's path is `window.frame.closeButton` |
 | PANEL-15 | §4 | Corrected: the General page has three tabs |
+| PANEL-18 | §4, §6; 06 MM.2 (MM-16), 06 MM.8 (MM-14) | Corrected: the `/mm set global.minimap.shown` half and the `/reload`; never run |
 | PANEL-20 | §4 | Corrected: Header → Title text offers Class / Custom only |
-| PANEL-23 | §4 (`M3-02`) | "Not yet run" |
+| PANEL-23 | §4 (`M3-02`); 06 L.10 (LK-24) | "Not yet run"; new: each font name in its own face |
 | PANEL-24 | §30 (`M4-07`) | "NOT YET RUN" |
 | PANEL-25 | §4 | Corrected: General and Windows both carry Defaults |
-| PANEL-30 | §4 (LibKa0s v1.46.1) | "not yet run" |
+| PANEL-30 | §4 (LibKa0s v1.46.1); 06 X1.6 | "not yet run"; new: an action-bar click in combat raises no taint line |
 | PANEL-40 | §5 | Corrected: the order and full shape of the `[Blocks]` lines |
+| PANEL-43 | §5 (LK-21); 06 MM.10 (MM-18), 06 L.9 (LK-21) | Never run: the library drag |
+| PANEL-45 | 06 MM.9 (MM-17) | New: the color picker's throttle |
+| PANEL-46 | 06 L.12 (LK-27), 06 X1.2 | New: switching windows leaks nothing |
 | PROFILE-5 | §4, §16 | Corrected: the fresh window is **Multi Meters #1** |
 | PROFILE-6 | §16 | Corrected: the popup's wording, and only `[Set]` lines are counted |
 | PROFILE-9 | §15 (`M2-18`) | "Not yet run" |
 | PROFILE-10 to PROFILE-17 | New | The `/mm profile` verb (SP-MM-02), never run in a client |
 | STATE-1 | §14 | New: `/mm diagnostics` and `/mm profile` among the verbs that answer while disabled |
-| STATE-5 | §3 SM-02, §14 SM-02 | Corrected: the suspension starts at `/mm perf measure b`, not at `start` |
+| STATE-3 | §3 SM-01; 06 MM.6 (MM-01) | Never run |
+| STATE-4 | §3 SM-03; 06 MM.6 (MM-01) | Never run |
+| STATE-5 | §3 SM-02, §14 SM-02; 06 MM.5 (MM-02), 06 MM.6 (MM-01) | Corrected: the suspension starts at `/mm perf measure b`, not at `start`; never run in the plan either |
+| STATE-9 | §3; 06 MM.11 (MM-22) | Corrected: the `/mm test` lines; never run |
 | STATE-11 | §3 | Corrected: the General page's box is under the combat cover, so only `/mm test` and the minimap menu are routes |
 | WIN-5 | §1 header controls | Corrected: the Header control names |
 | WIN-12 | §26 control | Corrected: the toggle is on Header → Title bar |
 | WIN-16 | §1 header controls | Corrected: the dialog asks *Clear every recorded combat session?* with Yes / No; the meter-data warning is not in it |
 | WIN-25 | §3 | Corrected: the window drags by its title bar, and the cells answer the mouse locked or unlocked |
-| WIN-28 | §6 | Corrected: the refresh interval is addon-wide, not a per-window difference |
+| WIN-26 | §3, §16; 06 MM.11 (MM-22) | Corrected: the singular and plural lines; never run |
+| WIN-28 | §6; 06 MM.8 (MM-14) | Corrected: the refresh interval is addon-wide, not a per-window difference; only the band's window moves, never run |
+| WIN-31 | §6, §16; 06 MM.8 (MM-14) | Never run: one refresh and one `[Set]` line per copy |
 | VIS-5 | §7 | Corrected: the vehicle rule ships off and is now switched on first |
 | GRID-3 | §8 | Corrected: Bars → Text style and Bars → Bar |
 | GRID-7 | §19 step 6 (issue #26) | "Unconfirmed in game" |
 | GRID-9 | §20 step 2 | Corrected: the default name cap is 15 |
-| GRID-12 | §9 SM-04 | Corrected: Frame → Row → Maximum rows and Always show yourself |
+| GRID-12 | §9 SM-04; 06 Q.5 (MM-03) | Corrected: Frame → Row → Maximum rows and Always show yourself; never run in the plan either |
 | GRID-13 | §9 | Corrected: each sort mode is set with `/mm set window.data.sortMode` |
 | GRID-17 | §12 | Corrected: pets have their own rows unless **Merge pets into their owner** is ticked first; it ships off |
 | GRID-18 | §12 "Also worth checking" | Corrected: the fold needs **Merge pets into their owner** ticked |
 | GRID-21 | §13 | Corrected: the empty state comes from the header reset; a fresh login keeps the old fights |
 | GRID-31 | §21 step 8 | Corrected: the meter reset is the header control's |
 | TIP-6 | §10 | Corrected: the row line also needs `/mm debug tooltip` |
+| TIP-10 | §10; 06 MM.7 (MM-05) | Never run |
 | TIP-11 | §10 | Corrected: Death timestamps is on Bars → Text content |
 | TIP-23 | §4, §24 | Corrected: there is no "At cursor" anchor |
 | TIP-26 | §24 | Corrected: Bar spacing ships at 1 |
 | EXPORT-20 | §26 whisper | Corrected: a blank whisper is refused with a line |
 | EXPORT-21 | §26 whisper | Corrected: a statement turned into a step |
 | EXPORT-29 | §26 file | Corrected: 24 columns, and the header row is compared with LOC-1's |
-| EXPORT-33 | §26 chat | Corrected: the channel is **Self only**; there is no *Print to myself* |
+| EXPORT-33 | §26 chat; 06 Q.6 (MM-04) | Corrected: the channel is **Self only**; there is no *Print to myself*; corrected: no notice line before the lines |
+| EXPORT-38 | §26 chat; 06 Q.6 (MM-04) | Corrected: a Party export printed locally with the no-sender notice fails; never run |
 | EXPORT-39 | §26 chat | Corrected: the list includes **Whisper my target** |
 | EXPORT-48 | §26 chat | Corrected: the *There is nothing to export.* line, and the empty segment comes from the header reset, not a fresh login |
 | EXPORT-53 | §26 `/mm export` | Corrected: the by-name example is `Multi Meters #1`; no window is named Meter |
@@ -1280,15 +1354,19 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | COMBAT-27 | §12 | Corrected: the catch-up needs **Merge pets into their owner** ticked; it ships off |
 | COMBAT-30 | New | Cell borders mid-pull, which `modules/Row_Border.lua` said the suite checked |
 | DIAG-1 | §18 | Corrected: `sort=value/provider` mid-pull, and repeated passes folded into `(xN)` lines |
-| DIAG-7 | §18 | Corrected: `measure a`, `measure b` and `report`; `finish` prints no report |
+| DIAG-7 | §18; 06 Q.7 (MM-19), 06 L.8 (LK-20) | Corrected: `measure a`, `measure b` and `report`; `finish` prints no report; restored: `meterEvent`, `spellEvent` and `systemEvent` each with calls and ms, and the whisper `systemEvent` needs; *addon RESUMED* at `finish`; the plan's bucket and parent steps never ran |
 | DIAG-10 | §18 (issue #47) | "Unconfirmed in game" |
 | DIAG-11 | §29 | "NOT YET RUN"; corrected: a bare `start` is stamped with the date and time, never `unlabeled` |
 | DIAG-12 | §31 | "NOT YET RUN" |
 | DIAG-15 | §35 step 4 | Corrected: the end marker carries the line count |
+| DIAG-17 | §35 step 6; 06 L.7 (LK-19) | Corrected: the copy holds the newest lines in order; never run |
 | DIAG-20 | §26 control | The atlas rung is "still unconfirmed" |
 | DIAG-22 | §27 | Corrected: when `no identity pass has been measured` appears |
 | DIAG-23 | §28 | Corrected: the refusal line includes its backticks |
 | DIAG-26 to DIAG-30 | §37 MM-E1 to MM-E5 (2026-09-29) | Result empty |
+| DIAG-31 | 06 MM.3 (MM-07), 06 X1.5 | New: the rejected-events line, seen through an enable cycle because the debug flag does not survive a `/reload` |
+| DEGRADED-1 | §17; 06 X2.11 | Never run |
 | DEGRADED-2 | §17 | Corrected: the first line's full text, and each later line repeating the cause |
+| DEGRADED-3 | §17; 06 X2.11 | Never run: a bare `/mm` answers |
 | DEGRADED-8 | New | `/mm profile` with LibKa0s absent |
 | LOC-1 | §26 file | Corrected: the header has 24 columns, not 26 |
