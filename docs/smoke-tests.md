@@ -203,11 +203,13 @@ right. Open the panel with `/mm config`.
   Background and border, Row; it opens on General, where *Font outline (all surfaces)* shows **None**
   on a fresh profile. **Bars**: Bar, Background, Border, Text content, Text style, Icons.
   **Header**: Title bar (show, background, alignment, height, divider), Title text, Controls, Button
-  style. **Tooltip**: General, Contents, Bar, Bar background, Bar border, Text. **Visibility**: Where
-  to show this window, When to hide this window, Combat. Each tab label appears once. Frame has no
-  Header controls tab, no Reset position button, no Show resize grip and no Minimized checkbox; Header
-  has no Column headers tab. Stored paths did not move with the rows: `/mm get window.text.size` and
-  `/mm get window.frame.showClose` still answer. Result:
+  style. **Tooltip**: General (Tooltip anchor, Tooltip scale, Horizontal offset, Vertical offset, Hide
+  tooltips in combat), Bar, Bar background, Bar border, Text, Contents (Show spell breakdown, Maximum
+  spells, Show targets, Maximum targets, Name the killer, Name the killing blow, Summarize on the name).
+  **Visibility**: Where to show this window, When to hide this window, Combat. Each tab label appears
+  once. Frame has no Header controls tab, no Reset position button, no Show resize grip and no
+  Minimized checkbox; Header has no Column headers tab. Stored paths did not move with the rows:
+  `/mm get window.text.size` and `/mm get window.frame.showClose` still answer. Result:
 - **PANEL-14. The Controls tab reads like the strip.** Header → Controls → each checkbox draws its
   control's own icon between the tick box and the words, and the rows run in the strip's left-to-right
   order: the segment line (no icon), export, reset, segment picker, settings, lock, minimize, close.
@@ -257,8 +259,7 @@ right. Open the panel with `/mm config`.
   background, Tooltip → Bar, Tooltip → Bar background); the three text modes (Bars → Text style,
   Tooltip → Text, Header → Title text) do not move. Set one of the six back to Custom → only that one
   changes. The bar texture reaches the grid and the tooltip; the font and outline reach the cells,
-  both header strips and the tooltip. Press Frame's **Defaults** → every Frame tab resets and no other
-  entry changes. Result:
+  both header strips and the tooltip. Result:
 - **PANEL-23. Media pickers see late-registered media.** Load a media pack that registers fonts,
   borders and bar textures (SharedMedia_MyMedia or similar), then open all eleven pickers: Frame →
   General's Font and Bar texture, Frame → Border style, Bars → Texture and Border style, Tooltip → Bar
@@ -274,12 +275,14 @@ right. Open the panel with `/mm config`.
   all five addons look the same on both passes (`LSM30_Border` is one process-wide AceGUI slot, now
   registered once by LibKa0s). A dropdown that differs, or changes with load order, is the finding. No
   Lua error. Result:
-- **PANEL-25. Which pages have Defaults.** Frame, Header, Bars, Tooltip, Visibility and Columns carry a
-  **Defaults** button in the page header; the Windows → General entry and Profiles do not. Result:
-- **PANEL-26. Defaults reaches the whole entry.** On each of the six, change a value on a tab that is
-  not showing, switch tabs, press **Defaults**, switch back → your change is gone too. On Columns, stay
-  on the block editor tab, change a value on Header text or Header background without visiting it,
-  press Defaults → it is reset as well. Result:
+- **PANEL-25. Which pages have Defaults.** Open each page → General and Windows carry a **Defaults**
+  button in the page header and Profiles does not. On Windows the one button acts on the entry on
+  screen: Frame, Header, Bars, Tooltip, Visibility, Columns, or General, where it restores nothing
+  (PANEL-27). Result:
+- **PANEL-26. Defaults reaches the whole entry.** On each of Frame, Header, Bars, Tooltip, Visibility
+  and Columns, change a value on a tab that is not showing, switch tabs, press **Defaults**, switch
+  back → your change is gone too. On Columns, stay on the block editor tab, change a value on Header
+  text or Header background without visiting it, press Defaults → it is reset as well. Result:
 - **PANEL-27. Defaults stays on its entry and window.** With two windows and the first active: change
   Frame → Size and position → Width and Header → Title bar → Header height; select Frame and press
   Defaults → only the Frame rows reset, on the active window only (Header height keeps your value; the
@@ -690,7 +693,8 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
 
 ## TIP
 
-TIP-1 to TIP-21 are checkable out of combat; COMBAT-18 repeats them mid-pull, where they matter most.
+TIP-1 to TIP-21 are checkable out of combat. COMBAT-18 repeats the hover, click and mouse-off checks
+among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where they matter most.
 
 - **TIP-1. Cell tooltip.** Hover a Damage cell → the spells behind the number, with icons, capped at
   **Maximum spells** (10 by default), with an *and N more* line when there are more. Result:
@@ -709,7 +713,9 @@ TIP-1 to TIP-21 are checkable out of combat; COMBAT-18 repeats them mid-pull, wh
   the name cell) → the client's own spell tooltip, never "No data yet" or a column of zeroed
   statistics, and the row highlights. With `/mm debug on`, one `[Tooltip] row spell=<id>` line per row
   entered. Result:
-- **TIP-7. A left-click in a breakdown does nothing.** Result:
+- **TIP-7. A left-click in a spell breakdown does nothing.** Open a Damage cell's spell breakdown
+  (TIP-5) and left-click a row → nothing happens: no empty drill, no new window. (A death list is
+  different; see TIP-17.) Result:
 - **TIP-8. The wheel scrolls.** Shrink the window until rows are hidden → the mouse wheel scrolls both
   the grid and a breakdown, stops at both ends, holds through refreshes, and resets to the top on
   entering or leaving a breakdown. Result:
@@ -743,8 +749,8 @@ TIP-1 to TIP-21 are checkable out of combat; COMBAT-18 repeats them mid-pull, wh
   feign is counted and corrects when combat ends; see scope.md's Known limitations.) Result:
 - **TIP-19. No `C_DeathRecap`.** On a client without it → a Deaths click falls back to Blizzard's
   frame, then to the ordinary breakdown; the cell is never dead. Result:
-- **TIP-20. Leaving hides the tooltip.** Move the mouse off the window → the tooltip always hides.
-  Result:
+- **TIP-20. Leaving hides the tooltip.** Hover a cell, then move the mouse off the window → the
+  tooltip always hides; one left pinned under the cursor is the failure. Result:
 - **TIP-21. Death line switches.** Tooltip → Contents; hover a Deaths cell → on a fresh profile each
   line reads *Death 3 | <who>* (**Name the killer** on, **Name the killing blow** off). Turn the killing
   blow on → *Death 3 | <who> | <what>*. Turn Name the killer off → the caster half goes with no
@@ -762,8 +768,8 @@ TIP-1 to TIP-21 are checkable out of combat; COMBAT-18 repeats them mid-pull, wh
   and opacity. Result:
 - **TIP-25. The tooltip's own bar texture.** Tooltip → Bar → Bar texture unlike the grid's → the
   tooltip bars change and the grid's do not; change the grid's → the tooltip's do not. Result:
-- **TIP-26. Bar spacing.** Tooltip → Bar → **Bar spacing** 6 → space opens between lines; 0 restores
-  the tight default. Result:
+- **TIP-26. Bar spacing.** Tooltip → Bar → **Bar spacing** 6 → space opens between lines; back to 1
+  (the shipped default) → the tight spacing returns. Result:
 - **TIP-27. The tooltip font.** Tooltip → Text → font, size and **Thick outline** → apply to the spell
   names as well as both number columns. Result:
 - **TIP-28. The tooltip bar border.** Tooltip → Bar border → a real LSM border at thickness 2, hover →
@@ -848,7 +854,8 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
   the view at the top of the file. Result:
 - **EXPORT-24. Copying.** Ctrl+C, paste into a text editor → the whole CSV with its line breaks, not one
   line. Result:
-- **EXPORT-25. Esc closes only the copy window.** Result:
+- **EXPORT-25. Esc closes only the copy window.** With the copy window and the Export modal open,
+  press Esc → only the copy window closes; the modal stays. Result:
 - **EXPORT-26. One copy window.** Export again without closing it → it refills rather than stacking a
   second; after `/reload`, export again → still one window, still centered. Result:
 - **EXPORT-27. It follows the meter window.** Drag the meter window elsewhere and export → the copy
@@ -970,9 +977,10 @@ stayed empty; "no errors" from a dummy is not evidence here.
   the game restricts combat data.* prints. Result:
 - **COMBAT-17. The name sort in combat.** With `sortMode = "name"` when a pull starts → the arrow leaves
   the Player header for the sort column. Result:
-- **COMBAT-18. Tooltips and drill-down mid-pull.** Repeat TIP-1, TIP-4 to TIP-9 and TIP-12 to TIP-17
-  during a pull → no Lua error and the same results; a present, correct *and N more* line; the spell
-  list in the game's own order (never *invalid order function for sorting*). Result:
+- **COMBAT-18. Tooltips and drill-down mid-pull.** Repeat TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17
+  and TIP-20 during a pull → no Lua error and the same results; a present, correct *and N more* line;
+  the spell list in the game's own order (never *invalid order function for sorting*); the tooltip
+  never stays pinned under the cursor. Result:
 - **COMBAT-19. Death lines mid-pull.** With both death-line switches on → a caster or spell the client
   hid is simply absent, never an error. Result:
 - **COMBAT-20. Death bars mid-pull.** Hover a death row → the bars draw; the HP percentages may vanish
@@ -1000,8 +1008,9 @@ stayed empty; "no errors" from a dummy is not evidence here.
   Lua error. Record client build and whether it was a key or a raid. Result:
 - **COMBAT-29. Diagnostics mid-pull.** `/mm diagnostics` → no Lua error; session figures, names and
   durations read `<secret>` where hidden, and every window's size and position still print. Result:
-- **COMBAT-30. Cell borders mid-pull.** Set Bars → Border to an LSM edge style (the backdrop path) and
-  pull → the borders draw and no Lua error appears. Result:
+- **COMBAT-30. Cell borders mid-pull.** Tick Bars → Border → **Bar border** (it ships off) and pick a
+  **Border style** other than None (an LSM edge, the backdrop path), then pull → the borders draw
+  around the cells and no Lua error appears. Result:
 
 ## DIAG
 
@@ -1141,7 +1150,7 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 ## Pending sign-off
 
 Checks carried over unsigned from the previous suite (never run in a client, or an owner table with an
-empty Result), plus the profile-verb checks this rewrite added. Sign each on its own `Result:` line.
+empty Result). Sign each on its own `Result:` line.
 
 | ID | Origin |
 |---|---|
@@ -1150,9 +1159,6 @@ empty Result), plus the profile-verb checks this rewrite added. Sign each on its
 | PANEL-11 | old §29, the pooled tab strip after the v1.27.0 re-vendor (`M4-01`), "NOT YET RUN" |
 | PANEL-24 | old §30, the Border dropdown across five addons (`M4-07`), "NOT YET RUN" |
 | PROFILE-9 | old §15, the Profiles page after a switch made off it (`M2-18`), "Not yet run" |
-| PROFILE-10 to PROFILE-17 | new: the `/mm profile` verb (SP-MM-02), never run |
-| DEGRADED-8 | new: `/mm profile` on a library-absent load, never run |
-| COMBAT-30 | new: cell borders mid-pull, which `modules/Row_Border.lua` says this suite checks; never run |
 | GRID-7 | old §19 step 6, a rate below 1000 (issue #26), "Unconfirmed in game" |
 | DIAG-10 | old §18, the group capture with the tooltip path (issue #47), "Unconfirmed in game" |
 | DIAG-11 | old §29, the perf strings after the v1.27.0 re-vendor, "NOT YET RUN" |
