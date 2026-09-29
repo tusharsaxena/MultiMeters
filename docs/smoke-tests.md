@@ -142,8 +142,8 @@ secret-value rules the checks refer to.
 - **SLASH-12. `/mm config` in combat.** Enter combat (a dummy is fine), type `/mm config`, then a bare
   `/mm` → each refuses with one gray notice; leaving combat does not open the panel (nothing was
   queued). Result:
-- **SLASH-13. Minimap button, enabled.** Hover the button → the tooltip ends *Left-click: Open
-  settings* / *Right-click: Options menu*. Left-click → the settings panel opens. Right-click → a menu
+- **SLASH-13. Minimap button, enabled.** Start unlocked: `/mm lock off` (SLASH-10 ends locked).
+  Hover the button → the tooltip ends *Left-click: Open settings* / *Right-click: Options menu*. Left-click → the settings panel opens. Right-click → a menu
   titled *Ka0s Multi Meters* with four checkboxes in order, each ticked to match the current state:
   **Enabled**, **Locked**, **Test mode**, **Show window**. Click **Locked** → chat prints *Windows are
   locked.* and the entry reads ticked on reopen. Click **Test mode** → placeholder rows appear; again
@@ -229,7 +229,8 @@ right. Open the panel with `/mm config`.
   once, and no row sits on a tab other than the one named here. Frame has no Header controls tab, no
   Reset position button, no Show resize grip and no Minimized checkbox; Header has no Column headers
   tab. Stored paths did not move with the rows: `/mm get window.text.size` and `/mm get
-  window.frame.showClose` still answer. Result:
+  window.frame.closeButton` still answer (the close row keeps its older key; there is no
+  `showClose`). Result:
 - **PANEL-14. The Controls tab reads like the strip.** Header → Controls → each checkbox draws its
   control's own icon between the tick box and the words, and the rows run in the strip's left-to-right
   order: the segment line (no icon), export, reset, segment picker, settings, lock, minimize, close.
@@ -537,9 +538,10 @@ right. Open the panel with `/mm config`.
 - **WIN-15. Expanding restores the height.** Collapse, `/reload` → it comes back collapsed; expand →
   it returns to the exact height you set, not a default. Result:
 - **WIN-16. The reset control asks first.** Click the header's reset control → a confirmation opens
-  in the middle of the screen, warning that it also wipes the game's own meter data; nothing is
-  cleared yet; Cancel leaves the sessions intact. (A second popup opening on top can pull it up the
-  stack; that is accepted.) Result:
+  in the middle of the screen asking *Clear every recorded combat session?* with **Yes** and **No**;
+  nothing is cleared yet; **No** leaves the sessions intact. (The warning that it also wipes the
+  game's own meter data is on the **Show reset** row's tooltip under Header → Controls, not in the
+  dialog. A second popup opening on top can pull it up the stack; that is accepted.) Result:
 - **WIN-17. Reset accepted.** Click reset and accept → Blizzard's own meter window empties too
   (`C_DamageMeter.ResetAllCombatSessions` is account-wide), every open drill-down closes, and the
   window shows *Waiting for combat data...* Result:
@@ -1229,7 +1231,7 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | SLASH-9 | §14 | Corrected: the by-name example is `Multi Meters #1`; no window is named Meter |
 | SLASH-11 | §6 | Corrected: the list line's shape, the one-word copy source, no confirmation on the CLI delete |
 | PANEL-11 | §29 (`M4-01`) | "NOT YET RUN" |
-| PANEL-13 | §4 | Corrected: Tooltip's tab names and order; each tab's rows restated from the code (Title text holds the name's face, not the name; Button style's three headings; the hide rules add solo, vehicles and flight paths, and combat is its own tab) |
+| PANEL-13 | §4 | Corrected: Tooltip's tab names and order; each tab's rows restated from the code (Title text holds the name's face, not the name; Button style's three headings; the hide rules add solo, vehicles and flight paths, and combat is its own tab); the close row's path is `window.frame.closeButton` |
 | PANEL-15 | §4 | Corrected: the General page has three tabs |
 | PANEL-20 | §4 | Corrected: Header → Title text offers Class / Custom only |
 | PANEL-23 | §4 (`M3-02`) | "Not yet run" |
@@ -1246,6 +1248,7 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | STATE-11 | §3 | Corrected: the General page's box is under the combat cover, so only `/mm test` and the minimap menu are routes |
 | WIN-5 | §1 header controls | Corrected: the Header control names |
 | WIN-12 | §26 control | Corrected: the toggle is on Header → Title bar |
+| WIN-16 | §1 header controls | Corrected: the dialog asks *Clear every recorded combat session?* with Yes / No; the meter-data warning is not in it |
 | WIN-25 | §3 | Corrected: the window drags by its title bar, and the cells answer the mouse locked or unlocked |
 | WIN-28 | §6 | Corrected: the refresh interval is addon-wide, not a per-window difference |
 | VIS-5 | §7 | Corrected: the vehicle rule ships off and is now switched on first |
