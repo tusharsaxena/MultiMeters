@@ -94,15 +94,30 @@ test("Slash profile: the verb follows the thirteen reserved ones, with its local
 function()
     -- A host verb (slash-commands.md:7, not reserved), so it goes AFTER `version`, next to the
     -- settings verbs rather than among the window verbs. Its description is a locale key, so the
-    -- help index, the landing page and the README all read one string a translation can reach.
+    -- help index and the landing page both read one string a translation can reach.
+    --
+    -- enUS answers the key itself, so the row read off the shared instance cannot tell `L[...]`
+    -- from the bare literal. The second half therefore gives a fresh instance a translation that
+    -- differs from its key and re-runs settings/Slash.lua over it, the way a deDE.lua loaded after
+    -- enUS would present: only a row that reads through L picks the translation up.
     -- red under: a row reading the literal instead of L, or one placed among the reserved thirteen.
     local NSi = T.NS
     local names = {}
     for i, entry in ipairs(NSi.COMMANDS) do names[entry[1]] = i end
     assertEqual(names.profile, names.version + 1, "`profile` should sit right after `version`")
-    local entry = NSi.COMMANDS[names.profile]
-    assertEqual(entry[2], NSi.L[DESCRIPTION])
+    assertEqual(NSi.COMMANDS[names.profile][2], DESCRIPTION)
     assertEqual(rawget(NSi.L, DESCRIPTION), DESCRIPTION, "locales/enUS.lua carries no key for it")
+
+    local inst = T.load{}
+    local TRANSLATED = "Profile auflisten oder zu einem wechseln: profile <Name>"
+    rawset(inst.NS.L, DESCRIPTION, TRANSLATED)
+    T.Loader.load(T.root .. "/settings/Slash.lua", inst.NS, inst.mocks)
+    local row
+    for _, entry in ipairs(inst.NS.COMMANDS) do
+        if entry[1] == "profile" then row = entry end
+    end
+    assertTrue(row ~= nil, "the reloaded table has no `profile` row")
+    assertEqual(row[2], TRANSLATED, "the row reads the literal, not L")
 end)
 
 -- ---------------------------------------------------------------------------
