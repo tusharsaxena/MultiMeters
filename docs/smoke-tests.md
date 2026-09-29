@@ -1122,20 +1122,24 @@ stayed empty; "no errors" from a dummy is not evidence here.
   close icon; Ctrl+C then Esc work. Result:
 - **DIAG-7. A perf capture.** `/mm perf help`, `/mm perf start`, `/mm perf measure a`, then a raid
   pull (a Mythic+ pack will do; a solo dummy records only your own casts). Still in combat in that A
-  window, whisper a name nobody is playing (`/w Zzqxvw hi`): the server's *No player named …* reply is
-  a system message, and no fight produces one on its own. After the pull, `/mm perf measure b`, fight
-  another pack, `/mm perf finish` (it prints *addon RESUMED — restored* and the windows come back, then
-  *perf run FINISHED — saved; …* and no report), then `/mm perf report` → during the B window the addon
-  is inert without a `/reload` (no provider reads, timers stopped, every window refused) and nothing
-  (combat, roster change, a settings write) brings a window back. The report, written to the console
-  with the JSON line after it, has a `meterEvent`, a `spellEvent` and a `systemEvent` row, each with
-  calls and total ms above zero (the brackets record only in window A's combat, and a bucket that
-  recorded nothing has no row: `meterEvent` counts the `DAMAGE_METER_*` events, `spellEvent` every
-  `UNIT_SPELLCAST_SUCCEEDED` from any unit, `systemEvent` each `CHAT_MSG_SYSTEM`); it also names
-  `refresh` with `aggregate` and `render` under it, `renderRow` under `render`, and `providerRead`,
-  plus `tooltip` (and `targets` under it) only if a cell was hovered in window A, which is DIAG-10's
-  run; every nested bucket reads **observed inside**, never *declares itself within X — not
-  observed*. Hand the report and dump to `/wow-addon:perf-analysis`. Result:
+  window, whisper a name nobody is playing (`/w Zzqxvw hi`): the server's *No player named …* reply
+  is a system message, and no fight produces one on its own. After the pull, `/mm perf measure b`,
+  fight another pack, `/mm perf finish` (chat shows *perf run FINISHED — saved; …* first and *addon
+  RESUMED — restored* second, the windows come back and no report prints; the console has them the
+  other way round, *addon RESUMED — events and frames restored* then *perf run FINISHED — saved;
+  …*), then `/mm perf report` → during the B window the addon is inert without a `/reload` (no
+  provider reads, timers stopped, every window refused) and nothing (combat, roster change, a
+  settings write) brings a window back. The report, written to the console with the JSON line after
+  it, has a `meterEvent`, a `spellEvent` and a `systemEvent` row, each with calls above zero and a
+  total ms column (that column can read 0.00: `systemEvent` returns at once when no whisper export
+  is pending, so read its `totalMs` from the JSON line if it matters. The brackets record only in
+  window A's combat, and a bucket that recorded nothing has no row: `meterEvent` counts the
+  `DAMAGE_METER_*` events, `spellEvent` every `UNIT_SPELLCAST_SUCCEEDED` from any unit,
+  `systemEvent` each `CHAT_MSG_SYSTEM`.) It also names `refresh` with `aggregate` and `render` under
+  it, `renderRow` under `render`, and `providerRead`, plus `tooltip` (and `targets` under it) only
+  if a cell was hovered in window A, which is DIAG-10's run; every nested bucket reads **observed
+  inside**, never *declares itself within X — not observed*. Hand the report and dump to
+  `/wow-addon:perf-analysis`. Result:
 - **DIAG-8. Captures carry the version.** Every capture record is stamped with the addon version, never
   `v?`. Result:
 - **DIAG-9. Perf output ignores the debug flag.** With `/mm debug off`, run a capture → its output
@@ -1354,7 +1358,7 @@ the steps that session added are listed here by ID.
 | COMBAT-27 | §12 | Corrected: the catch-up needs **Merge pets into their owner** ticked; it ships off |
 | COMBAT-30 | New | Cell borders mid-pull, which `modules/Row_Border.lua` said the suite checked |
 | DIAG-1 | §18 | Corrected: `sort=value/provider` mid-pull, and repeated passes folded into `(xN)` lines |
-| DIAG-7 | §18; 06 Q.7 (MM-19), 06 L.8 (LK-20) | Corrected: `measure a`, `measure b` and `report`; `finish` prints no report; restored: `meterEvent`, `spellEvent` and `systemEvent` each with calls and ms, and the whisper `systemEvent` needs; *addon RESUMED* at `finish`; the plan's bucket and parent steps never ran |
+| DIAG-7 | §18; 06 Q.7 (MM-19), 06 L.8 (LK-20) | Corrected: `measure a`, `measure b` and `report`; `finish` prints no report; restored: `meterEvent`, `spellEvent` and `systemEvent` each with calls and ms, and the whisper `systemEvent` needs; *perf run FINISHED* then *addon RESUMED* in chat at `finish`; calls above zero, not total ms; the plan's bucket and parent steps never ran |
 | DIAG-10 | §18 (issue #47) | "Unconfirmed in game" |
 | DIAG-11 | §29 | "NOT YET RUN"; corrected: a bare `start` is stamped with the date and time, never `unlabeled` |
 | DIAG-12 | §31 | "NOT YET RUN" |
