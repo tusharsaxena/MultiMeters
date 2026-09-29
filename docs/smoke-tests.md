@@ -685,10 +685,15 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
 - **GRID-16. No enemy gets a row.** Out of combat after a pull → no mob's name appears as a row. If one
   does, stop and report it with `/mm diagnostics` taken out of combat (its targets section prints each
   enemy's `class=` and `enemies carrying a player class: N of M`). Result:
-- **GRID-17. Pets fold into the owner.** With a hunter and a warlock in the group, out of combat →
-  pet damage is in the owner's row, and the hunter's Damage matches Blizzard's meter. Result:
-- **GRID-18. Pet swaps correct themselves.** A hunter dismisses and re-summons, or a warlock swaps
-  demons → the fold is right again within one refresh. Result:
+- **GRID-17. Pets fold into the owner when merged.** With a hunter and a warlock in the group, out
+  of combat after a pull, on the shipped settings → each pet has a row of its own under its own name,
+  as Blizzard's meter shows it. Note the hunter's and the pet's Damage. Tick General → Behavior →
+  **Merge pets into their owner** (it ships off) → the pet rows go, and the hunter's Damage is the
+  two figures added together. Leave it ticked for GRID-18. Result:
+- **GRID-18. Pet swaps correct themselves.** With **Merge pets into their owner** still ticked from
+  GRID-17, a hunter dismisses and re-summons, or a warlock swaps demons → the new pet's damage is in
+  its owner's row again within one refresh, with no row of its own. Untick the option afterwards.
+  Result:
 - **GRID-19. The meter-unavailable prompt.** Turn off Blizzard's built-in damage meter (the client's
   setting or CVar), `/reload` → in place of rows, *Blizzard's damage meter is not available.*, *Multi
   Meters reads every number from the game's built-in damage meter. Enable it to see data here.*, and in
@@ -1046,9 +1051,10 @@ stayed empty; "no errors" from a dummy is not evidence here.
   load with no AceEvent, close and re-open instead.) Result:
 - **COMBAT-26. A modal opened after the pull.** Keep the modal closed through a pull, open it after →
   both buttons live. Result:
-- **COMBAT-27. The pet fold at the edges.** With a hunter in the group → in combat the owner's number is
-  low by the pet's share, and it catches up when combat ends; no Lua error at either transition.
-  Result:
+- **COMBAT-27. The pet fold at the edges.** With a hunter in the group, tick General → Behavior →
+  **Merge pets into their owner** (it ships off), then pull → in combat the hunter's number is low by
+  the pet's share, and it catches up when combat ends; no Lua error at either transition. Untick the
+  option afterwards. Result:
 - **COMBAT-28. Bar fills slide mid-pull.** With Animate bar fills on → the bars still slide and no
   Lua error. Record client build and whether it was a key or a raid. Result:
 - **COMBAT-29. Diagnostics mid-pull.** `/mm diagnostics` → no Lua error; session figures, names and
@@ -1248,6 +1254,8 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | GRID-9 | §20 step 2 | Corrected: the default name cap is 15 |
 | GRID-12 | §9 SM-04 | Corrected: Frame → Row → Maximum rows and Always show yourself |
 | GRID-13 | §9 | Corrected: each sort mode is set with `/mm set window.data.sortMode` |
+| GRID-17 | §12 | Corrected: pets have their own rows unless **Merge pets into their owner** is ticked first; it ships off |
+| GRID-18 | §12 "Also worth checking" | Corrected: the fold needs **Merge pets into their owner** ticked |
 | GRID-21 | §13 | Corrected: the empty state comes from the header reset; a fresh login keeps the old fights |
 | GRID-31 | §21 step 8 | Corrected: the meter reset is the header control's |
 | TIP-6 | §10 | Corrected: the row line also needs `/mm debug tooltip` |
@@ -1266,6 +1274,7 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | COMBAT-13 | §9, §27 | Corrected: the `N of M` header strings |
 | COMBAT-14 | §9 | Corrected: each sort mode is set with `/mm set` |
 | COMBAT-17 | §9 | Corrected: the name sort is set by the Player header |
+| COMBAT-27 | §12 | Corrected: the catch-up needs **Merge pets into their owner** ticked; it ships off |
 | COMBAT-30 | New | Cell borders mid-pull, which `modules/Row_Border.lua` said the suite checked |
 | DIAG-1 | §18 | Corrected: `sort=value/provider` mid-pull, and repeated passes folded into `(xN)` lines |
 | DIAG-7 | §18 | Corrected: `measure a`, `measure b` and `report`; `finish` prints no report |
