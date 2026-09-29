@@ -70,13 +70,13 @@
 -- rebuilds. The message keeps exactly one sender; it is just not this file.
 --
 -- ---------------------------------------------------------------------------
--- THE REMEMBERED MAP IS BOUNDED BY A PRUNE, NOT FORGOTTEN AT LOGIN (SM-06)
+-- THE REMEMBERED MAP IS BOUNDED BY A PRUNE, NOT FORGOTTEN AT LOGIN (INSTALL-5, was SM-06)
 -- ---------------------------------------------------------------------------
 --
 -- The remembered map below (db.global.roster) is cleared only by a meter reset,
 -- so between resets it grew with every player the account ever grouped with
 -- (MultiMeters-R-08). Two bounds were on the table, and an in-client
--- observation chose between them: SM-06 in docs/smoke-tests.md, walked
+-- observation chose between them: INSTALL-5 in docs/smoke-tests.md, walked
 -- 2026-09-24. After a fight, a full logout and a fresh login, the meter STILL
 -- SHOWED the previous data -- the same two Cleave Training Dummy segments (1:09
 -- with 128.8K damage, and 1:13) in window #1. C_DamageMeter's data outlives the
@@ -144,7 +144,7 @@ local cache = State.Cache("Roster")
 --
 -- `seen` is the fix. Every member and every pet-owner link the live build learns
 -- is ALSO written here, and only two things remove an entry: a meter reset, and
--- the prune above 4 * MAX_ROWS members (the SM-06 section in the header).
+-- the prune above 4 * MAX_ROWS members (the INSTALL-5 section in the header).
 --
 -- ITS LIFETIME IS THE METER'S DATA, not the group's and not the session's — so
 -- it is PERSISTED, in `db.global.roster`, and not in the session cache where it
@@ -186,7 +186,7 @@ local function remembered()
 end
 
 -- The bound on the remembered map, in members: four full windows' worth. Past
--- it, build() keeps only the live group (the SM-06 section in the header).
+-- it, build() keeps only the live group (the INSTALL-5 section in the header).
 local REMEMBER_CAP = 4 * Const.MAX_ROWS
 
 --- Drop every remembered member who is not in the live group, and every pet

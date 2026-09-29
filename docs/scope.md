@@ -284,7 +284,7 @@ default to total and rate.
   `modules/Provider.lua` copies every field it could filter on. The only route the addon has is the
   cast join in `modules/Feign.lua` described above, which cannot run mid-pull and is unconfirmed for
   party members. Unless the in-game recap check in
-  [smoke-tests.md §28](smoke-tests.md#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25)
+  [smoke-tests.md DIAG-25](smoke-tests.md#diag)
   finds a recap that answers differently for a feign, #25 is not fixable from this provider: a death
   row is a death row.
 - **A past death cannot be dated against the run it happened in, so the addon does not try.**

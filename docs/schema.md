@@ -44,7 +44,7 @@ above `4 * Const.MAX_ROWS` (160), the build drops every member not in the live g
 link to one of them, and recounts. `count` is deliberately not in the AceDB defaults: a declared `0`
 would be backfilled over a populated legacy map, so `remembered()` counts a map stored without one
 once, by walk. The bound is a prune rather than a forget at login because the meter's data survives a
-full logout (SM-06, [smoke-tests.md](smoke-tests.md) §2).
+full logout (INSTALL-5 in [smoke-tests.md](smoke-tests.md#install)).
 
 The version is **addon-wide rather than per-profile** (`savedvariables-§1`), so a migration runs
 once per account instead of once per profile. `NS:RunMigrations()` walks it forward one step at a
@@ -1119,7 +1119,7 @@ unpinned state used to be `nil`, which no row default can state, so it is now
 `Constants.NO_SEGMENT` (`0`): the row's default, the value its validator accepts beside a positive
 integer session id, and what `Database.PinnedSegment` answers as "no pin" for every reader. The
 client's session ids are positive, so the sentinel names none of them; a
-[smoke test](smoke-tests.md#33-the-pinned-segments-none) confirms that on a live client.
+[smoke test, GRID-32,](smoke-tests.md#grid) confirms that on a live client.
 `SetSegment` writes it through `NS.SetByPath` for its own window. `SetSessionType` clears it in the
 same `NS.SetByPaths` batch as the type. `DropStaleSegment` clears a stale one through the seam too,
 because a row wins. `WindowManager:CopyFrom` carries it in its batch like the other four. An account
