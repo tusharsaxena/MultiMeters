@@ -51,7 +51,7 @@ secret-value rules the checks refer to.
   with its stack (a secret-value error names the operation: compare, arithmetic, index, length or
   concat), the window config (`/mm list`), the diagnostics report taken right after the failure
   (`/mm diagnostics`, then **Copy** in the console), and whether it reproduces with one window and
-  with `sortMode = "roster"`, which takes value comparison out of the picture.
+  after `/mm set window.data.sortMode roster`, which takes value comparison out of the picture.
 
 ## INSTALL
 
@@ -118,9 +118,11 @@ secret-value rules the checks refer to.
   520; pick the other window in the band and repeat the same command → it now targets the other
   window, with no change to the typed path. `/mm reset window.frame.width` → only that row returns
   to its default. Result:
-- **SLASH-7. CLI refusals.** `/mm set window.columns.2.width 90` → refused, pointing at Windows →
-  Columns (a column is not addressable by ordinal); `/mm set window.frame.scale 5` → refused (range
-  0.5 to 2.0); `/mm set nonsense.path 1` → refused with "Setting not found". Result:
+- **SLASH-7. CLI refusals and clamps.** `/mm set window.columns.2.width 90` → *Setting not found:
+  window.columns.2.width* (a column has no path of its own; columns are edited under Windows →
+  Columns); `/mm set window.frame.scale 5` → not refused but clamped to the top of the range, echoing
+  `window.frame.scale = 2.00x`; `/mm set nonsense.path 1` → *Setting not found: nonsense.path*.
+  Result:
 - **SLASH-8. `/mm list` and hidden rows.** `/mm list` → every setting grouped under the same page
   keys the panel uses, with the column list as `window.columns = N shown`; it includes
   `window.frame.minimized`, which the panel does not draw;
@@ -130,9 +132,13 @@ secret-value rules the checks refer to.
   spaces kept. Result:
 - **SLASH-10. `/mm lock`.** `/mm lock` twice → it toggles; `/mm lock off` → it sets, printing
   *Windows are unlocked — drag them into place.*; `/mm lock on` prints *Windows are locked.* Result:
-- **SLASH-11. `/mm window`.** `/mm window list` → every window with its shown/hidden state and column
-  count; `/mm window new Raid`, `/mm window copy <source> Raid` and `/mm window delete Raid` → each does
-  what the Windows → General entry does. Result:
+- **SLASH-11. `/mm window`.** `/mm window list` → one line per window: its name, *Enabled* when it
+  is on screen or *Disabled* when hidden, and a count of every column in its list, shown or not
+  (`8 Columns` on a fresh window). `/mm window new Raid` → *Window 'Raid' created.*; `/mm window new
+  Solo`, then `/mm window copy Raid Solo` → *Copied everything from 'Raid'.* and Solo takes Raid's
+  settings (the source is the first word, so a source whose name has a space is copied from Windows
+  → General instead); `/mm window delete Solo` → *Window 'Solo' deleted.* with no confirmation (the
+  panel's **Delete window** asks first, WIN-34); `/mm window delete Raid` the same. Result:
 - **SLASH-12. `/mm config` in combat.** Enter combat (a dummy is fine), type `/mm config`, then a bare
   `/mm` → each refuses with one gray notice; leaving combat does not open the panel (nothing was
   queued). Result:
@@ -340,9 +346,11 @@ right. Open the panel with `/mm config`.
   row. Result:
 - **PANEL-40. Columns: no leftovers.** With `/mm debug on`, after every drag and every Defaults → no row
   shows two names stacked and no drag handle appears anywhere that is not a block (not by the intro
-  text, not on the scrollbar). The console prints `[Columns] paint window=N`, `[Blocks] released N
-  blocks`, `[Blocks] released N handles`, then `[Blocks] painted N rows, M draggable`, and the released
-  counts equal the painted counts every time. Result:
+  text, not on the scrollbar). Each repaint prints, in this order, `[Blocks] released N handles, M
+  boxes` and `[Blocks] released N blocks` for the list going away (skipped when there was none),
+  `[Columns] paint window=N`, then `[Blocks] painted N rows, M draggable, K boxed, boundary=…` for the
+  new one. The blocks and handles released always equal the rows and draggable handles the repaint
+  before it painted. Result:
 - **PANEL-41. Columns: glyph tooltips.** Hover a tick and a cross → each says what a click will do:
   *Click to hide this column* / *Click to show this column*. Result:
 - **PANEL-42. Columns: tabs and leaving mid-drag.** The strip reads Columns, Header text, Header
@@ -381,11 +389,13 @@ right. Open the panel with `/mm config`.
   defaults, with the six shipped columns in catalog order; the extras are deleted, not restyled. The
   popup warned about the deletion first. Profiles → **Reset Profile** gives the identical result.
   Result:
-- **PROFILE-6. `/mm resetall` asks first.** With two windows and `/mm debug on`, type `/mm resetall` →
-  the General page's "Reset all settings?" popup appears, nothing has changed, and showing it logged
-  nothing. Click **No** (or press Escape) → both windows unchanged and no console line. Type it again and click **Yes** → one
-  fresh window, as PROFILE-5, and exactly one console line `[Set] reset profile '<name>' to defaults`
-  (no `reset all` line). Result:
+- **PROFILE-6. `/mm resetall` asks first.** With two windows and `/mm debug on`, type `/mm resetall`
+  → the popup the General page's **Reset all settings** button opens (*Reset this profile to the addon
+  defaults? …*, with **Yes** and **No**) appears, nothing has changed, and showing it logged no `[Set]`
+  line. Click **No** (or press Escape) → both windows unchanged and no `[Set]` line. Type it again and
+  click **Yes** → one fresh window, as PROFILE-5, and exactly one `[Set]` line, `[Set] reset profile
+  '<name>' to defaults` (no `[Set] reset all` line). The rebuild's own `[Roster]`, `[Aggregator]` and
+  `[Visibility]` lines beside it are expected. Result:
 - **PROFILE-7. A reset leaves other profiles alone.** Create a second profile, switch back, reset (by
   each of the three routes) → the profile list is unchanged, you are still on the profile you were
   on, and the second profile's windows and settings are untouched. Result:
@@ -442,10 +452,12 @@ right. Open the panel with `/mm config`.
 - **STATE-4. A window made while disabled comes up live.** `/mm disable`, create a window from
   Windows → General, `/mm enable` → the new window refreshes like the others (its rows move in Test
   mode or in a fight). Result:
-- **STATE-5. A perf capture suspends the windows.** `/mm perf start`, and during the suspended arm:
-  type `/mm toggle` → no window appears and chat prints *Windows are suspended while a performance
-  capture runs.*; right-click the minimap button → **Enabled** still ticked and nothing grayed; click
-  **Show window** → the same line and no window; left-click → the panel still opens. Result:
+- **STATE-5. A perf capture suspends the windows.** `/mm perf start`, then `/mm perf measure b` (the
+  suspended arm, which stands the windows down at once). During it: type `/mm toggle` → no window
+  appears and chat prints *Windows are suspended while a performance capture runs.*; right-click the
+  minimap button → **Enabled** still ticked and nothing grayed; click **Show window** → the same line
+  and no window; left-click → the panel still opens. `/mm perf cancel` afterwards brings the windows
+  back. Result:
 - **STATE-6. Lock and Test mode are independent.** With Test mode off, `/mm lock off` → a real
   (possibly empty) grid, no placeholder rows. `/mm test on` with the window locked → placeholders.
   Unticking Test mode on an unlocked window clears the placeholders. Result:
@@ -480,7 +492,8 @@ right. Open the panel with `/mm config`.
   any combination hidden → the title stays clear of the strip. Result:
 - **WIN-5. The strip is centered.** The strip, the window name and the session line sit on one line,
   centered in the title bar, with equal gaps above the row and below it to the divider. Change Header
-  → Height, Header → Size and Control size → all three stay on the shared line. Result:
+  → Title bar → **Header height**, Header → Title text → **Font size** and Header → Button style →
+  **Control size** → all three stay on the shared line. Result:
 - **WIN-6. Exactly one control reveals.** Sweep the pointer along the strip, on an unlocked and on a
   locked window → only the control under the pointer comes to full alpha and turns gold, following
   the pointer control by control with no flicker in the gaps; none stays bright after the pointer
@@ -548,8 +561,8 @@ right. Open the panel with `/mm config`.
 - **WIN-27. A new window.** Windows → General → **New window** → the band follows it and it is named
   **Multi Meters #2** (the count of windows, not the id). Result:
 - **WIN-28. Windows are independent.** Give two windows different width, bar color, column set and sort
-  column → each draws its own columns, sorting and refresh; changing window 2's bar color leaves window
-  1 alone (a shared sub-table means `deepcopy` was bypassed). Result:
+  column → each draws its own width, color, columns and row order; changing window 2's bar color leaves
+  window 1 alone (a shared sub-table means `deepcopy` was bypassed). Result:
 - **WIN-29. Copy settings: one group.** Windows → General → Copy settings from, source window 1, group
   **Bars**, Copy → the target's bar settings match and its width, columns, position and visibility
   rules are untouched. Result:
@@ -584,8 +597,9 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   resolved=delve`; turn **Delves** off → it hides while **Scenarios** stays on. In an ordinary scenario
   or follower dungeon → shown, reported as `resolved=scenario`. A window hiding in both means the delve
   probe is not firing. Result:
-- **VIS-5. Vehicles.** Enter a vehicle (a quest turret or a vehicle encounter) → the window hides at
-  once; leave → it shows at once, on the vehicle event itself, not at the next zone change. Result:
+- **VIS-5. Vehicles.** Tick Visibility → When to hide this window → **Hide in vehicles**, then enter a
+  vehicle (a quest turret or a vehicle encounter) → the window hides at once; leave → it shows at once,
+  on the vehicle event itself, not at the next zone change. Result:
 - **VIS-6. Housing, flight paths, pet battles.** Switch each rule on → the window goes in your house,
   on a taxi and during a pet battle, and returns when you leave. Result:
 - **VIS-7. Hide when mounted.** On → it goes while mounted; on a druid it also goes in Travel, Aquatic
@@ -638,13 +652,15 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   accented character → no replacement box. Result:
 - **GRID-11. Spell names keep their hyphens.** Drill into a player → a spell name containing a hyphen
   keeps it (the realm strip does not reach breakdown rows). Result:
-- **GRID-12. Always show yourself.** In a raid, on the shipped window (**Max rows** 0) with **Always
-  show yourself** on, be ranked below the last visible row → the last row drawn is you and the rows
-  above are the top of the list in order. Scroll with the wheel until your own row is in view → the
-  last slot returns to its own rank and you appear once. Untick the option → the last slot is its own
-  rank throughout. Result:
-- **GRID-13. Sort modes out of combat.** `sortMode = "roster"` → group order (you first), then role,
-  then name. `sortMode = "provider"` → the game's own order. Result:
+- **GRID-12. Always show yourself.** In a raid, on the shipped window (Frame → Row → **Maximum rows**
+  0) with Frame → Row → **Always show yourself** on (the default), be ranked below the last visible row
+  → the last row drawn is you and the rows above are the top of the list in order. Scroll with the
+  wheel until your own row is in view → the last slot returns to its own rank and you appear once.
+  Untick the option → the last slot is its own rank throughout. Result:
+- **GRID-13. Sort modes out of combat.** `/mm set window.data.sortMode roster` → group order (you
+  first), then role, then name. `/mm set window.data.sortMode provider` → the game's own order.
+  Click a statistic's column header → value sorting again (`/mm get window.data.sortMode` reads
+  `value`). Result:
 - **GRID-14. An unowned ally has its own row.** After a pull, out of combat → a guardian, totem or pet
   whose owner the unit API never saw has a row under its own name. Result:
 - **GRID-15. A delve companion has a row.** After a delve → the companion (Valeera or whoever came)
@@ -692,7 +708,7 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   `sessionID` is a positive integer; log out and in, pull, read again → still no 0. Pin each listed
   fight → each pins. `/mm get window.data.sessionID` answers the pinned id; after picking Overall it
   answers `0`. `/mm set window.data.sessionID 0` unpins; `/mm set window.data.sessionID -1` → *Invalid
-  value*. Record the lowest and highest ids seen. Result:
+  value for window.data.sessionID*. Record the lowest and highest ids seen. Result:
 
 ## TIP
 
@@ -714,8 +730,9 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
   any row, returns to the grid. There is no Back button. Result:
 - **TIP-6. Breakdown rows show the spell's tooltip.** In a breakdown, hover rows (middle of a cell and
   the name cell) → the client's own spell tooltip, never "No data yet" or a column of zeroed
-  statistics, and the row highlights. With `/mm debug on`, one `[Tooltip] row spell=<id>` line per row
-  entered. Result:
+  statistics, and the row highlights. With `/mm debug on` and then `/mm debug tooltip` (it answers
+  *tooltip logging ON — mouse over a row and read the console.*), one `[Tooltip] row spell=<id>` line
+  per row entered; `/mm debug tooltip` again answers *tooltip logging off.* Result:
 - **TIP-7. A left-click in a spell breakdown does nothing.** Open a Damage cell's spell breakdown
   (TIP-5) and left-click a row → nothing happens: no empty drill, no new window. (A death list is
   different; see TIP-17.) Result:
@@ -847,8 +864,8 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
   there. Result:
 - **EXPORT-20. A blank whisper is refused.** Whisper with the box empty (or spaces), Print to Chat →
   one line *Enter a name to whisper to.*; nothing sent, no error. Result:
-- **EXPORT-21. Cross-realm whispers.** A cross-realm recipient needs `Name-Realm`, as `/w` does.
-  Result:
+- **EXPORT-21. Cross-realm whispers.** Channel **Whisper**, type a player from another realm in the
+  box as `Name-Realm` (the form `/w` takes), **Print to Chat** → the lines reach that player. Result:
 - **EXPORT-22. The CSV window.** With several players in the segment, **Export to CSV** → a wider
   window opens above the modal (the modal stays visible under it), centered on the meter window,
   titled **Export — Ctrl+C, then Esc**, ending in the same close icon, its text in the bundled
@@ -866,11 +883,12 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
 - **EXPORT-28. The first open.** On the first export of a session, lines may wrap oddly while the scroll
   frame is unlaid (the 590px fallback) and not on the second → cosmetic; note it if seen. Result:
 - **EXPORT-29. The file in a spreadsheet.** Paste the CSV into a spreadsheet → one header row and one
-  row per player; every catalog statistic is present even from a window showing only Damage, with
-  `_ps` on Damage and Healing only and one `_pct` per statistic; values are raw integers
-  (`4821993`, not `4.8M`) and `_pct` a bare two-decimal number; `session` (the segment the window's
-  header names) and `duration` repeat on every row; absent figures are empty cells, never `nil`; no
-  trailing blank row; a raid over 40 stops at 40 data rows. Result:
+  row per player; the header row is byte-identical to the line quoted in LOC-1; every catalog
+  statistic is present even from a window showing only Damage, with `_ps` on Damage and Healing only
+  and one `_pct` per statistic; values are raw integers (`4821993`, not `4.8M`) and `_pct` a bare
+  two-decimal number; `session` (the segment the window's header names) and `duration` repeat on
+  every row; absent figures are empty cells, never `nil`; no trailing blank row; a raid over 40 stops
+  at 40 data rows. Result:
 - **EXPORT-30. A name with a space and a hyphen.** After a follower dungeon or delve, export → an NPC
   ally such as `Crenna Earth-Daughter` arrives whole, unquoted, in one cell. Result:
 - **EXPORT-31. The CSV keeps the realm.** Group with someone from another realm and export → their
@@ -910,8 +928,9 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
   export was not sent.* and the other nineteen lines are dropped. Result:
 - **EXPORT-47. No line is cut.** A long NPC ally name on a line with a share → the line arrives whole.
   Result:
-- **EXPORT-48. An empty segment.** Fresh login, before any pull, Print to Chat → nothing sent, no
-  error. Result:
+- **EXPORT-48. An empty segment.** Fresh login, before any pull, **Print to Chat**, then **Export to
+  CSV** → each prints one line *There is nothing to export.*; nothing is sent, no copy window opens,
+  no error. Result:
 - **EXPORT-49. What is remembered.** Set Metric Healing, Channel Party, Lines 20 and a whisper name;
   close; `/reload`; re-open → Channel, Lines and the name are as you left them for every window (they
   are addon-wide); Metric reads the opening window's sort column. With `/mm debug on`, re-open on the
@@ -934,7 +953,8 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
 ## COMBAT
 
 Every check here needs a real pull (a Mythic+ pack or raid pull) with BugSack cleared, the window
-locked, `sortMode = "value"` and the six default columns, unless it says otherwise. Record the
+locked, the default value sort (`/mm get window.data.sortMode` reads `value`) and the six default
+columns, unless it says otherwise. Record the
 dungeon and key level (or raid), group composition, number of packs and whether the error frame
 stayed empty; "no errors" from a dummy is not evidence here.
 
@@ -955,8 +975,9 @@ stayed empty; "no errors" from a dummy is not evidence here.
   the sort column, throughout. Result:
 - **COMBAT-6. The grid is not empty.** Rows show all pull. *Waiting for combat data...* with a live
   session means sources are being dropped (`/mm debug on`: `dropped=` equal to the group size). Result:
-- **COMBAT-7. Percent slots go empty.** With `text.leftSlot = "percent"` → the slot empties on the pull
-  and refills between packs (empty means unknowable, never zero). Result:
+- **COMBAT-7. Percent slots go empty.** With Bars → Text content → **Left text** on **Percent**
+  (`/mm set window.text.leftSlot percent`) → the slot empties on the pull and refills between packs
+  (empty means unknowable, never zero). Result:
 - **COMBAT-8. The refresh is smooth.** About four updates a second (`data.throttle = 0.25`) with no
   stutter or hitch at a big pull; capture one with DIAG-7 rather than guess. Result:
 - **COMBAT-9. Between packs everything comes back.** On the first refresh after the pull → percentages
@@ -972,14 +993,16 @@ stayed empty; "no errors" from a dummy is not evidence here.
   their Damage is right and their other columns are empty; the header reads `restricted — N of M share
   a class and spec` while under a quarter of the rows are affected, and `restricted — N of M blank:
   duplicate specs` from a quarter up, the whole sentence fitting the header at two-digit counts. Result:
-- **COMBAT-14. Sort modes mid-pull.** With `sortMode` `roster`, then `provider` → in combat each shows
-  the engine's ranking, as COMBAT-11. Result:
+- **COMBAT-14. Sort modes mid-pull.** `/mm set window.data.sortMode roster` before one pull, then
+  `/mm set window.data.sortMode provider` before the next → in combat each shows the engine's ranking,
+  as COMBAT-11. Click a statistic's column header afterwards to return to value sorting. Result:
 - **COMBAT-15. A stat header click mid-pull.** Click a stat header → the grid re-ranks by that stat and
   the arrow moves; click it again → reversed; nothing printed. Result:
 - **COMBAT-16. The Player header mid-pull.** Click it → nothing moves and *Sorting is not possible while
   the game restricts combat data.* prints. Result:
-- **COMBAT-17. The name sort in combat.** With `sortMode = "name"` when a pull starts → the arrow leaves
-  the Player header for the sort column. Result:
+- **COMBAT-17. The name sort in combat.** Out of combat, click the Player header (the arrow moves to
+  it; `/mm get window.data.sortMode` reads `name`), then pull → the arrow leaves the Player header for
+  the sort column. Result:
 - **COMBAT-18. Tooltips and drill-down mid-pull.** Repeat TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17
   and TIP-20 during a pull → no Lua error and the same results; a present, correct *and N more* line;
   the spell list in the game's own order (never *invalid order function for sorting*); the tooltip
@@ -1010,18 +1033,22 @@ stayed empty; "no errors" from a dummy is not evidence here.
 - **COMBAT-28. Bar fills slide mid-pull.** With Animate bar fills on → the bars still slide and no
   Lua error. Record client build and whether it was a key or a raid. Result:
 - **COMBAT-29. Diagnostics mid-pull.** `/mm diagnostics` → no Lua error; session figures, names and
-  durations read `<secret>` where hidden, and every window's size and position still print. Result:
+  durations read `<secret>` where hidden, and every window's size and position still print. Record
+  whether it was a key or a raid. Result:
 - **COMBAT-30. Cell borders mid-pull.** Tick Bars → Border → **Bar border** (it ships off) and pick a
   **Border style** other than None (an LSM edge, the backdrop path), then pull → the borders draw
   around the cells and no Lua error appears. Result:
 
 ## DIAG
 
-- **DIAG-1. The debug log.** `/mm debug on`, `/mm debug` to open the console, complete a pull → one line
-  per aggregator pass, such as `window=1 cols=6 rows=5 dropped=0 unfolded=0 sort=value/frozen
-  reason=ok` (`sort=value/frozen` mid-pull, `value/value` between packs); one per render pass, roster
-  build and visibility pass; nothing per row or cell. A large `dropped=` out of combat means the owner
-  map missed something; `unfolded=` in combat is expected. Result:
+- **DIAG-1. The debug log.** `/mm debug on`, `/mm debug` to open the console, complete a pull → an
+  `[Aggregator]` line whenever a pass differs from the one before, such as `window=1 cols=6 rows=5
+  dropped=0 unfolded=0 sort=value/value reason=ok` (`sort=value/value` between packs, `value/provider`
+  mid-pull, where the game's order stands in); a run of identical passes is folded into one line
+  ending `(xN)` about every ten seconds, and `[Render] window N drew …` lines behave the same way. A
+  roster build logs one `[Roster] built members=…` line and a visibility pass one `[Visibility]` line;
+  nothing is logged per row or cell. A large `dropped=` out of combat means the owner map missed
+  something; `unfolded=` in combat is expected. Result:
 - **DIAG-2. Logging off.** `/mm debug off` → logging stops and the console stays open; after `/reload`
   neither the flag nor the console state has survived. Result:
 - **DIAG-3. Console and flag are separate.** `/mm debug` toggles the console window; `/mm debug on|off`
@@ -1032,13 +1059,15 @@ stayed empty; "no errors" from a dummy is not evidence here.
 - **DIAG-5. No tooltips on copy and clear.** Hover each → it turns gold and nothing pops up. Result:
 - **DIAG-6. Clear and copy work.** Clear → the log empties. Copy → the copy window opens with the same
   close icon; Ctrl+C then Esc work. Result:
-- **DIAG-7. A perf capture.** `/mm perf help`, `/mm perf start`, two or three packs, `/mm perf finish` →
-  during the B window the addon is inert without a `/reload` (no provider reads, timers stopped, every
-  window refused) and nothing (combat, roster change, a settings write) brings a window back. The
-  report names `meterEvent`, `spellEvent`, `systemEvent`, `refresh` with `aggregate` and `render` under
+- **DIAG-7. A perf capture.** `/mm perf help`, `/mm perf start`, `/mm perf measure a`, fight a pack,
+  `/mm perf measure b`, fight another pack, `/mm perf finish` (it prints *perf run FINISHED — saved; …*
+  and no report), then `/mm perf report` → during the B window the addon is inert without a `/reload`
+  (no provider reads, timers stopped, every window refused) and nothing (combat, roster change, a
+  settings write) brings a window back. The report, written to the console with the JSON line after
+  it, names `meterEvent`, `spellEvent`, `systemEvent`, `refresh` with `aggregate` and `render` under
   it, `renderRow` under `render`, `tooltip` with `targets` under it, and `providerRead`; every nested
-  bucket reads **observed inside**, never *declares itself within X — not observed*. Hand the report and
-  dump to `/wow-addon:perf-analysis`. Result:
+  bucket reads **observed inside**, never *declares itself within X — not observed*. Hand the report
+  and dump to `/wow-addon:perf-analysis`. Result:
 - **DIAG-8. Captures carry the version.** Every capture record is stamped with the addon version, never
   `v?`. Result:
 - **DIAG-9. Perf output ignores the debug flag.** With `/mm debug off`, run a capture → its output
@@ -1047,9 +1076,11 @@ stayed empty; "no errors" from a dummy is not evidence here.
   targets on, during the A window park the mouse on your Damage cell for several seconds, then on
   another player's → `tooltip` and `targets` record calls; the nesting note reports `providerRead
   observed inside more than one parent`; `renderRow` calls per pass match the rows on screen. Result:
-- **DIAG-11. Perf labels and cancel.** `/mm perf start mylabel`, then `finish` → the started line and the
-  report header name the label. `/mm perf start` with no label, then `/mm perf cancel` → the start line
-  and header read `unlabeled` and the cancel line `perf run CANCELED`. No Lua error. Result:
+- **DIAG-11. Perf labels and cancel.** `/mm perf start mylabel` → the started line reads *perf run
+  STARTED — <date> <time> mylabel*; `/mm perf finish`, then `/mm perf report` → the report's
+  `capture:` line names the same label. `/mm perf start` with no label → the started line carries the
+  date and time alone; `/mm perf cancel` → *perf run CANCELED — nothing saved* (one L in CANCELED). No
+  Lua error. Result:
 - **DIAG-12. The perf panel's close control.** `/mm perf`, then `/mm debug` beside it → exactly one close
   control, in the panel's top-right corner, in the same art as the console's and the header's (a thin
   gray multiplication sign is the library's fallback; two stacked means a `decorate` hook came back);
@@ -1060,7 +1091,8 @@ stayed empty; "no errors" from a dummy is not evidence here.
 - **DIAG-14. The report appends.** `/mm debug on`, change a setting or two, `/mm diagnostics` → the
   trace lines are still above `==== Ka0s Multi Meters diagnostics begin ====`. Result:
 - **DIAG-15. The report copies clean.** After DIAG-14, **Copy** and paste → the trace, the begin marker
-  and `==== Ka0s Multi Meters diagnostics end ====`, with no `|c` escapes. Result:
+  and the end line `==== Ka0s Multi Meters diagnostics end: N line(s) ====`, with no `|c` escapes.
+  Result:
 - **DIAG-16. The report is ungated.** `/mm debug off`, `/mm diagnostics` → the full report; the console
   header still reads `Debug: OFF` and the next setting change writes no `[Set]` line. Result:
 - **DIAG-17. The buffer cap.** With `/mm debug on`, refresh through a few pulls or repeat
@@ -1085,23 +1117,26 @@ stayed empty; "no errors" from a dummy is not evidence here.
   combat, and whether the addon's order looks like any consistent order. Result:
 - **DIAG-22. The identity capture.** In the largest group you can get (20 or more; a party proves
   nothing), `/mm debug on` before the pull; about ten seconds in, `/mm debug identity`; about fifteen
-  seconds later, again; after combat, once more; then copy the console → the standing line reads
-  `identity rows=N keys=N collidedKeys=N collidedRows=N filled=F/P collided=N unmatched=N absent=N`
-  with `filled + collided + unmatched + absent == P`, and the header's `N of M` equals `collidedRows`.
-  Report `unmatched` above zero with its column, any `PARTIAL` line other than `specIconID`, any
-  `ABSENT` line, any `WOULD widen the key` field (or `No usable candidates`), and whether a collided
-  key's seats hold their order across both captures, with group size and duplicated class+spec pairs.
-  Out of combat, with the flag off or in a party the report says `no identity pass has been measured`.
-  Result:
+  seconds later, again; after combat, once more; then copy the console → no Lua error at any point
+  (the probe walks a raw source row with `pairs`, a shape the mock only approximates); the standing
+  line reads `identity rows=N keys=N collidedKeys=N collidedRows=N filled=F/P collided=N unmatched=N
+  absent=N` with `filled + collided + unmatched + absent == P`, and the header's `N of M` equals
+  `collidedRows`. Report `unmatched` above zero with its column, any `PARTIAL` line other than
+  `specIconID`, any `ABSENT` line, any `WOULD widen the key` field (or `No usable candidates`), and
+  whether a collided key's seats hold their order across both captures, with group size, the
+  duplicated class+spec pairs, instance and difficulty, and all three captures in full. Typed before
+  any pull with the flag on this session, the report says `no identity pass has been measured`; the
+  after-combat capture instead shows the last pass under *the pull has ENDED*. Result:
 - **DIAG-23. The feign verb refuses a typo.** On a fresh session, `/mm debug feign of` → one line
-  `unknown feign argument 'of' — /mm debug feign on|off, or /mm debug feign to print the recording.`
-  and nothing else; `/mm debug feign` then still says `armed: false`. Result:
+  ``unknown feign argument 'of' — `/mm debug feign on|off`, or `/mm debug feign` to print the recording.``
+  (backticks included) and nothing else; `/mm debug feign` then still says `armed: false`. Result:
 - **DIAG-24. The feign capture.** `/mm debug feign on` (answers `feign trace ON`), run a dungeon with a
   hunter who is not you, have them feign twice (and feign then really die), then `/mm debug feign` and
-  copy the console → record it: no `cast` line means `UNIT_SPELLCAST_SUCCEEDED` never arrived; `prune`
-  lines read `state=noted` or `state=down`, never `<evicted>`; `unit=<not in group>` against a hunter
-  still in the party is a roster fault; `N judge rows suppressed` with no `judge` lines means no cast
-  line named the GUID. Note the Deaths count shown beside it. Result:
+  copy the console → record it with the group size and composition: no `cast` line means
+  `UNIT_SPELLCAST_SUCCEEDED` never arrived; `prune` lines read `state=noted` or `state=down`, never
+  `<evicted>`; `unit=<not in group>` against a hunter still in the party is a roster fault; `N judge
+  rows suppressed` with no `judge` lines means no cast line named the GUID. Note the Deaths count shown
+  beside it. Result:
 - **DIAG-25. Does a feign's recap differ?** Out of combat, a hunter feigns once without dying and
   another member really dies; `/mm debug recap` → compare what `HasRecapEvents`, `GetRecapEvents` and
   `GetRecapMaxHealth` answered for the hunter's newest row and the real death's. Both alike (events, a
@@ -1125,9 +1160,10 @@ stayed empty; "no errors" from a dummy is not evidence here.
 Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the install), then `/reload`.
 
 - **DEGRADED-1. The addon still runs.** → it loads and the window draws rows. Result:
-- **DEGRADED-2. One honest line.** → the first line the addon prints names the cause once: *The LibKa0s
-  library is missing from this installation of Ka0s Multi Meters (expected in libs/LibKa0s)*, then
-  what is unavailable. Result:
+- **DEGRADED-2. One honest line.** → the first line the addon prints names the cause: *The LibKa0s
+  library is missing from this installation of Ka0s Multi Meters (expected in libs/LibKa0s); running
+  on reduced built-in fallbacks.* Each line after it that reports a missing piece repeats the cause
+  with its own consequence, such as *…, so there is no minimap button and no broker plugin.* Result:
 - **DEGRADED-3. What names the missing library.** `/mm config` and a bare `/mm` say the settings panel
   is unavailable; `/mm help` still prints the index (plainly); `/mm list`, `get`, `set` and `reset` each
   name the missing library; `/mm perf` says performance measurement is unavailable. Result:
@@ -1152,19 +1188,68 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 
 ## Pending sign-off
 
-Checks carried over unsigned from the previous suite (never run in a client, or an owner table with an
-empty Result). Sign each on its own `Result:` line.
+Checks with no pass on record in their current form, with their origin in the previous suite (its
+`§n` sections). Two kinds: checks the old suite marked as never run, unconfirmed or with an empty
+Result, and checks this rewrite added or corrected against the code (a corrected check has not been
+run as written). Sign one off on its own `Result:` line, then remove its row here.
 
-| ID | Origin |
-|---|---|
-| PANEL-23 | old §4, media pickers after the v1.26.0 composer change (`M3-02`), "Not yet run" |
-| PANEL-30 | old §4, every page mid-combat from the Blizzard sidebar (LibKa0s v1.46.1), "not yet run" |
-| PANEL-11 | old §29, the pooled tab strip after the v1.27.0 re-vendor (`M4-01`), "NOT YET RUN" |
-| PANEL-24 | old §30, the Border dropdown across five addons (`M4-07`), "NOT YET RUN" |
-| PROFILE-9 | old §15, the Profiles page after a switch made off it (`M2-18`), "Not yet run" |
-| GRID-7 | old §19 step 6, a rate below 1000 (issue #26), "Unconfirmed in game" |
-| DIAG-10 | old §18, the group capture with the tooltip path (issue #47), "Unconfirmed in game" |
-| DIAG-11 | old §29, the perf strings after the v1.27.0 re-vendor, "NOT YET RUN" |
-| DIAG-12 | old §31, the perf panel's close control, "NOT YET RUN" |
-| DIAG-20 | old §26, the export control's atlas rung (`poi-scrollofresonance`, `UI-HUD-MicroMenu-Questlog-Up`), "still unconfirmed" |
-| DIAG-26 to DIAG-30 | old §37, MM-E1 to MM-E5, the event trace (2026-09-29), Result empty |
+| ID | Origin | Why it is owed |
+|---|---|---|
+| INSTALL-4 | §2 | Corrected: the column set replaces a per-column width, which no longer exists |
+| INSTALL-7 | §23 step 4 | Corrected: the control color modes live on Header → Button style |
+| SLASH-3 | §14 | New verbs in the sweep: `diagnostics`, `profile`, `export` and an unknown word |
+| SLASH-4 | §14, §26 `/mm export` | New: the `profile` row |
+| SLASH-7 | §14 | Corrected: the ordinal path answers *Setting not found*, and an out-of-range scale is clamped, not refused |
+| SLASH-11 | §6 | Corrected: the list line's shape, the one-word copy source, no confirmation on the CLI delete |
+| PANEL-11 | §29 (`M4-01`) | "NOT YET RUN" |
+| PANEL-13 | §4 | Corrected: Tooltip's tab names and order |
+| PANEL-15 | §4 | Corrected: the General page has three tabs |
+| PANEL-20 | §4 | Corrected: Header → Title text offers Class / Custom only |
+| PANEL-23 | §4 (`M3-02`) | "Not yet run" |
+| PANEL-24 | §30 (`M4-07`) | "NOT YET RUN" |
+| PANEL-25 | §4 | Corrected: General and Windows both carry Defaults |
+| PANEL-30 | §4 (LibKa0s v1.46.1) | "not yet run" |
+| PANEL-40 | §5 | Corrected: the order and full shape of the `[Blocks]` lines |
+| PROFILE-5 | §4, §16 | Corrected: the fresh window is **Multi Meters #1** |
+| PROFILE-6 | §16 | Corrected: the popup's wording, and only `[Set]` lines are counted |
+| PROFILE-9 | §15 (`M2-18`) | "Not yet run" |
+| PROFILE-10 to PROFILE-17 | New | The `/mm profile` verb (SP-MM-02), never run in a client |
+| STATE-1 | §14 | New: `/mm diagnostics` and `/mm profile` among the verbs that answer while disabled |
+| STATE-5 | §3 SM-02, §14 SM-02 | Corrected: the suspension starts at `/mm perf measure b`, not at `start` |
+| WIN-5 | §1 header controls | Corrected: the Header control names |
+| WIN-12 | §26 control | Corrected: the toggle is on Header → Title bar |
+| WIN-28 | §6 | Corrected: the refresh interval is addon-wide, not a per-window difference |
+| VIS-5 | §7 | Corrected: the vehicle rule ships off and is now switched on first |
+| GRID-3 | §8 | Corrected: Bars → Text style and Bars → Bar |
+| GRID-7 | §19 step 6 (issue #26) | "Unconfirmed in game" |
+| GRID-9 | §20 step 2 | Corrected: the default name cap is 15 |
+| GRID-12 | §9 SM-04 | Corrected: Frame → Row → Maximum rows and Always show yourself |
+| GRID-13 | §9 | Corrected: each sort mode is set with `/mm set window.data.sortMode` |
+| GRID-31 | §21 step 8 | Corrected: the meter reset is the header control's |
+| TIP-6 | §10 | Corrected: the row line also needs `/mm debug tooltip` |
+| TIP-11 | §10 | Corrected: Death timestamps is on Bars → Text content |
+| TIP-23 | §4, §24 | Corrected: there is no "At cursor" anchor |
+| TIP-26 | §24 | Corrected: Bar spacing ships at 1 |
+| EXPORT-20 | §26 whisper | Corrected: a blank whisper is refused with a line |
+| EXPORT-21 | §26 whisper | Corrected: a statement turned into a step |
+| EXPORT-29 | §26 file | Corrected: 24 columns, and the header row is compared with LOC-1's |
+| EXPORT-48 | §26 chat | Corrected: the *There is nothing to export.* line |
+| EXPORT-54 | §26 `/mm export` | Corrected: *No window named '…'.* |
+| COMBAT-7 | §8 | Corrected: the step names the control and the command |
+| COMBAT-13 | §9, §27 | Corrected: the `N of M` header strings |
+| COMBAT-14 | §9 | Corrected: each sort mode is set with `/mm set` |
+| COMBAT-17 | §9 | Corrected: the name sort is set by the Player header |
+| COMBAT-30 | New | Cell borders mid-pull, which `modules/Row_Border.lua` said the suite checked |
+| DIAG-1 | §18 | Corrected: `sort=value/provider` mid-pull, and repeated passes folded into `(xN)` lines |
+| DIAG-7 | §18 | Corrected: `measure a`, `measure b` and `report`; `finish` prints no report |
+| DIAG-10 | §18 (issue #47) | "Unconfirmed in game" |
+| DIAG-11 | §29 | "NOT YET RUN"; corrected: a bare `start` is stamped with the date and time, never `unlabeled` |
+| DIAG-12 | §31 | "NOT YET RUN" |
+| DIAG-15 | §35 step 4 | Corrected: the end marker carries the line count |
+| DIAG-20 | §26 control | The atlas rung is "still unconfirmed" |
+| DIAG-22 | §27 | Corrected: when `no identity pass has been measured` appears |
+| DIAG-23 | §28 | Corrected: the refusal line includes its backticks |
+| DIAG-26 to DIAG-30 | §37 MM-E1 to MM-E5 (2026-09-29) | Result empty |
+| DEGRADED-2 | §17 | Corrected: the first line's full text, and each later line repeating the cause |
+| DEGRADED-8 | New | `/mm profile` with LibKa0s absent |
+| LOC-1 | §26 file | Corrected: the header has 24 columns, not 26 |
