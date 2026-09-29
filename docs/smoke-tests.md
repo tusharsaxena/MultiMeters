@@ -563,14 +563,13 @@ right. Open the panel with `/mm config`.
 - **WIN-22. No border means no border.** Frame → Border style **None** and Border thickness **0** → no
   edge of any kind (a surviving 1px line is the skin's `frame.innerBorder`). None at a non-zero
   thickness → also no edge, not the Ka0s edge. Result:
-- **WIN-23. Drag.** `/mm lock off` (or untick Frame → General → Lock window), drag the window by its
-  body → it moves as one object (persistence across `/reload` is INSTALL-4). Result:
 - **WIN-24. The resize grip follows the lock.** Unlocked → the bottom-right grip shows and resizes the
   window (persistence across `/reload` is INSTALL-4); locked → no grip. There is no Show resize grip
   setting. Result:
-- **WIN-25. Locked windows hand the mouse to the cells.** `/mm lock on`, try to drag → it does not
-  move, and hovering a cell shows a tooltip. Unlocked → the window drags and the cells do not respond.
-  Result:
+- **WIN-25. The lock governs the title-bar drag, not the cells.** `/mm lock off` (or untick Frame →
+  General → Lock window), drag the window by its title bar → it moves as one object (persistence
+  across `/reload` is INSTALL-4). `/mm lock on`, drag the title bar again → it does not move. Locked
+  and unlocked alike, hovering a cell shows its tooltip. Result:
 - **WIN-26. Resetting positions.** Move two windows off center. `/mm reset-positions` → every window
   re-centers and chat says how many moved. General → Master controls → **Reset position** → only the
   window the band is on re-centers. Result:
@@ -654,10 +653,10 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   million → an abbreviated figure such as `1.4M`, one decimal place at any magnitude (fewer
   significant figures than the reference screenshots is accepted), and no `/s` on the rate. Raw digits
   (`1410000`) mean neither native formatter exists on this client. Result:
-- **GRID-6. Full numbers.** `/mm set window.text.numberFormat full` → the unabbreviated form. Result:
 - **GRID-7. A rate below 1000.** Put a Healing or Damage rate under 1000 on screen (a healer at a
-  dummy), on `abbreviated` then `full`, out of combat and in → a whole number (`411`), never its float
-  (`411.90476…`). If digits show: `/mm debug on`, change any setting, and report the `[Format]` line
+  dummy), with GRID-1's Bars → Text content → **Number format** on *Abbreviated (12.4M)* then *Full
+  (12400000)*, out of combat and in → a whole number (`411`), never its float (`411.90476…`). If
+  digits show: `/mm debug on`, change any setting, and report the `[Format]` line
   (the rung the client took) with the `-- number formatting --` block from `/mm diagnostics`. Result:
 - **GRID-8. The realm is stripped.** Group with someone from another realm → their name shows without
   `-Realm`. Result:
@@ -1247,6 +1246,7 @@ run as written). Sign one off on its own `Result:` line, then remove its row her
 | STATE-11 | §3 | Corrected: the General page's box is under the combat cover, so only `/mm test` and the minimap menu are routes |
 | WIN-5 | §1 header controls | Corrected: the Header control names |
 | WIN-12 | §26 control | Corrected: the toggle is on Header → Title bar |
+| WIN-25 | §3 | Corrected: the window drags by its title bar, and the cells answer the mouse locked or unlocked |
 | WIN-28 | §6 | Corrected: the refresh interval is addon-wide, not a per-window difference |
 | VIS-5 | §7 | Corrected: the vehicle rule ships off and is now switched on first |
 | GRID-3 | §8 | Corrected: Bars → Text style and Bars → Bar |
