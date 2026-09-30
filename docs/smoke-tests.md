@@ -28,7 +28,7 @@ secret-value rules the checks refer to.
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
-| DIAG-1 to DIAG-31 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events |
+| DIAG-1 to DIAG-36 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel |
 | DEGRADED-1 to DEGRADED-9 | [LibKa0s absent](#degraded) | The library-absent install |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
@@ -1232,6 +1232,29 @@ stayed empty; "no errors" from a dummy is not evidence here.
   `/mm enable` → no `[Init] rejected events:` line in the console (the debug flag does not survive a
   `/reload`, so the enable cycle is how to see the load's registrations logged). Any event named is a
   finding: the client no longer knows it. Result:
+- **DIAG-32. The console resizes.** `/mm debug`, then drag the grip in the console's bottom-right
+  corner → the console grows and shrinks on both axes from its 700 × 344 opening size; the log text,
+  the scrollbar and the title bar follow, the three title icons stay in their corner, the scrollbar's
+  thumb and the `N / 3000 lines` counter still match the buffer (no digit under the grip), and the
+  buffer and scroll position are unchanged. Shrink it as far as it goes → it stops while the title and
+  all three icons still fit side by side and the title bar, the status bar and a few lines still
+  show. No Lua error. Result:
+- **DIAG-33. The copy windows resize.** Console **Copy**, then drag its bottom-right grip → it resizes
+  on both axes, the text box widens and narrows with it, and the scroll bar's down button sits above
+  the grip and takes a click on its whole face; it stops shrinking at 240 × 140. Repeat on the
+  **Export to CSV** window (EXPORT-22) → the same, and its size is its own: resizing one leaves the
+  other at the size it had. No Lua error. Result:
+- **DIAG-34. The perf panel resizes in width only.** `/mm perf`, then drag its bottom-right grip → the
+  panel widens and every step row stretches with it; the height does not move; it never goes
+  narrower than its opening width. No Lua error. Result:
+- **DIAG-35. Sizes last the session, never a reload.** Resize the console, the console's copy window,
+  the CSV window and the perf panel, close each and reopen it → each comes back at the size you
+  left. Then `/reload` and reopen each → each is at its default again (the console 700 × 344, the
+  panel its opening size, each copy window its own); do the same once with the console dragged
+  elsewhere first, and the reload still restores the default size. Result:
+- **DIAG-36. Another addon's console is unaffected.** With another Ka0s addon loaded, resize this
+  addon's console, then open the other addon's debug console → it opens at 700 × 344; resize it →
+  this addon's console keeps the size it had. Result:
 
 ## DEGRADED
 
@@ -1369,6 +1392,7 @@ the steps that session added are listed here by ID.
 | DIAG-23 | §28 | Corrected: the refusal line includes its backticks |
 | DIAG-26 to DIAG-30 | §37 MM-E1 to MM-E5 (2026-09-29) | Result empty |
 | DIAG-31 | 06 MM.3 (MM-07), 06 X1.5 | New: the rejected-events line, seen through an enable cycle because the debug flag does not survive a `/reload` |
+| DIAG-32 to DIAG-36 | New (LibKa0s v1.64.0, 2026-09-30) | The resizable console, copy windows and perf panel, never run in a client |
 | DEGRADED-1 | §17; 06 X2.11 | Never run |
 | DEGRADED-2 | §17 | Corrected: the first line's full text, and each later line repeating the cause |
 | DEGRADED-3 | §17; 06 X2.11 | Never run: a bare `/mm` answers |
