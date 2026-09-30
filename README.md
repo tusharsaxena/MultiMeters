@@ -83,7 +83,7 @@ That design is also where the one odd behavior comes from. In Midnight, addons g
 2. Type `/mm diagnostics`.
 3. If the debug window isn't open, open it with `/mm debug`. Press **Copy**, copy the entire output, and include it with your bug report.
 
-The diagnostics report is added after the debug trace in the same window, so one copy gets you both. Running it also turns debug logging on for the rest of the session, if it was off; a `/reload` turns it off again. The **Diagnostics** link in the debug window's title bar runs the same report.
+The diagnostics report is added after the debug trace in the same window, so one copy gets you both.
 
 ## Issues and feature requests
 
