@@ -38,10 +38,10 @@ The first time you run it after installing, you get a default window, already un
 
 Setting a window up takes four steps. Most of it happens on the Windows page, where the Active window dropdown at the top picks the window you're working on and the list down the left side takes you through the rest.
 
-1. Pick your columns. The Columns entry lists every statistic the game offers, and the ticked ones are the columns this window shows. A new window starts with Damage, Healing, Interrupts, Dispels, Avoidable Damage and Deaths. Click a block to show or hide it and drag it by its handle to reorder. Columns only change out of combat.
-2. Decide when it shows. On Visibility you tell the window which content it belongs in (dungeons and raids and nothing else, say) and which situations it should get out of the way for. There are ten hide rules: solo, mounted, dead, on a flight path, and six more. Set it once and you can stop thinking about it.
-3. Choose your header controls. The title bar has room for seven: close, minimize, lock, settings, segment, reset and export, and the Header entry's Controls tab picks which ones this window draws. The segment control is the three horizontal lines, and it's the one people miss. It picks which fight the window shows, and your pick sticks through a reload.
-4. Dig into the numbers. Hover a cell to see the spells behind it, or hover a name to see everything tracked for that player. Click either one to drill in. Clicking a Deaths cell opens the recap instead, which is usually the more interesting trip.
+- Pick your columns. The Columns entry lists every statistic the game offers, and the ticked ones are the columns this window shows. A new window starts with Damage, Healing, Interrupts, Dispels, Avoidable Damage and Deaths. Click a block to show or hide it and drag it by its handle to reorder. Columns only change out of combat.
+- Decide when it shows. On Visibility you tell the window which content it belongs in (dungeons and raids and nothing else, say) and which situations it should get out of the way for. There are ten hide rules: solo, mounted, dead, on a flight path, and six more. Set it once and you can stop thinking about it.
+- Choose your header controls. The title bar has room for seven: close, minimize, lock, settings, segment, reset and export, and the Header entry's Controls tab picks which ones this window draws. The segment control is the three horizontal lines, and it's the one people miss. It picks which fight the window shows, and your pick sticks through a reload.
+- Dig into the numbers. Hover a cell to see the spells behind it, or hover a name to see everything tracked for that player. Click either one to drill in. Clicking a Deaths cell opens the recap instead, which is usually the more interesting trip.
 
 Want a second window? Click **New window** on the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you four switches: Enabled, Locked, Test mode and Show window.
 
@@ -79,11 +79,11 @@ That design is also where the one odd behavior comes from. In Midnight, addons g
 
 ## Reporting a bug
 
-1. Type `/mm debug on` and reproduce the bug.
-2. Type `/mm diagnostics`.
-3. If the debug window isn't open, open it with `/mm debug`. Press **Copy**, copy the entire output, and include it with your bug report.
+- Type `/mm debug on` and reproduce the bug.
+- Type `/mm diagnostics`.
+- If the debug window isn't open, open it with `/mm debug`. Press **Copy**, copy the entire output, and include it with your bug report.
 
-The diagnostics report is added after the debug trace in the same window, so one copy gets you both.
+The report is added after the debug trace in the same window, so one copy carries both.
 
 ## Issues and feature requests
 
