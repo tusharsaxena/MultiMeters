@@ -14,7 +14,7 @@ this addon's own surface on top of it.
 | `/mm debug` | Toggle the console window. Never touches a flag. |
 | `/mm debug on` / `off` | Set the session logging flag. Works with the window closed. |
 | `/mm debug tooltip` | Toggle the tooltip log channel. Off by default; prints the state it landed in. |
-| `/mm diagnostics`, `/mm debug diagnostics` | Write the diagnostics report into the console, after whatever is already there (`debug-logging-§14`). Both forms run the same report; `diag`, its old name, is an unknown word now. |
+| `/mm diagnostics`, `/mm debug diagnostics` | Write the diagnostics report into the console, after whatever is already there (`debug-logging-§14`), turning logging on for the session first if it is off. Both forms run the same report; `diag`, its old name, is an unknown word now. |
 | `/mm debug recap` | Print the death-recap probe alone (issue #1). |
 | `/mm debug identity` | Print the mid-pull correlation capture (issue #22). |
 | `/mm debug feign on` / `off` | Arm and disarm the feign-death recording (issue #25). |
@@ -22,6 +22,10 @@ this addon's own surface on top of it.
 
 **Logging and the window are separate on purpose.** Logging runs with the console closed, so a bug
 can be reproduced first and the log read afterwards.
+
+**The console's title bar carries an orange Diagnostics link** (LibKa0s-DebugLog-1.0 minor 16), just
+right of the Debug On/Off label with a small gap, drawn as plain text like that label. A click runs
+the same report as `/mm diagnostics`, `NS.DebugLog:RunDiagnostics()`.
 
 **The four read verbs run without the console seam at all.** They are what a player is asked to type
 when something looks wrong, and requiring them to open a window first is one more step between a bug
@@ -185,14 +189,27 @@ logs `[Set] reset all: N rows (stopped by an error)` instead.
 
 `/mm diagnostics` and `/mm debug diagnostics` run one report (`debug-logging-§14`). It is what the
 README's `## Reporting a bug` asks a player to copy, so it has to work from any state: logging off,
-the console closed, the addon disabled, or mid-pull under the restriction.
+the console closed, the addon disabled, or mid-pull under the restriction. The console's Diagnostics
+link runs the same report.
+
+**Running it turns debug logging on for the session** (`debug-logging-§14`, LibKa0s
+DebugLogDiagnostics minor 2), as `/mm debug on` would, and a `/reload` turns it off again. When
+logging is off, the run goes through the flag's one seam (`NS.DebugLog:SetEnabled(true)`) before it
+writes, so the `debug logging ON` chat line, the `[Debug] logging enabled` console line and the
+`[Init]` summary land just ahead of the begin marker, and the header reads `debug logging: on`. It
+never turns logging off, and with logging already on it writes no second enable line. This addon
+keeps the library's default: its descriptor in `core/DebugLogSetup.lua` does not set
+`diagnosticsEnablesLogging = false`. The sections read state only and never touch the flag. Because
+logging is on while the sections run, a gated trace their reads cause (the provider's
+`[Provider] meter available` line, the first time the memo is asked) can also land ahead of the
+begin marker.
 
 **The frame is the library's.** `LibKa0s-DebugLog-1.0`'s `RunDiagnostics` writes the begin and end
 markers carrying the brand (`Ka0s Multi Meters`), the identity header, a pcall around each section
 (a raise costs one `section <name> failed` line), the plain-text strip and the line cap: 1200
 lines or the buffer's 3000 less 100, whichever is smaller, ending in a `truncated` line and then the end
 marker when a report runs past it. It appends after the trace already in the buffer, clears
-nothing, and writes whether or not logging is on. The flag is left as it was.
+nothing, and writes through the ungated append (`debug-logging-§12`).
 
 **The sections are this addon's,** handed over by `core/Diagnostics.lua`'s `Sections()` through the
 descriptor field `diagnostics`, in this order:

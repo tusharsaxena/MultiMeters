@@ -42,6 +42,19 @@ end
 
 local BRAND = "Ka0s Multi Meters"
 
+--- The report alone: `lines` from its begin marker on. With logging on, a gated
+--- trace the report's own reads cause (the provider's `meter available` line)
+--- can land ahead of the marker, and so, on a run that turns logging on, do the
+--- `[Debug] logging enabled` line and the [Init] summary (debug-logging-§14).
+local function fromBegin(lines)
+    local out, seen = {}, false
+    for _, line in ipairs(lines) do
+        if not seen and line:find("diagnostics begin", 1, true) then seen = true end
+        if seen then out[#out + 1] = line end
+    end
+    return out
+end
+
 test("Diagnostics: the sections are handed to the LibKa0s helper, not run by hand", function()
     -- debug-logging-§14 (STD-16): the host writes SECTIONS only. The line buffer,
     -- the per-section pcall, the markers and the cap are the library's, so this
@@ -64,7 +77,24 @@ test("Diagnostics: the report carries both markers with the addon's brand", func
     -- the line count, both naming `Ka0s Multi Meters`.
     -- red under: a descriptor with no `brandName`, which falls back to the title.
     local inst = T.load{ enable = true }
-    local _, lines = report(inst)
+    assertFalse(inst.NS.DebugLog:IsEnabled(), "logging starts off")
+    local _, added = report(inst)
+    -- The run turns logging on for the session first (debug-logging-§14,
+    -- DebugLogDiagnostics 2), so the `[Debug] logging enabled` line and the
+    -- [Init] summary land ahead of the report.
+    -- red under: a run that leaves the flag off, so no enable line precedes it.
+    local first
+    for i, line in ipairs(added) do
+        if line:find("diagnostics begin", 1, true) then first = i break end
+    end
+    assertTrue(first ~= nil and first > 1, "the report is preceded by the enable lines")
+    local enabled = false
+    for i = 1, first - 1 do
+        if added[i]:find("[Debug] logging enabled", 1, true) then enabled = true end
+    end
+    assertTrue(enabled, "the `logging enabled` line precedes the begin marker")
+    assertTrue(inst.NS.DebugLog:IsEnabled(), "the report turns logging on for the session")
+    local lines = fromBegin(added)
     assertTrue(lines[1]:find("[Diag] ==== " .. BRAND .. " diagnostics begin ====", 1, true) ~= nil,
         "the first line is the begin marker: " .. tostring(lines[1]))
     local last = lines[#lines]
@@ -88,9 +118,13 @@ test("Diagnostics: the report prints exactly one chat line, naming Copy", functi
     -- STD-09: the lines go to the console, and chat gets one tagged line with the
     -- count. Chat interleaves everything with combat spam, so the report itself
     -- never lands there.
+    -- Logging is turned on first, so the run adds the report's own line alone: a
+    -- run with logging off also prints the seam's `debug logging ON` line.
     local inst = T.load{ enable = true }
+    inst.NS.DebugLog:SetEnabled(true)
     local chatN = #inst.mocks.__chat
-    local _, lines = report(inst)
+    local _, added = report(inst)
+    local lines = fromBegin(added)
     assertEqual(#inst.mocks.__chat, chatN + 1, "the report spammed chat, or said nothing")
     local said = inst.mocks.__chat[#inst.mocks.__chat]
     assertTrue(said:find(tostring(#lines), 1, true) ~= nil, "the line names the count: " .. said)
@@ -308,7 +342,11 @@ test("Diagnostics: the report lands in the debug console, not in chat", function
     D:RunDiagnostics()
 
     assertTrue(#D.buffer > bufN + 10, "the report did not reach the console buffer")
-    assertEqual(#inst.mocks.__chat, chatN + 1, "only the one count line goes to chat")
+    -- Two chat lines with logging off: the seam's `debug logging ON` (the run
+    -- turns logging on for the session, debug-logging-§14), then the count line.
+    assertEqual(#inst.mocks.__chat, chatN + 2, "only the enable line and the count line go to chat")
+    assertTrue(inst.mocks.__chat[chatN + 1]:find("debug logging", 1, true) ~= nil,
+        "the first is the seam's enable line: " .. tostring(inst.mocks.__chat[chatN + 1]))
 end)
 
 test("Diagnostics: the console is OPENED, so the report is not written out of sight", function()

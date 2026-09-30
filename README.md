@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2125%2F2125_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2126%2F2126_passing-green)
 
 Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
@@ -83,7 +83,7 @@ That design is also where the one odd behavior comes from. In Midnight, addons g
 2. Type `/mm diagnostics`.
 3. If the debug window isn't open, open it with `/mm debug`. Press **Copy**, copy the entire output, and include it with your bug report.
 
-The diagnostics report is added after the debug trace in the same window, so one copy gets you both.
+The diagnostics report is added after the debug trace in the same window, so one copy gets you both. Running it also turns debug logging on for the rest of the session, if it was off; a `/reload` turns it off again. The **Diagnostics** link in the debug window's title bar runs the same report.
 
 ## Issues and feature requests
 
