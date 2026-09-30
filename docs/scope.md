@@ -408,9 +408,8 @@ default to total and rate.
   `[Visibility]`, `[Roster]` and `[DrillDown]` pass lines go through `NS.DebugSteady`, which emits a
   change immediately and says nothing while the summary holds (`debug-logging-§9`, quiet steady
   state); the run's `(xN)` comes out when it ends. Whether the loop is alive is `/mm diagnostics`'s
-  `age=`, not a heartbeat line. Note the console's **Clear** button does not reset the comparison
-  (the library offers the host no hook), so a freshly cleared console stays silent until the next
-  change.
+  `age=`, not a heartbeat line. The console's **Clear** button resets the comparison too (the
+  descriptor's `onClear`, LibKa0s-DebugLog minor 18), so the first pass after a Clear speaks again.
 - No automated in-client tests: headless suites plus manual in-game smoke tests.
 - **With `libs/LibKa0s` missing, a disable leaves bus-target registrations live.** The stand-down
   record is `LibKa0s-Bus-1.0`'s. Without it, `NS.NewBusTarget()` falls back to the untracked-target

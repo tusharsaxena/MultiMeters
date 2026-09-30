@@ -115,7 +115,8 @@ block of bare calls loses every line after the one that raised — here that was
 `pcall` alone). A refused name costs only itself and is recorded in `NS.State.rejectedEvents`, which
 is replaced on every enable. Read it with `/mm diagnostics` (the `events` section says
 `rejected events: none` on a healthy client), or with the debug log on, where `[Init]` carries one
-`rejected events:` line when the list is not empty.
+`rejected events:` line when the list is not empty (written at login through the console's
+at-enable queue, so it lands when logging is turned on).
 
 `PLAYER_IS_GLIDING_CHANGED` is the name most likely to be refused: it is the newest of the set and a
 client that has not got it raises on `RegisterEvent`. Losing that one edge is survivable where losing

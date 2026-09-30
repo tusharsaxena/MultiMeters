@@ -28,7 +28,7 @@ secret-value rules the checks refer to.
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
-| DIAG-1 to DIAG-38 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on |
+| DIAG-1 to DIAG-41 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-9 | [LibKa0s absent](#degraded) | The library-absent install |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
@@ -1229,10 +1229,11 @@ stayed empty; "no errors" from a dummy is not evidence here.
 - **DIAG-30. Event trace: quiet events.** Mount, dismount, shapeshift, die and release → no `[Event]`
   line for any of them, and the windows still hide and show by your visibility rules. Result:
 - **DIAG-31. Rejected events.** On a current client, `/mm diagnostics` → the `-- events --` section,
-  the last in the report, reads `rejected events: none`. Then `/mm debug on`, `/mm disable`,
-  `/mm enable` → no `[Init] rejected events:` line in the console (the debug flag does not survive a
-  `/reload`, so the enable cycle is how to see the load's registrations logged). Any event named is a
-  finding: the client no longer knows it. Result:
+  the last in the report, reads `rejected events: none`. Then `/reload` and `/mm debug on` → no
+  `[Init] rejected events:` line in the console (a name refused at login is held by the console's
+  at-enable queue and written the moment logging is turned on, so this is the load's own answer).
+  `/mm disable`, `/mm enable` → still none. Any event named is a finding: the client no longer knows
+  it. Result:
 - **DIAG-32. The console resizes.** `/mm debug`, then drag the grip in the console's bottom-right
   corner → the console grows and shrinks on both axes from its 700 × 344 opening size; the log text,
   the scrollbar and the title bar follow, the three title icons stay in their corner, the scrollbar's
@@ -1272,6 +1273,20 @@ stayed empty; "no errors" from a dummy is not evidence here.
   link (DIAG-37) → the same: logging on for the session. `/reload`, then `/mm debug on` and
   `/mm debug diagnostics` → the report appends with no second `logging enabled` line. `/mm debug off`
   → logging stops, and nothing turns it back on until the next report or `/mm debug on`. Result:
+- **DIAG-39. A slash refusal shows in the console.** `/mm debug on`, then `/mm frobnicate` → chat
+  prints the unknown-command line and the help, as before; the console holds one
+  `[Cmd] refused frobnicate: unknown verb` line. `/mm disable`, then `/mm lock` → chat prints the
+  disabled line; the console holds one `[Cmd] refused lock: disabled` line, and no second line for
+  the same refusal. `/mm enable` after. Result:
+- **DIAG-40. A Lifecycle edge shows in the console.** `/mm debug on`, `/mm disable` → the console
+  holds one `[Lifecycle] stood down: added disabled (holds: disabled)` line and no `[Init] stood down`
+  line. `/mm enable` → one `[Lifecycle] stood up: released disabled (holds: none)` line. Result:
+- **DIAG-41. State written at login lands at enable, and Clear re-arms.** `/reload`, then
+  `/mm debug on` → after the `[Init]` summary the console holds one `[Launcher] registered` line
+  (written at login, while logging was off). `/mm debug off`, `/mm debug on` → no second
+  `[Launcher] registered`. With a window drawing and nothing changing, press the console's Clear →
+  within a second one `[Render] window 1 drew …` line comes back rather than an empty console until
+  the next change. Result:
 
 ## DEGRADED
 
@@ -1408,10 +1423,11 @@ the steps that session added are listed here by ID.
 | DIAG-22 | §27 | Corrected: when `no identity pass has been measured` appears |
 | DIAG-23 | §28 | Corrected: the refusal line includes its backticks |
 | DIAG-26 to DIAG-30 | §37 MM-E1 to MM-E5 (2026-09-29) | Result empty |
-| DIAG-31 | 06 MM.3 (MM-07), 06 X1.5 | New: the rejected-events line, seen through an enable cycle because the debug flag does not survive a `/reload` |
+| DIAG-31 | 06 MM.3 (MM-07), 06 X1.5 | New: the rejected-events line; corrected (LibKa0s v1.65.0, DG-MM-01): a name refused at login is held and written at `/mm debug on`, so no enable cycle is needed |
 | DIAG-32 to DIAG-36 | New (LibKa0s v1.64.0, 2026-09-30) | The resizable console, copy windows and perf panel, never run in a client |
 | DIAG-16 | Corrected (LibKa0s v1.64.0, 2026-09-30, DL-MM-03) | The report still lands with logging off, but now turns logging on, so the header reads `Debug: ON` afterwards |
 | DIAG-37, DIAG-38 | New (LibKa0s v1.64.0, 2026-09-30, DL-MM-03) | The console's Diagnostics link, and diagnostics turning logging on for the session, never run in a client |
+| DIAG-39 to DIAG-41 | New (LibKa0s v1.65.0, 2026-10-01, DG-MM-01) | The library's `[Cmd]` and `[Lifecycle]` lines, the at-enable queue and Clear's re-arm, never run in a client |
 | DEGRADED-1 | §17; 06 X2.11 | Never run |
 | DEGRADED-2 | §17 | Corrected: the first line's full text, and each later line repeating the cause |
 | DEGRADED-3 | §17; 06 X2.11 | Never run: a bare `/mm` answers |
