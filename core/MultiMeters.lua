@@ -216,8 +216,11 @@ function NS:OnEnable()
     for i = 1, #EVENTS do
         register(self, EVENTS[i][1], EVENTS[i][2], rejected)
     end
-    if #rejected > 0 and NS.Debug then
-        NS.Debug("Init", "rejected events: %s", table.concat(rejected, ", "))
+    -- A STATE line, written while logging is off at login: the console's at-enable
+    -- queue holds it until logging is turned on (debug-logging-§8). A stand-up
+    -- re-runs this with logging possibly on, and the queue then writes it at once.
+    if #rejected > 0 and NS.DebugAtEnable then
+        NS.DebugAtEnable("Init", "rejected events: %s", table.concat(rejected, ", "))
     end
 
     -- Seed the restriction mirror from the live state rather than assuming

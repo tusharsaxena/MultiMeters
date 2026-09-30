@@ -110,22 +110,6 @@ local function standDownVisibility()
     if vis and vis.Refresh then vis:Refresh() end
 end
 
---- The addon's own enable edge, one [Init] line each way (debug-logging-§8,
---- Diagnosis: "the addon's own enable and stand-down transitions").
----
---- It names the HOLDS on the way down, because the two reasons need different
---- answers: `disabled` is the player's switch and `/mm enable` undoes it, while a
---- perf capture's hold is released by the capture ending. A log that says only
---- "stood down" cannot tell a player which. The hold set is already mutated when
---- the latch calls back, so the list is the one that took it down.
-local function traceEdge(down)
-    if not (NS.State and NS.State.debug and NS.Debug) then return end
-    if not down then NS.Debug("Init", "stood up") return end
-    local lc = NS.lifecycle
-    local holds = lc and lc.Holds and lc:Holds() or {}
-    NS.Debug("Init", "stood down (holds: %s)", #holds > 0 and table.concat(holds, ", ") or "none")
-end
-
 --- Make the addon genuinely inert, in the same turn as the write.
 ---
 --- EVERY REGISTRATION ACTUALLY UNREGISTERED, never gated. The order below is the
@@ -149,7 +133,6 @@ end
 --- goes to empty. An addon that later grows secure work adds the hold-pending
 --- here and releases it on that one event -- it does not start gating handlers.
 local function standDown()
-    traceEdge(true)
     standDownEvents()
     standDownModules()
 
@@ -169,7 +152,6 @@ end
 --- fixed set, and `WindowManager:Resume` calls `Init` first so a window created
 --- while down is built before anything is resumed.
 local function standUp()
-    traceEdge(false)
     -- The bus FIRST. LibKa0s-Bus-1.0 records a registration made while the bus is
     -- down without making it, so a receiver a module's OnEnable (re)subscribes, or
     -- a window WindowManager:Resume builds, would sit deaf until the replay -- and
@@ -247,6 +229,15 @@ NS.lifecycle = Lifecycle:New({
     standDown = standDown,
     standUp   = standUp,
     print     = function(line) if NS.Print then NS.Print(line) end end,
+    -- THE EDGE LINES ARE THE LIBRARY'S (Lifecycle minor 3, debug-logging-§8
+    -- Diagnosis: "the addon's own enable and stand-down transitions"). Each edge
+    -- writes one `[Lifecycle]` line naming the hold that caused it and the set it
+    -- left -- `stood down: added disabled (holds: disabled)`, `stood up: released
+    -- perf (holds: none)` -- before the callback runs, so `disabled` (the player's
+    -- switch, undone by `/mm enable`) and `perf` (released by the capture ending)
+    -- are told apart. This file used to write its own `[Init]` pair from the
+    -- callbacks; that pair is gone, and a host line here would now be a duplicate.
+    debug     = function(tag, message) if NS.Debug then NS.Debug(tag, "%s", message) end end,
 })
 
 end
