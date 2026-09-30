@@ -337,6 +337,13 @@ if not lib then
             return { lines = {}, dropped = 0, capped = false, capsHit = false }
         end,
         DebugVerb       = function() return false end,
+        -- The change gates and the at-enable queue (LibKa0s-DebugLog 18,
+        -- DebugLogGates.lua). With no console nothing is written, so each answers
+        -- false ("did not write"), exactly as the live members do with logging off.
+        DebugOnce       = function() return false end,
+        DebugChanged    = function() return false end,
+        DebugForget     = function() end,
+        DebugAtEnable   = function() return false end,
     }
     D.FormatColored = D.FormatPlain
     NS.DebugLog = D
