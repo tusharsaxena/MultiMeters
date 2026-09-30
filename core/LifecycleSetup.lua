@@ -110,6 +110,22 @@ local function standDownVisibility()
     if vis and vis.Refresh then vis:Refresh() end
 end
 
+--- The addon's own enable edge, one [Init] line each way (debug-logging-§8,
+--- Diagnosis: "the addon's own enable and stand-down transitions").
+---
+--- It names the HOLDS on the way down, because the two reasons need different
+--- answers: `disabled` is the player's switch and `/mm enable` undoes it, while a
+--- perf capture's hold is released by the capture ending. A log that says only
+--- "stood down" cannot tell a player which. The hold set is already mutated when
+--- the latch calls back, so the list is the one that took it down.
+local function traceEdge(down)
+    if not (NS.State and NS.State.debug and NS.Debug) then return end
+    if not down then NS.Debug("Init", "stood up") return end
+    local lc = NS.lifecycle
+    local holds = lc and lc.Holds and lc:Holds() or {}
+    NS.Debug("Init", "stood down (holds: %s)", #holds > 0 and table.concat(holds, ", ") or "none")
+end
+
 --- Make the addon genuinely inert, in the same turn as the write.
 ---
 --- EVERY REGISTRATION ACTUALLY UNREGISTERED, never gated. The order below is the
@@ -132,22 +148,6 @@ end
 --- addon has nothing to complete, so it keeps NOTHING and the registration set
 --- goes to empty. An addon that later grows secure work adds the hold-pending
 --- here and releases it on that one event -- it does not start gating handlers.
---- The addon's own enable edge, one [Init] line each way (debug-logging-§8,
---- Diagnosis: "the addon's own enable and stand-down transitions").
----
---- It names the HOLDS on the way down, because the two reasons need different
---- answers: `disabled` is the player's switch and `/mm enable` undoes it, while a
---- perf capture's hold is released by the capture ending. A log that says only
---- "stood down" cannot tell a player which. The hold set is already mutated when
---- the latch calls back, so the list is the one that took it down.
-local function traceEdge(down)
-    if not (NS.State and NS.State.debug and NS.Debug) then return end
-    if not down then NS.Debug("Init", "stood up") return end
-    local lc = NS.lifecycle
-    local holds = lc and lc.Holds and lc:Holds() or {}
-    NS.Debug("Init", "stood down (holds: %s)", #holds > 0 and table.concat(holds, ", ") or "none")
-end
-
 local function standDown()
     traceEdge(true)
     standDownEvents()

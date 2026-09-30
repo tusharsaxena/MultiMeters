@@ -784,8 +784,9 @@ local queuedGeneration
 
 --- The [Export] trace (debug-logging-§8, Diagnosis: deferred work). A staggered
 --- dump is work HELD on a clock, and "my export only half arrived" is the report
---- it answers: the send line says how many lines went and how, and a cancel line
---- says the tail was dropped and why. Gated before anything is formatted.
+--- it answers: the send line says how many lines went and how, a flush line says
+--- the queued tail went out, and a cancel line says the tail was dropped and why.
+--- Gated before anything is formatted.
 local function traceExport(pattern, ...)
     if NS.State and NS.State.debug and NS.Debug then NS.Debug("Export", pattern, ...) end
 end
@@ -925,11 +926,21 @@ function Export.Send(lines, channel, target)
         return true
     end
 
-    traceExport("sent line 1 of %d to %s, the rest queued", #lines, chatType)
-    if #lines > 1 then queuedGeneration = generation end
+    local last = #lines
+    -- HELD AND FLUSHED, as a pair (debug-logging-§8, Diagnosis: deferred work).
+    -- The hold line says a tail was queued; the flush line below says it went
+    -- out. Without the second, a dump that finished and a dump whose timers
+    -- never ran read the same in the log, and "held, never flushed" is exactly
+    -- the case the pair exists to make stand out. A one-line dump queues
+    -- nothing, so it says so rather than claiming a tail.
+    if last > 1 then
+        traceExport("sent line 1 of %d to %s, the rest queued", last, chatType)
+        queuedGeneration = generation
+    else
+        traceExport("sent 1 line to %s", chatType)
+    end
 
     send(lines[1], chatType, nil, to)
-    local last = #lines
     for i = 2, last do
         local line = lines[i]
         after(Export.SendDelay(i), function()
@@ -939,7 +950,10 @@ function Export.Send(lines, channel, target)
             -- more. Disarming here rather than on a second timer keeps the two
             -- facts — "lines are still queued" and "a failure can still cancel
             -- them" — as one.
-            if i == last then pendingWhisper, queuedGeneration = nil, nil end
+            if i == last then
+                pendingWhisper, queuedGeneration = nil, nil
+                traceExport("sent the queued rest of a dump (%d lines) to %s", last - 1, chatType)
+            end
         end)
     end
 

@@ -131,14 +131,18 @@ test("Slash: EVERY tooltip-channel line is behind the flag, not just some", func
     -- Asserted over the SOURCE rather than by driving three widgets, because the
     -- property is "no call site was missed" and a behavioral test can only ever
     -- cover the call sites somebody remembered to drive.
-    local missed = {}
+    -- The lines go through NS.DebugSteady now (debug-logging-§9), so the scan
+    -- matches either sink, and counts what it found: a scan that matched nothing
+    -- would pass vacuously.
+    local missed, found = {}, 0
     for _, rel in ipairs({ "modules/Row.lua", "modules/Tooltip_Builders.lua" }) do
         local fh = assert(io.open(T.root .. "/" .. rel, "r"))
         local prev = ""
         local n = 0
         for line in fh:lines() do
             n = n + 1
-            if line:find('Debug("Tooltip"', 1, true) and not line:find("^%s*%-%-") then
+            if line:find('Debug%w*%([^"]-"Tooltip"') and not line:find("^%s*%-%-") then
+                found = found + 1
                 if not prev:find("State.debugTooltip", 1, true) then
                     missed[#missed + 1] = rel .. ":" .. n
                 end
@@ -147,6 +151,7 @@ test("Slash: EVERY tooltip-channel line is behind the flag, not just some", func
         end
         fh:close()
     end
+    assertEqual(found, 3, "expected the row, cell and name tooltip lines")
     assertEqual(#missed, 0,
         "tooltip lines not behind State.debugTooltip: " .. table.concat(missed, ", "))
 end)

@@ -53,14 +53,22 @@ and three call sites write on the `Tooltip` channel:
 | `modules/Tooltip_Builders.lua` (cell) | a cell tooltip being built |
 | `modules/Tooltip_Builders.lua` (name) | a name tooltip being built |
 
-The first is the loud one: resting the cursor on a row emits a line as fast as the mouse reports its
-position, so a few seconds of hovering evicts the `[Aggregator]` and `[Render]` lines somebody was
+The first is the loud one: resting the cursor on a row reaches it as fast as the mouse reports its
+position, and the cell and name tooltips are rebuilt on every refresh the cursor sits through. Written
+plainly, a few seconds of hovering evicts the `[Aggregator]` and `[Render]` lines somebody was
 actually reading. Gating it costs nothing — the tooltips themselves are unaffected, only the log is.
+
+**Opt-in does not exempt a path from `debug-logging-§9`**, so all three are also change-gated: each
+writes through `NS.DebugSteady` keyed on the hovered frame, so a hover speaks once when it starts
+(and again if its count changes) and is silent while it holds. Leaving the cell or row calls
+`NS.DebugSteadyForget` on that frame, which writes the held run's `(xN)` line and forgets it, so the
+next hover of the same cell speaks again. `tests/test_row_mouse.lua` pins both.
 
 **A half-gated channel reads exactly like a gated one from the console**, which is how the first cut
 of this shipped with `modules/Row.lua` missed. `tests/test_slash_diagnostics.lua` scans the source for
-`Debug("Tooltip"` call sites not preceded by the flag, so a fourth site added without the guard fails
-the suite rather than quietly restoring the flood.
+`Tooltip` call sites (through `NS.Debug` or `NS.DebugSteady`) not preceded by the flag, and expects
+exactly three, so a fourth site added without the guard fails the suite rather than quietly restoring
+the flood.
 
 ## Coverage
 
@@ -72,7 +80,8 @@ call sites; `Cfg`, `Launcher` and part of `Set` come from vendored libraries thr
 
 **Quiet steady state (`debug-logging-§9`).** Every path that repeats — the refresh tick, the
 visibility pass, a roster retry, a drill view, a refusal the join repeats on every pass, the meter
-availability memo — writes through `NS.DebugSteady` (`core/DebugLogSetup.lua`). A line is written
+availability memo, a tooltip rebuilt under a resting cursor — writes through `NS.DebugSteady`
+(`core/DebugLogSetup.lua`). A line is written
 when its summary changes and **not otherwise**; when a run ends, its line comes out once more with
 `(xN)`, the number of passes it stood for, just before the line that ended it. There is no heartbeat:
 through a whole dungeon key the ten-second heartbeat this replaced filled the console with an
@@ -107,11 +116,11 @@ always speaks. The console's **Clear** does not (the library offers no hook).
 | `Test` | `core/State.lua`, `modules/WindowManager.lua` | test mode on or off; `start refused: in combat` | — |
 | `DrillDown` | `modules/DrillDown.lua` | entering and leaving a drill view, a recap opened | — |
 | `DrillDown` | `modules/DrillDown.lua` | `rows window=… n=…` for the drill view being drawn | yes |
-| `Export` | `modules/Export.lua` | a chat dump sent (at once, staggered, or printed locally); `canceled the queued rest of a dump: <why>` when a queued tail is dropped | — |
+| `Export` | `modules/Export.lua` | a chat dump sent (at once, staggered, or printed locally); a staggered dump's hold (`sent line 1 of N to X, the rest queued`) pairs with `sent the queued rest of a dump (N-1 lines) to X` when the last queued line goes out, or with `canceled the queued rest of a dump: <why>` when the tail is dropped — a hold with neither is a tail whose timers never ran | — |
 | `Export` | `modules/Export_Modal.lua` | `csv`, `chat` or `open refused: <sentence>` — the refusal the player was shown | — |
 | `Format` | `modules/Format.lua` | the number formatter degrading at build (no breakpoints, no floor) | — |
 | `Feign` | `modules/Feign.lua` | a Feign Death cast noted | — |
-| `Tooltip` | `modules/Row.lua`, `modules/Tooltip_Builders.lua` | row hover, cell and name tooltips — **only** with `/mm debug tooltip` on (above) | — |
+| `Tooltip` | `modules/Row.lua`, `modules/Tooltip_Builders.lua` | row hover, cell and name tooltips — **only** with `/mm debug tooltip` on (above) | yes, per hovered frame |
 | `Columns` | `settings/Columns.lua` | the settings panel's Columns entry painted | — |
 | `Blocks` | `settings/ColumnBlocks.lua` | column blocks released, and the drag list's own trace | — |
 | `Cfg` | `LibKa0s-Options-1.0` | the settings panel opened, or its open or register held in combat | — |

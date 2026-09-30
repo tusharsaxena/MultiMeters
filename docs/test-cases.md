@@ -1432,7 +1432,7 @@ badge and any count quoted in the docs must agree with it.
 
 - Update never touches a cell the layout hid, and the live list is reused in place
 
-### test_row_mouse.lua (15)
+### test_row_mouse.lua (17)
 
 - Hovering a stat cell asks the tooltip the narrow question
 - Clicking a stat cell routes to the drill-down; the name cell does not
@@ -1449,6 +1449,8 @@ badge and any count quoted in the docs must agree with it.
 - A right click on the ROW ITSELF leaves the breakdown
 - A right click on the GRID is a harmless no-op
 - Cells register for BOTH buttons, or the right click never arrives
+- Tooltip channel: a cell rebuilt under a resting cursor speaks once per hover
+- Tooltip channel: a breakdown row under a resting cursor speaks once per hover
 
 ### test_targets.lua (24)
 
@@ -1690,7 +1692,7 @@ badge and any count quoted in the docs must agree with it.
 - Switching out of a deaths view replaces the state, it does not merge into it
 - BuildRows on every refresh while drilled in logs its rows line once, not once per pass
 
-### test_export.lua (91)
+### test_export.lua (93)
 
 - Export is a plain table on NS, not an AceAddon module
 - Export.Available says yes out of combat, with nothing to explain
@@ -1782,6 +1784,8 @@ badge and any count quoted in the docs must agree with it.
 - Export.Build goes through the aggregator and nowhere near the meter API
 - Export.Build answers nil when there is no aggregator to ask
 - Export: a staggered dump traces its send, and a cancel traces the tail it dropped
+- Export: a staggered dump that finishes traces its flush, once
+- Export: a one-line dump claims no queued tail
 - Export: a cancel with nothing queued says nothing
 
 ### test_export_modal.lua (32)
@@ -2419,14 +2423,14 @@ badge and any count quoted in the docs must agree with it.
 | test_row.lua | 62 |
 | test_row_namecell.lua | 30 |
 | test_row_cells.lua | 1 |
-| test_row_mouse.lua | 15 |
+| test_row_mouse.lua | 17 |
 | test_targets.lua | 24 |
 | test_tooltip.lua | 20 |
 | test_tooltip_lines.lua | 37 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
 | test_drilldown.lua | 61 |
-| test_export.lua | 91 |
+| test_export.lua | 93 |
 | test_export_modal.lua | 32 |
 | test_visibility.lua | 44 |
 | test_windowmanager.lua | 48 |
@@ -2447,4 +2451,4 @@ badge and any count quoted in the docs must agree with it.
 | test_surface_parity.lua | 5 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2121** |
+| **Total** | **2125** |

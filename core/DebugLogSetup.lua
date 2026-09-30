@@ -198,7 +198,7 @@ local function DebugSteady(key, tag, fmt, ...)
             emitRun(tag, slot, slot.repeats + 1)
         end
         remember(slot, n, fmt, ...)
-        slot.repeats = 0
+        slot.tag, slot.repeats = tag, 0
         NS.Debug(tag, fmt, ...)
         return
     end
@@ -219,6 +219,30 @@ NS.DebugSteady = DebugSteady
 --- worth a library seam if it ever bites in practice.
 function NS.DebugSteadyReset()
     for fmt in pairs(steady) do steady[fmt] = nil end
+end
+
+--- End one emitter's runs: report any it was holding, then forget them.
+---
+--- For an emitter whose "same again" becomes news once it has gone away and come
+--- back. A tooltip is the case: resting on one cell rebuilds it with the same
+--- figures (a steady state, held), but leaving and hovering that cell again is a
+--- new hover, and a reader asking "did the tooltip fire?" expects a line for it.
+--- modules/Row.lua calls this on leave with the hovered frame as `key`, so each
+--- hover speaks once, and the count of a held run lands on its own line as it
+--- ends, as it does when a run is broken by a change.
+---
+--- @param key any  the key the emitter passed to NS.DebugSteady
+function NS.DebugSteadyForget(key)
+    if key == nil then key = "?" end
+    for _, byKey in pairs(steady) do
+        local slot = byKey[key]
+        if slot then
+            if (slot.repeats or 0) > 0 and slot.fmt and slot.tag then
+                emitRun(slot.tag, slot, slot.repeats + 1)
+            end
+            byKey[key] = nil
+        end
+    end
 end
 
 local lib = LibStub and LibStub("LibKa0s-DebugLog-1.0", true)

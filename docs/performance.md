@@ -89,8 +89,8 @@ overlap, and **a parent must never be summed with its children**.
 | `providerRead` | — (observed: `aggregate`, `targets`) | one `C_DamageMeter` column read | `modules/Provider.lua:375` |
 | `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1158`, `modules/DrillDown.lua:700`, `:734` |
 | `render` | `refresh` | the window's draw | `modules/Window.lua:1315` |
-| `renderRow` | `render` | one row's cells | `modules/Row.lua:1157` |
-| `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:925`, `:943`, `:1004`, `:1018`, `:1032` |
+| `renderRow` | `render` | one row's cells | `modules/Row.lua:1167` |
+| `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:930`, `:948`, `:1010`, `:1024`, `:1038` |
 | `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:396`, `:404`, `:418` |
 
 `spellEvent` and `systemEvent` are **measurement only** (MultiMeters-R-17). Both events stay

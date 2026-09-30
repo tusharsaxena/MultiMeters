@@ -626,6 +626,16 @@ function NS.RegisterSchemaRows(rows) S.AddRows(rows) end
 --- reads nil.
 function NS.GetSetting(path, windowId) return S.Get(path, windowId) end
 
+--- The seam's one refusal line (debug-logging-§8, Diagnosis: a write rejected
+--- names its guard). The runtime logs `[Set] <path> = <value>` for a write that
+--- lands and nothing for one it refuses, so `/mm set` typed wrong, a widget whose
+--- value failed validation or a write with no window selected left no trace at
+--- all. `err` is the sentence the caller shows the player, so the two agree.
+local function traceRefused(path, err)
+    if not (NS.State and NS.State.debug) then return end
+    debugSink("Set", "%s refused: %s", tostring(path), NS.SafeToString(err))
+end
+
 --- Write one setting. THE single write seam (architecture-§5): the panel's
 --- widgets, `/mm set`, `/mm reset` and the defaults restore all land here.
 --- The runtime's order: refuse an unknown path, validate, normalize, refuse a
@@ -640,16 +650,6 @@ function NS.GetSetting(path, windowId) return S.Get(path, windowId) end
 --- such a path, so no reset or batch can reach it; the gate is wording only.
 ---
 --- @return boolean ok, string|nil err, string|nil why
---- The seam's one refusal line (debug-logging-§8, Diagnosis: a write rejected
---- names its guard). The runtime logs `[Set] <path> = <value>` for a write that
---- lands and nothing for one it refuses, so `/mm set` typed wrong, a widget whose
---- value failed validation or a write with no window selected left no trace at
---- all. `err` is the sentence the caller shows the player, so the two agree.
-local function traceRefused(path, err)
-    if not (NS.State and NS.State.debug) then return end
-    debugSink("Set", "%s refused: %s", tostring(path), NS.SafeToString(err))
-end
-
 function NS.SetByPath(path, value, windowId)
     if type(path) == "string" and path:sub(1, #COLUMNS_PATH + 1) == COLUMNS_PATH .. "." then
         local err = L["A single column is not a setting — edit columns under Windows > Columns."]

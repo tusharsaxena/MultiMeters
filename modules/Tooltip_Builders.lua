@@ -32,7 +32,7 @@ local L = NS.L
 local Const = NS.Constants
 local Compat = NS.Compat
 local State = NS.State
-local Debug = NS.Debug
+local DebugSteady = NS.DebugSteady
 
 -- The primitives modules/Tooltip.lua publishes, and the line machinery
 -- modules/Tooltip_Lines.lua adds to the same table. FILE SCOPE, which is what
@@ -786,11 +786,16 @@ function Tooltip:CellTooltip(row, statKey, anchorFrame, window)
     applyPlacement()
 
     if t0 then Perf.Note("tooltip", debugprofilestop() - t0) end
-    -- BEHIND ITS OWN CHANNEL. A tooltip is rebuilt on every mouse-over and on
-    -- every refresh the cursor sits through, so this line alone can fill a
-    -- capped buffer and evict the pass somebody was reading. `/mm debug tooltip`.
-    if State.debug and State.debugTooltip and Debug then
-        Debug("Tooltip", "cell %s spells=%d", statKey, shown)
+    -- BEHIND ITS OWN CHANNEL, AND CHANGE-GATED. A tooltip is rebuilt on every
+    -- mouse-over and on every refresh the cursor sits through, so written
+    -- plainly this line alone can fill a capped buffer and evict the pass
+    -- somebody was reading. Through DebugSteady, keyed on the hovered frame, it
+    -- speaks when the hover starts or its count changes and is silent while it
+    -- holds (debug-logging-§9, quiet steady state); modules/Row.lua's
+    -- cellOnLeave forgets the frame, so each new hover speaks once.
+    -- `/mm debug tooltip`.
+    if State.debug and State.debugTooltip and DebugSteady then
+        DebugSteady(anchorFrame, "Tooltip", "cell %s spells=%d", statKey, shown)
     end
 end
 
@@ -941,8 +946,9 @@ function Tooltip:NameTooltip(row, anchorFrame, window)
     applyPlacement()
 
     if t0 then Perf.Note("tooltip", debugprofilestop() - t0) end
-    if State.debug and State.debugTooltip and Debug then
-        Debug("Tooltip", "name stats=%d", rendered)
+    -- Change-gated on the hovered frame, as CellTooltip's line is.
+    if State.debug and State.debugTooltip and DebugSteady then
+        DebugSteady(anchorFrame, "Tooltip", "name stats=%d", rendered)
     end
 end
 
