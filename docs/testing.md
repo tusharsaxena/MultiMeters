@@ -92,6 +92,10 @@ not compared by name, and the suite's header gives the reason for each. The sett
 stub (`settings/Schema_Paths.lua`, issue #52) is pinned there too, in the two-table form the
 library's docs prescribe for an instance: a live `NS.SchemaRuntime` against a degraded one and the
 stub library against the live one, both from real loads, plus a degraded batch landing in the store.
+The Slash stub (`settings/Slash.lua`) joined it on 2026-09-29 (SP-MM-02) in the same two-table form:
+the file publishes its dispatcher as the `NS.Slash.__dispatcher` debug seam, and a live load's is
+compared member by member against a degraded load's, so dropping `CliProfile` or `ProfileSwitch`
+from the stub goes red.
 
 ### One environment detail worth knowing
 
@@ -210,6 +214,8 @@ the `diagnostics`, `recap` and `identity` reports and the console toggle. The di
 refusal cases (`slash-commands-§2`) joined the schema-seam refusals in
 `tests/test_slash_refusal.lua`. The parent keeps the verb table's shape, dispatch, the host verbs,
 `resetall` and registration. Case bodies and names moved unchanged, so the suite total did not move.
+`tests/test_slash_profile.lua` (2026-09-29, SP-MM-02) is a fourth sibling, new rather than peeled: the
+`profile` verb's cases, driven through the real dispatcher and the real AceDB switch.
 
 ## What the mock models, and what it admits it cannot
 

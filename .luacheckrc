@@ -104,7 +104,7 @@ globals = {
 
 -- The test tree is linted, and these are the three globals it WRITES. Every suite READS the
 -- harness table as `_G.MULTIMETERS_TEST`, and a field read off the already-declared `_G` needs no
--- entry at all; what needs one is tests/run.lua:315 writing it, plus the two SavedVariables tables
+-- entry at all; what needs one is tests/run.lua:408 writing it, plus the two SavedVariables tables
 -- a case clears to assert on the absent-saved-variable path. Hence `globals` and not
 -- `read_globals`. Hence also the `_G.` qualification -- spelled bare, all six writes are still
 -- reported as W122 "setting read-only field of global '_G'", which is checked both ways.

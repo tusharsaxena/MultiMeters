@@ -94,6 +94,17 @@ call from `core/Database.lua` (`architecture-§4`):
 
 The full catalog is in [message-bus.md](message-bus.md).
 
+## Switching from the slash command
+
+`/mm profile` lists the profiles, the current one marked, and `/mm profile <name>` switches to an
+existing one: quotes around the name are stripped, its case and spaces are kept, an unknown name is
+refused and never created, and a switch in combat is refused. The verb is LibKa0s-Slash-1.0's
+`CliProfile`, handed `NS.db` as the profile store, so a switch made there is the same `SetProfile` the
+Profiles page makes and runs the same `OnProfileChanged` above: one `[Profile]` line, the `disabled`
+hold re-evaluated, one `PROFILE_CHANGED`, and an open Profiles page repainted. It answers while the
+addon is disabled, because a switch can turn the addon back on. Creating, copying, resetting and
+deleting stay on the Profiles page. The verb in full: [slash-dispatch.md](slash-dispatch.md#the-profile-verb).
+
 ## The reset-all veto
 
 **General → Reset all settings is a profile reset.** It, `/mm resetall` and Profiles → Reset Profile

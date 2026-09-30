@@ -48,8 +48,8 @@ Retail only · English only.
 - **Cell drill-down** into a player's per-spell breakdown, rendered through the same row path as the
   grid, plus a hand-off to Blizzard's own death recap from the Deaths column.
 - **Pet folding** into owners, best-effort — see the caveat below.
-- **A nine-page settings panel** driven by one 162-row schema, with full `/mm` CLI parity for every
-  schema-shaped operation.
+- **A three-page settings panel** (General, Windows, Profiles) driven by one 169-row schema, with
+  full `/mm` CLI parity for every schema-shaped operation.
 - **Visibility rules** per window — **show everywhere, hide nowhere** out of the box. Seven contexts
   (dungeon, raid, arena, battleground, delve, scenario, open world), all on by default; ten hide
   rules (solo, vehicle, mounted, skyriding, flight path, player housing, pet battle, dead, in
@@ -284,7 +284,7 @@ default to total and rate.
   `modules/Provider.lua` copies every field it could filter on. The only route the addon has is the
   cast join in `modules/Feign.lua` described above, which cannot run mid-pull and is unconfirmed for
   party members. Unless the in-game recap check in
-  [smoke-tests.md §28](smoke-tests.md#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25)
+  [smoke-tests.md DIAG-25](smoke-tests.md#diag)
   finds a recap that answers differently for a feign, #25 is not fixable from this provider: a death
   row is a death row.
 - **A past death cannot be dated against the run it happened in, so the addon does not try.**

@@ -34,6 +34,11 @@ local RESERVED = {
     "get", "set", "list", "reset", "resetall",
 }
 
+-- The host verbs that stay live on top of the reserved set: `profile` alone (LibKa0s-Slash minor
+-- 17). The host passes lib.LIVE_VERBS plus this, because a profile switch can flip `enabled` and a
+-- player who turned the addon off in one profile must be able to reach one where it is on.
+local HOST_LIVE = { "profile" }
+
 --- One registration, as a string a diff can be read from. Keyed by TARGET as well
 --- as by name because "the addon registers UNIT_SPELLCAST_SUCCEEDED" and "the
 --- addon registers it on the object that has the handler" are different claims,
@@ -380,6 +385,29 @@ test("Disabled 7: every reserved verb and the bare command answer normally", fun
     assertEqual(NS.GetSetting("master.scale"), NS.FindSchemaRow("master.scale").default)
 end)
 
+test("Disabled 7: the host's `profile` verb answers while disabled, bare and with a name",
+function()
+    -- The one host verb on the live list. Bare, it lists; with a name, it switches, and the
+    -- switch is what can bring a disabled addon back without touching a checkbox.
+    -- red under: a `liveVerbs` without `profile`, or none at all.
+    local inst, NS = scene()
+    NS.db.sv.profiles.Raid = {}
+    assertTrue(NS.SetByPath("enabled", false))
+
+    local refusal = refusalLine(inst)
+    for _, verb in ipairs(HOST_LIVE) do
+        for _, command in ipairs({ verb, verb .. " Raid" }) do
+            local lines = say(inst, command)
+            assertTrue(#lines >= 1, "`/mm " .. command .. "` said nothing")
+            for _, line in ipairs(lines) do
+                assertTrue(line:find(refusal, 1, true) == nil,
+                    "`/mm " .. command .. "` was refused: " .. line)
+            end
+        end
+    end
+    assertEqual(NS.db:GetCurrentProfile(), "Raid", "`/mm profile Raid` did not switch while disabled")
+end)
+
 test("Disabled 7: both diagnostics forms reach RunDiagnostics, each once, with no refusal",
     function()
     -- debug-logging-§14 and the audit's diagnostics check: the report is what a
@@ -423,6 +451,7 @@ test("Disabled 7: every FEATURE verb refuses on exactly one line and reaches no 
     local refusal = refusalLine(inst)
     local live = {}
     for _, verb in ipairs(RESERVED) do live[verb] = true end
+    for _, verb in ipairs(HOST_LIVE) do live[verb] = true end
 
     inst.mocks.__resetSvWrites()
     local gated = 0

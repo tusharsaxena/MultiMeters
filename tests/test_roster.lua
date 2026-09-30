@@ -785,10 +785,10 @@ test("A meter reset forgets the remembered roster, through the bus", function()
 end)
 
 -- ---------------------------------------------------------------------------
--- Bounding the remembered map (SM-06, branch B)
+-- Bounding the remembered map (smoke INSTALL-5, branch B)
 -- ---------------------------------------------------------------------------
 --
--- SM-06 settled which way this goes: the meter's data SURVIVES a full logout and
+-- INSTALL-5 settled which way this goes: the meter's data SURVIVES a full logout and
 -- a fresh login, so forgetting the map at login would throw away a session the
 -- window still shows. The bound is a prune instead. Above 4 x MAX_ROWS
 -- remembered members, build() drops every remembered member who is not in the
@@ -869,7 +869,7 @@ test("A partial build never prunes, so a member the unit API has not reached sur
 end)
 
 test("While disabled, no game event writes to db.global.roster", function()
-    -- Either branch of SM-06 had to keep this: the roster's handlers live on the
+    -- Either branch of INSTALL-5 had to keep this: the roster's handlers live on the
     -- bus, which the stand-down tears down, so a roster change, a zone-in (login
     -- included) and a meter reset all reach nothing.
     -- red under: a Roster that registers a game event of its own, or a bus

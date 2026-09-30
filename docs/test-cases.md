@@ -2126,7 +2126,21 @@ badge and any count quoted in the docs must agree with it.
 - Slash: enabling the addon again gives the feature verbs back
 - Slash: nothing refuses on an install whose store has not been built
 
-### test_disabled.lua (23)
+### test_slash_profile.lua (11)
+
+- Slash profile: the verb follows the thirteen reserved ones, with its localized description
+- Slash profile: a bare `profile` lists every profile, sorted, the current one marked
+- Slash profile: `profile <name>` switches to that profile and the handler runs once
+- Slash profile: surrounding quotes are stripped; case and inner spaces are kept
+- Slash profile: an unknown name is refused with the list, and nothing is created
+- Slash profile: naming the current profile says so and rebuilds nothing
+- Slash profile: in combat the switch is refused and nothing moves
+- Slash profile: with no database the verb says profiles are unavailable
+- Slash profile: the verb answers and switches while the addon is disabled
+- Slash profile: with no library `/mm profile` names what is missing and switches nothing
+- Slash profile: the stub's ProfileSwitch answers false with the same line
+
+### test_disabled.lua (24)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -2135,6 +2149,7 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 5: every frame that was shown is hidden
 - Disabled 6: every event fired anyway writes nothing, prints nothing, shows nothing
 - Disabled 7: every reserved verb and the bare command answer normally
+- Disabled 7: the host's `profile` verb answers while disabled, bare and with a name
 - Disabled 7: both diagnostics forms reach RunDiagnostics, each once, with no refusal
 - Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam
 - Disabled 8: left-click opens the panel and writes nothing, in either state
@@ -2312,12 +2327,13 @@ badge and any count quoted in the docs must agree with it.
 - Degraded: with only the Options majors missing, /mm disable and /mm enable still work
 - Degraded: the stub refuses a row-less path it was not told to write through
 
-### test_surface_parity.lua (4)
+### test_surface_parity.lua (5)
 
 - parity: the Options stub carries every public member of the live Helpers surface
 - parity: NS.Compat and NS.Secrets carry every LibKa0s-Compat-1.0 member between them
 - parity: the bus stub carries the LibKa0s-Bus-1.0 surface, and its record the instance's
 - parity: the Schema stub carries the live runtime's surface, and a degraded batch lands
+- parity: the Slash stub carries the live dispatcher's surface
 
 ### test_eol.lua (2)
 
@@ -2407,13 +2423,14 @@ badge and any count quoted in the docs must agree with it.
 | test_slash.lua | 50 |
 | test_slash_diagnostics.lua | 20 |
 | test_slash_refusal.lua | 11 |
-| test_disabled.lua | 23 |
+| test_slash_profile.lua | 11 |
+| test_disabled.lua | 24 |
 | test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 14 |
 | test_degraded.lua | 38 |
-| test_surface_parity.lua | 4 |
+| test_surface_parity.lua | 5 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2094** |
+| **Total** | **2107** |

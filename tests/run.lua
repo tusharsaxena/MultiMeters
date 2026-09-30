@@ -316,6 +316,7 @@ local SUITES = {
     "test_slash",
     "test_slash_diagnostics",
     "test_slash_refusal",
+    "test_slash_profile",
     -- slash-commands-§7's conformance suite: the disabled state is TOTAL. It asserts on
     -- the REGISTRATION SET rather than on a handler's return value, because an early
     -- return is what a draw gate does and a suite written that way certifies the shape
@@ -391,7 +392,7 @@ Kit.diagnostics = {
 -- Set BEFORE Kit.expose, which is what makes it stick: expose registers a source only when none is
 -- registered yet, precisely so a runner like this one keeps its own.
 --
--- Options, Compat and Bus are named. The other five seams are not compared by name, and
+-- Options, Compat and Bus are named. The other six seams are not compared by name, and
 -- tests/test_surface_parity.lua's header gives the reason for each.
 Kit.setSurfaceSource{
     ["LibKa0s-Options-1.0"] = shared.NS.Helpers,

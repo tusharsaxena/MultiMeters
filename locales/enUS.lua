@@ -976,6 +976,11 @@ L["export is unavailable \226\128\148 modules/Export.lua did not load."] =
 L["export is not available right now."] = "export is not available right now."
 L["there is no window to export."] = "there is no window to export."
 
+-- The `profile` verb's COMMANDS description (settings/Slash.lua). Its output lines are
+-- LibKa0s-Slash-1.0's own `PROFILE_*` strings, not keys here.
+L["List profiles, or switch to one: profile <name>"] =
+    "List profiles, or switch to one: profile <name>"
+
 -- The two debug channels' acknowledgments (`/mm debug feign`, `/mm debug tooltip`).
 L["feign trace ON \226\128\148 run the dungeon, then `/mm debug feign`."] =
     "feign trace ON \226\128\148 run the dungeon, then `/mm debug feign`."

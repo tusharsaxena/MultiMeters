@@ -1,2285 +1,1376 @@
-# Smoke tests
+# Smoke tests — Ka0s Multi Meters
 
-Manual, in-client checks for **Ka0s Multi Meters**. Run before claiming a non-trivial change works,
-before tagging a release, and after refreshing `libs/` or bumping `## Interface:`.
+These are the in-client checks for **Ka0s Multi Meters** that the headless suite cannot make.
+`lua tests/run.lua` loads every source file under a mocked client and proves the logic; it cannot run
+the real `C_DamageMeter`, real secret values or the real `Combat` addon restriction, and that is where
+this addon's risk lives (the [COMBAT](#combat) theme). Run the suite before claiming a non-trivial
+change works, before a release, and after refreshing `libs/` or bumping `## Interface:`. A change
+confined to `.luacheckrc`, a headless-only gate under `tests/` or docs never reaches the client, so
+`luacheck .` at 0/0 and a green `lua tests/run.lua` is its whole verification. Start each session from
+a clean `/reload`; turn `/mm debug on` only where a step says so. Record each run on the check's
+`Result:` line (date, client build, pass or what failed). IDs are `<THEME>-<n>`, stable across
+rewrites: a new check takes the next free number in its theme, and a retired number is not reused.
+Companion docs: [testing.md](testing.md) for the harness, [ARCHITECTURE.md](ARCHITECTURE.md) for the
+secret-value rules the checks refer to.
 
-This file covers what the headless suite **cannot**. `lua tests/run.lua` loads every source file
-under a mocked client and proves the logic: the schema resolves, the GUID join works, the sort ladder
-falls through, the secret guards fire on mock secrets. What it cannot do is run inside a real client
-with the real `C_DamageMeter`, real secret values, and the real `Combat` addon restriction — and
-**that is where this addon's entire risk surface lives.** Everything in §8 through §11 exists because
-a mock cannot fail the way a Mythic+ pull can.
+## Index
 
-Companion docs: [testing.md](testing.md) for the headless harness,
-[ARCHITECTURE.md](ARCHITECTURE.md) for the secret-value rules referenced throughout.
-
-**Re-verification note (2026-08-27, settings-redesign branch).** The header-controls bullets in
-§1 and the settings-panel steps in §3 and §4 — page names, tab names, control names and the
-lock/Test-mode relationship — were re-checked against `settings/Schema.lua` and the current page
-files as part of documenting that branch's tab redesign. The rest of §1, and all of §2 and §5 through
-§26, was **not** re-audited in that pass and may still describe older behavior; treat any step
-outside those specific bullets as unverified against the current branch until it has been walked
-in-client.
-
-## Conventions
-
-- **`/reload`** abbreviates `/console reloadui`.
-- **BugSack / BugGrabber** (or the stock Lua error frame) is the primary regression signal. A clean
-  run is **"no errors thrown at any point"** — and in this addon the errors that matter arrive
-  *four times a second, mid-pull*, so a single one is a hard fail even if the window looks right.
-- **Chat banner.** Every line the addon prints starts with a cyan `[MM]`. A doubled `[MM][MM]`
-  banner, or any line missing it, is a bug (`core/MultiMeters.lua` reclaims `NS.Print` from
-  AceConsole immediately after `NewAddon` — a green line with a trailing colon means the reclaim
-  broke).
-- **"Restricted"** below means the `Combat` addon restriction is **active**, which is when meter
-  numbers arrive as secret values. It keys off **combat, not Mythic+** — between packs in a key the
-  values are fully readable. So "in a key" and "restricted" are not the same state, and several
-  checks below depend on the difference.
-- **"A pull"** means a real one: a trash pack in a Mythic+ dungeon, with the group actually fighting.
-  A target dummy is **not** a substitute for the restricted-path checks — dummies do not activate the
-  addon restriction.
-- **Pass** lines describe what success looks like. If a step says "should X" and X does not happen,
-  the smoke test failed.
-- **What needs no smoke run at all.** A change confined to `.luacheckrc`, to a headless-only gate
-  under `tests/`, or to docs does not reach the client, and `luacheck .` at 0/0 plus
-  `lua tests/run.lua` green is its whole verification. `M4c-06` is the case this bullet was written
-  for: it removed the blanket lint suppression, renamed the unread `addonName` in thirty-three
-  bootstrap headers to `_` — a local nothing reads, in files whose behavior is otherwise byte for
-  byte what it was — and added `tests/test_lintconfig.lua`. Recorded here rather than left to be
-  re-derived the next time the same shape lands.
-
-## Suite
-
-| # | Area | Scenario |
+| ID range | Theme | What it covers |
 |---|---|---|
-| 1 | Cold start | [Fresh install + first login](#1-fresh-install--first-login) |
-| 2 | Reload | [`/reload` integrity](#2-reload-integrity) |
-| 3 | Window handling | [Lock, drag, resize, Test mode](#3-lock-drag-resize-test-mode) |
-| 4 | Settings panel | [Page sweep and panel/CLI parity](#4-settings-panel-sweep) |
-| 5 | Columns | [Column editor](#5-column-editor) |
-| 6 | Multi-window | [Second window, copy settings, independence](#6-multi-window) |
-| 7 | Visibility | [Context matrix](#7-visibility-matrix) · [Hide rules and combat](#7b-hide-rules-and-combat) |
-| 8 | **Secret values** | [**Mythic+ pull — the secret-value path**](#8-mythic-pull--the-secret-value-path) |
-| 9 | **Sorting** | [**Live ranking mid-pull, and identity ambiguity**](#9-live-ranking-mid-pull-and-identity-ambiguity) |
-| 10 | **Interaction** | [**Tooltips, drill-down and death recap mid-pull**](#10-tooltips-drill-down-and-death-recap-mid-pull) |
-| 11 | **Unverified assumption** | [**Does `combatSources` arrive pre-sorted?**](#11-verify-the-unverified-assumption-provider-order) |
-| 12 | Pets | [Pet attribution](#12-pet-attribution) |
-| 13 | Degradation | [Meter-unavailable prompt](#13-meter-unavailable-prompt) |
-| 14 | Slash | [Slash surface](#14-slash-surface) |
-| 15 | Profiles | [Profiles](#15-profiles) |
-| 16 | Resets | [Resets](#16-resets) |
-| 17 | Degraded install | [LibKa0s absent](#17-libka0s-absent) |
-| 18 | Diagnostics | [Debug console and perf capture](#18-debug-console-and-perf-capture) |
-| 19 | **Number rendering** | [**Abbreviation actually reaches the cells**](#19-abbreviation-actually-reaches-the-cells) |
-| 20 | Names | [Realm strip and truncation](#20-realm-strip-and-truncation) |
-| 21 | **Segments** | [**The header segment selector**](#21-the-header-segment-selector) |
-| 22 | Migration | [v1 → v2 uniform column widths](#22-v1--v2-uniform-column-widths) |
-| 23 | Migration | [v12 → v13 title bar and control-color migration](#23-v12--v13-title-bar-and-control-color-migration) |
-| 24 | Tooltip styling | [Tooltip appearance, anchor and offsets](#24-tooltip-appearance-anchor-and-offsets) |
-| 25 | **Targets** | [**The Targets section, and its absence mid-pull**](#25-the-targets-section-and-its-absence-mid-pull) |
-| 26 | **Export** | [**The export modal, the CSV and the chat dump**](#26-the-export-modal-the-csv-and-the-chat-dump) |
-| 27 | **Identity** | [**The identity-correlation capture (issue #22)**](#27-the-identity-correlation-capture-issue-22) |
-| 28 | **Feign trace** | [**The feign-trace verbs and what the recording says (issue #25)**](#28-the-feign-trace-verbs-and-what-the-recording-says-issue-25) |
-| 29 | **Shared registry** | [**The Border dropdown when five Ka0s addons share one registry**](#29-the-border-dropdown-when-five-ka0s-addons-share-one-registry) |
-| 32 | **Bar animation** | [**Bar fills slide between refreshes (issue #23)**](#32-bar-fills-slide-between-refreshes-issue-23) |
-| 33 | **Segments** | [**The pinned segment's none**](#33-the-pinned-segments-none) |
-| 34 | Migration | [v13 → v14 Lock frame migration](#34-v13--v14-lock-frame-migration) |
-| 35 | **Diagnostics** | [**The diagnostics report**](#35-the-diagnostics-report) |
-| 36 | **Settings panel** | [**The Windows page (MultiMeters#55)**](#36-the-windows-page-multimeters55) |
-
----
-
-### 1. Fresh install + first login
-
-**Setup.** Quit WoW. Delete `WTF/Account/<ACCOUNT>/SavedVariables/MultiMeters.lua` (and the `.bak`).
-Confirm the addon is enabled in the character-select AddOns list as **Ka0s Multi Meters**.
-
-**Steps.** Log in. Run `/mm help`, then a bare `/mm`. Open Settings → AddOns.
-
-### The header's controls (issues #6, #7)
-
-**Steps:** hover the title bar; click each control in turn; turn some off in Settings → Frame.
-
-**Pass.**
-- **Seven controls, right to left:** close, minimize, lock, settings, segment, reset, export. They
-  are drawn from this addon's own art — white glyphs that take the header's text color. A control
-  that is a plain letter (`*`, `#`, `>`) means the art AND the atlas both failed: the ladder is
-  working, but say so, because it means a texture did not load.
-- **The close button is ours too**, drawn from `libs/LibKa0s/media/icons/close.tga` at the same size and
-  weight as its six neighbors. A thin gray multiplication sign there is LibKa0s' close button —
-  which is what the strip used to end in, and what the art replaced.
-- **The icons sit inside their slots.** Each is drawn at 72% of `Control size`, so there is visible
-  air between two neighbors and the strip does not read heavier than the title beside it. Icons
-  touching each other means the inset was lost and the art is filling its whole click target.
-- **Turning one off closes the gap.** Hide the lock and everything to its left moves right by
-  exactly one slot; nothing to its right moves. A hole where a control was is the indexed layout
-  failing, and it is the whole point of the rewrite.
-- **The title never runs under a control**, at any `Control size` from 10 to 32 and with any
-  combination hidden.
-- **The strip is centered in the title bar**, on the same line as the window name and the session
-  line beside it, with the gap above the row matching the gap below it down to the divider. All three
-  are placed from `Window:TitleRowTop`, so check it again after changing **Header → Height**,
-  **Header → Size** and **Control size**: any of those moving one of the three off the shared line
-  means something is back on a hand-picked offset. A row that hugs the divider with clear space above
-  it means the centering is using the tinted band rather than the frame's top edge.
-- **Exactly one control reveals** — the one under the pointer comes up to full alpha and turns gold;
-  the other six do not move. Two lit at once is the reveal having gone back to being strip-wide, and
-  a control left bright after the pointer has moved on is the leave handler clearing a hover that has
-  already moved. **Sweep along the strip**: the bright one must follow the pointer control by
-  control, without a flicker in the gaps and without the whole set coming up as you cross the title
-  bar. **Check this on a LOCKED window too**: locking used to disable the title bar's mouse.
-- **The colors are both settings.** Header → Button style → **Control color** (white by default)
-  and **Control hover color** (gold). Change either and the strip must follow immediately, at rest
-  and under the pointer.
-- **Each color has its OWN color-mode dropdown.** Set **Control color mode** to **Class color**: the
-  strip goes to your class color at rest and the **hover color is unchanged**. Set **Control hover
-  color mode** to Class color instead: the resting color is unchanged and the control under the
-  pointer takes your class. Both set to Class color is legal and makes hover indistinguishable from
-  rest — that is the player's choice to make, but one dropdown driving both would force it, which is
-  why there are two. (These were booleans, `controlClassColor` / `controlHoverClassColor`, migrated
-  to `controlColorMode` / `controlHoverColorMode` at schemaVersion 12 → 13.)
-- **`Reveal controls on hover` OFF keeps every control at full alpha** — and the hover **color**
-  must still say which one the pointer is on, because it is the only channel left.
-- **Minimize collapses to the title bar** and the plus/minus flips. The column headers, the rows,
-  the "Waiting for combat data…" notice and the resize grip all go — anything still drawn over a
-  collapsed window is parented to the frame rather than the body.
-- **A collapsed window stops updating.** Verify during a pull: it must not tick. It is a real clause
-  in `ShouldPoll`, not a consequence of hiding, so it is exactly the kind of thing that regresses.
-- **Expanding restores the exact height** the window had, including after a `/reload` — a collapsed
-  window comes back collapsed, and expands to the size you chose rather than to a default.
-- **Reset asks first.** It must open the confirmation, not clear anything, and the dialog must warn
-  that it wipes the game's own meter data too. Canceling must leave the sessions intact. **The
-  dialog opens in the middle of the screen**, not up at the top where the popup stack puts it. It is
-  re-anchored once, as it is shown: a SECOND popup opening on top of it re-stacks every dialog and
-  can pull this one back up, which is accepted rather than fixed — a confirmation that is up at the
-  same moment as another popup is rare, and following the stack means hooking Blizzard's own
-  positioning.
-- **Segment opens the selector**, and it is the ONLY route to it. The session line beside it takes no
-  mouse: hovering the empty header to the left of "Overall" must produce no red glow, and clicking
-  there must open nothing. That invisible 220px click target is what the control replaced.
-
-**Pass.**
-- Login completes with no Lua errors.
-- Exactly **one** window exists, named "Multi Meters #1", centered on screen
-  (`Database.SeedWindows` seeds one).
-- It shows the six default columns left to right after the name column: **Damage · Healing ·
-  Interrupts · Dispels · Avoidable Damage · Deaths**.
-- Standing solo in the open world the window is **shown**: every context ships on and every hide
-  rule ships off.
-- `/mm help` prints the help index. Every row carries the cyan `[MM]` banner; verb names are yellow.
-- A bare `/mm` opens the settings panel on the **Ka0s Multi Meters** landing page, the same as
-  `/mm config`, and prints nothing to chat. `/mm` followed only by spaces does the same.
-- Settings → AddOns shows a **Ka0s Multi Meters** parent with **three** subcategories. The tree
-  reads General · Windows · Profiles. There are no nested entries.
-- **No `schema error:` line and no "schema path does not resolve" line appears at any point.**
-  `NS.ValidateSchema` runs from the options descriptor at panel creation; a line here means a schema
-  row's path does not resolve against `defaults/Profile.lua`, or its default disagrees with the tree.
-- After `/reload`, `MultiMetersDB` exists on disk with `profileKeys`, `profiles.Default`,
-  `global.schemaVersion = 16` (the runner's target; the declared default is 0), a one-entry `profile.windows` array whose window has `id = 1`, and
-  `profile.nextWindowId = 2`.
-
-### 2. `/reload` integrity
-
-**Steps.** Move the window, resize it, change a bar color and a column width. `/reload`.
-
-**Pass.** Position, size, color and width all survive. No errors during load. The window re-appears
-in the same visibility state it was in. `nextWindowId` has not moved (a reload creates no windows).
-
-**Also.** Take a `/reload` **during** a pull, with the restriction active. The addon must come back
-without errors — `NS:OnEnable` seeds `NS.State.restricted` from `Secrets.IsRestricted()` rather than
-assuming "inactive", because `ADDON_RESTRICTION_STATE_CHANGED` has already fired and there is no
-second edge to catch.
-
-- **SM-06.** Fight (a target dummy will do), then `/logout` fully, log back in and look at the meter.
-
-**Pass.**
-- **SM-06: the meter's data survives a fresh login, and so do the people in it.** Observed
-  2026-09-24: after a fight, a full logout and a fresh login, window #1 still showed the previous
-  data, the same two Cleave Training Dummy segments (1:09 with 128.8K damage, and 1:13). That
-  observation chose the bound on `db.global.roster` (`modules/Roster.lua`'s header): a prune above
-  `4 * MAX_ROWS` remembered members, not a forget at login. So a `/reload` keeps the roster, a fresh
-  login keeps it too, and a player who left the group still has their row on data from before the
-  logout. If a fresh login ever shows an EMPTY meter, the observation has changed and the bound
-  should be revisited.
-
-### 3. Lock, drag, resize, Test mode
-
-**Steps.**
-- `/mm lock off` (or uncheck **Frame → Lock window**).
-- Drag the window by its body. Drag the bottom-right grip.
-- `/mm lock on`. Try to drag again.
-- With two windows and the settings panel open on **General → Master controls**: `/mm lock on`, then
-  untick **Lock frame**, then tick it again. Then unlock one window from the padlock in its header.
-- `/mm test` on and off (or **General → Master controls → Test mode**), with the settings panel open.
-- Turn Test mode on again and start a fight (a target dummy will do). Repeat with the window's
-  **hide in combat** rule ticked on its Visibility entry.
-- While still in combat, tick the Test mode box, then type `/mm test`.
-- **SM-01.** `/mm disable`, then on **General → Master controls** tick and untick **Test mode**.
-- **SM-02.** `/mm perf start`, and during the suspended arm type `/mm toggle`.
-- **SM-03.** `/mm disable`, create a window from the **Windows** page, then `/mm enable`.
-
-**Pass.**
-- **SM-01: nothing comes back while disabled.** Unticking Test mode on a disabled addon puts no
-  window on screen. The manual turn-off keeps windows up through an explicit show, and that show
-  asks the stand-down latch first.
-- **SM-02: `/mm toggle` refuses during a capture's suspended arm.** No window appears, and chat
-  prints one line: *Windows are suspended while a performance capture runs.*
-- **SM-03: a window made while disabled comes up live.** After `/mm enable` the new window refreshes
-  like the others (in Test mode or in a fight its rows move), so its refresh clock was armed at
-  stand-up rather than at creation.
-- **Locking and Test mode are independent — not coupled.** `WindowManager:SetLocked` used to also
-  switch Test mode on, on the theory that someone positioning a window wants a full grid to aim at;
-  that coupling is gone. `/mm lock off` no longer fills the window with placeholder rows on its own,
-  and unchecking Test mode while a window is unlocked now actually clears the placeholder rows rather
-  than being a no-op. Confirm both halves: lock off with Test mode off shows a real (possibly empty)
-  grid, and Test mode on with the window locked still shows placeholders.
-- **Lock frame is every window's own lock, not a second one.** After `/mm lock on` the box reads
-  ticked. Unticking it unlocks **every** window: each drags by its title bar and shows its grip.
-  Ticking it locks every window again. Unlocking one window from its header padlock leaves the others
-  locked, and the box reads **unticked** until that window is locked again. It used to be a separate
-  lock ORed over the windows' own, and unticking it after `/mm lock` changed nothing on screen.
-- **The Test mode box follows the verb.** With the panel open, `/mm test` ticks and unticks the box
-  on General → Master controls without a click.
-- **Combat ends Test mode.** The pull prints one line, *Test mode off — combat started*; the
-  placeholder rows give way to the real (possibly empty) grid and the Test mode box unticks. The
-  window then goes where its own rules put it: with **hide in combat** ticked it disappears,
-  otherwise it stays up. Leaving combat does not turn test mode back on. (`/mm test off` by hand is
-  different: it always leaves the window on screen.)
-- **Starting in combat is refused.** In combat, ticking the box or typing `/mm test` prints one
-  line, *Cannot start test mode during combat*, and the box stays unticked.
-- **Test mode fills the window with placeholder rows** — ten Ka0s-named members with plausible,
-  **non-jittering** numbers. The numbers are deterministic; a preview that changes every refresh is
-  unusable for judging column widths, which is the job it exists for.
-- Dragging moves the window; the position persists across `/reload`.
-- The resize grip is visible only while unlocked, and resizing persists. That is the **only** thing
-  that governs it — there is no "Show resize grip" setting any more, and there must not be: the one
-  there used to be was read while the frame was being built, so unticking it did nothing until a
-  reload.
-- **Locked**, the window does not drag, and hovering a cell produces a tooltip (locked hands the
-  mouse to the cells). **Unlocked**, the whole window drags as one object and cells do not respond.
-- `/mm reset-positions` re-centers every window and prints how many moved.
-
-### 4. Settings panel sweep
-
-**Steps.** Open every one of the three pages, and on Windows every one of the Windows page's seven
-entries. On each, move one control of each type present
-(checkbox, slider, dropdown, color, edit box) and watch the window.
-
-**Pass.**
-- **The band, and switching windows.** The Windows page draws one band naming the active window
-  across the top, above the rail. Change the window from the band on any one of the Windows page's
-  seven entries and every other entry reflects it the next time you visit — the controls on that
-  entry now show the newly-picked window's values, not the old one's. **The active tab survives the
-  switch**: land on Bars → **Border**, change windows from the band, and you are still looking at
-  *Border*, now for the new window — the active tab is per-entry UI state, not tied to which window
-  is selected, and must not snap back to the first tab.
-- Every page draws on **first show** with correctly sized widgets — nothing squashed into a
-  zero-width column, and every widget carries the same skin as the rest of your AceGUI addons. With a
-  skinning addon (ElvUI / AddOnSkins) loaded, this reaches the band's window dropdown and the tab
-  strip too, not only the row controls — both are built lazily on first `OnShow`, like the Defaults
-  button, and a skin that reaches everything else but not one of these three is the lazy-build rule
-  failing for that one piece. (Both symptoms are the lazy-build rules failing; see
-  [settings-panel.md](settings-panel.md#eager-category-lazy-body-lazy-defaults-button).)
-- Every change applies **immediately** to the window, without a `/reload`.
-- **The tooltip.** *Tooltip behavior* now holds the **scale** slider and the **Targets** pair (they
-  had a group of their own for two rows). **Each anchor is a box of a 3×3 around the cell**: "Top left" is above and to
-  the LEFT, "Left" is beside it and grows left, and so on around the eight. Walk all eight and check each opens AWAY from the cell rather than
-  across it. **There is no "At cursor"** — it was the default, and over a grid it landed wherever the
-  pointer happened to be inside a cell, so the same hover moved every time; **Top** is the deliberate
-  version and is the default now. **This is the one
-  place the addon positions the tooltip itself**, so it is also the check for a taint error: if
-  hovering a cell mid-pull ever produces a Lua error naming this addon, the placement is the
-  suspect — it is `pcall`'d and the tooltip should fall back to roughly the right place rather than
-  failing to open, so a tooltip that opens in the WRONG box mid-pull and the right box out of combat
-  is that fallback doing its job. Every **target line carries an icon** now, in the
-  column where the spell lines put theirs. The **player's name is class-colored** on every tooltip
-  that names one. **Text color mode reaches the spell name as well as the numbers** — all the text on
-  a bar, not two thirds of it. The **fill and the backdrop** each have their own color, mode and
-  opacity. And **Border draws something**: it is on the bar rather than under it now, so a style
-  and a thickness are visible at last.
-- **The five text controls, on all four surfaces.** Bars → Text style, Header → Title text, Columns →
-  Header text, and Tooltip → Text each carry a **font** picker, a **font outline** dropdown, a **text
-  shadow** checkbox, a **text color** picker and a **Text color mode** dropdown of Class /
-  Per-statistic / Custom. **Per-statistic means a different statistic on each**: the cell takes its
-  own column's color, the title bar takes the **sort column's** (change the sort and watch it follow), the tooltip
-  takes **the column you hovered** — a Healing tooltip is Healing-colored whatever the grid is
-  sorted by, and each **column label takes its own column's** — that last one is the check
-  that catches the strip being resolved once and painted uniformly. Columns → **Header background**
-  also carries a **Background color mode** over the same three, where Per-statistic paints one
-  rectangle behind each label rather than one across the strip. The **Title bar's** own background
-  (Header → Title bar) is a plain color picker with no mode: it is one strip over the whole window,
-  so per-statistic could only ever paint it the sort column's color. **The configured opacity survives
-  every mode** — a class or statistic background must arrive as a tint, not a slab. Walk all four on each page and watch the
-  right thing change: the cells, the title bar and session line, the "Player | Damage | Healing"
-  strip, and a hovered tooltip. A control that moves the wrong surface means two groups are sharing a
-  key that is supposed to be their own.
-- **Every media dropdown lists what LibSharedMedia knows NOW, not what it knew at file load
-  (`M3-02`, session 4 of the 2026-09-07 remediation bundle).** Load a media pack that registers
-  faces, borders and bar textures — SharedMedia_MyMedia, or any addon whose only job is to hand
-  LibSharedMedia more of them — then open **every** media picker this addon draws. There are eleven:
-  Frame → General's two **all surfaces** pickers (**Font**, **Bar texture**), Frame → **Border style**,
-  Bars → **Texture** and **Border style**, Tooltip → **Bar texture** and **Bar border style**, and the
-  **font** picker on each of Bars → Text style, Header → Title text, Columns → Header text and
-  Tooltip → Text. Each list must contain the faces and textures that pack registered, not merely the
-  stock Blizzard set. **Nine of the eleven are the ones this step is really for** — every picker
-  except Frame → General's two, which `settings/Schema.lua` writes out by hand rather than composing.
-
-  **Why this step exists and what it is really watching.** Those nine rows come out of
-  `LibKa0s-Options-1.0`'s schema composers, and v1.26.0 changed *when* a composer asks this addon for
-  its media list: it used to ask as a dropdown opened, and now it asks once, as the row is declared.
-  So the member `settings/Schema_Compose.lua` hands the composer has to be the deferred reader itself rather
-  than a caller of it. Get that wrong and nothing breaks loudly — no Lua error, no chat warning, no
-  red case in `lua tests/run.lua`; the row simply carries a media list built before any media addon
-  registered anything. `settings/Schema_Compose.lua` re-dresses all nine rows with its own deferred reader
-  afterwards, so today that would be caught before it reached a dropdown, but the two are independent
-  and this is the only place the pair can be seen agreeing. **A dropdown that opens and looks
-  plausible is not a pass here** — the pass is a name in it that could only have come from the media
-  pack.
-
-  Not yet run — no client has been available since the change.
-- **"Text color mode" set to Class means the right class on each surface.** On Bars → **Text style** the cells take
-  **each row's** class, so a grid of mixed classes goes multi-colored — not all one color. On
-  Tooltip → **Text** the text takes the class of the player you are **hovering**; hover two different
-  players and the color follows. On Header → **Title text** and Columns → **Header text** it takes
-  **your own** class, because those strips are about the window rather than any row. Also set **Text
-  opacity** to 50% with the color mode set to Class: the text must stay half-transparent — a class
-  color that resets it is one setting canceling another.
-- **Reset all settings starts the profile over.** With **two or more** windows open, change something
-  visible on each (font size, width, a column added or removed), rename them, select **one** in the
-  window picker, then General → **Reset all settings**. You must come back with exactly **one** window
-  called *Meter* at the screen center wearing the shipped defaults — the extras **deleted**, not
-  restyled. That is the point: it is a profile reset, the same act as Profiles → **Reset Profile**,
-  and the popup warns about the deletion before it happens. Confirm the two paths give the identical
-  result, and that **`/mm resetall`** opens the same popup and, accepted, does too.
-- **The Reset all settings tooltip names the equivalence.** Hover the button on General → **Master
-  controls**: it reads, verbatim, *"Reset the current profile to its defaults — the same thing
-  Profiles → Reset Profile does. Your other profiles are not affected."* The old *"Restore every
-  setting in this addon to its default."* is the regression.
-- **A reset leaves your other profiles alone.** Make a second profile on the Profiles page, switch
-  back, then reset. The profile list must be unchanged and you must still be on the profile you were
-  on — a reset empties one profile, it never deletes any.
-- **The four meta rows.** Frame → **General** carries **Color mode**, **Bar texture**, **Font**
-  and **Font outline**, each marked *(all surfaces)*, below the lock and keep-on-screen toggles. Each sets every surface that has a setting of
-  its kind — the bar texture reaches the grid and the tooltip, the font and its outline reach the
-  cells, both header strips and the tooltip. The check below is written for the color mode and is
-  the same for all four.
-- **The meta color mode.** Frame → **General** → **Color mode (all surfaces)**. Set it to
-  Per-statistic and check all **six** of the individual dropdowns followed — Bars → *Bar*, Bars →
-  *Background*, Columns → *Header text*, Columns → *Header background*, Tooltip → *Bar* and
-  Tooltip → *Bar background*. The three **text** modes must **not** move: Bars → *Text style*,
-  Tooltip → *Text* and Header → *Title text* are each an explicit choice, because text is drawn on
-  top of a surface the broadcast reaches and has to contrast with it. Then change **one** of the six
-  back to Custom:
-  only that one changes, and the meta is not fought. Finally press the Frame entry's **Defaults**
-  button and confirm the rest are **untouched** — an entry's reset must not reach other entries, and
-  this entry's own Defaults resets the **whole entry**, every tab, not just the visible one.
-- **The Frame entry's shape.** Four tabs, in order: *General* (lock, keep on screen, and the four
-  meta rows above), *Size and position* (width, height, scale, opacity, strata, padding),
-  *Background and border* (border style and thickness, then the window's own fill color and its
-  edge color), and *Row* (max rows, row height, spacing, growth direction, then always-show-self,
-  highlight-self, mouseover highlight and the alternating background). The page **opens on
-  General**, and *Font outline (all surfaces)* there shows **None** on a fresh profile. Each tab label appears **once**; a heading printed twice means a row is
-  filed under a tab the page has already left. There is **no** *Header controls* tab here — those
-  rows are on **Header** — and **no** "Reset position" button, which is on **General**'s **Master
-  controls** tab. There is also **no** "Show resize grip" checkbox and **no** "Minimized" checkbox: the lock
-  governs the grip, and the header's own minimize button governs the collapse. Whether the title bar
-  draws at all (`window.header.show`) is a **Header** entry setting now, on its **Title bar** tab, not
-  a Frame row.
-- **The Bars entry's shape.** Six tabs, outside in: *Bar*, *Background*, *Border*, *Text content*,
-  *Text style*, *Icons* — every tab here is about the bar, so the two that used to say so in their
-  names no longer do. The Text and Icons pages folded in here, and their paths did not move with
-  them — `/mm get window.text.size` still answers; `window.rows.*` is on the **Frame** entry's *Row*
-  tab now, not on Bars.
-- **The Header entry's shape.** Four tabs, top to bottom in the order the strips are drawn: *Title
-  bar* — the strip's own shape: whether it draws, its background, alignment, height, and the divider
-  under it (on/off, thickness and color) — then *Title text* — the face drawn on it, and the
-  window's own name — then *Controls*, and *Button style* (the reveal beside the size, then rest and
-  hover paired down three lines: mode, color, opacity). `showClose` and the rest are still **stored** at
-  `window.frame.*` (`/mm get window.frame.showClose` answers), which is deliberate: a row's page is
-  where it is edited, its path is where it is stored. There is **no** *Column headers* tab here any
-  more — that strip's rows moved to the **Columns** entry, which is the entry that labels it.
-- **The Controls tab reads like the header strip.** Every checkbox draws **the control's own icon**
-  between the tick box and the words, and the rows run in the order the strip runs **left to right**:
-  the segment line first (no icon — it is text, not a glyph), then export, reset, segment picker,
-  settings, lock, minimize, close. Check each icon against the one in the header above it; a missing
-  icon means `NS.Icon` answered nil for that art name, which is a media-payload problem rather than a
-  settings one, and the label falls back to its plain words.
-- **The Visibility entry's shape.** Three tabs: *Where to show this window* (the seven context
-  checkboxes), *When to hide this window* (the mount/skyriding/housing/pet-battle/death/combat
-  rules) and *Combat* (hide in/out of combat). Those first two are by a wide margin the longest tab
-  labels in the whole panel, and the likeliest strip to wrap.
-- **The divider under the title bar.** Header → *Title bar* → **Show divider** ships **on**. Turn it
-  off and the hairline between the title strip and the column labels goes, and **nothing else moves**
-  — the window title, the session line and the control strip stay exactly where they were, because
-  the title row is centered against a constant rather than measured off the line. **Divider
-  thickness** grows it downward, into the gap above the column labels. **Divider color mode** ships
-  as **Ka0s skin**, which means the line is left exactly as the shared skin painted it — check that
-  first, then switch to **Class color** and confirm it takes yours, and to **Custom color** and
-  confirm it takes the swatch. Set the swatch's opacity to something low and switch between Custom
-  and Class: the opacity must **not** change with the mode. There is deliberately no per-statistic
-  mode — one line across the whole window could only ever mean the sort column.
-- **The two control opacities.** Header → *Button style* → **Control opacity** (25%) and **Control
-  hover opacity** (100%) are the two ends of the reveal and ship at what used to be hardcoded, so
-  check first that an untouched window looks exactly as it did. Then move each on its own and confirm
-  it moves only its end. Finally set **Control opacity** near zero and turn **Reveal controls on
-  hover** OFF: the strip must come back to the *hover* value, not vanish — with fading off there is
-  no faded state, so the rest slider is not read at all.
-- **The lock icon is the same weight as its neighbors in both states.** Unlock a window and compare
-  the padlock against the six controls beside it — same brightness, same color; only the glyph
-  changes, from a closed padlock to an open one. It used to be drawn at 45% while unlocked, which is
-  the state a fresh window ships in, so the strip read as having one half-broken icon in it.
-- **The tab strips all fit one row at default UI scale.** Frame's four tabs, Bars' six, Tooltip's
-  six, Header's four and Visibility's three — note any that wrap onto a second row; a wrapped strip is a layout bug in
-  `placeTabs`' coordinate arithmetic, not a copy problem.
-- **Tab art — open question.** The strip is currently a flat backing with the active tab drawn
-  darker. Whether that reads as tabs, or wants Blizzard's tab atlas instead, is a deliberately open
-  call the plan left for the client: look at it and decide. Changing it is a
-  `LibKa0s/OptionsWidgets.lua` edit plus a minor version bump, not a MultiMeters change.
-- **The header background stops at the title bar.** Header → Title bar → **Header background** to
-  something loud, and Columns → Header background → **Background color** to something else: two
-  distinct bands, the second starting exactly where the first ends. One color covering both rows is
-  the old behavior, in which the column strip's own setting was invisible underneath and a color
-  picked for the title bar restyled the grid's labels too.
-- **Scale scales the whole window.** Frame → Scale to 0.5, then 2.0. The window's **outline** grows
-  and shrinks with its contents. A box that stays exactly the size it was while the grid inside it
-  shrinks into one corner means the scale reached the visible frame but not its anchor.
-- **No border means no border.** Frame → Border style **None** and Border thickness **0**: the window
-  has no edge of any kind. A 1px line surviving both is the library skin's `frame.innerBorder`, a
-  child frame that is not part of the backdrop the border settings rewrite. Check **None** at a
-  non-zero thickness too — it must also draw nothing, rather than falling back to the Ka0s edge. The
-  addon has **two** LSM border settings and the rule is the same on both; the other is Tooltip → Bar
-  border style, checked in §24.
-- **The closed Border style dropdown is flush with the controls beside it**, with no ~42px empty gap
-  on its left, and opening it still draws a per-row border preview on hover. A gap means
-  `lib.__PatchLSM30Border()` did not take effect. **This checks it with Multi Meters alone, which is
-  exactly the check that would have stayed green all the way through the defect §30 exists for** —
-  run §30 too whenever this one matters.
-- Six pages carry a **Defaults** button in the header (Frame, Header, Bars, Tooltip, Visibility,
-  Columns); **Windows and Profiles do not.** Columns' button resets its block editor to the shipped
-  catalog, ticked and ordered — it is **not** absent the way it used to be.
-- **The Defaults blast radius stays page-wide on every tabbed page** (`options-ui-§13`): the button
-  MUST NOT narrow to the tab on screen. On each of the six Defaults pages, change a value on a tab
-  that is **not** the one showing, switch to a different tab, press **Defaults**, then switch back
-  and confirm the value you changed is gone too. Columns is the sharpest version of this check —
-  ticking/reordering a block lives on its *Columns* tab, but the header text and background rows the
-  same button also restores live on the other two — so leave the page on the block-editor tab, change
-  a value on *Header text* or *Header background* without visiting it, and confirm Defaults still
-  reaches it.
-- **The General page's shape and its buttons.** It is the **first** page in the tree, above Windows,
-  and it draws **no banner** — it is not a window page. Two tabs, in this order.
-  **Master controls** is `options-ui-§15`'s canonical set and opens the page: **Enable Multi
-  Meters**, **General visibility**, **Master scale**, **Master alpha**, **Lock frame**, **Debug
-  console**, **Minimap button** and **Test mode** (the last two paired on one line below Lock
-  frame / Debug console, in that order), closed by the
-  **Reset position** / **Reset all settings** button pair and one sentence
-  under it saying what each reaches. Master scale and Master alpha are addon-wide and are **not** the
-  per-window scale and opacity on Frame — set Master scale to 0.5 with a window already at
-  0.8 and the window draws at 0.4, and putting the master back to 1.0 gives every window exactly the
-  size it was set to. **Nothing of this addon's own follows the canonical eight** — the minimap
-  toggle used to, and is one of the eight now. Untick **Minimap button** and the button must vanish
-  from the minimap **immediately**, not at the next reload; tick it and it must come back at the
-  angle it was dragged to. Switch profiles and it must not move or reappear, and **Reset all
-  settings** must not un-hide it: both are what the global store buys. **No prose under the button
-  pair** — a paragraph explaining Reset position used to sit there and was removed. **Behavior** is
-  the second tab: **Merge pets into their owner** and **Refresh interval**, both addon-wide — change
-  either and **every** window follows, not just the selected one. They were on Master controls until
-  `options-ui-§15`'s canonical set pushed them off. With Test mode they were once a tab called
-  **General**; there must be no tab by that name on this page. **Statistic colors** is the palette
-  (below), and the strip reads **[ Master controls ][ Behavior ][ Statistic colors ]**.
-  The retired **Data**, **Maintenance** and **General** tabs are where those rows used to live.
-  There is deliberately
-  **no** Reset meter data button here, or on any page; the header's own reset control is the one way
-  to it. Reset position is the one control on the page that is **not** addon-wide — it moves the
-  window the band is pointed at and nothing else, which the line under the pair says.
-  **Nothing is drawn twice**: Test mode and the debug console are composed `sessionOnly` rows, so a
-  second "Preview mode"/"Debug console" checkbox or a second *Debug* heading is the duplicate this
-  redesign removed coming back.
-- **The statistic palette is editable, and every surface follows it.** General → **Statistic
-  colors** carries one swatch per statistic, shipped in the catalog's own colors, and a note under
-  the grid saying where they are worn — read it and check it is true, because it is the only thing on
-  that tab explaining why setting a color can appear to do nothing. Change
-  **Damage**'s to something unmistakable, then check all four surfaces that wear the palette move
-  together: a Bars → *Bar* → Bar color mode of **Per-statistic**, a Bars → *Text style* → Text color
-  mode of **Per-statistic**, the Columns → *Header text* / *Header background* modes, and — with no
-  mode set anywhere — the **Damage** line of a name tooltip, which wears the palette always. Then
-  press the General page's **Defaults** and confirm the shipped colors come back.
-- **The two death-line switches.** Hover a **Deaths** cell for somebody who has died: on a fresh
-  profile each line reads *Death 3 | <who>* — **Name the killer** ships on and **Name the killing
-  blow** ships off, because the spell is the longest thing on the line and the half most often
-  absent. Turn the spell on and the line becomes *Death 3 | <who> | <what>*. Turn **Name the killer**
-  off and the caster half goes with no separator left behind; turn the spell back off and it goes the
-  same way. A fall or a fire has no caster to name and a melee swing reads
-  **Melee** — neither is a bug, and neither may take the numbered line down with it. **Check this
-  mid-pull too**: a restricted client can hand either name back secret, and the correct behavior is
-  the same as "not available" — the half is simply absent.
-- **The number formats.** Bars → *Text content* → **Number format** offers four: *Abbreviated
-  (12.4M)*, *Abbreviated, no decimals (12M)*, *Abbreviated, two decimals (12.40M)* and *Full
-  (12400000)*. Walk all four on a column holding a large number and confirm each renders what its
-  name says. **The two-decimal rung is the one to look hardest at** — the ladder is probed against
-  `47.50K` and a client that renders it any other way falls back to the client's own defaults, which
-  would show as the setting quietly doing nothing.
-- **The two smart values.** Bars → *Text content* → **Left text**. *Smart value (Per Second or
-  Absolute)* picks one figure per column — the rate on Damage and Healing, the total on Interrupts
-  and the rest. *Smart value (Absolute | Per Second)* shows both with a bar between them on the
-  columns that have both, and the absolute **alone** on a counting column: an Interrupts cell reading
-  `9 | 3` is the failure to look for. Check both **mid-pull**, when every figure is secret.
-- **The window name takes the header's color.** Header → *Title text* → **Text color**: the title in
-  the window's title bar follows it, along with the font, size, outline and shadow it already
-  followed. Set **Text color mode** to **Class color** and the title takes your class color, exactly
-  as the session line beside it does — the two are one header and must never differ. Drop the
-  swatch's opacity and switch between the two modes: the opacity must **not** change with the mode.
-  There is deliberately no per-statistic option — one strip over the whole window could only ever
-  mean the sort column.
-  The Settings window's own footer Defaults control works on the same tab.
-- **Panel ↔ CLI parity.** With a page open, run `/mm set window.frame.width 640`. The Frame entry's
-  Width slider moves to 640 **without being reopened** (`RefreshScalars`). Conversely, move a slider
-  and `/mm get window.frame.width` reports the new value.
-- `/mm list` groups every setting under the same page keys the panel uses. It lists
-  `window.frame.minimized`, which the **panel does not draw** — that row is `hidden`, because it is
-  state the header's own minimize button writes rather than a preference. `/mm set
-  window.frame.minimized true` must still collapse the window.
-- **An open page locks when combat starts.** With a tabbed page already open, enter combat (a dummy
-  is fine). A cover falls over the **whole** page — band, rail and tab strip included — reading
-  *Settings are locked during combat.* in gray, and one gray chat line says settings are locked. A
-  tab click, a widget and the Defaults button all do nothing under it (`options-ui-§2`/`§13`). The
-  Settings window stays open. When combat ends the cover lifts on its own and the page shows current
-  values; nothing re-opens.
-- **Clicking the tab you are already on does nothing at all** — no flicker, no repaint, no refusal
-  message.
-- **Combat refusal.** Enter combat (a dummy is fine here). `/mm config` **refuses** and prints one
-  gray notice. It must **not** queue the request and open the panel when combat ends.
-- **Every page mid-combat, from the Blizzard sidebar.** With the Settings window closed, enter
-  combat, then open Settings → AddOns → Ka0s Multi Meters from the Blizzard sidebar and walk **every**
-  page in the category — General, Windows and **Profiles included**. Each must show the gray combat
-  cover with nothing drawn under it (on Windows, the band, the rail and the strip included, so no
-  rail entry can be clicked), and the **Settings window must stay open** — no close, no
-  `ADDON_ACTION_BLOCKED`, no `C stack overflow` (anti-pattern #88, which the old close-the-window
-  refusal caused). Exactly one gray *settings are locked during combat* line for the whole walk.
-  After combat, the page on screen draws itself without a click. That route bypasses `/mm config`
-  entirely, which is why the lock lives on the page (in the library's `H.SetRenderer`) rather than on
-  the slash command — and the Profiles page gets it from the same place as the other two, so the
-  failure this step is for is **two pages covered and one rendering**. (LibKa0s v1.46.1; not yet run
-  in a client.)
-
-### 5. Column editor
-
-The page is **one block per statistic** — a drag handle, a green tick or a red cross, and a name.
-Ticked blocks are the columns, in block order, and they always sit above the rule; unticked ones sit
-below it. Nothing here can be driven offline, so every check below needs a client.
-
-**Steps.** Out of combat, under Windows > Columns:
-
-1. **Drag** a block from the bottom of the ticked group to the top, by its handle.
-2. **Untick** a middle column.
-3. **Re-tick** it.
-4. Try to **drag a ticked block below the rule**.
-5. Untick down to one column, then try to untick that one.
-
-**Pass.**
-- **1** — the window's columns reorder to match, immediately, and the page after the drop shows the
-  new order. The **handle** is the full-height strip down the left edge carrying the icon — the whole
-  strip is the target, not just the icon. Pressing anywhere else on the block does not start a drag.
-- **If the drag does nothing at all**, turn on `/mm debug` and try again. The handle logs
-  `[Blocks] grab N at y=…` when the press is received and `[Blocks] drop N -> M (R rows)` when it
-  completes. No `grab` line means the press never reached the handle; a `grab` with no `drop` means
-  no release path fired; a `drop` with `0 rows` means the cursor read did not move.
-- **After any of these, look at the blocks themselves.** Each must show exactly ONE label and ONE
-  glyph. Two names overprinted ("DamageDeaths") or a tick with a cross through it means blocks are
-  stacking on recycled slots again, and the next thing to check is that clicking a glyph toggles the
-  statistic you clicked rather than a different one.
-- **2** — the block drops to the **top of the disabled group**, just below the rule, and the window
-  loses that column. It lands where you can see it, not at the bottom of a long list.
-- **3** — it lands at the **end of the ticked group** and reappears as the **rightmost** column.
-- **4** — **a hidden column has no handle at all**, so there is nothing to grab below the rule. On a
-  shown one the **insertion line stops at the rule** and the block stays ticked, wherever you take
-  the cursor. The tick is what moves a block between groups; a drag must never silently turn a column off.
-  A clamped drop writes nothing, so the line stopping is the only feedback there is — if you cannot
-  see it, that is the bug, not the clamp.
-
-**Throughout a drag, three things must be true at once:** a **copy of the block** follows the
-cursor, the row it came from **fades** in the list, and a gold **insertion line** sits where it would
-land. The list itself never reflows under the pointer — the copy and the line are the whole of the
-feedback, and without them a working drag is indistinguishable from a broken one. The copy must
-follow the cursor **past the top and bottom of the list**; if it clips at the edge it is parented to
-the wrong frame.
-- **5** — refused, with "A window must keep at least one column." printed. A window of nothing but
-  names reads as a broken addon rather than as a configuration.
-
-**Hover the handle before pressing it:** it goes **gold** and says *Drag to reorder*.
-
-**Drag twice in a row.** The second drag must work exactly like the first — a handle that responds
-once and then does nothing means a stale one from the previous render is taking the press, and the
-carried copy is usually left floating over the list as the other half of that symptom.
-
-**The Defaults button** (top right) puts the shipped statistics back, ticked and in shipped order.
-
-**After every drag and after Defaults, look for leftovers.** No row may show two names stacked, and
-no drag handle may appear anywhere that is not a block — not beside the page's intro text, not on
-the scrollbar, nowhere. Either symptom means a handle or a block outlived the render that made it.
-`/mm debug` prints `[Columns] paint window=N` per repaint, `[Blocks] released N blocks` and
-`[Blocks] released N handles` on the way in, and `[Blocks] painted N rows, M draggable` on the way
-out. **Blocks and handles released must equal blocks and handles painted**, every time — a
-shortfall is something still parented to a container the page has already given back to AceGUI's
-pool, which is where every leftover in this page's history has come from.
-
-**Hover a tick and a cross.** Each says what the CLICK will do — *Click to hide this column* / *Click to show this column* — not what the glyph already means.
-
-Also check: every column draws its **bar** (there is no numbers-only column any more), and the
-columns share the frame width evenly (there is no per-column width to set).
-
-**The three tabs.** The strip reads **Columns**, **Header text**, **Header background**, in that
-order, and the page opens on Columns. Click each tab. Header text shows only the header-font rows and
-Header background only its color pair, neither with a section heading of its own. Back on Columns,
-the blocks are all there. Then drag a block, drop it, and click **Header text** straight away: the
-list's reorder controller is live for as long as Columns is showing. **Pass:** no drag handle or block
-survives onto the schema tab, and with `/mm debug` the `[Blocks] released N blocks` line comes before
-the tab's repaint.
-The strip is hand-built on purpose (issue #53, pinned by `tests/test_columns.lua`).
-
-**The library drag (LK-21).** The reorder is LibKa0s-Widgets' `ReorderList` drag. Drag a block **from
-the middle of the ticked group** by its handle and drop it lower. **Pass:** the insertion line is drawn
-in the list's own color, the order changes in the page and in the window, and a second drag in
-**another window's** Columns entry (change the band's selection) draws its own line, not a
-leftover from the first. After the drop nothing stutters: no row's `OnUpdate` stays armed, so frame
-time with the page open and idle is what it was before the drag.
-
-**Combat lock.** Leave the Columns entry **open**, then pull. Click a glyph and drag a handle.
-
-**Pass.** The library's gray cover is over the page, so neither lands: the columns do not change,
-and the one chat line is the library's *settings are locked during combat*. **No Lua error.** Then,
-out of combat, start a handle drag and pull while still holding it; drop. The drop is refused with
-"Columns cannot be changed during combat." — `commit()`'s own backstop, because rebuilding cells that
-are holding secret values is precisely what must not happen.
-
-### 6. Multi-window
-
-**Steps.**
-1. Windows → General → **New window**. Confirm the picker follows the new window, and that it is named
-   "Multi Meters #2" — the count of windows, not the window id.
-2. Give the two windows visibly different settings — different width, bar color, column set, sort
-   column.
-3. Change a setting on window 2 and confirm window 1 does **not** move.
-4. Windows → General → **Copy settings from** → source = window 1, group = **Bars** → Copy.
-5. Repeat with group = **Everything**, with `/mm debug on` and the console open.
-6. **Duplicate window**, then **Delete** one.
-7. The settings runtime (LibKa0s-Schema-1.0, issue #52): with the picker on window **1**, resize
-   window **2** by its grip and click one of its column headers, then toggle **Minimap button** on
-   General twice.
-
-**Pass.**
-- Both windows draw independently, each with its own columns, sorting and refresh interval.
-- Editing one changes only that one. **This is the aliasing check**: if changing window 2's bar color
-  changes window 1's, two windows are sharing a sub-table and `deepcopy` has been bypassed somewhere.
-- Copying **Bars** copies the bar settings and nothing else — width, columns, position and visibility
-  rules on the target are untouched.
-- Copying **Everything** copies all ten groups but **not** the target's `id`, `name` or **position** —
-  the copy must not land exactly on top of its source.
-- Duplicate offsets the new window by 24px down-right, so it is visibly a second window.
-- The window picker is keyed by id: two windows both named "Raid" are still individually selectable.
-- **Delete** confirms first, and the **last** window cannot be deleted ("The last window cannot be
-  deleted.").
-- After deleting the window the picker was pointed at, every Windows entry re-renders against the
-  first surviving window rather than showing empty widgets.
-- `/mm window list` lists both, with shown/hidden state and column count. `/mm window new`,
-  `delete`, `copy <source> <target>` do the same things the panel does.
-- The resize and the sort land on window 2 only (its Frame entry shows the new width once the
-  picker moves to it), and the picker stays on window 1.
-- A copy-from redraws the target **once** and logs **one** `[Set] copy from '<src>' to '<dst>': N
-  rows` line in the console, never a line per row.
-- The Minimap button checkbox hides and shows the button immediately; `/mm get global.minimap.shown`
-  reads `true` while it is shown, and `/mm list` shows `window.columns = N shown`.
-
-### 7. Visibility matrix
-
-**Steps.** A **fresh profile**, so nothing has been switched. Visit: solo open world · grouped open
-world · a five-player dungeon · a raid · a battleground · a delve · a vehicle (a quest turret or a
-Mythic+ dungeon vehicle encounter).
-
-**Pass.**
-- **The window is visible in every one of them.** Show everywhere, hide nowhere is the shipped
-  default: a fresh profile has all seven contexts on and all ten rules off, so nothing takes the
-  window away until the player asks. A window missing anywhere on a fresh profile is a bug.
-- Turn **Open world** off: it hides outdoors and still shows in the dungeon.
-- Turn **Hide when solo** on and drop group: it hides. Group up: it returns.
-- A **delve** → shown, and `/mm diagnostics` reports `type=scenario resolved=delve`. This is the one
-  context where Blizzard's token and the addon's answer deliberately disagree: delves have no
-  instance type of their own. Turn **Delves** off and the window hides while **Scenarios** stays on —
-  if it hides in both, the delve probe is not firing and both contexts have collapsed into one.
-- An ordinary **scenario or follower dungeon** → shown, reported as `resolved=scenario`.
-- Entering a vehicle hides the window; leaving shows it again — **immediately**, on the vehicle
-  event itself. If it only hides after you next change zone, `UNIT_ENTERED_VEHICLE` is not reaching
-  the fan-out; that was the 0.1.0 behavior and it is the shape every visibility rule fails in.
-
-### 7b. Hide rules and combat
-
-**Steps.** One rule at a time, with the window otherwise showing. Mount up · summon a skyriding
-mount and stand still on the ground · take a flight path · enter your house · start a pet battle ·
-die · pull a target dummy.
-
-**Pass.** Every rule below ships **off**, so each has to be switched on for its check.
-- **Hide in player housing / on flight paths / in pet battles**: switched on, the window goes in
-  your house, on a taxi and over a pet battle, and returns when you leave.
-- **Hide when mounted**: switched on, the window goes while mounted — and for a druid
-  it must also go in **Travel, Aquatic and Flight Form**, and must NOT go in Cat, Bear or Moonkin.
-- **Hide when skyriding** fires from the moment the skyriding bar appears, standing on the ground,
-  not only once airborne. A Dracthyr's Soar and a Haranir flight form count here even though
-  `IsMounted()` is false in them. **Test the dismount as carefully as the mount**: a ground mount and
-  a skyriding mount take different code paths — the ground one flips `IsMounted()` on its own edge,
-  the skyriding one depends on the glide events arriving *and* on the settle pass, because
-  `canGlide` can still read true at the dismount edge. A window that hides on mounting and never
-  returns is the signature failure.
-- **Hide while dead**: off by default so dying in a raid leaves the meter readable, which is most of
-  what it is for. Switched on, the window goes on death and comes back on release or resurrection.
-- **Hide in combat** / **Hide out of combat** are independent. Each hides on its own side of a pull
-  and the window returns on the other side, promptly rather than a refresh tick late — both edges
-  are announced on the bus. Ticking **both** is a window that never shows; `/mm diagnostics` still
-  reports `ShouldShow -> false (in combat)` or `(out of combat)` depending on where you are standing.
-- After every one of these, `/mm diagnostics` names the rule that decided in its `ShouldShow` line.
-- **Master enable off** (`/mm set enabled false`, or General → Enable Multi Meters) **stands the
-  addon down** — every window hidden immediately, every game event unregistered, every timer
-  canceled, nothing read from the meter. `/mm toggle`, `/mm lock`, `/mm test`, `/mm window`,
-  `/mm reset-positions` and `/mm export` each answer one line naming `/mm enable` and do nothing
-  else; `/mm` still opens the settings panel, the whole schema CLI still reads and writes, a
-  LEFT-click on the minimap button still opens the panel, and its RIGHT-click menu grays everything
-  but Enabled. See
-  [disabled-state.md](disabled-state.md).
-- **Test mode overrides context**: with Test mode on, the window shows wherever you are standing.
-
-### 8. Mythic+ pull — the secret-value path
-
-**This is the most important test in the file.** Everything else can be checked at a target dummy;
-this cannot. Secret values only arrive when the `Combat` addon restriction is active, and every
-inspection that is illegal on one raises an immediate Lua error — four times a second, in the middle
-of a pull, where nobody can see it until BugSack fills up.
-
-**Setup.** A real Mythic+ dungeon, a real group, BugSack (or the stock error frame) enabled and
-**cleared**. Window locked, `sortMode = "value"` (the default), all six default columns.
-
-**Steps.**
-1. Zone in. Confirm the window appears and shows rows for the whole group between packs.
-2. Pull a trash pack and fight it through to the end. **Do not touch anything** — just watch.
-3. Repeat for at least three packs and one boss.
-4. Check the error frame after every pull.
-
-**Pass — and each of these is a separate failure mode:**
-
-- **No Lua error of any kind.** The specific ones to watch for read like
-  *"attempt to compare two secret values"*, *"attempt to perform arithmetic on a secret value"*,
-  *"attempt to use a secret value as a table index"*, *"attempt to get length of a secret value"*, or
-  a `table.concat` error. Any of them means a value was inspected outside `core/Secrets.lua`.
-- **Bars move.** Every cell's `StatusBar` fills and drains as the fight progresses. A bar frozen at
-  zero for the whole pull means `SetValue` is being handed something it should not be, or
-  `maxAmount` never arrived.
-- **Text renders, and it is abbreviated.** Damage reads `188K`, not `188000` and not `<secret>` — the
-  shipped `leftSlot = "smart"` puts the PER-SECOND figure in a rate column's cell and the absolute
-  one in every column without a rate, so Damage and Healing read as rates while Interrupts, Dispels,
-  Avoidable Damage and Deaths read as counts and totals.
-  `<secret>` in a cell means the `NumericRuleFormatter` was unreachable and the addon fell all the
-  way to its third degradation rung — honest, but it means `C_StringUtil` is missing or the formatter
-  cache is broken.
-- **Names and class colors are correct throughout.** `classFilename` and `specIconID` are
-  `NeverSecret`, so the name column must render in full even at the height of a pull. A row whose
-  name goes blank mid-pull is the `ConditionalSecret` `name` field being handled wrong — the class
-  icon and the bar should carry the identity instead, and the row must still draw.
-- **The header renders in combat**: session name ("Current"), duration ticking as `m:ss`, and the
-  group total for the sort column. All three are built from secret values and folded together with
-  `..` — a `table.concat` here would be a Lua error on every refresh, so a header that goes blank or
-  errors is this exact bug.
-- **Text opacity fades only the text.** Settings → Text → **Text opacity** at 10%: the numbers and
-  names go faint while the bars, the cell backgrounds, the borders and the class icons stay exactly
-  as bright as they were. If the whole grid dims, `text.alpha` has been folded back into the cell's
-  StatusBar alpha and is fading every child of it. **Bar opacity** (Settings → Bars) is the one that
-  dims everything, and setting both to 50% must leave the text at 25% — a child's alpha rides on top
-  of its parent's.
-- **The text slots are literal — walk all six.** On Bars → *Text content* set **Left text** and
-  **Right text** in turn and confirm each does exactly what it says, with no substitution anywhere:
-  **None** on both leaves the cells with a bar and no text at all (this is the check that matters —
-  it used to fall back to the total and the setting appeared to do nothing); **Smart value (Per
-  Second or Absolute)** shows the rate on Damage and Healing and the absolute figure on Interrupts,
-  Dispels, Avoidable and Deaths; **Smart value (Absolute | Per Second)** shows both on Damage and
-  Healing and the absolute alone on the other four; **Absolute value** shows the total on every
-  column including the rate ones; **Per second value** shows a figure on Damage and Healing and
-  leaves Interrupts, Dispels, Avoidable and Deaths **empty** rather than substituting their totals;
-  **Percent** behaves as below. Left None with Right
-  set to anything must leave the figure on the RIGHT — it must not slide over into the empty left
-  slot.
-- **Percent slots, if you configured any, go empty in combat.** That is correct and by design: a
-  percentage is a division, and an empty slot means "cannot be known right now", never "zero
-  percent". Set `text.leftSlot = "percent"` for one pull and confirm the slot empties on pull and
-  refills between packs.
-- **The refresh is smooth, not frantic.** With `data.throttle = 0.25` the grid updates roughly four
-  times a second regardless of how fast the game reports. If it visibly stutters or the client
-  hitches at the start of a big pull, capture it (§18) rather than guessing.
-- **THE GRID IS NOT EMPTY.** A window reading *"Waiting for combat data…"* for a whole pull with a
-  live session behind it is the bug this section exists for: `sourceGUID` is `SecretWhenInCombat`, and
-  any code that keys, compares or looks one up mid-pull drops every source silently. `/mm debug on`
-  and a `dropped=` count equal to the group size is the signature.
-- **Between packs, everything comes back**: percentages return, secondary cells that were blanked for
-  ambiguity fill in, pets fold per `mergePets`, and the gray `restricted` note disappears.
-
-**Record for the report:** dungeon and key level, group composition, number of packs, and whether the
-error frame stayed empty. "No errors" from a five-minute dummy session is not evidence for this test.
-
-### 9. Live ranking mid-pull, and identity ambiguity
-
-**Setup.** As §8, `sortMode = "value"`, `sortColumn = "DamageDone"`. Run it once in a group where
-every player has a different specialization, and once in a group containing **two players of the same
-class AND spec** — that second run is the whole point of this case.
-
-**Steps.**
-1. Between packs, note the row order top to bottom.
-2. Pull. Watch the order, and watch the columns other than Damage, for the whole fight.
-3. Kill the pack. Watch again.
-4. **SM-04.** In a raid, on the shipped window (**Max rows** 0, so the height decides how many rows
-   show), with **Always show yourself** on, be ranked below the last visible row. Then scroll the
-   window with the wheel until your natural row is in view.
-
-**Pass.**
-- **SM-04: your row sits in the last slot.** Ranked below the visible rows, the last row drawn is you,
-  and the rows above it are the top of the list in order. Scrolled so your natural row is in view,
-  the last slot goes back to its own rank and you appear exactly once. Untick **Always show
-  yourself** and the last slot is its own rank throughout.
-- **Rows keep coming, and they re-rank live.** `sourceGUID` is secret for the whole of a pull, so the
-  grid is built by identity correlation and its order is the game's own ranking of the sort column.
-  Someone overtaking someone else moves up *during* the fight.
-- **The header says `restricted`** in gray. The grid is built a different way and the player is owed
-  the reason a cell can be blank.
-- **Every row is present**, including pets — which appear as their own rows mid-pull whatever
-  `mergePets` says, because folding needs an owner link the GUID would have provided.
-- **With two players of one class and spec**: their Damage figures are still right (that column comes
-  off the row itself), and their **other columns are empty**. The header reads
-  `restricted — some rows cannot be told apart`. An empty cell here is the correct answer: the addon
-  cannot prove which of the two a secondary figure belongs to, and will not guess.
-- **After the pull everything fills in** on the next refresh — exact GUID correlation, all columns,
-  pets folded per `mergePets` — and the gray note disappears.
-- Switch `sortMode` to **`roster`** and repeat: out of combat the order is group order (you first),
-  then role, then name. In combat the ranking is the engine's, as above — `roster` mode needs GUIDs
-  to place a row and cannot run while they are secret.
-- Switch to **`provider`** and repeat: out of combat the order follows the game's own, which is what
-  identity mode uses in combat too, so this mode looks the same on both sides of a pull.
-- **Click a stat header mid-pull.** The grid re-ranks to the engine's ordering for *that* stat, and
-  the arrow moves with it. Clicking the same header again **reverses** the grid. Neither prints
-  anything — nothing was refused.
-- **Click the Player header mid-pull.** This is the one refusal left: nothing moves, and
-  *"Sorting is not possible while the game restricts combat data."* is printed. A click that went
-  quiet would read as a broken button.
-- **With `sortMode = "name"` when a pull starts**, the arrow leaves the Player header and appears on
-  the sort column, because that is the order the rows are actually in. An arrow left on Player would
-  be the grid stating something untrue.
-
-### 10. Tooltips, drill-down and death recap mid-pull
-
-There is deliberately **no** combat gate on any of this. These are unprotected frames, and the moment
-a raider most wants to know what killed them is the moment they are still fighting.
-
-**Steps, all performed during a pull with the window locked:**
-1. Hover a **Damage** cell.
-2. Hover the **name** cell.
-3. Click a Damage cell; then **right-click any row** to leave; then click the same cell twice.
-4. Hover a **Deaths** cell on a row for someone who has died, then click it; hover a death
-   row in the list that opens, then click that.
-5. Move the mouse off the window.
-
-**Pass.**
-- **Cell tooltip** lists the spells behind that number, with icons, capped at `tooltip.maxSpells`
-  (10 by default), and an *"and N more"* line when there are more. The count comes from
-  `Secrets.SafeCount`, which never applies `#` — so an "and N more" line that is present and correct
-  mid-pull is itself evidence the safe walk is working.
-- Out of combat the spell list is **biggest first**. In combat it is in the game's own order — the
-  sort is attempted only when comparison is legal, and it refuses **as a whole** rather than
-  partially. A partial sort would raise *"invalid order function for sorting"*.
-- Hovering an **Avoidable Damage** cell draws **one line per spell and nothing else** — no
-  "Avoidable" / "Avoidable, Deadly" sub-line beneath a bar, and no Overkill line. Every spell in that
-  breakdown is avoidable by definition, so the tag restated the column once per row. Check this in
-  **Test mode** (`/mm test`) especially: its placeholder data sets both flags on alternating
-  spells, which is where the tags were most visible.
-- **Name tooltip** lists **every** tracked statistic for that player, including the ones this window
-  is not showing. Each line wears **its own statistic's color, label and amount alike** — the same
-  palette a bar takes under `bars.colorMode == "stat"`, and it wears it whatever that setting is
-  currently set to. Hold the tooltip beside the grid and check the two **match**: a "Damage" line
-  that reads as a paler or less saturated red than the Damage bars behind it means the palette has
-  been lifted or tinted somewhere between the catalog and the tooltip. The statistics this window has
-  no column for are the **same hue, dimmed**, not a flat gray — and the dimming reaches the number,
-  not just the label. That cross-column read is the reason the addon exists.
-- **Drill-down**: clicking a cell replaces the grid with that player's spell breakdown, styled
-  identically (same fonts, bars, row height — it is the same renderer), with the header reading
-  `<player> - <stat>`. Clicking the same cell again returns to the grid, and so does a **right-click
-  on any row** — there is no Back button, deliberately: it cost a row of height on every drilled
-  window and pushed the last row out through the bottom of the frame.
-- **Every row of a breakdown is a spell, so the whole row shows the SPELL's tooltip** — the client's
-  own, not this addon's. Hovering the name cell must show it too. A tooltip reading "No data yet" or
-  a column of zeroed statistics means a drill row reached one of the player tooltips. It must appear
-  over the MIDDLE of a cell, not only in the seams between columns: the tooltip belongs to the row
-  frame, and a tooltip that shows in a seam and nowhere else means the cells have taken their mouse
-  back. The row must highlight there too — the cells drive that on the grid and cannot here. With
-  `/mm debug` on, one `[Tooltip] row spell=<id>` line per row entered says the handler ran at all.
-- **A left-click inside a SPELL breakdown does nothing at all.** It used to ask the provider for a
-  breakdown of a spell and render an empty window. A left-click inside a DEATH list is different —
-  see the death-recap block below.
-- **The mouse wheel scrolls both the grid and a breakdown** when there are more rows than fit. It
-  stops at both ends, survives the refresh tick rather than snapping back, and resets to the top when
-  you enter or leave a breakdown. Shrink the window until rows are hidden to test it.
-- The drill-down **does not reshuffle** while you watch it, in or out of combat.
-- **Renaming a drilled window keeps its breakdown open.** Open a spell breakdown, then rename the
-  window from the Windows page: the breakdown stays up under the new title. Copying settings onto
-  that window still returns it to the grid, because a copy can replace the column it drilled.
-- **Settings → Text → Death timestamps** offers two styles — time of day, and how long ago — and the
-  Deaths cell tooltip and the death list must agree on whichever is picked: the first is the index
-  into the second, and two labelings would make one list look like two. A third style, "time into
-  the fight", was built and removed; see Known limitations before adding one back.
-- **Deaths cell tooltip**: it lists **that player's deaths, one line each, newest first**, each
-  labeled `Death N` with the wall-clock time in the right-hand column. It must NOT say "Spell
-  breakdown" and must NOT say "No data yet" — a Deaths source carries no spell list, and running the
-  spell path there is the dead end this feature replaced. The list is the index into the drill-down:
-  hover then click, and the same deaths appear in the same order.
-- **Deaths cell**: clicking it opens a **list of that player's deaths** — one row each, the name
-  column reading `Death 1`, `Death 2`… numbered chronologically so a newest-first list counts *down*,
-  and the Deaths cell carrying the **wall-clock time** of that death with a full bar behind it. A
-  time reading `—` means the client no longer holds that recap; the row must still be there, because
-  the count in the cell it came from says a death happened.
-- **The number of rows in that list must equal the number in the cell you clicked.** They are two
-  independent tallies of one fact, in two separate builds, and disagreeing is the failure this whole
-  surface must not have. Check it both in and out of combat: the identity build runs mid-pull.
-- **The death tooltip is laid out like every other one** — header, a paragraph gap, a caption, then
-  the bars. A header sitting flush against the first bar means the section gap is missing, and on a
-  live client it also means a bar carrier is on tooltip line 1, which permanently restyles the title
-  of every GameTooltip in the game until `/reload`.
-- **Hovering a death row** lists what killed them — one line per incoming hit, **oldest first**, in
-  four columns: seconds before death, spell, attacker, damage taken, and the HP percentage
-  remaining. The columns must line up down the whole tooltip; a long spell or caster name is clipped
-  into its column rather than pushing the numbers off the edge, and it must never wrap onto a second
-  line. A **melee swing** reads as `Melee` with the weapon icon — it carries no spell id at all, and
-  `#?` there means the fallback is broken. The bar behind each line is **HP remaining**,
-  not damage, so it empties as you read down. The last line is the killing blow and carries an
-  overkill clause. An event with `hideCaster` shows no parentheses at all — never an empty `()`.
-- **Mid-pull the bars must still draw.** The percentage text may vanish (a percentage is a division,
-  and dividing a secret is illegal) but the bar is the widget dividing natively and is unaffected. A
-  measured capture showed these fields arriving *plain* in combat, so in practice the percentages
-  stay — but a build where they disappear and the bars remain is correct, and a Lua error here means
-  something computed the ratio in Lua.
-- **Clicking a death row opens Blizzard's own Death Recap** for that exact death — not the newest
-  one. Verify with a player who died more than once: the frame's contents must match the row you
-  clicked. The list must stay open behind it; returning to the grid would lose your place.
-- **A hunter's Feign Death must not appear as a death**, in the count or in the list. Out of combat
-  only — see Known limitations: the filter joins a plain GUID against `sourceGUID`, which is secret
-  for the whole of a pull, so mid-pull a feign IS counted and the number corrects itself when combat
-  ends. Feign, leave combat, check the count; then feign, actually die, and confirm the real death is
-  still counted.
-- If the client has no `C_DeathRecap` at all, the Deaths click must fall back to **Blizzard's frame**
-  and then to the ordinary breakdown — the cell is never dead. (`deathRecapID` is `NeverSecret`,
-  which is the only reason any of this can be a click action at all.)
-- Moving the mouse off the window **always** hides the tooltip. A tooltip left pinned under the
-  cursor is the single most reported meter bug there is.
-- Set **Tooltip → Hide tooltips in combat** and repeat step 1 during a pull: no tooltip appears, and
-  one **does** appear the moment you drop combat. The test behind it is
-  `UnitAffectingCombat("player")`, so the transition should track the player leaving combat, not the
-  lockdown edge.
-
-### 11. Verify the unverified assumption (provider order)
-
-**The addon ships with one assumption it has not been able to prove, and this test is how it gets
-proven or corrected.**
-
-`modules/Provider.lua` returns `sources` in exactly the order `C_DamageMeter` handed back
-`combatSources`, and `sortMode = "provider"` treats that order as *"sorted by the requested stat,
-descending"*. **Nothing in Blizzard's documentation says that.** It is an inference from how the
-built-in meter displays.
-
-Only `provider` mode depends on it. `value` mode orders by the values themselves whenever comparison
-is legal, and `roster` mode orders by group position — neither cares. And **if the assumption is
-false, the correction is confined to `modules/Provider.lua`**: a sort inside `GetColumn`, legal out
-of combat, which is the only time `value` mode would have needed it anyway. No other file changes.
-
-**The addon now measures it for you.** Out of combat the amounts are plain and `<` is legal, so
-`/mm diagnostics` walks each column in the order the API returned it and prints a verdict per stat:
-
-```
--- provider order --
-  DamageDone             5 sources - ranked, descending
-  HealingDone            5 sources - NOT ranked, breaks at index 3
-  Interrupts             1 sources - nothing to check
-```
-
-`NOT ranked` disproves the assumption outright and names the position where the order broke. Inside a
-pull every line reads `cannot be checked` — the values are secret and the probe refuses rather than
-finding no break it was never able to look for. **Run the probe first; the manual comparison below is
-what confirms its verdict against a second meter.**
-
-**Procedure.**
-
-0. Out of combat, after at least one pull: `/mm diagnostics`, and read the **provider order** section.
-   If any stat says `NOT ranked`, paste that section into issue #14 — that is the deliverable, and
-   the steps below are then confirmation rather than discovery.
-1. In a Mythic+ dungeon or a raid, with a full group and at least one completed pull, stand **out of
-   combat**.
-2. Put the window on **Damage** by clicking the **Damage** column header, and click it once more if
-   the arrow is not pointing down. The sort is the window's own control, drawn nowhere on the panel:
-   the click writes the hidden rows `sortMode`, `sortColumn` and `sortAscending` through the seam
-   for this window, so `/mm get window.data.sortColumn` reads the same value back (issue #50).
-3. Pick **Overall** from the header's **segment** dropdown, so both meters are describing the same
-   span. (Overall is the accumulated run and the shipped default; Current is the live pull.)
-4. Open **Blizzard's built-in damage meter** and put it on **Damage done**, same session scope.
-5. Compare the two lists **top to bottom, by name**, and write both orders down.
-6. Repeat for **Healing** (click the Healing column header) and for a counting stat —
-   **Interrupts** is the sharpest test, because ties are common and a stable tie-break is exactly
-   where an order assumption breaks.
-7. Repeat once **during** a pull, with the restriction active, comparing the order the addon holds
-   against Blizzard's live window.
-
-**Pass.** The addon's row order matches Blizzard's, for each stat, out of combat and in.
-
-**If it does not match, report:**
-- the stat key, the dungeon/raid and the session type;
-- the addon's order and Blizzard's order, both by name;
-- whether the mismatch was out of combat, in combat, or both;
-- whether the addon's order looked like *any* consistent order (first-seen, GUID, roster) or like
-  none.
-
-That report is the whole deliverable. The fix lands in `modules/Provider.lua` and in the header
-comment there that records the assumption, and in design §5 — nowhere else.
-
-### 12. Pet attribution
-
-**Setup.** Bring a **hunter** and a **warlock** (a shadow priest's Mindbender, a mage's water
-elemental and a shaman's elementals are also good, and are the cases the unit-frame pet map does
-*not* cover).
-
-**Steps.** Complete a pull, then check the grid **out of combat**.
-
-**Pass.**
-- **An unowned ally has its own row, under its own name.** A guardian, a totem or a pet whose owner
-  the unit API never saw is shown rather than dropped — it names itself, so nothing is being
-  attributed to the wrong player.
-- **A delve companion has a row.** Run a delve and check the grid afterwards: Valeera (or whichever
-  companion came along) must appear with her own name, class color and figures. She is filed under
-  `None` rather than `Ally`, and is admitted on her class filename. Cross-check the total against
-  another meter — the row's figure plus yours should equal the header total.
-- **No ENEMY ever gets a row.** This is the half that can go badly wrong: `None` is admitted when the
-  source carries a real player class, so a mob flagged `None` with a class filename is the one thing
-  that could put trash on the grid. Enemies do report `None` (the enemy column reads `0` for every
-  source out of combat), so the class filename is the test that holds. If a mob's name appears as a
-  row, stop and report it, and run `/mm diagnostics` out of combat: its targets section prints each
-  enemy's `class=` and the line `enemies carrying a player class: N of M`.
-- **Out of combat, pet damage folds into the owner.** Compare the hunter's Damage figure against
-  Blizzard's own meter, which also attributes pet damage to the owner. They should agree.
-- **In combat the owner's number is low by whatever the pet contributed**, and that is correct
-  behavior rather than a bug. Adding a pet's damage to its owner's is arithmetic on two secret
-  values, and there is no native escape hatch for summing the way there is for formatting. Confirm
-  the number **catches up** the moment combat ends.
-- **No Lua error at the transition** in either direction.
-- With `/mm debug on`, the aggregator's one-line-per-pass log reports `dropped=` and `unfolded=`
-  counts. A large `dropped=` out of combat means the owner map missed something worth naming in a
-  report; `unfolded=` in combat is expected and is the fold being refused rather than approximated.
-
-**Also worth checking:** a hunter who dismisses and re-summons mid-dungeon, and a warlock who swaps
-demons. The owner map is rebuilt lazily on the next read after `GROUP_ROSTER_UPDATE`, so a swap
-should correct itself within one refresh.
-
-### 13. Meter-unavailable prompt
-
-**Setup.** Disable Blizzard's built-in damage meter (the client's own meter setting / CVar).
-
-**Steps.** `/reload`. Look at the window.
-
-**Pass.**
-- The window **explains itself** in place of rows:
-  - *"Blizzard's damage meter is not available."*
-  - *"Multi Meters reads every number from the game's built-in damage meter. Enable it to see data
-    here."*
-  - and, in gray, *"Reason: …"* — **Blizzard's own `failureReason`, quoted verbatim**. It is not
-    translated and not second-guessed: the game knows why its meter is off, and guessing on its
-    behalf is how an addon tells a player to enable something that was never the problem.
-- **No Lua error**, and no empty window with no explanation.
-- Re-enable the meter. Within a few seconds (or after a zone change / meter event, which invalidates
-  the memoized availability answer) the rows come back **without a `/reload`**.
-
-**The other empty state.** With the meter **enabled** but no combat data yet — fresh login, or right
-after the header's **reset** control wipes the sessions — the window shows *"Waiting for combat data…"* instead.
-These two messages must not be confused: one means "the meter is off", the other means "the meter is
-on and there is nothing in it yet", which is the normal state between pulls.
-
-**Reset meter data.** From the window header's **reset** control — there is no settings-page button
-for it — click it and confirm the popup. Blizzard's **own** meter
-window empties too — the call is `C_DamageMeter.ResetAllCombatSessions` and it is account-wide, which
-is why the popup exists. Every open drill-down closes and this module's caches are dropped.
-
-### 14. Slash surface
-
-**Steps.** Run each verb.
-
-```
-/mm                          /mm help              /mm config
-/mm list                     /mm version
-/mm get window.frame.width   /mm set window.frame.width 520
-/mm reset window.frame.width /mm resetall
-/mm lock            /mm lock off        /mm test            /mm test on
-/mm toggle          /mm toggle Meter
-/mm window list     /mm window new Raid /mm window copy Meter Raid
-/mm window delete Raid
-/mm reset-positions
-/mm debug           /mm debug on        /mm debug off
-/mm perf            /mm perf help
-/multimeters help
-```
-
-**Pass.**
-- Every verb answers; none errors; unknown verbs print "unknown command" followed by the help index.
-- A bare `/mm` (or `/mm` followed only by spaces) is `/mm config` (`slash-commands-§4`): it opens the
-  settings panel on its landing page, and in combat it gives `/mm config`'s refusal. The index is
-  `/mm help`.
-- `/mm help` and the settings **landing page** list the **same** commands — the panel generates its
-  list from `NS.COMMANDS` through the same formatter, so a divergence means someone wrote a second
-  list.
-- `/mm version` matches the TOC's `## Version` line (it reads the manifest, not a constant).
-- `/mm set window.frame.width 520` moves the **active** window — the one the picker is on — and
-  `/mm get` reads it back. With two windows, select the other in the picker and confirm the same
-  command now targets the other one **with no change to the path typed**.
-- `/mm set window.columns.2.width 90` is **refused** with a message pointing at Windows > Columns. A
-  single column is not addressable by ordinal, because the ordinal moves on the next edit.
-- `/mm set window.frame.scale 5` is refused (validator: 0.5–2.0). `/mm set nonsense.path 1` is
-  refused with "Setting not found".
-- `/mm toggle` with no name flips every window; with a name it flips one, and the name keeps its case
-  and spacing.
-- `/mm lock` with no argument **toggles**; `/mm lock off` sets. Unlocking prints "unlocked — drag
-  them into place" and does **not** touch Test mode — the two used to be coupled
-  (`WindowManager:SetLocked` also flipped it on) and are not any more; ask for placeholder rows
-  with `/mm test` explicitly.
-- `/mm debug` toggles the console **window**; `/mm debug on|off` sets the logging **flag**. They are
-  separate on purpose: logging runs with the console closed so a bug can be reproduced first and the
-  log read afterwards.
-- **The console's title bar draws three icons, right to left: close, clear, copy** — the same art the
-  meter window's header uses, one size and one pitch, gray at rest and gold under the pointer. Words
-  there (`Copy`, `Clear`) or a multiplication sign mean `core/DebugLogSetup.lua` stopped passing
-  `addonName`, or the art is missing from the vendored payload; the console still works either way,
-  which is why nothing errors to tell you.
-- **Hover copy and clear: each brightens to gold, and NOTHING pops up.** They carried a tooltip for
-  one release; it anchored under the control, on top of the first line of the log. A tooltip
-  reappearing there is a regression, not a nicety.
-- **Clear empties the log; copy opens the copy window**, whose own title bar carries the same close
-  icon. Ctrl+C then Esc still works there.
-
-**Then turn the addon off and run the surface again** — `/mm disable`, then every verb above.
-
-- **The six feature verbs refuse, on ONE line each, naming `/mm enable`, and do nothing.**
-  `/mm toggle`, `/mm lock`, `/mm test`, `/mm window new Raid`, `/mm reset-positions`, `/mm export`.
-  Watch what does *not* happen as closely as what prints: `/mm window list` afterwards must show the
-  **same** windows (no `Raid`), and nothing may move on screen. A verb that printed the refusal and
-  then acted anyway is the failure this check exists for, and the line alone will not show it to you.
-- **Everything else still answers**: `/mm`, `/mm help`, `/mm config` (the panel opens),
-  `/mm version`, `/mm list`, `/mm get enabled`, `/mm set master.scale 1.5`, `/mm reset master.scale`,
-  `/mm resetall`, `/mm debug`, `/mm perf help`. You must be able to read and repair settings and to
-  reach the panel with the addon off — which is exactly when you are most likely to need to.
-- **`/mm enable` turns it back on**, and the six feature verbs work again immediately. Were that one
-  verb ever gated, the only route back would be the settings panel you were trying not to open.
-- **The help index is unchanged throughout.** A refused verb keeps its row in `/mm help` and on the
-  settings landing page; a verb that disappeared from either while the addon was off would be a
-  second way to lose it.
-
-**Then the minimap button, enabled, disabled and mid-capture (SM-11, and SM-02's launcher half).**
-The clicks and the menu are LibKa0s-Launcher minor 4's (`launcher-§2`, standard v2.67.0); each menu
-entry runs this addon's own slash verb.
-
-- **SM-11a (enabled).** Hover the button: the tooltip ends *Left-click: Open settings* /
-  *Right-click: Options menu*. Left-click opens the settings panel. Right-click opens a menu titled
-  *Ka0s Multi Meters* with four checkboxes in this order: **Enabled** (ticked), **Locked**, **Test
-  mode**, **Show window**, each ticked to match the current state. Click **Locked**: chat prints
-  *Windows are locked.*, the same line `/mm lock` prints, and reopening the menu shows it ticked.
-  Click **Test mode**: placeholder rows appear, as with `/mm test`; click it again to end it. Click
-  **Show window**: every meter window hides (or shows, if none was up), as with `/mm toggle`. In
-  combat, **Test mode** refuses with the same line `/mm test` prints there.
-- **SM-11b (disabled).** `/mm disable`, or untick **Enabled** in the menu (chat prints
-  `enabled = false`). Left-click still opens the settings panel and prints nothing. Right-click: the
-  menu shows **Enabled** unticked and clickable, and **Locked**, **Test mode** and **Show window**
-  grayed, each reading *(enable the addon first)*. The grayed entries cannot be clicked. Tick
-  **Enabled**: the addon comes back, as with `/mm enable`.
-- **SM-02 (launcher half).** `/mm enable`, then `/mm perf start`, and during the suspended arm
-  right-click the button. **Enabled** is still ticked and nothing is grayed. Click **Show window**:
-  chat prints *Windows are suspended while a performance capture runs.* and no window appears.
-  Left-click still opens the settings panel.
-
-### 15. Profiles
-
-**Steps.** Profiles page → create "Test" → switch to it → change several settings and add a window →
-switch back to Default → copy from Test → reset.
-
-**Pass.**
-- **The page draws.** Open another addon's options page first, then MultiMeters → Profiles → the
-  AceDBOptions controls render (current profile, New, Copy From, Delete, Reset Profile): never a
-  blank page under the header.
-- Switching profiles rebuilds every window immediately: the previous profile's windows are gone and
-  the new profile's are drawn, positioned and populated.
-- The settings panel re-renders against the new profile's windows; the picker lists them.
-- A profile with a different **number** of windows works in both directions.
-- Copying a profile brings its windows across, and editing one profile's window afterwards does not
-  touch the other's.
-- Resetting a profile re-seeds exactly one window.
-- **The page is still fresh after a switch made off it.** Open Profiles, page away to **General**,
-  then type `/mm resetall` and accept the "Reset all settings?" popup it opens. It
-  is a profile reset, so it moves the active profile out from
-  under the hidden page. Come back to Profiles: the profile list and the scope dropdowns must be
-  redrawn against the profile you are actually on. `M2-18` moved this page onto `H.SetRenderer`,
-  which draws once and then only when the library is told the page is dirty, and the
-  `PROFILE_CHANGED` listener is the only thing telling it. A stale list here means that listener is
-  not reaching `H.RefreshPanel`. **Not yet run** — no client has been available since the change.
-- **A fresh character lands on the shared `Default` profile**, not on its own. (`AceDB:New(..., true)`
-  — omitting that third argument silently gives per-character profiles, which is the source of every
-  "each new character has its own settings" report in the collection.)
-- No Lua errors, and no stale window left on screen after a switch.
-
-### 16. Resets
-
-| Control | Expected scope |
-|---|---|
-| A page's **Defaults** button | every schema row on **that page**, for the **active window** |
-| General → **Reset all settings** (confirms) | every row on every page, for every window, in the active profile — **plus every window position** |
-| `/mm resetall` | opens the same **Reset all settings** popup; accepting gives the identical result, declining changes nothing |
-| `/mm reset <path>` | that one row |
-| General → **Master controls** → **Reset position** | the active window only, back to center |
-| `/mm reset-positions` | every window back to center |
-
-**Pass.**
-- **`/mm resetall` asks first.** With two windows up, type it: the same "Reset all settings?" popup
-  the General page's button opens appears, and nothing has changed yet. Click **No** (or press
-  Escape): both windows are still there, unchanged, and the console shows no `[Set]` line. Type it
-  again and click **Yes**: one fresh window, and one console line.
-- **Profiles are never touched** by any reset. Create a second profile first, then run
-  `/mm resetall` and accept, then confirm the second profile still exists and is unchanged. This is
-  enforced in two places on purpose.
-- "Reset all settings" **does** move every window back to center — but not through a position hook
-  of its own any more. It is a **profile reset** (`db:ResetProfile()`), so the extra windows are
-  **deleted** and the one that is re-seeded comes back at the shipped position with the rest of the
-  profile. `afterRestoreAll` no longer calls `ResetPositions`.
-- After an accepted `/mm resetall` the column list is back to the six shipped columns, in catalog
-  order.
-- **Each reset is one line in the console.** Turn on `/mm debug on`, open the console and clear it.
-  - A page's or an entry's **Defaults** press reads `[Set] reset <page>: N rows`, with no `[Set] <path> = …` line
-    under it, and a second press reads `0 rows`.
-  - Windows > Columns reads `[Set] reset columns: N rows`, with the column list counted as one row.
-  - **Reset all settings** and an accepted `/mm resetall` each read exactly `[Set] reset profile
-    '<name>' to defaults`, with no `reset all` line beside it. Showing or declining the popup logs
-    nothing.
-  - Copying settings between two windows reads `[Set] copy from '<A>' to '<B>': N rows`.
-
-### 17. LibKa0s absent
-
-**Setup.** Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the install).
-`/reload`.
-
-**Pass.**
-- **The addon still loads and the window still draws rows.** This is the point: a missing vendored
-  library degrades, it does not break the addon.
-- One honest chat line names the cause, once, on the first line the addon prints — the shared clause
-  *"The LibKa0s library is missing from this installation of Ka0s Multi Meters (expected in
-  libs/LibKa0s)"* — followed by what is unavailable.
-- `/mm config`, and a bare `/mm` (which runs `config`), say the settings panel is unavailable.
-  `/mm help` still prints the index. `/mm list|get|set|reset` each name the missing
-  library. `/mm perf` says performance measurement is unavailable.
-- **The host verbs still work**: `/mm lock`, `/mm test`, `/mm toggle`, `/mm window list`,
-  `/mm reset-positions`. They never went to the library.
-- **`/mm disable` and `/mm enable` still work.** `/mm disable` prints `enabled = false` and the
-  windows go away; `/mm enable` prints `enabled = true` and they come back. Neither says anything is
-  unavailable.
-- **`/mm resetall` still works.** It opens the same popup, and accepting resets the profile. The
-  user whose panel will not open is exactly the user who needs "reset everything", and the schema
-  loaded fine.
-- **No Lua error at load, and no half-loaded schema.** `/mm list`'s absence message is expected; a
-  *partial* settings surface is not — that would mean a page file raised inside a schema-row literal
-  and took its rows with it.
-- Restore the directory and `/reload`. Everything comes back.
-
-### 18. Debug console and perf capture
-
-**Steps.**
-```
-/mm debug on
-/mm debug           -- open the console
-```
-Then complete a pull, watch the log, and run a capture:
-```
-/mm perf help
-/mm perf start
-... play through two or three packs ...
-/mm perf finish
-```
-
-**Pass — debug log.**
-- One line per aggregator pass, not one per row: `window=1 cols=6 rows=5 dropped=0 unfolded=0
-  sort=value/frozen reason=ok`. During a pull `sort=value/frozen` is the expected reading; between
-  packs it should be `sort=value/value`.
-- One line per render pass, one per roster build, one per visibility pass.
-- **Nothing is logged per row or per cell.** Forty allocations a quarter second on a raid, discarded
-  by a disabled sink, is exactly what the deferred-format rule exists to prevent.
-- `/mm debug off` silences it and the console stays open. Neither the flag nor the console state
-  survives a `/reload` — both are session-only and must never reach SavedVariables.
-
-**Pass — perf capture.**
-- The A/B run makes the addon **inert** during its B window without a `/reload`: the provider stops
-  reading, the coalescing timers stop, and every window is refused at the source. **Nothing** — a
-  combat transition, a roster change, a settings write — may bring a window back while suspended.
-- After `finish`, the report names the declared buckets: `meterEvent`, `spellEvent` and
-  `systemEvent` (each with calls and ms after a raid pull), `refresh` with `aggregate`
-  and `render` under it, `renderRow` under `render`, and `tooltip` with `targets` under it, plus
-  `providerRead`. The nesting note says **observed inside** for every nested bucket, never
-  *declares itself within X — not observed* (issue #47).
-- Every capture record carries the addon version. A record stamped `v?` is unattributable the moment
-  it leaves the session and is a bug in its own right.
-- `/mm perf` output appears **whether or not** debug logging is on: a perf run is explicit user
-  action, and a user who started one without enabling debug first should not watch an empty console.
-- Hand the report and the JSON dump to `/wow-addon:perf-analysis`, which writes the frozen bundle.
-
-**Group capture with the tooltip path (issue #47).** The first archived capture was solo, one
-window, five rows, and never hovered a cell, so `tooltip` and `targets` recorded nothing and the
-140-cell case was extrapolated rather than measured. Repeat the run **in a group of 15 or more**,
-with **Settings → Tooltip → Show targets** on. During the A window, park the mouse on your own
-**Damage** cell for several seconds, then on another player's.
-- `tooltip` and `targets` both record calls.
-- The nesting note reports `providerRead observed inside more than one parent`, because the column
-  read ran under both `aggregate` and `targets`. A run that never hovered reports it observed inside
-  `aggregate`.
-- `renderRow` calls per pass match the number of rows on screen, which turns the per-cell cost into
-  a measured number.
-- **Unconfirmed in game** until someone runs it. The headless suite proves the parents are passed and
-  recorded, not what the tree costs on a live client in a group.
-
----
-
-### 19. Abbreviation actually reaches the cells
-
-**Why this is a case and not an assumption.** Abbreviating is arithmetic, so the addon cannot do it
-in Lua — it hands the value to `C_StringUtil.CreateNumericRuleFormatter`'s `FormatNumber`, falls back
-to `AbbreviateNumbers`, and falls back again to `"<secret>"`. Which rung a live client actually lands
-on is not knowable from the headless harness, and rung 3 renders a window full of `<secret>`.
-
-1. Stand at a target dummy, out of combat, and hit it until Damage reads over a million.
-2. **Damage shows an abbreviated figure** — `1.4M` or similar, always ONE decimal place whatever the
-   magnitude. Note the exact precision it
-   produces; the reference screenshots show three significant figures and the native formatter may
-   give fewer, which is accepted, not a bug.
-3. **No `/s` anywhere.** The rate slot is the bare number.
-4. Pull the dummy and check again **in combat**, when the values are secret. The figures must look
-   the same as they did out of combat. A number that renders `1.4M` out of combat and `<secret>` in it
-   means the formatter rung changed under the restriction — report it with both screenshots.
-5. Set `window.text.numberFormat` to `full` and confirm the unabbreviated form appears.
-6. **A rate below 1000 (issue #26).** Put a Healing (or Damage) rate under 1000 on screen — a
-   healer's HPS at a dummy does it — on `abbreviated`, then on `full`. Read it out of combat and
-   **in combat**. It must be a whole number (`411`), never its float (`411.90476…`). If it shows its
-   digits, turn `/mm debug on`, change any setting (which rebuilds the formatter), and report the
-   `[Format]` line the console prints, which names the rung the client accepted, together with the
-   `-- number formatting --` block from `/mm diagnostics`. **Unconfirmed in game:** the fix gives every
-   fallback a rule below 1000, but which fallback the reporting client actually lands on has only
-   been modeled headlessly.
-
-**If step 2 shows raw digits** (`1410000`), neither formatter exists on this client and the
-degradation ladder is landing on a rung nobody planned for. That is a different bug from anything in
-this change set.
-
-### 20. Realm strip and truncation
-
-1. Group with someone from another realm. **Their name shows without `-Realm`.**
-2. Run a follower dungeon. The companion NPCs — names longer than a player's 12-character limit —
-   show in full at the default cap of 20.
-3. `/mm set window.text.maxNameLength 8`. Names truncate with a single `…` glyph, not three periods.
-4. Find or invite a name with an accent in it (`Helyâ`). Truncate it right at the accented character
-   and confirm **no replacement box appears** — the cut counts characters, not bytes.
-5. `/mm set window.text.maxNameLength 0`. Names show in full again.
-6. Drill into a player, and confirm a **spell name containing a hyphen keeps it**. The realm strip is
-   anchored to the first hyphen and must not apply to a breakdown row.
-
-### 21. The header segment selector
-
-1. Run two or three pulls so the client is holding several stored sessions.
-2. **Click the segment control in the header strip** (the three horizontal lines). A menu opens:
-   the stored fights with their durations, a divider, then `Current` and `Overall`. It anchors to the
-   session line, which is where the menu has always come out. **The session line itself is not a
-   click target** — that 220px invisible button was removed.
-3. Pick a stored fight. **The grid changes to that fight's numbers and the header names it** rather
-   than saying "Current".
-4. Hover a cell and drill into a row. **Both describe the pinned fight**, not the live pull. This is
-   the case that catches a half-threaded `sessionID`.
-5. Pull something new. The pinned window **stays on its fight** while an unpinned second window
-   follows the live pull.
-6. Pick `Current` from the menu. The pin clears and the window follows the live pull again.
-7. Pin a fight, then `/reload`. **The pin survives.**
-8. Pin a fight, then reset the meter from the General settings page. On the next refresh the window
-   **falls back to Current on its own** — it must not sit there empty.
-
-### 22. v1 → v2 uniform column widths
-
-Needs a profile written by v0.1.0, so do this before wiping SavedVariables.
-
-1. Log in with an existing `MultiMeters.lua` SavedVariables file from before this change.
-2. **Every column is the same width**, and the window is wide enough to show the rightmost one
-   without clipping.
-3. A window you had previously dragged **wider** than the grid needs keeps its width — the migration
-   only ever widens.
-4. `/reload` and confirm nothing moves again: the step is idempotent and `schemaVersion` is now 2.
-5. Check a **second profile** you had not activated this session. Its widths are lifted too.
-
----
-
-### 23. v12 → v13 title bar and control-color migration
-
-Needs a profile written before this branch (`schemaVersion` 12 or earlier), so do this before wiping
-SavedVariables — same constraint as §22.
-
-1. Log in with an existing `MultiMeters.lua` SavedVariables file from before this branch, on a window
-   that had its title bar **turned off** and at least one of *Control class color* / *Control hover
-   class color* **ticked**.
-2. The window opens with its title bar **still off** and its control colors **exactly as they were**
-   — the migration carries the stored value across; it does not re-default it. A title bar that comes
-   back ON, or control colors that reset to Custom, is the migration writing a default instead of
-   carrying the stored value.
-3. Header → **Title bar** shows the toggle unticked, matching what §2 showed on the window itself; the
-   old Frame → *Frame behavior* location is gone.
-4. Frame → **General** (or wherever the control color dropdowns now live) shows **Class** for
-   whichever of the two flags was ticked before, not Custom.
-5. `/reload` and confirm nothing moves again: the step is idempotent and `schemaVersion` is now 13.
-6. Check a **second profile** you had not activated this session; its title bar and control colors
-   are carried across too.
-
----
-
-### 24. Tooltip appearance, anchor and offsets
-
-Everything here is cosmetic except the last item, which is the one that can damage another addon.
-
-**Steps:**
-1. Settings → **Tooltip**. Set **Bar texture** to something visibly different from the grid's, set
-   **Bar spacing** to 6, set **Font** and **Font size** to something obviously different, and set
-   **Font outline** to Thick outline.
-2. Hover a Damage cell.
-3. Set **Bar border style** to a real LSM border with thickness 2, hover again; then set it back to
-   **None** and hover the same cell again.
-4. Walk **Tooltip anchor** through all eight values, hovering after each.
-5. Set **Horizontal offset** to 60 and **Vertical offset** to -60, hover again.
-6. Set **Maximum spells** to 0 and hover a cell for someone with a long spell list.
-7. **Now hover a bag item, a party member's unit frame, and a quest in the tracker.**
-
-**Pass.**
-- The tooltip's bars wear the **tooltip's** texture, not the grid's — these are two settings now and
-  changing one must not move the other.
-- Spacing visibly opens up between lines; 0 restores the tight default.
-- The font, size and outline apply to the **spell names as well as** the two number columns. A font
-  that reached only the numbers means the shared line FontStrings were skipped.
-- The border appears around each spell bar and **disappears completely** when set back to None. A
-  border that lingers means the pooled carrier was not cleared — the lines are recycled, so line 4
-  of this hover is the same frame as line 4 of the last one. This is one of the addon's **two** LSM
-  border settings, and "None" has to mean no edge on both: the other is Frame → Border style, checked
-  in §4.
-- Every anchor moves the tooltip somewhere different. An anchor that behaves identically to **At
-  cursor** means its token is missing and it silently fell back.
-- The offsets move the tooltip and it **still stays on screen** near the edges — the client is doing
-  the placing, and an offset that lets the tooltip run off the edge means it is being positioned by
-  hand, which is a rule R3 violation.
-- **Maximum spells 0** lists every spell, up to the collector's own ceiling of 64, with an *"and N
-  more"* line if the player had more than that. 0 must not behave like 10.
-- **Step 7 is the one that matters.** The item, unit and quest tooltips must look **exactly as they
-  always do** — stock font, stock spacing, no bars, no borders. Anything carried over means the
-  addon has restyled the shared `GameTooltip` and left it that way, which persists until a reload
-  and is invisible until somebody else's tooltip looks wrong.
-
-### 25. The Targets section, and its absence mid-pull
-
-The one place in this addon where the restriction costs *information* rather than decoration. Read
-[data-flow.md §9](data-flow.md) before judging a failure here — "the section is missing mid-pull" is
-the **correct** behavior, not the bug.
-
-**Steps:**
-1. Settings → **Tooltip** → enable **Show targets**, leave **Maximum targets** at 3.
-2. **Out of combat**, after a pull with several different enemies, hover your own **Damage** cell.
-3. Hover a **Healing** cell and an **Interrupts** cell.
-4. Hover another player's Damage cell.
-5. **During a pull**, hover a Damage cell.
-6. Raise **Maximum targets** to 10, repeat step 2.
-7. Turn **Show targets** back off and repeat step 2.
-
-**Pass.**
-- Out of combat, a **Targets** header appears below the spell breakdown, listing the enemies you hit,
-  biggest first, with bars and a share column exactly like the spell lines.
-- The section appears on **Damage cells only**. A Targets list under Healing or Interrupts means the
-  column guard is missing.
-- Another player's tooltip lists **their** targets, not yours and not the group's. This is the
-  failure worth hunting: every enemy's spell list holds the whole group mixed together, so a broken
-  caster filter shows everyone the same list and looks entirely plausible.
-- **Mid-pull the section is absent entirely.** Not a shorter list, not zeroes — absent. A Targets
-  list that *does* appear during a pull is a hard fail: the numbers behind it were summed from
-  whichever rows happened to be readable and every one of them is too low.
-- No Lua error at any point in step 5. The build touches secret amounts and secret GUIDs on that
-  path, and it must refuse rather than raise.
-- Raising the cap lists more enemies, still ordered biggest-first — the cap trims **after** ordering,
-  so the top three at cap 3 are the same three enemies that lead the list at cap 10.
-- With the setting off, no Targets header and — check with `/mm perf` — **no `targets` bucket
-  activity at all**. The section costs one provider call per enemy, and an off switch that still
-  pays for the walk is a bug.
-
-### 26. The export modal, the CSV and the chat dump
-
-Two frames, two destinations and one hard refusal. Most of this is checkable at a target dummy —
-**except the last block, which needs a real pull**, because the refusal keys off the `Combat` addon
-restriction and a dummy does not activate it.
-
-Read [data-flow.md §6](data-flow.md) first if a failure looks like a formatting problem. A CSV cell
-is `tostring(value)`, and `tostring` is not on the list of operations permitted on a secret — it
-answers a *secret string* rather than raising, which then poisons the quoting logic downstream. That
-is why the whole serializer refuses in combat instead of degrading, and why "it produced a file with
-odd-looking cells mid-pull" would be a much worse outcome than "it said no".
-
-#### The export control in the title bar
-
-**Steps.** Look at the header strip, right to left, and hover the export control.
-
-**Pass.**
-- **It is the leftmost of the seven**, at the same size, the same center line and the same color as
-  the six beside it. The whole strip is covered by *The header's controls (issues #6, #7)* near the
-  top of this file — what is checked here is only the export end of it.
-- **It draws the collection's own art** (`libs/LibKa0s/media/icons/export.tga`). A plain `>` means BOTH our
-  texture and every atlas candidate failed: the ladder is working as designed, but say so, because a
-  shipped TGA that does not load is a packaging bug rather than a fallback.
-- **The atlas rung is still unconfirmed.** `poi-scrollofresonance` and `UI-HUD-MicroMenu-Questlog-Up`
-  are candidates that have **never been seen resolving on a live client**, which is the mistake the
-  art-ladder note in `modules/HeaderControls.lua` records happening twice before. They are only
-  reachable now on a client that cannot load our TGA, so confirming one is a `/mm diagnostics` job,
-  not something a normal run will show you.
-- **`/mm diagnostics` answers this for you.** Both candidates are in its atlas probe list and the
-  export control is in its header dump, so one command reports what the client has and what the
-  control actually drew.
-- **Hovering it shows a tooltip** reading *Export a segment to CSV or to chat*. It is the only
-  control in the strip with one, and deliberately: a gear and a padlock say what they are, and the
-  export glyph is the one whose meaning is not obvious.
-- **Turn the title bar off** (Frame → Title bar). The whole strip goes with it, export included —
-  there is nothing to hang it on. Turn it back on and all seven return.
-- **Clicking it opens the modal centered over that window** — see below.
-
-#### The modal
-
-**Steps.** Out of combat, after at least one pull, drag a window to a corner of the screen and click
-its export glyph.
-
-**Pass.**
-- The modal opens **centered on the window it was clicked from**, wherever that window has been
-  dragged to. It is anchored to the window's invisible anchor frame rather than to the visible frame
-  (rule R3), so this must hold for a window that has been showing live numbers all fight.
-- Its title bar reads **Export**, drags the modal, and carries the addon's usual close button — the
-  **same icon the window header draws**, gray at rest and red under the pointer. A thin gray
-  multiplication sign there means LibKa0s was not told which addon is asking (`core/CoreSetup.lua`
-  wraps `MakeCloseButton` to pass the folder name), or the art is missing from the vendored payload.
-- Three selector buttons stacked top to bottom — **Metric**, **Channel**, **Lines** — each reading
-  `Label: value`, and two action buttons across the bottom: **Export to CSV** and **Print to Chat**.
-- **Each action button carries an icon to the left of its label** — a spreadsheet on Export to CSV, a
-  speech bubble on Print to Chat — and **the words are still there**. The mark says where the export
-  lands; the label says what the button does, and it stays centered whether or not the art resolves,
-  so a missing icon leaves the button looking exactly as it did before.
-- **The modal is one frame, reused.** Open it from window 1, close it, open it from window 2: it
-  re-centers on window 2 and exports window 2's segment. A modal that exported the *first* window's
-  segment from then on is the invoker not being re-stamped.
-- **Esc closes it** (it is registered in `UISpecialFrames`), and so does the close button.
-- **Open a selector (Metric, Channel or Lines), then press Esc instead of picking a row.** The modal
-  closes AND the dropped menu closes with it — it must not stay floating over the game. The shared
-  `LibKa0s-Widgets-1.0` popup is a process-wide singleton parented to `UIParent`, not to this modal,
-  so `modules/Export_Modal.lua`'s `EnsureFrame` hooks the modal's `OnHide` to call `W.CloseMenu()` for
-  exactly this path; a menu left behind here means that hook regressed.
-- **The copy window that opens from Export to CSV** carries the same close icon in its own title bar,
-  and its text is the bundled monospace face — a CSV is columns of digits and only lines up in one.
-- Click **Metric**. A flat menu drops **directly under the button, left-aligned
-  with it** — dark panel, no gold title bar. The current metric's row is **gold**;
-  the rest are light gray. It looks like Bank Ledger's Data Set menu, not like a
-  Blizzard right-click menu.
-- Click outside the menu, on the modal behind it. It closes **and the click lands**
-  on the modal in that same press; a right-click there does the same. *(Changed at
-  LibKa0s v1.13.0, Widgets minor 5. The menu used to be dismissed by a full-screen
-  `Button` that consumed the press — and, registering `LeftButtonUp` only, swallowed
-  a right-click entirely — so dismissing cost a click that did nothing else.)*
-- Pick a different metric. The menu closes, the button reads `Metric: <that one>`.
-- Repeat for **Channel** and **Lines**. Same skin, same behavior, in all three.
-- **Open Metric, then click Channel without picking anything.** The Metric menu **closes** as the
-  Channel menu drops: exactly one menu on screen, never two stacked. There is one popup frame in the
-  whole client — `LibKa0s-Widgets-1.0`'s menu is a process-wide singleton shared by every dropdown
-  in every Ka0s addon loaded — so opening a second dropdown re-points that one frame the way a
-  native game menu does. Two menus at once would mean two popups exist, which no amount of exercising
-  the three selectors *one at a time* (the line above) can show.
-- **No row in any of these three menus carries a leading glyph**, and none should. `makeSelector` in
-  `modules/Export_Modal.lua` passes no `opts.glyphFont`, which is correct rather than an omission to
-  repair: the face is a precondition for an option that sets `glyph`, and none of this modal's
-  options does. A row here showing a box or a stray character in front of its label means one grew a
-  `glyph` without the mono face growing with it.
-- Open the modal from a window sorted by **Healing**. Metric reads
-  **`Metric: Healing`** before you touch anything — there is no
-  "Match the window" entry any more, and there should not be one.
-- **Picking anything repaints the modal immediately** — the button's label changes to what you picked
-  before the menu has finished closing.
-- **On a fresh profile the Metric follows the window it was opened from.** `defaults/Profile.lua`
-  ships `export.metric` as `Const.STATS[1].key` — the first entry of the catalog, a real stat rather
-  than a sentinel — and `Export.Open` reseeds it from the invoking window's sort column on the way
-  in, so the shipped value is only ever seen on a profile whose export modal has never been opened.
-  Sort a window by **Healing**, export from it, and the Metric button must read **Healing**; sort
-  another by **Interrupts**, export from that one, and the same modal must now read **Interrupts**.
-- **A pick holds while the modal is open, and the next open takes the window's answer back.** Pick
-  **Deaths** from the Metric menu: the button reads Deaths and the chat dump ranks by Deaths. Close
-  the modal and re-open it from a window sorted by Healing, and it must read **Healing** again —
-  every open reseeds, which is also why `export.metric` has no row in the settings panel; a
-  preference every open overwrites is a preference in name only. There is no *Match the window*
-  entry to go back to, and the reseed is what replaced it: the stored value used to be `""`, meaning
-  exactly that, and resolving it fresh at every use put a label naming a **rule** on a button whose
-  job is to name a **stat**. `Export.ResolveMetric` still reads that `""` — and any key the catalog
-  has since dropped — as unset and lands on the window's own column, so a profile written before the
-  change opens on the right stat with no migration step behind it.
-
-#### The whisper name box
-
-**Steps.** Walk the Channel selector through every entry, watching the space under the Lines button.
-
-**Pass.**
-- **The name box exists only while Channel is Whisper.** Every other channel hides it outright — it
-  is hidden rather than grayed, because a disabled name box on a Raid export is a control asking to
-  be filled in for no reason.
-- Set **Channel: Whisper**. A fourth row appears below Lines, in the same flat
-  box as the three above it, reading `Whisper to: ` in gold with an editable
-  field beside it. **The modal grows by one row** — the red warning line and the
-  two buttons move down with it, and nothing overlaps.
-- Type a full name. The text is fully visible, not clipped at either end, and
-  sits on the same baseline as the caption.
-- Click **Print to Chat** without pressing Enter first. The dump is whispered:
-  focus loss stores the name.
-- Switch back to **Self only**. The row disappears and the modal shrinks back.
-- Type a name and press **Enter**: it is stored, and the box loses focus.
-- Type a name and **click away without pressing Enter**: it is stored anyway (`OnEditFocusLost`).
-  This is the one that catches people — nobody expects to have to press Enter in a box directly above
-  the button they are about to click.
-- **Esc in the box clears focus** and leaves the modal open. A second Esc closes the modal.
-- Switch to another channel and back to Whisper: the name you typed is still there.
-- **Whisper with the box empty prints to your own chat frame and sends nothing.** That is deliberate
-  — a whisper with nobody to whisper to means the same thing "Print to myself" means. Confirm no
-  error and no stray `SendChatMessage` failure in the error frame.
-- A cross-realm target needs `Name-Realm`, exactly as the client's own `/w` does.
-
-#### The CSV copy window
-
-**Steps.** With a segment holding several players, click **Export to CSV**.
-
-**Pass.**
-- A second, wider window opens **above** the modal — it sits at `FULLSCREEN` strata deliberately, so
-  the modal stays visible underneath and "copy this, now try a different metric" is one trip. Its
-  title reads **Export — Ctrl+C, then Esc**, and it too centers on the meter window.
-- **There is text in it**, in the bundled JetBrains Mono, and the columns of digits line up. A
-  proportional font here means `Constants.FONT_MONO` was passed by LibSharedMedia *name* rather than
-  by path — `SetFont` does not accept the name.
-- **The whole text is pre-selected** — highlighted the moment the window appears, with the view at
-  the **top** of the file rather than at the bottom. Cursor position, show, focus and highlight
-  happen in a load-bearing order; a window that opens scrolled to the end, or with nothing
-  highlighted, means that order broke.
-- **Ctrl+C copies.** Paste into a text editor and confirm you got the whole thing, not one line.
-- **Esc closes the copy window and leaves the modal open.**
-- Open it a second time without closing the first: it re-fills rather than stacking a second frame.
-- Widen nothing and check the **first open specifically** — the EditBox falls back to a 590px width
-  when the scroll frame has not been laid out yet, so a first export whose lines wrap oddly and a
-  second that does not is that fallback doing its job (report it, but it is cosmetic).
-
-**The copy window is LibKa0s-Widgets-1.0's now** — the frame is built by the library from
-a descriptor this addon passes, and the six steps below are the adoption check. Nothing above is
-meant to change; a difference between the two lists is the bug.
-
-1. `/mm` → open a meter window → Export → **Export to CSV**.
-2. The copy window opens **centered on the meter window**, above the modal, with the CSV **already
-   selected**.
-3. Ctrl+C, paste into a text editor: the whole CSV, with its line breaks.
-4. Esc closes the copy window and leaves the modal open.
-5. Drag the meter window somewhere else, export again: the copy window follows it.
-6. `/reload`, export again: still one window, still centered.
-
-**Now check the file itself**, in a text editor or by pasting into a spreadsheet:
-
-- **The header line is exactly 26 columns**, and it is:
-  ```
-  session,duration,name,class,spec,role,damage_done,damage_done_ps,damage_done_pct,healing_done,healing_done_ps,healing_done_pct,absorbs,absorbs_pct,interrupts,interrupts_pct,dispels,dispels_pct,damage_taken,damage_taken_pct,avoidable_damage_taken,avoidable_damage_taken_pct,deaths,deaths_pct
-  ```
-  Names are `snake_case`, **derived from the stat keys and never localized** — a German client must
-  produce a file a colleague on an English client can open with the same formulas. Run one export on
-  a non-English locale if you can and diff the header line against the one above: it must be
-  byte-identical.
-- **`_ps` appears twice and only twice**, on Damage and Healing — the two `isRate` stats. `_pct`
-  appears once per stat, eight times.
-- **Every stat in the catalog is present, not the window's columns.** Export from a window showing
-  only Damage and confirm the CSV still carries all eight — the export is "the data", not "what is on
-  screen". `enemy_damage_taken` is **not** among them and must not come back: it is read by the
-  Targets tooltip section, but it is not a column and so not a CSV field (issue #2).
-- **Values are raw integers.** `4821993`, never `4.8M`. A spreadsheet wants the number; the
-  abbreviation belongs to the chat dump. `_pct` is a bare two-decimal number with no `%` sign.
-- **`session` and `duration` repeat on every row** rather than sitting in a preamble, so two exports
-  pasted into one sheet still mean something and a pivot can group by fight. `session` is what the
-  window's own header says — a stored fight's name if the window is pinned to one, otherwise
-  `Current` or `Overall`.
-- **Empty cells are empty, never the string `nil`.** Most players have no row in Dispels, Interrupts
-  or Deaths, and that is the common case rather than an error.
-- **Line endings are CRLF, and the file ends with one.** Paste into a spreadsheet and confirm no
-  trailing blank row appears where a stray newline would put one.
-- **The 40-row ceiling.** In a raid of more than 40, the CSV stops at 40 data rows —
-  `Constants.MAX_ROWS`, inherited from the aggregator and documented rather than worked around.
-
-**The name test, which is the one worth doing carefully.** Run a **follower dungeon** or a **delve**
-and export afterwards, so the grid holds an NPC ally whose name has both a space and a hyphen —
-`Crenna Earth-Daughter` is the canonical one.
-
-- **The name survives intact and lands in ONE spreadsheet cell**: `Crenna Earth-Daughter`.
-- It is **unquoted**, and that is correct: `Export.CsvField` quotes only on a comma, a double quote,
-  a CR or an LF, and a hyphen and a space are none of those. A name split across two cells, or one
-  that arrives as `Crenna` alone, means either the quoting rule or the realm strip has reached the
-  serializer — the realm strip belongs to `modules/Row_NameCell.lua`'s *display* path and must never run here.
-- **Group with someone from another realm** and export: their `name` field keeps `-Realm`. The CSV is
-  data interchange, so the realm-qualified form is the right answer even though the grid strips it.
-- If any name in your group contains a comma or a quote (an NPC ally can), that field **is** wrapped
-  in double quotes with embedded quotes doubled, and a spreadsheet still reads it as one cell.
-
-#### Print to Chat — Self only first
-
-**Do the Self run before any other channel.** `SELF` is the shipped default precisely so a misclick
-cannot reach a raid, and the first time anyone runs this feature is the most likely time for a
-misclick.
-
-**Steps.**
-1. Channel = **Print to myself**. Metric = **Damage**. Lines = **5**. Click **Print to Chat**.
-2. Read your own chat frame. Ask someone in the group whether they saw anything.
-3. Only once that is clean, work outward: Say · Party · Raid · Instance · Guild · Whisper ·
-   Whisper my target.
-
-**Pass.**
-- **Self prints to your own frame and reaches nobody.** Every line carries the cyan `[MM]` banner,
-  because Self goes through `NS.Print` and not `SendChatMessage`. **A group member seeing anything on
-  a Self export is a hard fail** and worth stopping on.
-- **The shape is a header line then ranked lines:**
-  ```
-  Multi Meters — Damage — Current (2:14)
-  1. Kaosz 4.8M (84.2K, 31.2%)
-  2. Brewz 4.1M (71.9K, 26.6%)
-  ```
-  Numbers are **abbreviated** here, unlike the CSV — chat wants `4.8M`.
-- **The parenthetical carries only what is meaningful.** Switch Metric to **Deaths** or
-  **Interrupts** and re-send: the per-second figure disappears (they are not `isRate` stats) and the
-  lines read `1. Kaosz 3 (12.5%)`. An empty `( )` on any line is a bug.
-- **The ranking follows the metric.** Set Metric = **Healing** and confirm the list is the top
-  healers, not the top damage dealers with their healing beside them. This is the check that catches
-  the export being built with the window's sort column instead of the chosen one.
-- **The line cap holds.** Lines = 3 → four lines total (header plus three). Lines = 40 in a
-  five-player group → six lines, not forty: the cap is a ceiling, not a pad. Walk all five choices.
-- **Say** reaches only people nearby; **Party** and **Raid** reach the group; **Instance** works
-  inside a dungeon or LFR group; **Guild** reaches the guild. Each sends the same lines, **without**
-  the `[MM]` banner (that belongs to `NS.Print`).
-- **There is no Automatic channel.** It was removed as ambiguous: the dropdown offers Say, Party,
-  Raid, Instance, Guild, Whisper and Self only, and nothing else. A profile that still held `AUTO`
-  is folded to **Self only** by the v3 → v4 migration, so an upgraded install opens on Self rather
-  than on a destination it picked for you.
-- **Say outside an instance arrives whole, or the server says why.** Stand in a city, set Lines = 20
-  and send: every line leaves inside the click, because Blizzard only permits `SAY` / `YELL` /
-  `CHANNEL` from a hardware event out in the world, and the addon prints a one-line warning first
-  saying the server may drop some of them. **Only the header arriving is the bug this replaced** —
-  that was the staggered send, every line of which the server dropped silently.
-- **Say INSIDE a dungeon or raid is staggered like every other channel**, because the hardware-event
-  rule is lifted there. Twenty lines take about seven seconds and all twenty arrive.
-- **A long dump pauses every fifth line.** Lines = 20 to Party: watch the timing — five quick lines,
-  a beat, five more. That extra second per batch is what keeps the server's message counter from
-  swallowing the tail.
-- **Whisper** with a name in the box reaches that character and nobody else.
-- **Whisper my target** takes the recipient off your current target instead of the box, and the box
-  is hidden for it. Target a group member and send: they get it. Target a **cross-realm** member and
-  confirm it still arrives — the name is read with its realm, and dropping the realm would whisper
-  whoever holds that name on yours. With **nothing targeted** it says "You have no target to whisper
-  to."; with a **boss or an NPC** targeted, "Your target is not a player." Neither sends anything,
-  and neither may silently print to you instead.
-- **The target is read at the click, not when the modal opened.** Open the modal with one target,
-  switch targets, then send: it goes to the second.
-- **Whisper to a name nobody is playing stops after the first line.** Type a nonsense name and send
-  20 lines: the game answers with its own "No player named ... is currently playing", the addon says
-  **"There is nobody called '...' to whisper to. The rest of the export was not sent."** once, and
-  the remaining nineteen lines are dropped. Nineteen repeats of the game's error is the failure.
-- **No line is truncated.** `SendChatMessage` cuts at 255 bytes; these are far under, but a very long
-  NPC ally name on a percent-bearing line is the closest this ever gets.
-- Send with a segment that has **no rows at all** (a fresh login, before any pull): nothing is sent
-  and nothing errors.
-
-#### What is remembered
-
-**Steps.** Set Metric = Healing, Channel = Party, Lines = 20, and a whisper name. Close the modal.
-`/reload`. Re-open it.
-
-**Pass.**
-- Channel, Lines and the whisper name come back exactly as you left them. They live at `export.*` in
-  the **profile** and are **addon-wide**, not per window — "I print the top five to party" is a habit
-  rather than a window's appearance. Metric is stored there too (`export.metric`), but every open
-  re-seeds it from the sort column of the window it was opened from. So after the reload it reads
-  that window's sort column, not Healing, unless that window is sorted by Healing. Re-open it on the
-  same window with `/mm debug on`: the second open prints no `[Set] export.metric` line, because a
-  seed that matches the stored metric is not written again.
-- **The General page shows NO Export group.** The modal's own controls are the only ones: a second
-  copy on a settings page restated a control a player only ever meets in the dialog, and gave the two
-  a chance to disagree about what is selected. All four export rows (`export.metric`,
-  `export.channel`, `export.lines`, `export.whisperTo`) still exist and are marked `hidden`, which is
-  what keeps the seam below working.
-- `/mm get export.channel` and `/mm set export.lines 10` still work, and the modal follows them —
-  set `/mm set export.lines 10` with the modal closed, re-open it and confirm it reads `Lines: 10`.
-  A "no such setting" answer means the rows were deleted rather than hidden, which also drops every
-  modal write onto the degraded fallback that skips validation and `CONFIG_CHANGED`.
-- Switch **profiles** and confirm the export choices switch with them.
-
-#### `/mm export`
-
-**Steps.**
-```
-/mm export
-/mm export Meter
-/mm export Nosuchwindow
-```
-
-**Pass.**
-- `/mm export` with no name opens the modal for **the window the settings picker is on**
-  (`State.activeWindowId`), falling back to the first window when nothing has ever selected one. With
-  two windows, select the second in the panel, pin it to a *different* segment from the first, then
-  `/mm export` and confirm the `session` column of the CSV names the second window's segment.
-- `/mm export <name>` opens it for the named window; the name keeps its case and its internal
-  spacing, exactly as `/mm toggle` does.
-- `/mm export Nosuchwindow` prints `no window named Nosuchwindow` and opens nothing.
-- The verb appears in `/mm` help **and** on the settings landing page, with the same description
-  string — both read `NS.COMMANDS` and nothing else.
-- A window that exists in the registry but has **never been drawn** is still exportable — the verb
-  hands over the config, not the live instance.
-
-#### The combat refusal — the case this section exists for
-
-**This one needs a real pull.** A target dummy will not do: dummies do not activate the `Combat`
-addon restriction, and the restriction is the entire subject.
-
-**Setup.** A Mythic+ dungeon or a raid, a real group, BugSack cleared.
-
-**Steps.**
-1. **Between packs**, click the export glyph. The modal opens normally. **Leave it open.**
-2. **Pull.** Watch the modal for the whole fight without touching it.
-3. **Mid-pull, click Export to CSV.** Then click **Print to Chat**.
-4. Finish the pull.
-5. Separately, mid-pull: click a window's **export glyph**, and run `/mm export`.
-
-**Pass.**
-- **Nothing is exported.** No copy window opens, no chat line is sent, nothing reaches the group.
-- **One line is printed, and it is the sentence itself:** *"Export is not available while the game
-  restricts combat data."* — banner and all. A click that went silently nowhere would read as a
-  broken button.
-- **The modal repaints on that click**: both action buttons gray out, and the same sentence appears
-  in red across the middle of the modal. This is the visible half of the refusal, and it is why the
-  check is repeated **inside** each click handler rather than only at open — the modal was opened out
-  of combat, when the answer was yes.
-- **The glyph does not gray and ungray through the fight.** It is deliberately not wired to the
-  restriction: a header icon flickering four times a second is worse to look at than a modal that
-  opens and says plainly why it cannot export.
-- **The export glyph mid-pull opens nothing** and prints the same sentence. So does `/mm export`.
-- **NO LUA ERROR OF ANY KIND**, and the specific ones to watch for read like *"attempt to compare two
-  secret values"* or a `table.concat` error. One of those here means a serializer ran on secret input
-  — the whole point of the refusal is that it cannot.
-- **After the pull, both action buttons come back live on their own, with no interaction** — the
-  warning line clears at the same moment. The modal takes a private bus target when it is built and
-  repaints on `RESTRICTION_CHANGED`, so this is the case to watch: buttons that stay gray until you
-  click something mean that subscription is not landing. Confirm the export then works normally.
-  (On a degraded load with no AceEvent there is no bus target and no repaint; closing and re-opening
-  the modal is the fallback there.)
-- Repeat once with the modal **closed** through the pull and opened afterwards: it opens with both
-  buttons live, as though the pull had not happened.
-
-**Record for the report:** which of the three atlas candidates resolved (or that `>` was drawn),
-dungeon and key level, whether the error frame stayed empty, and the exact header line of one CSV.
-
-### 27. The identity-correlation capture (issue #22)
-
-**Why this one is different.** Every other scenario here checks that something *works*. This one
-takes a **measurement**, and three of the numbers it exists for cannot be produced offline at any
-effort: what the running client annotates plain on a raw source row, how many players share one
-class+spec at raid size, and whether the engine's ordering of sources is stable. The headless suite
-proves the report runs; only a raid can tell it what to say.
-
-**Take it in the largest group you can get.** A 5-player dungeon will produce a clean-looking capture
-and prove nothing — the whole finding is that the correlation works at party size and falls apart
-above it. 20+ is where it starts to be worth reading; 30 is what the issue was filed on.
-
-1. `/mm debug on` **before** the pull. The rectangle is built only while the flag is on.
-2. Pull. Roughly ten seconds in, `/mm debug identity`.
-3. Wait ~15 seconds, still in combat, and run `/mm debug identity` **again**. Two captures is the
-   ordering probe; one proves nothing about stability.
-4. **After combat ends, run `/mm debug identity` once more.** Out of combat nothing is secret, so
-   this is the only capture that can fill in the `values` column for fields that read `SECRET`
-   mid-pull — which is how a candidate field gets settled either way. The `ABSENT` and `PARTIAL`
-   lines hold in both states.
-5. `/mm debug` to open the console and copy the whole buffer.
-6. **While the pull is running, read the window's header line** and the standing `identity` line in
-   the buffer. The line must read `identity rows=N keys=N collidedKeys=N collidedRows=N filled=F/P
-   collided=N unmatched=N absent=N`, with `filled + collided + unmatched + absent == P`. The header
-   must say `restricted — N of M share a class and spec` while fewer than a quarter of the rows are
-   collided, and `restricted — N of M blank: duplicate specs` from a quarter up, with `N` equal to
-   the line's `collidedRows`. Check that the whole sentence fits the header without truncation at
-   two-digit counts; the line is a fixed 220 px wide.
-
-**What to read in it, and what each answer would mean:**
-
-- **`unmatched` above zero in any column.** This is the fault the instrumentation was built to find:
-  the column named a key and still produced no cell, which would mean a field the correlation trusts
-  is less stable across columns than it looks. Report it with the column name — it is the highest
-  value line in the whole capture.
-- **`collided` dominating, `unmatched` zero.** The expected shape, and it says the blanking is
-  working correctly and the *key* is the problem. Compare `collidedRows` against `rows`: that ratio,
-  not the key count, is what bounds any fix.
-- **`rows per key`.** Anything past "worn by 1 row" is a key blanking cells for every row wearing it.
-- **A `PARTIAL` line.** A field the client sends for some rows and not others — the state a one-row
-  probe had no word for. `specIconID` is the known case ([#24](https://github.com/tusharsaxena/MultiMeters/issues/24));
-  report any *other* field that reads PARTIAL, with its `rows` count.
-- **An `ABSENT` line.** A field the addon reads that the client does not send at all. Report these
-  first: they are defects rather than facts about the client, and they are nil out of combat too.
-- **A `WOULD widen the key` line in the field audit.** A plain field outside the key that actually
-  *varies* across players. This is the single most valuable thing the capture can come back with,
-  because it is the only one of the three directions that costs a player nothing — report the field
-  name and its `values` count. `No usable candidates` is equally worth reporting: it retires that
-  direction permanently. A field marked `no use as a key` carries one value for the whole group;
-  don't chase it.
-- **The seats of a collided key, across the two captures.** If a key's sources hold the same relative
-  order in every column *and* in both captures, positional pairing is at least possible. If they move
-  between captures, that direction is dead and should be recorded as such.
-
-**What would make the capture worthless:** running it out of combat (there is no identity pass — the
-GUID join is exact, and the report will say `no identity pass has been measured`), running it with
-the debug flag off (same message, different cause — the report does not distinguish, and does not
-pretend to), or running it in a party. None of the three raise; all three produce a clean-looking
-nothing.
-
-**Record for the report:** group size and composition (specifically, which class+spec pairs were
-duplicated), instance and difficulty, both captures in full, and whether any Lua error appeared —
-the probe walks a raw source row with `pairs`, which is the one thing here that touches a shape the
-mock can only approximate.
-
-### 28. The feign-trace verbs and what the recording says (issue #25)
-
-**Why this is in-client.** The recording itself is proved headless — the harness arms it, drives all
-three boundaries and reads the report back. What the harness cannot supply is a hunter on another
-client feigning next to you, which is the entire asymmetry issue #25 is about: the local player's
-feign is filtered correctly and a party member's is not.
-
-**The verb check comes first, and it is the reason this step is scheduled at all.** It costs one line
-of typing and it protects every capture after it.
-
-```
-/mm debug feign of
-```
-
-**Pass.** One line: `unknown feign argument 'of' — /mm debug feign on|off, or /mm debug feign to
-print the recording.` **Nothing else.** No trace report, and the recording's armed state is exactly
-what it was before you typed it — confirm with `/mm debug feign`, which must still say
-`armed: false` on a fresh session.
-
-**Fail — and this is what shipped before.** The report prints in full and the trace is left armed.
-A player told to type `/mm debug feign off` who typed `of` got an empty-looking report, no
-indication anything was wrong, and a recording running for the rest of the session.
-
-**Then the capture itself.**
-
-1. `/mm debug feign on` before the pull. It answers `feign trace ON`.
-2. Run a dungeon with a **hunter in the party** — not the local player. Let them feign at least
-   twice, and if you can, have them feign and then really die.
-3. `/mm debug feign` afterwards, then `/mm debug` to open the console and copy the buffer.
-
-**What to read in it.**
-
-- **No `cast` line at all** is the single most informative outcome and is not a failed capture:
-  `UNIT_SPELLCAST_SUCCEEDED` never arrived for that unit, and the filter was never told anything.
-  The report says so in those terms.
-- **`prune` lines carry `state=noted` or `state=down`, never `<evicted>`.** `noted` means the cast
-  arrived and this client never confirmed the feign; `down` means it did. An entry evicted at `hp=0`
-  from `noted` and one evicted at `hp=0` from `down` are different findings, and a run where every
-  evicted party member reads `noted` while the local player reads `down` is the answer.
-- **`unit=<not in group>`** is the third exit: the entry was dropped because no unit token was left
-  to read. Seeing one of these against a hunter who never left the party is a roster fault, not a
-  feign fault, and it is worth reporting on its own.
-- **`N judge rows suppressed`** with no `judge` lines means the Deaths refresh ran and never met a
-  GUID any cast line had named — a different finding from a refresh that never ran.
-
-**Record for the report:** group size and composition, whether the hunter was the local player or a
-party member, the full buffer, and the Deaths count you actually saw in the window beside it.
-
-**Then the provider check — does a feign's recap answer differently from a death's?** Blizzard's
-documented death row carries no field that marks a feign (see
-[scope.md](scope.md#known-limitations)), so the one place a signal could still hide is the recap
-behind the row's `deathRecapID`, whose event shape is undocumented. This check decides whether
-issue #25 is fixable from the provider at all.
-
-1. With a hunter in the party, out of combat, have them **feign once and not die**. Note the time.
-2. Have another party member **really die once** (or wait for one). Out of combat again.
-3. `/mm debug recap`. It dumps every death row the session holds with its recap id, then calls
-   `HasRecapEvents`, `GetRecapEvents` and `GetRecapMaxHealth` against chosen ids.
-4. Find the hunter's newest row and the real death's newest row in the dump, and compare what the
-   recap calls answered for each.
-
-**Pass (the issue closes as not fixable from this provider).** Both ids answer the same way:
-events present, a max health, the same shape of event list. Nothing distinguishes the feign, and the
-Known Limitations entry stands as written.
-
-**Finding (reopen the design).** The feign's id answers consistently differently from every real
-death's across at least three feigns: no events, a zero max health, or an event list with a marker
-a real death never carries. Paste the dump into the issue. That is a signal a filter could read off
-the row, and only then is a code change worth writing.
-
-### 29. The pooled tab strip, and the perf strings, after the v1.27.0 re-vendor
-
-**Smoke, session 3. NOT YET RUN.** Two things arrived with `M4-01`'s LibKa0s v1.27.0 payload that
-only a client can settle, and nothing here may be reported as passing until someone has looked at it.
-
-`TabStrip` (`libs/LibKa0s/OptionsWidgets.lua`) no longer builds a button and a content panel per
-click: it acquires both from per-`ctx` `LibKa0s-Pool-1.0` pools and re-dresses them, re-setting
-`OnClick` on every dress. Its only headless proof counts `CreateFrame` calls on a second selection
-pass, and the case that would pin band geometry as invariant under selection cannot be written yet —
-the shared mock answers `GetHeight` with 0 for every frame and that flips at kit 16, not here. **So a
-stale label, a mis-anchored button or a band that changes height on a re-dressed tab is invisible to
-every automated check in this repo.** This addon has the widest strip surface in the collection —
-fourteen page files decorate one descriptor — so it is the likeliest place a reuse defect shows.
-
-**Steps — the strip.**
-- `/mm config`. Walk every page that draws a strip, and on each cycle every tab three times, ending
-  back on the first. **Columns** matters most: it is the one page that drives `H.TabStrip` directly
-  rather than through `H.RenderTabbedSchema`, because it is a block editor and not a schema group,
-  so it is the strip least like the other thirteen.
-- Watch three things on each pass: the **label** is that tab's own, the **selected** tab is the one
-  you pressed, and the strip's **band height** does not move as you go through it.
-
-**Steps — the strings.** `LibKa0s-Perf-1.0` minor 8 respells five player-facing strings: two
-`CANCELED` and three `unlabeled` become `CANCELED` and `unlabeled`. No single capture shows all
-five, so run two.
-- `/mm perf start mylabel`, then `finish` — the started line and the report header both name the
-  label.
-- `/mm perf start` with no label, then `cancel`.
-
-**Pass.**
-- Every tab labeled and selected correctly on all three passes, on every page, and no band that
-  grows or shrinks. A label carried over from the previously-dressed tab, a highlight on the wrong
-  button, a body drawn under the wrong tab, or a strip whose height moves between passes is the pool
-  handing back a frame it did not finish dressing.
-- The unlabeled start line, its report header and the cancel line read **`unlabeled`** and
-  **`perf run CANCELED`**. A double-L in either is a copy of the string that did not come from the
-  vendored payload.
-- No Lua errors at any point.
-
----
-
-### 30. The Border dropdown when five Ka0s addons share one registry
-
-**Smoke, session 5. NOT YET RUN — no client was available when this step was written.**
-Run after this addon's `core/LSMPatch.lua` was deleted and `settings/OptionsSetup.lua`'s live wiring
-took the fixup over (`M4-07`), and again after the one deletion still outstanding — AbsorbTracker,
-last of the five, because its copy is the one that diverges (a callable `NS.ApplyLSMBorderPatch()`
-rather than a `PLAYER_LOGIN` frame). Five deletions, five commits, five bisect points if this goes
-wrong.
-
-**The thing under test is not Multi Meters.** AceGUI's widget registry is process-global: one slot
-named `LSM30_Border` shared by every addon in the client, Ka0s or not, and the highest version
-registered for the name owns it for the rest of the session. Five Ka0s addons each carried a private
-copy of the same wrapper, each registering one version above whatever it found, so the wrapper a
-Border dropdown actually got belonged to whichever addon the client loaded last. Nothing headless in
-any of the five repos could see it — each suite loads one copy, registers once and passes — and this
-addon's copy could not even be seen registering, because it did its work from a `PLAYER_LOGIN` frame
-that never fires under `lua tests/run.lua`.
-
-KickCD lost its private copy first (`M4-04`), then PanelMaster (`M4-05`), then ConsumableMaster
-(`M4-06`); Multi Meters is the fourth. So this run is also the evidence that one library-level
-registration dresses the dropdown in **four** addons that no longer carry their own, with one that
-still does loaded alongside them.
-
-1. Enable KickCD, PanelMaster, AbsorbTracker, ConsumableMaster and Multi Meters together, and log
-   in.
-2. Open each addon's Border dropdown in turn. This addon's are `/mm` → **Frame** → **Border style**
-   and **Tooltip** → **Bar border style**; both are `LSM30_Border` and both must look the same.
-3. Change the load order — disable and re-enable addons, or rename folders so a different one is
-   reached last — `/reload`, and walk the dropdowns again.
-
-**Expect:** in all five addons, the closed control's left edge is **flush** with the sliders and
-checkboxes stacked with it, with **no ~42px gap**, and opening it still draws the per-row hover
-previews. Nothing differs between the two passes. **Any dropdown that looks different from the
-others, or that changes when the load order changes, is the finding** — the whole point of moving
-the registration into LibKa0s is that the answer no longer depends on who loaded last. No Lua error
-at any point.
-
----
-
-### 31. The perf panel's close control
-
-**Smoke, session 3. NOT YET RUN — no client was available when this step was written.**
-
-`core/PerfSetup.lua` passes no `decorate` hook, so `libs/LibKa0s/PerfPanel.lua` draws the panel's
-close control itself, from the folder name the descriptor now states explicitly. That path has
-**never been looked at in a client from this addon**: for as long as the hook existed the library's
-own arm could not run, and the arm is the half a headless case can only prove by argument. The
-failure it is watching for draws nothing and raises nothing — a texture path that is never built is
-silent, which is how this panel wore a multiplication sign through a green suite once already.
-
-**Steps.**
-```
-/mm perf
-```
-Then, with the panel open, `/mm debug` so the console sits beside it.
-
-**Pass.**
-- **Exactly one** close control on the perf panel, in the panel's **top-right corner**, at the same
-  inset from the same corner it has always been at. Two stacked there means a `decorate` hook came
-  back and the library's arm ran as well; none at all means the arm did not run.
-- It is **this collection's close mark** — the same art the debug console beside it wears, and the
-  same the meter window's title bar ends in (§1). A thin gray multiplication sign is the library
-  falling back because it was not told which addon folder to build the path from, and is the exact
-  regression the explicit `addonName` exists to prevent.
-- Clicking it closes the panel, and `/mm perf` reopens it.
-- No Lua error at any point.
-
-### 32. Bar fills slide between refreshes (issue #23)
-
-**Why this is in-client.** The headless suite proves that `Cell:SetValue` hands both status-bar
-setters the ease-out interpolation, that a secret value is still passed raw beside it, and that the
-switch and a client without `Enum.StatusBarInterpolation` both fall back to the plain call. It cannot
-show a bar moving, and it cannot prove the client accepts the argument on a secret in combat.
-
-1. With **Bars → Bar → Animate bar fills** on (the default), out of combat at a target dummy, watch
-   the top rows. Each fill **slides** to its new length over a fraction of a second rather than
-   stepping four times a second at the shipped 0.25 s throttle. The column max moves smoothly too:
-   when the leader's number grows, the other bars shrink smoothly rather than jumping.
-2. **In a real pull** (a Mythic+ pack or a raid pull, where the `Combat` restriction is active),
-   the bars still slide and **no Lua error** appears. This is the check that matters: every value
-   is secret there, and the slide must come from the client.
-3. Turn **Animate bar fills** off (or `/mm set window.bars.animate false`). The bars snap again,
-   exactly as before.
-4. With it on, confirm the **numbers, the row order and an export** are the same as with it off.
-   The animation is only drawn, and nothing reads it back.
-
-**Pass:** smooth fills in and out of combat, a snap when off, no error, identical text and order.
-**Record:** client build, and whether step 2 was in a key or a raid.
-
----
-
-### 33. The pinned segment's none
-
-**Why this is in-client.** `window.data.sessionID` is a hidden row now, and its "no pin" is
-`Constants.NO_SEGMENT`, the number `0`. The headless suite proves that every reader turns 0 into "no
-pin", that the menu, the Current / Overall entries and the staleness check all write through the
-seam, and that an account saved without the key backfills to 0. It cannot prove the premise the
-sentinel rests on: **that the live client never hands out a stored session whose id is 0.** If it
-did, that fight could not be pinned.
-
-1. Run three or four pulls, then `/mm diagnostics` and read the stored-session list it prints.
-   **Every `sessionID` is a positive integer.** None is 0.
-2. Log out and back in, run another pull, and read the list again. **Still no 0.** A counter that
-   restarts at login is the case that could mint one.
-3. Pin each listed fight in turn from the header's segment menu. **Each one pins**: the header names
-   it and the grid shows its numbers.
-4. `/mm get window.data.sessionID` answers the pinned id. Pick **Overall** from the menu and ask
-   again: it answers `0`.
-5. `/mm set window.data.sessionID 0` unpins a pinned window, and `/mm set window.data.sessionID -1`
-   is refused with *Invalid value*.
-
-**Pass:** no stored session ever carries id 0, every fight pins, and the CLI reads and writes the
-row as the menu does.
-**Record:** client build, and the lowest and highest ids seen.
-
----
-
-### 34. v13 → v14 Lock frame migration
-
-Needs a profile saved before this change (`schemaVersion` 13 or earlier) with **General → Master
-controls → Lock frame** ticked, so do this before wiping SavedVariables — same constraint as §22.
-
-1. On the old build, with at least two windows, unlock one of them from its own header padlock, then
-   tick **Lock frame** on General. Log out so it is saved.
-2. Update and log in. **Every window is locked**, including the one whose own padlock was open: a
-   ticked master lock is carried onto every window's own lock. A window that drags means the
-   migration dropped the stored lock instead of carrying it.
-3. **Lock frame** reads ticked. Untick it: every window unlocks.
-4. `/reload` and confirm nothing moves again: the step is idempotent and `schemaVersion` is now 14.
-   `/mm get master.locked` answers whether every window is locked, not a stored value.
-5. Check a **second profile** you had not activated this session that also had Lock frame ticked:
-   its windows arrive locked too.
-6. A profile that had Lock frame **unticked** arrives with each window's lock exactly as it was.
-
-**Record:** client build.
-
-### 35. The diagnostics report
-
-`debug-logging-§14`. The report is what the README's `## Reporting a bug` asks a player for, so it
-must land from any state. The headless suite proves the section order, the never-list and the
-markers against a mocked client; only a live client proves the restriction, the copy and a real
-buffer. [debug.md](debug.md#the-diagnostics-report) describes what each section prints.
-
-1. **Both forms, while disabled.** `/mm disable`, then `/mm diagnostics`, then
-   `/mm debug diagnostics`. **Both write a full report**, and its `state` section reads
-   `stored enabled=false` and `stood down=true`. Then `/multimeters diagnostics` and
-   `/multimeters debug diagnostics`: **the same report** under the long slash.
-   `/mm enable` afterwards.
-2. **It appends.** `/mm debug on`, change a setting or two, then `/mm diagnostics`. The trace lines
-   are **still above** the `==== Ka0s Multi Meters diagnostics begin ====` line. Nothing was cleared.
-3. **Under the restriction.** Mid-pull in a Mythic+ dungeon or a raid, `/mm diagnostics`. **No Lua
-   error.** Session figures, names and durations read `<secret>` where the client hid them, and every
-   window's size and position still print, because they come from config.
-4. **The copy.** After step 2, press **Copy** in the console and paste into a text editor. The paste
-   holds the trace, the begin marker and the `==== Ka0s Multi Meters diagnostics end ====` line, and
-   **no `|c` color escapes** anywhere in the report.
-5. **Ungated.** `/mm debug off`, then `/mm diagnostics`. The report lands in full. Afterwards the
-   console header still reads `Debug: OFF`, and the next setting change writes no `[Set]` line.
-6. **The buffer cap.** With `/mm debug on`, leave a window refreshing through a few pulls, or run
-   `/mm diagnostics` a few times, until the console passes its cap. The counter reads
-   `N / 3000 lines`, stops at 3000, and **Copy** opens without a noticeable hitch.
-7. **The old name is gone.** `/mm debug diag` toggles the console the way any unknown word does, and
-   `/mm diag` answers `unknown command`. **Neither runs the report.**
-8. **The README, word for word.** From a fresh `/reload` with the console closed, follow
-   `## Reporting a bug` in the README exactly as written. Every step works as written, and the paste
-   holds the trace and the whole report.
-
-**Record:** client build, whether step 3 ran in a key or a raid, and the line count step 6 settled at.
-
----
-
-### 36. The Windows page (MultiMeters#55)
-
-The Windows page is one page per window: the Active window band on top, the nav rail on the left and
-the entry's own tab strip to its right. Open the panel with `/mm config`. The owner fills the Result
-column.
-
-**Owner run, 2026-09-26:** MM-S1 to MM-S11 all passed in the client; the owner then gave the go-ahead to merge.
-
-| # | Check | Expected | Source | Result |
-|---|---|---|---|---|
-| MM-S1 | Look at the Settings tree under Ka0s Multi Meters. | General · Windows · Profiles. There are no Frame, Header, Bars, Tooltip, Visibility or Columns entries, indented or not. | spec §A1; NR-MM-04 | |
-| MM-S2 | Open Windows. | The Active window picker is the band across the top, full width. The rail is on the left with General · Frame · Header · Bars · Tooltip · Visibility · Columns, and the page opens on General. The rail's top edge is level with the top of the tab art (the tab itself, not the empty space above it). | spec §A2; options-ui-§13, §14 | |
-| MM-S3 | Rail -> Bars, then scroll to the bottom of the Bar tab. | Only the controls move. The band, the rail and the tab strip stay where they are. | spec §A2 | |
-| MM-S4 | Frame -> Size and position, then Bars, then Frame again. | Frame opens on Size and position. Repeat with Columns -> Header background, then General, then Columns: Columns opens on Header background. | spec §A3 (per-entry tabs); NR-MM-02 | |
-| MM-S5 | On Bars -> Border, pick the other window in the band. | The page stays on Bars -> Border, and the values shown are the other window's. Pick the first window again: the same. | options-ui-§14 (the rail is not a picker); NR-MM-02 | |
-| MM-S6 | On General: rename the window in the name box and press Enter, click New window, Duplicate window, then Delete window and confirm. Then, under the Copy settings from heading, pick the other window as Source window, pick Bars under Settings to copy, and click Copy. | General shows one tab, named General. Each act does what it did on the old Window tab, and the band follows the new or duplicated window. The copy changes only the active window's Bars settings to the source's. | spec §A2 (Copy folded into General); R2 | |
-| MM-S7 | Columns -> Columns tab. Start dragging a block by its handle, and while the mouse is still down, click Frame on the rail. Release. Then go back to Columns. | The page moves to Frame with no drag handle left on any Frame row. Back on Columns, every block is there, in an order you can read, and dragging still works. | Review Focus 1; NR-MM-02 | |
-| MM-S8 | With the first window active: change a Frame setting (Size and position -> Width) and a Header setting (Title bar -> Header height). Select Frame and click Defaults. Then select General and click Defaults. Then change the column order on Columns, select Columns and click Defaults. | Frame's Defaults puts only the Frame rows back, on the active window only: Header height keeps your value, and the other window is unchanged. General's Defaults changes nothing and prints one line saying General has no settings to restore; the window keeps its name. Columns' Defaults restores the shipped column list and the header text and background settings. | Review Focus 2; spec §A3 (Defaults); R1 | |
-| MM-S9 | Open Windows, then enter combat (attack a training dummy). Try clicking a rail entry. Leave combat. | The whole page, rail included, is under the combat cover with "Settings are locked during combat." Nothing under it can be clicked, and one gray "locked" line prints. After combat the page draws normally, on the entry you were on. | options-ui-§2, §13 | |
-| MM-S10 | `/reload`, then open Windows as the first page of the session. | The tabs sit in one row to the right of the rail from the first frame. None is drawn under the rail, and none is stacked one per row. | Global Constraints; NR-MM-02 | |
-| MM-S11 | Hover each rail entry. | Each shows a tooltip saying what the entry holds. The rail looks like a tree pane (gold entries, the selected one white on a blue bar), visibly different from the gold tabs. | spec §A2 (rail tooltips) | |
-
-### 37. The event trace (2026-09-29)
-
-`/mm debug on`, keep the console open. The owner fills the Result column.
-
-| # | Check | Expected | Result |
-|---|---|---|---|
-| MM-E1 | Zone into a dungeon (or take a portal). | `[Event] PLAYER_ENTERING_WORLD lockdown=false restricted=… login=false reload=false`, then `[Event] ZONE_CHANGED_NEW_AREA …` when the zone name changes without a loading screen. | |
-| MM-E2 | Pull a training dummy, then leave combat. | `[Event] PLAYER_REGEN_DISABLED …` at the pull and `[Event] PLAYER_REGEN_ENABLED …` when combat ends. | |
-| MM-E3 | Join or leave a group, or have someone join yours. | `[Event] GROUP_ROSTER_UPDATE …`, once or a few times. | |
-| MM-E4 | A boss pull and kill (a follower dungeon or LFR boss), or a Mythic+ key start and end. | `[Event] ADDON_RESTRICTION_STATE_CHANGED lockdown=… restricted=… type=<n> state=<n>` at each edge; `restricted=true` while it is active. Note every `type=`/`state=` pair seen, and at which moment. | |
-| MM-E5 | Mount, dismount, shapeshift, die and release. | No `[Event]` line for any of them. The windows still hide and show by your visibility rules. | |
-
----
-
-## What to report
-
-For any failure, the minimum useful report is:
-
-- **Where**: dungeon and key level, or raid, or open world; solo or grouped, and the composition.
-- **When**: in combat or between packs; before or after a pull; on login, on reload, on zone-in.
-- **The full Lua error with its stack**, if there was one. A secret-value error names the operation
-  (compare / arithmetic / index / length / concat), which is what identifies the rule that was broken
-  and therefore the file that broke it.
-- **Window config**: sort mode, sort column, session type, throttle, and the column list. `/mm list`
-  dumps all of it.
-- **The diagnostics report**, taken right after the failure: `/mm diagnostics`, then **Copy** in the
-  console. It carries the window config, the restriction state and the addon's own view of what it
-  was doing.
-- **Whether it reproduces with one window**, and whether it reproduces with `sortMode = "roster"` —
-  which takes the value-comparison path out of the picture entirely and is the fastest way to tell a
-  sorting bug from a rendering one.
+| INSTALL-1 to INSTALL-9 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades |
+| SLASH-1 to SLASH-14 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button |
+| PANEL-1 to PANEL-46 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse |
+| PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
+| STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
+| WIN-1 to WIN-36 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window |
+| VIS-1 to VIS-12 | [Visibility](#vis) | Contexts and hide rules |
+| GRID-1 to GRID-32 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments |
+| TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
+| EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
+| COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
+| DIAG-1 to DIAG-31 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events |
+| DEGRADED-1 to DEGRADED-9 | [LibKa0s absent](#degraded) | The library-absent install |
+| LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
+
+## Before you start
+
+- **`/reload`** means `/console reloadui`.
+- **BugSack / BugGrabber** (or the stock Lua error frame), enabled and cleared, is the main signal.
+  "No Lua error" means none at any point. Meter errors arrive four times a second mid-pull, so a
+  single one fails the check even if the window looks right.
+- **Restricted** means the `Combat` addon restriction is active, which is when meter numbers arrive as
+  secret values. It follows combat, not Mythic+: between packs in a key the values are readable.
+- **A pull** means a real one: a Mythic+ trash pack or a raid pull with the group fighting. A target
+  dummy does not activate the restriction and is no substitute where a check says "a pull". Where a
+  dummy is enough, the check says so.
+- **Old SavedVariables.** INSTALL-6 to INSTALL-9 need a `MultiMeters.lua` file saved by an older
+  build; copy it aside before INSTALL-1 wipes it.
+- **Several windows.** Checks that say "two windows" start from Windows → General → **New window**.
+- **Reporting a failure.** Give where (dungeon and key level, raid or open world; solo or grouped and
+  the composition), when (in combat or between packs; login, reload or zone-in), the full Lua error
+  with its stack (a secret-value error names the operation: compare, arithmetic, index, length or
+  concat), the window config (`/mm list`), the diagnostics report taken right after the failure
+  (`/mm diagnostics`, then **Copy** in the console), and whether it reproduces with one window and
+  after `/mm set window.data.sortMode roster`, which takes value comparison out of the picture.
+
+## INSTALL
+
+- **INSTALL-1. Fresh install.** Quit WoW, delete `WTF/Account/<ACCOUNT>/SavedVariables/MultiMeters.lua`
+  and its `.bak`, confirm the character-select AddOns list shows **Ka0s Multi Meters** enabled, log in
+  → no Lua error; exactly one window, named **Multi Meters #1**, centered on screen, showing the six
+  default columns after the name column, left to right: Damage · Healing · Interrupts · Dispels ·
+  Avoidable Damage · Deaths. Result:
+- **INSTALL-2. No schema errors.** After INSTALL-1, open the settings panel and walk every page →
+  no `schema error:` line and no "schema path does not resolve" line at any point (either means a
+  schema row's path or default disagrees with `defaults/Profile.lua`). Result:
+- **INSTALL-3. SavedVariables shape.** After INSTALL-1, `/reload`, then read `MultiMeters.lua` on disk
+  → `profileKeys`, `profiles.Default`, `global.schemaVersion = 16`, a one-entry `profile.windows`
+  whose window has `id = 1`, and `profile.nextWindowId = 2`. Result:
+- **INSTALL-4. `/reload` keeps the layout.** Move the window, resize it, change its bar color and its
+  column set, `/reload` → position, size, color and columns survive; the window is in the same
+  visibility state; no error during load; `nextWindowId` has not moved. Result:
+- **INSTALL-5. Meter data survives a full logout.** Fight a target dummy, `/logout` fully, log back in
+  → window #1 still shows the previous fight's segments and the people in them. A player who left the
+  group keeps their row on data from before the logout. An empty meter after a fresh login means the
+  observation behind `db.global.roster`'s bound (prune above `4 * MAX_ROWS`, no forget at login,
+  `modules/Roster.lua`) has changed and the bound needs revisiting. Result:
+- **INSTALL-6. Upgrade from v1 (uniform column widths).** Log in with a file written by v0.1.0 →
+  every column is the same width and the window is wide enough to show the rightmost one; a window
+  previously dragged wider keeps its width (the step only widens); after `/reload` nothing moves and
+  `schemaVersion` has advanced; a second profile not activated this session has its widths lifted
+  too. Result:
+- **INSTALL-7. Upgrade from v12 (title bar and control colors).** Log in with a file saved at
+  `schemaVersion` 12 or earlier, on a window with its title bar off and at least one of *Control class
+  color* / *Control hover class color* ticked → the title bar is still off and the control colors are
+  exactly as they were; Header → **Title bar** shows the toggle unticked; Header → **Button style**
+  shows **Class color** for whichever flag was ticked, not Custom; after `/reload` nothing moves; a
+  second, inactive profile is carried across too. A title bar back on, or colors reset to Custom,
+  means the step wrote a default. Result:
+- **INSTALL-8. Upgrade from v13 (Lock frame).** On a build from before v14, with two windows, unlock
+  one from its header padlock, tick General → Master controls → **Lock frame**, log out; update and log
+  in → every window is locked, including the one whose padlock was open; **Lock frame** reads ticked,
+  and unticking it unlocks every window; after `/reload` nothing moves and `schemaVersion` is at least
+  14; `/mm get master.locked` answers whether every window is locked; a second, inactive profile with
+  Lock frame ticked arrives locked; one with it unticked keeps each window's own lock. Result:
+- **INSTALL-9. Upgrade from v15 (minimize keys and the minimap button).** On a build from before v16
+  (`schemaVersion` 15 or earlier), hide the minimap button, collapse one window with its minimize
+  control, hide the minimize control on a second window (Header → Controls), log out; update and log
+  in → the button is still hidden and `/mm get global.minimap.shown` answers `false`;
+  `/dump MultiMetersDB.global.minimap` shows `hide = true` (plus `minimapPos` if the button was ever
+  dragged) and no `shown` key; the first window is still collapsed; the second still has no minimize
+  control and its Header → Controls → **Show minimize** box reads unticked;
+  `/dump MultiMetersDB.global.schemaVersion` prints `16`; in `/dump
+  MultiMetersDB.profiles.Default.windows` every window's `frame` keys are spelled the US way
+  (`minimized`, `showMinimize`; the v16 step renames the two British-spelled keys and drops them), and
+  the collapsed one reads `minimized = true`. A window back expanded, or a minimize control back on
+  screen, means the v16 step lost the old key. Result:
+
+## SLASH
+
+- **SLASH-1. Banner and help.** `/mm help` → the help index; every line the addon prints starts with
+  one cyan `[MM]`, verb names are yellow. A doubled `[MM][MM]`, a line missing the banner, or a green
+  line with a trailing colon (AceConsole's printer) means `core/MultiMeters.lua`'s reclaim of
+  `NS.Print` broke. Result:
+- **SLASH-2. Bare `/mm`.** Type `/mm`, then `/mm` followed only by spaces → each opens the settings
+  panel on the **Ka0s Multi Meters** landing page, the same as `/mm config`, and prints nothing.
+  Result:
+- **SLASH-3. Every verb answers.** Run `/mm help`, `/mm config`, `/mm list`, `/mm version`,
+  `/mm get window.frame.width`, `/mm set window.frame.width 520`, `/mm reset window.frame.width`,
+  `/mm lock`, `/mm lock off`, `/mm test`, `/mm test on`, `/mm toggle`, `/mm window list`,
+  `/mm reset-positions`, `/mm debug`, `/mm debug on`, `/mm debug off`, `/mm diagnostics`,
+  `/mm perf help`, `/mm profile`, `/mm export`, then `/multimeters help` and `/mm frobnicate` →
+  every verb answers and none errors; `/multimeters` behaves as `/mm`; the unknown verb prints
+  `unknown command 'frobnicate'` followed by the index. Result:
+- **SLASH-4. Help and landing page agree.** Compare `/mm help` with the settings landing page → the
+  same commands with the same descriptions, including `export` and `profile` (both read
+  `NS.COMMANDS`; a difference means someone wrote a second list). Result:
+- **SLASH-5. Version.** `/mm version` → matches the TOC's `## Version` line. Result:
+- **SLASH-6. `set` and `get` target the active window.** With two windows, `/mm set
+  window.frame.width 520` → the window the band is on changes and `/mm get window.frame.width` reads
+  520; pick the other window in the band and repeat the same command → it now targets the other
+  window, with no change to the typed path. `/mm reset window.frame.width` → only that row returns
+  to its default. Result:
+- **SLASH-7. CLI refusals and clamps.** `/mm set window.columns.2.width 90` → *Setting not found:
+  window.columns.2.width* (a column has no path of its own; columns are edited under Windows →
+  Columns); `/mm set window.frame.scale 5` → not refused but clamped to the top of the range, echoing
+  `window.frame.scale = 2.00x`; `/mm set nonsense.path 1` → *Setting not found: nonsense.path*.
+  `/mm set window.data.sortMode bogus` (a value the parser takes and the row's check refuses) → one
+  line *Invalid value for window.data.sortMode* and no `window.data.sortMode = …` echo;
+  `/mm get window.data.sortMode` still reads `value`. Result:
+- **SLASH-8. `/mm list` and hidden rows.** `/mm list` → every setting grouped under the same page
+  keys the panel uses, with the column list as `window.columns = N shown`; it includes
+  `window.frame.minimized`, which the panel does not draw;
+  `/mm set window.frame.minimized true` collapses the window. Result:
+- **SLASH-9. `/mm toggle`.** `/mm toggle` → every window flips; `/mm toggle <window name>` (for
+  example `/mm toggle Multi Meters #1`) → only that window flips, its name read with case and inner
+  spaces kept. Result:
+- **SLASH-10. `/mm lock`.** `/mm lock` twice → it toggles; `/mm lock off` → it sets, printing
+  *Windows are unlocked — drag them into place.*; `/mm lock on` prints *Windows are locked.* Result:
+- **SLASH-11. `/mm window`.** `/mm window list` → one line per window: its name, *Enabled* when it
+  is on screen or *Disabled* when hidden, and a count of every column in its list, shown or not
+  (`8 Columns` on a fresh window). `/mm window new Raid` → *Window 'Raid' created.*; `/mm window new
+  Solo`, then `/mm window copy Raid Solo` → *Copied everything from 'Raid'.* and Solo takes Raid's
+  settings (the source is the first word, so a source whose name has a space is copied from Windows
+  → General instead); `/mm window delete Solo` → *Window 'Solo' deleted.* with no confirmation (the
+  panel's **Delete window** asks first, WIN-34); `/mm window delete Raid` the same. Result:
+- **SLASH-12. `/mm config` in combat.** Enter combat (a dummy is fine), type `/mm config`, then a bare
+  `/mm` → each refuses with one gray notice; leaving combat does not open the panel (nothing was
+  queued). Result:
+- **SLASH-13. Minimap button, enabled.** Start unlocked: `/mm lock off` (SLASH-10 ends locked).
+  Hover the button → the tooltip ends *Left-click: Open settings* / *Right-click: Options menu*. Left-click → the settings panel opens. Right-click → a menu
+  titled *Ka0s Multi Meters* with four checkboxes in order, each ticked to match the current state:
+  **Enabled**, **Locked**, **Test mode**, **Show window**. Click **Locked** → chat prints *Windows are
+  locked.* and the entry reads ticked on reopen. Click **Test mode** → placeholder rows appear; again
+  → they go. Click **Show window** → every window hides (or shows, if none was up), as `/mm toggle`.
+  Result:
+- **SLASH-14. Minimap button, disabled.** `/mm disable` (or untick **Enabled** in the menu, which
+  prints `enabled = false`). Left-click → the panel still opens and nothing prints. Right-click →
+  **Enabled** unticked and clickable; **Locked**, **Test mode** and **Show window** grayed, each reading
+  *(enable the addon first)*, and not clickable. Tick **Enabled** → the addon comes back, as
+  `/mm enable`. Result:
+
+## PANEL
+
+The Windows page is one page per window: the Active window band on top, the nav rail on the left
+(General · Frame · Header · Bars · Tooltip · Visibility · Columns), and the entry's tab strip to its
+right. Open the panel with `/mm config`.
+
+- **PANEL-1. The Settings tree.** Settings → AddOns → Ka0s Multi Meters → the tree reads General ·
+  Windows · Profiles, and nothing else: no Frame, Header, Bars, Tooltip, Visibility or Columns
+  entries, nested or not. Result:
+- **PANEL-2. Windows page layout.** Open Windows → the band spans the top; the rail is on the left
+  with its seven entries and the page opens on General; the rail's top edge is level with the top of
+  the tab art (the tab itself, not the space above it). Result:
+- **PANEL-3. Only the controls scroll.** Rail → Bars, scroll to the bottom of the Bar tab → only the
+  controls move; the band, the rail and the tab strip stay put. Result:
+- **PANEL-4. Each entry remembers its tab.** Frame → Size and position, then Bars, then Frame → Frame
+  opens on Size and position. Columns → Header background, then General, then Columns → Columns opens
+  on Header background. Result:
+- **PANEL-5. The band switches windows and keeps the tab.** With two windows, on Bars → Border pick
+  the other window in the band → still on Bars → Border, now showing the other window's values; every
+  other entry shows the newly picked window's values on the next visit; pick the first window again →
+  the same. Result:
+- **PANEL-6. First show draws correctly.** `/reload`, then open each page for the first time → every
+  widget correctly sized, none squashed into a zero-width column, every widget in the same skin as
+  your other AceGUI addons. With a skinning addon (ElvUI / AddOnSkins) loaded, the skin also reaches
+  the band's window dropdown and the tab strip (both built on first show, like the Defaults button);
+  a piece left unskinned is the lazy-build rule failing for it
+  ([settings-panel.md](settings-panel.md#eager-category-lazy-body-lazy-defaults-button)). Result:
+- **PANEL-7. Changes apply at once.** On every page and every Windows entry, move one control of each
+  type present (checkbox, slider, dropdown, color, edit box) → the window changes immediately, with no
+  `/reload`. Result:
+- **PANEL-8. Tab strips fit one row.** `/reload`, open Windows as the first page of the session, then
+  visit every entry → from the first frame, the tabs sit in one row to the right of the rail, none
+  under the rail and none stacked one per row. At default UI scale no strip wraps: Frame's four, Bars'
+  six, Tooltip's six, Header's four, Visibility's three, Columns' three (a wrap is `placeTabs`
+  arithmetic, not a copy problem). Result:
+- **PANEL-9. Clicking the current tab.** Click the tab you are already on → nothing at all: no
+  flicker, no repaint, no message. Result:
+- **PANEL-10. Rail tooltips and look.** Hover each rail entry → a tooltip saying what the entry holds;
+  the rail reads as a tree pane (gold entries, the selected one white on a blue bar), visibly different
+  from the gold tabs. Result:
+- **PANEL-11. Tabs survive reuse.** On every page that draws a strip, cycle every tab three times,
+  ending on the first; do Columns too, which drives the strip directly rather than through the schema
+  renderer → on every pass each tab carries its own label, the selected tab is the one you pressed,
+  the body belongs to that tab, and the strip's height does not change. A carried-over label, a
+  highlight on the wrong tab or a moving height is the tab pool handing back a half-dressed frame
+  (invisible to every headless check). No Lua error. Result:
+- **PANEL-12. Tab art.** Look at any strip → a flat backing with the active tab drawn darker. Record
+  whether it reads as tabs or wants Blizzard's tab atlas; changing it is a
+  `LibKa0s/OptionsWidgets.lua` change, not a Multi Meters one. Result:
+- **PANEL-13. Entry shapes.** Visit each entry → the tabs read, in order, each holding the rows named:
+  **Frame**: General (Lock window, Keep on screen, then the four *(all surfaces)* rows), Size and
+  position (Width, Height, Scale, Opacity, Frame strata, Padding), Background and border (a
+  *Background* heading with Background color and Background color mode, then a *Border* heading with
+  Border style, Border thickness, Border color and Border color mode), Row (Maximum rows, Row height,
+  Row spacing, Growth direction, Always show yourself, Highlight yourself, Highlight on mouseover,
+  Alternating background); it opens on General, where *Font outline (all surfaces)* shows **None**
+  on a fresh profile. **Bars**: Bar, Background, Border, Text content, Text style, Icons; none of the
+  Row rows above appears on Bars (their paths are `window.rows.*`, and `/mm get window.rows.height`
+  answers). **Header**: Title bar (Show title bar, Alignment, Header height, Header background, then
+  the divider rows), Title text (the face the window's name is drawn in: Font, Font size, Text color,
+  Text color mode, Font outline, Text shadow; the name itself is typed on Windows → General), Controls,
+  Button style (an *Icon* heading with Reveal controls on hover beside Control size; a *Color* heading
+  with Control color and Control color mode on one line and Control hover color and Control hover
+  color mode on the next; an *Opacity* heading with Control opacity beside Control hover opacity).
+  **Tooltip**: General (Tooltip anchor, Tooltip scale, Horizontal offset, Vertical offset, Hide
+  tooltips in combat), Bar, Bar background, Bar border, Text, Contents (Show spell breakdown, Maximum
+  spells, Show targets, Maximum targets, Name the killer, Name the killing blow, Summarize on the name).
+  **Visibility**: Where to show this window (the seven contexts: Dungeons, Raids, Arenas,
+  Battlegrounds, Delves, Scenarios, Open world), When to hide this window (Hide when solo, Hide in
+  vehicles, Hide when mounted, Hide when skyriding, Hide on flight paths, Hide in player housing, Hide
+  in pet battles, Hide while dead), Combat (Hide in combat, Hide out of combat). Each tab label appears
+  once, and no row sits on a tab other than the one named here. Frame has no Header controls tab, no
+  Reset position button, no Show resize grip and no Minimized checkbox; Header has no Column headers
+  tab. Stored paths did not move with the rows: `/mm get window.text.size` and `/mm get
+  window.frame.closeButton` still answer (the close row keeps its older key; there is no
+  `showClose`). Result:
+- **PANEL-14. The Controls tab reads like the strip.** Header → Controls → each checkbox draws its
+  control's own icon between the tick box and the words, and the rows run in the strip's left-to-right
+  order: the segment line (no icon), export, reset, segment picker, settings, lock, minimize, close.
+  Each icon matches the header's; a missing icon means `NS.Icon` answered nil for that art name.
+  Result:
+- **PANEL-15. The General page.** Open General → it is first in the tree, draws no window band, and
+  its strip reads **[ Master controls ][ Behavior ][ Statistic colors ]**. Master controls holds
+  Enable Multi Meters, General visibility, Master scale, Master alpha, Lock frame, Debug console,
+  Minimap button and Test mode (the last two paired on one line below Lock frame / Debug console),
+  then the **Reset position** / **Reset all settings** pair and one sentence saying what each reaches,
+  with no paragraph under it. No second Test mode, Debug console or *Debug* heading anywhere; no tab
+  named General, Data, Maintenance or Export; no Reset meter data button on this or any page. Result:
+- **PANEL-16. Master scale and alpha.** With a window at Frame → Scale 0.8, set General → **Master
+  scale** to 0.5 → the window draws at 0.4; back to 1.0 → every window is exactly the size it was set
+  to. **Master alpha** behaves the same way over each window's opacity. Result:
+- **PANEL-17. Behavior is addon-wide.** With two windows, change General → Behavior → **Merge pets
+  into their owner** and **Refresh interval** → every window follows, not only the selected one.
+  Result:
+- **PANEL-18. The Minimap button toggle.** Untick General → **Minimap button** → the button leaves
+  the minimap immediately; tick it → it returns at the angle it was dragged to, and
+  `/mm get global.minimap.shown` reads `true`. Switch profiles → the button neither moves nor
+  reappears. General → **Reset all settings** → it stays hidden if it was hidden. With Master
+  controls open, `/mm set global.minimap.shown false` → the button hides and the **Minimap button** box
+  unticks without a click; `/reload` → still hidden; `/mm set global.minimap.shown true` → it returns.
+  Result:
+- **PANEL-19. The statistic palette.** General → Statistic colors → one swatch per statistic in the
+  catalog's colors, with a note saying where they are worn (check the note is true). Change Damage's
+  swatch → all four palette surfaces move together: Bars → Bar color mode Per-statistic, Bars → Text
+  style color mode Per-statistic, the Columns header text and background modes, and the Damage line of
+  a name tooltip (which wears the palette always). General's **Defaults** → the shipped colors return.
+  Result:
+- **PANEL-20. The five text controls, four surfaces.** Bars → Text style, Header → Title text, Columns
+  → Header text and Tooltip → Text each carry a font picker, font outline, text shadow, text color and
+  a **Text color mode**: Class / Per-statistic / Custom on Bars, Columns and Tooltip; Class / Custom
+  only on Header → Title text (no Per-statistic, as in WIN-20). Walk each mode the surface offers on
+  each page → only that surface changes (the cells; the title and session line; the "Player | Damage
+  | Healing" strip; a hovered tooltip). Per-statistic means: each cell its own column's color, the
+  tooltip the hovered column's, and each column label its own column's. Columns → Header background
+  has a Background color mode of Class / Per-statistic / Custom, where
+  Per-statistic paints one rectangle per label; Header → Title bar's background is a plain color with
+  no mode. The configured opacity survives every mode (a tint, not a slab). A control that moves the
+  wrong surface means two groups share a key. Result:
+- **PANEL-21. Class color on each surface.** Set Text color mode to Class on each page → Bars → Text
+  style colors each row by its own class (a mixed grid is multi-colored); Tooltip → Text takes the
+  hovered player's class (hover two classes); Header → Title text and Columns → Header text take your
+  own class. With Bars → Text style → **Text opacity** at 50% and mode Class → the text stays
+  half-transparent. Result:
+- **PANEL-22. The four meta rows.** Frame → General carries Color mode, Bar texture, Font and Font
+  outline, each marked *(all surfaces)*. Set **Color mode (all surfaces)** to Per-statistic → the six
+  surface dropdowns follow (Bars → Bar, Bars → Background, Columns → Header text, Columns → Header
+  background, Tooltip → Bar, Tooltip → Bar background); the three text modes (Bars → Text style,
+  Tooltip → Text, Header → Title text) do not move. Set one of the six back to Custom → only that one
+  changes. The bar texture reaches the grid and the tooltip; the font and outline reach the cells,
+  both header strips and the tooltip. Result:
+- **PANEL-23. Media pickers see late-registered media.** Load a media pack that registers fonts,
+  borders and bar textures (SharedMedia_MyMedia or similar), then open all eleven pickers: Frame →
+  General's Font and Bar texture, Frame → Border style, Bars → Texture and Border style, Tooltip → Bar
+  texture and Bar border style, and the font picker on Bars → Text style, Header → Title text, Columns
+  → Header text and Tooltip → Text → each list holds a name that could only have come from the pack. A
+  plausible-looking stock list is not a pass: nine of these rows are built by LibKa0s-Options' schema
+  composers, and a composer holding a list built before the pack registered fails silently. In each
+  font picker every name is drawn in its own face, not all in the default one. Result:
+- **PANEL-24. The Border dropdown is flush, whoever loaded last.** Open Frame → Border style and
+  Tooltip → Bar border style → the closed control's left edge is flush with the controls stacked with
+  it (no ~42px gap), and opening it still draws a border preview per row on hover. Then enable KickCD,
+  PanelMaster, AbsorbTracker and ConsumableMaster alongside, walk every addon's Border dropdown, change
+  the load order (disable and re-enable addons, or rename a folder), `/reload` and walk them again →
+  all five addons look the same on both passes (`LSM30_Border` is one process-wide AceGUI slot, now
+  registered once by LibKa0s). A dropdown that differs, or changes with load order, is the finding. No
+  Lua error. Result:
+- **PANEL-25. Which pages have Defaults.** Open each page → General and Windows carry a **Defaults**
+  button in the page header and Profiles does not. On Windows the one button acts on the entry on
+  screen: Frame, Header, Bars, Tooltip, Visibility, Columns, or General, where it restores nothing
+  (PANEL-27). Result:
+- **PANEL-26. Defaults reaches the whole entry.** On each of Frame, Header, Bars, Tooltip, Visibility
+  and Columns, change a value on a tab that is not showing, switch tabs, press **Defaults**, switch
+  back → your change is gone too. On Columns, stay on the block editor tab, change a value on Header
+  text or Header background without visiting it, press Defaults → it is reset as well. Result:
+- **PANEL-27. Defaults stays on its entry and window.** With two windows and the first active: change
+  Frame → Size and position → Width and Header → Title bar → Header height; select Frame and press
+  Defaults → only the Frame rows reset, on the active window only (Header height keeps your value; the
+  other window is unchanged). With `/mm debug on`, the press logs one `[Set] reset <page>: N rows` line
+  with no `[Set] <path> = …` lines under it, and a second press logs `0 rows`. With Windows → General
+  selected, click Defaults → nothing changes and one line says General has no settings to restore;
+  the window keeps its name. Result:
+- **PANEL-28. Panel and CLI stay in step.** With the Frame entry open, `/mm set window.frame.width
+  640` → the Width slider moves to 640 without reopening the page; move the slider → `/mm get
+  window.frame.width` reports the new value. Result:
+- **PANEL-29. An open page locks in combat.** Open Windows on a tabbed entry (then repeat with Columns
+  open), enter combat (a dummy is fine) → a gray cover reading *Settings are locked during combat.*
+  falls over the whole page, band, rail and tab strip included; one gray chat line says settings are
+  locked; a rail entry, a tab, a widget, a block glyph, a drag handle and the Defaults button all do
+  nothing; the Settings window stays open; no Lua error. Leave combat → the cover lifts on its own and
+  the page shows current values on the entry you were on. Result:
+- **PANEL-30. Every page mid-combat from the Blizzard sidebar.** Close the Settings window, enter
+  combat, open Settings → AddOns → Ka0s Multi Meters from the Blizzard sidebar, walk General, Windows
+  and Profiles → each shows the gray cover with nothing drawn under it (on Windows the band, rail and
+  strip too); the Settings window stays open; no `ADDON_ACTION_BLOCKED` and no `C stack overflow`;
+  exactly one gray *settings are locked during combat* line for the whole walk. Still in combat, with
+  the page open, click an action-bar button → it fires, with no *Interface action failed because of an
+  AddOn*. After combat the page on screen draws without a click. "Two pages covered and one rendering"
+  is the failure. Result:
+- **PANEL-31. The Windows → General entry.** Rename the window in the name box and press Enter, click
+  **New window**, **Duplicate window**, then **Delete window** and confirm; then under *Copy settings
+  from* pick the other window as Source window and Bars under Settings to copy, and click **Copy** → the
+  entry shows one tab, General; each act works, and the band follows a new or duplicated window; the
+  copy changes only the active window's Bars settings. Result:
+- **PANEL-32. Columns: drag by the handle.** Out of combat, Windows → Columns → hover a block's handle
+  → it turns gold and says *Drag to reorder*. Drag a block from the bottom of the ticked group to the
+  top by its handle → the window's columns reorder at once and the page shows the new order. The
+  handle is the full-height strip down the block's left edge; pressing anywhere else starts no drag.
+  If the drag does nothing, `/mm debug on` and retry: `[Blocks] grab N at y=…` on press and
+  `[Blocks] drop N -> M (R rows)` on release (no `grab`: the press missed the handle; `grab` without
+  `drop`: no release path fired; `0 rows`: the cursor read did not move). Result:
+- **PANEL-33. Columns: drag feedback.** During a drag → a copy of the block follows the cursor,
+  including past the top and bottom of the list; the source row fades; a gold insertion line marks
+  the landing spot; the list never reflows under the pointer. Result:
+- **PANEL-34. Columns: tick and untick.** Untick a middle block → it drops to the top of the unticked
+  group, just below the rule, and the window loses that column. Re-tick it → it lands at the end of the
+  ticked group and reappears as the rightmost column. Result:
+- **PANEL-35. Columns: the rule clamps a drag.** An unticked block has no handle. Drag a ticked block
+  toward the unticked group → the insertion line stops at the rule and the block stays ticked (a
+  clamped drop writes nothing, so the line stopping is the only feedback). Result:
+- **PANEL-36. Columns: the last column stays.** Untick down to one column, then untick that one →
+  refused with *A window must keep at least one column.* Result:
+- **PANEL-37. Columns: one label, one glyph.** After each drag, tick and untick → every block shows one
+  name and one glyph (no "DamageDeaths" overprint, no tick crossed by a cross), and clicking a glyph
+  toggles the statistic you clicked. Result:
+- **PANEL-38. Columns: drag twice.** Drag, drop, then drag again → the second drag works like the
+  first and no carried copy is left floating over the list. Result:
+- **PANEL-39. Columns: Defaults.** Reorder and untick, then press Columns' **Defaults** → the shipped
+  statistics come back, ticked and in shipped order, along with the header text and background rows;
+  with `/mm debug on` the console logs `[Set] reset columns: N rows`, the column list counted as one
+  row. Result:
+- **PANEL-40. Columns: no leftovers.** With `/mm debug on`, after every drag and every Defaults → no row
+  shows two names stacked and no drag handle appears anywhere that is not a block (not by the intro
+  text, not on the scrollbar). Each repaint prints, in this order, `[Blocks] released N handles, M
+  boxes` and `[Blocks] released N blocks` for the list going away (skipped when there was none),
+  `[Columns] paint window=N`, then `[Blocks] painted N rows, M draggable, K boxed, boundary=…` for the
+  new one. The blocks and handles released always equal the rows and draggable handles the repaint
+  before it painted. Result:
+- **PANEL-41. Columns: glyph tooltips.** Hover a tick and a cross → each says what a click will do:
+  *Click to hide this column* / *Click to show this column*. Result:
+- **PANEL-42. Columns: tabs and leaving mid-drag.** The strip reads Columns, Header text, Header
+  background, and the page opens on Columns; Header text shows only the header-font rows and Header
+  background only its color pair, with no section heading of their own. Drag a block, drop it, and
+  click Header text at once → no handle or block survives onto that tab, and with `/mm debug` the
+  `[Blocks] released N blocks` line comes before its repaint. Then start a drag and, holding the
+  mouse, click Frame on the rail; release → Frame shows no drag handle on any row; back on Columns
+  every block is there in a readable order and dragging still works. Result:
+- **PANEL-43. Columns: the library drag.** Drag a block from the middle of the ticked group to a lower
+  slot → the insertion line is in the list's own color and the order changes on the page and in the
+  window. Switch the band to another window and drag in its Columns → it draws its own line, not a
+  leftover. After the drop, idle frame time with the page open is what it was before the drag (no row
+  `OnUpdate` left armed). Result:
+- **PANEL-44. Columns: a drag held into combat.** Out of combat start a handle drag, pull a dummy while
+  holding it, drop → refused with *Columns cannot be changed during combat.* and the columns do not
+  change. No Lua error. Result:
+- **PANEL-45. A color drag is throttled.** With `/mm debug on` and the console open, set Bars → Bar →
+  Bar color mode to **Custom color**, click **Bar color** and drag around the picker for about three seconds →
+  the window's bars recolor while you drag, not only on release, with no per-frame stutter; the
+  console shows `[Set] window.bars.customColor = …` lines at about twenty a second, not one per frame.
+  **Cancel** → the color from before the drag returns at once. Result:
+- **PANEL-46. Switching windows does not leak.** With two windows, open Windows, then `/run
+  collectgarbage() print(collectgarbage("count"))`. Switch the band between the two windows 30
+  times and run the same line; repeat the 30 switches and read it again → the figure does not climb
+  with each round of 30 (a few KB of noise is fine). `/framestack` over the band → exactly one
+  Dropdown under it. No `SetParent` or `Release` error. Result:
+
+## PROFILE
+
+- **PROFILE-1. The Profiles page draws.** Open another addon's options page, then Ka0s Multi Meters →
+  Profiles → the AceDBOptions controls render (current profile, New, Copy From, Delete, Reset
+  Profile), never a blank page under the header. Result:
+- **PROFILE-2. A fresh character shares `Default`.** Log in on a character that has never loaded the
+  addon → Profiles shows it on the shared **Default** profile, not a per-character one. Result:
+- **PROFILE-3. Switching on the page.** Create "Test", switch to it, change several settings and add a
+  window, switch back to Default → every window rebuilds at once: the old profile's windows are gone,
+  the new profile's are drawn, positioned and populated; no stale window is left; the settings panel
+  and the band list the new profile's windows; profiles with different window counts work in both
+  directions; no Lua error. Result:
+- **PROFILE-4. Copy From.** On Default, Copy From "Test" → Test's windows come across; editing one
+  profile's window afterwards does not touch the other's. Result:
+- **PROFILE-5. Reset starts the profile over.** With two or more windows, each renamed and restyled
+  (font size, width, a column added or removed), pick one in the band, then General → **Reset all
+  settings** and accept → exactly one window, **Multi Meters #1**, at screen center in shipped
+  defaults, with the six shipped columns in catalog order; the extras are deleted, not restyled. The
+  popup warned about the deletion first. Profiles → **Reset Profile** gives the identical result.
+  Result:
+- **PROFILE-6. `/mm resetall` asks first.** With two windows and `/mm debug on`, type `/mm resetall`
+  → the popup the General page's **Reset all settings** button opens (*Reset this profile to the addon
+  defaults? …*, with **Yes** and **No**) appears, nothing has changed, and showing it logged no `[Set]`
+  line. Click **No** (or press Escape) → both windows unchanged and no `[Set]` line. Type it again and
+  click **Yes** → one fresh window, as PROFILE-5, and exactly one `[Set]` line, `[Set] reset profile
+  '<name>' to defaults` (no `[Set] reset all` line). The rebuild's own `[Roster]`, `[Aggregator]` and
+  `[Visibility]` lines beside it are expected. Result:
+- **PROFILE-7. A reset leaves other profiles alone.** Create a second profile, switch back, reset (by
+  each of the three routes) → the profile list is unchanged, you are still on the profile you were
+  on, and the second profile's windows and settings are untouched. Result:
+- **PROFILE-8. Export choices follow the profile.** Set different export Channel and Lines on two
+  profiles, switch between them → the modal's choices switch with the profile. Result:
+- **PROFILE-9. The page stays fresh after a switch made elsewhere.** Open Profiles, page away to
+  General, type `/mm resetall` and accept; come back to Profiles → the profile list and the scope
+  dropdowns are redrawn for the profile you are on. Repeat, switching with `/mm profile <name>` while
+  Profiles is hidden, and again while it is on screen → it shows the new current profile each time
+  (the `PROFILE_CHANGED` listener reaching `H.RefreshPanel`). Result:
+- **PROFILE-10. `/mm profile` lists.** With profiles Default, "raid" and "Test", type `/mm profile` →
+  a header line `Profiles`, then one line per profile sorted without regard to case (Default, raid,
+  Test), the current one followed by `(current)`, then the hint `/mm profile <name> switches profile`.
+  Every line carries the `[MM]` banner and none ends in a colon. Result:
+- **PROFILE-11. `/mm profile <name>` switches.** With `/mm debug on` and the console open, on Default
+  type `/mm profile Test` → chat prints `Switched to profile 'Test'.`; every window rebuilds for Test,
+  as in PROFILE-3; the console shows one `[Profile] switched to 'Test'` line; an open Profiles page
+  shows Test as current. Result:
+- **PROFILE-12. Naming the current profile.** On Test, `/mm profile Test` → `Already on profile
+  'Test'.`, no `[Profile]` line, and no window rebuilds. Result:
+- **PROFILE-13. An unknown name is refused.** `/mm profile Nosuch` → `No profile named 'Nosuch'.`
+  then the list; nothing switches, and the Profiles page shows no new profile. `/mm profile test`
+  (wrong case) → `No profile named 'test'.`, `Did you mean 'Test'?`, then the list; still no switch.
+  Result:
+- **PROFILE-14. Quotes and spaces.** Create "Raid Team" on the Profiles page (creating it switches to
+  it), then `/mm profile Default`. `/mm profile "Raid Team"` → `Switched to profile 'Raid Team'.`;
+  `/mm profile Default`, then `/mm profile 'Raid Team'` → switches again; `/mm profile Default`, then
+  `/mm profile Raid Team` → switches again (quotes stripped, inner space and case kept). Result:
+- **PROFILE-15. The verb answers while disabled.** Make "Off" a profile with General → Enable Multi
+  Meters unticked and switch to it (the addon stands down). `/mm profile` → the list, not the disabled
+  refusal. `/mm profile Default` → switches, and since Default is enabled the addon stands back up:
+  windows return and feature verbs work. Result:
+- **PROFILE-16. Refused in combat.** Enter combat (a dummy is fine), `/mm profile Test` → `Can't switch
+  profiles in combat.`; no switch, no `[Profile]` line, nothing rebuilds. A bare `/mm profile` in
+  combat still lists. Result:
+- **PROFILE-17. The verb in help.** `/mm help` and the landing page → a `profile` row reading *List
+  profiles, or switch to one: profile <name>*, right after the thirteen reserved verbs. Result:
+
+## STATE
+
+- **STATE-1. Disabled stands the addon down.** `/mm disable` (or `/mm set enabled false`, or untick
+  General → Enable Multi Meters) → every window hidden at once, nothing refreshes. Then run
+  `/mm toggle`, `/mm lock`, `/mm test`, `/mm window new Raid`, `/mm reset-positions` and `/mm export`
+  → each prints one line naming `/mm enable` and does nothing: `/mm window list` afterwards shows no
+  `Raid`, and nothing moves on screen (a verb that printed the refusal and then acted is the failure).
+  `/mm`, `/mm help`, `/mm config` (the panel opens), `/mm version`, `/mm list`, `/mm get enabled`,
+  `/mm set master.scale 1.5`, `/mm reset master.scale`, `/mm resetall`, `/mm debug`, `/mm diagnostics`,
+  `/mm perf help` and `/mm profile` still answer. `/mm enable` → the addon returns and the six feature
+  verbs work at once ([disabled-state.md](disabled-state.md)). Result:
+- **STATE-2. Help unchanged while disabled.** While disabled, `/mm help` and the landing page → every
+  verb keeps its row, the refused ones included. Result:
+- **STATE-3. Nothing comes back while disabled.** `/mm disable`, then on General → Master controls
+  tick and untick **Test mode** → no window appears. Result:
+- **STATE-4. A window made while disabled comes up live.** `/mm disable`, create a window from
+  Windows → General, `/mm enable` → the new window refreshes like the others (its rows move in Test
+  mode or in a fight). Result:
+- **STATE-5. A perf capture suspends the windows.** `/mm perf start`, then `/mm perf measure b` (the
+  suspended arm, which stands the windows down at once). During it: type `/mm toggle` → no window
+  appears and chat prints *Windows are suspended while a performance capture runs.*; right-click the
+  minimap button → **Enabled** still ticked and nothing grayed; click **Show window** → the same line
+  and no window; left-click → the panel still opens. `/mm perf cancel` afterwards brings the windows
+  back. Result:
+- **STATE-6. Lock and Test mode are independent.** With Test mode off, `/mm lock off` → a real
+  (possibly empty) grid, no placeholder rows. `/mm test on` with the window locked → placeholders.
+  Unticking Test mode on an unlocked window clears the placeholders. Result:
+- **STATE-7. Lock frame is every window's lock.** Two windows, panel on General → Master controls:
+  `/mm lock on` → **Lock frame** reads ticked. Untick it → every window unlocks (drags by its title bar,
+  shows its grip). Tick it → every window locks. Unlock one window from its header padlock → the others
+  stay locked and **Lock frame** reads unticked until that window is locked again. Result:
+- **STATE-8. The Test mode box follows the verb.** With General → Master controls open, `/mm test` on
+  and off → the Test mode box ticks and unticks without a click. Result:
+- **STATE-9. Test mode rows.** `/mm test` → chat prints *test mode on — showing placeholder rows*
+  and ten Ka0s-named placeholder members appear, with plausible numbers that do not change between
+  refreshes; `/mm test` again → *test mode off*. Result:
+- **STATE-10. Combat ends Test mode.** Test mode on, pull a dummy → one line *Test mode off — combat
+  started*; the placeholders give way to the real (possibly empty) grid and the box unticks; the window
+  stays up, or hides if its Visibility → Combat → hide in combat is ticked. Leaving combat does not turn
+  Test mode back on. (`/mm test off` by hand always leaves the window on screen.) Result:
+- **STATE-11. Test mode cannot start in combat.** With Test mode off, enter combat (a dummy is fine),
+  type `/mm test`, then click the minimap menu's **Test mode** → each prints one line *Cannot start test
+  mode during combat* and no placeholder rows appear. (The General page's Test mode box is under the
+  combat cover then, PANEL-29, so it is not a route.) Leave combat → General → Master controls → Test
+  mode reads unticked. Result:
+
+## WIN
+
+- **WIN-1. Seven header controls, our own art.** Hover the title bar → seven controls, right to left:
+  close, minimize, lock, settings, segment, reset, export, each a white glyph from this addon's art
+  (close from `libs/LibKa0s/media/icons/close.tga`, export from `.../export.tga`) at the same size,
+  weight, center line and color. A plain letter (`*`, `#`, `>`) means the art and the atlas both
+  failed; a thin gray multiplication sign at the close end is LibKa0s's own close button. Result:
+- **WIN-2. Icons sit inside their slots.** Each icon is drawn at 72% of **Control size**, with air
+  between neighbors → icons touching means the inset was lost. Result:
+- **WIN-3. A hidden control closes the gap.** Header → Controls, hide the lock → everything to its left
+  moves right by exactly one slot and nothing to its right moves; no hole. Result:
+- **WIN-4. The title never runs under a control.** At every **Control size** from 10 to 32 and with
+  any combination hidden → the title stays clear of the strip. Result:
+- **WIN-5. The strip is centered.** The strip, the window name and the session line sit on one line,
+  centered in the title bar, with equal gaps above the row and below it to the divider. Change Header
+  → Title bar → **Header height**, Header → Title text → **Font size** and Header → Button style →
+  **Control size** → all three stay on the shared line. Result:
+- **WIN-6. Exactly one control reveals.** Sweep the pointer along the strip, on an unlocked and on a
+  locked window → only the control under the pointer comes to full alpha and turns gold, following
+  the pointer control by control with no flicker in the gaps; none stays bright after the pointer
+  leaves; the set never lights up as a whole when crossing the title bar. Result:
+- **WIN-7. Control colors.** Header → Button style → change **Control color** (white by default) and
+  **Control hover color** (gold) → the strip follows at once, at rest and under the pointer. Result:
+- **WIN-8. Each color has its own mode.** Set **Control color mode** to Class color → the resting strip
+  takes your class and the hover color is unchanged. Set only **Control hover color mode** to Class
+  color → the resting color is unchanged and the hovered control takes your class. Both at Class is
+  allowed. Result:
+- **WIN-9. Control opacities and the reveal.** An untouched window shows **Control opacity** 25% and
+  **Control hover opacity** 100%; move each alone → only its end changes. Set Control opacity near zero
+  and turn **Reveal controls on hover** off → the strip shows at the hover value, not invisible, and
+  the hover color still marks the control under the pointer. Result:
+- **WIN-10. The lock icon matches its neighbors.** Unlock a window → the padlock has the same
+  brightness and color as the other six, locked or open; only the glyph changes. Result:
+- **WIN-11. The export control's tooltip.** Hover the export control → *Export a segment to CSV or to
+  chat*; it is the only control in the strip with a tooltip. Result:
+- **WIN-12. Title bar off takes the strip.** Header → Title bar, turn the title bar off → the whole
+  strip goes, export included; turn it on → all seven return. Result:
+- **WIN-13. Minimize collapses to the title bar.** Click minimize → the plus/minus flips and the column
+  headers, rows, *Waiting for combat data...* notice and resize grip all go (anything still drawn is
+  parented to the frame, not the body). Result:
+- **WIN-14. A collapsed window stops updating.** Collapse a window, pull → it does not tick. Result:
+- **WIN-15. Expanding restores the height.** Collapse, `/reload` → it comes back collapsed; expand →
+  it returns to the exact height you set, not a default. Result:
+- **WIN-16. The reset control asks first.** Click the header's reset control → a confirmation opens
+  in the middle of the screen asking *Clear every recorded combat session?* with **Yes** and **No**;
+  nothing is cleared yet; **No** leaves the sessions intact. (The warning that it also wipes the
+  game's own meter data is on the **Show reset** row's tooltip under Header → Controls, not in the
+  dialog. A second popup opening on top can pull it up the stack; that is accepted.) Result:
+- **WIN-17. Reset accepted.** Click reset and accept → Blizzard's own meter window empties too
+  (`C_DamageMeter.ResetAllCombatSessions` is account-wide), every open drill-down closes, and the
+  window shows *Waiting for combat data...* Result:
+- **WIN-18. The divider.** Header → Title bar → **Show divider** ships on. Turn it off → the hairline
+  under the title strip goes and nothing else moves (title, session line and controls stay). **Divider
+  thickness** grows it downward. **Divider color mode** ships as Ka0s skin (the line as the shared
+  skin painted it); switch to Class color → your class; to Custom color → the swatch. With a low
+  swatch opacity, switching between Custom and Class leaves the opacity alone. There is no
+  per-statistic mode. Result:
+- **WIN-19. The header background stops at the title bar.** Header → Title bar → Header background to
+  something loud and Columns → Header background → Background color to something else → two distinct
+  bands, the second starting where the first ends. Result:
+- **WIN-20. The window name takes the header's color.** Header → Title text → **Text color** → the
+  window name follows it, with its font, size, outline and shadow; set **Text color mode** to Class
+  color → the title takes your class, the same as the session line beside it. With a low swatch
+  opacity, switching modes leaves the opacity alone. No per-statistic mode. The Settings window's
+  footer Defaults also resets this tab. Result:
+- **WIN-21. Scale scales the whole window.** Frame → Scale to 0.5, then 2.0 → the window's outline
+  grows and shrinks with its contents (a box that keeps its size while the grid shrinks into a corner
+  means the scale missed the anchor). Result:
+- **WIN-22. No border means no border.** Frame → Border style **None** and Border thickness **0** → no
+  edge of any kind (a surviving 1px line is the skin's `frame.innerBorder`). None at a non-zero
+  thickness → also no edge, not the Ka0s edge. Result:
+- **WIN-24. The resize grip follows the lock.** Unlocked → the bottom-right grip shows and resizes the
+  window (persistence across `/reload` is INSTALL-4); locked → no grip. There is no Show resize grip
+  setting. Result:
+- **WIN-25. The lock governs the title-bar drag, not the cells.** `/mm lock off` (or untick Frame →
+  General → Lock window), drag the window by its title bar → it moves as one object (persistence
+  across `/reload` is INSTALL-4). `/mm lock on`, drag the title bar again → it does not move. Locked
+  and unlocked alike, hovering a cell shows its tooltip. Result:
+- **WIN-26. Resetting positions.** With one window, `/mm reset-positions` → *Moved 1 window back to
+  the center.* Move two windows off center, `/mm reset-positions` → every window re-centers and chat
+  prints *Moved 2 windows back to the center.* (a raw locale key, or *1 windows*, is the failure).
+  General → Master controls → **Reset position** → only the window the band is on re-centers. Result:
+- **WIN-27. A new window.** Windows → General → **New window** → the band follows it and it is named
+  **Multi Meters #2** (the count of windows, not the id). Result:
+- **WIN-28. Windows are independent.** Give two windows different width, bar color, column set and sort
+  column → each draws its own width, color, columns and row order; changing window 2's bar color leaves
+  window 1 alone (a shared sub-table means `deepcopy` was bypassed). Result:
+- **WIN-29. Copy settings: one group.** Windows → General → Copy settings from, source window 1, group
+  **Bars**, Copy → the target's bar settings match and its width, columns, position and visibility
+  rules are untouched. Result:
+- **WIN-30. Copy settings: Everything.** Repeat with **Everything** → all ten groups copy, but not the
+  target's id, name or position (it does not land on top of its source). Result:
+- **WIN-31. A copy is one redraw and one line.** With `/mm debug on` and the console open, copy settings
+  → the target redraws once and the console shows one `[Set] copy from '<A>' to '<B>': N rows` line,
+  never a line per row. Result:
+- **WIN-32. Duplicate.** **Duplicate window** → the new window is offset 24px down and right. Result:
+- **WIN-33. The band is keyed by id.** Name two windows "Raid" → each is still selectable in the band.
+  Result:
+- **WIN-34. Delete.** **Delete window** → it confirms first; on the last window → refused with *The
+  last window cannot be deleted.* Result:
+- **WIN-35. Deleting the selected window.** Delete the window the band is on → every Windows entry
+  re-renders against the first surviving window, with no empty widgets. Result:
+- **WIN-36. Edits on another window stay there.** With the band on window 1, resize window 2 by its grip
+  and click one of its column headers → the size and sort land on window 2 only (its Frame entry shows
+  the new width once the band moves to it) and the band stays on window 1. Result:
+
+## VIS
+
+Every rule ships **off**, so each hide rule has to be switched on for its check.
+
+- **VIS-1. A fresh profile shows everywhere.** On a fresh profile, visit solo open world, grouped open
+  world, a five-player dungeon, a raid, a battleground, a delve and a vehicle → the window is visible
+  in every one (all seven contexts on, all ten rules off). Result:
+- **VIS-2. Open world.** Turn **Open world** off → it hides outdoors and still shows in a dungeon.
+  Result:
+- **VIS-3. Hide when solo.** Turn **Hide when solo** on, drop group → it hides; group up → it returns.
+  Result:
+- **VIS-4. Delves and scenarios.** In a delve → shown, and `/mm diagnostics` reports `type=scenario
+  resolved=delve`; turn **Delves** off → it hides while **Scenarios** stays on. In an ordinary scenario
+  or follower dungeon → shown, reported as `resolved=scenario`. A window hiding in both means the delve
+  probe is not firing. Result:
+- **VIS-5. Vehicles.** Tick Visibility → When to hide this window → **Hide in vehicles**, then enter a
+  vehicle (a quest turret or a vehicle encounter) → the window hides at once; leave → it shows at once,
+  on the vehicle event itself, not at the next zone change. Result:
+- **VIS-6. Housing, flight paths, pet battles.** Switch each rule on → the window goes in your house,
+  on a taxi and during a pet battle, and returns when you leave. Result:
+- **VIS-7. Hide when mounted.** On → it goes while mounted; on a druid it also goes in Travel, Aquatic
+  and Flight Form, and not in Cat, Bear or Moonkin. Result:
+- **VIS-8. Hide when skyriding.** On → it goes the moment the skyriding bar appears, standing on the
+  ground; a Dracthyr's Soar and a Haranir flight form count. Dismount from a ground mount and from a
+  skyriding mount → it returns both times (never hiding for good after a mount). Result:
+- **VIS-9. Hide while dead.** On → it goes on death and returns on release or resurrection. Result:
+- **VIS-10. Hide in / out of combat.** Tick each alone and pull a dummy → it hides on its own side of
+  the pull and returns promptly on the other side. Tick both → it never shows. Result:
+- **VIS-11. Diagnostics names the rule.** After each of VIS-2 to VIS-10, `/mm diagnostics` → its
+  `ShouldShow` line names the rule that decided (with both combat rules ticked:
+  `ShouldShow -> false (in combat)` or `(out of combat)`). Result:
+- **VIS-12. Test mode overrides context.** With a hide rule in force, `/mm test` → the window shows
+  wherever you stand. Result:
+
+## GRID
+
+- **GRID-1. Number formats.** Bars → Text content → **Number format**, on a column with a large number
+  → *Abbreviated (12.4M)*, *Abbreviated, no decimals (12M)*, *Abbreviated, two decimals (12.40M)* and
+  *Full (12400000)* each render what the name says. Look hardest at two decimals: a client that
+  refuses the rule falls back to its own defaults, which shows as the setting doing nothing. Result:
+- **GRID-2. The text slots are literal.** Bars → Text content, set **Left text** and **Right text** in
+  turn → **None** on both: a bar and no text; **Smart value (Per Second or Absolute)**: the rate on
+  Damage and Healing, the total on Interrupts, Dispels, Avoidable and Deaths; **Smart value (Absolute |
+  Per Second)**: both on Damage and Healing, the total alone on the other four (an Interrupts cell
+  reading `9 | 3` fails); **Absolute value**: the total on every column; **Per second value**: a figure
+  on Damage and Healing and nothing on the other four; **Percent**: the share. Left None with Right set
+  → the figure stays on the right. Result:
+- **GRID-3. Text opacity fades only the text.** Bars → Text style → **Text opacity** 10% → names and
+  numbers go faint while bars, backgrounds, borders and class icons keep their brightness. Bars → Bar →
+  **Bar opacity** dims everything; both at 50% leaves the text at 25%. Result:
+- **GRID-4. Every column is a bar.** Every column draws a bar (no numbers-only column), and the columns
+  share the frame width evenly (no per-column width). Result:
+- **GRID-5. Abbreviation reaches the cells.** At a target dummy out of combat, push Damage past a
+  million → an abbreviated figure such as `1.4M`, one decimal place at any magnitude (fewer
+  significant figures than the reference screenshots is accepted), and no `/s` on the rate. Raw digits
+  (`1410000`) mean neither native formatter exists on this client. Result:
+- **GRID-7. A rate below 1000.** Put a Healing or Damage rate under 1000 on screen (a healer at a
+  dummy), with GRID-1's Bars → Text content → **Number format** on *Abbreviated (12.4M)* then *Full
+  (12400000)*, out of combat and in → a whole number (`411`), never its float (`411.90476…`). If
+  digits show: `/mm debug on`, change any setting, and report the `[Format]` line
+  (the rung the client took) with the `-- number formatting --` block from `/mm diagnostics`. Result:
+- **GRID-8. The realm is stripped.** Group with someone from another realm → their name shows without
+  `-Realm`. Result:
+- **GRID-9. Truncation.** In a follower dungeon → companion names within the default cap of 15 show in
+  full. `/mm set window.text.maxNameLength 8` → names truncate with a single `…` glyph, not three
+  periods. `/mm set window.text.maxNameLength 0` → full names again. Result:
+- **GRID-10. Truncation counts characters.** Truncate a name with an accent (`Helyâ`) right at the
+  accented character → no replacement box. Result:
+- **GRID-11. Spell names keep their hyphens.** Drill into a player → a spell name containing a hyphen
+  keeps it (the realm strip does not reach breakdown rows). Result:
+- **GRID-12. Always show yourself.** In a raid, on the shipped window (Frame → Row → **Maximum rows**
+  0) with Frame → Row → **Always show yourself** on (the default), be ranked below the last visible row
+  → the last row drawn is you and the rows above are the top of the list in order. Scroll with the
+  wheel until your own row is in view → the last slot returns to its own rank and you appear once.
+  Untick the option → the last slot is its own rank throughout. Result:
+- **GRID-13. Sort modes out of combat.** `/mm set window.data.sortMode roster` → group order (you
+  first), then role, then name. `/mm set window.data.sortMode provider` → the game's own order.
+  Click a statistic's column header → value sorting again (`/mm get window.data.sortMode` reads
+  `value`). Result:
+- **GRID-14. An unowned ally has its own row.** After a pull, out of combat → a guardian, totem or pet
+  whose owner the unit API never saw has a row under its own name. Result:
+- **GRID-15. A delve companion has a row.** After a delve → the companion (Valeera or whoever came)
+  has a row with her own name, class color and figures, and her figure plus yours equals the header
+  total. Result:
+- **GRID-16. No enemy gets a row.** Out of combat after a pull → no mob's name appears as a row. If one
+  does, stop and report it with `/mm diagnostics` taken out of combat (its targets section prints each
+  enemy's `class=` and `enemies carrying a player class: N of M`). Result:
+- **GRID-17. Pets fold into the owner when merged.** With a hunter and a warlock in the group, out
+  of combat after a pull, on the shipped settings → each pet has a row of its own under its own name,
+  as Blizzard's meter shows it. Note the hunter's and the pet's Damage. Tick General → Behavior →
+  **Merge pets into their owner** (it ships off) → the pet rows go, and the hunter's Damage is the
+  two figures added together. Leave it ticked for GRID-18. Result:
+- **GRID-18. Pet swaps correct themselves.** With **Merge pets into their owner** still ticked from
+  GRID-17, a hunter dismisses and re-summons, or a warlock swaps demons → the new pet's damage is in
+  its owner's row again within one refresh, with no row of its own. Untick the option afterwards.
+  Result:
+- **GRID-19. The meter-unavailable prompt.** Turn off Blizzard's built-in damage meter (the client's
+  setting or CVar), `/reload` → in place of rows, *Blizzard's damage meter is not available.*, *Multi
+  Meters reads every number from the game's built-in damage meter. Enable it to see data here.*, and in
+  gray *Reason: …* quoting Blizzard's `failureReason` verbatim. No Lua error, never an empty window
+  with no explanation. Result:
+- **GRID-20. The meter returns without a reload.** Re-enable the meter → within a few seconds (or after
+  a zone change or meter event) the rows come back. Result:
+- **GRID-21. The two empty states differ.** With the meter enabled and no combat data (click the
+  header's reset control and accept, WIN-17; a fresh login keeps the old fights, INSTALL-5) → *Waiting
+  for combat data...*, never the unavailable prompt. Result:
+- **GRID-22. Bar fills slide.** With Bars → Bar → **Animate bar fills** on (the default), at a dummy →
+  each fill slides to its new length instead of stepping four times a second, and when the leader grows
+  the other bars shrink smoothly. Result:
+- **GRID-23. Animation off snaps.** Turn Animate bar fills off (or `/mm set window.bars.animate false`)
+  → the bars snap. Result:
+- **GRID-24. The animation changes nothing else.** With it on and off → the same numbers, row order
+  and export. Result:
+- **GRID-25. The segment menu.** After two or three pulls, click the segment control → a menu of the
+  stored fights with durations, a divider, then `Current` and `Overall`, anchored to the session line.
+  The segment control is the only route: hovering the empty header left of "Overall" gives no glow and
+  clicking there opens nothing. Result:
+- **GRID-26. Pinning a fight.** Pick a stored fight → the grid shows that fight's numbers and the header
+  names it. Result:
+- **GRID-27. Tooltips follow the pin.** On a pinned window, hover a cell and drill into a row → both
+  describe the pinned fight, not the live pull. Result:
+- **GRID-28. A pin holds through a new pull.** Pull with one window pinned and a second unpinned → the
+  pinned one stays on its fight while the other follows the pull. Result:
+- **GRID-29. Current clears the pin.** Pick `Current` → the window follows the live pull again. Result:
+- **GRID-30. A pin survives `/reload`.** Pin a fight, `/reload` → still pinned. Result:
+- **GRID-31. A reset clears a stale pin.** Pin a fight, then reset the meter from the header's reset
+  control → on the next refresh the window falls back to Current on its own, never sitting empty.
+  Result:
+- **GRID-32. Session ids are never 0.** Run three or four pulls, `/mm diagnostics` → every stored
+  `sessionID` is a positive integer; log out and in, pull, read again → still no 0. Pin each listed
+  fight → each pins. `/mm get window.data.sessionID` answers the pinned id; after picking Overall it
+  answers `0`. `/mm set window.data.sessionID 0` unpins; `/mm set window.data.sessionID -1` → *Invalid
+  value for window.data.sessionID*. Record the lowest and highest ids seen. Result:
+
+## TIP
+
+TIP-1 to TIP-21 are checkable out of combat. COMBAT-18 repeats the hover, click and mouse-off checks
+among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where they matter most.
+
+- **TIP-1. Cell tooltip.** Hover a Damage cell → the spells behind the number, with icons, capped at
+  **Maximum spells** (10 by default), with an *and N more* line when there are more. Result:
+- **TIP-2. Spell order.** Out of combat → biggest first. Result:
+- **TIP-3. Avoidable Damage lines.** In Test mode (`/mm test`), hover an Avoidable Damage cell → one
+  line per spell and nothing else: no "Avoidable" / "Avoidable, Deadly" sub-line and no Overkill line.
+  Result:
+- **TIP-4. Name tooltip.** Hover a name cell → every tracked statistic for that player, including
+  columns this window does not show; each line wears its own statistic's color (label and amount)
+  whatever the bar color mode is; held beside the grid, the Damage line matches the Damage bars'
+  red; statistics with no column here are the same hue dimmed, number included, not flat gray. Result:
+- **TIP-5. Drill-down.** Click a Damage cell → the grid is replaced by that player's spell breakdown in
+  the same style, with the header `<player> - <stat>`. Clicking the same cell again, or right-clicking
+  any row, returns to the grid. There is no Back button. Result:
+- **TIP-6. Breakdown rows show the spell's tooltip.** In a breakdown, hover rows (middle of a cell and
+  the name cell) → the client's own spell tooltip, never "No data yet" or a column of zeroed
+  statistics, and the row highlights. With `/mm debug on` and then `/mm debug tooltip` (it answers
+  *tooltip logging ON — mouse over a row and read the console.*), one `[Tooltip] row spell=<id>` line
+  per row entered; `/mm debug tooltip` again answers *tooltip logging off.* Result:
+- **TIP-7. A left-click in a spell breakdown does nothing.** Open a Damage cell's spell breakdown
+  (TIP-5) and left-click a row → nothing happens: no empty drill, no new window. (A death list is
+  different; see TIP-17.) Result:
+- **TIP-8. The wheel scrolls.** Shrink the window until rows are hidden → the mouse wheel scrolls both
+  the grid and a breakdown, stops at both ends, holds through refreshes, and resets to the top on
+  entering or leaving a breakdown. Result:
+- **TIP-9. A breakdown holds still.** Watch an open breakdown through several refreshes → its rows do
+  not reshuffle. Result:
+- **TIP-10. Renaming keeps the breakdown.** Open a breakdown, rename the window from Windows → General
+  → it stays open under the new title. Copy settings onto that window → it returns to the grid. Result:
+- **TIP-11. Death timestamps.** Bars → Text content → **Death timestamps**, try both styles (time of
+  day, time ago) → the Deaths cell tooltip and the death list always agree. Result:
+- **TIP-12. Deaths cell tooltip.** Hover a Deaths cell for someone who died → one line per death,
+  newest first, each `Death N` with the time on the right; never "Spell breakdown" or "No data yet".
+  Result:
+- **TIP-13. The death list.** Click that Deaths cell → a list of that player's deaths, one row each:
+  `Death 1`, `Death 2`… numbered chronologically (so the newest-first list counts down), with the
+  time of death over a full bar. A time reading `—` (recap no longer held) still has its row. Result:
+- **TIP-14. The counts agree.** The number of rows in the death list equals the number in the cell you
+  clicked, out of combat and in. Result:
+- **TIP-15. Death tooltip layout.** A death tooltip has a header, a paragraph gap, a caption, then the
+  bars; a header flush against the first bar is the failure (it also restyles every GameTooltip title
+  until `/reload`). Result:
+- **TIP-16. What killed them.** Hover a death row → one line per incoming hit, oldest first: seconds
+  before death, spell, attacker, damage taken, HP percent remaining. Columns line up; long names clip
+  inside their column and never wrap. A melee swing reads `Melee` with the weapon icon (never `#?`).
+  The bar is HP remaining, emptying down the list. The last line is the killing blow with an overkill
+  clause. A hidden caster shows no parentheses, never `()`. Result:
+- **TIP-17. The recap is the right one.** With a player who died more than once, click a death row →
+  Blizzard's own Death Recap for that exact death, not the newest; the list stays open behind it.
+  Result:
+- **TIP-18. Feign Death is not a death.** Out of combat, a hunter feigns and leaves combat → not
+  counted in the cell or the list. Feign, then really die → the real death is counted. (Mid-pull a
+  feign is counted and corrects when combat ends; see scope.md's Known limitations.) Result:
+- **TIP-19. No `C_DeathRecap`.** On a client without it → a Deaths click falls back to Blizzard's
+  frame, then to the ordinary breakdown; the cell is never dead. Result:
+- **TIP-20. Leaving hides the tooltip.** Hover a cell, then move the mouse off the window → the
+  tooltip always hides; one left pinned under the cursor is the failure. Result:
+- **TIP-21. Death line switches.** Tooltip → Contents; hover a Deaths cell → on a fresh profile each
+  line reads *Death 3 | <who>* (**Name the killer** on, **Name the killing blow** off). Turn the killing
+  blow on → *Death 3 | <who> | <what>*. Turn Name the killer off → the caster half goes with no
+  separator left; turn the spell off → the same. A fall or fire names no caster and melee reads
+  **Melee**; neither takes the numbered line with it. Result:
+- **TIP-22. Hide tooltips in combat.** Tooltip → General → **Hide tooltips in combat**, pull, hover a
+  cell → no tooltip; leave combat → one appears as soon as the player is out of combat. Result:
+- **TIP-23. Anchors.** Tooltip → General → **Tooltip anchor**, walk all eight → each is a box of a 3×3
+  around the cell ("Top left" above and to the left, "Left" beside and growing left, and so on), each
+  opens away from the cell rather than across it, and each lands somewhere different. There is no "At
+  cursor"; **Top** is the default. Result:
+- **TIP-24. Tooltip appearance.** Hover cells → every Targets line carries an icon in the spell icon
+  column; the player's name is class-colored wherever a tooltip names one; the text color mode reaches
+  the spell name as well as the numbers; the bar fill and the backdrop each take their own color, mode
+  and opacity. Result:
+- **TIP-25. The tooltip's own bar texture.** Tooltip → Bar → Bar texture unlike the grid's → the
+  tooltip bars change and the grid's do not; change the grid's → the tooltip's do not. Result:
+- **TIP-26. Bar spacing.** Tooltip → Bar → **Bar spacing** 6 → space opens between lines; back to 1
+  (the shipped default) → the tight spacing returns. Result:
+- **TIP-27. The tooltip font.** Tooltip → Text → font, size and **Thick outline** → apply to the spell
+  names as well as both number columns. Result:
+- **TIP-28. The tooltip bar border.** Tooltip → Bar border → a real LSM border at thickness 2, hover →
+  a border around each spell bar; set it back to **None**, hover the same cell → no border at all
+  (a lingering border is the pooled line not being cleared). Result:
+- **TIP-29. Offsets.** Tooltip → General → Horizontal offset 60, Vertical offset -60 → the tooltip
+  moves and still stays on screen near the edges. Result:
+- **TIP-30. Maximum spells 0.** Tooltip → Contents → **Maximum spells** 0, hover someone with a long
+  list → every spell, up to 64, with *and N more* past that; 0 does not act like 10. Result:
+- **TIP-31. Other tooltips are untouched.** After TIP-23 to TIP-30, hover a bag item, a party member's
+  unit frame and a quest in the tracker → each looks exactly as always: stock font and spacing, no
+  bars, no borders. Result:
+- **TIP-32. The Targets section.** Tooltip → Contents → **Show targets** on, **Maximum targets** 3; out
+  of combat after a pull on several enemies, hover your Damage cell → a **Targets** header under the
+  spells, listing the enemies you hit, biggest first, with bars and a share column. Result:
+- **TIP-33. Targets on Damage only.** Hover a Healing and an Interrupts cell → no Targets section.
+  Result:
+- **TIP-34. Each player's own targets.** Hover another player's Damage cell → their targets, not yours
+  and not the group's. Result:
+- **TIP-35. The cap trims after ordering.** Raise Maximum targets to 10 → more enemies, still biggest
+  first, led by the same three as at 3. Result:
+- **TIP-36. Targets off costs nothing.** Turn Show targets off → no Targets header, and a `/mm perf`
+  capture while hovering shows no `targets` bucket activity. Result:
+
+## EXPORT
+
+Everything here works at a target dummy; the combat refusals are COMBAT-23 to COMBAT-26.
+
+- **EXPORT-1. The modal opens over its window.** Out of combat after a pull, drag a window to a corner
+  and click its export control → the modal opens centered on that window. Result:
+- **EXPORT-2. The modal's title bar.** Its title reads **Export**, drags the modal, and ends in the
+  collection's close icon (the one the window header draws), gray at rest and red under the pointer; a
+  thin gray multiplication sign means LibKa0s was not told the addon folder or the art is missing.
+  Result:
+- **EXPORT-3. The modal's layout.** Three selectors stacked, **Metric**, **Channel**, **Lines**, each
+  reading `Label: value`, and two action buttons, **Export to CSV** and **Print to Chat**. Result:
+- **EXPORT-4. Action icons.** A spreadsheet icon left of Export to CSV's label and a speech bubble left
+  of Print to Chat's; the words stay, centered. Result:
+- **EXPORT-5. One modal, reused.** Open it from window 1, close it, open it from window 2 → it
+  re-centers on window 2 and exports window 2's segment. Result:
+- **EXPORT-6. Closing.** Esc closes it, and so does the close button. Result:
+- **EXPORT-7. Esc with a menu open.** Open Metric, Channel or Lines, press Esc without picking → the
+  modal and its dropped menu both close; no menu is left floating. Result:
+- **EXPORT-8. The selector menu.** Click Metric → a flat dark menu drops directly under the button,
+  left-aligned with it, with no gold title bar; the current row is gold and the rest light gray (like
+  Bank Ledger's Data Set menu, not a Blizzard right-click menu). The same on Channel and Lines. Result:
+- **EXPORT-9. A click outside lands.** With a menu open, left-click and then right-click on the modal
+  behind it → the menu closes and the click takes effect in the same press. Result:
+- **EXPORT-10. Picking repaints at once.** Pick a different entry in each selector → the menu closes
+  and the button reads the new choice before the menu has finished closing. Result:
+- **EXPORT-11. One menu at a time.** Open Metric, then click Channel without picking → Metric closes as
+  Channel drops; never two menus. Result:
+- **EXPORT-12. No leading glyphs.** No row in the three menus shows a box or stray character before its
+  label. Result:
+- **EXPORT-13. Metric follows the window.** Export from a window sorted by Healing → **Metric:
+  Healing** before you touch anything; from another sorted by Interrupts → **Interrupts**. There is no
+  "Match the window" entry. Result:
+- **EXPORT-14. A pick holds until the next open.** Pick Deaths → the button reads Deaths and the chat
+  dump ranks by Deaths. Close, re-open from a window sorted by Healing → **Healing** again. Result:
+- **EXPORT-15. The whisper row.** Walk Channel through every entry → a fourth row, `Whisper to: ` in
+  gold with an edit field in the same flat box, exists only for **Whisper**; the modal grows by one row
+  with the warning line and buttons moving down, nothing overlapping; back to **Self only** → the row
+  goes and the modal shrinks. Result:
+- **EXPORT-16. The name box shows its text.** Type a full name → fully visible, on the caption's
+  baseline. Result:
+- **EXPORT-17. The name is stored without Enter.** Type a name and press Enter → stored, focus leaves
+  the box. Type a name and click away → stored anyway. Type a name and click **Print to Chat** straight
+  away → it is whispered. Result:
+- **EXPORT-18. Esc in the box.** Esc → focus clears and the modal stays; a second Esc closes it.
+  Result:
+- **EXPORT-19. The name is kept.** Switch to another channel and back to Whisper → your name is still
+  there. Result:
+- **EXPORT-20. A blank whisper is refused.** Whisper with the box empty (or spaces), Print to Chat →
+  one line *Enter a name to whisper to.*; nothing sent, no error. Result:
+- **EXPORT-21. Cross-realm whispers.** Channel **Whisper**, type a player from another realm in the
+  box as `Name-Realm` (the form `/w` takes), **Print to Chat** → the lines reach that player. Result:
+- **EXPORT-22. The CSV window.** With several players in the segment, **Export to CSV** → a wider
+  window opens above the modal (the modal stays visible under it), centered on the meter window,
+  titled **Export — Ctrl+C, then Esc**, ending in the same close icon, its text in the bundled
+  JetBrains Mono with the digit columns lined up. Result:
+- **EXPORT-23. Pre-selected, from the top.** The whole text is highlighted the moment it appears, with
+  the view at the top of the file. Result:
+- **EXPORT-24. Copying.** Ctrl+C, paste into a text editor → the whole CSV with its line breaks, not one
+  line. Result:
+- **EXPORT-25. Esc closes only the copy window.** With the copy window and the Export modal open,
+  press Esc → only the copy window closes; the modal stays. Result:
+- **EXPORT-26. One copy window.** Export again without closing it → it refills rather than stacking a
+  second; after `/reload`, export again → still one window, still centered. Result:
+- **EXPORT-27. It follows the meter window.** Drag the meter window elsewhere and export → the copy
+  window centers on it there. Result:
+- **EXPORT-28. The first open.** On the first export of a session, lines may wrap oddly while the scroll
+  frame is unlaid (the 590px fallback) and not on the second → cosmetic; note it if seen. Result:
+- **EXPORT-29. The file in a spreadsheet.** Paste the CSV into a spreadsheet → one header row and one
+  row per player; the header row is byte-identical to the line quoted in LOC-1; every catalog
+  statistic is present even from a window showing only Damage, with `_ps` on Damage and Healing only
+  and one `_pct` per statistic; values are raw integers (`4821993`, not `4.8M`) and `_pct` a bare
+  two-decimal number; `session` (the segment the window's header names) and `duration` repeat on
+  every row; absent figures are empty cells, never `nil`; no trailing blank row; a raid over 40 stops
+  at 40 data rows. Result:
+- **EXPORT-30. A name with a space and a hyphen.** After a follower dungeon or delve, export → an NPC
+  ally such as `Crenna Earth-Daughter` arrives whole, unquoted, in one cell. Result:
+- **EXPORT-31. The CSV keeps the realm.** Group with someone from another realm and export → their
+  `name` keeps `-Realm`. Result:
+- **EXPORT-32. Commas and quotes.** A name containing a comma or a quote → that field is wrapped in
+  double quotes with inner quotes doubled, and reads as one cell. Result:
+- **EXPORT-33. Self only reaches nobody.** Do this before any other channel. Channel **Self only**,
+  Metric Damage, Lines 5, Print to Chat → the lines appear in your frame, each with the `[MM]` banner
+  and with no notice line before them, and a group member sees nothing (anything seen is a hard fail).
+  Result:
+- **EXPORT-34. The dump's shape.** A header line `Multi Meters — Damage — Current (2:14)` then ranked
+  lines such as `1. Kaosz 4.8M (84.2K, 31.2%)`, abbreviated. Result:
+- **EXPORT-35. Only meaningful parentheses.** Metric Deaths or Interrupts → no per-second figure
+  (`1. Kaosz 3 (12.5%)`); never an empty `( )`. Result:
+- **EXPORT-36. The ranking follows the metric.** Metric Healing → the top healers, not the damage
+  ranking with healing beside it. Result:
+- **EXPORT-37. The line cap.** Walk all five Lines choices; Lines 3 → four lines (header plus three);
+  Lines 40 in a five-player group → six lines, not forty. Result:
+- **EXPORT-38. The channels.** Say reaches people nearby, Party and Raid the group, Instance a dungeon
+  or LFR group, Guild the guild; each sends the same lines without the `[MM]` banner. A Party export
+  that only prints to you, after *This client has no way to send chat messages, so the export was
+  printed to you instead.*, is the failure. Result:
+- **EXPORT-39. The channel list.** Channel offers Say, Party, Raid, Instance, Guild, Whisper, Whisper my
+  target and Self only; there is no Automatic. A profile that stored the retired `AUTO` opens on Self
+  only. Result:
+- **EXPORT-40. Say outdoors.** In a city, Lines 20, Say → every line leaves inside the click, after a
+  one-line warning that the server may drop some; only the header arriving is the failure. Result:
+- **EXPORT-41. Say inside an instance.** Lines 20, Say inside a dungeon or raid → staggered, about seven
+  seconds, all twenty arrive. Result:
+- **EXPORT-42. The pause every fifth line.** Lines 20 to Party → five quick lines, a beat, five more.
+  Result:
+- **EXPORT-43. Whisper.** With a name in the box → it reaches that character and nobody else. Result:
+- **EXPORT-44. Whisper my target.** The box is hidden. Target a group member → they get it; a
+  cross-realm member → it still arrives. Nothing targeted → *You have no target to whisper to.*; a boss
+  or NPC → *Your target is not a player.*; neither sends or prints the dump to you. Result:
+- **EXPORT-45. The target is read at the click.** Open the modal on one target, switch targets, send →
+  it goes to the second. Result:
+- **EXPORT-46. A whisper to nobody stops.** Whisper a nonsense name, Lines 20 → after the game's "No
+  player named ..." the addon says once *There is nobody called '...' to whisper to. The rest of the
+  export was not sent.* and the other nineteen lines are dropped. Result:
+- **EXPORT-47. No line is cut.** A long NPC ally name on a line with a share → the line arrives whole.
+  Result:
+- **EXPORT-48. An empty segment.** Out of combat, click the header's reset control and accept (the
+  window reads *Waiting for combat data...*, WIN-17; a fresh login is no substitute, since the old
+  fights survive it, INSTALL-5), open the export modal, Channel **Self only**, **Print to Chat**, then
+  **Export to CSV** → each prints one line *There is nothing to export.*; nothing is sent, no copy
+  window opens, no error. Result:
+- **EXPORT-49. What is remembered.** Set Metric Healing, Channel Party, Lines 20 and a whisper name;
+  close; `/reload`; re-open → Channel, Lines and the name are as you left them for every window (they
+  are addon-wide); Metric reads the opening window's sort column. With `/mm debug on`, re-open on the
+  same window → no `[Set] export.metric` line. Result:
+- **EXPORT-50. No Export group in the panel.** General shows no Export group; the modal is the only
+  place these are set. Result:
+- **EXPORT-51. The CLI reaches the export rows.** `/mm get export.channel` answers; with the modal
+  closed, `/mm set export.lines 10`, re-open → `Lines: 10`. Result:
+- **EXPORT-52. `/mm export` uses the active window.** With two windows, select the second in the band
+  and pin it to a different segment, `/mm export`, Export to CSV → the `session` column names the
+  second window's segment. With nothing ever selected, it opens for the first window. Result:
+- **EXPORT-53. `/mm export <name>`.** `/mm export Multi Meters #1` → the modal for that window (name
+  case and inner spaces kept). Result:
+- **EXPORT-54. An unknown window.** `/mm export Nosuchwindow` → *No window named 'Nosuchwindow'.* and
+  nothing opens. Result:
+- **EXPORT-55. A window never drawn.** For a window that exists but has not been drawn this session
+  (for example one a hide rule has kept hidden since login), `/mm export <its name>` → it exports (the
+  verb hands over the config, not the live frame). Result:
+
+## COMBAT
+
+Every check here needs a real pull (a Mythic+ pack or raid pull) with BugSack cleared, the window
+locked, the default value sort (`/mm get window.data.sortMode` reads `value`) and the six default
+columns, unless it says otherwise. Record the
+dungeon and key level (or raid), group composition, number of packs and whether the error frame
+stayed empty; "no errors" from a dummy is not evidence here.
+
+- **COMBAT-1. No Lua error through a key.** Zone in (the window shows the whole group between packs),
+  fight at least three packs and one boss without touching anything, check the error frame after each →
+  empty. Watch for *attempt to compare two secret values*, *…arithmetic on a secret value*, *…use a
+  secret value as a table index*, *…get length of a secret value* and `table.concat` errors. Result:
+- **COMBAT-2. Bars move.** Every cell's bar fills and drains through the pull (none frozen at zero).
+  Result:
+- **COMBAT-3. Text renders mid-pull.** Damage reads like `188K`, never `188000` or `<secret>`, and looks
+  the same as out of combat; with the shipped smart slot, Damage and Healing read as rates and the
+  other four as counts and totals; set **Smart value (Absolute | Per Second)** for one pull → both
+  figures on Damage and Healing and the absolute alone elsewhere. `<secret>` means the native formatter
+  was unreachable. Result:
+- **COMBAT-4. Names and class colors hold.** The name column renders in full at the height of a pull;
+  if a name ever blanks, the class icon and bar still carry the row. Result:
+- **COMBAT-5. The header renders.** "Current", the duration ticking as `m:ss` and the group total for
+  the sort column, throughout. Result:
+- **COMBAT-6. The grid is not empty.** Rows show all pull. *Waiting for combat data...* with a live
+  session means sources are being dropped (`/mm debug on`: `dropped=` equal to the group size). Result:
+- **COMBAT-7. Percent slots go empty.** With Bars → Text content → **Left text** on **Percent**
+  (`/mm set window.text.leftSlot percent`) → the slot empties on the pull and refills between packs
+  (empty means unknowable, never zero). Result:
+- **COMBAT-8. The refresh is smooth.** About four updates a second (`data.throttle = 0.25`) with no
+  stutter or hitch at a big pull; capture one with DIAG-7 rather than guess. Result:
+- **COMBAT-9. Between packs everything comes back.** On the first refresh after the pull → percentages
+  return, blanked cells fill, pets fold per **Merge pets**, and the gray `restricted` note goes.
+  Result:
+- **COMBAT-10. `/reload` mid-pull.** `/reload` during a pull → the addon comes back with no error
+  (`NS.State.restricted` is seeded from `Secrets.IsRestricted()` at enable). Result:
+- **COMBAT-11. Live ranking.** Note the order between packs, pull → rows keep coming and re-rank live
+  (someone overtaking moves up during the fight); the header says `restricted` in gray. Result:
+- **COMBAT-12. Pets mid-pull.** Every row is present, with pets as their own rows whatever **Merge
+  pets** says. Result:
+- **COMBAT-13. Duplicate class and spec.** In a group with two players of the same class and spec →
+  their Damage is right and their other columns are empty; the header reads `restricted — N of M share
+  a class and spec` while under a quarter of the rows are affected, and `restricted — N of M blank:
+  duplicate specs` from a quarter up, the whole sentence fitting the header at two-digit counts. Result:
+- **COMBAT-14. Sort modes mid-pull.** `/mm set window.data.sortMode roster` before one pull, then
+  `/mm set window.data.sortMode provider` before the next → in combat each shows the engine's ranking,
+  as COMBAT-11. Click a statistic's column header afterwards to return to value sorting. Result:
+- **COMBAT-15. A stat header click mid-pull.** Click a stat header → the grid re-ranks by that stat and
+  the arrow moves; click it again → reversed; nothing printed. Result:
+- **COMBAT-16. The Player header mid-pull.** Click it → nothing moves and *Sorting is not possible while
+  the game restricts combat data.* prints. Result:
+- **COMBAT-17. The name sort in combat.** Out of combat, click the Player header (the arrow moves to
+  it; `/mm get window.data.sortMode` reads `name`), then pull → the arrow leaves the Player header for
+  the sort column. Result:
+- **COMBAT-18. Tooltips and drill-down mid-pull.** Repeat TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17
+  and TIP-20 during a pull → no Lua error and the same results; a present, correct *and N more* line;
+  the spell list in the game's own order (never *invalid order function for sorting*); the tooltip
+  never stays pinned under the cursor. Result:
+- **COMBAT-19. Death lines mid-pull.** With both death-line switches on → a caster or spell the client
+  hid is simply absent, never an error. Result:
+- **COMBAT-20. Death bars mid-pull.** Hover a death row → the bars draw; the HP percentages may vanish
+  (a division), but a Lua error means something computed the ratio in Lua. Result:
+- **COMBAT-21. Tooltip placement mid-pull.** Hover cells → no Lua error naming this addon; a tooltip in
+  the wrong box mid-pull and the right box out of combat is the `pcall` fallback working. Result:
+- **COMBAT-22. Targets are absent mid-pull.** With Show targets on, hover a Damage cell → no Targets
+  section at all (a list mid-pull is a hard fail) and no Lua error. Result:
+- **COMBAT-23. Export actions refuse.** Open the modal between packs and leave it open; pull; click
+  Export to CSV, then Print to Chat → nothing exported or sent; one line *Export is not available while
+  the game restricts combat data.*; both buttons gray out and the same sentence appears in red on the
+  modal. No Lua error. Result:
+- **COMBAT-24. The glyph and the verb refuse.** Mid-pull, click a window's export control and run
+  `/mm export` → nothing opens and the same sentence prints. The control does not gray and ungray
+  through the fight. Result:
+- **COMBAT-25. The modal recovers on its own.** Leave the modal open to the end of the pull → both
+  buttons come back live and the warning clears without a click; an export then works. (On a degraded
+  load with no AceEvent, close and re-open instead.) Result:
+- **COMBAT-26. A modal opened after the pull.** Keep the modal closed through a pull, open it after →
+  both buttons live. Result:
+- **COMBAT-27. The pet fold at the edges.** With a hunter in the group, tick General → Behavior →
+  **Merge pets into their owner** (it ships off), then pull → in combat the hunter's number is low by
+  the pet's share, and it catches up when combat ends; no Lua error at either transition. Untick the
+  option afterwards. Result:
+- **COMBAT-28. Bar fills slide mid-pull.** With Animate bar fills on → the bars still slide and no
+  Lua error. Record client build and whether it was a key or a raid. Result:
+- **COMBAT-29. Diagnostics mid-pull.** `/mm diagnostics` → no Lua error; session figures, names and
+  durations read `<secret>` where hidden, and every window's size and position still print. Record
+  whether it was a key or a raid. Result:
+- **COMBAT-30. Cell borders mid-pull.** Tick Bars → Border → **Bar border** (it ships off) and pick a
+  **Border style** other than None (an LSM edge, the backdrop path), then pull → the borders draw
+  around the cells and no Lua error appears. Result:
+
+## DIAG
+
+- **DIAG-1. The debug log.** `/mm debug on`, `/mm debug` to open the console, complete a pull → an
+  `[Aggregator]` line whenever a pass differs from the one before, such as `window=1 cols=6 rows=5
+  dropped=0 unfolded=0 sort=value/value reason=ok` (`sort=value/value` between packs, `value/provider`
+  mid-pull, where the game's order stands in); a run of identical passes is folded into one line
+  ending `(xN)` about every ten seconds, and `[Render] window N drew …` lines behave the same way. A
+  roster build logs one `[Roster] built members=…` line and a visibility pass one `[Visibility]` line;
+  nothing is logged per row or cell. A large `dropped=` out of combat means the owner map missed
+  something; `unfolded=` in combat is expected. Result:
+- **DIAG-2. Logging off.** `/mm debug off` → logging stops and the console stays open; after `/reload`
+  neither the flag nor the console state has survived. Result:
+- **DIAG-3. Console and flag are separate.** `/mm debug` toggles the console window; `/mm debug on|off`
+  sets the flag; logging runs with the console closed. Result:
+- **DIAG-4. The console's title icons.** Three icons, right to left: close, clear, copy, in the meter
+  header's art, one size and pitch, gray at rest and gold under the pointer; words or a multiplication
+  sign mean the art or `addonName` was lost. Result:
+- **DIAG-5. No tooltips on copy and clear.** Hover each → it turns gold and nothing pops up. Result:
+- **DIAG-6. Clear and copy work.** Clear → the log empties. Copy → the copy window opens with the same
+  close icon; Ctrl+C then Esc work. Result:
+- **DIAG-7. A perf capture.** `/mm perf help`, `/mm perf start`, `/mm perf measure a`, then a raid
+  pull (a Mythic+ pack will do; a solo dummy records only your own casts). Still in combat in that A
+  window, whisper a name nobody is playing (`/w Zzqxvw hi`): the server's *No player named …* reply
+  is a system message, and no fight produces one on its own. After the pull, `/mm perf measure b`,
+  fight another pack, `/mm perf finish` (chat shows *perf run FINISHED — saved; …* first and *addon
+  RESUMED — restored* second, the windows come back and no report prints; the console has them the
+  other way round, *addon RESUMED — events and frames restored* then *perf run FINISHED — saved;
+  …*), then `/mm perf report` → during the B window the addon is inert without a `/reload` (no
+  provider reads, timers stopped, every window refused) and nothing (combat, roster change, a
+  settings write) brings a window back. The report, written to the console with the JSON line after
+  it, has a `meterEvent`, a `spellEvent` and a `systemEvent` row, each with calls above zero and a
+  total ms column (that column can read 0.00: `systemEvent` returns at once when no whisper export
+  is pending, so read its `totalMs` from the JSON line if it matters. The brackets record only in
+  window A's combat, and a bucket that recorded nothing has no row: `meterEvent` counts the
+  `DAMAGE_METER_*` events, `spellEvent` every `UNIT_SPELLCAST_SUCCEEDED` from any unit,
+  `systemEvent` each `CHAT_MSG_SYSTEM`.) It also names `refresh` with `aggregate` and `render` under
+  it, `renderRow` under `render`, and `providerRead`, plus `tooltip` (and `targets` under it) only
+  if a cell was hovered in window A, which is DIAG-10's run; every nested bucket reads **observed
+  inside**, never *declares itself within X — not observed*. Hand the report and dump to
+  `/wow-addon:perf-analysis`. Result:
+- **DIAG-8. Captures carry the version.** Every capture record is stamped with the addon version, never
+  `v?`. Result:
+- **DIAG-9. Perf output ignores the debug flag.** With `/mm debug off`, run a capture → its output
+  still appears. Result:
+- **DIAG-10. A group capture with the tooltip path.** In a group of 15 or more with Tooltip → Show
+  targets on, during the A window park the mouse on your Damage cell for several seconds, then on
+  another player's → `tooltip` and `targets` record calls; the nesting note reports `providerRead
+  observed inside more than one parent`; `renderRow` calls per pass match the rows on screen. Result:
+- **DIAG-11. Perf labels and cancel.** `/mm perf start mylabel` → the started line reads *perf run
+  STARTED — <date> <time> mylabel*; `/mm perf finish`, then `/mm perf report` → the report's
+  `capture:` line names the same label. `/mm perf start` with no label → the started line carries the
+  date and time alone; `/mm perf cancel` → *perf run CANCELED — nothing saved* (one L in CANCELED). No
+  Lua error. Result:
+- **DIAG-12. The perf panel's close control.** `/mm perf`, then `/mm debug` beside it → exactly one close
+  control, in the panel's top-right corner, in the same art as the console's and the header's (a thin
+  gray multiplication sign is the library's fallback; two stacked means a `decorate` hook came back);
+  clicking it closes the panel and `/mm perf` reopens it. No Lua error. Result:
+- **DIAG-13. The report while disabled.** `/mm disable`, then `/mm diagnostics`, `/mm debug diagnostics`,
+  `/multimeters diagnostics` and `/multimeters debug diagnostics` → each writes the same full report,
+  whose `state` section reads `stored enabled=false` and `stood down=true`. `/mm enable` after. Result:
+- **DIAG-14. The report appends.** `/mm debug on`, change a setting or two, `/mm diagnostics` → the
+  trace lines are still above `==== Ka0s Multi Meters diagnostics begin ====`. Result:
+- **DIAG-15. The report copies clean.** After DIAG-14, **Copy** and paste → the trace, the begin marker
+  and the end line `==== Ka0s Multi Meters diagnostics end: N line(s) ====`, with no `|c` escapes.
+  Result:
+- **DIAG-16. The report is ungated.** `/mm debug off`, `/mm diagnostics` → the full report; the console
+  header still reads `Debug: OFF` and the next setting change writes no `[Set]` line. Result:
+- **DIAG-17. The buffer cap.** With `/mm debug on`, refresh through a few pulls or repeat
+  `/mm diagnostics` until the console passes its cap → the counter reads `N / 3000 lines`, stops at
+  3000, and nothing stalls as lines keep arriving; Copy opens without a hitch and holds the newest
+  lines in order, the oldest dropped. Record where it settled. Result:
+- **DIAG-18. The old name is gone.** `/mm debug diag` → toggles the console like any unknown word;
+  `/mm diag` → `unknown command`. Neither runs the report. Result:
+- **DIAG-19. The README's bug-report steps.** From a fresh `/reload` with the console closed, follow
+  `## Reporting a bug` in the README word for word → every step works and the paste holds the trace
+  and the whole report. Result:
+- **DIAG-20. The export control's art in the report.** `/mm diagnostics` → its atlas probe lists
+  `poi-scrollofresonance` and `UI-HUD-MicroMenu-Questlog-Up` with whether each resolves, and its header
+  dump shows what the export control drew. Record which resolved (never yet seen on a live client).
+  Result:
+- **DIAG-21. Provider order.** After a pull, out of combat, `/mm diagnostics` → the `-- provider order
+  --` section gives each stat `ranked, descending`, `NOT ranked, breaks at index N` or `nothing to
+  check` (mid-pull every line reads `cannot be checked`); a `NOT ranked` goes to issue #14. Then in a
+  full group: click the Damage header until the arrow points down (`/mm get window.data.sortColumn`
+  reads it back), pick **Overall** from the segment menu, open Blizzard's meter on Damage done with the
+  same scope, and compare the two lists by name; repeat for Healing and Interrupts, and once mid-pull →
+  the orders match. On a mismatch, report the stat, instance, session type, both orders, in or out of
+  combat, and whether the addon's order looks like any consistent order. Result:
+- **DIAG-22. The identity capture.** In the largest group you can get (20 or more; a party proves
+  nothing), `/mm debug on` before the pull; about ten seconds in, `/mm debug identity`; about fifteen
+  seconds later, again; after combat, once more; then copy the console → no Lua error at any point
+  (the probe walks a raw source row with `pairs`, a shape the mock only approximates); the standing
+  line reads `identity rows=N keys=N collidedKeys=N collidedRows=N filled=F/P collided=N unmatched=N
+  absent=N` with `filled + collided + unmatched + absent == P`, and the header's `N of M` equals
+  `collidedRows`. Report `unmatched` above zero with its column, any `PARTIAL` line other than
+  `specIconID`, any `ABSENT` line, any `WOULD widen the key` field (or `No usable candidates`), and
+  whether a collided key's seats hold their order across both captures, with group size, the
+  duplicated class+spec pairs, instance and difficulty, and all three captures in full. Typed before
+  any pull with the flag on this session, the report says `no identity pass has been measured`; the
+  after-combat capture instead shows the last pass under *the pull has ENDED*. Result:
+- **DIAG-23. The feign verb refuses a typo.** On a fresh session, `/mm debug feign of` → one line
+  ``unknown feign argument 'of' — `/mm debug feign on|off`, or `/mm debug feign` to print the recording.``
+  (backticks included) and nothing else; `/mm debug feign` then still says `armed: false`. Result:
+- **DIAG-24. The feign capture.** `/mm debug feign on` (answers `feign trace ON`), run a dungeon with a
+  hunter who is not you, have them feign twice (and feign then really die), then `/mm debug feign` and
+  copy the console → record it with the group size and composition: no `cast` line means
+  `UNIT_SPELLCAST_SUCCEEDED` never arrived; `prune` lines read `state=noted` or `state=down`, never
+  `<evicted>`; `unit=<not in group>` against a hunter still in the party is a roster fault; `N judge
+  rows suppressed` with no `judge` lines means no cast line named the GUID. Note the Deaths count shown
+  beside it. Result:
+- **DIAG-25. Does a feign's recap differ?** Out of combat, a hunter feigns once without dying and
+  another member really dies; `/mm debug recap` → compare what `HasRecapEvents`, `GetRecapEvents` and
+  `GetRecapMaxHealth` answered for the hunter's newest row and the real death's. Both alike (events, a
+  max health, the same shape) → issue #25 stays not fixable from this provider. The feign consistently
+  different across three feigns → paste the dump into the issue. Result:
+- **DIAG-26. Event trace: zoning.** `/mm debug on`, console open, zone into a dungeon (or take a
+  portal) → `[Event] PLAYER_ENTERING_WORLD lockdown=false restricted=… login=false reload=false`, then
+  `[Event] ZONE_CHANGED_NEW_AREA …` when the zone name changes without a loading screen. Result:
+- **DIAG-27. Event trace: combat.** Pull a dummy, then leave combat → `[Event] PLAYER_REGEN_DISABLED …`
+  at the pull and `[Event] PLAYER_REGEN_ENABLED …` when combat ends. Result:
+- **DIAG-28. Event trace: roster.** Join or leave a group, or have someone join yours →
+  `[Event] GROUP_ROSTER_UPDATE …`, once or a few times. Result:
+- **DIAG-29. Event trace: the restriction.** A boss pull and kill (follower dungeon or LFR), or a key
+  start and end → `[Event] ADDON_RESTRICTION_STATE_CHANGED lockdown=… restricted=… type=<n> state=<n>`
+  at each edge, `restricted=true` while active. Note every `type=`/`state=` pair and when. Result:
+- **DIAG-30. Event trace: quiet events.** Mount, dismount, shapeshift, die and release → no `[Event]`
+  line for any of them, and the windows still hide and show by your visibility rules. Result:
+- **DIAG-31. Rejected events.** On a current client, `/mm diagnostics` → the `-- events --` section,
+  the last in the report, reads `rejected events: none`. Then `/mm debug on`, `/mm disable`,
+  `/mm enable` → no `[Init] rejected events:` line in the console (the debug flag does not survive a
+  `/reload`, so the enable cycle is how to see the load's registrations logged). Any event named is a
+  finding: the client no longer knows it. Result:
+
+## DEGRADED
+
+Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the install), then `/reload`.
+
+- **DEGRADED-1. The addon still runs.** → it loads and the window draws rows. Result:
+- **DEGRADED-2. One honest line.** → the first line the addon prints names the cause: *The LibKa0s
+  library is missing from this installation of Ka0s Multi Meters (expected in libs/LibKa0s); running
+  on reduced built-in fallbacks.* Each line after it that reports a missing piece repeats the cause
+  with its own consequence, such as *…, so there is no minimap button and no broker plugin.* Result:
+- **DEGRADED-3. What names the missing library.** `/mm config` and a bare `/mm` say the settings panel
+  is unavailable; `/mm help` still prints the index (plainly); `/mm list`, `get`, `set` and `reset` each
+  name the missing library; `/mm perf` says performance measurement is unavailable. Result:
+- **DEGRADED-4. The host verbs work.** `/mm lock`, `/mm test`, `/mm toggle`, `/mm window list`,
+  `/mm reset-positions` → each works. Result:
+- **DEGRADED-5. Enable and disable work.** `/mm disable` → `enabled = false` and the windows go;
+  `/mm enable` → `enabled = true` and they return; neither says anything is unavailable. Result:
+- **DEGRADED-6. `/mm resetall` works.** → the same popup; accepting resets the profile. Result:
+- **DEGRADED-7. No half-loaded schema.** No Lua error at load; `/mm list`'s absence message is
+  expected, a partial settings surface is not. Result:
+- **DEGRADED-8. `/mm profile` names the library.** `/mm profile` and `/mm profile Default` → each prints
+  `/mm profile is unavailable.` with the cause, and nothing switches. Result:
+- **DEGRADED-9. Restoring.** Rename the folder back, `/reload` → everything returns. Result:
+
+## Non-English client
+
+- **LOC-1. The CSV header does not translate.** On a non-English client (German, for example), export
+  a CSV and compare its header line with this one → byte-identical:
+  `session,duration,name,class,spec,role,damage_done,damage_done_ps,damage_done_pct,healing_done,healing_done_ps,healing_done_pct,absorbs,absorbs_pct,interrupts,interrupts_pct,dispels,dispels_pct,damage_taken,damage_taken_pct,avoidable_damage_taken,avoidable_damage_taken_pct,deaths,deaths_pct`
+  (snake_case from the stat keys, never localized, so a file opens with the same formulas anywhere).
+  Result:
+
+## Pending sign-off
+
+Checks with no pass on record in their current form, with their origin in the previous suite (its
+`§n` sections) or in the 2026-09-23 remediation plan's in-client checklist (`06 <step>`, in
+Ka0sAddonsCommonTasks `docs/2026-09-23-REVIEW_AND_STANDARDS_AUDIT_REMEDIATION/06_SMOKE_TESTS.md`,
+whose `RESUME.md` §5 leaves its sessions owed). Two kinds: checks the old suite or that plan marked as
+never run, unconfirmed or with an empty Result, and checks this rewrite added or corrected against
+the code (a corrected check has not been run as written). Sign one off on its own `Result:` line, then
+remove its row here.
+
+From that plan, these have a pass on record and are not listed: 06 MM.12, the MM-20 after capture
+(PASS 2026-09-24); 06 P.6 and the `/reload` half of 06 MM.13 (INSTALL-5, and the `/reload` clause
+of INSTALL-4, which is listed only for its own correction; recorded 2026-09-24; the roster bound
+rests on MM-21's headless case); the Multi Meters half of 06 X1.3 (the clamp, recorded 2026-09-24);
+06 X1.4 and the disabled half of 06 MM.5 (SLASH-13, SLASH-14; PASS 2026-09-25 after M6); the tab
+half of 06 MM.10 (PANEL-4 and PANEL-42, the owner's 2026-09-26 run of the Windows page checks). 06
+Q.4 was the alternative to MM.12 and was not needed. 06 MM.14 asked for a full pass of the old suite;
+the steps that session added are listed here by ID.
+
+| ID | Origin | Why it is owed |
+|---|---|---|
+| INSTALL-4 | §2 | Corrected: the column set replaces a per-column width, which no longer exists |
+| INSTALL-6 | §22 step 4 | Corrected: `schemaVersion` has advanced, rather than being 2 |
+| INSTALL-7 | §23 step 4 | Corrected: the control color modes live on Header → Button style |
+| INSTALL-8 | §34 step 4 | Corrected: `schemaVersion` is at least 14, rather than exactly 14 |
+| INSTALL-9 | 06 MM.1 (MM-16, MM-13, MM-12) | New: the v15 to v16 upgrade, never run |
+| SLASH-3 | §14 | New verbs in the sweep: `diagnostics`, `profile`, `export` and an unknown word |
+| SLASH-4 | §14, §26 `/mm export` | New: the `profile` row |
+| SLASH-7 | §14; 06 MM.4 (MM-09) | Corrected: the ordinal path answers *Setting not found*, and an out-of-range scale is clamped, not refused; new: a validated row's refusal, never run |
+| SLASH-9 | §14 | Corrected: the by-name example is `Multi Meters #1`; no window is named Meter |
+| SLASH-10 | §14; 06 MM.11 (MM-22) | Never run: the lock lines through the locale |
+| SLASH-11 | §6 | Corrected: the list line's shape, the one-word copy source, no confirmation on the CLI delete |
+| SLASH-12 | §4; 06 X1.6 | Never run: `/mm config` in combat |
+| PANEL-11 | §29 (`M4-01`) | "NOT YET RUN" |
+| PANEL-13 | §4 | Corrected: Tooltip's tab names and order; each tab's rows restated from the code (Title text holds the name's face, not the name; Button style's three headings; the hide rules add solo, vehicles and flight paths, and combat is its own tab); the close row's path is `window.frame.closeButton` |
+| PANEL-15 | §4 | Corrected: the General page has three tabs |
+| PANEL-18 | §4, §6; 06 MM.2 (MM-16), 06 MM.8 (MM-14) | Corrected: the `/mm set global.minimap.shown` half and the `/reload`; never run |
+| PANEL-20 | §4 | Corrected: Header → Title text offers Class / Custom only |
+| PANEL-23 | §4 (`M3-02`); 06 L.10 (LK-24) | "Not yet run"; new: each font name in its own face |
+| PANEL-24 | §30 (`M4-07`) | "NOT YET RUN" |
+| PANEL-25 | §4 | Corrected: General and Windows both carry Defaults |
+| PANEL-30 | §4 (LibKa0s v1.46.1); 06 X1.6 | "not yet run"; new: an action-bar click in combat raises no taint line |
+| PANEL-40 | §5 | Corrected: the order and full shape of the `[Blocks]` lines |
+| PANEL-43 | §5 (LK-21); 06 MM.10 (MM-18), 06 L.9 (LK-21) | Never run: the library drag |
+| PANEL-45 | 06 MM.9 (MM-17) | New: the color picker's throttle |
+| PANEL-46 | 06 L.12 (LK-27), 06 X1.2 | New: switching windows leaks nothing |
+| PROFILE-5 | §4, §16 | Corrected: the fresh window is **Multi Meters #1** |
+| PROFILE-6 | §16 | Corrected: the popup's wording, and only `[Set]` lines are counted |
+| PROFILE-9 | §15 (`M2-18`) | "Not yet run" |
+| PROFILE-10 to PROFILE-17 | New | The `/mm profile` verb (SP-MM-02), never run in a client |
+| STATE-1 | §14 | New: `/mm diagnostics` and `/mm profile` among the verbs that answer while disabled |
+| STATE-3 | §3 SM-01; 06 MM.6 (MM-01) | Never run |
+| STATE-4 | §3 SM-03; 06 MM.6 (MM-01) | Never run |
+| STATE-5 | §3 SM-02, §14 SM-02; 06 MM.5 (MM-02), 06 MM.6 (MM-01) | Corrected: the suspension starts at `/mm perf measure b`, not at `start`; never run in the plan either |
+| STATE-9 | §3; 06 MM.11 (MM-22) | Corrected: the `/mm test` lines; never run |
+| STATE-11 | §3 | Corrected: the General page's box is under the combat cover, so only `/mm test` and the minimap menu are routes |
+| WIN-5 | §1 header controls | Corrected: the Header control names |
+| WIN-12 | §26 control | Corrected: the toggle is on Header → Title bar |
+| WIN-16 | §1 header controls | Corrected: the dialog asks *Clear every recorded combat session?* with Yes / No; the meter-data warning is not in it |
+| WIN-25 | §3 | Corrected: the window drags by its title bar, and the cells answer the mouse locked or unlocked |
+| WIN-26 | §3, §16; 06 MM.11 (MM-22) | Corrected: the singular and plural lines; never run |
+| WIN-28 | §6; 06 MM.8 (MM-14) | Corrected: the refresh interval is addon-wide, not a per-window difference; only the band's window moves, never run |
+| WIN-31 | §6, §16; 06 MM.8 (MM-14) | Never run: one refresh and one `[Set]` line per copy |
+| VIS-5 | §7 | Corrected: the vehicle rule ships off and is now switched on first |
+| GRID-3 | §8 | Corrected: Bars → Text style and Bars → Bar |
+| GRID-7 | §19 step 6 (issue #26) | "Unconfirmed in game" |
+| GRID-9 | §20 step 2 | Corrected: the default name cap is 15 |
+| GRID-12 | §9 SM-04; 06 Q.5 (MM-03) | Corrected: Frame → Row → Maximum rows and Always show yourself; never run in the plan either |
+| GRID-13 | §9 | Corrected: each sort mode is set with `/mm set window.data.sortMode` |
+| GRID-17 | §12 | Corrected: pets have their own rows unless **Merge pets into their owner** is ticked first; it ships off |
+| GRID-18 | §12 "Also worth checking" | Corrected: the fold needs **Merge pets into their owner** ticked |
+| GRID-21 | §13 | Corrected: the empty state comes from the header reset; a fresh login keeps the old fights |
+| GRID-31 | §21 step 8 | Corrected: the meter reset is the header control's |
+| TIP-6 | §10 | Corrected: the row line also needs `/mm debug tooltip` |
+| TIP-10 | §10; 06 MM.7 (MM-05) | Never run |
+| TIP-11 | §10 | Corrected: Death timestamps is on Bars → Text content |
+| TIP-23 | §4, §24 | Corrected: there is no "At cursor" anchor |
+| TIP-26 | §24 | Corrected: Bar spacing ships at 1 |
+| EXPORT-20 | §26 whisper | Corrected: a blank whisper is refused with a line |
+| EXPORT-21 | §26 whisper | Corrected: a statement turned into a step |
+| EXPORT-29 | §26 file | Corrected: 24 columns, and the header row is compared with LOC-1's |
+| EXPORT-33 | §26 chat; 06 Q.6 (MM-04) | Corrected: the channel is **Self only**; there is no *Print to myself*; corrected: no notice line before the lines |
+| EXPORT-38 | §26 chat; 06 Q.6 (MM-04) | Corrected: a Party export printed locally with the no-sender notice fails; never run |
+| EXPORT-39 | §26 chat | Corrected: the list includes **Whisper my target** |
+| EXPORT-48 | §26 chat | Corrected: the *There is nothing to export.* line, and the empty segment comes from the header reset, not a fresh login |
+| EXPORT-53 | §26 `/mm export` | Corrected: the by-name example is `Multi Meters #1`; no window is named Meter |
+| EXPORT-54 | §26 `/mm export` | Corrected: *No window named '…'.* |
+| COMBAT-7 | §8 | Corrected: the step names the control and the command |
+| COMBAT-13 | §9, §27 | Corrected: the `N of M` header strings |
+| COMBAT-14 | §9 | Corrected: each sort mode is set with `/mm set` |
+| COMBAT-17 | §9 | Corrected: the name sort is set by the Player header |
+| COMBAT-27 | §12 | Corrected: the catch-up needs **Merge pets into their owner** ticked; it ships off |
+| COMBAT-30 | New | Cell borders mid-pull, which `modules/Row_Border.lua` said the suite checked |
+| DIAG-1 | §18 | Corrected: `sort=value/provider` mid-pull, and repeated passes folded into `(xN)` lines |
+| DIAG-7 | §18; 06 Q.7 (MM-19), 06 L.8 (LK-20) | Corrected: `measure a`, `measure b` and `report`; `finish` prints no report; restored: `meterEvent`, `spellEvent` and `systemEvent` each with calls and ms, and the whisper `systemEvent` needs; *perf run FINISHED* then *addon RESUMED* in chat at `finish`; calls above zero, not total ms; the plan's bucket and parent steps never ran |
+| DIAG-10 | §18 (issue #47) | "Unconfirmed in game" |
+| DIAG-11 | §29 | "NOT YET RUN"; corrected: a bare `start` is stamped with the date and time, never `unlabeled` |
+| DIAG-12 | §31 | "NOT YET RUN" |
+| DIAG-15 | §35 step 4 | Corrected: the end marker carries the line count |
+| DIAG-17 | §35 step 6; 06 L.7 (LK-19) | Corrected: the copy holds the newest lines in order; never run |
+| DIAG-20 | §26 control | The atlas rung is "still unconfirmed" |
+| DIAG-22 | §27 | Corrected: when `no identity pass has been measured` appears |
+| DIAG-23 | §28 | Corrected: the refusal line includes its backticks |
+| DIAG-26 to DIAG-30 | §37 MM-E1 to MM-E5 (2026-09-29) | Result empty |
+| DIAG-31 | 06 MM.3 (MM-07), 06 X1.5 | New: the rejected-events line, seen through an enable cycle because the debug flag does not survive a `/reload` |
+| DEGRADED-1 | §17; 06 X2.11 | Never run |
+| DEGRADED-2 | §17 | Corrected: the first line's full text, and each later line repeating the cause |
+| DEGRADED-3 | §17; 06 X2.11 | Never run: a bare `/mm` answers |
+| DEGRADED-8 | New | `/mm profile` with LibKa0s absent |
+| LOC-1 | §26 file | Corrected: the header has 24 columns, not 26 |
