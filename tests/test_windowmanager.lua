@@ -841,3 +841,15 @@ test("Rename to an empty name answers a sentence, not the row's label", function
     assertEqual(ok, false)
     assertEqual(err, "A window name cannot be empty.")
 end)
+
+test("A test-mode start refused in combat names its guard in the log", function()
+    -- debug-logging-§8, Diagnosis: a refusal names its guard. The [Test] line a
+    -- start writes never comes, so without this the log shows nothing at all.
+    -- red under: SetTestMode's combat branch with no [Test] trace.
+    local inst = T.load()
+    inst.NS.State.debug = true
+    inst.mocks.setInCombat(true)
+    assertFalse(inst.NS.WindowManager:SetTestMode(true))
+    assertTrue(inst.NS.DebugLog:FindLine("[Test] start refused: in combat") ~= nil,
+        "got: " .. tostring(inst.NS.DebugLog:LastLine()))
+end)

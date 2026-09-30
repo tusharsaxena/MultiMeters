@@ -698,8 +698,10 @@ function DrillDown:BuildRows(window)
     if view.kind == "deaths" then
         local deathList = deathRows(view)
         if t0 then Perf.Note("aggregate", debugprofilestop() - t0, "refresh") end
-        if State.debug and Debug then
-            Debug("DrillDown", "rows window=%s stat=%s kind=deaths n=%d",
+        if State.debug and NS.DebugSteady then
+            -- Change-gated like the grid's own pass line (debug-logging-§9, quiet
+            -- steady state): this runs on every refresh while drilled in.
+            NS.DebugSteady(windowIdOf(window), "DrillDown", "rows window=%s stat=%s kind=deaths n=%d",
                 tostring(windowIdOf(window)), view.statKey, #deathList)
         end
         return deathList, DrillDown.Title(window), true
@@ -730,8 +732,9 @@ function DrillDown:BuildRows(window)
     end
 
     if t0 then Perf.Note("aggregate", debugprofilestop() - t0, "refresh") end
-    if State.debug and Debug then
-        Debug("DrillDown", "rows window=%s stat=%s n=%d",
+    if State.debug and NS.DebugSteady then
+        -- Change-gated: one line when the breakdown moves, not one per refresh.
+        NS.DebugSteady(windowIdOf(window), "DrillDown", "rows window=%s stat=%s n=%d",
             tostring(windowIdOf(window)), view.statKey, #rows)
     end
 

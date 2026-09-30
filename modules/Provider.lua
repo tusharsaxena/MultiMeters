@@ -171,6 +171,14 @@ function Provider.IsAvailable(_)
     memo.checked = true
     memo.ok      = ok and true or false
     memo.reason  = reason
+    -- The meter's own availability is a state edge every window reacts to (the
+    -- "meter unavailable" notice), so it is traced (debug-logging-§8, Diagnosis).
+    -- CHANGE-GATED: the memo is refilled after every session update and world
+    -- entry, and an answer that did not move writes nothing (§9).
+    if State.debug and NS.DebugSteady then
+        NS.DebugSteady("meter", "Provider", "meter %s",
+            memo.ok and "available" or ("unavailable: " .. NS.SafeToString(reason)))
+    end
     return memo.ok, memo.reason
 end
 

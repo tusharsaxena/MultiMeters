@@ -460,6 +460,37 @@ test("Evaluate records the last answer per window and counts the changes", funct
     assertEqual(select(2, NS.Visibility.LastResult(cfg.id)), "world")
 end)
 
+--- How many [Visibility] lines the buffer holds.
+local function visibilityLines(NS)
+    local n = 0
+    for _, line in ipairs(NS.DebugLog.buffer) do
+        if tostring(line):find("[Visibility]", 1, true) then n = n + 1 end
+    end
+    return n
+end
+
+test("Evaluate is quiet in a steady state: edges that move no answer write no line", function()
+    -- debug-logging-§9, quiet steady state. The pass runs on every roster,
+    -- combat and player-state edge, and a mount or a roster ripple that moved
+    -- no window's answer used to repeat `#1=show(...)` each time (the 060 log).
+    -- red under: Evaluate calling NS.Debug on every pass instead of DebugSteady.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.State.debug = true
+    inst.mocks.setInstance("party")
+    NS.Visibility:Evaluate()
+    local after = visibilityLines(NS)
+    assertEqual(after, 1, "the first pass must describe the state")
+    for _ = 1, 20 do NS.Visibility:Evaluate() end
+    assertEqual(visibilityLines(NS), after, "an unchanged pass wrote a [Visibility] line")
+
+    -- A real change is written on the pass it happens.
+    inst.mocks.setInstance(nil)
+    NS.Visibility:Evaluate()
+    local last = NS.DebugLog:LastLine()
+    assertTrue(tostring(last):find("(world)", 1, true) ~= nil, "the change was not written: " .. tostring(last))
+end)
+
 test("Refresh is Evaluate under the name a caller thinks in", function()
     local inst = T.load()
     inst.mocks.setInstance("party")

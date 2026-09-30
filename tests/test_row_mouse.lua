@@ -322,3 +322,65 @@ test("Cells register for BOTH buttons, or the right click never arrives", functi
     assertTrue(seen["LeftButtonUp"], "left clicks are not registered")
     assertTrue(seen["RightButtonUp"], "right clicks are not registered")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The tooltip debug channel is quiet while a hover holds
+-- ---------------------------------------------------------------------------
+
+--- How many buffered console lines contain `needle` (a plain find).
+local function countLines(NS, needle)
+    local n = 0
+    for _, line in ipairs(NS.DebugLog.buffer) do
+        if tostring(line):find(needle, 1, true) then n = n + 1 end
+    end
+    return n
+end
+
+local function tooltipChannel(inst)
+    inst.NS.State.debug = true
+    inst.NS.State.debugTooltip = true
+    if inst.NS.DebugSteadyReset then inst.NS.DebugSteadyReset() end
+end
+
+test("Tooltip channel: a cell rebuilt under a resting cursor speaks once per hover", function()
+    -- debug-logging-§9, quiet steady state: a repeating path MUST NOT log while
+    -- nothing it reports has changed, and being opt-in behind `/mm debug
+    -- tooltip` does not exempt it. The cell tooltip is rebuilt on every refresh
+    -- the cursor sits through; each rebuild is driven here as a fresh OnEnter.
+    -- red under: CellTooltip / NameTooltip writing through NS.Debug.
+    local inst, _, row = bench()
+    tooltipChannel(inst)
+    row:Update(entry{ DamageDone = { total = 1, maxAmount = 1 } }, 1)
+
+    for _ = 1, 20 do row.cells.DamageDone.frame:_run("OnEnter") end
+    assertEqual(countLines(inst.NS, "[Tooltip] cell DamageDone"), 1,
+        "an unchanged cell tooltip logged on every rebuild")
+    for _ = 1, 20 do row.nameCell.frame:_run("OnEnter") end
+    assertEqual(countLines(inst.NS, "[Tooltip] name stats="), 1,
+        "an unchanged name tooltip logged on every rebuild")
+
+    -- Leaving ends the hover, so the held run reports its count and the next
+    -- hover of the same cell is news again.
+    -- red under: cellOnLeave not calling NS.DebugSteadyForget.
+    row.cells.DamageDone.frame:_run("OnLeave")
+    assertEqual(countLines(inst.NS, "(x20)"), 1, "the held run's count was lost on leave")
+    row.cells.DamageDone.frame:_run("OnEnter")
+    assertEqual(countLines(inst.NS, "[Tooltip] cell DamageDone spells="), 3,
+        "expected the first hover, its run count, and the second hover")
+end)
+
+test("Tooltip channel: a breakdown row under a resting cursor speaks once per hover", function()
+    -- The loudest of the three: rowOnEnter's line fires on mouse motion.
+    -- red under: rowOnEnter writing through NS.Debug.
+    local inst, _, row = bench()
+    tooltipChannel(inst)
+    row:Update(spellEntry(), 1)
+
+    for _ = 1, 30 do row.frame:_run("OnEnter") end
+    assertEqual(countLines(inst.NS, "[Tooltip] row spell=49998"), 1,
+        "an unchanged row hover logged on every motion event")
+    row.frame:_run("OnLeave")
+    row.frame:_run("OnEnter")
+    assertEqual(countLines(inst.NS, "[Tooltip] row spell=49998"), 3,
+        "expected the first hover, its run count, and the second hover")
+end)

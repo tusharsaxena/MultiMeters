@@ -1323,3 +1323,75 @@ test("Export.Build answers nil when there is no aggregator to ask", function()
     assertTrue(ok, "a missing aggregator must not raise")
     assertNil(result)
 end)
+
+--- How many buffered console lines contain `needle` (a plain find).
+local function countLines(NS, needle)
+    local n = 0
+    for _, line in ipairs(NS.DebugLog.buffer) do
+        if tostring(line):find(needle, 1, true) then n = n + 1 end
+    end
+    return n
+end
+
+test("Export: a staggered dump traces its send, and a cancel traces the tail it dropped", function()
+    -- debug-logging-§8, Diagnosis: deferred work, held and flushed. "My export
+    -- only half arrived" is answered by these two lines and by nothing else.
+    -- red under: Export.Send / cancelQueue with no [Export] trace.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.State.debug = true
+    inst.mocks.SendChatMessage = function() end
+
+    assertTrue(NS.Export.Send({ "head", "one", "two" }, "WHISPER", "Nosuchname"))
+    assertEqual(countLines(NS, "[Export] sent line 1 of 3 to WHISPER, the rest queued"), 1)
+    NS.Export.NoteSystemMessage(inst.mocks.ERR_CHAT_PLAYER_NOT_FOUND_S:format("Nosuchname"))
+    assertEqual(countLines(NS, "canceled the queued rest of a dump: no player named Nosuchname"), 1,
+        "the dropped tail was not traced: " .. tostring(NS.DebugLog:LastLine()))
+end)
+
+test("Export: a staggered dump that finishes traces its flush, once", function()
+    -- debug-logging-§8, Diagnosis: deferred work, HELD AND FLUSHED as a pair.
+    -- The hold line alone reads the same whether the tail went out or the
+    -- timers never ran, and "held, never flushed" is the case that must stand
+    -- out. So the last queued line writes a flush line, and nothing before it
+    -- does.
+    -- red under: Export.Send's last timer disarming without a trace.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.State.debug = true
+    inst.mocks.SendChatMessage = function() end
+    assertTrue(NS.Export.Send({ "head", "one", "two" }, "PARTY"))
+    assertEqual(countLines(NS, "sent the queued rest"), 0, "the flush line came out before the tail went")
+    inst.mocks.__fireTimers()
+    assertEqual(countLines(NS, "[Export] sent the queued rest of a dump (2 lines) to PARTY"), 1,
+        "the flushed tail was not traced: " .. tostring(NS.DebugLog:LastLine()))
+end)
+
+test("Export: a one-line dump claims no queued tail", function()
+    -- Nothing is queued behind a single line, so "the rest queued" would send a
+    -- reader looking for a flush that can never come.
+    -- red under: writing the hold wording for #lines == 1.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.State.debug = true
+    inst.mocks.SendChatMessage = function() end
+    assertTrue(NS.Export.Send({ "head" }, "PARTY"))
+    inst.mocks.__fireTimers()
+    assertEqual(countLines(NS, "the rest queued"), 0)
+    assertEqual(countLines(NS, "sent the queued rest"), 0)
+    assertEqual(countLines(NS, "[Export] sent 1 line to PARTY"), 1)
+end)
+
+test("Export: a cancel with nothing queued says nothing", function()
+    -- A stand-down cancels unconditionally; a line for a dump that finished long
+    -- ago would read as an export cut short.
+    -- red under: tracing every cancelQueue call.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.State.debug = true
+    inst.mocks.SendChatMessage = function() end
+    NS.Export.Send({ "head", "one" }, "PARTY")
+    inst.mocks.__fireTimers()
+    NS.Export.CancelSend()
+    assertEqual(countLines(NS, "canceled the queued rest"), 0)
+end)

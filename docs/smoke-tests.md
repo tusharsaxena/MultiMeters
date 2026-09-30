@@ -28,7 +28,7 @@ secret-value rules the checks refer to.
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
-| DIAG-1 to DIAG-31 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events |
+| DIAG-1 to DIAG-38 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on |
 | DEGRADED-1 to DEGRADED-9 | [LibKa0s absent](#degraded) | The library-absent install |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
@@ -1165,8 +1165,9 @@ stayed empty; "no errors" from a dummy is not evidence here.
 - **DIAG-15. The report copies clean.** After DIAG-14, **Copy** and paste → the trace, the begin marker
   and the end line `==== Ka0s Multi Meters diagnostics end: N line(s) ====`, with no `|c` escapes.
   Result:
-- **DIAG-16. The report is ungated.** `/mm debug off`, `/mm diagnostics` → the full report; the console
-  header still reads `Debug: OFF` and the next setting change writes no `[Set]` line. Result:
+- **DIAG-16. The report is ungated.** `/mm debug off`, `/mm diagnostics` → the full report lands, begin
+  to end marker, even though logging was off when it ran; it also turns logging on (DIAG-38), so the
+  header now reads `Debug: ON`. Result:
 - **DIAG-17. The buffer cap.** With `/mm debug on`, refresh through a few pulls or repeat
   `/mm diagnostics` until the console passes its cap → the counter reads `N / 3000 lines`, stops at
   3000, and nothing stalls as lines keep arriving; Copy opens without a hitch and holds the newest
@@ -1232,6 +1233,45 @@ stayed empty; "no errors" from a dummy is not evidence here.
   `/mm enable` → no `[Init] rejected events:` line in the console (the debug flag does not survive a
   `/reload`, so the enable cycle is how to see the load's registrations logged). Any event named is a
   finding: the client no longer knows it. Result:
+- **DIAG-32. The console resizes.** `/mm debug`, then drag the grip in the console's bottom-right
+  corner → the console grows and shrinks on both axes from its 700 × 344 opening size; the log text,
+  the scrollbar and the title bar follow, the three title icons stay in their corner, the scrollbar's
+  thumb and the `N / 3000 lines` counter still match the buffer (no digit under the grip), and the
+  buffer and scroll position are unchanged. Shrink it as far as it goes → it stops while the title and
+  all three icons still fit side by side and the title bar, the status bar and a few lines still
+  show. No Lua error. Result:
+- **DIAG-33. The copy windows resize.** Console **Copy**, then drag its bottom-right grip → it resizes
+  on both axes, the text box widens and narrows with it, and the scroll bar's down button sits above
+  the grip and takes a click on its whole face; it stops shrinking at 240 × 140. Repeat on the
+  **Export to CSV** window (EXPORT-22) → the same, and its size is its own: resizing one leaves the
+  other at the size it had. No Lua error. Result:
+- **DIAG-34. The perf panel resizes in width only.** `/mm perf`, then drag its bottom-right grip → the
+  panel widens and every step row stretches with it; the height does not move; it never goes
+  narrower than its opening width. No Lua error. Result:
+- **DIAG-35. Sizes last the session, never a reload.** Resize the console, the console's copy window,
+  the CSV window and the perf panel, close each and reopen it → each comes back at the size you
+  left. Then `/reload` and reopen each → each is at its default again (the console 700 × 344, the
+  panel its opening size, each copy window its own); do the same once with the console dragged
+  elsewhere first, and the reload still restores the default size. Result:
+- **DIAG-36. Another addon's console is unaffected.** With another Ka0s addon loaded, resize this
+  addon's console, then open the other addon's debug console → it opens at 700 × 344; resize it →
+  this addon's console keeps the size it had. Result:
+- **DIAG-37. The Diagnostics link.** Bare `/mm debug` → in the title bar, top left, the word
+  **Diagnostics** sits just right of the `Debug: ON` / `Debug: OFF` label with a small gap, drawn
+  orange in the same plain text as that label: no button art, border or background. Hover it → it
+  brightens; move off → orange again. Click it → the diagnostics report is written into the console,
+  begin to end marker, with the one chat line giving its line count, exactly as `/mm diagnostics`
+  writes it. Toggle the label between ON and OFF → the gap after it holds for either word. Drag the
+  console in as far as it goes (DIAG-32) → the link still fits beside the label and the title.
+  Result:
+- **DIAG-38. Diagnostics turns logging on for the session.** `/reload` → logging is off (DIAG-2).
+  `/mm diagnostics` → chat prints the `debug logging ON` line, then the report's line-count line; the
+  console holds `[Debug] logging enabled` and the `[Init]` summary ahead of the begin marker, the
+  report's header reads `debug logging: on`, and the title-bar label reads `Debug: ON`. Change a
+  setting → a `[Set]` line streams. `/reload` → logging is off again. Click the console's Diagnostics
+  link (DIAG-37) → the same: logging on for the session. `/reload`, then `/mm debug on` and
+  `/mm debug diagnostics` → the report appends with no second `logging enabled` line. `/mm debug off`
+  → logging stops, and nothing turns it back on until the next report or `/mm debug on`. Result:
 
 ## DEGRADED
 
@@ -1369,6 +1409,9 @@ the steps that session added are listed here by ID.
 | DIAG-23 | §28 | Corrected: the refusal line includes its backticks |
 | DIAG-26 to DIAG-30 | §37 MM-E1 to MM-E5 (2026-09-29) | Result empty |
 | DIAG-31 | 06 MM.3 (MM-07), 06 X1.5 | New: the rejected-events line, seen through an enable cycle because the debug flag does not survive a `/reload` |
+| DIAG-32 to DIAG-36 | New (LibKa0s v1.64.0, 2026-09-30) | The resizable console, copy windows and perf panel, never run in a client |
+| DIAG-16 | Corrected (LibKa0s v1.64.0, 2026-09-30, DL-MM-03) | The report still lands with logging off, but now turns logging on, so the header reads `Debug: ON` afterwards |
+| DIAG-37, DIAG-38 | New (LibKa0s v1.64.0, 2026-09-30, DL-MM-03) | The console's Diagnostics link, and diagnostics turning logging on for the session, never run in a client |
 | DEGRADED-1 | §17; 06 X2.11 | Never run |
 | DEGRADED-2 | §17 | Corrected: the first line's full text, and each later line repeating the cause |
 | DEGRADED-3 | §17; 06 X2.11 | Never run: a bare `/mm` answers |

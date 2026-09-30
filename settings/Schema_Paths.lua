@@ -626,6 +626,16 @@ function NS.RegisterSchemaRows(rows) S.AddRows(rows) end
 --- reads nil.
 function NS.GetSetting(path, windowId) return S.Get(path, windowId) end
 
+--- The seam's one refusal line (debug-logging-§8, Diagnosis: a write rejected
+--- names its guard). The runtime logs `[Set] <path> = <value>` for a write that
+--- lands and nothing for one it refuses, so `/mm set` typed wrong, a widget whose
+--- value failed validation or a write with no window selected left no trace at
+--- all. `err` is the sentence the caller shows the player, so the two agree.
+local function traceRefused(path, err)
+    if not (NS.State and NS.State.debug) then return end
+    debugSink("Set", "%s refused: %s", tostring(path), NS.SafeToString(err))
+end
+
 --- Write one setting. THE single write seam (architecture-§5): the panel's
 --- widgets, `/mm set`, `/mm reset` and the defaults restore all land here.
 --- The runtime's order: refuse an unknown path, validate, normalize, refuse a
@@ -642,9 +652,13 @@ function NS.GetSetting(path, windowId) return S.Get(path, windowId) end
 --- @return boolean ok, string|nil err, string|nil why
 function NS.SetByPath(path, value, windowId)
     if type(path) == "string" and path:sub(1, #COLUMNS_PATH + 1) == COLUMNS_PATH .. "." then
-        return false, L["A single column is not a setting — edit columns under Windows > Columns."]
+        local err = L["A single column is not a setting — edit columns under Windows > Columns."]
+        traceRefused(path, err)
+        return false, err
     end
-    return S.Set(path, value, windowId)
+    local ok, err, why = S.Set(path, value, windowId)
+    if ok == false then traceRefused(path, err) end
+    return ok, err, why
 end
 
 --- Write several settings as ONE change, through the runtime's SetMany: every

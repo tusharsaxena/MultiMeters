@@ -420,8 +420,19 @@ function Visibility:Evaluate()
         end
     end
 
-    if summary and Debug then
-        Debug("Visibility", "%s", summary)
+    -- CHANGE-GATED (debug-logging-§9, quiet steady state). This pass runs on
+    -- every roster, combat and player-state edge, and a mount, a form or a
+    -- roster ripple that moved no window's answer used to repeat the same
+    -- `#1=show(...)` line each time. Through NS.DebugSteady the line is written
+    -- when the summary moves and not otherwise; the run it closes carries its
+    -- `(xN)`. Built only under the gate at the top of this function.
+    if summary then
+        local steady = NS.DebugSteady
+        if steady then
+            steady("visibility", "Visibility", "%s", summary)
+        elseif Debug then
+            Debug("Visibility", "%s", summary)
+        end
     end
 
     return changed

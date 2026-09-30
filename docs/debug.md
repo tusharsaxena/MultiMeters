@@ -14,7 +14,7 @@ this addon's own surface on top of it.
 | `/mm debug` | Toggle the console window. Never touches a flag. |
 | `/mm debug on` / `off` | Set the session logging flag. Works with the window closed. |
 | `/mm debug tooltip` | Toggle the tooltip log channel. Off by default; prints the state it landed in. |
-| `/mm diagnostics`, `/mm debug diagnostics` | Write the diagnostics report into the console, after whatever is already there (`debug-logging-§14`). Both forms run the same report; `diag`, its old name, is an unknown word now. |
+| `/mm diagnostics`, `/mm debug diagnostics` | Write the diagnostics report into the console, after whatever is already there (`debug-logging-§14`), turning logging on for the session first if it is off. Both forms run the same report; `diag`, its old name, is an unknown word now. |
 | `/mm debug recap` | Print the death-recap probe alone (issue #1). |
 | `/mm debug identity` | Print the mid-pull correlation capture (issue #22). |
 | `/mm debug feign on` / `off` | Arm and disarm the feign-death recording (issue #25). |
@@ -22,6 +22,10 @@ this addon's own surface on top of it.
 
 **Logging and the window are separate on purpose.** Logging runs with the console closed, so a bug
 can be reproduced first and the log read afterwards.
+
+**The console's title bar carries an orange Diagnostics link** (LibKa0s-DebugLog-1.0 minor 16), just
+right of the Debug On/Off label with a small gap, drawn as plain text like that label. A click runs
+the same report as `/mm diagnostics`, `NS.DebugLog:RunDiagnostics()`.
 
 **The four read verbs run without the console seam at all.** They are what a player is asked to type
 when something looks wrong, and requiring them to open a window first is one more step between a bug
@@ -53,38 +57,97 @@ and three call sites write on the `Tooltip` channel:
 | `modules/Tooltip_Builders.lua` (cell) | a cell tooltip being built |
 | `modules/Tooltip_Builders.lua` (name) | a name tooltip being built |
 
-The first is the loud one: resting the cursor on a row emits a line as fast as the mouse reports its
-position, so a few seconds of hovering evicts the `[Aggregator]` and `[Render]` lines somebody was
+The first is the loud one: resting the cursor on a row reaches it as fast as the mouse reports its
+position, and the cell and name tooltips are rebuilt on every refresh the cursor sits through. Written
+plainly, a few seconds of hovering evicts the `[Aggregator]` and `[Render]` lines somebody was
 actually reading. Gating it costs nothing — the tooltips themselves are unaffected, only the log is.
+
+**Opt-in does not exempt a path from `debug-logging-§9`**, so all three are also change-gated: each
+writes through `NS.DebugSteady` keyed on the hovered frame, so a hover speaks once when it starts
+(and again if its count changes) and is silent while it holds. Leaving the cell or row calls
+`NS.DebugSteadyForget` on that frame, which writes the held run's `(xN)` line and forgets it, so the
+next hover of the same cell speaks again. `tests/test_row_mouse.lua` pins both.
 
 **A half-gated channel reads exactly like a gated one from the console**, which is how the first cut
 of this shipped with `modules/Row.lua` missed. `tests/test_slash_diagnostics.lua` scans the source for
-`Debug("Tooltip"` call sites not preceded by the flag, so a fourth site added without the guard fails
-the suite rather than quietly restoring the flood.
+`Tooltip` call sites (through `NS.Debug` or `NS.DebugSteady`) not preceded by the flag, and expects
+exactly three, so a fourth site added without the guard fails the suite rather than quietly restoring
+the flood.
 
-## The channels
+## Coverage
 
-`NS.Debug(channel, format, ...)` is the sink; the channel is the bracketed name at the head of the
-line. Twenty go through it: nineteen from this addon's own call sites, and `Cfg`, which the options
-library logs through the descriptor's `debug` hook. The twenty do not include `Perf`, whose lines
-the perf harness writes straight to the buffer with `DebugLog:Add`, so the console can show twenty-one.
-The three that dominate a live capture are `Aggregator` (one summary line per refresh pass),
-`Render` (one per window per pass) and `Roster` (one per rebuild).
+`NS.Debug(channel, format, ...)` is the sink; the channel is the bracketed tag at the head of the
+line. This section is the map of what writes each tag and when, so a log read back after a repro can
+be matched to the code that wrote it (`debug-logging-§8`). Twenty-one tags come from this addon's own
+call sites; `Cfg`, `Launcher` and part of `Set` come from vendored libraries through the descriptors'
+`debug` hooks; `Perf` is written straight to the buffer by the perf harness with `DebugLog:Add`.
 
-A pass whose summary line is **unchanged** from the previous pass is not logged; a change is never
-delayed and never dropped, and a repeat is collapsed to a heartbeat carrying `(xN)`. That behavior
-is a documented deviation from `debug-logging-§8` — see `## Documented deviations` in
-[ARCHITECTURE.md](ARCHITECTURE.md) — and it exists because four passes a second into a capped buffer
-otherwise leaves a console holding forty seconds of one repeated string.
+**Quiet steady state (`debug-logging-§9`).** Every path that repeats — the refresh tick, the
+visibility pass, a roster retry, a drill view, a refusal the join repeats on every pass, the meter
+availability memo, a tooltip rebuilt under a resting cursor — writes through `NS.DebugSteady`
+(`core/DebugLogSetup.lua`). A line is written
+when its summary changes and **not otherwise**; when a run ends, its line comes out once more with
+`(xN)`, the number of passes it stood for, just before the line that ended it. There is no heartbeat:
+through a whole dungeon key the ten-second heartbeat this replaced filled the console with an
+`[Aggregator]` / `[Render]` pair `(x41)` every ten seconds and nothing changing. Whether the loop is
+still alive is `/mm diagnostics`'s `aggregator` section, whose `age=` is the time since each
+window's last pass. Toggling logging forgets every run, so the first pass after `/mm debug on`
+always speaks. The console's **Clear** does not (the library offers no hook).
+
+| Tag | Written by | When | Steady-gated |
+|---|---|---|---|
+| `Init` | the library's `initSummary` (`core/DebugLogSetup.lua`) | on `/mm debug on`: version, schema, profile, window count, whether LibSharedMedia loaded | — |
+| `Init` | `core/Database.lua` | a default window seeded into an empty profile | — |
+| `Init` | `core/MultiMeters.lua` | an enable whose event registrations the client refused, naming them | — |
+| `Init` | `core/LifecycleSetup.lua` | `stood down (holds: …)` and `stood up`, one line per edge of the addon's own latch | — |
+| `Migrate` | `core/Database.lua` | each schema step that runs, and a version with no step | — |
+| `Profile` | `core/Database.lua` | a profile switch | — |
+| `Set` | the schema runtime (library) and `core/Database.lua` | every settings write, bulk act and profile reset or copy — see [Settings lines](#settings-lines) | — |
+| `Set` | `settings/Schema_Paths.lua` | `<path> refused: <reason>` — a write the seam rejected, with the sentence the caller shows | — |
+| `Event` | `core/MultiMeters.lua` | each world entry, zone, group and combat edge and each restriction change (below) | — |
+| `Bus` | `core/Namespace.lua` | message registrations the bus refused on stand-up | — |
+| `Provider` | `modules/Provider.lua` | `meter available` / `meter unavailable: <reason>` when the answer changes; a reset of every session; suspend and resume | availability |
+| `Aggregator` | `modules/Aggregator.lua` | one pass summary per window (`window=… rows=… dropped=… sort=… reason=…`) | yes |
+| `Aggregator` | `modules/Aggregator.lua` | `dropped guid=…` — why the first refused source of a pass was refused | yes |
+| `Aggregator` | `modules/Aggregator_Identity.lua` | the identity-correlation rectangle, on a mid-pull pass | yes |
+| `Render` | `modules/Window.lua` | `window N drew D/E rows` per window per pass | yes |
+| `Roster` | `modules/Roster.lua` | `built members=…` or `partial build (a of b) — will retry` (a held build, flushed by the next `built`) | yes |
+| `Roster` | `modules/Roster.lua` | the remembered roster pruned or forgotten | — |
+| `Visibility` | `modules/Visibility.lua` | every window's show answer and its rule (`#1=show(dungeon)`), on a roster, zone, combat or player-state edge, under debug only | yes |
+| `Window` | `modules/Window_Placement.lua` | a window moved by a drag; a shown window hidden, with the reason | — |
+| `Window` | `modules/Window_Header.lua` | a pinned segment dropped as stale; `sort by name refused: restricted` | — |
+| `Windows` | `modules/WindowManager.lua` | a window created, deleted, renamed, copied or reset | — |
+| `Test` | `core/State.lua`, `modules/WindowManager.lua` | test mode on or off; `start refused: in combat` | — |
+| `DrillDown` | `modules/DrillDown.lua` | entering and leaving a drill view, a recap opened | — |
+| `DrillDown` | `modules/DrillDown.lua` | `rows window=… n=…` for the drill view being drawn | yes |
+| `Export` | `modules/Export.lua` | a chat dump sent (at once, staggered, or printed locally); a staggered dump's hold (`sent line 1 of N to X, the rest queued`) pairs with `sent the queued rest of a dump (N-1 lines) to X` when the last queued line goes out, or with `canceled the queued rest of a dump: <why>` when the tail is dropped — a hold with neither is a tail whose timers never ran | — |
+| `Export` | `modules/Export_Modal.lua` | `csv`, `chat` or `open refused: <sentence>` — the refusal the player was shown | — |
+| `Format` | `modules/Format.lua` | the number formatter degrading at build (no breakpoints, no floor) | — |
+| `Feign` | `modules/Feign.lua` | a Feign Death cast noted | — |
+| `Tooltip` | `modules/Row.lua`, `modules/Tooltip_Builders.lua` | row hover, cell and name tooltips — **only** with `/mm debug tooltip` on (above) | yes, per hovered frame |
+| `Columns` | `settings/Columns.lua` | the settings panel's Columns entry painted | — |
+| `Blocks` | `settings/ColumnBlocks.lua` | column blocks released, and the drag list's own trace | — |
+| `Cfg` | `LibKa0s-Options-1.0` | the settings panel opened, or its open or register held in combat | — |
+| `Launcher` | `LibKa0s-Launcher-1.0` | the minimap and compartment button's own trace | — |
+| `Perf` | the perf harness | a capture's steps | — |
+
+**Deliberately not logged.** The player-state block (mount, vehicle, form, gliding, pet battle,
+death) has no `[Event]` line by the owner's ruling; its effect shows in the `[Visibility]` line. The
+spellcast, system-message and `DAMAGE_METER_*` events fire constantly and are not traced; their
+effect is the pass lines above. The `pcall`s in `core/Compat.lua`, `core/CoreSetup.lua`,
+`core/Secrets.lua` and `modules/Format.lua` are probes whose failure is an answer (a secret refused, a
+formatter missing), not an error, and a line per failure would be a line per cell. The disabled
+refusal a slash verb prints comes from `LibKa0s-Slash-1.0` and is visible in chat;
+`/mm diagnostics`'s `state` section records the disabled hold.
+
+### The `[Event]` line
 
 `Event` (owner, 2026-09-29) is one line per game event that changes where a window may show or what
 the meters may read: `[Event] <EVENT> lockdown=<bool> restricted=<bool>`, then the event's fields.
 `restricted=` is `NS.State.restricted` as the line is written; for
 `ADDON_RESTRICTION_STATE_CHANGED … type=<n> state=<n>` that is after the handler refreshed it. The
 others are `PLAYER_ENTERING_WORLD … login=<bool> reload=<bool>`, `ZONE_CHANGED_NEW_AREA`,
-`GROUP_ROSTER_UPDATE` and both `PLAYER_REGEN_` edges. The player-state block (mount, vehicle, form,
-gliding, pet battle, death) is left out by the owner's ruling, and the spellcast, system-message
-and `DAMAGE_METER_*` traffic because it fires constantly.
+`GROUP_ROSTER_UPDATE` and both `PLAYER_REGEN_` edges.
 
 ### Settings lines
 
@@ -126,14 +189,27 @@ logs `[Set] reset all: N rows (stopped by an error)` instead.
 
 `/mm diagnostics` and `/mm debug diagnostics` run one report (`debug-logging-§14`). It is what the
 README's `## Reporting a bug` asks a player to copy, so it has to work from any state: logging off,
-the console closed, the addon disabled, or mid-pull under the restriction.
+the console closed, the addon disabled, or mid-pull under the restriction. The console's Diagnostics
+link runs the same report.
+
+**Running it turns debug logging on for the session** (`debug-logging-§14`, LibKa0s
+DebugLogDiagnostics minor 2), as `/mm debug on` would, and a `/reload` turns it off again. When
+logging is off, the run goes through the flag's one seam (`NS.DebugLog:SetEnabled(true)`) before it
+writes, so the `debug logging ON` chat line, the `[Debug] logging enabled` console line and the
+`[Init]` summary land just ahead of the begin marker, and the header reads `debug logging: on`. It
+never turns logging off, and with logging already on it writes no second enable line. This addon
+keeps the library's default: its descriptor in `core/DebugLogSetup.lua` does not set
+`diagnosticsEnablesLogging = false`. The sections read state only and never touch the flag. Because
+logging is on while the sections run, a gated trace their reads cause (the provider's
+`[Provider] meter available` line, the first time the memo is asked) can also land ahead of the
+begin marker.
 
 **The frame is the library's.** `LibKa0s-DebugLog-1.0`'s `RunDiagnostics` writes the begin and end
 markers carrying the brand (`Ka0s Multi Meters`), the identity header, a pcall around each section
 (a raise costs one `section <name> failed` line), the plain-text strip and the line cap: 1200
 lines or the buffer's 3000 less 100, whichever is smaller, ending in a `truncated` line and then the end
 marker when a report runs past it. It appends after the trace already in the buffer, clears
-nothing, and writes whether or not logging is on. The flag is left as it was.
+nothing, and writes through the ungated append (`debug-logging-§12`).
 
 **The sections are this addon's,** handed over by `core/Diagnostics.lua`'s `Sections()` through the
 descriptor field `diagnostics`, in this order:

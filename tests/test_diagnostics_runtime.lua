@@ -38,6 +38,19 @@ local function report(inst, spec)
     return table.concat(lines, "\n"), lines
 end
 
+--- The report alone: `lines` from its begin marker on. With logging on, a gated
+--- trace the report's own reads cause (the provider's `meter available` line)
+--- can land ahead of the marker, and so, on a run that turns logging on, do the
+--- `[Debug] logging enabled` line and the [Init] summary (debug-logging-§14).
+local function fromBegin(lines)
+    local out, seen = {}, false
+    for _, line in ipairs(lines) do
+        if not seen and line:find("diagnostics begin", 1, true) then seen = true end
+        if seen then out[#out + 1] = line end
+    end
+    return out
+end
+
 --- The index of the first line carrying `needle`, or nil.
 local function indexOf(lines, needle)
     for i, line in ipairs(lines) do
@@ -342,8 +355,12 @@ end)
 
 test("Diagnostics runtime: an over-cap report ends in the truncated line, then the end marker", function()
     -- STD-15 / STD-19: a capped report is still whole at its end.
+    -- Logging on first, so the run adds the report alone and no enable line or
+    -- [Init] summary (a run with logging off turns it on, debug-logging-§14).
     local inst = T.load{ enable = true }
-    local _, lines = report(inst, { maxLines = 30 })
+    inst.NS.DebugLog:SetEnabled(true)
+    local _, added = report(inst, { maxLines = 30 })
+    local lines = fromBegin(added)
     assertEqual(#lines, 30, "the cap bounds the report")
     assertTrue(lines[#lines - 1]:find("truncated: ", 1, true) ~= nil, lines[#lines - 1])
     assertTrue(lines[#lines]:find("diagnostics end: 30 line(s)", 1, true) ~= nil, lines[#lines])

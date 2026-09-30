@@ -847,3 +847,20 @@ test("Switching out of a deaths view replaces the state, it does not merge into 
     assertEqual(view.kind, "spells")
     assertNil(view.deaths, "a stale death snapshot survived the switch")
 end)
+
+test("BuildRows on every refresh while drilled in logs its rows line once, not once per pass", function()
+    -- debug-logging-§9, quiet steady state: the drill view is rebuilt on every
+    -- refresh pass, four times a second, and an unchanged breakdown used to
+    -- repeat `rows window=… n=…` on each one.
+    -- red under: BuildRows calling NS.Debug instead of NS.DebugSteady.
+    local inst, cfg = bench()
+    local D = inst.NS.DrillDown
+    D:Enter(cfg, playerRow(), "DamageDone")
+    inst.NS.State.debug = true
+    for _ = 1, 12 do D:BuildRows(cfg) end
+    local n = 0
+    for _, line in ipairs(inst.NS.DebugLog.buffer) do
+        if tostring(line):find("[DrillDown] rows window=", 1, true) then n = n + 1 end
+    end
+    assertEqual(n, 1, "an unchanged drill view was logged on every pass")
+end)

@@ -65,7 +65,8 @@ local Const = NS.Constants
 -- The debug pass. Row.lua is a render path, so both are load-time upvalues and
 -- every call site stays behind `if State.debug`.
 local State = NS.State
-local Debug = NS.Debug
+local DebugSteady = NS.DebugSteady
+local DebugSteadyForget = NS.DebugSteadyForget
 
 local Row = {}
 NS.Row = Row
@@ -405,6 +406,9 @@ local function cellOnLeave(frame)
     -- whole point: the cursor crossing a cell seam would blank a tooltip the row
     -- is still hovering.
     if cell.entry and cell.entry.isDrillDown then return end
+    -- The cell and name tooltip lines are change-gated on this frame (see
+    -- CellTooltip); leaving ends the hover, so the next one speaks again.
+    if State.debug and State.debugTooltip and DebugSteadyForget then DebugSteadyForget(frame) end
     local T = NS.Tooltip
     if T and T.Hide then T:Hide() end
 end
@@ -450,10 +454,14 @@ local function rowOnEnter(frame)
     -- newCell.
     -- BEHIND THE TOOLTIP CHANNEL, like the two builder lines. This one fires on
     -- MOUSE MOTION rather than on a tooltip being built, so it is the loudest of
-    -- the three: resting the cursor on a row emits it as fast as the mouse
-    -- reports, and a capped buffer loses everything else. `/mm debug tooltip`.
-    if State.debug and State.debugTooltip and Debug then
-        Debug("Tooltip", "row spell=%s", tostring(entry.spellID))
+    -- the three: resting the cursor on a row reaches it as fast as the mouse
+    -- reports. CHANGE-GATED on the row frame (debug-logging-§9, quiet steady
+    -- state): the first enter speaks, every further motion event while the
+    -- cursor rests is counted, and rowOnLeave forgets the frame so the next
+    -- hover speaks again.
+    -- `/mm debug tooltip`.
+    if State.debug and State.debugTooltip and DebugSteady then
+        DebugSteady(frame, "Tooltip", "row spell=%s", tostring(entry.spellID))
     end
     if T and T.SpellTooltip then T:SpellTooltip(entry, frame, row.window.config) end
 end
@@ -463,6 +471,8 @@ local function rowOnLeave(frame)
     local entry = row and row.entry
     if not (entry and entry.isDrillDown) then return end
     row:SetMouseOver(false)
+    -- The hover is over, so the next one is news rather than more of the same.
+    if State.debug and State.debugTooltip and DebugSteadyForget then DebugSteadyForget(frame) end
     local T = NS.Tooltip
     if T and T.Hide then T:Hide() end
 end

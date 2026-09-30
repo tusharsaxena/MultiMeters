@@ -859,6 +859,11 @@ function WindowProto:SortByColumn(key)
     -- message the click would simply do nothing, which reads as a broken button
     -- rather than as a rule.
     if key == "name" and NS.Secrets and NS.Secrets.IsRestricted() then
+        -- Named in the log as well (debug-logging-§8, Diagnosis): no [Set] line
+        -- follows a refused click, and "the header did nothing" is the report.
+        if NS.State.debug then
+            NS.Debug("Window", "window %d sort by name refused: restricted", self.id)
+        end
         if NS.Print then
             NS.Print(L["Sorting is not possible while the game restricts combat data."])
         end
