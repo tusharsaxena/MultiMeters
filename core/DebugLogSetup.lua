@@ -212,11 +212,17 @@ NS.DebugSteady = DebugSteady
 
 --- Forget every run, so the next pass of each speaks again.
 ---
---- Wired to the enable toggle below. NOT wired to the console's Clear button:
---- that lives inside the library and offers the host no hook, so a cleared
---- console stays silent until the next change. Worth knowing before reading a
---- cleared log as "nothing is happening" (`/mm diagnostics` answers that);
---- worth a library seam if it ever bites in practice.
+--- Wired to both edges a reader means "start again" by: turning logging on
+--- (`setEnabled` below) and the console's Clear (`onClear` below, LibKa0s-
+--- DebugLog minor 18). Before that hook a cleared console stayed silent until
+--- the next change, which read as "nothing is happening".
+---
+--- WHY THIS SINK IS KEPT RATHER THAN SWAPPED FOR THE CONSOLE'S `DebugChanged`
+--- (debug-logging-§9's SHOULD, which names this route for a host that keeps
+--- its own gate). `DebugChanged` suppresses a repeat; this sink also COUNTS the
+--- run and writes it as `… (xN)` on the state's own line when the run ends, which
+--- tests/test_debuglogsetup.lua's DebugSteady cases pin. The library's gate has
+--- no count, so moving to it would drop that line from every timer-driven pass.
 function NS.DebugSteadyReset()
     for fmt in pairs(steady) do steady[fmt] = nil end
 end
@@ -337,10 +343,18 @@ if not lib then
             return { lines = {}, dropped = 0, capped = false, capsHit = false }
         end,
         DebugVerb       = function() return false end,
+        -- The change gates and the at-enable queue (LibKa0s-DebugLog 18,
+        -- DebugLogGates.lua). With no console nothing is written, so each answers
+        -- false ("did not write"), exactly as the live members do with logging off.
+        DebugOnce       = function() return false end,
+        DebugChanged    = function() return false end,
+        DebugForget     = function() end,
+        DebugAtEnable   = function() return false end,
     }
     D.FormatColored = D.FormatPlain
     NS.DebugLog = D
     NS.Debug = D.Debug
+    NS.DebugAtEnable = D.DebugAtEnable
     return
 end
 
@@ -390,6 +404,12 @@ NS.DebugLog = lib:New({
         if NS.State then NS.State.debug = on end
         if NS.DebugSteadyReset then NS.DebugSteadyReset() end
     end,
+    -- The console's Clear re-arms the steady-state sink too (DebugLog minor 18),
+    -- so the first pass after a Clear speaks again instead of matching a run the
+    -- reader just wiped. The console re-arms its own gates itself.
+    onClear = function()
+        if NS.DebugSteadyReset then NS.DebugSteadyReset() end
+    end,
 
     -- Both resolved at CALL time rather than captured. core/CoreSetup.lua has
     -- already run, so a captured reference would in fact be correct here — but
@@ -432,3 +452,10 @@ NS.DebugLog = lib:New({
 -- precisely so `NS.Debug("Aggregate", "rows=%d", n)` keeps working with no self
 -- and no allocation when the flag is off.
 NS.Debug = NS.DebugLog.Debug
+
+-- The console's at-enable queue (DebugLog minor 18, DebugLogGates.lua): a STATE
+-- line written while logging is off -- the flag is off at login, so anything
+-- written from OnEnable -- is held and written when logging is turned on
+-- (debug-logging-§8, dependencies once at enable). Bound bare, as NS.Debug is.
+-- Falls back to the gated sink on a console built without the gates file.
+NS.DebugAtEnable = NS.DebugLog.DebugAtEnable or NS.Debug

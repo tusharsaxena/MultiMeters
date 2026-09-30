@@ -816,16 +816,22 @@ local function countLines(NS, needle)
     return n
 end
 
-test("Disabled: the stand-down and the stand-up are one [Init] line each, naming the holds", function()
+test("Disabled: the stand-down and the stand-up are one [Lifecycle] line each, naming the holds", function()
     -- debug-logging-§8, Diagnosis: the addon's own enable and stand-down edges.
     -- `disabled` is the player's switch and a perf capture's hold is not, so
-    -- the down line names which one took the addon down.
-    -- red under: standDown / standUp with no traceEdge call.
+    -- the down line names which one took the addon down. The lines are the
+    -- LIBRARY'S (Lifecycle minor 3), through the `debug` core/LifecycleSetup.lua
+    -- passes, and the host writes none of its own (debug-logging-§4).
+    -- red under: no `debug` on the Lifecycle descriptor; the host's old [Init]
+    -- pair put back in standDown / standUp.
     local _, NS = scene()
     NS.State.debug = true
     assertTrue(NS.SetByPath("enabled", false))
-    assertEqual(countLines(NS, "[Init] stood down (holds: disabled)"), 1,
+    assertEqual(countLines(NS, "[Lifecycle] stood down: added disabled (holds: disabled)"), 1,
         "the stand-down was not traced with its hold: " .. tostring(NS.DebugLog:LastLine()))
     assertTrue(NS.SetByPath("enabled", true))
-    assertEqual(countLines(NS, "[Init] stood up"), 1, "the stand-up was not traced")
+    assertEqual(countLines(NS, "[Lifecycle] stood up: released disabled (holds: none)"), 1,
+        "the stand-up was not traced")
+    assertEqual(countLines(NS, "stood down"), 1, "the stand-down edge was written twice")
+    assertEqual(countLines(NS, "stood up"), 1, "the stand-up edge was written twice")
 end)

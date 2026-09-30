@@ -79,8 +79,18 @@ the flood.
 `NS.Debug(channel, format, ...)` is the sink; the channel is the bracketed tag at the head of the
 line. This section is the map of what writes each tag and when, so a log read back after a repro can
 be matched to the code that wrote it (`debug-logging-§8`). Twenty-one tags come from this addon's own
-call sites; `Cfg`, `Launcher` and part of `Set` come from vendored libraries through the descriptors'
-`debug` hooks; `Perf` is written straight to the buffer by the perf harness with `DebugLog:Add`.
+call sites; `Perf` is written straight to the buffer by the perf harness with `DebugLog:Add`.
+
+**The library's tags.** `Cmd`, `Lifecycle`, `Cfg`, `Launcher` and part of `Set` are written by
+LibKa0s itself, through the gated sink this addon hands each descriptor as `debug` (standard v2.73.0,
+`debug-logging-§4`; LibKa0s v1.65.0): the slash dispatcher's refusals, the stand-down latch's edges,
+the options panel's combat lock, the launcher, and the schema runtime's write lines. The wording is
+the library's, and this addon writes **no** line of its own beside any of them: the `[Init] stood
+down` / `stood up` pair `core/LifecycleSetup.lua` used to write is gone, replaced by the library's
+`[Lifecycle]` line. `tests/test_library_lines.lua` pins each landing here once. A **state** line
+written while logging is off at login (the launcher's registration, the rejected events) goes through
+the console's at-enable queue, `NS.DebugAtEnable`, and is written the first time logging is turned
+on, once (`debug-logging-§8`, dependencies once at enable).
 
 **Quiet steady state (`debug-logging-§9`).** Every path that repeats — the refresh tick, the
 visibility pass, a roster retry, a drill view, a refusal the join repeats on every pass, the meter
@@ -92,14 +102,18 @@ through a whole dungeon key the ten-second heartbeat this replaced filled the co
 `[Aggregator]` / `[Render]` pair `(x41)` every ten seconds and nothing changing. Whether the loop is
 still alive is `/mm diagnostics`'s `aggregator` section, whose `age=` is the time since each
 window's last pass. Toggling logging forgets every run, so the first pass after `/mm debug on`
-always speaks. The console's **Clear** does not (the library offers no hook).
+always speaks, and so does the console's **Clear** (the descriptor's `onClear`, LibKa0s-DebugLog
+minor 18). The sink is this addon's rather than the console's `DebugChanged` because it counts a run
+and writes the `(xN)` line; the library gate has no count, and `debug-logging-§9` names `onClear` as
+the route for a host that keeps its own.
 
 | Tag | Written by | When | Steady-gated |
 |---|---|---|---|
 | `Init` | the library's `initSummary` (`core/DebugLogSetup.lua`) | on `/mm debug on`: version, schema, profile, window count, whether LibSharedMedia loaded | — |
 | `Init` | `core/Database.lua` | a default window seeded into an empty profile | — |
-| `Init` | `core/MultiMeters.lua` | an enable whose event registrations the client refused, naming them | — |
-| `Init` | `core/LifecycleSetup.lua` | `stood down (holds: …)` and `stood up`, one line per edge of the addon's own latch | — |
+| `Init` | `core/MultiMeters.lua` | an enable whose event registrations the client refused, naming them; at login it is held by the at-enable queue and written when logging is turned on | — |
+| `Lifecycle` | `LibKa0s-Lifecycle-1.0` (the library's) | `stood down: added <hold> (holds: <set>)` and `stood up: released <hold> (holds: none)`, one line per edge of the addon's own latch; a hold that moves no edge writes nothing | — |
+| `Cmd` | `LibKa0s-Slash-1.0` (the library's) | `refused <verb>[ <path>]: <guard>` — each refusal the dispatcher decides: the disabled gate (`refused lock: disabled`), an unknown verb, a get/set/reset path not found or a value it could not parse, a profile switch refused (unknown, already current, in combat); the chat line is unchanged | — |
 | `Migrate` | `core/Database.lua` | each schema step that runs, and a version with no step | — |
 | `Profile` | `core/Database.lua` | a profile switch | — |
 | `Set` | the schema runtime (library) and `core/Database.lua` | every settings write, bulk act and profile reset or copy — see [Settings lines](#settings-lines) | — |
@@ -127,8 +141,8 @@ always speaks. The console's **Clear** does not (the library offers no hook).
 | `Tooltip` | `modules/Row.lua`, `modules/Tooltip_Builders.lua` | row hover, cell and name tooltips — **only** with `/mm debug tooltip` on (above) | yes, per hovered frame |
 | `Columns` | `settings/Columns.lua` | the settings panel's Columns entry painted | — |
 | `Blocks` | `settings/ColumnBlocks.lua` | column blocks released, and the drag list's own trace | — |
-| `Cfg` | `LibKa0s-Options-1.0` | the settings panel opened, or its open or register held in combat | — |
-| `Launcher` | `LibKa0s-Launcher-1.0` | the minimap and compartment button's own trace | — |
+| `Cfg` | `LibKa0s-Options-1.0` (the library's) | the settings panel opened, or its open or register held in combat and the parked register's `register flushed (combat ended)`; each write, Defaults, tab, rail or page show the combat lock refused, as `<what> refused (in combat)`, once per text per combat | — |
+| `Launcher` | `LibKa0s-Launcher-1.0` (the library's) | the minimap and compartment button's own trace; its state lines (`registered`, a broker library absent) are held by the at-enable queue and written when logging is turned on | — |
 | `Perf` | the perf harness | a capture's steps | — |
 
 **Deliberately not logged.** The player-state block (mount, vehicle, form, gliding, pet battle,
@@ -137,7 +151,7 @@ spellcast, system-message and `DAMAGE_METER_*` events fire constantly and are no
 effect is the pass lines above. The `pcall`s in `core/Compat.lua`, `core/CoreSetup.lua`,
 `core/Secrets.lua` and `modules/Format.lua` are probes whose failure is an answer (a secret refused, a
 formatter missing), not an error, and a line per failure would be a line per cell. The disabled
-refusal a slash verb prints comes from `LibKa0s-Slash-1.0` and is visible in chat;
+refusal a slash verb prints is the library's `[Cmd]` line above, not this addon's;
 `/mm diagnostics`'s `state` section records the disabled hold.
 
 ### The `[Event]` line

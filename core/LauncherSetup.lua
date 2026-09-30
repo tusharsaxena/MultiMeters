@@ -294,4 +294,11 @@ NS.Launcher = Launcher:New({
     -- on a TOC line staying where it is (anti-patterns #36).
     print = function(line) if NS.Print then NS.Print(line) end end,
     debug = function(tag, message) if NS.Debug then NS.Debug(tag, "%s", message) end end,
+    -- The launcher's STATE lines (a broker library absent, no minimap table, registered; Launcher
+    -- minor 5) go to the console's at-enable queue: Register runs from OnInitialize, while the
+    -- session-only flag is always off, so through `debug` they never landed (debug-logging-§8).
+    -- Held, they are written the first time the player turns logging on.
+    debugAtEnable = function(tag, message)
+        if NS.DebugAtEnable then NS.DebugAtEnable(tag, "%s", message) end
+    end,
 })

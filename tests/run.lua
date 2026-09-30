@@ -322,6 +322,10 @@ local SUITES = {
     -- return is what a draw gate does and a suite written that way certifies the shape
     -- it exists to catch (testing-§12).
     "test_disabled",
+    -- The lines LibKa0s v1.65.0 writes through the sinks this addon hands it
+    -- (debug-logging-§4): Slash refusals, Lifecycle edges, Options combat-lock
+    -- refusals, the at-enable queue and the Clear re-arm.
+    "test_library_lines",
     "test_options_panel",
     "test_columnblocks",
     "test_columns",

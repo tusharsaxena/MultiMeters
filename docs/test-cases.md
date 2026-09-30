@@ -2183,7 +2183,21 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 10: an explicit WindowProto:Show while stood down refuses and shows nothing
 - Disabled 11: /mm toggle under a perf suspend shows nothing and says why
 - Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it
-- Disabled: the stand-down and the stand-up are one [Init] line each, naming the holds
+- Disabled: the stand-down and the stand-up are one [Lifecycle] line each, naming the holds
+
+### test_library_lines.lua (11)
+
+- Library lines: the disabled gate's refusal is one [Cmd] line, and chat is unchanged
+- Library lines: an unknown verb is one [Cmd] line naming it
+- Library lines: a get, set or reset of a path that does not exist is one [Cmd] line each
+- Library lines: a slash refusal writes nothing while logging is off
+- Library lines: a perf hold's edges are the library's [Lifecycle] lines, once each
+- Library lines: a hold that moves no edge writes no [Lifecycle] line
+- Library lines: an open refused in combat is one [Cfg] line
+- Library lines: a page shown in combat is one [Cfg] refusal line per combat
+- Library lines: the launcher's registration, written at login, lands when logging turns on
+- Library lines: rejected events, recorded at OnEnable, land when logging turns on
+- Library lines: after a Clear, an unchanged steady-state pass speaks again
 
 ### test_options_panel.lua (44)
 
@@ -2445,6 +2459,7 @@ badge and any count quoted in the docs must agree with it.
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
 | test_disabled.lua | 25 |
+| test_library_lines.lua | 11 |
 | test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
@@ -2453,4 +2468,4 @@ badge and any count quoted in the docs must agree with it.
 | test_surface_parity.lua | 5 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 9 |
-| **Total** | **2127** |
+| **Total** | **2138** |

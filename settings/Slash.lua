@@ -336,6 +336,12 @@ cli = SlashLib:New({
 
     print   = function(line) out(line) end,
     version = NS.Version,
+    -- The dispatcher logs each refusal it decides -- the disabled gate, an unknown verb,
+    -- a get/set/reset it could not resolve or parse, a refused profile switch -- as ONE
+    -- `[Cmd] refused <verb>: <guard>` line through this (Slash minor 18). The chat line
+    -- is unchanged, and this host writes no line of its own for any of them. Resolved at
+    -- call time; the message is passed through "%s" so a `%` in a typed path is text.
+    debug   = function(tag, message) if NS.Debug then NS.Debug(tag, "%s", message) end end,
 
     -- ── The schema seams ──────────────────────────────────────────────────
     --
