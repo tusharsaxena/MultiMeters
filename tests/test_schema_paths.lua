@@ -999,3 +999,18 @@ test("The sort and segment batches log one [Set] line per row they write", funct
         .. " window.data.sessionID window.data.sessionType")
     assertEqual(#seen, 2, "one announcement per batch")
 end)
+
+test("SetByPath: a refused write names the path and the reason in the log", function()
+    -- debug-logging-§8, Diagnosis: a write rejected names its guard. The runtime
+    -- logs `[Set] <path> = <value>` for a write that lands and nothing for one it
+    -- refuses, so a mistyped `/mm set` used to leave no trace.
+    -- red under: NS.SetByPath returning S.Set's refusal without traceRefused.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.State.debug = true
+    local ok, err = NS.SetByPath("window.frame.scale", 9)
+    assertFalse(ok)
+    local line = NS.DebugLog:FindLine("[Set] window.frame.scale refused:")
+    assertTrue(line ~= nil, "got: " .. tostring(NS.DebugLog:LastLine()))
+    assertTrue(line:find(err, 1, true) ~= nil, "the line must carry the reason the caller shows")
+end)

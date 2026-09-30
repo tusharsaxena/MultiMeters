@@ -489,8 +489,15 @@ end
 --- Every argument goes through NS.SafeToString: a GUID this branch could not use
 --- is exactly the one that is likely secret, and a secret raises inside
 --- string.format.
+---
+--- CHANGE-GATED (debug-logging-§9, quiet steady state). A source the join cannot
+--- place is usually still there on the next pass, four times a second for the
+--- rest of the pull, and the same refusal used to be written on every one of
+--- them. Through NS.DebugSteady it is written when it first appears or changes,
+--- and counted otherwise. Every argument is already a string, so the run is
+--- holdable. The pass summary's `dropped=` still moves on its own line.
 local function logDrop(pass, src, guid)
-    NS.Debug("Aggregator",
+    NS.DebugSteady(pass.windowId, "Aggregator",
         "dropped guid=%s secret=%s access=%s member=%s owner=%s local=%s/%s class=%s/%s display=%s lookup=%s",
         NS.SafeToString(guid), tostring(Secrets.IsSecret(guid)),
         tostring(Secrets.CanAccess(guid)),

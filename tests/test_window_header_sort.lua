@@ -408,3 +408,15 @@ test("With no art and no atlas the arrow is an ASCII character, and a legible on
     local font, size = damage.arrow:GetFont()
     assertTrue(font ~= nil and size ~= nil, "the fallback glyph was never given a font")
 end)
+
+test("The refused Player-header click names its guard in the log", function()
+    -- debug-logging-§8, Diagnosis: no [Set] line follows a refused click, and
+    -- "the header did nothing" is the report the log has to answer.
+    -- red under: SortByColumn's restricted branch with no [Window] trace.
+    local inst, window = scene{ sortMode = "value", restricted = true }
+    inst.NS.Print = function() end
+    inst.NS.State.debug = true
+    assertFalse(window:SortByColumn("name"))
+    assertTrue(inst.NS.DebugLog:FindLine("sort by name refused: restricted") ~= nil,
+        "got: " .. tostring(inst.NS.DebugLog:LastLine()))
+end)

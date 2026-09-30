@@ -771,3 +771,30 @@ test("Provider: a source with NEITHER identifier is still dropped", function()
     assertEqual(#col.sources, 1, "an unidentifiable source was kept")
     assertEqual(col.sources[1].name, "Somebody")
 end)
+
+test("Provider: the meter's availability is traced once per change, not once per refill", function()
+    -- debug-logging-§8, Diagnosis (a state edge every window reacts to) and §9's
+    -- quiet steady state: the memo is refilled after every session update and
+    -- world entry, and an unchanged answer writes nothing.
+    -- red under: no trace in IsAvailable, or one through NS.Debug on each refill.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.State.debug = true
+    local function count(needle)
+        local n = 0
+        for _, line in ipairs(NS.DebugLog.buffer) do
+            if tostring(line):find(needle, 1, true) then n = n + 1 end
+        end
+        return n
+    end
+    for _ = 1, 10 do
+        NS.Provider.InvalidateAvailability()
+        NS.Provider.IsAvailable()
+    end
+    assertEqual(count("[Provider] meter available"), 1, "an unchanged answer was traced on every refill")
+
+    inst.mocks.setMeterAvailable(false, "disabled by the player")
+    NS.Provider.InvalidateAvailability()
+    NS.Provider.IsAvailable()
+    assertEqual(count("meter unavailable: disabled by the player"), 1, "the edge was not traced")
+end)

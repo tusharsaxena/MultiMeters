@@ -404,12 +404,13 @@ default to total and rate.
   there is no widget to size and nothing measured. The cost is that a player cannot see there are
   rows above or below without trying the wheel.
 - Debug logging is session-only (`NS.State.debug`) and resets on every `/reload`.
-- **A refresh pass logs on change, not on every pass.** The `[Aggregator]` and `[Render]` summary
-  lines go through `NS.DebugSteady`, which emits a change immediately and otherwise re-announces an
-  unchanged run at most every 10 seconds as `… (xN)`. It is what keeps a 3000-line buffer holding
-  hours rather than four minutes. Ratified as a deviation from `debug-logging-§8` — see
-  [ARCHITECTURE.md](ARCHITECTURE.md#documented-deviations). Note the console's **Clear** button does not reset the comparison (the library offers the
-  host no hook), so a freshly cleared console can sit silent until the next change or heartbeat.
+- **A refresh pass logs on change, not on every pass.** The `[Aggregator]`, `[Render]`,
+  `[Visibility]`, `[Roster]` and `[DrillDown]` pass lines go through `NS.DebugSteady`, which emits a
+  change immediately and says nothing while the summary holds (`debug-logging-§9`, quiet steady
+  state); the run's `(xN)` comes out when it ends. Whether the loop is alive is `/mm diagnostics`'s
+  `age=`, not a heartbeat line. Note the console's **Clear** button does not reset the comparison
+  (the library offers the host no hook), so a freshly cleared console stays silent until the next
+  change.
 - No automated in-client tests: headless suites plus manual in-game smoke tests.
 - **With `libs/LibKa0s` missing, a disable leaves bus-target registrations live.** The stand-down
   record is `LibKa0s-Bus-1.0`'s. Without it, `NS.NewBusTarget()` falls back to the untracked-target

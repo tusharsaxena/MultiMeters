@@ -399,6 +399,28 @@ local function rememberMember(seenMap, entry)
     }
 end
 
+--- The one [Roster] line a build writes: `built members=…` or `partial build …`.
+---
+--- CHANGE-GATED, through ONE call site (debug-logging-§9, quiet steady state). A
+--- partial build is retried on every refresh, four times a second, and a group
+--- whose unit API never fills (a member the client cannot see) used to write the
+--- same `partial build (4 of 5)` line on each retry for as long as it lasted.
+--- Through NS.DebugSteady the first one is written and the rest are counted: the
+--- `(xN)` lands on it when the build finally completes, which is the flush line
+--- the hold waited for. Both shapes share this one site on purpose, so a partial
+--- after a completed build is a change and is written again. Called only from
+--- behind `State.debug`, which is where the caller builds the string.
+---
+--- @param summary string  the whole line, already formatted
+local function logBuild(summary)
+    local steady = NS.DebugSteady
+    if steady then
+        steady("roster", "Roster", "%s", summary)
+    else
+        NS.Debug("Roster", "%s", summary)
+    end
+end
+
 --- Rebuild the group array, the GUID index and the pet-owner map.
 ---
 --- One pass, three outputs, because they are derived from the same unit walk and
@@ -479,16 +501,14 @@ local function build()
         -- A partial build logs the partial line and NOT "built members=", which
         -- is what makes that string a reliable grep for a build that stuck.
         if State.debug then
-            NS.Debug("Roster", "partial build (%d of %d) — will retry", #group, expected)
+            logBuild(("partial build (%d of %d) — will retry"):format(#group, expected))
         end
         return group
     end
 
-    -- ONE line per build, format DEFERRED — the arguments are counters the loop
-    -- already kept, so nothing is built at the call site (debug-logging-§3).
     if State.debug then
-        NS.Debug("Roster", "built members=%d pets=%d raid=%s", #group, petCount,
-            (_G.IsInRaid and _G.IsInRaid()) and "yes" or "no")
+        logBuild(("built members=%d pets=%d raid=%s"):format(#group, petCount,
+            (_G.IsInRaid and _G.IsInRaid()) and "yes" or "no"))
     end
 
     return group

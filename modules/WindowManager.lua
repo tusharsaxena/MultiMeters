@@ -668,6 +668,9 @@ end
 --- @return boolean applied  false when the start was refused
 function M:SetTestMode(enabled)
     if enabled and not M:IsTest() and fighting() then
+        -- The refusal names its guard in the log too (debug-logging-§8,
+        -- Diagnosis), since the [Test] line a start writes never comes.
+        if NS.State and NS.State.debug and NS.Debug then NS.Debug("Test", "start refused: in combat") end
         if NS.Print then NS.Print(L["Cannot start test mode during combat"]) end
         if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
         return false

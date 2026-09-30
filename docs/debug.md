@@ -62,29 +62,79 @@ of this shipped with `modules/Row.lua` missed. `tests/test_slash_diagnostics.lua
 `Debug("Tooltip"` call sites not preceded by the flag, so a fourth site added without the guard fails
 the suite rather than quietly restoring the flood.
 
-## The channels
+## Coverage
 
-`NS.Debug(channel, format, ...)` is the sink; the channel is the bracketed name at the head of the
-line. Twenty go through it: nineteen from this addon's own call sites, and `Cfg`, which the options
-library logs through the descriptor's `debug` hook. The twenty do not include `Perf`, whose lines
-the perf harness writes straight to the buffer with `DebugLog:Add`, so the console can show twenty-one.
-The three that dominate a live capture are `Aggregator` (one summary line per refresh pass),
-`Render` (one per window per pass) and `Roster` (one per rebuild).
+`NS.Debug(channel, format, ...)` is the sink; the channel is the bracketed tag at the head of the
+line. This section is the map of what writes each tag and when, so a log read back after a repro can
+be matched to the code that wrote it (`debug-logging-§8`). Twenty-one tags come from this addon's own
+call sites; `Cfg`, `Launcher` and part of `Set` come from vendored libraries through the descriptors'
+`debug` hooks; `Perf` is written straight to the buffer by the perf harness with `DebugLog:Add`.
 
-A pass whose summary line is **unchanged** from the previous pass is not logged; a change is never
-delayed and never dropped, and a repeat is collapsed to a heartbeat carrying `(xN)`. That behavior
-is a documented deviation from `debug-logging-§8` — see `## Documented deviations` in
-[ARCHITECTURE.md](ARCHITECTURE.md) — and it exists because four passes a second into a capped buffer
-otherwise leaves a console holding forty seconds of one repeated string.
+**Quiet steady state (`debug-logging-§9`).** Every path that repeats — the refresh tick, the
+visibility pass, a roster retry, a drill view, a refusal the join repeats on every pass, the meter
+availability memo — writes through `NS.DebugSteady` (`core/DebugLogSetup.lua`). A line is written
+when its summary changes and **not otherwise**; when a run ends, its line comes out once more with
+`(xN)`, the number of passes it stood for, just before the line that ended it. There is no heartbeat:
+through a whole dungeon key the ten-second heartbeat this replaced filled the console with an
+`[Aggregator]` / `[Render]` pair `(x41)` every ten seconds and nothing changing. Whether the loop is
+still alive is `/mm diagnostics`'s `aggregator` section, whose `age=` is the time since each
+window's last pass. Toggling logging forgets every run, so the first pass after `/mm debug on`
+always speaks. The console's **Clear** does not (the library offers no hook).
+
+| Tag | Written by | When | Steady-gated |
+|---|---|---|---|
+| `Init` | the library's `initSummary` (`core/DebugLogSetup.lua`) | on `/mm debug on`: version, schema, profile, window count, whether LibSharedMedia loaded | — |
+| `Init` | `core/Database.lua` | a default window seeded into an empty profile | — |
+| `Init` | `core/MultiMeters.lua` | an enable whose event registrations the client refused, naming them | — |
+| `Init` | `core/LifecycleSetup.lua` | `stood down (holds: …)` and `stood up`, one line per edge of the addon's own latch | — |
+| `Migrate` | `core/Database.lua` | each schema step that runs, and a version with no step | — |
+| `Profile` | `core/Database.lua` | a profile switch | — |
+| `Set` | the schema runtime (library) and `core/Database.lua` | every settings write, bulk act and profile reset or copy — see [Settings lines](#settings-lines) | — |
+| `Set` | `settings/Schema_Paths.lua` | `<path> refused: <reason>` — a write the seam rejected, with the sentence the caller shows | — |
+| `Event` | `core/MultiMeters.lua` | each world entry, zone, group and combat edge and each restriction change (below) | — |
+| `Bus` | `core/Namespace.lua` | message registrations the bus refused on stand-up | — |
+| `Provider` | `modules/Provider.lua` | `meter available` / `meter unavailable: <reason>` when the answer changes; a reset of every session; suspend and resume | availability |
+| `Aggregator` | `modules/Aggregator.lua` | one pass summary per window (`window=… rows=… dropped=… sort=… reason=…`) | yes |
+| `Aggregator` | `modules/Aggregator.lua` | `dropped guid=…` — why the first refused source of a pass was refused | yes |
+| `Aggregator` | `modules/Aggregator_Identity.lua` | the identity-correlation rectangle, on a mid-pull pass | yes |
+| `Render` | `modules/Window.lua` | `window N drew D/E rows` per window per pass | yes |
+| `Roster` | `modules/Roster.lua` | `built members=…` or `partial build (a of b) — will retry` (a held build, flushed by the next `built`) | yes |
+| `Roster` | `modules/Roster.lua` | the remembered roster pruned or forgotten | — |
+| `Visibility` | `modules/Visibility.lua` | every window's show answer and its rule (`#1=show(dungeon)`), on a roster, zone, combat or player-state edge, under debug only | yes |
+| `Window` | `modules/Window_Placement.lua` | a window moved by a drag; a shown window hidden, with the reason | — |
+| `Window` | `modules/Window_Header.lua` | a pinned segment dropped as stale; `sort by name refused: restricted` | — |
+| `Windows` | `modules/WindowManager.lua` | a window created, deleted, renamed, copied or reset | — |
+| `Test` | `core/State.lua`, `modules/WindowManager.lua` | test mode on or off; `start refused: in combat` | — |
+| `DrillDown` | `modules/DrillDown.lua` | entering and leaving a drill view, a recap opened | — |
+| `DrillDown` | `modules/DrillDown.lua` | `rows window=… n=…` for the drill view being drawn | yes |
+| `Export` | `modules/Export.lua` | a chat dump sent (at once, staggered, or printed locally); `canceled the queued rest of a dump: <why>` when a queued tail is dropped | — |
+| `Export` | `modules/Export_Modal.lua` | `csv`, `chat` or `open refused: <sentence>` — the refusal the player was shown | — |
+| `Format` | `modules/Format.lua` | the number formatter degrading at build (no breakpoints, no floor) | — |
+| `Feign` | `modules/Feign.lua` | a Feign Death cast noted | — |
+| `Tooltip` | `modules/Row.lua`, `modules/Tooltip_Builders.lua` | row hover, cell and name tooltips — **only** with `/mm debug tooltip` on (above) | — |
+| `Columns` | `settings/Columns.lua` | the settings panel's Columns entry painted | — |
+| `Blocks` | `settings/ColumnBlocks.lua` | column blocks released, and the drag list's own trace | — |
+| `Cfg` | `LibKa0s-Options-1.0` | the settings panel opened, or its open or register held in combat | — |
+| `Launcher` | `LibKa0s-Launcher-1.0` | the minimap and compartment button's own trace | — |
+| `Perf` | the perf harness | a capture's steps | — |
+
+**Deliberately not logged.** The player-state block (mount, vehicle, form, gliding, pet battle,
+death) has no `[Event]` line by the owner's ruling; its effect shows in the `[Visibility]` line. The
+spellcast, system-message and `DAMAGE_METER_*` events fire constantly and are not traced; their
+effect is the pass lines above. The `pcall`s in `core/Compat.lua`, `core/CoreSetup.lua`,
+`core/Secrets.lua` and `modules/Format.lua` are probes whose failure is an answer (a secret refused, a
+formatter missing), not an error, and a line per failure would be a line per cell. The disabled
+refusal a slash verb prints comes from `LibKa0s-Slash-1.0` and is visible in chat;
+`/mm diagnostics`'s `state` section records the disabled hold.
+
+### The `[Event]` line
 
 `Event` (owner, 2026-09-29) is one line per game event that changes where a window may show or what
 the meters may read: `[Event] <EVENT> lockdown=<bool> restricted=<bool>`, then the event's fields.
 `restricted=` is `NS.State.restricted` as the line is written; for
 `ADDON_RESTRICTION_STATE_CHANGED … type=<n> state=<n>` that is after the handler refreshed it. The
 others are `PLAYER_ENTERING_WORLD … login=<bool> reload=<bool>`, `ZONE_CHANGED_NEW_AREA`,
-`GROUP_ROSTER_UPDATE` and both `PLAYER_REGEN_` edges. The player-state block (mount, vehicle, form,
-gliding, pet battle, death) is left out by the owner's ruling, and the spellcast, system-message
-and `DAMAGE_METER_*` traffic because it fires constantly.
+`GROUP_ROSTER_UPDATE` and both `PLAYER_REGEN_` edges.
 
 ### Settings lines
 

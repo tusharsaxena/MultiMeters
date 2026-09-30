@@ -352,6 +352,38 @@ test("A partial build is NOT cached, so the next read retries", function()
     assertEqual(#inst.NS.Roster.GetGroup(), 3, "and self-corrects on the next refresh")
 end)
 
+test("A partial build retried on every refresh logs once, and the build that completes it says so", function()
+    -- debug-logging-§9, quiet steady state. A partial build is retried on every
+    -- read, four times a second, and a group whose unit API never fills used to
+    -- write the same `partial build` line on each retry for as long as it lasted.
+    -- The hold must still be visible (§8, deferred work): one partial line, then
+    -- the completing build.
+    -- red under: logging the partial line straight through NS.Debug.
+    local inst = T.load()
+    local NS = inst.NS
+    inst.mocks.setGroup(PARTY)
+    inst.mocks.setUnit("party1", nil)
+    inst.mocks.setUnit("party2", nil)
+    NS.Roster.Refresh()
+    NS.State.debug = true
+
+    local function count(needle)
+        local n = 0
+        for _, line in ipairs(NS.DebugLog.buffer) do
+            if tostring(line):find(needle, 1, true) then n = n + 1 end
+        end
+        return n
+    end
+
+    for _ = 1, 12 do NS.Roster.GetGroup() end
+    assertEqual(count("partial build (1 of 3)"), 1, "every retry wrote the same partial line")
+
+    inst.mocks.setGroup(PARTY)
+    NS.Roster.GetGroup()
+    assertTrue(count("built members=3") == 1, "the completing build was not logged")
+    assertTrue(count("(x12)") == 1, "the held run did not say how many retries it stood for")
+end)
+
 test("A complete build IS cached", function()
     local inst = T.load()
     inst.mocks.setGroup(PARTY)

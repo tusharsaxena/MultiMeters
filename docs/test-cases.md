@@ -550,7 +550,7 @@ badge and any count quoted in the docs must agree with it.
 - PerfSetup: the degraded `/mm perf` answers with the shared cause and its own consequence
 - PerfSetup: a save past the ring's cap says what it dropped, in the console
 
-### test_debuglogsetup.lua (31)
+### test_debuglogsetup.lua (32)
 
 - DebugLogSetup: NS.DebugLog is the library instance and NS.Debug is its bare sink
 - DebugLogSetup: the sink is gated on the flag and costs nothing when it is off
@@ -559,6 +559,7 @@ badge and any count quoted in the docs must agree with it.
 - DebugLogSetup: the debug flag never reaches SavedVariables
 - DebugLogSetup: enabling the console acknowledges in chat
 - DebugLogSetup: the [Init] summary names the version, the schema and the profile
+- DebugLogSetup: the [Init] summary counts the windows and names the one optional library
 - DebugLogSetup: the console takes the shipped monospace font by PATH
 - DebugLogSetup: the font is registered with LSM exactly once, and not from this file
 - DebugLogSetup: the library is told the FOLDER name, not just the frame name
@@ -577,7 +578,7 @@ badge and any count quoted in the docs must agree with it.
 - DebugSteady: the run's count lands on the line it describes
 - DebugSteady: the (xN) line keeps EVERY field, not just the first
 - DebugSteady: two windows sharing a tag do not defeat each other
-- DebugSteady: an unchanged run re-announces itself, so silence still means something
+- DebugSteady: an unchanged run stays silent however long it lasts (quiet steady state)
 - DebugSteady: a SECRET argument is emitted at once and never replayed
 - DebugSteady: it exists without the library, because the render path calls it
 - DebugSteady: a reset makes the next pass speak again
@@ -757,7 +758,7 @@ badge and any count quoted in the docs must agree with it.
 - A floored rung whose floor did not take is not accepted on the K probe alone (#26)
 - The client's defaults under a floor that did not take are not accepted either (#26)
 
-### test_provider.lua (41)
+### test_provider.lua (42)
 
 - Provider: core/Compat.lua is the only file that names C_DamageMeter
 - Provider: modules/Provider.lua is the only caller of the meter shims
@@ -800,6 +801,7 @@ badge and any count quoted in the docs must agree with it.
 - Provider.ProbeSourceLookup skips a source that carries no GUID
 - Provider: an NPC source with no GUID is KEPT, on its creature ID
 - Provider: a source with NEITHER identifier is still dropped
+- Provider: the meter's availability is traced once per change, not once per refill
 
 ### test_provider_recap.lua (26)
 
@@ -844,7 +846,7 @@ badge and any count quoted in the docs must agree with it.
 - Distinct PLAIN values are counted, so a constant field reads as one
 - A SECRET value is never compared or keyed on to count distinctness
 
-### test_roster.lua (45)
+### test_roster.lua (46)
 
 - Roster.GetGroup is player-first, then party order
 - Roster.GetGroup carries name, class and role off the unit API
@@ -866,6 +868,7 @@ badge and any count quoted in the docs must agree with it.
 - Roster subscribes to the roster message; it never sends one
 - modules/Roster.lua registers no game event of its own
 - A partial build is NOT cached, so the next read retries
+- A partial build retried on every refresh logs once, and the build that completes it says so
 - A complete build IS cached
 - Solo is complete, not partial
 - Every member the build learns is remembered in db.global, as a plain copy
@@ -922,7 +925,7 @@ badge and any count quoted in the docs must agree with it.
 - Feign: with no Roster at all every entry is evicted
 - Feign: the set stops being walked once the last entry goes
 
-### test_aggregator.lua (62)
+### test_aggregator.lua (63)
 
 - Aggregator joins columns on the GUID, which is the only legal key
 - Aggregator's result table IS the row array, and cells aliases values
@@ -954,6 +957,7 @@ badge and any count quoted in the docs must agree with it.
 - A meter reset is what forgets them
 - A pet stays attributed after its owner's group is gone
 - A dropped source says WHY, once per pass
+- The same drop on every pass is written once, not once per pass
 - A secret-GUID source that says it is the local player keeps its row
 - A secret GUID that does NOT claim to be the local player is still dropped
 - A SECRET isLocalPlayer flag is not truth-tested, and claims nothing
@@ -1051,7 +1055,7 @@ badge and any count quoted in the docs must agree with it.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (62)
+### test_window.lua (63)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - BuildLayout computes every coordinate from config alone
@@ -1115,6 +1119,7 @@ badge and any count quoted in the docs must agree with it.
 - Two passes over the same ten entries ask the pool for nothing the second time
 - A pass with fewer entries releases exactly the surplus, and keeps the rest bound
 - A second pass re-anchors nothing until ApplyConfig moves the layout
+- A refresh that changes nothing writes no [Aggregator] or [Render] line (quiet steady state)
 
 ### test_window_header.lua (57)
 
@@ -1176,7 +1181,7 @@ badge and any count quoted in the docs must agree with it.
 - The Player header is a Button like every other, not a label with a gap beside it
 - The strip background and the per-column ones are mutually exclusive, both ways
 
-### test_window_header_sort.lua (16)
+### test_window_header_sort.lua (17)
 
 - The sort column shows an arrow and the others do not
 - The arrow flips with the direction
@@ -1194,6 +1199,7 @@ badge and any count quoted in the docs must agree with it.
 - The sort arrow follows the LABEL, rather than sitting at a fixed offset
 - The atlas rung flips ONE texture with SetTexCoord, and only for ascending
 - With no art and no atlas the arrow is an ASCII character, and a legible one
+- The refused Player-header click names its guard in the log
 
 ### test_window_placement.lua (33)
 
@@ -1620,7 +1626,7 @@ badge and any count quoted in the docs must agree with it.
 - Tooltip: a stat key the catalog does not know heads with the key itself
 - Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block
 
-### test_drilldown.lua (60)
+### test_drilldown.lua (61)
 
 - DrillDown.IsActive is a PLAIN BOOLEAN, in both directions
 - Enter captures PLAIN identity fields, never a reference to the row
@@ -1682,8 +1688,9 @@ badge and any count quoted in the docs must agree with it.
 - A client with no C_DeathRecap and no id still reaches the breakdown
 - The exit toggle is answered BEFORE the Deaths ladder is climbed
 - Switching out of a deaths view replaces the state, it does not merge into it
+- BuildRows on every refresh while drilled in logs its rows line once, not once per pass
 
-### test_export.lua (89)
+### test_export.lua (91)
 
 - Export is a plain table on NS, not an AceAddon module
 - Export.Available says yes out of combat, with nothing to explain
@@ -1774,8 +1781,10 @@ badge and any count quoted in the docs must agree with it.
 - Export.SessionLabel names what a bare config can name on its own
 - Export.Build goes through the aggregator and nowhere near the meter API
 - Export.Build answers nil when there is no aggregator to ask
+- Export: a staggered dump traces its send, and a cancel traces the tail it dropped
+- Export: a cancel with nothing queued says nothing
 
-### test_export_modal.lua (31)
+### test_export_modal.lua (32)
 
 - Export.Open refuses to open at all while restricted
 - Export.ResolveMetric answers the pinned stat
@@ -1808,8 +1817,9 @@ badge and any count quoted in the docs must agree with it.
 - Opening the modal seeds the metric through the seam, and says so
 - Reopening with the metric unchanged writes nothing and announces nothing
 - A metric the seam refuses is not stored around it
+- A refused export names its guard in the log as well as in chat
 
-### test_visibility.lua (43)
+### test_visibility.lua (44)
 
 - GetContext translates Blizzard's instance token to the setting's name
 - A delve reads as `delve`, not as the scenario it reports itself to be
@@ -1834,6 +1844,7 @@ badge and any count quoted in the docs must agree with it.
 - A non-table window is refused by name
 - Allows() is the same implementation under the ladder's name
 - Evaluate records the last answer per window and counts the changes
+- Evaluate is quiet in a steady state: edges that move no answer write no line
 - Refresh is Evaluate under the name a caller thinks in
 - Evaluate publishes NOTHING
 - Forget drops every remembered answer
@@ -1855,7 +1866,7 @@ badge and any count quoted in the docs must agree with it.
 - A visibility field that is not a table reads as `no rules`, not as hide
 - The master enable, test mode and perf suspend are NOT read here
 
-### test_windowmanager.lua (47)
+### test_windowmanager.lua (48)
 
 - WindowManager is published under the flat name every caller uses
 - Init builds one live instance per stored config, and is idempotent
@@ -1904,6 +1915,7 @@ badge and any count quoted in the docs must agree with it.
 - Toggle of an unknown window names the window, not a setting
 - Delete, Duplicate and CopyFrom of an unknown window name it too
 - Rename to an empty name answers a sentence, not the row's label
+- A test-mode start refused in combat names its guard in the log
 
 ### test_schema.lua (40)
 
@@ -1948,7 +1960,7 @@ badge and any count quoted in the docs must agree with it.
 - RestoreAllDefaults logs ONE line in total: the profile handler's, and no bulk line
 - The General page's Defaults unlock every window, through Lock frame's default
 
-### test_schema_paths.lua (48)
+### test_schema_paths.lua (49)
 
 - Schema: a window path resolves against the session's ACTIVE window
 - Schema: a global path is unaffected by which window is active
@@ -1998,6 +2010,7 @@ badge and any count quoted in the docs must agree with it.
 - A header click writes the sort through the seam, for the window clicked (issue #50)
 - Picking Current or Overall writes the session type through the seam (issue #50)
 - The sort and segment batches log one [Set] line per row they write
+- SetByPath: a refused write names the path and the reason in the log
 
 ### test_schema_batch.lua (13)
 
@@ -2140,7 +2153,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash profile: with no library `/mm profile` names what is missing and switches nothing
 - Slash profile: the stub's ProfileSwitch answers false with the same line
 
-### test_disabled.lua (24)
+### test_disabled.lua (25)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -2166,6 +2179,7 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 10: an explicit WindowProto:Show while stood down refuses and shows nothing
 - Disabled 11: /mm toggle under a perf suspend shows nothing and says why
 - Disabled 12: a window created while disabled carries no OnUpdate, and enable arms it
+- Disabled: the stand-down and the stand-up are one [Init] line each, naming the holds
 
 ### test_options_panel.lua (44)
 
@@ -2379,25 +2393,25 @@ badge and any count quoted in the docs must agree with it.
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 26 |
 | test_perfsetup.lua | 26 |
-| test_debuglogsetup.lua | 31 |
+| test_debuglogsetup.lua | 32 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 12 |
 | test_launchersetup.lua | 50 |
 | test_lifecycle.lua | 40 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
-| test_provider.lua | 41 |
+| test_provider.lua | 42 |
 | test_provider_recap.lua | 26 |
 | test_provider_fields.lua | 11 |
-| test_roster.lua | 45 |
+| test_roster.lua | 46 |
 | test_feign.lua | 27 |
-| test_aggregator.lua | 62 |
+| test_aggregator.lua | 63 |
 | test_aggregator_identity.lua | 27 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 62 |
+| test_window.lua | 63 |
 | test_window_header.lua | 57 |
-| test_window_header_sort.lua | 16 |
+| test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 33 |
 | test_window_lifecycle.lua | 8 |
 | test_window_segment.lua | 10 |
@@ -2411,20 +2425,20 @@ badge and any count quoted in the docs must agree with it.
 | test_tooltip_lines.lua | 37 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
-| test_drilldown.lua | 60 |
-| test_export.lua | 89 |
-| test_export_modal.lua | 31 |
-| test_visibility.lua | 43 |
-| test_windowmanager.lua | 47 |
+| test_drilldown.lua | 61 |
+| test_export.lua | 91 |
+| test_export_modal.lua | 32 |
+| test_visibility.lua | 44 |
+| test_windowmanager.lua | 48 |
 | test_schema.lua | 40 |
-| test_schema_paths.lua | 48 |
+| test_schema_paths.lua | 49 |
 | test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
 | test_slash.lua | 50 |
 | test_slash_diagnostics.lua | 20 |
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
-| test_disabled.lua | 24 |
+| test_disabled.lua | 25 |
 | test_options_panel.lua | 44 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
@@ -2433,4 +2447,4 @@ badge and any count quoted in the docs must agree with it.
 | test_surface_parity.lua | 5 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 7 |
-| **Total** | **2107** |
+| **Total** | **2121** |

@@ -127,6 +127,20 @@ test("DebugLogSetup: the [Init] summary names the version, the schema and the pr
     assertTrue(line:find("profile 'Default'", 1, true) ~= nil, "the summary omits the profile")
 end)
 
+test("DebugLogSetup: the [Init] summary counts the windows and names the one optional library", function()
+    -- debug-logging-§8: the record count (Lifecycle) and a dependency found or
+    -- missing, once, at enable (Diagnosis). Without LibSharedMedia every font and
+    -- texture falls back to the client's, and a screenshot alone cannot say why.
+    -- red under: an initSummary that stops at the profile.
+    local inst = T.load{}
+    inst.NS.DebugLog:SetEnabled(true)
+    local line = inst.NS.DebugLog:FindLine("MultiMeters v")
+    assertTrue(line ~= nil, "no [Init] session summary was emitted")
+    local n = #inst.NS.Database.GetWindows()
+    assertTrue(line:find("windows " .. n, 1, true) ~= nil, "the summary omits the window count: " .. line)
+    assertTrue(line:find("LibSharedMedia yes", 1, true) ~= nil, "the summary omits the library: " .. line)
+end)
+
 test("DebugLogSetup: the console takes the shipped monospace font by PATH", function()
     -- A meter is a grid of numbers and a proportional face makes the columns
     -- shiver. The console shares the same face so a log of a render pass lines
@@ -313,11 +327,11 @@ end)
 
 -- ── the steady-state sink ───────────────────────────────────────────────────
 --
--- debug-logging-§9 collapses per-ITEM to per-PASS. These cases are about the
--- axis it leaves open: a pass on a timer that reports the same thing every time.
--- Measured on this addon, that is twelve lines a second into a 3000-line buffer
--- (LibKa0s v1.60.0) — four minutes of history, and a single steady state evicts everything behind
--- it. Recorded as an accepted deviation in docs/ARCHITECTURE.md.
+-- debug-logging-§9 collapses per-ITEM to per-PASS, and its quiet-steady-state rule
+-- (v2.70.0) covers the other axis: a pass on a timer that reports the same thing
+-- every time MUST NOT log. Measured on this addon, that was twelve lines a second
+-- into a 3000-line buffer (LibKa0s v1.60.0) — four minutes of history — and later,
+-- with a ten-second heartbeat, a folded pair every ten seconds through a whole key.
 
 --- Every line the sink emitted while `body` ran.
 local function lines(inst, body)
@@ -408,20 +422,23 @@ test("DebugSteady: two windows sharing a tag do not defeat each other", function
     assertEqual(#emitted, 2, "the two windows defeated each other's comparison")
 end)
 
-test("DebugSteady: an unchanged run re-announces itself, so silence still means something", function()
-    -- Without this a frozen refresh loop and a healthy idle one produce
-    -- identical logs, and "no lines" stops meaning "nothing changed".
-    -- red under: dropping the heartbeat and suppressing on content alone.
+test("DebugSteady: an unchanged run stays silent however long it lasts (quiet steady state)", function()
+    -- debug-logging-§9, v2.70.0: a repeating path MUST NOT log while nothing it
+    -- reports has changed. The heartbeat this replaced re-emitted the run every
+    -- ten seconds, which through a whole dungeon key was an `[Aggregator]` /
+    -- `[Render]` pair `(x41)` every ten seconds with nothing changing — the
+    -- stream §9 names, and the console's own folding does not stop it. Liveness
+    -- is `/mm diagnostics`'s `age=` now.
+    -- red under: restoring the heartbeat (any re-emit on the clock).
     local inst = T.load{ enable = true }
     inst.NS.State.debug = true
     local emitted = lines(inst, function()
-        for _ = 1, 8 do inst.NS.DebugSteady(1, "Render", "drew %d rows", 2) end
-        inst.mocks.__now = inst.mocks.__now + 11
-        inst.NS.DebugSteady(1, "Render", "drew %d rows", 2)
+        for _ = 1, 240 do   -- a minute of passes at the 0.25 s throttle
+            inst.NS.DebugSteady(1, "Render", "drew %d rows", 2)
+            inst.mocks.__now = inst.mocks.__now + 0.25
+        end
     end)
-    assertEqual(#emitted, 2, "an unchanged run never re-announced itself")
-    assertTrue(emitted[2]:find("(x9)", 1, true) ~= nil,
-        "the heartbeat did not say how many passes it stood for")
+    assertEqual(#emitted, 1, "an unchanged run logged on the clock: " .. table.concat(emitted, " | "))
 end)
 
 test("DebugSteady: a SECRET argument is emitted at once and never replayed", function()

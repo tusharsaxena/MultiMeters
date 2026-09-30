@@ -778,6 +778,18 @@ local sendGeneration = 0
 -- NoteSystemMessage below, which is the only thing that looks at it.
 local pendingWhisper
 
+-- The generation of a staggered dump whose tail is still queued, or nil. Read
+-- only by the cancel trace below, so a cancel that drops nothing says nothing.
+local queuedGeneration
+
+--- The [Export] trace (debug-logging-§8, Diagnosis: deferred work). A staggered
+--- dump is work HELD on a clock, and "my export only half arrived" is the report
+--- it answers: the send line says how many lines went and how, and a cancel line
+--- says the tail was dropped and why. Gated before anything is formatted.
+local function traceExport(pattern, ...)
+    if NS.State and NS.State.debug and NS.Debug then NS.Debug("Export", pattern, ...) end
+end
+
 --- The game's own "no such player" error, as a Lua pattern with the name captured.
 ---
 --- Built from the client's ERR_CHAT_PLAYER_NOT_FOUND_S rather than from an
@@ -795,8 +807,12 @@ local function playerNotFoundPattern()
     return "^" .. escaped:gsub("%%%%s", "(.+)") .. "$"
 end
 
---- Drop everything still queued.
-local function cancelQueue()
+--- Drop everything still queued. `reason` names what canceled it, for the trace.
+local function cancelQueue(reason)
+    if queuedGeneration == sendGeneration then
+        traceExport("canceled the queued rest of a dump: %s", reason or "?")
+    end
+    queuedGeneration = nil
     sendGeneration = sendGeneration + 1
     pendingWhisper = nil
 end
@@ -811,7 +827,7 @@ end
 --- switched off finishing a whisper dump into a raid is exactly the kind of thing
 --- slash-commands-§7 means by "not running".
 function Export.CancelSend()
-    cancelQueue()
+    cancelQueue("stood down")
 end
 
 --- One CHAT_MSG_SYSTEM line, offered by core/MultiMeters.lua's fan-out.
@@ -847,7 +863,7 @@ function Export.NoteSystemMessage(message)
     if not message:match(playerNotFoundPattern()) then return false end
 
     local target = pending.target
-    cancelQueue()
+    cancelQueue("no player named " .. tostring(target))
     if NS.Print then
         NS.Print(L["There is nobody called '%s' to whisper to. The rest of the export was not sent."]
             :format(tostring(target)))
@@ -892,20 +908,25 @@ function Export.Send(lines, channel, target)
         if chatType then
             NS.Print(L["This client has no way to send chat messages, so the export was printed to you instead."])
         end
+        traceExport("printed %d lines locally (asked for %s)", #lines, tostring(chatType or "SELF"))
         for _, line in ipairs(lines) do NS.Print(line) end
         return true
     end
 
     -- A new send supersedes whatever the last one still had queued.
-    cancelQueue()
+    cancelQueue("superseded by a new send")
     local generation = sendGeneration
 
     local after = _G.C_Timer and _G.C_Timer.After
     -- Inside the click or not at all: see "Getting a dump past the server".
     if Export.NeedsHardwareEvent(chatType) or not after then
+        traceExport("sent %d lines to %s at once", #lines, chatType)
         for _, line in ipairs(lines) do send(line, chatType, nil, to) end
         return true
     end
+
+    traceExport("sent line 1 of %d to %s, the rest queued", #lines, chatType)
+    if #lines > 1 then queuedGeneration = generation end
 
     send(lines[1], chatType, nil, to)
     local last = #lines
@@ -918,7 +939,7 @@ function Export.Send(lines, channel, target)
             -- more. Disarming here rather than on a second timer keeps the two
             -- facts — "lines are still queued" and "a failure can still cancel
             -- them" — as one.
-            if i == last then pendingWhisper = nil end
+            if i == last then pendingWhisper, queuedGeneration = nil, nil end
         end)
     end
 

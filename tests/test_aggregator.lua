@@ -571,6 +571,26 @@ test("A dropped source says WHY, once per pass", function()
     assertTrue(found:find("member=false", 1, true) ~= nil, "got: " .. tostring(found))
 end)
 
+test("The same drop on every pass is written once, not once per pass", function()
+    -- debug-logging-§9, quiet steady state. A source the join cannot place is
+    -- usually still there on the next pass, four times a second for the rest of
+    -- the pull, and the same `dropped guid=` line used to be written each time.
+    -- red under: logDrop calling NS.Debug instead of NS.DebugSteady.
+    local inst = loaded()
+    local NS = inst.NS
+    NS.State.debug = true
+    install(inst, { src("Player-1-0000DEAD", 100) }, { maxAmount = 100 })
+
+    local window = makeWindow()
+    for _ = 1, 10 do NS.Aggregator.Build(window) end
+
+    local n = 0
+    for _, line in ipairs(NS.DebugLog.buffer) do
+        if tostring(line):find("dropped guid=", 1, true) then n = n + 1 end
+    end
+    assertEqual(n, 1, "an unchanged drop was written on every pass")
+end)
+
 test("A secret-GUID source that says it is the local player keeps its row", function()
     -- THE PULL THAT DREW NOTHING. C_DamageMeter hands back a SECRET sourceGUID
     -- while the Combat restriction is active — measured in-game, contradicting

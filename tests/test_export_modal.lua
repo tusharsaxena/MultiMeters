@@ -826,3 +826,14 @@ test("A metric the seam refuses is not stored around it", function()
     NS.SetByPath = real
     assertEqual(NS.db.profile.export.metric, "Deaths", "the refused seed landed anyway")
 end)
+
+test("A refused export names its guard in the log as well as in chat", function()
+    -- debug-logging-§8, Diagnosis: "I pressed export and nothing happened" is
+    -- read back from the log, after the chat line has scrolled away.
+    -- red under: the refusal sites printing without the [Export] trace.
+    local inst = restricted()
+    inst.NS.State.debug = true
+    assertNil(inst.NS.Export.Open({}))
+    assertTrue(inst.NS.DebugLog:FindLine("[Export] open refused:") ~= nil,
+        "got: " .. tostring(inst.NS.DebugLog:LastLine()))
+end)

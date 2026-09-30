@@ -558,6 +558,23 @@ local function linesOptions()
     return out
 end
 
+--- Say why an export did not happen, to the player and to the log.
+---
+--- The chat line is the player's half. The [Export] line is the log's
+--- (debug-logging-§8, Diagnosis: a refusal names its guard): "I pressed export and
+--- nothing happened" is read back from the log, where the chat line has already
+--- scrolled away. `act` is which button or open was refused; the reason is the
+--- sentence the player was shown, so the two can never disagree.
+---
+--- @param act string     csv | chat | open
+--- @param line string    the sentence to print
+local function refuse(act, line)
+    if NS.State and NS.State.debug and NS.Debug then
+        NS.Debug("Export", "%s refused: %s", act, NS.SafeToString(line))
+    end
+    if NS.Print then NS.Print(line) end
+end
+
 -- ---------------------------------------------------------------------------
 -- The two actions
 -- ---------------------------------------------------------------------------
@@ -571,7 +588,7 @@ end
 local function onExportCsv()
     local available, reason = Export.Available()
     if not available then
-        if NS.Print then NS.Print(reason) end
+        refuse("csv", reason)
         refreshModal()
         return
     end
@@ -581,7 +598,7 @@ local function onExportCsv()
     -- "Waiting for combat data" has nothing to serialize, and a dialog that
     -- answers a press with nothing at all reads as broken rather than as empty.
     if not result or #result == 0 then
-        if NS.Print then NS.Print(L["There is nothing to export."]) end
+        refuse("csv", L["There is nothing to export."])
         return
     end
     showCopy((Export.CSV(result, Export.SessionLabel(invoker))))
@@ -618,7 +635,7 @@ end
 local function onPrintToChat()
     local available, reason = Export.Available()
     if not available then
-        if NS.Print then NS.Print(reason) end
+        refuse("chat", reason)
         refreshModal()
         return
     end
@@ -627,7 +644,7 @@ local function onPrintToChat()
     local whisperTo = readExport("whisperTo", "")
     local noRecipient = recipientRefusal(channel, whisperTo)
     if noRecipient then
-        if NS.Print then NS.Print(noRecipient) end
+        refuse("chat", noRecipient)
         return
     end
 
@@ -637,7 +654,7 @@ local function onPrintToChat()
     -- healing beside them.
     local result = Export.Build(invoker, statKey)
     if not result or #result == 0 then
-        if NS.Print then NS.Print(L["There is nothing to export."]) end
+        refuse("chat", L["There is nothing to export."])
         return
     end
 
@@ -879,7 +896,7 @@ function Export.Open(a, b)
 
     local available, reason = Export.Available()
     if not available then
-        if NS.Print then NS.Print(reason) end
+        refuse("open", reason)
         return nil
     end
 
@@ -889,7 +906,7 @@ function Export.Open(a, b)
     -- broken addon; a sentence looks like a missing library, which is what it is.
     -- Same shape as the combat refusal above, for the same reason.
     if not W then
-        if NS.Print then NS.Print(L["The export window needs LibKa0s."]) end
+        refuse("open", L["The export window needs LibKa0s."])
         return nil
     end
 

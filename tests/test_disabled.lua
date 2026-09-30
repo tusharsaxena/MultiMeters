@@ -806,3 +806,26 @@ function()
             "enable left a window without its OnUpdate: " .. tostring(w.id))
     end
 end)
+
+--- How many buffered console lines contain `needle` (a plain find).
+local function countLines(NS, needle)
+    local n = 0
+    for _, line in ipairs(NS.DebugLog.buffer) do
+        if tostring(line):find(needle, 1, true) then n = n + 1 end
+    end
+    return n
+end
+
+test("Disabled: the stand-down and the stand-up are one [Init] line each, naming the holds", function()
+    -- debug-logging-§8, Diagnosis: the addon's own enable and stand-down edges.
+    -- `disabled` is the player's switch and a perf capture's hold is not, so
+    -- the down line names which one took the addon down.
+    -- red under: standDown / standUp with no traceEdge call.
+    local _, NS = scene()
+    NS.State.debug = true
+    assertTrue(NS.SetByPath("enabled", false))
+    assertEqual(countLines(NS, "[Init] stood down (holds: disabled)"), 1,
+        "the stand-down was not traced with its hold: " .. tostring(NS.DebugLog:LastLine()))
+    assertTrue(NS.SetByPath("enabled", true))
+    assertEqual(countLines(NS, "[Init] stood up"), 1, "the stand-up was not traced")
+end)

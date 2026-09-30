@@ -73,22 +73,19 @@ local addonName, NS = ...
 --   * A RUN IS REPORTED ON THE LINE IT DESCRIBES. When a run of identical passes
 --     ends, the run is emitted as `… (x160)` BEFORE the line that broke it, so
 --     the count belongs to the state it counts rather than to the next one.
---   * SILENCE STILL MEANS SOMETHING. Without a heartbeat, a frozen refresh loop
---     and a healthy idle one produce identical logs, and "no lines" stops meaning
---     "nothing changed". An unchanged run re-emits at most once every
---     STEADY_HEARTBEAT seconds, so the log always shows the pass is alive and
---     when the current state began.
+--   * AN UNCHANGED RUN IS SILENT, WITH NO HEARTBEAT (debug-logging-§9, "Quiet
+--     steady state", v2.70.0). This sink used to re-emit an unchanged run every
+--     ten seconds as `… (x41)`, so a frozen loop and an idle one would read
+--     differently. Through a whole dungeon key that was a folded
+--     `[Aggregator]`/`[Render]` pair every ten seconds with nothing changing,
+--     which is the steady stream §9 now forbids: the console's own `(xN)`
+--     folding does not stop it, and it still evicts the lines that matter.
+--     Liveness is answered where it is asked instead: `/mm diagnostics`'s
+--     `aggregator` section prints each window's last pass with its `age=`, and a
+--     frozen loop is a large age (core/Diagnostics_Runtime.lua).
 --
--- Recorded as an accepted deviation in docs/ARCHITECTURE.md -> Documented
--- deviations, against §8's "each recompute, as a single summary line".
-
---- How long an unchanged run may stay silent before it re-announces itself.
----
---- Ten seconds is one line per tag per ten seconds in a steady state — about eight
---- hours of history in the 3000-line buffer (LibKa0s v1.60.0) that held four
---- minutes, and still frequent enough that a reader who grabs the log mid-pull
---- sees the current state rather than inferring it from a line five minutes old.
-local STEADY_HEARTBEAT = 10
+-- This is the rule debug-logging-§9 states, so it is no longer a deviation: the
+-- register row it used to be retired when §9 gained the quiet-steady-state rule.
 
 --- Per FORMAT STRING, per key: the last arguments emitted and how the run stands.
 ---
@@ -164,7 +161,7 @@ local function emitRun(tag, slot, passes)
     NS.Debug(tag, slot.fmt .. " (x%d)", unpack(scratch, 1, n + 1))
 end
 
---- One debug line per CHANGE of a timer-driven pass, plus a bounded heartbeat.
+--- One debug line per CHANGE of a timer-driven pass, and nothing while it holds.
 ---
 --- `key` separates emitters that share a CALL SITE — two windows both logging the
 --- same `Render` line would otherwise alternate and defeat each other's
@@ -179,16 +176,17 @@ end
 --- @param tag string     the log tag, as NS.Debug takes it
 --- @param fmt string     the format string, a literal at the call site
 local function DebugSteady(key, tag, fmt, ...)
+    -- A nil key would raise as a table index; an emitter with no id shares one.
+    if key == nil then key = "?" end
     local byKey = steady[fmt]
     if byKey == nil then byKey = {} steady[fmt] = byKey end
     local slot = byKey[key]
     if slot == nil then slot = { n = -1 } byKey[key] = slot end
 
     local n = select("#", ...)
-    local now = _G.GetTime and _G.GetTime() or 0
 
     if not holdable(n, ...) then
-        slot.n, slot.fmt, slot.repeats, slot.at = -1, nil, 0, now
+        slot.n, slot.fmt, slot.repeats = -1, nil, 0
         NS.Debug(tag, fmt, ...)
         return
     end
@@ -200,16 +198,14 @@ local function DebugSteady(key, tag, fmt, ...)
             emitRun(tag, slot, slot.repeats + 1)
         end
         remember(slot, n, fmt, ...)
-        slot.repeats, slot.at = 0, now
+        slot.repeats = 0
         NS.Debug(tag, fmt, ...)
         return
     end
 
+    -- Unchanged: count it and say nothing. The count comes out on the run's own
+    -- line when the run ends, above.
     slot.repeats = (slot.repeats or 0) + 1
-    if now - (slot.at or 0) >= STEADY_HEARTBEAT then
-        emitRun(tag, slot, slot.repeats + 1)
-        slot.repeats, slot.at = 0, now
-    end
 end
 
 NS.DebugSteady = DebugSteady
@@ -218,9 +214,9 @@ NS.DebugSteady = DebugSteady
 ---
 --- Wired to the enable toggle below. NOT wired to the console's Clear button:
 --- that lives inside the library and offers the host no hook, so a cleared
---- console can still sit silent until the heartbeat. Worth knowing before
---- reading a cleared log as "nothing is happening"; worth a library seam if it
---- ever bites in practice.
+--- console stays silent until the next change. Worth knowing before reading a
+--- cleared log as "nothing is happening" (`/mm diagnostics` answers that);
+--- worth a library seam if it ever bites in practice.
 function NS.DebugSteadyReset()
     for fmt in pairs(steady) do steady[fmt] = nil end
 end
@@ -364,8 +360,8 @@ NS.DebugLog = lib:New({
     -- Toggling the flag also forgets every steady-state run. Without it, logging
     -- turned off and on again resumes mid-comparison: the first pass after the
     -- toggle matches a run the reader never saw and is suppressed, so the console
-    -- opens on silence for up to the heartbeat interval — which reads exactly
-    -- like the addon doing nothing.
+    -- opens on silence until something changes — which reads exactly like the
+    -- addon doing nothing.
     setEnabled = function(on)
         if NS.State then NS.State.debug = on end
         if NS.DebugSteadyReset then NS.DebugSteadyReset() end
@@ -381,12 +377,21 @@ NS.DebugLog = lib:New({
     -- The [Init] line the console brackets a session with. The library owns WHEN
     -- it is emitted — on enable, because the flag is off at login and a load-time
     -- summary would always be gated off — and only we can know what it says.
+    --
+    -- The window count is the addon's record count (debug-logging-§8, Lifecycle),
+    -- and LibSharedMedia is its one dependency that can be absent while the
+    -- console itself loads (debug-logging-§8, Diagnosis: dependencies, once, at
+    -- enable) -- without it every font and texture falls back to the client's.
     initSummary = function()
         local ver     = NS.version or "?"
         local schema  = NS.db and NS.db.global and NS.db.global.schemaVersion or "?"
         local profile = NS.db and NS.db.GetCurrentProfile and NS.db:GetCurrentProfile() or "?"
-        return ("MultiMeters v%s, schema v%s, profile '%s'"):format(
-            NS.SafeToString(ver), NS.SafeToString(schema), NS.SafeToString(profile))
+        local D       = NS.Database
+        local windows = D and D.GetWindows and #D.GetWindows() or "?"
+        local lsm     = LibStub and LibStub("LibSharedMedia-3.0", true) and "yes" or "missing"
+        return ("MultiMeters v%s, schema v%s, profile '%s', windows %s, LibSharedMedia %s"):format(
+            NS.SafeToString(ver), NS.SafeToString(schema), NS.SafeToString(profile),
+            NS.SafeToString(windows), lsm)
     end,
 
     -- The General page's "Debug console" checkbox mirrors the window's

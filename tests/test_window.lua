@@ -1347,3 +1347,35 @@ test("A second pass re-anchors nothing until ApplyConfig moves the layout", func
     window:Render(entries)
     assertEqual(anchors, 10, "ApplyConfig bumped layoutVersion, so every drawn row re-anchored once")
 end)
+
+--- How many buffered console lines contain `needle` (a plain find).
+local function countLines(NS, needle)
+    local n = 0
+    for _, line in ipairs(NS.DebugLog.buffer) do
+        if tostring(line):find(needle, 1, true) then n = n + 1 end
+    end
+    return n
+end
+
+test("A refresh that changes nothing writes no [Aggregator] or [Render] line (quiet steady state)", function()
+    -- THE 060 CASE. Through a whole dungeon key the console held an
+    -- `[Aggregator]` / `[Render]` pair `(x41)` every ten seconds with nothing
+    -- changing: the steady-state sink's heartbeat. debug-logging-§9 (v2.70.0)
+    -- forbids a repeating path logging when nothing it reports has changed.
+    -- red under: any re-emit of an unchanged pass (the heartbeat restored, or
+    -- either call site switched back to NS.Debug).
+    local inst, window = scene()
+    local NS = inst.NS
+    NS.State.debug = true
+    window:MarkDirty()
+    window:Refresh()
+    local agg, render = countLines(NS, "[Aggregator]"), countLines(NS, "[Render]")
+    assertEqual(render, 1, "the first pass must describe the grid")
+    for _ = 1, 80 do          -- twenty seconds of passes at the 0.25 s throttle
+        inst.mocks.__now = inst.mocks.__now + 0.25
+        window:MarkDirty()
+        window:Refresh()
+    end
+    assertEqual(countLines(NS, "[Aggregator]"), agg, "an unchanged pass wrote an [Aggregator] line")
+    assertEqual(countLines(NS, "[Render]"), render, "an unchanged pass wrote a [Render] line")
+end)
