@@ -1,4 +1,4 @@
-local _, NS = ...
+local addonName, NS = ...
 
 -- settings/OptionsSetup.lua — wires the addon into LibKa0s-Options-1.0.
 --
@@ -147,6 +147,9 @@ local descriptor = {
     -- Named rather than anonymous so /framestack attributes the canvas to this
     -- addon and two addons cannot collide on it.
     mainPanelName = "MultiMetersMainPanel",
+    -- The FOLDER name (first vararg), not the brand: OptionsIdList builds its
+    -- `info` help-mark art path from it (LibKa0s#42).
+    addonName     = addonName,
 
     print = function(line) if NS.Print then NS.Print(line) end end,
     debug = function(tag, fmt, ...) if NS.Debug then NS.Debug(tag, fmt, ...) end end,

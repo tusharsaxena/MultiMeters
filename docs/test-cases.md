@@ -2222,7 +2222,7 @@ badge and any count quoted in the docs must agree with it.
 - Library lines: rejected events, recorded at OnEnable, land when logging turns on
 - Library lines: after a Clear, an unchanged steady-state pass speaks again
 
-### test_options_panel.lua (44)
+### test_options_panel.lua (46)
 
 - Options: General is the FIRST page, above Windows
 - Options: the tree is General, Windows, Profiles, with no nesting mark
@@ -2257,6 +2257,8 @@ badge and any count quoted in the docs must agree with it.
 - Options: CreateOptionsPanel is idempotent
 - Options: CreateOptionsPanel runs the schema validator
 - Options: AceGUI is resolved once and published for the page builders
+- Options: the descriptor tells the library the FOLDER name (LibKa0s#42)
+- Options: the help-mark art the descriptor points at is vendored on disk
 - Options: the shared LSM30_Border slot is re-registered once, above what AGSMW left in it
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip
@@ -2494,7 +2496,7 @@ badge and any count quoted in the docs must agree with it.
 | test_slash_profile.lua | 11 |
 | test_disabled.lua | 25 |
 | test_library_lines.lua | 11 |
-| test_options_panel.lua | 44 |
+| test_options_panel.lua | 46 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 14 |
@@ -2503,4 +2505,4 @@ badge and any count quoted in the docs must agree with it.
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 9 |
 | test_lizard_sighted.lua | 8 |
-| **Total** | **2169** |
+| **Total** | **2171** |

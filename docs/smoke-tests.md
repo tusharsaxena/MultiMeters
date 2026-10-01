@@ -19,7 +19,7 @@ secret-value rules the checks refer to.
 |---|---|---|
 | INSTALL-1 to INSTALL-9 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades |
 | SLASH-1 to SLASH-14 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button |
-| PANEL-1 to PANEL-46 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse |
+| PANEL-1 to PANEL-47 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
 | WIN-1 to WIN-36 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window |
@@ -413,6 +413,11 @@ right. Open the panel with `/mm config`.
   times and run the same line; repeat the 30 switches and read it again → the figure does not climb
   with each round of 30 (a few KB of noise is fine). `/framestack` over the band → exactly one
   Dropdown under it. No `SetParent` or `Release` error. Result:
+- **PANEL-47. The panel still opens once the descriptor names the addon folder.** On LibKa0s v1.67.0
+  the Options descriptor passes `addonName` (LibKa0s#42). Log in with `/mm debug on`, open `/mm config`
+  and visit General, every Windows tab and Profiles → each page renders as before, with no Lua error on
+  load or on open, and no `[Cfg] help art:` line in the console (no list here carries help marks, so the
+  change is latent). Result:
 
 ## PROFILE
 
@@ -1370,6 +1375,7 @@ the steps that session added are listed here by ID.
 | PANEL-43 | §5 (LK-21); 06 MM.10 (MM-18), 06 L.9 (LK-21) | Never run: the library drag |
 | PANEL-45 | 06 MM.9 (MM-17) | New: the color picker's throttle |
 | PANEL-46 | 06 L.12 (LK-27), 06 X1.2 | New: switching windows leaks nothing |
+| PANEL-47 | New (LibKa0s v1.67.0, 2026-10-02, CA-MM-NM) | The panel with `addonName` on the Options descriptor (LibKa0s#42), never run in a client |
 | PROFILE-5 | §4, §16 | Corrected: the fresh window is **Multi Meters #1** |
 | PROFILE-6 | §16 | Corrected: the popup's wording, and only `[Set]` lines are counted |
 | PROFILE-9 | §15 (`M2-18`) | "Not yet run" |
