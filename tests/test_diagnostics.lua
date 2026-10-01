@@ -535,6 +535,22 @@ test("Diagnostics: the enemies carrying a real player class are counted and name
         "an enemy with no class was counted as classed")
 end)
 
+test("Diagnostics: the enemies the grid's unowned gate would admit are counted (issue #56)", function()
+    -- The in-client check for #56: hit a PvP Training Dummy and the report must
+    -- say the grid would NOT admit it, asked through the aggregator's own rule.
+    -- red under: no admit count in the targets section.
+    local inst = T.load{ enable = true }
+    enemyColumn(inst, inst.mocks.Enum.DamageMeterSourceDisplayType.None, "WARRIOR")
+    local text = report(inst)
+    assertTrue(text:find("enemies the grid would admit as a row: 0 of 1", 1, true) ~= nil,
+        "a classed None NPC was not reported as refused:\n" .. text)
+
+    enemyColumn(inst, inst.mocks.Enum.DamageMeterSourceDisplayType.Ally, "WARRIOR")
+    text = report(inst)
+    assertTrue(text:find("enemies the grid would admit as a row: 1 of 1", 1, true) ~= nil,
+        "an Ally source was not reported as admitted")
+end)
+
 test("Diagnostics: a display-type check that could not run says so", function()
     -- `sourceDisplayType` is secret for the whole of a pull — measured on a live
     -- client, which printed `display types: <secret> x5` across a five-enemy

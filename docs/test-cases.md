@@ -332,7 +332,7 @@ badge and any count quoted in the docs must agree with it.
 - migrations: the v16 step run twice is a no-op, and never overwrites a US key
 - migrations: a fresh install stores frame.minimized and no British key
 
-### test_diagnostics.lua (28)
+### test_diagnostics.lua (29)
 
 - Diagnostics: the sections are handed to the LibKa0s helper, not run by hand
 - Diagnostics: the report carries both markers with the addon's brand
@@ -358,6 +358,7 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: the enemy column's display types are printed, not assumed
 - Diagnostics: an enemy column filed under None is described, not called a grid risk
 - Diagnostics: the enemies carrying a real player class are counted and named
+- Diagnostics: the enemies the grid's unowned gate would admit are counted (issue #56)
 - Diagnostics: a display-type check that could not run says so
 - Diagnostics: the provider-order probe reports a RANKED column as ranked
 - Diagnostics: the probe NAMES the position where the order breaks
@@ -925,7 +926,7 @@ badge and any count quoted in the docs must agree with it.
 - Feign: with no Roster at all every entry is evicted
 - Feign: the set stops being walked once the last entry goes
 
-### test_aggregator.lua (63)
+### test_aggregator.lua (68)
 
 - Aggregator joins columns on the GUID, which is the only legal key
 - Aggregator's result table IS the row array, and cells aliases values
@@ -971,6 +972,11 @@ badge and any count quoted in the docs must agree with it.
 - A DELVE COMPANION, filed under None with a real class, gets a row
 - A None source with a class the CLIENT does not know is still refused
 - An ENEMY with a real player class is refused, class or no class
+- A classed NPC filed under None is refused in DamageDone (issue #56)
+- A classed None NPC with no creature id is refused on its GUID's npc field
+- A companion is admitted on an allowlisted creature id when its GUID names none
+- A Player- GUID filed under None with a real class is still admitted
+- The Valeera GUID's npc field is read through the pattern, not a guessed shape
 - A source with NO display type is refused, not assumed friendly
 - Every death lands in row.deaths, not just the newest
 - row.deathRecapID still names the NEWEST death
@@ -991,7 +997,7 @@ badge and any count quoted in the docs must agree with it.
 - The judge verdict is recorded per death source, after the prune
 - A column that is not counted records no judgment at all
 
-### test_aggregator_identity.lua (27)
+### test_aggregator_identity.lua (32)
 
 - A healer with no damage is on the mid-pull grid, from the healing column
 - An ambiguous key gets no invented row, because no column could ever fill it
@@ -1020,6 +1026,11 @@ badge and any count quoted in the docs must agree with it.
 - Identity: the pass publishes how many ROWS wear a collided key
 - Identity: an unambiguous pass publishes a count of ZERO, never nil
 - A GUID pass publishes a count of zero too, because nothing was correlated
+- Identity mode drops a classed None NPC with a plain, unlisted creature id
+- Identity mode keeps a companion whose creature id is allowlisted
+- Identity mode still admits a classed None source whose identifiers are all secret
+- Identity mode does not refuse an Ally pet with an unlisted creature id
+- A refused None NPC takes no identity key, so it cannot collide with a player
 
 ### test_aggregator_preview.lua (8)
 
@@ -2416,7 +2427,7 @@ badge and any count quoted in the docs must agree with it.
 | test_database.lua | 28 |
 | test_database_migrations.lua | 48 |
 | test_migrations.lua | 8 |
-| test_diagnostics.lua | 28 |
+| test_diagnostics.lua | 29 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
@@ -2436,8 +2447,8 @@ badge and any count quoted in the docs must agree with it.
 | test_provider_fields.lua | 11 |
 | test_roster.lua | 46 |
 | test_feign.lua | 27 |
-| test_aggregator.lua | 63 |
-| test_aggregator_identity.lua | 27 |
+| test_aggregator.lua | 68 |
+| test_aggregator_identity.lua | 32 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 63 |
@@ -2480,4 +2491,4 @@ badge and any count quoted in the docs must agree with it.
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 9 |
 | test_lizard_sighted.lua | 8 |
-| **Total** | **2146** |
+| **Total** | **2157** |

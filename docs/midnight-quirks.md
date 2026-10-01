@@ -96,9 +96,22 @@ Nothing on the grid changes because of it. The grid never reads EnemyDamageTaken
 enemy list without consulting the display type. What it does change is the weight of the `Enemy`
 gate in `modules/Aggregator.lua` (`isEnemySource` and `unownedAllyRow`): that gate cannot be relied
 on to recognize a mob. If a mob ever reached a grid column out of combat, the companion rule
-(`None` plus a class `RAID_CLASS_COLORS` knows) would be the only test in its way. So the targets
-section of `/mm diagnostics` now prints each enemy's `class=` and counts the enemies that carry a
-player class, rather than raising an alarm over the column's `None`.
+would be the only test in its way. So the targets section of `/mm diagnostics` now prints each
+enemy's `class=` and counts the enemies that carry a player class, rather than raising an alarm over
+the column's `None`.
+
+**A class is not enough either** ([#56](https://github.com/tusharsaxena/MultiMeters/issues/56)). The
+companion rule used to be `None` plus a class `RAID_CLASS_COLORS` knows, on the argument that a mob
+would have to report `None` AND carry a genuine class filename. The PvP Training Dummy (creature
+243211) does both: `None`, class `WARRIOR`. So a `None` source is now admitted only with a real class
+AND a companion identity: a `Player-` GUID, or a creature id (from `sourceCreatureID` or the GUID's
+npc field) in `Constants.COMPANION_CREATURE_IDS`, which is seeded with Valeera Sanguinar's measured
+248567 only. Mid-pull, identity mode refuses a classed `None` source only when its creature id or
+GUID is plain and names no companion; one whose identifiers are both secret is undecidable and stays
+admitted. **The allowlist rule:** an id is added from a measurement, never guessed. The targets
+section of `/mm diagnostics` prints each enemy's creature id and `enemies the grid would admit as a
+row: N of M`, and the aggregator's drop line prints the GUID, so a missing companion's id is read off
+one of those.
 
 ## Client-version workarounds on the event edges
 

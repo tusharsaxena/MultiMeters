@@ -149,13 +149,24 @@ Constants.SESSION_TYPE = {
 Constants.NO_SEGMENT = 0
 
 --- Enum.DamageMeterSourceDisplayType. Rows are filtered to Ally, plus None with
---- a player class (a delve companion). The enemy column modules/Targets.lua
+--- a player class and a companion identity (a delve companion; issue #56). The enemy column modules/Targets.lua
 --- reads is NOT filed under Enemy: measured out of combat, its sources read None
 --- (docs/midnight-quirks.md).
 Constants.SOURCE_DISPLAY_TYPE = {
     None  = enumValue("DamageMeterSourceDisplayType", "None",  0),
     Ally  = enumValue("DamageMeterSourceDisplayType", "Ally",  1),
     Enemy = enumValue("DamageMeterSourceDisplayType", "Enemy", 2),
+}
+
+--- The creature ids of the companions a None-filed source may be admitted as
+--- (issue #56). A None source with a real class is NOT enough on its own: the PvP
+--- Training Dummy (243211) reports None with class WARRIOR. So an NPC needs its id
+--- here. Seeded ONLY with what has been measured: Valeera Sanguinar's id is read
+--- off her live drop line. A new companion is added from a measurement -- the
+--- `/mm diagnostics` enemy line and the aggregator's drop line both print the
+--- creature id -- and never guessed (Brann Bronzebeard's is unmeasured, so absent).
+Constants.COMPANION_CREATURE_IDS = {
+    [248567] = "Valeera Sanguinar",
 }
 
 -- ---------------------------------------------------------------------------

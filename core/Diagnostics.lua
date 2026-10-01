@@ -575,6 +575,24 @@ local function classedEnemies(column)
     return n
 end
 
+--- How many of the enemy column's sources the GUID join's unowned gate would
+--- admit as a row (issue #56), asked through the aggregator's own predicate so the
+--- report and the grid cannot disagree. Resolved at call time: the aggregator is
+--- not this file's dependency. nil when it is absent.
+---
+--- @param column table
+--- @return number|nil
+local function admittedEnemies(column)
+    local seam = NS.Aggregator and NS.Aggregator._identity
+    local admits = seam and seam.admitsUnowned
+    if not admits then return nil end
+    local n = 0
+    for _, src in ipairs(column.sources) do
+        if admits(src) then n = n + 1 end
+    end
+    return n
+end
+
 --- What the client flags the enemy column's sources as, and whether they carry
 --- a player class.
 ---
@@ -623,6 +641,11 @@ local function reportEnemyDisplayTypes(column)
     end
     out(string.format("  enemies carrying a player class: %d of %d",
         classedEnemies(column), #column.sources))
+    local admitted = admittedEnemies(column)
+    if admitted then
+        out(string.format("  enemies the grid would admit as a row: %d of %d",
+            admitted, #column.sources))
+    end
 end
 
 -- ---------------------------------------------------------------------------

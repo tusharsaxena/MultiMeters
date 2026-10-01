@@ -194,7 +194,12 @@ the drop rule was written for: that rule is about one player's numbers appearing
 player's *name*, and this row makes no claim about an owner. Enemies are still refused on
 `sourceDisplayType`, which is never read as "anything that is not an enemy". A **delve companion** is
 admitted alongside the explicit allies: the client files one under `None`, so a `None` source is kept
-when its `classFilename` is a class `RAID_CLASS_COLORS` recognizes, and dropped otherwise.
+when its `classFilename` is a class `RAID_CLASS_COLORS` recognizes **and** it is a `Player-` GUID or
+carries a creature id in `Constants.COMPANION_CREATURE_IDS`, and dropped otherwise
+([#56](https://github.com/tusharsaxena/MultiMeters/issues/56): a classed training dummy is filed under
+`None` too). **A new companion stays off the grid until its creature id is added** to that table, from
+a measurement: the header total still counts it, and `/mm diagnostics` prints the id to add. Only
+Valeera Sanguinar (248567) is measured today.
 
 **Percentage text slots go quiet in combat.** A percentage is a division. `modules/Aggregator.lua`
 computes it once per cell when the operands are accessible and answers `nil` when they are not —

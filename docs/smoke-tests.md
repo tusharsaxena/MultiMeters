@@ -712,12 +712,17 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   `value`). Result:
 - **GRID-14. An unowned ally has its own row.** After a pull, out of combat → a guardian, totem or pet
   whose owner the unit API never saw has a row under its own name. Result:
-- **GRID-15. A delve companion has a row.** After a delve → the companion (Valeera or whoever came)
-  has a row with her own name, class color and figures, and her figure plus yours equals the header
-  total. Result:
-- **GRID-16. No enemy gets a row.** Out of combat after a pull → no mob's name appears as a row. If one
-  does, stop and report it with `/mm diagnostics` taken out of combat (its targets section prints each
-  enemy's `class=` and `enemies carrying a player class: N of M`). Result:
+- **GRID-15. A delve companion has a row.** In a delve with Valeera → she has a row mid-pull and again
+  after it, with her own name, class color and figures, and out of combat her figure plus yours equals
+  the header total. A companion other than Valeera has no row until its creature id is added to
+  `Constants.COMPANION_CREATURE_IDS` (issue #56); note its name and the creature id the
+  `/mm diagnostics` targets section prints. Result:
+- **GRID-16. No enemy gets a row.** Hit a PvP Training Dummy, then out of combat → the grid shows only
+  you, and the `/mm diagnostics` targets section prints the dummy's `class=WARRIOR` and
+  `enemies the grid would admit as a row: 0 of 1` (issue #56). After an open-world pull → no mob's
+  name appears as a row, mid-pull or after. If one does, stop and report it with `/mm diagnostics`
+  taken out of combat (its targets section prints each enemy's `class=`,
+  `enemies carrying a player class: N of M` and the admit count). Result:
 - **GRID-17. Pets fold into the owner when merged.** With a hunter and a warlock in the group, out
   of combat after a pull, on the shipped settings → each pet has a row of its own under its own name,
   as Blizzard's meter shows it. Note the hunter's and the pet's Damage. Tick General → Behavior →
@@ -1433,3 +1438,4 @@ the steps that session added are listed here by ID.
 | DEGRADED-3 | §17; 06 X2.11 | Never run: a bare `/mm` answers |
 | DEGRADED-8 | New | `/mm profile` with LibKa0s absent |
 | LOC-1 | §26 file | Corrected: the header has 24 columns, not 26 |
+| GRID-15, GRID-16 | Corrected (issue #56, 2026-10-01, GI-MM-01) | A None source needs a companion identity as well as a class: the PvP Training Dummy is refused and counted by the new admit line, Valeera is still admitted mid-pull and after; never run in a client |
