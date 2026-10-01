@@ -1703,7 +1703,7 @@ badge and any count quoted in the docs must agree with it.
 - Switching out of a deaths view replaces the state, it does not merge into it
 - BuildRows on every refresh while drilled in logs its rows line once, not once per pass
 
-### test_export.lua (93)
+### test_export.lua (94)
 
 - Export is a plain table on NS, not an AceAddon module
 - Export.Available says yes out of combat, with nothing to explain
@@ -1789,6 +1789,7 @@ badge and any count quoted in the docs must agree with it.
 - A system message with no dump in flight is a cheap no
 - A second send supersedes whatever the first still had queued
 - Export.Send does nothing with nothing to send
+- Export.Send answers false, emitting nothing, with neither a sender nor a printer
 - Export.SessionLabel asks the window, never the provider
 - Export.SessionLabel survives a window whose label raises
 - Export.SessionLabel names what a bare config can name on its own
@@ -1975,7 +1976,7 @@ badge and any count quoted in the docs must agree with it.
 - RestoreAllDefaults logs ONE line in total: the profile handler's, and no bulk line
 - The General page's Defaults unlock every window, through Lock frame's default
 
-### test_schema_paths.lua (49)
+### test_schema_paths.lua (50)
 
 - Schema: a window path resolves against the session's ACTIVE window
 - Schema: a global path is unaffected by which window is active
@@ -2007,6 +2008,7 @@ badge and any count quoted in the docs must agree with it.
 - SetByPath: window.columns REFUSES an array whose every statistic this build dropped, with a message
 - SetByPath: a path INTO the column array is refused by name
 - Schema: NS.NormalizeColumns is published for the migration ladder
+- Schema: NS.NormalizeColumns names each shape it refuses, and coerces enabled
 - SetByPath: a window id addresses THAT window and leaves the picker where it was
 - SetByPath: the window id reaches onChange and CONFIG_CHANGED
 - SetByPath: a window id that names no window is refused, and nothing is written
@@ -2468,12 +2470,12 @@ badge and any count quoted in the docs must agree with it.
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
 | test_drilldown.lua | 61 |
-| test_export.lua | 93 |
+| test_export.lua | 94 |
 | test_export_modal.lua | 32 |
 | test_visibility.lua | 44 |
 | test_windowmanager.lua | 48 |
 | test_schema.lua | 40 |
-| test_schema_paths.lua | 49 |
+| test_schema_paths.lua | 50 |
 | test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
 | test_slash.lua | 50 |
@@ -2491,4 +2493,4 @@ badge and any count quoted in the docs must agree with it.
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 9 |
 | test_lizard_sighted.lua | 8 |
-| **Total** | **2157** |
+| **Total** | **2159** |

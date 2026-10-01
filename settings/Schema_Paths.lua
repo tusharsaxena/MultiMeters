@@ -447,6 +447,40 @@ end
 
 local COLUMNS_PATH = WINDOW_PREFIX .. ".columns"
 
+--- The number of entries in `value`, counted with pairs, so a hole or a string
+--- key shows up as a count `#value` disagrees with.
+local function countKeys(value)
+    local keys = 0
+    for _ in pairs(value) do keys = keys + 1 end
+    return keys
+end
+
+--- Partition the caller's columns into enabled and disabled entries, stable.
+---
+--- @return table|nil enabled, table|string disabled-or-err, table seen
+local function partitionColumns(value, n)
+    local enabled, disabled, seen = {}, {}, {}
+    for i = 1, n do
+        local c = value[i]
+        if type(c) ~= "table" then
+            return nil, L["Column %d is not a column."]:format(i)
+        end
+
+        -- An unknown statistic and a repeat are both dropped, silently and on
+        -- purpose. THE FIRST APPEARANCE WINS: a later duplicate carrying a
+        -- different `enabled` cannot quietly overrule the position the caller
+        -- already gave it.
+        local stat = c.stat
+        if type(stat) == "string" and Const.STAT_BY_KEY[stat] and not seen[stat] then
+            seen[stat] = true
+            local entry = { stat = stat, enabled = c.enabled and true or false }
+            local into  = entry.enabled and enabled or disabled
+            into[#into + 1] = entry
+        end
+    end
+    return enabled, disabled, seen
+end
+
 --- Repair a candidate column array into the catalog, in the caller's order.
 ---
 --- REPAIRING RATHER THAN REJECTING. The array IS the catalog, there is no remove
@@ -478,31 +512,12 @@ local function normalizeColumns(value)
 
     -- A hole or a string key would make `#value` an arbitrary answer, so the array
     -- shape is proved rather than assumed before anything is read out of it.
-    local keys = 0
-    for _ in pairs(value) do keys = keys + 1 end
-    if keys ~= n then
+    if countKeys(value) ~= n then
         return nil, L["Columns must be a plain ordered list with no gaps."]
     end
 
-    local enabled, disabled, seen = {}, {}, {}
-    for i = 1, n do
-        local c = value[i]
-        if type(c) ~= "table" then
-            return nil, L["Column %d is not a column."]:format(i)
-        end
-
-        -- An unknown statistic and a repeat are both dropped, silently and on
-        -- purpose. THE FIRST APPEARANCE WINS: a later duplicate carrying a
-        -- different `enabled` cannot quietly overrule the position the caller
-        -- already gave it.
-        local stat = c.stat
-        if type(stat) == "string" and Const.STAT_BY_KEY[stat] and not seen[stat] then
-            seen[stat] = true
-            local entry = { stat = stat, enabled = c.enabled and true or false }
-            local into  = entry.enabled and enabled or disabled
-            into[#into + 1] = entry
-        end
-    end
+    local enabled, disabled, seen = partitionColumns(value, n)
+    if not enabled then return nil, disabled end
 
     -- Every catalog statistic the caller did not mention, appended disabled in
     -- catalog order -- which is what makes a statistic added to core/Constants.lua
