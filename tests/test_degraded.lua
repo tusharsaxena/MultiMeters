@@ -167,6 +167,8 @@ function()
     assertEqual(type(inst.NS.ApplySkin), "function")
     inst.NS.ApplySkin(inst.mocks.__stubFrame("Frame"))   -- must not raise
     assertNil(inst.NS.MakeCloseButton(inst.mocks.__stubFrame("Frame")))
+    -- The resize grip likewise: no grip, never a host copy of the library's.
+    assertNil(inst.NS.MakeResizable(inst.mocks.__stubFrame("Frame"), {}))
 end)
 
 test("Degraded: the stored-color reader does NOT degrade to nothing", function()
@@ -623,7 +625,7 @@ function()
     local full     = fullInstance().NS
     local degraded = degradedInstance().NS
     for _, name in ipairs({ "Print", "Format", "IsConcatSafe", "SafeToString", "RGBA",
-                            "ApplySkin", "MakeCloseButton", "Debug",
+                            "ApplySkin", "MakeCloseButton", "MakeResizable", "Debug",
                             "SafeRegisterEvent", "SafeRegisterUnitEvent", "SafeRegisterEvents",
                             "RegisterOptionsPage", "RefreshOptionsPanel",
                             "CreateOptionsPanel", "OpenOptionsPanel",

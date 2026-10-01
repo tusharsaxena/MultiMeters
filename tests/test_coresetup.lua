@@ -271,6 +271,34 @@ end)
 
 -- ── the window chrome seam ──────────────────────────────────────────────────
 
+test("CoreSetup: NS.MakeResizable is the library's grip on Core 10, by reference", function()
+    -- modules/Window.lua passes gripParent and onResizeStop, both Core minor 10.
+    -- red under: a host wrapper or a host-built grip behind the name.
+    local inst = T.load()
+    local lib = inst.mocks.LibStub("LibKa0s-Core-1.0", true)
+    assertTrue(lib.MODULES.Core >= 10, "the fixture needs Core minor 10")
+    assertTrue(inst.NS.MakeResizable == lib.MakeResizable,
+        "NS.MakeResizable is not the library's function object")
+end)
+
+test("CoreSetup: a Core below minor 10 yields no grip rather than a grip on the anchor", function()
+    -- An older Core answers the member but ignores gripParent and onResizeStop:
+    -- its grip would sit on the bare anchor and never save. So the seam answers nil.
+    -- red under: `NS.MakeResizable = lib.MakeResizable` with no minor gate.
+    local inst = T.load{}
+    local lib = inst.mocks.LibStub("LibKa0s-Core-1.0", true)
+    local saved = lib.MODULES.Core
+    lib.MODULES.Core = 9
+    local NS2 = { Constants = inst.NS.Constants, PREFIX = inst.NS.PREFIX,
+                  LIBKA0S_MISSING = inst.NS.LIBKA0S_MISSING, Util = {} }
+    T.Loader.load(T.root .. "/core/CoreSetup.lua", NS2, inst.mocks)
+    lib.MODULES.Core = saved
+
+    assertEqual(type(NS2.MakeResizable), "function")
+    assertTrue(NS2.MakeResizable ~= lib.MakeResizable, "a Core 9 grip was handed over")
+    assertNil(NS2.MakeResizable(inst.mocks.__stubFrame("Frame"), {}))
+end)
+
 test("CoreSetup: the class color is the LIBRARY's one resolver, not a private copy", function()
     -- options-ui-§17: the lookup is LibKa0s-Core-1.0's, so a bar in this window and
     -- the unit frame beside it read the same RAID_CLASS_COLORS and cache it the same

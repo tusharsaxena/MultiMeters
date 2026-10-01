@@ -441,13 +441,6 @@ local function onSizeChanged(anchor, width, height)
     inst.pendingHeight = height
 end
 
-local function onResizeStop(grip)
-    local inst = grip.mmWindow
-    if not inst then return end
-    inst.anchor:StopMovingOrSizing()
-    inst:SaveSize()
-end
-
 
 
 
@@ -464,7 +457,6 @@ function WindowProto:BuildFrame()
     local anchor = CreateFrame("Frame", name .. "Anchor", UIParent)
     anchor:SetSize(frameCfg.width or 694, frameCfg.height or 220)
     anchor:SetMovable(true)
-    anchor:SetResizable(true)
     anchor:SetClampedToScreen(frameCfg.clampToScreen ~= false)
     anchor.mmWindow = self
     anchor:SetScript("OnSizeChanged", onSizeChanged)
@@ -633,22 +625,26 @@ function WindowProto:BuildFrame()
     -- unticking it did nothing at all until a reload -- the reported bug. The
     -- grip's visibility is the LOCK's answer and only the lock's: ApplyLock and
     -- ApplyMinimized are its two authors and both ask the same question.
+    --
+    -- THE LIBRARY'S GRIP (Core.MakeResizable, Core minor 10), split the way rule
+    -- R3 needs it: it SIZES the bare anchor, which also takes SetResizable and
+    -- the bounds, but is DRAWN on the art frame (`gripParent`), so it shares the
+    -- window's strata, alpha and rule-driven visibility. The profile is written
+    -- on release only (`onResizeStop`, issue #49): the library's `onResize` runs
+    -- on every size tick and on the programmatic SetSize in ApplyConfig, so it is
+    -- not passed. `canResize` refuses a locked window even if something shows the
+    -- grip later. ApplyResizeBounds runs after this in every ApplyConfig and owns
+    -- the bounds from then on; the minimum here is the same layout figure. With
+    -- no library, or a Core below 10, NS.MakeResizable answers nil: no grip.
     do
-        -- THE GRIP ART IS A PAIR, and that is why it is not the catalog's.
-        -- LibKa0s-Media carries `resize`, but it is one glyph in one state; this
-        -- is -Up plus -Highlight, the two-state chrome a player already reads in
-        -- every chat window, and the catalog publishes no hover variant of
-        -- anything (library-stack-§8). Both paths are carried in
-        -- docs/texture-paths.md's census, ratified by an ARCHITECTURE.md register row.
-        local grip = CreateFrame("Button", nil, frame)
-        grip:SetSize(12, 12)
-        grip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
-        grip:SetNormalTexture([[Interface\ChatFrame\UI-ChatIM-SizeGrabber-Up]])
-        grip:SetHighlightTexture([[Interface\ChatFrame\UI-ChatIM-SizeGrabber-Highlight]])
-        grip.mmWindow = self
-        grip:SetScript("OnMouseDown", function() anchor:StartSizing("BOTTOMRIGHT") end)
-        grip:SetScript("OnMouseUp", onResizeStop)
-        self.grip = grip
+        local layout = self.layout or self:BuildLayout()
+        self.grip = NS.MakeResizable(anchor, {
+            gripParent   = frame,
+            minWidth     = layout.minWidth,
+            minHeight    = layout.minHeight,
+            canResize    = function() return not self.locked end,
+            onResizeStop = function() self:SaveSize() end,
+        })
     end
 
     frame:Hide()

@@ -199,6 +199,11 @@ if not lib then
     NS.SKIN            = {}
     NS.ApplySkin       = function() end
     NS.MakeCloseButton = function() return nil end
+    -- The resize grip degrades the same way and for the same reason: a stub must
+    -- not re-implement the library, and a grip is chrome. `nil` is "no grip",
+    -- which modules/Window.lua's two visibility authors already guard on, and the
+    -- window keeps the size its profile gives it.
+    NS.MakeResizable   = function() return nil end
     -- The class-color lookup degrades the same way RGBA does and for the same
     -- reason: it is not chrome, it is how a class-colored bar, header or border
     -- gets its color at all, and a degraded install still draws rows. The
@@ -289,6 +294,16 @@ NS.ApplySkin       = lib.ApplySkin
 NS.MakeCloseButton = function(parent, onClick)
     return lib.MakeCloseButton(parent, onClick, addonName)
 end
+
+-- THE RESIZE GRIP, GATED ON CORE MINOR 10. modules/Window.lua sizes the bare
+-- anchor (rule R3) but draws the grip on the art frame, and saves on release
+-- only (issue #49). `gripParent` and `onResizeStop` are what say that, and both
+-- arrived at Core minor 10. An older Core answers the member and silently
+-- ignores both fields -- a grip on the anchor, under the window's strata, and a
+-- save that never runs -- so below 10 the window gets no grip at all, the same
+-- answer the library-absent arm gives.
+local coreMinor = (lib.MODULES and lib.MODULES.Core) or lib.MINOR or 0
+NS.MakeResizable = (coreMinor >= 10 and lib.MakeResizable) or function() return nil end
 
 -- The prefix is handed over as a FUNCTION rather than as the value of NS.PREFIX.
 -- It reads the same here, where core/Constants.lua has already run — but the

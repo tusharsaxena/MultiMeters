@@ -53,7 +53,7 @@ badge and any count quoted in the docs must agree with it.
 - texturepaths: every census row carries a disposition that can be followed
 - texturepaths: the deviation register carries the row the ColumnBlocks sites point at
 - texturepaths: the register row's ColumnBlocks citation names the lines the pair is on
-- texturepaths: the register carries a library-stack-§8 row for the Tooltip and Window declines
+- texturepaths: the register carries a library-stack-§8 row for the Tooltip decline
 
 ### test_docmap.lua (1)
 
@@ -499,7 +499,7 @@ badge and any count quoted in the docs must agree with it.
 - Defaults: NS.C aliases the profile defaults rather than copying them
 - Defaults: the debug flag is NOT a profile default
 
-### test_coresetup.lua (29)
+### test_coresetup.lua (31)
 
 - CoreSetup: the harness loads the vendored LibKa0s majors, so nothing measures a stub
 - CoreSetup: the runner FEEDS the derived library list, and it is not empty
@@ -522,6 +522,8 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: channels fall back independently, so a three-element color keeps its alpha
 - CoreSetup: RGBA answers the four defaults for a non-table
 - CoreSetup: the fallback color reader stands behind the library's
+- CoreSetup: NS.MakeResizable is the library's grip on Core 10, by reference
+- CoreSetup: a Core below minor 10 yields no grip rather than a grip on the anchor
 - CoreSetup: the class color is the LIBRARY's one resolver, not a private copy
 - CoreSetup: the classFilename reader is KEPT, because the library has no equivalent
 - CoreSetup: the class color degrades to a working reader, not to nothing
@@ -1222,7 +1224,7 @@ badge and any count quoted in the docs must agree with it.
 - With no art and no atlas the arrow is an ASCII character, and a legible one
 - The refused Player-header click names its guard in the log
 
-### test_window_placement.lua (33)
+### test_window_placement.lua (43)
 
 - Closing HIDES the window; it never deletes it
 - Dragging moves the ANCHOR, never the frame that holds the cells
@@ -1253,6 +1255,16 @@ badge and any count quoted in the docs must agree with it.
 - The resize grip is built unconditionally and follows the LOCK
 - `resizeGrip` is gone from the code, not just from the panel
 - Unlocking does not resurrect the grip on a collapsed window
+- The grip sizes the ANCHOR from BOTTOMRIGHT, never the visible frame
+- The grip is DRAWN on the visible frame, so it shares its strata, alpha and visibility
+- SaveSize runs once per grip release, never on OnSizeChanged or a config apply
+- A rule-driven hide then show keeps the grip on an unlocked window
+- Lock and minimize both put the grip away, and unlock-and-expand brings it back
+- The grip is the library's: left button only, pressed art, leveled above the frame
+- A locked window's grip refuses to size even if something shows it
+- A resize alone leaves the anchor's user-placed flag as it was
+- The grip's library bounds are overwritten by the layout's in the same apply
+- Degraded: no grip, and lock, minimize and apply raise nothing
 - A window is locked exactly by its own Lock window; master.locked no longer pins it
 - SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)
 - SaveSize applies the config ONCE per resize-stop, and still applies when the seam refuses
@@ -2452,7 +2464,7 @@ badge and any count quoted in the docs must agree with it.
 | test_diagnostics_feign.lua | 19 |
 | test_diagnostics_runtime.lua | 18 |
 | test_defaults.lua | 24 |
-| test_coresetup.lua | 29 |
+| test_coresetup.lua | 31 |
 | test_perfsetup.lua | 26 |
 | test_debuglogsetup.lua | 32 |
 | test_mediasetup.lua | 7 |
@@ -2473,7 +2485,7 @@ badge and any count quoted in the docs must agree with it.
 | test_window.lua | 64 |
 | test_window_header.lua | 57 |
 | test_window_header_sort.lua | 17 |
-| test_window_placement.lua | 33 |
+| test_window_placement.lua | 43 |
 | test_window_lifecycle.lua | 8 |
 | test_window_segment.lua | 10 |
 | test_headercontrols.lua | 66 |
@@ -2510,4 +2522,4 @@ badge and any count quoted in the docs must agree with it.
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 9 |
 | test_lizard_sighted.lua | 8 |
-| **Total** | **2176** |
+| **Total** | **2188** |
