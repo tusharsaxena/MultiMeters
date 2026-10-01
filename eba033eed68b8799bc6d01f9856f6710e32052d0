@@ -1,0 +1,1 @@
+OK CA-MM-RV tests 2168 passed/0 failed/1 skipped/2169; luacheck 0/0 in 146 files; vendor diff -r empty (both payloads, HEAD=v1.67.0 0bccf4c); i/lf w/crlf kept; test-cases.md matches --list; badge 2168/2168
