@@ -32,7 +32,7 @@ such rather than listed as a requirement.
 |---|---|---|---|
 | `lua5.1` (+ `luac`) | **5.1 exactly** | the headless suite, `lua tests/run.lua` | `tests/_kit/loader.lua` uses `setfenv` |
 | `luacheck` | any recent | `luacheck .`, the other half of the green gate | `.luacheckrc` at the repo root |
-| `lizard` | any recent | the `complexity` suite of `tests/_kit/run-automated-tests.sh` | `tests/_kit/run-automated-tests.sh` invokes `lizard` |
+| `lizard` | **1.24.0** (pinned) | the `complexity` suite of `tests/_kit/run-automated-tests.sh` | `tests/_kit/run-automated-tests.sh` invokes `lizard` over the sighted shadow `tests/_kit/lizard_sighted.lua` builds (kit 35); the sanitizer targets 1.24.0's Lua blind spots, so an upgrade is re-checked against parity before it is taken |
 | `git` | any recent | vendoring, `diff -r` against the LibKa0s repo, and the runner's own provenance stamp | library-stack-§7; `tests/_kit/run-automated-tests.sh` calls `git describe` / `git rev-parse` / `git status --porcelain` |
 | `bash` | **4.x or later** | `tests/_kit/run-automated-tests.sh` — the whole automated-test bundle | its shebang is `#!/usr/bin/env bash`, and it declares an associative array (`declare -A ST DUR NOTE`), which `dash`/POSIX `sh` has no syntax for |
 

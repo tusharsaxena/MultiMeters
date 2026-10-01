@@ -82,6 +82,12 @@ do
         -- launcher suite would measure the stub and pass.
         "Launcher.lua",
         "Perf.lua", "PerfPanel.lua",
+        -- v1.66.0 peeled four secondary files off their shells, each loaded only when present, so a
+        -- payload missing one raises nothing: without SlashParse.lua every `/mm set` refuses with a
+        -- line naming it; without PerfSampler.lua or PerfCommands.lua `/mm perf` answers one line
+        -- and the brackets are inert; without WidgetsReorder.lua settings/ColumnBlocks.lua has no
+        -- ReorderList to draw.
+        "SlashParse.lua", "PerfSampler.lua", "PerfCommands.lua", "WidgetsReorder.lua",
         -- THE LATCH. Perf.lua RETURNS BEFORE NewLibrary without it from minor 12, so a payload
         -- missing this file loses the perf probe outright rather than finding out mid-run -- and
         -- core/LifecycleSetup.lua would take its degradation stub, which would make every case in
@@ -347,6 +353,10 @@ local SUITES = {
     -- 27: both forms, while disabled, append, ungated, the markers, and `diag` running
     -- nothing. Wired to this addon's own dispatcher through `Kit.diagnostics` below.
     { name = "test_diagnostics_contract", dir = "tests/_kit/" },
+    -- The sighted complexity suite's sanitizer and parity reader, since kit revision 35
+    -- (automated-tests-§3). It needs no consumer facts; with lizard on PATH it also runs lizard
+    -- end to end on a hazard fixture, and is a declared skip without it.
+    { name = "test_lizard_sighted", dir = "tests/_kit/" },
 }
 
 -- ---------------------------------------------------------------------------
