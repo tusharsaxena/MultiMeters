@@ -1,0 +1,1 @@
+OK GI-MM-02 — all eight sighted >15 functions extracted with behaviour-equivalent helpers (diff-reviewed: perf bracket paths, cache, abandon/walk counts, Export stagger/whisper order preserved); reviewer complexity run 0 warnings, max CCN 15, blindFiles 0; tests 2168/0/1
