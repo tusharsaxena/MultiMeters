@@ -332,7 +332,7 @@ badge and any count quoted in the docs must agree with it.
 - migrations: the v16 step run twice is a no-op, and never overwrites a US key
 - migrations: a fresh install stores frame.minimized and no British key
 
-### test_diagnostics.lua (33)
+### test_diagnostics.lua (35)
 
 - Diagnostics: the sections are handed to the LibKa0s helper, not run by hand
 - Diagnostics: the report carries both markers with the addon's brand
@@ -367,6 +367,8 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: the provider-order probe reports a RANKED column as ranked
 - Diagnostics: the probe NAMES the position where the order breaks
 - Diagnostics: the probe REFUSES mid-pull rather than reporting a false all-clear
+- Diagnostics: a secret renders as the library's sentinel, on both paths
+- Diagnostics: the zero-reader SECRET alias is gone
 
 ### test_diagnostics_deathrecap.lua (30)
 
@@ -497,7 +499,7 @@ badge and any count quoted in the docs must agree with it.
 - Defaults: NS.C aliases the profile defaults rather than copying them
 - Defaults: the debug flag is NOT a profile default
 
-### test_coresetup.lua (26)
+### test_coresetup.lua (29)
 
 - CoreSetup: the harness loads the vendored LibKa0s majors, so nothing measures a stub
 - CoreSetup: the runner FEEDS the derived library list, and it is not empty
@@ -510,6 +512,9 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: IsConcatSafe rejects a value table.concat would raise on
 - CoreSetup: SafeToString renders a secret as the sentinel rather than raising
 - CoreSetup: the secret-safe members are the library's own, published by reference
+- CoreSetup: NS.SECRET is the library's sentinel, published by reference
+- CoreSetup: SafeToString's sentinel IS NS.SECRET on both paths
+- CoreSetup: no addon file spells the secret sentinel outside the degraded stub
 - CoreSetup: RGBA reads the keyed shape the profile ships
 - CoreSetup: RGBA reads the positional shape the options color widget writes
 - CoreSetup: a stored ZERO channel survives as zero
@@ -2441,13 +2446,13 @@ badge and any count quoted in the docs must agree with it.
 | test_database.lua | 28 |
 | test_database_migrations.lua | 48 |
 | test_migrations.lua | 8 |
-| test_diagnostics.lua | 33 |
+| test_diagnostics.lua | 35 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
 | test_diagnostics_runtime.lua | 18 |
 | test_defaults.lua | 24 |
-| test_coresetup.lua | 26 |
+| test_coresetup.lua | 29 |
 | test_perfsetup.lua | 26 |
 | test_debuglogsetup.lua | 32 |
 | test_mediasetup.lua | 7 |
@@ -2505,4 +2510,4 @@ badge and any count quoted in the docs must agree with it.
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 9 |
 | test_lizard_sighted.lua | 8 |
-| **Total** | **2171** |
+| **Total** | **2176** |

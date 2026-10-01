@@ -711,3 +711,29 @@ test("Diagnostics: the probe REFUSES mid-pull rather than reporting a false all-
     assertTrue(text:find("NOT ranked", 1, true) == nil,
         "and must not accuse the API on evidence it never gathered")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The secret sentinel (MultiMeters#58)
+-- ---------------------------------------------------------------------------
+
+test("Diagnostics: a secret renders as the library's sentinel, on both paths", function()
+    -- `shown` and `probe` describe a secret rather than format it, and the
+    -- display-types tally keys on what `shown` printed, so both must answer the
+    -- one sentinel the namespace publishes.
+    -- red under: a host-side sentinel that differs from NS.SECRET.
+    for _, opts in ipairs({ { enable = true }, { enable = true, libFiles = {} } }) do
+        local inst = T.load(opts)
+        local Diag = inst.NS.Diagnostics
+        local s    = inst.mocks.secret(1)
+        assertEqual(Diag.shown(s), "<secret>")
+        assertEqual(Diag.probe(function() return s end), "<secret>")
+        assertEqual(Diag.shown(s), inst.NS.SECRET, "shown and the namespace disagree")
+    end
+end)
+
+test("Diagnostics: the zero-reader SECRET alias is gone", function()
+    -- No sibling probe read Diagnostics.SECRET; the sentinel is NS.SECRET.
+    -- red under: re-publishing `Diagnostics.SECRET = SECRET`.
+    local inst = T.load{ enable = true }
+    assertEqual(inst.NS.Diagnostics.SECRET, nil)
+end)

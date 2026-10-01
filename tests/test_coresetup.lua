@@ -159,6 +159,52 @@ test("CoreSetup: the secret-safe members are the library's own, published by ref
     assertTrue(NS.SafeToString == lib.SafeToString)
 end)
 
+-- ── the secret sentinel (MultiMeters#58) ────────────────────────────────────
+
+test("CoreSetup: NS.SECRET is the library's sentinel, published by reference", function()
+    -- Core.SECRET has existed since Core minor 1, so the live arm hands it over
+    -- with no `or` fallback and no second literal.
+    -- red under: a live arm that spells "<secret>" again, or publishes nothing.
+    local lib = mocks.LibStub("LibKa0s-Core-1.0", true)
+    assertEqual(type(lib.SECRET), "string", "the vendored Core carries no SECRET")
+    assertTrue(NS.SECRET == lib.SECRET, "NS.SECRET must BE the library's sentinel")
+    assertEqual(NS.SECRET, "<secret>")
+end)
+
+test("CoreSetup: SafeToString's sentinel IS NS.SECRET on both paths", function()
+    -- Diagnostics keys a tally on the rendered string, so the sentinel a probe
+    -- prints and the one SafeToString prints must be one value on either path.
+    -- red under: a degraded arm that publishes no NS.SECRET.
+    assertEqual(NS.SafeToString(mocks.secret(1)), NS.SECRET)
+    local inst = T.load{ libFiles = {} }
+    assertEqual(inst.NS.SECRET, "<secret>", "the degraded arm publishes the sentinel too")
+    assertEqual(inst.NS.SafeToString(inst.mocks.secret(1)), inst.NS.SECRET)
+end)
+
+test("CoreSetup: no addon file spells the secret sentinel outside the degraded stub", function()
+    -- events-frames-taint-§8 allows exactly one copy of the sentinel: the stub that
+    -- stands in for the library when it is absent. Everything else reads NS.SECRET.
+    -- Comments are stripped first, because several files DESCRIBE the sentinel.
+    -- red under: `local SECRET = "<secret>"` in core/Diagnostics.lua.
+    local found = 0
+    for _, rel in ipairs(T.loadedAddonFiles) do
+        local fh = io.open(T.root .. "/" .. rel, "r")
+        local src = fh and fh:read("*a") or ""
+        if fh then fh:close() end
+        src = src:gsub("%-%-[^\r\n]*", "")
+        local at = src:find('"<secret>"', 1, true)
+        while at do
+            found = found + 1
+            assertEqual(rel, "core/CoreSetup.lua", rel .. " spells the secret sentinel")
+            local live = src:find("NS.SafeToString = lib.SafeToString", 1, true)
+            assertTrue(live ~= nil and at < live,
+                "core/CoreSetup.lua spells the sentinel outside its degraded arm")
+            at = src:find('"<secret>"', at + 1, true)
+        end
+    end
+    assertEqual(found, 1, "the degraded arm's one literal")
+end)
+
 -- ── the stored-color reader ─────────────────────────────────────────────────
 
 test("CoreSetup: RGBA reads the keyed shape the profile ships", function()

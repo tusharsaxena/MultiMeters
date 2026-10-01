@@ -28,7 +28,7 @@ secret-value rules the checks refer to.
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
-| DIAG-1 to DIAG-41 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
+| DIAG-1 to DIAG-42 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-9 | [LibKa0s absent](#degraded) | The library-absent install |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
@@ -1297,6 +1297,10 @@ stayed empty; "no errors" from a dummy is not evidence here.
   `[Launcher] registered`. With a window drawing and nothing changing, press the console's Clear →
   within a second one `[Render] window 1 drew …` line comes back rather than an empty console until
   the next change. Result:
+- **DIAG-42. A secret still prints as `<secret>`.** Mid-pull, run `/mm diagnostics` → the secret
+  session names and durations, and the display-types tally, read `<secret>` exactly as before, and
+  the plain fields beside them still print. No Lua error. The sentinel is now the library's
+  `Core.SECRET` rather than the report's own copy (MultiMeters#58). Result:
 
 ## DEGRADED
 
@@ -1439,6 +1443,7 @@ the steps that session added are listed here by ID.
 | DIAG-16 | Corrected (LibKa0s v1.64.0, 2026-09-30, DL-MM-03) | The report still lands with logging off, but now turns logging on, so the header reads `Debug: ON` afterwards |
 | DIAG-37, DIAG-38 | New (LibKa0s v1.64.0, 2026-09-30, DL-MM-03) | The console's Diagnostics link, and diagnostics turning logging on for the session, never run in a client |
 | DIAG-39 to DIAG-41 | New (LibKa0s v1.65.0, 2026-10-01, DG-MM-01) | The library's `[Cmd]` and `[Lifecycle]` lines, the at-enable queue and Clear's re-arm, never run in a client |
+| DIAG-42 | New (LibKa0s v1.67.0, 2026-10-02, CA-MM-01) | The report's secret sentinel is now `Core.SECRET`, never run in a client |
 | DEGRADED-1 | §17; 06 X2.11 | Never run |
 | DEGRADED-2 | §17 | Corrected: the first line's full text, and each later line repeating the cause |
 | DEGRADED-3 | §17; 06 X2.11 | Never run: a bare `/mm` answers |

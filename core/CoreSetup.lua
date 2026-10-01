@@ -140,6 +140,10 @@ if not lib then
     -- coloring, no console line.
     local function probeConcat(v) return table.concat({ v }) end
 
+    -- The one copy of the sentinel this addon spells (events-frames-taint-§8):
+    -- the library's own is unreachable here, and the live arm hands that over.
+    NS.SECRET = "<secret>"
+
     function NS.IsConcatSafe(v)
         return (pcall(probeConcat, v))
     end
@@ -148,7 +152,7 @@ if not lib then
         if v == nil then return "nil" end
         if type(v) == "boolean" then return tostring(v) end
         if NS.IsConcatSafe(v) then return tostring(v) end
-        return "<secret>"
+        return NS.SECRET
     end
 
     local announced = false
@@ -220,9 +224,11 @@ end
 -- ── the live seam ────────────────────────────────────────────────────────────
 
 -- Lib-level and stateless, so they are published by reference rather than
--- wrapped. `lib.SECRET` is the "<secret>" sentinel the suites name.
+-- wrapped. `lib.SECRET` is the sentinel SafeToString answers for a secret; it has
+-- been there since Core minor 1, so it needs no fallback and no second literal.
 NS.IsConcatSafe = lib.IsConcatSafe
 NS.SafeToString = lib.SafeToString
+NS.SECRET       = lib.SECRET
 
 -- `lib.RGBA(c, dr, dg, db, da) -> r, g, b, a` arrived at Core minor 4, and a
 -- vendored copy older than that answers the major without the member — so the
