@@ -551,6 +551,66 @@ test("Diagnostics: the enemies the grid's unowned gate would admit are counted (
         "an Ally source was not reported as admitted")
 end)
 
+-- Characterization (GI-MM-02): the targets walk's every line, pinned before
+-- reportTargets was brought under CCN 15.
+
+--- The one enemy's source detail, keyed by its plain GUID as the walk asks.
+local function enemyDetail(inst, spells)
+    local mocks = inst.mocks
+    mocks.setSourceDetail(1, mocks.Enum.DamageMeterType.EnemyDamageTaken,
+        "Creature-0-0000-0-0-0001", { combatSpells = spells, maxAmount = 0, totalAmount = 0 })
+end
+
+test("Diagnostics: a readable enemy whose detail is nil gets the detail-nil verdict", function()
+    local inst = T.load{ enable = true }
+    enemyColumn(inst, inst.mocks.Enum.DamageMeterSourceDisplayType.Enemy)
+    local text = report(inst)
+    assertTrue(text:find("[1] name=Cleave Training Dummy guid=plain creatureID=6001", 1, true) ~= nil, text)
+    assertTrue(text:find("detail: nil", 1, true) ~= nil, text)
+    assertTrue(text:find("enemies with a detail: 0 · with spells: 0 · spells carrying combatSpellDetails: 0",
+        1, true) ~= nil, text)
+    assertTrue(text:find("every source detail came back nil", 1, true) ~= nil, text)
+    assertTrue(text:find("caster names seen: none readable", 1, true) ~= nil, text)
+end)
+
+test("Diagnostics: spells with no combatSpellDetails get the missing-field verdict", function()
+    local inst = T.load{ enable = true }
+    enemyColumn(inst, inst.mocks.Enum.DamageMeterSourceDisplayType.Enemy)
+    enemyDetail(inst, { { spellID = 1, totalAmount = 5 }, "not a spell" })
+    local text = report(inst)
+    assertTrue(text:find("detail: yes, 1 spells", 1, true) ~= nil, text)
+    assertTrue(text:find("no combatSpellDetails on any spell", 1, true) ~= nil, text)
+end)
+
+test("Diagnostics: a walk that reaches casters names them beside the roster", function()
+    local inst = T.load{ enable = true }
+    enemyColumn(inst, inst.mocks.Enum.DamageMeterSourceDisplayType.Enemy)
+    enemyDetail(inst, {
+        { spellID = 1, totalAmount = 5, combatSpellDetails = { unitName = "Alpha" } },
+        { spellID = 2, totalAmount = 5, combatSpellDetails = { unitName = 7 } },
+    })
+    local text = report(inst)
+    assertTrue(text:find("enemies with a detail: 1 · with spells: 1 · spells carrying combatSpellDetails: 2",
+        1, true) ~= nil, text)
+    assertTrue(text:find("caster names seen: Alpha", 1, true) ~= nil, text)
+    assertFalse(text:find("came back nil", 1, true) ~= nil, "a verdict printed over a working walk")
+    assertFalse(text:find("no combatSpellDetails", 1, true) ~= nil, "a verdict printed over a working walk")
+    assertTrue(text:find("roster names:", 1, true) ~= nil, text)
+end)
+
+test("Diagnostics: an empty enemy column says no enemies and stops", function()
+    local inst = T.load{ enable = true }
+    local mocks = inst.mocks
+    mocks.setSession(1, mocks.Enum.DamageMeterType.EnemyDamageTaken, {
+        combatSources = {}, maxAmount = 0, totalAmount = 0, durationSeconds = 60,
+    })
+    inst.NS.Database.GetWindows()[1].data.sessionType = 1
+    local text = report(inst)
+    assertTrue(text:find("enemy column: 0 sources", 1, true) ~= nil, text)
+    assertTrue(text:find("no enemies", 1, true) ~= nil, text)
+    assertFalse(text:find("caster names seen", 1, true) ~= nil, "the walk ran over nothing")
+end)
+
 test("Diagnostics: a display-type check that could not run says so", function()
     -- `sourceDisplayType` is secret for the whole of a pull — measured on a live
     -- client, which printed `display types: <secret> x5` across a five-enemy

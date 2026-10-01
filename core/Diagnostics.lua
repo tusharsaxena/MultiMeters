@@ -575,13 +575,9 @@ local function classedEnemies(column)
     return n
 end
 
---- How many of the enemy column's sources the GUID join's unowned gate would
---- admit as a row (issue #56), asked through the aggregator's own predicate so the
---- report and the grid cannot disagree. Resolved at call time: the aggregator is
---- not this file's dependency. nil when it is absent.
----
---- @param column table
---- @return number|nil
+--- How many enemy sources the GUID join's unowned gate would admit as a row
+--- (issue #56), through the aggregator's own predicate, resolved at call time
+--- (the aggregator is not this file's dependency); nil when it is absent.
 local function admittedEnemies(column)
     local seam = NS.Aggregator and NS.Aggregator._identity
     local admits = seam and seam.admitsUnowned
@@ -757,6 +753,127 @@ local function reportProviderOrder()
     end
 end
 
+--- Print the session and the enemy column; the walk's tally, or nil (after saying why).
+local function targetsColumn(P)
+    local windows = NS.Database and NS.Database.GetWindows and NS.Database.GetWindows()
+    local cfg = windows and windows[1]
+    local sessionType = (cfg and cfg.data and cfg.data.sessionType) or 1
+    local sessionID   = NS.Database.PinnedSegment(cfg and cfg.data)
+    out(string.format("  session type=%s id=%s", tostring(sessionType), tostring(sessionID)))
+
+    local column = P:GetColumn(sessionType, "EnemyDamageTaken", sessionID)
+    if type(column) ~= "table" then
+        out("  enemy column: nil")
+        return nil
+    end
+    out(string.format("  enemy column: %d sources, reason=%s",
+        #column.sources, tostring(column.reason)))
+    reportEnemyDisplayTypes(column)
+    if #column.sources == 0 then
+        out("  |cffff2020no enemies|r — either the session holds none, or every one")
+        out("  was dropped by the provider's `sourceGUID == nil` guard.")
+        return nil
+    end
+    -- `identified`: how many enemies could be ASKED about at all (else the walk's
+    -- first failure and its last read the same).
+    return { column = column, sessionType = sessionType, sessionID = sessionID,
+             withDetail = 0, withSpells = 0, withDetails = 0, identified = 0, names = {} }
+end
+
+--- Count one detail's spells into the walk, sampling up to six caster names.
+--- @return number  the spells counted
+local function tallySpells(source, walk)
+    local Secrets = NS.Secrets
+    local spells = 0
+    Secrets.SafeIterate(source.combatSpells, function(_, spell)
+        if type(spell) ~= "table" then return end
+        spells = spells + 1
+        local d = spell.combatSpellDetails
+        if not Secrets.CanAccessTable(d) then return end
+        walk.withDetails = walk.withDetails + 1
+        local n = d.unitName
+        if n ~= nil and Secrets.CanAccess(n) and type(n) == "string" and #walk.names < 6 then
+            walk.names[#walk.names + 1] = n
+        end
+    end)
+    return spells
+end
+
+--- An enemy's identifiers, each nil unless a legal key, plus the two answers.
+--- `plainGUID`, not `safe`: this file's module-level `safe` means "printable". The
+--- creature ID gets the GUID's gate: it is SECRET in a pull, and forwarding a
+--- secret one raised `bad argument #4` here and on the tooltip's render path
+--- (see modules/Targets.lua).
+local function enemyIds(enemy)
+    local Secrets = NS.Secrets
+    local guid, creatureID = enemy.guid, enemy.creatureID
+    local plainGUID = Secrets and Secrets.IsSafeKey(guid)
+    local safeID = Secrets and Secrets.IsSafeKey(creatureID)
+    return plainGUID and guid or nil, safeID and creatureID or nil, plainGUID, safeID
+end
+
+--- Print one enemy's line, then ask for and count its detail.
+local function probeEnemy(P, walk, i, enemy)
+    local guid, creatureID, plainGUID, safeID = enemyIds(enemy)
+    out(string.format("  [%d] name=%s guid=%s creatureID=%s display=%s class=%s",
+        i, shown(enemy.name), plainGUID and "plain" or "secret/absent",
+        safeID and tostring(creatureID) or "secret/absent",
+        shown(enemy.sourceDisplayType), shown(enemy.classFilename)))
+
+    local source
+    if plainGUID or safeID then
+        walk.identified = walk.identified + 1
+        source = P:GetSourceDetail(walk.sessionType, "EnemyDamageTaken", guid, creatureID, walk.sessionID)
+    end
+    if type(source) ~= "table" then
+        out("        detail: nil")
+        return
+    end
+    walk.withDetail = walk.withDetail + 1
+    local spells = tallySpells(source, walk)
+    if spells > 0 then walk.withSpells = walk.withSpells + 1 end
+    out(string.format("        detail: yes, %d spells", spells))
+end
+
+--- WHERE THE WALK DIED DECIDES WHAT THIS MEANS, and conflating the two readings
+--- is how a live report came back accusing the client of a missing field it in
+--- fact carries. In a pull BOTH identifiers on every enemy are secret, so
+--- `GetSourceDetail` is never called, so no spell is ever seen — and the old
+--- verdict read that silence as "this build does not carry the caster". The same
+--- client, out of combat, hands over the caster name immediately. Only a walk
+--- that actually REACHED spells can say anything about the field.
+local function reportTargetsVerdict(walk)
+    if walk.identified == 0 then
+        out("  |cffffd100no enemy had a readable GUID or creature ID|r — both are")
+        out("  secret for the whole of a pull, so the walk stops before it reaches")
+        out("  a spell. This says nothing about the build; re-run out of combat.")
+    elseif walk.withDetail == 0 then
+        out("  |cffff2020every source detail came back nil|r — the identifiers were")
+        out("  readable but resolved to nothing.")
+    elseif walk.withDetails == 0 then
+        out("  |cffff2020no combatSpellDetails on any spell|r — this build does not")
+        out("  carry the caster, and the cross-reference cannot work at all.")
+    end
+end
+
+--- The caster names the walk saw, then the roster's: the comparison that decides
+--- it. A realm suffix on one side only fails every match while both look right.
+local function reportTargetNames(sampleNames)
+    if #sampleNames > 0 then
+        out("  caster names seen: " .. table.concat(sampleNames, ", "))
+    else
+        out("  caster names seen: none readable")
+    end
+
+    local roster = NS.Roster and NS.Roster.GetGroup and NS.Roster.GetGroup()
+    if roster then
+        local names = {}
+        for i = 1, math.min(#roster, 6) do names[#names + 1] = tostring(roster[i].name) end
+        out("  roster names:      " .. table.concat(names, ", "))
+        out("  ^ these two lists must match EXACTLY for a target row to appear.")
+    end
+end
+
 --- Walk the enemy column the way modules/Targets.lua does, and say where it dies.
 ---
 --- The section has five places it can silently produce nothing, and they are
@@ -776,116 +893,16 @@ local function reportTargets()
         return
     end
 
-    local windows = NS.Database and NS.Database.GetWindows and NS.Database.GetWindows()
-    local cfg = windows and windows[1]
-    local sessionType = (cfg and cfg.data and cfg.data.sessionType) or 1
-    local sessionID   = NS.Database.PinnedSegment(cfg and cfg.data)
-    out(string.format("  session type=%s id=%s", tostring(sessionType), tostring(sessionID)))
-
-    local column = P:GetColumn(sessionType, "EnemyDamageTaken", sessionID)
-    if type(column) ~= "table" then
-        out("  enemy column: nil")
-        return
-    end
-    out(string.format("  enemy column: %d sources, reason=%s",
-        #column.sources, tostring(column.reason)))
-    reportEnemyDisplayTypes(column)
-    if #column.sources == 0 then
-        out("  |cffff2020no enemies|r — either the session holds none, or every one")
-        out("  was dropped by the provider's `sourceGUID == nil` guard.")
-        return
-    end
-
-    local Secrets = NS.Secrets
-    local withDetail, withSpells, withDetails, sampleNames = 0, 0, 0, {}
-    -- How many enemies could be ASKED about at all. Without this the walk's
-    -- first failure and its last were reported as the same thing.
-    local identified = 0
-
-    for i = 1, math.min(#column.sources, 8) do
-        local enemy = column.sources[i]
-        local guid = enemy.guid
-        -- Named for what it answers, and not `safe`: this file now has a
-        -- module-level `safe` for "printable", and a local shadowing it made two
-        -- different questions share one word.
-        local plainGUID = Secrets and Secrets.IsSafeKey(guid)
-        -- The creature ID gets the same gate as the GUID. It is plain out of
-        -- combat and SECRET in a pull, and forwarding a secret one is what
-        -- raised `bad argument #4` here and, more seriously, on the tooltip's
-        -- own render path — see modules/Targets.lua.
-        local creatureID = enemy.creatureID
-        local safeID = Secrets and Secrets.IsSafeKey(creatureID)
-        out(string.format("  [%d] name=%s guid=%s creatureID=%s display=%s class=%s",
-            i, shown(enemy.name), plainGUID and "plain" or "secret/absent",
-            safeID and tostring(creatureID) or "secret/absent",
-            shown(enemy.sourceDisplayType), shown(enemy.classFilename)))
-
-        local source = (plainGUID or safeID)
-            and P:GetSourceDetail(sessionType, "EnemyDamageTaken",
-                plainGUID and guid or nil, safeID and creatureID or nil, sessionID)
-            or nil
-        if plainGUID or safeID then identified = identified + 1 end
-        if type(source) ~= "table" then
-            out("        detail: nil")
-        else
-            withDetail = withDetail + 1
-            local spells = 0
-            Secrets.SafeIterate(source.combatSpells, function(_, spell)
-                if type(spell) ~= "table" then return end
-                spells = spells + 1
-                local d = spell.combatSpellDetails
-                if Secrets.CanAccessTable(d) then
-                    withDetails = withDetails + 1
-                    local n = d.unitName
-                    if n ~= nil and Secrets.CanAccess(n) and type(n) == "string"
-                        and #sampleNames < 6 then
-                        sampleNames[#sampleNames + 1] = n
-                    end
-                end
-            end)
-            if spells > 0 then withSpells = withSpells + 1 end
-            out(string.format("        detail: yes, %d spells", spells))
-        end
+    local walk = targetsColumn(P)
+    if not walk then return end
+    for i = 1, math.min(#walk.column.sources, 8) do
+        probeEnemy(P, walk, i, walk.column.sources[i])
     end
 
     out(string.format("  enemies with a detail: %d · with spells: %d · spells carrying combatSpellDetails: %d",
-        withDetail, withSpells, withDetails))
-
-    -- WHERE THE WALK DIED DECIDES WHAT THIS MEANS, and conflating the two
-    -- readings is how a live report came back accusing the client of a missing
-    -- field it in fact carries. In a pull BOTH identifiers on every enemy are
-    -- secret, so `GetSourceDetail` is never called, so no spell is ever seen —
-    -- and the old verdict read that silence as "this build does not carry the
-    -- caster". The same client, out of combat, hands over the caster name
-    -- immediately. Only a walk that actually REACHED spells can say anything
-    -- about the field.
-    if identified == 0 then
-        out("  |cffffd100no enemy had a readable GUID or creature ID|r — both are")
-        out("  secret for the whole of a pull, so the walk stops before it reaches")
-        out("  a spell. This says nothing about the build; re-run out of combat.")
-    elseif withDetail == 0 then
-        out("  |cffff2020every source detail came back nil|r — the identifiers were")
-        out("  readable but resolved to nothing.")
-    elseif withDetails == 0 then
-        out("  |cffff2020no combatSpellDetails on any spell|r — this build does not")
-        out("  carry the caster, and the cross-reference cannot work at all.")
-    end
-
-    if #sampleNames > 0 then
-        out("  caster names seen: " .. table.concat(sampleNames, ", "))
-    else
-        out("  caster names seen: none readable")
-    end
-
-    -- The comparison that actually decides it. A realm suffix on one side and not
-    -- the other makes every match fail while both strings look right in print.
-    local roster = NS.Roster and NS.Roster.GetGroup and NS.Roster.GetGroup()
-    if roster then
-        local names = {}
-        for i = 1, math.min(#roster, 6) do names[#names + 1] = tostring(roster[i].name) end
-        out("  roster names:      " .. table.concat(names, ", "))
-        out("  ^ these two lists must match EXACTLY for a target row to appear.")
-    end
+        walk.withDetail, walk.withSpells, walk.withDetails))
+    reportTargetsVerdict(walk)
+    reportTargetNames(walk.names)
 end
 
 -- ---------------------------------------------------------------------------

@@ -257,82 +257,61 @@ local function accumulateEnemy(source, key, byPlayer)
     return ok
 end
 
---- Every player's target list for one session, built in a single walk.
+--- An enemy's two identifiers, each nil unless it is a legal key.
 ---
---- Answers nil for all of "no provider", "no enemy column" and "the values may
---- not be read" — and a nil is NOT cached. Caching a refusal would pin the
---- section shut for the rest of the session: the next hover would find a live
---- cache key, read a nil map, and never retry once the restriction lifted.
+--- NEITHER IDENTIFIER MAY BE ASSUMED PLAIN, and this is the line that makes the
+--- section work mid-pull at all. A meter sourceGUID is secret and inaccessible
+--- for the whole of a pull (docs/data-flow.md §2), and handing one back to the
+--- API resolves nothing.
 ---
---- @param sessionType number
---- @param sessionID number|nil
---- @return table|nil  { [bareName] = { { name, total }, ... } }, ordered
-local function buildMap(sessionType, sessionID)
+--- The GUID was dropped here for that reason and the creature ID was forwarded
+--- beside it, on the belief that a `sourceCreatureID` is a plain number and never
+--- secret. IT IS NOT. In a live pull the client refuses the call outright — `bad
+--- argument #4 … Secret values are only allowed during untainted execution` — and
+--- because this runs on the render path, that raise took EVERY cell tooltip down
+--- with it, not just the Targets section. It looked plain only because it is
+--- plain out of combat, which is where it was read.
+---
+--- So both go through the same gate. Passing a secret and hoping is not an option
+--- for either argument.
+local function enemyIdentifiers(enemy)
     local Secrets = NS.Secrets
-    local P = provider()
-    if not (P and P.GetColumn and P.GetSourceDetail) then return nil end
+    local guid = enemy.guid
+    if not Secrets.IsSafeKey(guid) then guid = nil end
+    local creatureID = enemy.creatureID
+    if not Secrets.IsSafeKey(creatureID) then creatureID = nil end
+    return guid, creatureID
+end
 
-    -- "targets": the bracket this read runs inside, which is what makes the
-    -- column read's parent MIXED once a capture hovers a cell (issue #47).
-    local column = P:GetColumn(sessionType, ENEMY_STAT, sessionID, "targets")
-    if type(column) ~= "table" or type(column.sources) ~= "table" then return nil end
+--- Walk one enemy of the column into `byPlayer`.
+---
+--- @return string  "abandon" (the whole build is refused), "walked" (an answered
+---                 enemy, counted against ENEMY_LIMIT) or "skipped"
+local function walkEnemy(P, walk, index, enemy)
+    if type(enemy) ~= "table" then return "skipped" end
+    local guid, creatureID = enemyIdentifiers(enemy)
 
-    -- Keyed by POSITION in the enemy column, never by the enemy's GUID: a source
-    -- GUID is secret and inaccessible for the whole of a pull (docs/data-flow.md
-    -- §2), so keying on one raises. The index is ours, it is plain, and it is
-    -- unique across the walk — which is everything a key here has to be.
-    local byPlayer, names = {}, {}
-    local walked = 0
+    -- With neither identifier there is no way to ask about THIS enemy, and
+    -- asking with both nil does not fail — it answers for a different source,
+    -- whose numbers would be summed in as if they were this one's. Abandon, for
+    -- the same reason a restricted read below abandons: a wrong total is worse
+    -- than an absent section.
+    if guid == nil and creatureID == nil then return "abandon" end
 
-    for index = 1, #column.sources do
-        if walked >= ENEMY_LIMIT then break end
-        local enemy = column.sources[index]
-        if type(enemy) == "table" then
-            -- NEITHER IDENTIFIER MAY BE ASSUMED PLAIN, and this is the line
-            -- that makes the section work mid-pull at all. A meter sourceGUID is
-            -- secret and inaccessible for the whole of a pull (docs/data-flow.md
-            -- §2), and handing one back to the API resolves nothing.
-            --
-            -- The GUID was dropped here for that reason and the creature ID was
-            -- forwarded beside it, on the belief that a `sourceCreatureID` is a
-            -- plain number and never secret. IT IS NOT. In a live pull the
-            -- client refuses the call outright — `bad argument #4 … Secret
-            -- values are only allowed during untainted execution` — and because
-            -- this runs on the render path, that raise took EVERY cell tooltip
-            -- down with it, not just the Targets section. It looked plain only
-            -- because it is plain out of combat, which is where it was read.
-            --
-            -- So both go through the same gate. Passing a secret and hoping is
-            -- not an option for either argument.
-            local guid = enemy.guid
-            if not Secrets.IsSafeKey(guid) then guid = nil end
-            local creatureID = enemy.creatureID
-            if not Secrets.IsSafeKey(creatureID) then creatureID = nil end
+    local source = P:GetSourceDetail(walk.sessionType, ENEMY_STAT,
+        guid, creatureID, walk.sessionID)
+    if type(source) ~= "table" then return "skipped" end
+    walk.names[index] = enemy.name
+    -- Restricted. Abandon everything rather than return a partial sum: see this
+    -- file's header.
+    if not accumulateEnemy(source, index, walk.byPlayer) then return "abandon" end
+    return "walked"
+end
 
-            -- With neither identifier there is no way to ask about THIS enemy,
-            -- and asking with both nil does not fail — it answers for a
-            -- different source, whose numbers would be summed in as if they were
-            -- this one's. Abandon, for the same reason a restricted read below
-            -- abandons: a wrong total is worse than an absent section.
-            if guid == nil and creatureID == nil then return nil end
-
-            local source = P:GetSourceDetail(sessionType, ENEMY_STAT,
-                guid, creatureID, sessionID)
-            if type(source) == "table" then
-                walked = walked + 1
-                names[index] = enemy.name
-                if not accumulateEnemy(source, index, byPlayer) then
-                    -- Restricted. Abandon everything rather than return a
-                    -- partial sum: see this file's header.
-                    return nil
-                end
-            end
-        end
-    end
-
-    -- Each player's enemy map becomes an ordered array once, here, rather than
-    -- on every hover. Sorting is legal without asking: every amount was checked
-    -- accessible on the way in, and these are our own sums.
+--- Each player's enemy map as an ordered array, built once here rather than on
+--- every hover. Sorting is legal without asking: every amount was checked
+--- accessible on the way in, and these are our own sums.
+local function orderedMap(byPlayer, names)
     local map = {}
     for player, totals in pairs(byPlayer) do
         local list = {}
@@ -346,8 +325,99 @@ local function buildMap(sessionType, sessionID)
             map[player] = list
         end
     end
-
     return map
+end
+
+--- Every player's target list for one session, built in a single walk.
+---
+--- Answers nil for all of "no provider", "no enemy column" and "the values may
+--- not be read" — and a nil is NOT cached. Caching a refusal would pin the
+--- section shut for the rest of the session: the next hover would find a live
+--- cache key, read a nil map, and never retry once the restriction lifted.
+---
+--- @param sessionType number
+--- @param sessionID number|nil
+--- @return table|nil  { [bareName] = { { name, total }, ... } }, ordered
+local function buildMap(sessionType, sessionID)
+    local P = provider()
+    if not (P and P.GetColumn and P.GetSourceDetail) then return nil end
+
+    -- "targets": the bracket this read runs inside, which is what makes the
+    -- column read's parent MIXED once a capture hovers a cell (issue #47).
+    local column = P:GetColumn(sessionType, ENEMY_STAT, sessionID, "targets")
+    if type(column) ~= "table" or type(column.sources) ~= "table" then return nil end
+
+    -- Keyed by POSITION in the enemy column, never by the enemy's GUID: a source
+    -- GUID is secret and inaccessible for the whole of a pull (docs/data-flow.md
+    -- §2), so keying on one raises. The index is ours, it is plain, and it is
+    -- unique across the walk — which is everything a key here has to be.
+    local walk = { sessionType = sessionType, sessionID = sessionID, byPlayer = {}, names = {} }
+    local walked = 0
+
+    for index = 1, #column.sources do
+        if walked >= ENEMY_LIMIT then break end
+        local outcome = walkEnemy(P, walk, index, column.sources[index])
+        if outcome == "abandon" then return nil end
+        if outcome == "walked" then walked = walked + 1 end
+    end
+
+    return orderedMap(walk.byPlayer, walk.names)
+end
+
+--- The hovered name, bare, or nil when there is no comparison to make.
+---
+--- The hovered name is ConditionalSecret too, and it is what every spell row is
+--- matched against — so an unreadable one means there is no comparison to make,
+--- which is the same nil as everything else. Both sides go through the same
+--- normalizer, so it does not matter which of them carried a realm.
+local function hoveredName(player)
+    local Secrets = NS.Secrets
+    if not (Secrets and Secrets.CanAccess and Secrets.CanAccess(player)) then return nil end
+    if type(player) ~= "string" or player == "" then return nil end
+    return bareName(player)
+end
+
+--- The session's map, from the cache or freshly built; nil for a refused build.
+---
+--- A REFUSED build stores nothing. Note what is actually load-bearing here,
+--- because it is not this branch: a nil map is re-derived on the very next call
+--- regardless, since the lookup answers nil for "no key" and "key present, map
+--- nil" alike. So the section cannot be pinned shut by a refusal even if the nil
+--- WERE stored. Not storing is the cheaper spelling of the same thing, not the
+--- guarantee — the guarantee is the recheck.
+local function sessionMap(window)
+    local sessionType, sessionID = sessionTypeOf(window), sessionIDOf(window)
+    local key = cacheKey(sessionType, sessionID)
+    if cache.key == key and cache.map ~= nil then return cache.map end
+    local map = buildMap(sessionType, sessionID)
+    if map ~= nil then cache.key, cache.map = key, map end
+    return map
+end
+
+--- A COPY of the first `limit` entries, always. The cached list outlives this
+--- call and is handed to every later hover of the same player, so trimming it in
+--- place would make the first hover at a cap of three permanently delete the
+--- fourth target for every window and every cap after it.
+local function trimmedCopy(built, limit)
+    local cap = (type(limit) == "number" and limit >= 1) and limit or #built
+    if cap > #built then cap = #built end
+    local list = {}
+    for i = 1, cap do list[i] = built[i] end
+    return list
+end
+
+-- What forPlayer answers when the hovered name could not be compared at all,
+-- which returns before the perf bracket, as it always has.
+local NOT_ASKED = {}
+
+local function forPlayer(window, player, limit)
+    player = hoveredName(player)
+    if player == nil then return NOT_ASKED end
+    local map = sessionMap(window)
+    if map == nil then return nil end
+    local built = map[player]
+    if built == nil or #built == 0 then return nil end
+    return trimmedCopy(built, limit)
 end
 
 --- Every enemy `player` damaged, biggest first, or nil.
@@ -367,55 +437,11 @@ end
 --- @return table|nil  array of { name = string, total = number }, descending
 function Targets.ForPlayer(window, player, limit)
     local t0 = Perf.on and debugprofilestop()
-
-    local Secrets = NS.Secrets
-    -- The hovered name is ConditionalSecret too, and it is what every spell row
-    -- is matched against — so an unreadable one means there is no comparison to
-    -- make, which is the same nil as everything else.
-    if not (Secrets and Secrets.CanAccess and Secrets.CanAccess(player)) then return nil end
-    if type(player) ~= "string" or player == "" then return nil end
-    -- Both sides go through the same normalizer, so it does not matter which of
-    -- them carried a realm.
-    player = bareName(player)
-
-    local sessionType, sessionID = sessionTypeOf(window), sessionIDOf(window)
-    local key = cacheKey(sessionType, sessionID)
-
-    local map = (cache.key == key) and cache.map or nil
-    if map == nil then
-        map = buildMap(sessionType, sessionID)
-        -- A REFUSED build stores nothing and returns early.
-        --
-        -- Note what is actually load-bearing here, because it is not this
-        -- branch: a nil map is re-derived on the very next call regardless,
-        -- since the lookup above answers nil for "no key" and "key present,
-        -- map nil" alike. So the section cannot be pinned shut by a refusal
-        -- even if the nil WERE stored. This early return is the cheaper spelling
-        -- of the same thing, not the guarantee — the guarantee is the recheck.
-        if map == nil then
-            if t0 then Perf.Note("targets", debugprofilestop() - t0, "tooltip") end
-            return nil
-        end
-        cache.key, cache.map = key, map
-    end
-
-    local built = map[player]
-    if built == nil or #built == 0 then
-        if t0 then Perf.Note("targets", debugprofilestop() - t0, "tooltip") end
-        return nil
-    end
-
-    -- A COPY, always. The cached list outlives this call and is handed to every
-    -- later hover of the same player, so trimming it in place would make the
-    -- first hover at a cap of three permanently delete the fourth target for
-    -- every window and every cap after it.
-    local cap = (type(limit) == "number" and limit >= 1) and limit or #built
-    if cap > #built then cap = #built end
-
-    local list = {}
-    for i = 1, cap do list[i] = built[i] end
-
-    if t0 then Perf.Note("targets", debugprofilestop() - t0, "tooltip") end
+    local list = forPlayer(window, player, limit)
+    -- Noted on every path that reached a build or a lookup, exactly as before:
+    -- an unreadable hovered name returns before the bracket opens.
+    if t0 and list ~= NOT_ASKED then Perf.Note("targets", debugprofilestop() - t0, "tooltip") end
+    if list == NOT_ASKED then return nil end
     return list
 end
 

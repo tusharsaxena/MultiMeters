@@ -1379,3 +1379,20 @@ test("A refresh that changes nothing writes no [Aggregator] or [Render] line (qu
     assertEqual(countLines(NS, "[Aggregator]"), agg, "an unchanged pass wrote an [Aggregator] line")
     assertEqual(countLines(NS, "[Render]"), render, "an unchanged pass wrote a [Render] line")
 end)
+
+test("Render's empty notice is for a live grid only, and its pass line names the count", function()
+    -- Characterization (GI-MM-02), pinned before Render was brought under CCN 15:
+    -- an empty preview or breakdown shows no "Waiting" notice, and the one debug
+    -- line reads `window N drew D/E rows`, with ` (preview)` on a preview.
+    local inst, window = scene()
+    window:Render({}, true)
+    assertFalse(window.notice:IsShown(), "an empty preview said it was waiting for combat")
+    window:Render({}, false, true, "Title")
+    assertFalse(window.notice:IsShown(), "an empty breakdown said it was waiting for combat")
+    window:Render({}, false)
+    assertTrue(window.notice:IsShown(), "an empty live grid said nothing")
+
+    inst.NS.State.debug = true
+    window:Render({}, true)
+    assertEqual(countLines(inst.NS, "window " .. window.id .. " drew 0/0 rows (preview)"), 1)
+end)

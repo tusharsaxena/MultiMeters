@@ -332,7 +332,7 @@ badge and any count quoted in the docs must agree with it.
 - migrations: the v16 step run twice is a no-op, and never overwrites a US key
 - migrations: a fresh install stores frame.minimized and no British key
 
-### test_diagnostics.lua (29)
+### test_diagnostics.lua (33)
 
 - Diagnostics: the sections are handed to the LibKa0s helper, not run by hand
 - Diagnostics: the report carries both markers with the addon's brand
@@ -359,6 +359,10 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: an enemy column filed under None is described, not called a grid risk
 - Diagnostics: the enemies carrying a real player class are counted and named
 - Diagnostics: the enemies the grid's unowned gate would admit are counted (issue #56)
+- Diagnostics: a readable enemy whose detail is nil gets the detail-nil verdict
+- Diagnostics: spells with no combatSpellDetails get the missing-field verdict
+- Diagnostics: a walk that reaches casters names them beside the roster
+- Diagnostics: an empty enemy column says no enemies and stops
 - Diagnostics: a display-type check that could not run says so
 - Diagnostics: the provider-order probe reports a RANKED column as ranked
 - Diagnostics: the probe NAMES the position where the order breaks
@@ -1066,7 +1070,7 @@ badge and any count quoted in the docs must agree with it.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (63)
+### test_window.lua (64)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - BuildLayout computes every coordinate from config alone
@@ -1131,6 +1135,7 @@ badge and any count quoted in the docs must agree with it.
 - A pass with fewer entries releases exactly the surplus, and keeps the rest bound
 - A second pass re-anchors nothing until ApplyConfig moves the layout
 - A refresh that changes nothing writes no [Aggregator] or [Render] line (quiet steady state)
+- Render's empty notice is for a live grid only, and its pass line names the count
 
 ### test_window_header.lua (57)
 
@@ -1463,7 +1468,7 @@ badge and any count quoted in the docs must agree with it.
 - Tooltip channel: a cell rebuilt under a resting cursor speaks once per hover
 - Tooltip channel: a breakdown row under a resting cursor speaks once per hover
 
-### test_targets.lua (24)
+### test_targets.lua (28)
 
 - Targets: a player's enemies are recovered from the enemy column
 - Targets: one enemy's several spells are summed into one line
@@ -1489,6 +1494,10 @@ badge and any count quoted in the docs must agree with it.
 - Targets: a new session's numbers replace the old ones
 - Targets: the invalidating messages are actually subscribed
 - Targets: two sessions do not share a map
+- Targets: a cap that is not a positive number keeps the whole list
+- Targets: an empty or non-string hovered name answers nil
+- Targets: a zero total is not listed, and a player with only zeros gets nil
+- Targets: the walk stops at ENEMY_LIMIT (64) answered enemies
 
 ### test_tooltip.lua (20)
 
@@ -1639,7 +1648,7 @@ badge and any count quoted in the docs must agree with it.
 - Tooltip: a stat key the catalog does not know heads with the key itself
 - Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block
 
-### test_drilldown.lua (61)
+### test_drilldown.lua (62)
 
 - DrillDown.IsActive is a PLAIN BOOLEAN, in both directions
 - Enter captures PLAIN identity fields, never a reference to the row
@@ -1702,6 +1711,7 @@ badge and any count quoted in the docs must agree with it.
 - The exit toggle is answered BEFORE the Deaths ladder is climbed
 - Switching out of a deaths view replaces the state, it does not merge into it
 - BuildRows on every refresh while drilled in logs its rows line once, not once per pass
+- BuildRows' rows line names the stat and the count, and the deaths branch says so
 
 ### test_export.lua (94)
 
@@ -2429,7 +2439,7 @@ badge and any count quoted in the docs must agree with it.
 | test_database.lua | 28 |
 | test_database_migrations.lua | 48 |
 | test_migrations.lua | 8 |
-| test_diagnostics.lua | 29 |
+| test_diagnostics.lua | 33 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
@@ -2453,7 +2463,7 @@ badge and any count quoted in the docs must agree with it.
 | test_aggregator_identity.lua | 32 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 63 |
+| test_window.lua | 64 |
 | test_window_header.lua | 57 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 33 |
@@ -2464,12 +2474,12 @@ badge and any count quoted in the docs must agree with it.
 | test_row_namecell.lua | 30 |
 | test_row_cells.lua | 1 |
 | test_row_mouse.lua | 17 |
-| test_targets.lua | 24 |
+| test_targets.lua | 28 |
 | test_tooltip.lua | 20 |
 | test_tooltip_lines.lua | 37 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
-| test_drilldown.lua | 61 |
+| test_drilldown.lua | 62 |
 | test_export.lua | 94 |
 | test_export_modal.lua | 32 |
 | test_visibility.lua | 44 |
@@ -2493,4 +2503,4 @@ badge and any count quoted in the docs must agree with it.
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 9 |
 | test_lizard_sighted.lua | 8 |
-| **Total** | **2159** |
+| **Total** | **2169** |

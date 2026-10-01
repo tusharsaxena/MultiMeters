@@ -864,3 +864,24 @@ test("BuildRows on every refresh while drilled in logs its rows line once, not o
     end
     assertEqual(n, 1, "an unchanged drill view was logged on every pass")
 end)
+
+test("BuildRows' rows line names the stat and the count, and the deaths branch says so", function()
+    -- Characterization (GI-MM-02): the two lines' exact shapes.
+    local inst, cfg = bench()
+    local D = inst.NS.DrillDown
+    inst.NS.State.debug = true
+    D:Enter(cfg, playerRow(), "DamageDone")
+    D:BuildRows(cfg)
+    D:Exit(cfg)
+    withRecaps(inst)
+    D:OnCellClick(cfg, deadRow{ 29, 28 }, "Deaths")
+    D:BuildRows(cfg)
+    local spells, deaths
+    for _, line in ipairs(inst.NS.DebugLog.buffer) do
+        line = tostring(line)
+        if line:find("rows window=" .. cfg.id .. " stat=DamageDone n=3", 1, true) then spells = true end
+        if line:find("rows window=" .. cfg.id .. " stat=Deaths kind=deaths n=2", 1, true) then deaths = true end
+    end
+    assertTrue(spells, "the spells line lost its shape")
+    assertTrue(deaths, "the deaths line lost its shape")
+end)

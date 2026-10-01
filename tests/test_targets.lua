@@ -591,3 +591,44 @@ test("Targets: two sessions do not share a map", function()
     assertEqual(inst.NS.Targets.ForPlayer(cfg, "Alpha", 5)[1].total, 4242,
         "a second segment was served the first segment's map")
 end)
+
+-- ---------------------------------------------------------------------------
+-- Characterization (GI-MM-02): edges of ForPlayer and buildMap pinned before
+-- the two were brought under CCN 15
+-- ---------------------------------------------------------------------------
+
+test("Targets: a cap that is not a positive number keeps the whole list", function()
+    local inst, cfg = bench{
+        { name = "A", hits = { { caster = "Alpha", amount = 10 } } },
+        { name = "B", hits = { { caster = "Alpha", amount = 20 } } },
+    }
+    assertEqual(#inst.NS.Targets.ForPlayer(cfg, "Alpha", 0), 2, "a zero cap trimmed")
+    assertEqual(#inst.NS.Targets.ForPlayer(cfg, "Alpha", "3"), 2, "a string cap trimmed")
+    assertEqual(#inst.NS.Targets.ForPlayer(cfg, "Alpha", nil), 2, "no cap trimmed")
+    assertEqual(#inst.NS.Targets.ForPlayer(cfg, "Alpha", 9), 2, "a cap above the list padded it")
+end)
+
+test("Targets: an empty or non-string hovered name answers nil", function()
+    local inst, cfg = bench{ { name = "A", hits = { { caster = "Alpha", amount = 10 } } } }
+    assertEqual(inst.NS.Targets.ForPlayer(cfg, ""), nil)
+    assertEqual(inst.NS.Targets.ForPlayer(cfg, 42), nil)
+end)
+
+test("Targets: a zero total is not listed, and a player with only zeros gets nil", function()
+    local inst, cfg = bench{
+        { name = "A", hits = { { caster = "Alpha", amount = 0 }, { caster = "Beta", amount = 5 } } },
+    }
+    assertEqual(inst.NS.Targets.ForPlayer(cfg, "Alpha"), nil, "a zero total was listed")
+    assertEqual(#inst.NS.Targets.ForPlayer(cfg, "Beta"), 1)
+end)
+
+test("Targets: the walk stops at ENEMY_LIMIT (64) answered enemies", function()
+    local enemies = {}
+    for i = 1, 70 do
+        enemies[i] = { name = "E" .. i, hits = { { caster = "Alpha", amount = i } } }
+    end
+    local inst, cfg = bench(enemies)
+    local list = inst.NS.Targets.ForPlayer(cfg, "Alpha")
+    assertEqual(#list, 64, "the walk did not stop at the limit")
+    assertEqual(list[1].name, "E64", "the biggest walked enemy is the 64th")
+end)
