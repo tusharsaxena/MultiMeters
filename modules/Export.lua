@@ -872,60 +872,26 @@ function Export.NoteSystemMessage(message)
     return true
 end
 
---- Put a set of chat lines where the player asked for them.
+--- LOCAL PRINTING IS NOT A SEND and is not throttled: NS.Print writes straight
+--- into the player's own chat frame, reaches nobody, and the server never
+--- sees it. This is also the path a client with no chat sender takes, so an
+--- export there degrades to "printed to yourself" rather than to silence —
+--- and says so first, since the player asked for a channel and got none.
 ---
---- SELF goes through NS.Print, which is the addon's prefixed chat printer and
---- reaches nobody else. Everything else goes through the sender
---- NS.Compat.ChatSender resolves (C_ChatInfo.SendChatMessage, else the
---- deprecated global) one line at a time — the API's 255-byte ceiling is per
---- message, and no line built above comes close, because every field in one is
---- a formatted number or a player name.
----
---- Falls back to printing when the client has no sender at all (the headless
---- harness does not define one), so a test of the caller does not need a stub
---- to avoid an error. When a real channel was asked for, one notice line says
---- so first: a RAID export that silently printed to the player would look sent
---- when nothing reached the raid. SELF says nothing, because nothing was lost.
---- A client with no C_Timer sends everything at once, which is the old behavior
---- and still better than not sending.
----
---- @param lines table|nil     array of strings
---- @param channel string|nil  a key from Const.EXPORT_CHANNELS
---- @param target string|nil   the whisper recipient
 --- @return boolean  whether anything was emitted
-function Export.Send(lines, channel, target)
-    if type(lines) ~= "table" or #lines == 0 then return false end
-
-    local chatType, to = Export.ResolveChannel(channel, target)
-    local send = chatType and NS.Compat and NS.Compat.ChatSender and NS.Compat.ChatSender()
-
-    -- LOCAL PRINTING IS NOT A SEND and is not throttled: NS.Print writes straight
-    -- into the player's own chat frame, reaches nobody, and the server never
-    -- sees it. This is also the path a client with no chat sender takes, so an
-    -- export there degrades to "printed to yourself" rather than to silence —
-    -- and says so first, since the player asked for a channel and got none.
-    if not send then
-        if not NS.Print then return false end
-        if chatType then
-            NS.Print(L["This client has no way to send chat messages, so the export was printed to you instead."])
-        end
-        traceExport("printed %d lines locally (asked for %s)", #lines, tostring(chatType or "SELF"))
-        for _, line in ipairs(lines) do NS.Print(line) end
-        return true
+local function printLocally(lines, chatType)
+    if not NS.Print then return false end
+    if chatType then
+        NS.Print(L["This client has no way to send chat messages, so the export was printed to you instead."])
     end
+    traceExport("printed %d lines locally (asked for %s)", #lines, tostring(chatType or "SELF"))
+    for _, line in ipairs(lines) do NS.Print(line) end
+    return true
+end
 
-    -- A new send supersedes whatever the last one still had queued.
-    cancelQueue("superseded by a new send")
-    local generation = sendGeneration
-
-    local after = _G.C_Timer and _G.C_Timer.After
-    -- Inside the click or not at all: see "Getting a dump past the server".
-    if Export.NeedsHardwareEvent(chatType) or not after then
-        traceExport("sent %d lines to %s at once", #lines, chatType)
-        for _, line in ipairs(lines) do send(line, chatType, nil, to) end
-        return true
-    end
-
+--- Line 1 now, every later line on its own C_Timer.After, all of them dropped
+--- the moment a newer send moves `sendGeneration` on.
+local function sendStaggered(lines, chatType, to, send, after, generation)
     local last = #lines
     -- HELD AND FLUSHED, as a pair (debug-logging-§8, Diagnosis: deferred work).
     -- The hold line says a tail was queued; the flush line below says it went
@@ -956,6 +922,49 @@ function Export.Send(lines, channel, target)
             end
         end)
     end
+end
+
+--- Put a set of chat lines where the player asked for them.
+---
+--- SELF goes through NS.Print, which is the addon's prefixed chat printer and
+--- reaches nobody else. Everything else goes through the sender
+--- NS.Compat.ChatSender resolves (C_ChatInfo.SendChatMessage, else the
+--- deprecated global) one line at a time — the API's 255-byte ceiling is per
+--- message, and no line built above comes close, because every field in one is
+--- a formatted number or a player name.
+---
+--- Falls back to printing when the client has no sender at all (the headless
+--- harness does not define one), so a test of the caller does not need a stub
+--- to avoid an error. When a real channel was asked for, one notice line says
+--- so first: a RAID export that silently printed to the player would look sent
+--- when nothing reached the raid. SELF says nothing, because nothing was lost.
+--- A client with no C_Timer sends everything at once, which is the old behavior
+--- and still better than not sending.
+---
+--- @param lines table|nil     array of strings
+--- @param channel string|nil  a key from Const.EXPORT_CHANNELS
+--- @param target string|nil   the whisper recipient
+--- @return boolean  whether anything was emitted
+function Export.Send(lines, channel, target)
+    if type(lines) ~= "table" or #lines == 0 then return false end
+
+    local chatType, to = Export.ResolveChannel(channel, target)
+    local send = chatType and NS.Compat and NS.Compat.ChatSender and NS.Compat.ChatSender()
+    if not send then return printLocally(lines, chatType) end
+
+    -- A new send supersedes whatever the last one still had queued.
+    cancelQueue("superseded by a new send")
+    local generation = sendGeneration
+
+    local after = _G.C_Timer and _G.C_Timer.After
+    -- Inside the click or not at all: see "Getting a dump past the server".
+    if Export.NeedsHardwareEvent(chatType) or not after then
+        traceExport("sent %d lines to %s at once", #lines, chatType)
+        for _, line in ipairs(lines) do send(line, chatType, nil, to) end
+        return true
+    end
+
+    sendStaggered(lines, chatType, to, send, after, generation)
 
     -- Armed only for a whisper, and only while its own lines are still queued:
     -- the error this watches for is the server's answer to a name nobody is

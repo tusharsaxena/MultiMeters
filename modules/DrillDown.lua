@@ -669,6 +669,34 @@ local function deathRows(view)
     return rows
 end
 
+--- The source detail a spells view reads: a test row answers for itself (the
+--- provider has no such source, the same reason as modules/Tooltip.lua's copy of
+--- this branch), otherwise the provider's GetSourceDetail.
+local function spellSource(view)
+    local A = NS.Aggregator
+    local source = A and A.TestSourceDetail and A.TestSourceDetail(view.guid, view.statKey)
+    if source ~= nil then return source end
+    local P = provider()
+    return P and P.GetSourceDetail
+        and P:GetSourceDetail(view.sessionType, view.statKey, view.guid, nil, view.sessionID)
+end
+
+--- One row per accessible spell of `source`, in the API's order, capped.
+local function spellRows(source, view)
+    local rows = {}
+    if type(source) ~= "table" then return rows end
+    local Secrets = NS.Secrets
+    if not (Secrets and Secrets.SafeIterate) then return rows end
+    local maxAmount = source.maxAmount
+    Secrets.SafeIterate(source.combatSpells, function(_, spell)
+        if type(spell) ~= "table" then return end
+        if Secrets.CanAccessTable and not Secrets.CanAccessTable(spell) then return end
+        rows[#rows + 1] = spellRow(spell, view, maxAmount)
+        if #rows >= MAX_SPELL_ROWS then return false end
+    end)
+    return rows
+end
+
 --- The rows a window should draw while it is in a drill-down.
 ---
 --- Returns nil when the window is not drilled in, which is how
@@ -707,29 +735,7 @@ function DrillDown:BuildRows(window)
         return deathList, DrillDown.Title(window), true
     end
 
-    local P = provider()
-    -- A test row answers for itself; the provider has no such source. Same
-    -- reason as modules/Tooltip.lua's copy of this branch.
-    local A = NS.Aggregator
-    local source = A and A.TestSourceDetail and A.TestSourceDetail(view.guid, view.statKey)
-    if source == nil then
-        source = P and P.GetSourceDetail
-            and P:GetSourceDetail(view.sessionType, view.statKey, view.guid, nil, view.sessionID)
-    end
-
-    local rows = {}
-    if type(source) == "table" then
-        local Secrets = NS.Secrets
-        local maxAmount = source.maxAmount
-        if Secrets and Secrets.SafeIterate then
-            Secrets.SafeIterate(source.combatSpells, function(_, spell)
-                if type(spell) ~= "table" then return end
-                if Secrets.CanAccessTable and not Secrets.CanAccessTable(spell) then return end
-                rows[#rows + 1] = spellRow(spell, view, maxAmount)
-                if #rows >= MAX_SPELL_ROWS then return false end
-            end)
-        end
-    end
+    local rows = spellRows(spellSource(view), view)
 
     if t0 then Perf.Note("aggregate", debugprofilestop() - t0, "refresh") end
     if State.debug and NS.DebugSteady then

@@ -47,6 +47,7 @@ local function src(guid, total, opts)
         deathTimeSeconds = opts.deathTime,
         deathRecapID     = opts.recapID,
         sourceDisplayType = opts.displayType,
+        sourceCreatureID = opts.creatureID,
     }
 end
 
@@ -857,6 +858,90 @@ test("An ENEMY with a real player class is refused, class or no class", function
     local result = inst.NS.Aggregator.Build(makeWindow())
     assertEqual(#result, 1, "an enemy was promoted to a grid row on the strength of its class")
     assertEqual(result[1].guid, ALPHA)
+end)
+
+-- ---------------------------------------------------------------------------
+-- The None arm needs a companion IDENTITY, not only a class (issue #56)
+-- ---------------------------------------------------------------------------
+--
+-- "A mob would have to report None AND carry a genuine class filename" was the
+-- safety argument for the delve-companion rule, and it is false: the PvP Training
+-- Dummy (creature 243211) reports None with class WARRIOR. So a None source is
+-- admitted only with a real class AND an identity that says it is one of ours: a
+-- Player- GUID, or a creature id in Constants.COMPANION_CREATURE_IDS.
+
+local NONE_DUMMY_GUID = "Creature-0-1-2-3-243211-0000ABCDEF"
+
+test("A classed NPC filed under None is refused in DamageDone (issue #56)", function()
+    -- red under: companionClass admitting on the class alone.
+    local inst = loaded()
+    install(inst, {
+        src(ALPHA, 100),
+        src(NONE_DUMMY_GUID, 90, { name = "PvP Training Dummy", class = "WARRIOR",
+            creatureID = 243211,
+            displayType = inst.mocks.Enum.DamageMeterSourceDisplayType.None }),
+    }, { maxAmount = 100, totalAmount = 190 })
+
+    local result = inst.NS.Aggregator.Build(makeWindow())
+    assertEqual(#result, 1, "a classed training dummy reached the grid")
+    assertEqual(result[1].guid, ALPHA)
+end)
+
+test("A classed None NPC with no creature id is refused on its GUID's npc field", function()
+    -- The GUID's sixth field is the npc id; a GUID naming an id the allowlist does
+    -- not carry is no companion, even when sourceCreatureID is absent.
+    -- red under: companionClass admitting on the class alone.
+    local inst = loaded()
+    install(inst, {
+        src(ALPHA, 100),
+        src("Creature-0-1-2-3-99999-0000000001", 90, { name = "Gladiator", class = "PALADIN",
+            displayType = inst.mocks.Enum.DamageMeterSourceDisplayType.None }),
+    }, { maxAmount = 100, totalAmount = 190 })
+
+    local result = inst.NS.Aggregator.Build(makeWindow())
+    assertEqual(#result, 1, "a classed None NPC without an allowlisted id reached the grid")
+end)
+
+test("A companion is admitted on an allowlisted creature id when its GUID names none", function()
+    -- The creature-id half of the identity: the GUID below has no npc field to
+    -- parse, so only sourceCreatureID can say this is Valeera.
+    local inst = loaded()
+    install(inst, {
+        src(ALPHA, 100),
+        src("Creature-0-3748", 80, { name = "Valeera Sanguinar", class = "ROGUE",
+            creatureID = 248567,
+            displayType = inst.mocks.Enum.DamageMeterSourceDisplayType.None }),
+    }, { maxAmount = 100, totalAmount = 180 })
+
+    local result = inst.NS.Aggregator.Build(makeWindow())
+    assertEqual(#result, 2, "the allowlisted companion was dropped")
+end)
+
+test("A Player- GUID filed under None with a real class is still admitted", function()
+    -- A player is an identity the GUID states outright; the allowlist is for NPCs.
+    local inst = loaded()
+    install(inst, {
+        src(ALPHA, 100),
+        src("Player-2-0000BEEF", 90, { name = "Helper", class = "PALADIN",
+            displayType = inst.mocks.Enum.DamageMeterSourceDisplayType.None }),
+    }, { maxAmount = 100, totalAmount = 190 })
+
+    local result = inst.NS.Aggregator.Build(makeWindow())
+    assertEqual(#result, 2, "a None-filed player was refused")
+end)
+
+test("The Valeera GUID's npc field is read through the pattern, not a guessed shape", function()
+    -- Other GUID kinds (Pet-, Vehicle-) simply do not match the Creature- pattern.
+    local A = loaded().NS.Aggregator._identity
+    assertTrue(A.companionIdentity({ guid = "Creature-0-3748-2933-99554-248567-0000075FD2" }),
+        "Valeera's GUID is not recognized")
+    assertTrue(A.companionIdentity({ guid = "Player-1-0000000A" }), "a Player- GUID is an identity")
+    assertTrue(A.companionIdentity({ creatureID = 248567 }), "the allowlisted id alone is an identity")
+    assertEqual(A.companionIdentity({ guid = "Vehicle-0-3748-2933-99554-248567-0000075FD2" }), false,
+        "a Vehicle- GUID was parsed as a Creature-")
+    assertEqual(A.companionIdentity({ guid = NONE_DUMMY_GUID, creatureID = 243211 }), false,
+        "the dummy is an identity")
+    assertEqual(A.companionIdentity({}), false, "no identifier is an identity")
 end)
 
 test("A source with NO display type is refused, not assumed friendly", function()

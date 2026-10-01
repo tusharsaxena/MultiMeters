@@ -527,6 +527,28 @@ test("Schema: NS.NormalizeColumns is published for the migration ladder", functi
     assertEqual(NS.NormalizeColumns({}), nil, "it refuses what it cannot repair")
 end)
 
+test("Schema: NS.NormalizeColumns names each shape it refuses, and coerces enabled", function()
+    -- Characterization (GI-MM-02): every refusal branch, with its own message.
+    local NS = T.load().NS
+    local out, err = NS.NormalizeColumns("Deaths")
+    assertNil(out); assertTrue(err:find("not string", 1, true) ~= nil, err)
+    out, err = NS.NormalizeColumns({ { stat = "Deaths", enabled = true }, extra = 1 })
+    assertNil(out); assertTrue(err:find("no gaps", 1, true) ~= nil, err)
+    out, err = NS.NormalizeColumns({ { stat = "Deaths", enabled = true }, "Interrupts" })
+    assertNil(out); assertTrue(err:find("Column 2 is not a column", 1, true) ~= nil, err)
+    out, err = NS.NormalizeColumns({ { stat = "Deaths", enabled = false } })
+    assertNil(out); assertTrue(err:find("at least one column", 1, true) ~= nil, err)
+    out, err = NS.NormalizeColumns({ { stat = 7, enabled = true } })
+    assertNil(out); assertTrue(err:find("at least one column", 1, true) ~= nil,
+        "a non-string stat is dropped, leaving nothing enabled")
+
+    out = NS.NormalizeColumns({ { stat = "Deaths", enabled = 1 }, { stat = "Interrupts", enabled = "x" } })
+    assertEqual(out[1].enabled, true, "a truthy enabled is stored as true")
+    assertEqual(out[2].stat, "Interrupts")
+    assertEqual(out[2].enabled, true)
+    assertEqual(out[3].enabled, false, "the appended catalog rows are disabled")
+end)
+
 -- ---------------------------------------------------------------------------
 -- The instance argument (issue #49)
 -- ---------------------------------------------------------------------------

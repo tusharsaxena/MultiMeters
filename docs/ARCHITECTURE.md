@@ -298,6 +298,9 @@ thing is in it before opening it:
   death row carries nothing a real death's lacks, so the provider cannot filter one
   ([#25](https://github.com/tusharsaxena/MultiMeters/issues/25)); pet attribution has no owner link
   and is best-effort; the provider-order assumption is measured rather than proven.
+- **A new delve companion stays off the grid** until its creature id is added to
+  `Constants.COMPANION_CREATURE_IDS`, because a class alone no longer admits a `None` source
+  ([#56](https://github.com/tusharsaxena/MultiMeters/issues/56)).
 - **Deliberate ceilings.** English only, Retail only, a 40-row export cap, no in-window column drag
   editor (rule R3), wheel-only scrolling, a sticky roster, a drill-down list that is a snapshot, and
   session-only debug logging.

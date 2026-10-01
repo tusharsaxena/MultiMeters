@@ -54,6 +54,7 @@ local function src(guid, total, opts)
         deathTimeSeconds = opts.deathTime,
         deathRecapID     = opts.recapID,
         sourceDisplayType = opts.displayType,
+        sourceCreatureID = opts.creatureID,
     }
 end
 
@@ -751,4 +752,93 @@ test("A GUID pass publishes a count of zero too, because nothing was correlated"
 
     assertEqual(result.ambiguous, false, "a GUID pass is never ambiguous")
     assertEqual(result.ambiguousRows, 0)
+end)
+
+-- ---------------------------------------------------------------------------
+-- Identity mode refuses a classed None NPC whose creature id it can read (#56)
+-- ---------------------------------------------------------------------------
+--
+-- Mid-pull the GUID is secret, so identity mode used to admit every non-Enemy
+-- source. A classed None source whose creature id is PLAIN and not allowlisted is
+-- now refused; one whose identifiers are both secret is undecidable and keeps
+-- today's admission, so a mid-pull companion is never lost.
+
+test("Identity mode drops a classed None NPC with a plain, unlisted creature id", function()
+    -- red under: buildByIdentity refusing on isEnemySource alone.
+    local inst = loaded()
+    inst.mocks.setRestricted(true)
+    install(inst, {
+        src(ALPHA, 100, { class = "MAGE" }),
+        src("Creature-0-1-2-3-243211-0000ABCDEF", 90, { name = "PvP Training Dummy",
+            class = "WARRIOR", creatureID = 243211,
+            displayType = inst.mocks.Enum.DamageMeterSourceDisplayType.None }),
+    }, { statKey = "DamageDone", maxAmount = 100 })
+
+    local result = inst.NS.Aggregator.Build(makeWindow(), "refresh")
+    assertEqual(#result, 1, "the dummy is on the mid-pull grid")
+    assertEqual(inst.NS.Aggregator.LastPass(1).dropped, 1, "the refusal was not counted")
+end)
+
+test("Identity mode keeps a companion whose creature id is allowlisted", function()
+    local inst = loaded()
+    inst.mocks.setRestricted(true)
+    install(inst, {
+        src(ALPHA, 100, { class = "MAGE" }),
+        src("Creature-0-3748-2933-99554-248567-0000075FD2", 80, { name = "Valeera Sanguinar",
+            class = "ROGUE", creatureID = 248567,
+            displayType = inst.mocks.Enum.DamageMeterSourceDisplayType.None }),
+    }, { statKey = "DamageDone", maxAmount = 100 })
+
+    assertEqual(#inst.NS.Aggregator.Build(makeWindow()), 2, "the companion was dropped mid-pull")
+end)
+
+test("Identity mode still admits a classed None source whose identifiers are all secret", function()
+    -- Pins the status quo: undecidable is admitted, never refused.
+    local inst = loaded()
+    inst.mocks.setRestricted(true)
+    install(inst, {
+        src(ALPHA, 100, { class = "MAGE" }),
+        src("Creature-0-3748-2933-99554-248567-0000075FD2", 80, { name = "Valeera Sanguinar",
+            class = "ROGUE", creatureID = inst.mocks.secret(248567),
+            displayType = inst.mocks.Enum.DamageMeterSourceDisplayType.None }),
+    }, { statKey = "DamageDone", maxAmount = 100 })
+
+    assertEqual(#inst.NS.Aggregator.Build(makeWindow()), 2, "an undecidable source was refused")
+end)
+
+test("Identity mode does not refuse an Ally pet with an unlisted creature id", function()
+    -- The allowlist is for the None arm only; pets arrive as Ally.
+    local inst = loaded()
+    inst.mocks.setRestricted(true)
+    install(inst, {
+        src(ALPHA, 100, { class = "MAGE" }),
+        src("Creature-0-1-2-3-17252-0000000002", 40, { name = "Felguard", class = "WARLOCK",
+            creatureID = 17252,
+            displayType = inst.mocks.Enum.DamageMeterSourceDisplayType.Ally }),
+    }, { statKey = "DamageDone", maxAmount = 100 })
+
+    assertEqual(#inst.NS.Aggregator.Build(makeWindow()), 2, "an Ally pet was refused mid-pull")
+end)
+
+test("A refused None NPC takes no identity key, so it cannot collide with a player", function()
+    -- The collision sweep keys every source it keeps. A refused dummy sharing a
+    -- player's class and spec would otherwise make that player's key ambiguous and
+    -- blank their cell in the column the dummy appears in.
+    -- red under: sweepColumn keying every non-Enemy source.
+    local inst = loaded()
+    inst.mocks.setRestricted(true)
+    install(inst, { src(ALPHA, 100, { class = "WARRIOR" }) },
+        { statKey = "DamageDone", maxAmount = 100 })
+    install(inst, {
+        src(ALPHA, 50, { class = "WARRIOR" }),
+        src("Creature-0-1-2-3-243211-0000ABCDEF", 30, { name = "PvP Training Dummy",
+            class = "WARRIOR", creatureID = 243211,
+            displayType = inst.mocks.Enum.DamageMeterSourceDisplayType.None }),
+    }, { statKey = "HealingDone", maxAmount = 50 })
+
+    local result = inst.NS.Aggregator.Build(
+        makeWindow{ columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" })
+    assertEqual(#result, 1, "the dummy made a row")
+    assertTrue(not result.ambiguous, "the refused dummy collided with the warrior")
+    assertTrue(result[1].values.HealingDone ~= nil, "the warrior's healing cell was blanked")
 end)

@@ -408,6 +408,14 @@ Identity mode is built out of the fields Blizzard annotates `NeverSecret`:
   mobs off the grid: it builds rows from the *sort* column's source list, which holds allies. The
   companion admission in `modules/Aggregator.lua` guards on the same secrecy and therefore runs only
   out of combat, which is the only place the GUID join runs at all.
+- **Admission rules for a source nobody in the group owns** (`unownedAllyRow`, issue #56): an `Ally`
+  is admitted; a `None` source is admitted only with a class `RAID_CLASS_COLORS` knows AND a companion
+  identity (`companionIdentity`: a plain `Player-` GUID, or a plain creature id, from
+  `sourceCreatureID` or the GUID's npc field, in `Constants.COMPANION_CREATURE_IDS`); an `Enemy`, an
+  absent or secret display type, and everything else is dropped. Identity mode refuses through
+  `isForeignSource`: an `Enemy`, or a plain `None` source with a real class whose creature id or GUID
+  is plain and names no companion. A source whose identifiers are both secret is undecidable and
+  stays admitted, so a mid-pull companion is not lost, and a player is never refused.
 - **Pets are rows**, not folded contributions. The fold needs the owner link, the owner link needs a
   GUID, and there is none — so a pet appears as the source Blizzard reports, with its own name and
   numbers, and nothing is summed.

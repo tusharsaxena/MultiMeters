@@ -1252,6 +1252,17 @@ test("Export.Send does nothing with nothing to send", function()
     assertFalse(T.NS.Export.Send({}, "SELF"))
 end)
 
+test("Export.Send answers false, emitting nothing, with neither a sender nor a printer", function()
+    -- Characterization (GI-MM-02): the local-print fallback needs NS.Print.
+    local inst = T.load()
+    inst.mocks.C_ChatInfo = nil
+    inst.mocks.SendChatMessage = nil
+    inst.NS.Print = nil
+    local before = #inst.mocks.__chat
+    assertFalse(inst.NS.Export.Send({ "one" }, "RAID"))
+    assertEqual(#inst.mocks.__chat, before, "something was emitted")
+end)
+
 -- ---------------------------------------------------------------------------
 -- The segment's name
 -- ---------------------------------------------------------------------------

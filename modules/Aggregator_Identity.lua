@@ -40,7 +40,7 @@ local Const    = NS.Constants
 local Seam          = Aggregator._identity
 local newRow        = Seam.newRow
 local setCell       = Seam.setCell
-local isEnemySource = Seam.isEnemySource
+local isForeignSource = Seam.isForeignSource
 local plainTruth    = Seam.plainTruth
 local UNRANKED      = Seam.UNRANKED
 
@@ -252,7 +252,7 @@ local function sweepColumn(pass, statKey, collisions, keyOf)
     local keys = {}
     local seen = (not isCount) and {} or nil
     for i, src in ipairs(column.sources) do
-        if not isEnemySource(src) then
+        if not isForeignSource(src) then
             local key = identityKey(src)
             keys[i] = key
             if seen then
@@ -628,7 +628,7 @@ local function buildByIdentity(pass)
     local localGuid = Roster.LocalGUID()
 
     for index, src in ipairs(column.sources) do
-        if isEnemySource(src) then
+        if isForeignSource(src) then
             pass.dropped = pass.dropped + 1
         else
             local row = identityRow(pass, src, index, localGuid, pass.keyOf[sortKey][index])

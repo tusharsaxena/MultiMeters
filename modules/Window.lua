@@ -1210,6 +1210,60 @@ function WindowProto:SelfPin(entries, offset, isDrill)
         (self.config or {}).rows)
 end
 
+--- The scroll offset to draw from, clamped and stored back.
+---
+--- THE CLAMP LIVES HERE, and only here. `ScrollBy` applies the floor; this
+--- applies the ceiling, against the list actually being drawn rather than
+--- against a remembered count that a group change would have made stale.
+---
+--- Re-clamping every draw is what covers the list shrinking under a stationary
+--- offset, which happens constantly — a player leaves the group, a breakdown has
+--- fewer spells than the grid had rows — and an offset past the end would render
+--- an empty window that scrolling could not fix.
+local function clampScroll(win, count)
+    local offset = win.scrollOffset or 0
+    local maxOffset = win:MaxScroll(count)
+    if offset > maxOffset then offset = maxOffset end
+    if offset < 0 then offset = 0 end
+    win.scrollOffset = offset
+    return offset
+end
+
+--- Bind the visible slice of `entries` to row widgets, slot by slot.
+---
+--- @return number  the rows drawn
+local function drawSlice(win, entries, offset, isDrill)
+    local maxRows = win.layout.maxRows
+    -- "Always show yourself", against the slice actually drawn (see SelfPin).
+    local pin = win:SelfPin(entries, offset, isDrill)
+    local lastIndex = offset + maxRows
+
+    local drawn = 0
+    for i = 1 + offset, #entries do
+        if drawn >= maxRows then break end
+        local entry = slotEntry(entries, i, pin, lastIndex)
+        if entry then
+            drawn = drawn + 1
+            local row = win.pool.active[drawn] or win:Acquire()
+            win:PlaceRow(row, drawn)
+            row:Update(entry, drawn)
+        end
+    end
+    return drawn
+end
+
+--- The notice an EMPTY live grid shows.
+---
+--- An empty grid with no explanation reads as a broken addon. The meter is
+--- available (Refresh established that above), there is simply nothing in the
+--- session yet — which is the normal state between pulls. A preview and a
+--- breakdown say nothing.
+local function showWaiting(win, preview, isDrill)
+    if preview or isDrill then return end
+    win.notice:SetText(NS.GRAY .. L["Waiting for combat data..."] .. "|r")
+    win.notice:Show()
+end
+
 --- Put the aggregator's answer on screen.
 ---
 --- The percent text slot used to cost a second full session read per column per
@@ -1231,7 +1285,6 @@ function WindowProto:Render(entries, preview, isDrill, drillTitle)
     -- NO HideAll: rows stay bound across passes. Slot i reuses pool.active[i],
     -- the pool is asked only past it, and ReleaseSurplus returns the rest.
 
-    local layout = self.layout
     entries = entries or {}
 
     -- The back button belongs to modules/DrillDown.lua and is anchored into this
@@ -1252,44 +1305,11 @@ function WindowProto:Render(entries, preview, isDrill, drillTitle)
     -- only while a breakdown is open, so the grid's hover behavior is untouched.
     self.body:EnableMouse(isDrill and true or false)
 
-    -- THE CLAMP LIVES HERE, and only here. `ScrollBy` applies the floor; this
-    -- applies the ceiling, against the list actually being drawn rather than
-    -- against a remembered count that a group change would have made stale.
-    --
-    -- Re-clamping every draw is what covers the list shrinking under a
-    -- stationary offset, which happens constantly — a player leaves the group, a
-    -- breakdown has fewer spells than the grid had rows — and an offset past the
-    -- end would render an empty window that scrolling could not fix.
-    local offset = self.scrollOffset or 0
-    local maxOffset = self:MaxScroll(#entries)
-    if offset > maxOffset then offset = maxOffset end
-    if offset < 0 then offset = 0 end
-    self.scrollOffset = offset
-
-    -- "Always show yourself", against the slice actually drawn (see SelfPin).
-    local pin = self:SelfPin(entries, offset, isDrill)
-    local lastIndex = offset + layout.maxRows
-
-    local drawn = 0
-    for i = 1 + offset, #entries do
-        if drawn >= layout.maxRows then break end
-        local entry = slotEntry(entries, i, pin, lastIndex)
-        if entry then
-            drawn = drawn + 1
-            local row = self.pool.active[drawn] or self:Acquire()
-            self:PlaceRow(row, drawn)
-            row:Update(entry, drawn)
-        end
-    end
+    local offset = clampScroll(self, #entries)
+    local drawn = drawSlice(self, entries, offset, isDrill)
     self:ReleaseSurplus(drawn)
 
-    -- An empty grid with no explanation reads as a broken addon. The meter is
-    -- available (Refresh established that above), there is simply nothing in the
-    -- session yet — which is the normal state between pulls.
-    if drawn == 0 and not preview and not isDrill then
-        self.notice:SetText(NS.GRAY .. L["Waiting for combat data..."] .. "|r")
-        self.notice:Show()
-    end
+    if drawn == 0 then showWaiting(self, preview, isDrill) end
 
     -- Park the aggregate on the window so UpdateHeaderText can read the group
     -- total off it. The aggregator already computed the sort column's total

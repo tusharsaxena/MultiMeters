@@ -604,8 +604,9 @@ end
 --- TWO CONDITIONS, and neither is sufficient alone. The display type must be
 --- exactly `None` — an absent or secret one is not "probably a companion", it is
 --- an unknown, and unknowns keep being dropped. And the class must be one the
---- client itself recognizes, which is what separates a delve companion from a
---- humanoid mob that happens to reach this function.
+--- client itself recognizes. That is NOT enough to separate a delve companion
+--- from a mob -- issue #56 measured a classed training dummy filed under None --
+--- so companionClass below adds an identity test on top of this one.
 ---
 --- THE SECRECY GUARD IS NOT DEFENSIVE PADDING. `sourceDisplayType` is SECRET for
 --- the whole of a pull — a live `/mm diagnostics` mid-pull printed `display types:
@@ -622,7 +623,7 @@ end
 ---
 --- @param src table
 --- @return string|nil  the class filename, when it identifies a real class
-local function companionClass(src)
+local function realClass(src)
     local kind = src.sourceDisplayType
     if kind == nil or Secrets.IsSecret(kind) then return nil end
     if kind ~= Const.SOURCE_DISPLAY_TYPE.None then return nil end
@@ -637,6 +638,66 @@ local function companionClass(src)
     local classes = _G.RAID_CLASS_COLORS
     if type(classes) ~= "table" or classes[class] == nil then return nil end
     return class
+end
+
+local COMPANIONS = Const.COMPANION_CREATURE_IDS or {}
+
+--- The npc id in a plain Creature- GUID's sixth field, or nil. Pet-, Vehicle- and
+--- every other shape simply do not match.
+local function guidNpcID(guid)
+    return tonumber(guid:match("^Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-"))
+end
+
+--- Whether a source's own identifiers say it is one of ours (issue #56).
+---
+--- True for a plain Player- GUID, a plain creature id in
+--- Constants.COMPANION_CREATURE_IDS, or a plain Creature- GUID whose npc field is
+--- in that table. Every identifier is proved a legal key by Secrets.IsSafeKey
+--- before it is matched or indexed with; nothing here compares or concatenates a
+--- secret.
+---
+--- @param src table
+--- @return boolean
+local function companionIdentity(src)
+    local creatureID = src.creatureID
+    if Secrets.IsSafeKey(creatureID) and COMPANIONS[creatureID] ~= nil then return true end
+    local guid = src.guid
+    if not (Secrets.IsSafeKey(guid) and type(guid) == "string") then return false end
+    if guid:find("^Player%-") then return true end
+    local npc = guidNpcID(guid)
+    return npc ~= nil and COMPANIONS[npc] ~= nil
+end
+
+--- The class filename of a None-filed source that is one of ours, or nil.
+---
+--- A real class (realClass) AND a companion identity. The class alone was the
+--- rule until issue #56 measured a classed training dummy filed under None.
+local function companionClass(src)
+    local class = realClass(src)
+    if class == nil or not companionIdentity(src) then return nil end
+    return class
+end
+
+--- Whether identity mode must refuse this source (issue #56).
+---
+--- An Enemy, as before; or a None source with a real class whose creature id or
+--- GUID is plain and names no companion. A source whose identifiers are BOTH
+--- secret or absent is undecidable and stays admitted -- the mid-pull companion
+--- is not lost, and a player (no creature id, secret GUID) is never refused.
+local function isForeignSource(src)
+    if isEnemySource(src) then return true end
+    if realClass(src) == nil then return false end
+    if not (Secrets.IsSafeKey(src.creatureID) or Secrets.IsSafeKey(src.guid)) then return false end
+    return not companionIdentity(src)
+end
+
+--- Whether the GUID join's unowned-source gate (unownedAllyRow) would admit this
+--- source on its display type and identity: an Ally, or a companion. For
+--- `/mm diagnostics`, so the in-client check asks the same rule the grid does.
+local function admitsUnowned(src)
+    local kind = src.sourceDisplayType
+    if kind == nil or Secrets.IsSecret(kind) then return false end
+    return kind == Const.SOURCE_DISPLAY_TYPE.Ally or companionClass(src) ~= nil
 end
 
 --- A row for an ALLY nobody in the group owns.
@@ -684,10 +745,15 @@ end
 --- nor `Enemy`. The old comment here predicted this exact failure — "the failure
 --- mode is this fix doing nothing" — and this is it, four columns wide.
 ---
---- SO `None` IS ADMITTED, BUT ONLY WITH A REAL PLAYER CLASS ON IT, and the
---- narrowness is the point. `classFilename` is NeverSecret, so the test is legal
---- in a pull as well as out of it, and a mob would have to report `None` AND
---- carry a genuine class filename to slip through.
+--- SO `None` IS ADMITTED, BUT ONLY WITH A REAL PLAYER CLASS AND A COMPANION
+--- IDENTITY ON IT. `classFilename` is NeverSecret, so the class test is legal in
+--- a pull as well as out of it. The class alone was the rule until issue #56: the
+--- argument that "a mob would have to report `None` AND carry a genuine class
+--- filename" is false -- the PvP Training Dummy (creature 243211) does exactly
+--- that, class WARRIOR. So the source must also be a Player- GUID or carry a
+--- creature id in Constants.COMPANION_CREATURE_IDS (companionIdentity). A new
+--- companion with an unmeasured id stays off the grid until it is added: a
+--- visible absence, which the file's rule prefers to a mislabeled row.
 ---
 --- RAID_CLASS_COLORS is the oracle rather than a list of our own, because
 --- modules/Row.lua ALREADY looks a row up in that same table to color its bar
@@ -770,6 +836,11 @@ Aggregator._identity = {
     newRow        = newRow,
     setCell       = setCell,
     isEnemySource = isEnemySource,
+    -- Issue #56: identity mode refuses through this rather than isEnemySource, and
+    -- the tests and core/Diagnostics.lua ask the two predicates directly.
+    isForeignSource   = isForeignSource,
+    companionIdentity = companionIdentity,
+    admitsUnowned     = admitsUnowned,
     plainTruth    = plainTruth,
     UNRANKED      = UNRANKED,
 }

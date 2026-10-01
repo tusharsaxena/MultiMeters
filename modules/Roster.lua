@@ -421,6 +421,36 @@ local function logBuild(summary)
     end
 end
 
+--- Enter one unit of the walk into the three outputs, when it is a member.
+---
+--- @return number  the pets linked for it (0 when the unit is not entered)
+local function addMember(unit, group, byGuid, pets, seenMap)
+    if not unitExists(unit) then return 0 end
+    local guid = unitGUID(unit)
+    -- byGuid doubles as the duplicate filter for the raid case above:
+    -- the player appears as both "player" and "raidN", and the first
+    -- entry (which is "player", by construction) wins.
+    --
+    -- IsSafeKey covers the nil case and the secret case in one question,
+    -- and both mean the same thing here: this member cannot be joined on,
+    -- so it is left out rather than entered under a key that raises.
+    if not Secrets.IsSafeKey(guid) or byGuid[guid] ~= nil then return 0 end
+    local entry = {
+        guid          = guid,
+        unit          = unit,
+        name          = unitName(unit),
+        classFilename = unitClassFile(unit),
+        role          = unitRole(unit),
+        isPlayer      = (unit == "player"),
+    }
+    group[#group + 1] = entry
+    byGuid[guid] = entry
+    rememberMember(seenMap, entry)
+
+    -- Inside the member guard on purpose: see linkPetOf.
+    return linkPetOf(unit, guid, pets, seenMap)
+end
+
 --- Rebuild the group array, the GUID index and the pet-owner map.
 ---
 --- One pass, three outputs, because they are derived from the same unit walk and
@@ -434,32 +464,7 @@ local function build()
     local seenMap = remembered()
 
     for _, unit in ipairs(groupUnits()) do
-        if unitExists(unit) then
-            local guid = unitGUID(unit)
-            -- byGuid doubles as the duplicate filter for the raid case above:
-            -- the player appears as both "player" and "raidN", and the first
-            -- entry (which is "player", by construction) wins.
-            --
-            -- IsSafeKey covers the nil case and the secret case in one question,
-            -- and both mean the same thing here: this member cannot be joined on,
-            -- so it is left out rather than entered under a key that raises.
-            if Secrets.IsSafeKey(guid) and byGuid[guid] == nil then
-                local entry = {
-                    guid          = guid,
-                    unit          = unit,
-                    name          = unitName(unit),
-                    classFilename = unitClassFile(unit),
-                    role          = unitRole(unit),
-                    isPlayer      = (unit == "player"),
-                }
-                group[#group + 1] = entry
-                byGuid[guid] = entry
-                rememberMember(seenMap, entry)
-
-                -- Inside the member guard on purpose: see linkPetOf.
-                petCount = petCount + linkPetOf(unit, guid, pets, seenMap)
-            end
-        end
+        petCount = petCount + addMember(unit, group, byGuid, pets, seenMap)
     end
 
     -- AN UNDER-POPULATED BUILD IS NOT CACHED, and this is the fix for a window
