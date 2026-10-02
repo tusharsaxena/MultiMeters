@@ -682,6 +682,188 @@ test("Unlocking does not resurrect the grip on a collapsed window", function()
     end
 end)
 
+-- ---------------------------------------------------------------------------
+-- The grip's mechanics (MultiMeters#58). Pinned against the hand-rolled grip
+-- before it moved onto Core.MakeResizable, so the move is measured rather than
+-- assumed: the grip SIZES the anchor (rule R3) but is DRAWN on the frame (its
+-- strata, alpha and visibility), and the profile is written once per release.
+-- ---------------------------------------------------------------------------
+
+--- An unlocked, expanded window, so its grip is offered.
+local function unlockedScene()
+    local inst, window, cfg = scene()
+    cfg.frame.locked = false
+    cfg.frame.minimized = false
+    window:ApplyConfig()
+    return inst, window, cfg
+end
+
+test("The grip sizes the ANCHOR from BOTTOMRIGHT, never the visible frame", function()
+    -- Rule R3: the frame that holds the cells is never asked about or moved by
+    -- its own geometry; the bare anchor is.
+    -- red under: frame:StartSizing, or a grip wired to the frame it is drawn on.
+    local _, window = unlockedScene()
+    local stops = window.anchor.__stops or 0
+
+    window.grip:_run("OnMouseDown", "LeftButton")
+    assertEqual(window.anchor.__sizings, 1)
+    assertEqual(window.anchor.__lastSizingPoint, "BOTTOMRIGHT")
+    assertNil(window.frame.__sizings, "the value-carrying frame was sized directly")
+
+    window.grip:_run("OnMouseUp", "LeftButton")
+    assertEqual(window.anchor.__stops, stops + 1, "mouse-up did not stop the anchor's sizing")
+end)
+
+test("The grip is DRAWN on the visible frame, so it shares its strata, alpha and visibility",
+function()
+    -- The anchor is empty on purpose and carries none of the player's strata or
+    -- opacity, and a rule-driven show re-shows only the frame.
+    -- red under: a grip built on the anchor (MakeResizable without gripParent).
+    local _, window = unlockedScene()
+    assertTrue(window.grip:GetParent() == window.frame, "the grip is not the frame's child")
+    assertFalse(window.grip:GetParent() == window.anchor, "the grip hangs off the anchor")
+end)
+
+test("SaveSize runs once per grip release, never on OnSizeChanged or a config apply", function()
+    -- issue #49's one-write-per-drag contract, driven from the grip itself.
+    -- red under: SaveSize wired to every size change (the library's onResize).
+    local inst, window, cfg = unlockedScene()
+    local NS = inst.NS
+    local seam, writes = NS.SetByPaths, 0
+    NS.SetByPaths = function(...) writes = writes + 1; return seam(...) end
+
+    window.anchor:_run("OnSizeChanged", 640, 300)
+    window:ApplyConfig()
+    assertEqual(writes, 0, "a size tick or a config apply wrote the profile")
+
+    window.grip:_run("OnMouseDown", "LeftButton")
+    window.anchor:_run("OnSizeChanged", 640, 300)
+    window.grip:_run("OnMouseUp", "LeftButton")
+    assertEqual(writes, 1, "one write per release")
+    assertEqual(cfg.frame.width, 640)
+    assertEqual(cfg.frame.height, 300)
+
+    window.grip:_run("OnMouseUp", "LeftButton")
+    NS.SetByPaths = seam
+    assertEqual(writes, 1, "a stray mouse-up wrote again")
+end)
+
+test("A rule-driven hide then show keeps the grip on an unlocked window", function()
+    -- Hide puts the anchor away too, but RefreshVisibility's show branch shows
+    -- only the frame. A grip that depended on the anchor would stay gone.
+    -- red under: a grip parented to the anchor.
+    local _, window = unlockedScene()
+    window:Hide("rule")
+    assertFalse(window.grip:IsVisible(), "a hidden window still shows its grip")
+    window:RefreshVisibility()
+    assertTrue(window.frame:IsShown(), "the fixture's rules did not show the window again")
+    assertTrue(window.grip:IsVisible(), "the grip did not come back with the window")
+end)
+
+test("Lock and minimize both put the grip away, and unlock-and-expand brings it back", function()
+    -- ApplyLock and ApplyMinimized stay the grip's two visibility authors.
+    -- red under: either author dropping its SetShown.
+    local _, window, cfg = unlockedScene()
+    assertTrue(window.grip:IsShown())
+
+    cfg.frame.locked = true
+    window:ApplyConfig()
+    assertFalse(window.grip:IsShown(), "locking left the grip up")
+
+    cfg.frame.locked = false
+    cfg.frame.minimized = true
+    window:ApplyConfig()
+    assertFalse(window.grip:IsShown(), "minimizing left the grip up")
+
+    cfg.frame.minimized = false
+    window:ApplyConfig()
+    assertTrue(window.grip:IsShown(), "unlock and expand did not bring the grip back")
+end)
+
+test("The grip is the library's: left button only, pressed art, leveled above the frame",
+function()
+    -- Core.MakeResizable (Core minor 10) builds it and keeps it on the SIZED
+    -- frame as `resizeGrip`; this addon holds it as `window.grip`. Two behavior
+    -- changes from the hand-rolled grip are pinned here: only the left button
+    -- sizes, and the grip has a pressed state.
+    -- red under: a host-built grip, which answered every button.
+    local _, window = unlockedScene()
+    assertTrue(window.grip == window.anchor.resizeGrip, "the grip is not the library's")
+    assertEqual(window.grip.__pushedTexture, [[Interface\ChatFrame\UI-ChatIM-SizeGrabber-Down]])
+    assertEqual(window.grip:GetFrameLevel(), (window.frame:GetFrameLevel() or 0) + 10)
+
+    window.grip:_run("OnMouseDown", "RightButton")
+    assertNil(window.anchor.__sizings, "a right-click started sizing")
+end)
+
+test("A locked window's grip refuses to size even if something shows it", function()
+    -- `canResize` is defense in depth behind ApplyLock's hide: a later change
+    -- that shows the grip cannot make a locked window resizable. The refused
+    -- mouse-down leaves the mouse-up inert, so nothing is stopped or saved.
+    -- red under: no canResize passed to NS.MakeResizable.
+    local inst, window, cfg = unlockedScene()
+    local NS = inst.NS
+    cfg.frame.locked = true
+    window:ApplyConfig()
+    window.grip:Show()
+
+    local seam, writes = NS.SetByPaths, 0
+    NS.SetByPaths = function(...) writes = writes + 1; return seam(...) end
+    local stops = window.anchor.__stops or 0
+    window.grip:_run("OnMouseDown", "LeftButton")
+    window.anchor:_run("OnSizeChanged", 640, 300)
+    window.grip:_run("OnMouseUp", "LeftButton")
+    NS.SetByPaths = seam
+
+    assertNil(window.anchor.__sizings, "a locked window started sizing")
+    assertEqual(window.anchor.__stops or 0, stops, "a refused mouse-down still stopped")
+    assertEqual(writes, 0, "a refused mouse-down still saved")
+end)
+
+test("A resize alone leaves the anchor's user-placed flag as it was", function()
+    -- The library reads IsUserPlaced before StartSizing and restores it after the
+    -- stop, so a window that was only resized stays out of layout-local.txt.
+    -- red under: a grip that calls StartSizing without restoring the flag.
+    local _, window = unlockedScene()
+    window.anchor:SetUserPlaced(false)
+    window.grip:_run("OnMouseDown", "LeftButton")
+    assertTrue(window.anchor:IsUserPlaced(), "the fixture's StartSizing did not mark the frame")
+    window.grip:_run("OnMouseUp", "LeftButton")
+    assertFalse(window.anchor:IsUserPlaced(), "a resize alone left the anchor user-placed")
+end)
+
+test("The grip's library bounds are overwritten by the layout's in the same apply", function()
+    -- MakeResizable bounds the anchor at build (max = the screen); ApplyResizeBounds
+    -- runs after BuildFrame in every ApplyConfig and is the owner from then on:
+    -- the layout's minimum, no maximum.
+    -- red under: ApplyResizeBounds dropped, or run before BuildFrame.
+    local _, window = unlockedScene()
+    local minW, minH, maxW, maxH = window.anchor:GetResizeBounds()
+    assertEqual(minW, window.layout.minWidth)
+    assertEqual(minH, window.layout.minHeight)
+    assertNil(maxW); assertNil(maxH)
+end)
+
+test("Degraded: no grip, and lock, minimize and apply raise nothing", function()
+    -- With libs/LibKa0s absent the seam's MakeResizable answers nil (a stub must
+    -- not re-implement the library). Both visibility authors guard on the grip.
+    -- red under: a host fallback grip in the library-absent arm.
+    local inst = T.load{ libFiles = {} }
+    local cfg = inst.NS.Database.GetWindows()[1]
+    cfg.frame.locked = false
+    local window = inst.NS.Window.New(cfg)
+    assertNil(window.grip, "a degraded install built a grip")
+
+    cfg.frame.locked = true
+    window:ApplyConfig()
+    cfg.frame.locked = false
+    cfg.frame.minimized = true
+    window:ApplyConfig()
+    window:ApplyLock()
+    window:ApplyMinimized()
+    assertNil(window.grip)
+end)
+
 test("A window is locked exactly by its own Lock window; master.locked no longer pins it", function()
     -- General > Lock frame is a VIEW over every window's own lock now, not a
     -- second lock ORed over them. The OR was the bug: after `/mm lock` set every

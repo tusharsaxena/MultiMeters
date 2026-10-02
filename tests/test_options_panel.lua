@@ -845,6 +845,35 @@ test("Options: AceGUI is resolved once and published for the page builders", fun
     assertEqual(inst.NS.AceGUI, inst.mocks.__libs["AceGUI-3.0"])
 end)
 
+test("Options: the descriptor tells the library the FOLDER name (LibKa0s#42)", function()
+    -- `addonName` is the route OptionsIdList takes to this collection's own `info`
+    -- help-mark art (Media.Icon builds Interface\AddOns\<addonName>\libs\LibKa0s\...).
+    -- Nothing else on the descriptor is the folder: parentTitle is the brand and
+    -- mainPanelName is a frame name. The value must be the first vararg, never a
+    -- literal and never a display label like MasterControls' `addonName`. Latent
+    -- here today -- no IdList on these pages carries `help` -- but the first help
+    -- line anyone adds would otherwise draw the client's blue disc.
+    -- red under: `local _, NS = ...` with no `addonName = addonName,` on the descriptor.
+    local fh = assert(io.open((T.root or ".") .. "/settings/OptionsSetup.lua", "r"))
+    local src = fh:read("*a"):gsub("%-%-[^\r\n]*", "")
+    fh:close()
+    assertTrue(src:match("^%s*local%s+addonName%s*,%s*NS%s*=%s*%.%.%.") ~= nil,
+        "settings/OptionsSetup.lua must keep its first vararg as `addonName`")
+    local body = src:match("local%s+descriptor%s*=%s*(%b{})")
+    assertTrue(body ~= nil, "settings/OptionsSetup.lua no longer builds a `descriptor` table")
+    assertTrue(body:match("addonName%s*=%s*addonName%s*,") ~= nil,
+        "the Options descriptor does not pass addonName = addonName")
+end)
+
+test("Options: the help-mark art the descriptor points at is vendored on disk", function()
+    -- The library's loaded-addon guard catches a wrong folder name, not a wrong
+    -- vendor path: a missing file under the right folder still draws nothing.
+    -- red under: a re-vendor that drops libs/LibKa0s/media/icons/info.tga.
+    local fh = io.open((T.root or ".") .. "/libs/LibKa0s/media/icons/info.tga", "rb")
+    assertTrue(fh ~= nil, "libs/LibKa0s/media/icons/info.tga is missing")
+    if fh then fh:close() end
+end)
+
 test("Options: the shared LSM30_Border slot is re-registered once, above what AGSMW left in it",
 function()
     -- red under: dropping `lib.__PatchLSM30Border()` from the live wiring below the

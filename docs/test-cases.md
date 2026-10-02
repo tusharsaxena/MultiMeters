@@ -53,7 +53,7 @@ badge and any count quoted in the docs must agree with it.
 - texturepaths: every census row carries a disposition that can be followed
 - texturepaths: the deviation register carries the row the ColumnBlocks sites point at
 - texturepaths: the register row's ColumnBlocks citation names the lines the pair is on
-- texturepaths: the register carries a library-stack-§8 row for the Tooltip and Window declines
+- texturepaths: the register carries a library-stack-§8 row for the Tooltip decline
 
 ### test_docmap.lua (1)
 
@@ -332,7 +332,7 @@ badge and any count quoted in the docs must agree with it.
 - migrations: the v16 step run twice is a no-op, and never overwrites a US key
 - migrations: a fresh install stores frame.minimized and no British key
 
-### test_diagnostics.lua (33)
+### test_diagnostics.lua (35)
 
 - Diagnostics: the sections are handed to the LibKa0s helper, not run by hand
 - Diagnostics: the report carries both markers with the addon's brand
@@ -367,6 +367,8 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: the provider-order probe reports a RANKED column as ranked
 - Diagnostics: the probe NAMES the position where the order breaks
 - Diagnostics: the probe REFUSES mid-pull rather than reporting a false all-clear
+- Diagnostics: a secret renders as the library's sentinel, on both paths
+- Diagnostics: the zero-reader SECRET alias is gone
 
 ### test_diagnostics_deathrecap.lua (30)
 
@@ -497,7 +499,7 @@ badge and any count quoted in the docs must agree with it.
 - Defaults: NS.C aliases the profile defaults rather than copying them
 - Defaults: the debug flag is NOT a profile default
 
-### test_coresetup.lua (26)
+### test_coresetup.lua (31)
 
 - CoreSetup: the harness loads the vendored LibKa0s majors, so nothing measures a stub
 - CoreSetup: the runner FEEDS the derived library list, and it is not empty
@@ -510,6 +512,9 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: IsConcatSafe rejects a value table.concat would raise on
 - CoreSetup: SafeToString renders a secret as the sentinel rather than raising
 - CoreSetup: the secret-safe members are the library's own, published by reference
+- CoreSetup: NS.SECRET is the library's sentinel, published by reference
+- CoreSetup: SafeToString's sentinel IS NS.SECRET on both paths
+- CoreSetup: no addon file spells the secret sentinel outside the degraded stub
 - CoreSetup: RGBA reads the keyed shape the profile ships
 - CoreSetup: RGBA reads the positional shape the options color widget writes
 - CoreSetup: a stored ZERO channel survives as zero
@@ -517,6 +522,8 @@ badge and any count quoted in the docs must agree with it.
 - CoreSetup: channels fall back independently, so a three-element color keeps its alpha
 - CoreSetup: RGBA answers the four defaults for a non-table
 - CoreSetup: the fallback color reader stands behind the library's
+- CoreSetup: NS.MakeResizable is the library's grip on Core 10, by reference
+- CoreSetup: a Core below minor 10 yields no grip rather than a grip on the anchor
 - CoreSetup: the class color is the LIBRARY's one resolver, not a private copy
 - CoreSetup: the classFilename reader is KEPT, because the library has no equivalent
 - CoreSetup: the class color degrades to a working reader, not to nothing
@@ -1217,7 +1224,7 @@ badge and any count quoted in the docs must agree with it.
 - With no art and no atlas the arrow is an ASCII character, and a legible one
 - The refused Player-header click names its guard in the log
 
-### test_window_placement.lua (33)
+### test_window_placement.lua (43)
 
 - Closing HIDES the window; it never deletes it
 - Dragging moves the ANCHOR, never the frame that holds the cells
@@ -1248,6 +1255,16 @@ badge and any count quoted in the docs must agree with it.
 - The resize grip is built unconditionally and follows the LOCK
 - `resizeGrip` is gone from the code, not just from the panel
 - Unlocking does not resurrect the grip on a collapsed window
+- The grip sizes the ANCHOR from BOTTOMRIGHT, never the visible frame
+- The grip is DRAWN on the visible frame, so it shares its strata, alpha and visibility
+- SaveSize runs once per grip release, never on OnSizeChanged or a config apply
+- A rule-driven hide then show keeps the grip on an unlocked window
+- Lock and minimize both put the grip away, and unlock-and-expand brings it back
+- The grip is the library's: left button only, pressed art, leveled above the frame
+- A locked window's grip refuses to size even if something shows it
+- A resize alone leaves the anchor's user-placed flag as it was
+- The grip's library bounds are overwritten by the layout's in the same apply
+- Degraded: no grip, and lock, minimize and apply raise nothing
 - A window is locked exactly by its own Lock window; master.locked no longer pins it
 - SaveSize writes through the seam ONCE, at resize-stop, for its own window (issue #49)
 - SaveSize applies the config ONCE per resize-stop, and still applies when the seam refuses
@@ -2222,7 +2239,7 @@ badge and any count quoted in the docs must agree with it.
 - Library lines: rejected events, recorded at OnEnable, land when logging turns on
 - Library lines: after a Clear, an unchanged steady-state pass speaks again
 
-### test_options_panel.lua (44)
+### test_options_panel.lua (46)
 
 - Options: General is the FIRST page, above Windows
 - Options: the tree is General, Windows, Profiles, with no nesting mark
@@ -2257,6 +2274,8 @@ badge and any count quoted in the docs must agree with it.
 - Options: CreateOptionsPanel is idempotent
 - Options: CreateOptionsPanel runs the schema validator
 - Options: AceGUI is resolved once and published for the page builders
+- Options: the descriptor tells the library the FOLDER name (LibKa0s#42)
+- Options: the help-mark art the descriptor points at is vendored on disk
 - Options: the shared LSM30_Border slot is re-registered once, above what AGSMW left in it
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip
@@ -2439,13 +2458,13 @@ badge and any count quoted in the docs must agree with it.
 | test_database.lua | 28 |
 | test_database_migrations.lua | 48 |
 | test_migrations.lua | 8 |
-| test_diagnostics.lua | 33 |
+| test_diagnostics.lua | 35 |
 | test_diagnostics_deathrecap.lua | 30 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
 | test_diagnostics_runtime.lua | 18 |
 | test_defaults.lua | 24 |
-| test_coresetup.lua | 26 |
+| test_coresetup.lua | 31 |
 | test_perfsetup.lua | 26 |
 | test_debuglogsetup.lua | 32 |
 | test_mediasetup.lua | 7 |
@@ -2466,7 +2485,7 @@ badge and any count quoted in the docs must agree with it.
 | test_window.lua | 64 |
 | test_window_header.lua | 57 |
 | test_window_header_sort.lua | 17 |
-| test_window_placement.lua | 33 |
+| test_window_placement.lua | 43 |
 | test_window_lifecycle.lua | 8 |
 | test_window_segment.lua | 10 |
 | test_headercontrols.lua | 66 |
@@ -2494,7 +2513,7 @@ badge and any count quoted in the docs must agree with it.
 | test_slash_profile.lua | 11 |
 | test_disabled.lua | 25 |
 | test_library_lines.lua | 11 |
-| test_options_panel.lua | 44 |
+| test_options_panel.lua | 46 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 14 |
@@ -2503,4 +2522,4 @@ badge and any count quoted in the docs must agree with it.
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 9 |
 | test_lizard_sighted.lua | 8 |
-| **Total** | **2169** |
+| **Total** | **2188** |

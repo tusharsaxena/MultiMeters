@@ -140,6 +140,10 @@ if not lib then
     -- coloring, no console line.
     local function probeConcat(v) return table.concat({ v }) end
 
+    -- The one copy of the sentinel this addon spells (events-frames-taint-§8):
+    -- the library's own is unreachable here, and the live arm hands that over.
+    NS.SECRET = "<secret>"
+
     function NS.IsConcatSafe(v)
         return (pcall(probeConcat, v))
     end
@@ -148,7 +152,7 @@ if not lib then
         if v == nil then return "nil" end
         if type(v) == "boolean" then return tostring(v) end
         if NS.IsConcatSafe(v) then return tostring(v) end
-        return "<secret>"
+        return NS.SECRET
     end
 
     local announced = false
@@ -195,6 +199,11 @@ if not lib then
     NS.SKIN            = {}
     NS.ApplySkin       = function() end
     NS.MakeCloseButton = function() return nil end
+    -- The resize grip degrades the same way and for the same reason: a stub must
+    -- not re-implement the library, and a grip is chrome. `nil` is "no grip",
+    -- which modules/Window.lua's two visibility authors already guard on, and the
+    -- window keeps the size its profile gives it.
+    NS.MakeResizable   = function() return nil end
     -- The class-color lookup degrades the same way RGBA does and for the same
     -- reason: it is not chrome, it is how a class-colored bar, header or border
     -- gets its color at all, and a degraded install still draws rows. The
@@ -220,9 +229,11 @@ end
 -- ── the live seam ────────────────────────────────────────────────────────────
 
 -- Lib-level and stateless, so they are published by reference rather than
--- wrapped. `lib.SECRET` is the "<secret>" sentinel the suites name.
+-- wrapped. `lib.SECRET` is the sentinel SafeToString answers for a secret; it has
+-- been there since Core minor 1, so it needs no fallback and no second literal.
 NS.IsConcatSafe = lib.IsConcatSafe
 NS.SafeToString = lib.SafeToString
+NS.SECRET       = lib.SECRET
 
 -- `lib.RGBA(c, dr, dg, db, da) -> r, g, b, a` arrived at Core minor 4, and a
 -- vendored copy older than that answers the major without the member — so the
@@ -283,6 +294,16 @@ NS.ApplySkin       = lib.ApplySkin
 NS.MakeCloseButton = function(parent, onClick)
     return lib.MakeCloseButton(parent, onClick, addonName)
 end
+
+-- THE RESIZE GRIP, GATED ON CORE MINOR 10. modules/Window.lua sizes the bare
+-- anchor (rule R3) but draws the grip on the art frame, and saves on release
+-- only (issue #49). `gripParent` and `onResizeStop` are what say that, and both
+-- arrived at Core minor 10. An older Core answers the member and silently
+-- ignores both fields -- a grip on the anchor, under the window's strata, and a
+-- save that never runs -- so below 10 the window gets no grip at all, the same
+-- answer the library-absent arm gives.
+local coreMinor = (lib.MODULES and lib.MODULES.Core) or lib.MINOR or 0
+NS.MakeResizable = (coreMinor >= 10 and lib.MakeResizable) or function() return nil end
 
 -- The prefix is handed over as a FUNCTION rather than as the value of NS.PREFIX.
 -- It reads the same here, where core/Constants.lua has already run — but the

@@ -129,7 +129,10 @@ local function out(line)
     if NS.Print then NS.Print(line) else print(line) end
 end
 
-local SECRET = "<secret>"
+-- The namespace's sentinel (core/CoreSetup.lua, loaded first): the library's
+-- on a full install, the degraded stub's one copy otherwise. The display-types
+-- tally below keys on what `shown` printed, so it must be this same string.
+local SECRET = NS.SECRET
 
 
 --- Whether a value can be put in a line at all.
@@ -191,7 +194,6 @@ Diagnostics.out    = out
 Diagnostics.safe   = safe
 Diagnostics.shown  = shown
 Diagnostics.probe  = probe
-Diagnostics.SECRET = SECRET
 
 --- Point `out` at the debug console for one report, or clear it again.
 ---

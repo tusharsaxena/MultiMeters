@@ -85,10 +85,10 @@ overlap, and **a parent must never be summed with its children**.
 | `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:484`, `:494`, `:502` |
 | `spellEvent` | — | one `UNIT_SPELLCAST_SUCCEEDED` handler — the Feign Death check, early returns included | `core/MultiMeters.lua:447` |
 | `systemEvent` | — | one `CHAT_MSG_SYSTEM` handler — the whisper-to-nobody check offered to `modules/Export.lua` | `core/MultiMeters.lua:438` |
-| `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1144`, `:1154`, `:1177`, `:1184` (every exit) |
+| `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1140`, `:1150`, `:1173`, `:1180` (every exit) |
 | `providerRead` | — (observed: `aggregate`, `targets`) | one `C_DamageMeter` column read | `modules/Provider.lua:375` |
 | `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1158`, `modules/DrillDown.lua:700`, `:734` |
-| `render` | `refresh` | the window's draw | `modules/Window.lua:1315` |
+| `render` | `refresh` | the window's draw | `modules/Window.lua:1331` |
 | `renderRow` | `render` | one row's cells | `modules/Row.lua:1167` |
 | `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:930`, `:948`, `:1010`, `:1024`, `:1038` |
 | `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:396`, `:404`, `:418` |

@@ -69,8 +69,9 @@ end
 --- goes through the seam as one batch addressed to THIS window by id: one
 --- `[Set]` line per dimension, announced once, whichever window the settings
 --- panel is pointed at.
---- Called from the grip's OnDragStop only; OnSizeChanged merely remembers the
---- size, so a drag costs one write however many frames it lasts.
+--- Called from the library grip's onResizeStop only (Core.MakeResizable, wired
+--- in BuildFrame), once per mouse-up that ends a resize; OnSizeChanged merely
+--- remembers the size, so a drag costs one write however many frames it lasts.
 function WindowProto:SaveSize()
     if not (self.config.frame and self.pendingWidth) then return end
     local width  = math.floor(self.pendingWidth + 0.5)

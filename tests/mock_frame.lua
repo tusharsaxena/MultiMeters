@@ -178,13 +178,25 @@ function FRAME.SetClampedToScreen(self, v) self.__clamped = v and true or false;
 function FRAME.EnableMouse(self, v) self.__mouseEnabled = v and true or false; return self end
 function FRAME.IsMouseEnabled(self) return self.__mouseEnabled and true or false end
 function FRAME.RegisterForDrag(self, ...) self.__dragButtons = { ... }; return self end
-function FRAME.StartMoving(self) self.__moves = (self.__moves or 0) + 1; return self end
+-- StartMoving and StartSizing both mark the frame USER-PLACED, as the client
+-- does (that is what puts a frame into layout-local.txt). Core.MakeResizable's
+-- grip reads the flag before StartSizing and puts it back after the stop, so a
+-- resize alone never makes the anchor user-placed; without the flag modeled, a
+-- suite could not see that. A boolean, false until something sets it.
+function FRAME.StartMoving(self)
+    self.__moves = (self.__moves or 0) + 1
+    self.__userPlaced = true
+    return self
+end
 function FRAME.StartSizing(self, point)
     self.__sizings = (self.__sizings or 0) + 1
     self.__lastSizingPoint = point
+    self.__userPlaced = true
     return self
 end
 function FRAME.StopMovingOrSizing(self) self.__stops = (self.__stops or 0) + 1; return self end
+function FRAME.SetUserPlaced(self, v) self.__userPlaced = v and true or false; return self end
+function FRAME.IsUserPlaced(self) return self.__userPlaced == true end
 
 -- ── text ───────────────────────────────────────────────────────────────────
 --

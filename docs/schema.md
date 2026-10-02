@@ -203,8 +203,9 @@ that names no window is refused. `NS.State.activeWindowId` does not move.
   announcement tagged with that window's id. `/mm lock` calls it, and so does the Lock frame box on
   General → Master controls, whose `set` is this function.
 - `WindowProto:SaveSize` writes `window.frame.width` and `window.frame.height` as one batch for the
-  window that was dragged. It runs on the grip's drag-stop only; `OnSizeChanged` just remembers the
-  size, so a drag costs one write however many frames it lasts.
+  window that was dragged. It runs on the library grip's `onResizeStop` only (`Core.MakeResizable`,
+  Core minor 10), once per mouse-up that ends a resize; `OnSizeChanged` just remembers the size, so a
+  drag costs one write however many frames it lasts.
 - `frame.position` has no row (see [`frame`](#frame--the-standalone-window) below). It is named
   non-setting state, owned by `WindowProto`, and needs no register row; its writers are listed in
   `docs/ARCHITECTURE.md` → Settings schema.
@@ -772,7 +773,9 @@ style**.
 **There is no `resizeGrip` key.** There was, and it was read once while the frame was being built —
 so unticking it did nothing until a reload. The grip follows the **lock**: drawn while the window is
 unlocked, hidden while it is locked, which is the same question the lock already answers. Locking a
-window is how you put its grip away.
+window is how you put its grip away. The grip itself is LibKa0s-Core's (`MakeResizable`, Core minor
+10): it sizes the window's anchor, is drawn on the window frame, and also refuses to start a resize on
+a locked window. A degraded install (no `libs/LibKa0s`) has no grip.
 
 `hoverReveal = true` fades every control except the one under the pointer — the reveal is per
 control, not per strip, so it *is* the "which one am I about to click" feedback rather than a

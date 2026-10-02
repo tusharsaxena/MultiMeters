@@ -19,17 +19,17 @@ secret-value rules the checks refer to.
 |---|---|---|
 | INSTALL-1 to INSTALL-9 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades |
 | SLASH-1 to SLASH-14 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button |
-| PANEL-1 to PANEL-46 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse |
+| PANEL-1 to PANEL-47 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-36 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window |
+| WIN-1 to WIN-38 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip |
 | VIS-1 to VIS-12 | [Visibility](#vis) | Contexts and hide rules |
 | GRID-1 to GRID-32 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
-| DIAG-1 to DIAG-41 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
-| DEGRADED-1 to DEGRADED-9 | [LibKa0s absent](#degraded) | The library-absent install |
+| DIAG-1 to DIAG-42 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
+| DEGRADED-1 to DEGRADED-10 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
 ## Before you start
@@ -413,6 +413,11 @@ right. Open the panel with `/mm config`.
   times and run the same line; repeat the 30 switches and read it again → the figure does not climb
   with each round of 30 (a few KB of noise is fine). `/framestack` over the band → exactly one
   Dropdown under it. No `SetParent` or `Release` error. Result:
+- **PANEL-47. The panel still opens once the descriptor names the addon folder.** On LibKa0s v1.67.0
+  the Options descriptor passes `addonName` (LibKa0s#42). Log in with `/mm debug on`, open `/mm config`
+  and visit General, every Windows tab and Profiles → each page renders as before, with no Lua error on
+  load or on open, and no `[Cfg] help art:` line in the console (no list here carries help marks, so the
+  change is latent). Result:
 
 ## PROFILE
 
@@ -598,7 +603,8 @@ right. Open the panel with `/mm config`.
   thickness → also no edge, not the Ka0s edge. Result:
 - **WIN-24. The resize grip follows the lock.** Unlocked → the bottom-right grip shows and resizes the
   window (persistence across `/reload` is INSTALL-4); locked → no grip. There is no Show resize grip
-  setting. Result:
+  setting. The grip is LibKa0s-Core's since MultiMeters#58: 16 px (it was 12) and one pixel inside
+  the corner; it must not cover the last row's value at the minimum size. Result:
 - **WIN-25. The lock governs the title-bar drag, not the cells.** `/mm lock off` (or untick Frame →
   General → Lock window), drag the window by its title bar → it moves as one object (persistence
   across `/reload` is INSTALL-4). `/mm lock on`, drag the title bar again → it does not move. Locked
@@ -630,6 +636,17 @@ right. Open the panel with `/mm config`.
 - **WIN-36. Edits on another window stay there.** With the band on window 1, resize window 2 by its grip
   and click one of its column headers → the size and sort land on window 2 only (its Frame entry shows
   the new width once the band moves to it) and the band stays on window 1. Result:
+- **WIN-37. The resize grip is the library's and still sizes the window.** Unlock window 1 and drag the
+  bottom-right grip with the left button → it shows a pressed state while held, the window resizes,
+  stops at the grid's minimum, and keeps its new size across `/reload` (INSTALL-4). With `/mm debug on`,
+  one drag writes one `[Set] window.frame.width` and one `[Set] window.frame.height` line, on release,
+  not one per frame. A right-click on the grip does nothing. Set Frame strata to **HIGH**, then
+  **DIALOG** → the grip still draws and takes the mouse above the window's backdrop. Set Opacity to 0.3
+  → the grip fades with the window. Result:
+- **WIN-38. The grip survives a rule-driven hide.** With window 1 unlocked and a visibility rule that
+  hides it (for example hide out of instance, or a context rule toggled), let the rule hide the window
+  and then show it again → the grip is back and resizes. Lock the window → no grip. Minimize it, then
+  `/mm lock off` → no grip over the collapsed window. Expand it → the grip is back. Result:
 
 ## VIS
 
@@ -1292,6 +1309,10 @@ stayed empty; "no errors" from a dummy is not evidence here.
   `[Launcher] registered`. With a window drawing and nothing changing, press the console's Clear →
   within a second one `[Render] window 1 drew …` line comes back rather than an empty console until
   the next change. Result:
+- **DIAG-42. A secret still prints as `<secret>`.** Mid-pull, run `/mm diagnostics` → the secret
+  session names and durations, and the display-types tally, read `<secret>` exactly as before, and
+  the plain fields beside them still print. No Lua error. The sentinel is now the library's
+  `Core.SECRET` rather than the report's own copy (MultiMeters#58). Result:
 
 ## DEGRADED
 
@@ -1314,6 +1335,9 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
   expected, a partial settings surface is not. Result:
 - **DEGRADED-8. `/mm profile` names the library.** `/mm profile` and `/mm profile Default` → each prints
   `/mm profile is unavailable.` with the cause, and nothing switches. Result:
+- **DEGRADED-10. No grip without the library.** → the window draws with no bottom-right grip and no
+  Lua error, and `/mm lock` then `/mm lock off` raise nothing (MultiMeters#58: the seam answers no
+  grip rather than re-implementing the library's). Result:
 - **DEGRADED-9. Restoring.** Rename the folder back, `/reload` → everything returns. Result:
 
 ## Non-English client
@@ -1370,6 +1394,7 @@ the steps that session added are listed here by ID.
 | PANEL-43 | §5 (LK-21); 06 MM.10 (MM-18), 06 L.9 (LK-21) | Never run: the library drag |
 | PANEL-45 | 06 MM.9 (MM-17) | New: the color picker's throttle |
 | PANEL-46 | 06 L.12 (LK-27), 06 X1.2 | New: switching windows leaks nothing |
+| PANEL-47 | New (LibKa0s v1.67.0, 2026-10-02, CA-MM-NM) | The panel with `addonName` on the Options descriptor (LibKa0s#42), never run in a client |
 | PROFILE-5 | §4, §16 | Corrected: the fresh window is **Multi Meters #1** |
 | PROFILE-6 | §16 | Corrected: the popup's wording, and only `[Set]` lines are counted |
 | PROFILE-9 | §15 (`M2-18`) | "Not yet run" |
@@ -1383,10 +1408,12 @@ the steps that session added are listed here by ID.
 | WIN-5 | §1 header controls | Corrected: the Header control names |
 | WIN-12 | §26 control | Corrected: the toggle is on Header → Title bar |
 | WIN-16 | §1 header controls | Corrected: the dialog asks *Clear every recorded combat session?* with Yes / No; the meter-data warning is not in it |
+| WIN-24 | Corrected (LibKa0s v1.67.0, 2026-10-02, CA-MM-02) | The grip is the library's: 16 px, one pixel inside the corner |
 | WIN-25 | §3 | Corrected: the window drags by its title bar, and the cells answer the mouse locked or unlocked |
 | WIN-26 | §3, §16; 06 MM.11 (MM-22) | Corrected: the singular and plural lines; never run |
 | WIN-28 | §6; 06 MM.8 (MM-14) | Corrected: the refresh interval is addon-wide, not a per-window difference; only the band's window moves, never run |
 | WIN-31 | §6, §16; 06 MM.8 (MM-14) | Never run: one refresh and one `[Set]` line per copy |
+| WIN-37, WIN-38 | New (LibKa0s v1.67.0, 2026-10-02, CA-MM-02) | The library resize grip on the art frame (strata, alpha, one save per release) and after a rule-driven hide, never run in a client |
 | VIS-5 | §7 | Corrected: the vehicle rule ships off and is now switched on first |
 | GRID-3 | §8 | Corrected: Bars → Text style and Bars → Bar |
 | GRID-7 | §19 step 6 (issue #26) | "Unconfirmed in game" |
@@ -1433,8 +1460,10 @@ the steps that session added are listed here by ID.
 | DIAG-16 | Corrected (LibKa0s v1.64.0, 2026-09-30, DL-MM-03) | The report still lands with logging off, but now turns logging on, so the header reads `Debug: ON` afterwards |
 | DIAG-37, DIAG-38 | New (LibKa0s v1.64.0, 2026-09-30, DL-MM-03) | The console's Diagnostics link, and diagnostics turning logging on for the session, never run in a client |
 | DIAG-39 to DIAG-41 | New (LibKa0s v1.65.0, 2026-10-01, DG-MM-01) | The library's `[Cmd]` and `[Lifecycle]` lines, the at-enable queue and Clear's re-arm, never run in a client |
+| DIAG-42 | New (LibKa0s v1.67.0, 2026-10-02, CA-MM-01) | The report's secret sentinel is now `Core.SECRET`, never run in a client |
 | DEGRADED-1 | §17; 06 X2.11 | Never run |
 | DEGRADED-2 | §17 | Corrected: the first line's full text, and each later line repeating the cause |
 | DEGRADED-3 | §17; 06 X2.11 | Never run: a bare `/mm` answers |
 | DEGRADED-8 | New | `/mm profile` with LibKa0s absent |
+| DEGRADED-10 | New (LibKa0s v1.67.0, 2026-10-02, CA-MM-02) | No resize grip with LibKa0s absent, never run in a client |
 | LOC-1 | §26 file | Corrected: the header has 24 columns, not 26 |

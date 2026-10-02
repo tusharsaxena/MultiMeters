@@ -62,16 +62,13 @@ local READYCHECK_PAIR = {
     "Interface\\RaidFrame\\ReadyCheck-NotReady",
 }
 
--- The two further sites where the catalog HAS a candidate and the addon declines it
--- (library-stack-§8's `target` and `resize`), each backed by its own register row since
--- 2026-09-23. Keyed by file, because each row argues about the paths of one file: the tooltip's
--- TARGET glyph, and the window's two-state size-grabber pair.
+-- The further site where the catalog HAS a candidate and the addon declines it
+-- (library-stack-§8's `target`), backed by its own register row since 2026-09-23. Keyed by file,
+-- because each row argues about the paths of one file: the tooltip's TARGET glyph. The window's
+-- size-grabber pair left this list on 2026-10-02 (MultiMeters#58): the grip is Core.MakeResizable's
+-- now, so the paths live in the library and the register row and census rows were retired with it.
 local DECLINED_SITES = {
     { file = "modules/Tooltip.lua", paths = { "Interface\\ICONS\\Ability_Hunter_FocusedAim" } },
-    { file = "modules/Window.lua", paths = {
-        "Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up",
-        "Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight",
-    } },
 }
 
 --- Split a NUL-delimited blob. `git ls-files -z` because a path may contain anything but NUL, and
@@ -384,7 +381,7 @@ local function registerRowCiting(file)
     return nil
 end
 
-test("texturepaths: the register carries a library-stack-§8 row for the Tooltip and Window declines",
+test("texturepaths: the register carries a library-stack-§8 row for the Tooltip decline",
 function()
     -- The ColumnBlocks decline was the only one with a register row; the tooltip's TARGET glyph
     -- and the window's size-grabber pair were declined in the census alone, with no Decided date

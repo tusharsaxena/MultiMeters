@@ -159,6 +159,52 @@ test("CoreSetup: the secret-safe members are the library's own, published by ref
     assertTrue(NS.SafeToString == lib.SafeToString)
 end)
 
+-- ── the secret sentinel (MultiMeters#58) ────────────────────────────────────
+
+test("CoreSetup: NS.SECRET is the library's sentinel, published by reference", function()
+    -- Core.SECRET has existed since Core minor 1, so the live arm hands it over
+    -- with no `or` fallback and no second literal.
+    -- red under: a live arm that spells "<secret>" again, or publishes nothing.
+    local lib = mocks.LibStub("LibKa0s-Core-1.0", true)
+    assertEqual(type(lib.SECRET), "string", "the vendored Core carries no SECRET")
+    assertTrue(NS.SECRET == lib.SECRET, "NS.SECRET must BE the library's sentinel")
+    assertEqual(NS.SECRET, "<secret>")
+end)
+
+test("CoreSetup: SafeToString's sentinel IS NS.SECRET on both paths", function()
+    -- Diagnostics keys a tally on the rendered string, so the sentinel a probe
+    -- prints and the one SafeToString prints must be one value on either path.
+    -- red under: a degraded arm that publishes no NS.SECRET.
+    assertEqual(NS.SafeToString(mocks.secret(1)), NS.SECRET)
+    local inst = T.load{ libFiles = {} }
+    assertEqual(inst.NS.SECRET, "<secret>", "the degraded arm publishes the sentinel too")
+    assertEqual(inst.NS.SafeToString(inst.mocks.secret(1)), inst.NS.SECRET)
+end)
+
+test("CoreSetup: no addon file spells the secret sentinel outside the degraded stub", function()
+    -- events-frames-taint-§8 allows exactly one copy of the sentinel: the stub that
+    -- stands in for the library when it is absent. Everything else reads NS.SECRET.
+    -- Comments are stripped first, because several files DESCRIBE the sentinel.
+    -- red under: `local SECRET = "<secret>"` in core/Diagnostics.lua.
+    local found = 0
+    for _, rel in ipairs(T.loadedAddonFiles) do
+        local fh = io.open(T.root .. "/" .. rel, "r")
+        local src = fh and fh:read("*a") or ""
+        if fh then fh:close() end
+        src = src:gsub("%-%-[^\r\n]*", "")
+        local at = src:find('"<secret>"', 1, true)
+        while at do
+            found = found + 1
+            assertEqual(rel, "core/CoreSetup.lua", rel .. " spells the secret sentinel")
+            local live = src:find("NS.SafeToString = lib.SafeToString", 1, true)
+            assertTrue(live ~= nil and at < live,
+                "core/CoreSetup.lua spells the sentinel outside its degraded arm")
+            at = src:find('"<secret>"', at + 1, true)
+        end
+    end
+    assertEqual(found, 1, "the degraded arm's one literal")
+end)
+
 -- ── the stored-color reader ─────────────────────────────────────────────────
 
 test("CoreSetup: RGBA reads the keyed shape the profile ships", function()
@@ -224,6 +270,34 @@ test("CoreSetup: the fallback color reader stands behind the library's", functio
 end)
 
 -- ── the window chrome seam ──────────────────────────────────────────────────
+
+test("CoreSetup: NS.MakeResizable is the library's grip on Core 10, by reference", function()
+    -- modules/Window.lua passes gripParent and onResizeStop, both Core minor 10.
+    -- red under: a host wrapper or a host-built grip behind the name.
+    local inst = T.load()
+    local lib = inst.mocks.LibStub("LibKa0s-Core-1.0", true)
+    assertTrue(lib.MODULES.Core >= 10, "the fixture needs Core minor 10")
+    assertTrue(inst.NS.MakeResizable == lib.MakeResizable,
+        "NS.MakeResizable is not the library's function object")
+end)
+
+test("CoreSetup: a Core below minor 10 yields no grip rather than a grip on the anchor", function()
+    -- An older Core answers the member but ignores gripParent and onResizeStop:
+    -- its grip would sit on the bare anchor and never save. So the seam answers nil.
+    -- red under: `NS.MakeResizable = lib.MakeResizable` with no minor gate.
+    local inst = T.load{}
+    local lib = inst.mocks.LibStub("LibKa0s-Core-1.0", true)
+    local saved = lib.MODULES.Core
+    lib.MODULES.Core = 9
+    local NS2 = { Constants = inst.NS.Constants, PREFIX = inst.NS.PREFIX,
+                  LIBKA0S_MISSING = inst.NS.LIBKA0S_MISSING, Util = {} }
+    T.Loader.load(T.root .. "/core/CoreSetup.lua", NS2, inst.mocks)
+    lib.MODULES.Core = saved
+
+    assertEqual(type(NS2.MakeResizable), "function")
+    assertTrue(NS2.MakeResizable ~= lib.MakeResizable, "a Core 9 grip was handed over")
+    assertNil(NS2.MakeResizable(inst.mocks.__stubFrame("Frame"), {}))
+end)
 
 test("CoreSetup: the class color is the LIBRARY's one resolver, not a private copy", function()
     -- options-ui-§17: the lookup is LibKa0s-Core-1.0's, so a bar in this window and
