@@ -630,6 +630,8 @@ end
 --- Answers "NONE" for a GUID that is not in the group rather than nil, so a row
 --- icon has one code path. A caller that needs to distinguish "not in the group"
 --- asks IsGroupMember, which is the question it actually means.
+--- TEST-ONLY TODAY: no in-addon caller; published for the headless suite
+--- (tests/test_roster.lua).
 ---
 --- @param guid string
 --- @return string

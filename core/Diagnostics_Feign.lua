@@ -141,6 +141,8 @@ end
 --- The accessor over the published field, and the surface everything that is not
 --- on the refresh path should ask through. The two hot sites read the field
 --- itself, because a function call is precisely the cost they are avoiding.
+--- TEST-ONLY TODAY: no in-addon caller; published for the headless suite
+--- (tests/test_diagnostics_feign.lua, tests/test_slash_diagnostics.lua).
 ---
 --- @return boolean
 function Diagnostics.IsFeignTraceArmed()

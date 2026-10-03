@@ -536,6 +536,8 @@ end
 --- Mark every window dirty without re-applying anything. What a data-shaped
 --- change (a meter reset, a roster change reaching the manager rather than the
 --- windows) costs: one flag each, and the throttle decides the rest.
+--- TEST-ONLY TODAY: no in-addon caller; published for the headless suite
+--- (tests/test_windowmanager.lua, tests/test_diagnostics_runtime.lua).
 function M:MarkAllDirty()
     for _, inst in ipairs(M.All()) do inst:MarkDirty() end
 end

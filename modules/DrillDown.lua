@@ -296,6 +296,8 @@ end
 --- ALWAYS a plain boolean, and the only supported way to ask the question. It is
 --- derived from the presence of the view table — never from DrillDown.Title's
 --- string, which may be secret and therefore un-testable (see the header).
+--- TEST-ONLY TODAY: no in-addon caller; published for the headless suite
+--- (tests/test_drilldown.lua, tests/test_row_mouse.lua, tests/test_window.lua, tests/perf.lua).
 ---
 --- @param window table|number
 --- @return boolean
@@ -788,6 +790,9 @@ end
 --- No combat gate: this is an unprotected button on an unprotected frame, and
 --- leaving a player stuck inside a breakdown until the pull ended would be a bug
 --- invented purely out of caution.
+---
+--- TEST-ONLY TODAY: no in-addon caller; published for the headless suite
+--- (tests/test_drilldown.lua).
 ---
 --- @param window table
 --- @param parent table  the frame to anchor into (the window's body)
