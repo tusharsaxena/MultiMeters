@@ -1161,7 +1161,7 @@ stayed empty; "no errors" from a dummy is not evidence here.
   it, `renderRow` under `render`, and `providerRead`, plus `tooltip` (and `targets` under it) only
   if a cell was hovered in window A, which is DIAG-10's run; every nested bucket reads **observed
   inside**, never *declares itself within X — not observed*. Hand the report and dump to
-  `/wow-addon:perf-analysis`. Result:
+  `/dev-copilot:wow-perf-analysis`. Result:
 - **DIAG-8. Captures carry the version.** Every capture record is stamped with the addon version, never
   `v?`. Result:
 - **DIAG-9. Perf output ignores the debug flag.** With `/mm debug off`, run a capture → its output

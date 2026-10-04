@@ -604,10 +604,10 @@ and diffed, not thresholded. A threshold that fails a run teaches everyone to re
 which is a signal rather than a stop.
 
 **The RELEASE is gated on all four.** The tag requires all four suites at `pass` **plus zero
-functions above CCN 15**, evaluated by `/wow-addon:bump-version` from the `manifest.json` the release
+functions above CCN 15**, evaluated by `/dev-copilot:bump-version` from the `manifest.json` the release
 run writes — not by the runner, whose exit code is unchanged.
 
-**Every release goes through `/wow-addon:bump-version`, never a bare tag.** `1.0.1-release` was
+**Every release goes through `/dev-copilot:bump-version`, never a bare tag.** `1.0.1-release` was
 cut without one: it re-published 1.0.0 unchanged to trigger a rebuild, so its TOC still read
 `1.0.0` and no release run was recorded for it (README Version History now carries the row).
 **1.1.0** went through it, and was 1.1.0 rather than 1.0.2 because the v16 schema migration (the

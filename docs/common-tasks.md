@@ -828,7 +828,7 @@ tests/_kit/run-automated-tests.sh --no-bundle                 # print only, writ
 
 Four suites — **lint**, **tests**, **perf**, **complexity** — recorded as one frozen bundle under
 `docs/automated-tests/<YYYYMMDD-HHMMSS>/`, then rolled into `docs/automated-tests/RESULTS.md`. Write
-the `ANALYSIS.md` alongside it; the `/wow-addon:automated-tests` command drives the whole flow and
+the `ANALYSIS.md` alongside it; the `/dev-copilot:wow-automated-tests` command drives the whole flow and
 fetches the living playbook.
 
 Three things about the runner are load-bearing:
@@ -844,5 +844,5 @@ Three things about the runner are load-bearing:
   run. Everything the runner writes goes down a plain shell redirect, which bypasses git's filters
   entirely.
 
-A release bundle is gated harder: `/wow-addon:bump-version` runs all four first and refuses to bump
+A release bundle is gated harder: `/dev-copilot:bump-version` runs all four first and refuses to bump
 anything unless lint, tests, perf and complexity all pass with **zero functions above CCN 15**.
