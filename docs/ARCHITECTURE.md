@@ -385,8 +385,8 @@ the verdict beside it.
 | `texture-paths.md` | The hard-coded texture-path census (`library-stack-§8`): every `Interface\` path in authored source, its disposition, and the command that measures it |
 | `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact |
 | `revendor/` | Frozen — one dated bundle per LibKa0s re-vendor: the payload delta and what was adopted, declined or filed from it |
-| `audits/` | Frozen — one dated bundle per `/wow-addon:standards-audit` run: the state, the deviations and the evidence as they stood on that date |
-| `reviews/` | Frozen — one dated bundle per `/wow-addon:review` run: the findings, the proposed changes and the plan as they stood on that date |
+| `audits/` | Frozen — one dated bundle per `/dev-copilot:wow-standards-audit` run: the state, the deviations and the evidence as they stood on that date |
+| `reviews/` | Frozen — one dated bundle per `/dev-copilot:review` run: the findings, the proposed changes and the plan as they stood on that date |
 
 ## Documented deviations
 

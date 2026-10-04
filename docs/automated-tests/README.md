@@ -50,7 +50,7 @@ which is a signal rather than a stop.
 
 **The RELEASE — the tag — is gated on all four suites at `pass`, plus zero functions above CCN 15.**
 
-That evaluation is `/wow-addon:bump-version`'s, made from the `manifest.json` the release run writes,
+That evaluation is `/dev-copilot:bump-version`'s, made from the `manifest.json` the release run writes,
 **not** the runner's: the script's exit code is unchanged by `perf` or `complexity`, and it stays
 that way on purpose so the commit gate and the release gate cannot be confused for one another. A
 release run is produced *before* the tag, with `--release <version>`, and carries an `ANALYSIS.md`
