@@ -503,6 +503,45 @@ function()
     assertEqual(#shownFrames(inst), 0, "a disabled left click showed a window")
 end)
 
+test("Disabled 8b: right-click opens the menu with only Enabled live, and writes nothing",
+function()
+    -- Step 8's other half: the right button opens the options menu, which the
+    -- library draws and grays from the descriptor's `isEnabled`. While disabled
+    -- only Enabled is clickable; Locked, Test mode and Show window are grayed, and
+    -- opening the menu (or clicking a grayed entry) writes no SavedVariables,
+    -- shows no frame and prints no line. The menu fake is the addon-local
+    -- tests/mock_menu.lua, installed the way tests/test_launchersetup.lua does.
+    -- red under: a menu builder that ignored isEnabled (every entry live, so a
+    -- grayed Show window would toggle the windows and write their stored `shown`).
+    local inst, NS = scene()
+    assertTrue(NS.SetByPath("enabled", false))
+
+    local obj = NS.Launcher.Object and NS.Launcher:Object()
+    assertTrue(obj ~= nil and type(obj.OnClick) == "function", "no LDB object to click")
+
+    local menu = assert(loadfile(T.root .. "/tests/mock_menu.lua"))()(inst.mocks)
+    local opened = 0
+    NS.OpenOptionsPanel = function() opened = opened + 1 end
+    inst.mocks.__resetSvWrites()
+    local chatN = #inst.mocks.__chat
+    obj.OnClick({}, "RightButton")
+
+    assertEqual(menu.opens, 1, "a disabled right click must open the options menu")
+    assertEqual(opened, 0, "a right click that found its menu does not also open the panel")
+    local m = menu.last
+    assertTrue(m:Find("Enabled").enabled, "Enabled must stay clickable while disabled")
+    for _, prefix in ipairs({ "Locked", "Test mode", "Show window" }) do
+        local entry = m:Find(prefix)
+        assertTrue(entry ~= nil, "no menu entry " .. prefix)
+        assertFalse(entry.enabled, prefix .. " is not grayed while disabled")
+        assertEqual(m:Click(prefix), nil, "a grayed " .. prefix .. " answered a click")
+    end
+
+    assertEqual(#chatSince(inst, chatN), 0, "the right click printed a line")
+    assertEqual(#inst.mocks.__svWrites(), 0, "a disabled right click wrote SavedVariables")
+    assertEqual(#shownFrames(inst), 0, "a disabled right click showed a window")
+end)
+
 -- ---------------------------------------------------------------------------
 -- 9. Restoration, from CURRENT state
 -- ---------------------------------------------------------------------------

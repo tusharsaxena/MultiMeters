@@ -2209,7 +2209,7 @@ Total.
 - Slash profile: with no library `/mm profile` names what is missing and switches nothing
 - Slash profile: the stub's ProfileSwitch answers false with the same line
 
-### test_disabled.lua (25)
+### test_disabled.lua (26)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -2222,6 +2222,7 @@ Total.
 - Disabled 7: both diagnostics forms reach RunDiagnostics, each once, with no refusal
 - Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam
 - Disabled 8: left-click opens the panel and writes nothing, in either state
+- Disabled 8b: right-click opens the menu with only Enabled live, and writes nothing
 - Disabled 9: re-enabling restores the registration set it had
 - Disabled 9: the rebuild reflects a setting changed WHILE disabled
 - Disabled 10: releasing one hold does not resurrect an addon the other holds down
@@ -2523,7 +2524,7 @@ Total.
 | test_slash_diagnostics.lua | 20 |
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
-| test_disabled.lua | 25 |
+| test_disabled.lua | 26 |
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 46 |
 | test_columnblocks.lua | 35 |
@@ -2535,4 +2536,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2197** |
+| **Total** | **2198** |
