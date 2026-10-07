@@ -1920,7 +1920,7 @@ Total.
 - A visibility field that is not a table reads as `no rules`, not as hide
 - The master enable, test mode and perf suspend are NOT read here
 
-### test_windowmanager.lua (48)
+### test_windowmanager.lua (49)
 
 - WindowManager is published under the flat name every caller uses
 - Init builds one live instance per stored config, and is idempotent
@@ -1961,6 +1961,7 @@ Total.
 - Resume restores from CURRENT state: a window made while suspended comes back
 - Rename writes window.name through the seam, for the window it names
 - Rename keeps the uniqueness check the row does not have
+- Rename to a different case of its own name keeps that name
 - CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it copies
 - CopyFrom logs ONE [Set] line naming the source, the target and the rows it changed
 - CopyFrom goes through each row's validate, and stores nothing on a refusal
@@ -2513,7 +2514,7 @@ Total.
 | test_export.lua | 94 |
 | test_export_modal.lua | 32 |
 | test_visibility.lua | 44 |
-| test_windowmanager.lua | 48 |
+| test_windowmanager.lua | 49 |
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 50 |
 | test_schema_batch.lua | 13 |
@@ -2534,4 +2535,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2196** |
+| **Total** | **2197** |
