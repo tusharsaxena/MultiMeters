@@ -939,7 +939,7 @@ Total.
 - Feign: with no Roster at all every entry is evicted
 - Feign: the set stops being walked once the last entry goes
 
-### test_aggregator.lua (68)
+### test_aggregator.lua (70)
 
 - Aggregator joins columns on the GUID, which is the only legal key
 - Aggregator's result table IS the row array, and cells aliases values
@@ -957,6 +957,8 @@ Total.
 - Aggregator sums an attributed pet into its owner out of combat
 - Aggregator adopts a pet's numbers into a column the owner has no cell in
 - A pet's position never moves its owner in the provider order
+- A pet ahead of its owner in a column still sums into the owner
+- An owner the gate refuses after its pet shows its own figure, and the refusal is counted
 - A row seen only outside the sort column is parked past every ranked row
 - Aggregator computes percent out of combat
 - ApplyRowLimit truncates to maxRows
@@ -2480,7 +2482,7 @@ Total.
 | test_provider_fields.lua | 11 |
 | test_roster.lua | 46 |
 | test_feign.lua | 27 |
-| test_aggregator.lua | 68 |
+| test_aggregator.lua | 70 |
 | test_aggregator_identity.lua | 32 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
@@ -2525,4 +2527,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2187** |
+| **Total** | **2189** |

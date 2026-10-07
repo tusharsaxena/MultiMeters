@@ -278,6 +278,14 @@ One case is legal in either state and is taken: if the owner has **no cell yet**
 pet did damage its owner did not), the pet's numbers are adopted wholesale. That is not a sum — and
 it is the correct answer, because the owner did that damage, through the pet.
 
+**The sum does not depend on the order of the source list.** A pet that out-ranks its owner arrives
+first in the column, and the cell it adopts is marked pet-seeded. When the owner's own source
+arrives later, `mergeOwnIntoPetSeeded` writes the owner's figures (its `maxAmount`, `deathRecapID`
+and `deathTime` included) and then adds the pet's total and rate back, under exactly `foldPet`'s
+`Secrets.CanCompare2` and number-type guards. So pet-then-owner gives the same total as
+owner-then-pet. If those guards refuse, the owner's own figures stand alone and the refusal is
+counted in the same `unfolded` tally as a refused fold: it is reported, never approximated.
+
 Attribution itself is best-effort. `modules/Roster.lua` builds the owner map by asking `UnitGUID` for
 every member's pet unit (`playerpet`, `party3pet`, `raid17pet`). That is *exact* for what it covers
 and covers nothing else: guardians, totems, temporary summons, a second pet, or a pet whose owner is

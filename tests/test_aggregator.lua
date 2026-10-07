@@ -356,6 +356,59 @@ test("A pet's position never moves its owner in the provider order", function()
     assertEqual(result[2].providerIndex, 3, "the owner keeps its own index, not the pet's")
 end)
 
+test("A pet ahead of its owner in a column still sums into the owner", function()
+    -- THE ORDER MUST NOT DECIDE THE SUM. The case above installs this exact
+    -- shape and asserts only the order; this one asserts the figures. The pet at
+    -- index 1 seeds its owner's cell, and the owner's own source at index 3 must
+    -- ADD to that cell rather than write over it.
+    -- red under: the own-source write replacing row.values[statKey] outright in
+    -- setCell, which threw the pet's 400 away and showed 100.
+    local inst = withPet()
+    install(inst, {
+        src(PET, 400, { rate = 40, name = "Ghoul" }),
+        src(BETA, 200, { rate = 20 }),
+        src(ALPHA, 100, { rate = 10 }),
+    }, { maxAmount = 400, totalAmount = 700 })
+
+    mergePets(inst)
+    local result = inst.NS.Aggregator.Build(makeWindow{})
+    assertEqual(#result, 2)
+    local alpha = result[1].guid == ALPHA and result[1] or result[2]
+    assertEqual(alpha.guid, ALPHA)
+    assertEqual(alpha.values.DamageDone.total, 500, "the owner's own 100 plus the pet's 400")
+    assertEqual(alpha.values.DamageDone.rate, 50, "the rate sums with the total")
+    assertEqual(alpha.values.DamageDone.maxAmount, 400, "the cell carries the column max")
+    assertNil(alpha.values.DamageDone.petSeeded, "the pet-seeded mark is cleared once the owner lands")
+end)
+
+test("An owner the gate refuses after its pet shows its own figure, and the refusal is counted", function()
+    -- The pet seeded the owner's cell, then the owner's own total arrives
+    -- inaccessible. There is no honest sum, so the owner's own figure replaces
+    -- the seeded cell exactly as it did before the fix, and the refusal joins
+    -- foldPet's in the pass's `unfolded` tally rather than going unreported.
+    -- red under: summing past the CanCompare2 gate (raises on the secret), or
+    -- replacing in setCell without counting the lost pet figure.
+    local inst = withPet()
+    local NS = inst.NS
+    NS.State.debug = true
+    local ownTotal = inst.mocks.secret(100)
+    install(inst, {
+        src(PET, 400, { rate = 40, name = "Ghoul" }),
+        src(ALPHA, ownTotal, { rate = 10 }),
+    }, { maxAmount = 400, totalAmount = 500 })
+
+    mergePets(inst)
+    local rows = NS.Aggregator.Build(makeWindow{})
+    assertEqual(#rows, 1, "merging is on: the pet has no row of its own")
+    assertTrue(rows[1].values.DamageDone.total == ownTotal,
+        "the owner's own figure is shown, never an approximation")
+    assertEqual(rows[1].values.DamageDone.rate, 10, "and its own rate with it")
+
+    local line = NS.DebugLog:FindLine("unfolded=")
+    assertTrue(line ~= nil and line:find("unfolded=1", 1, true) ~= nil,
+        "the refused merge is reported once on the pass line: " .. tostring(line))
+end)
+
 test("A row seen only outside the sort column is parked past every ranked row", function()
     local inst = loaded()
     install(inst, { src(BETA, 100) }, { statKey = "DamageDone", maxAmount = 100 })

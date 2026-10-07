@@ -269,7 +269,14 @@ local function foldPet(row, statKey, src)
         -- owner did not). Adopting the pet's numbers wholesale is not a sum, so
         -- it is legal in either state — and it is the correct answer: the owner
         -- DID that damage, through the pet.
+        --
+        -- MARKED PET-SEEDED, because the owner's own source may still be ahead in
+        -- this column: a pet that out-ranks its owner arrives first. The mark is
+        -- what tells the own-source write to ADD rather than replace — see
+        -- mergeOwnIntoPetSeeded. Without it the order of the source list decided
+        -- the sum (MM-R-01).
         setCell(row, statKey, src, nil)
+        row.values[statKey].petSeeded = true
         return true
     end
 
@@ -279,6 +286,33 @@ local function foldPet(row, statKey, src)
     cell.total = cell.total + src.totalAmount
     if type(cell.rate) == "number" and type(src.amountPerSecond) == "number" then
         cell.rate = cell.rate + src.amountPerSecond
+    end
+    return true
+end
+
+--- Write the owner's own source into a cell its pet seeded earlier in the column.
+---
+--- The mirror of foldPet for the other order: pet first, owner second. The owner's
+--- own figures land through setCell exactly as they would on an empty cell — so
+--- maxAmount, deathRecapID, deathTime and the row.deathRecapID promotion are the
+--- owner's, and the fresh cell carries no pet-seeded mark — and then the pet's
+--- total and rate are added back, under exactly foldPet's guards.
+---
+--- Returns true when the sum happened, false when it was refused. A refusal leaves
+--- the owner's own figures in place (the pet's part is lost, as it is on a refused
+--- fold) and the caller counts it in the same `unfolded` tally foldPet's refusals
+--- use: reported, never approximated.
+local function mergeOwnIntoPetSeeded(row, statKey, src, maxAmount)
+    local pet = row.values[statKey]
+    setCell(row, statKey, src, maxAmount)
+
+    if not Secrets.CanCompare2(pet.total, src.totalAmount) then return false end
+    if type(pet.total) ~= "number" or type(src.totalAmount) ~= "number" then return false end
+
+    local cell = row.values[statKey]
+    cell.total = cell.total + pet.total
+    if type(cell.rate) == "number" and type(pet.rate) == "number" then
+        cell.rate = cell.rate + pet.rate
     end
     return true
 end
@@ -924,7 +958,14 @@ local function placeSource(pass, statKey, src, index, isSortColumn, feigned, max
     end
     if not row then return end
 
-    if isOwn then
+    local seeded = row.values[statKey]
+    if isOwn and not isCount and seeded and seeded.petSeeded then
+        -- The pet came first in this column and seeded the owner's cell; the
+        -- owner's own figures add to it rather than replace it (MM-R-01).
+        if not mergeOwnIntoPetSeeded(row, statKey, src, maxAmount) then
+            pass.unfolded = pass.unfolded + 1
+        end
+    elseif isOwn then
         setCell(row, statKey, src, maxAmount, isCount)
         if touched then touched[row] = true end
     elseif isCount then
