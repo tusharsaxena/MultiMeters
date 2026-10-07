@@ -41,7 +41,6 @@ local Seam          = Aggregator._identity
 local newRow        = Seam.newRow
 local setCell       = Seam.setCell
 local isForeignSource = Seam.isForeignSource
-local plainTruth    = Seam.plainTruth
 local UNRANKED      = Seam.UNRANKED
 
 
@@ -120,7 +119,7 @@ local function identityKey(src)
     if Secrets.IsSecret(icon) then icon = nil end
     -- Concatenation only, on values just proved plain. Never `..` on a secret.
     return (class or "UNKNOWN") .. "_" .. tostring(icon or 0)
-        .. "_" .. tostring(plainTruth(src.isLocalPlayer))
+        .. "_" .. tostring(Secrets.PlainTruth(src.isLocalPlayer))
 end
 
 --- One correlated column: identity key -> the figures to show, plus the keys
@@ -306,7 +305,7 @@ end
 --- role. Everyone else is keyed on their POSITION, a plain string the row pool
 --- and the drill-down can hold without ever touching the secret one.
 local function identityRow(pass, src, index, localGuid, key, unranked)
-    local isLocal = plainTruth(src.isLocalPlayer)
+    local isLocal = Secrets.PlainTruth(src.isLocalPlayer)
 
     -- A row built from a NON-sort column is keyed on its identity rather than on
     -- a rank, because it has no rank: it is here precisely because the sort

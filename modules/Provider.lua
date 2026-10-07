@@ -548,7 +548,7 @@ local function tallyLookup(result, src, sessionType, sessionID, enumValue)
     -- theirs included. A live capture printed `secret 6 / plain 0` and a control
     -- line in the same breath, which is a contradiction the report had no way to
     -- notice. Carrying the flag lets it notice.
-    if src.isLocalPlayer == true then
+    if Secrets.PlainTruth(src.isLocalPlayer) then
         result.localWord = word
         result.localSecret = isSecret
     end
@@ -633,9 +633,10 @@ local FIELD_SAMPLE_ROWS = 10
 --- list reports the field absent and is wrong in the single most interesting
 --- way available. Their position is wherever their damage puts them.
 ---
---- `isLocalPlayer` is truth-tested only when it is a plain boolean. It is
---- annotated NeverSecret, but a probe is the wrong place to assume an annotation
---- — that assumption is exactly what issue #24 is.
+--- `isLocalPlayer` is truth-tested only through Secrets.PlainTruth, which reads
+--- an inaccessible flag as false. It is annotated NeverSecret, but a probe is the
+--- wrong place to assume an annotation — that assumption is exactly what issue
+--- #24 is.
 ---
 --- @return table samples  array of source rows
 --- @return table|nil localRow  the local player's row, when it was found
@@ -645,8 +646,7 @@ local function gatherSamples(session)
         if not Secrets.CanAccessTable(src) then return end
         if #samples < FIELD_SAMPLE_ROWS then samples[#samples + 1] = src end
 
-        local isLocal = src.isLocalPlayer
-        if localRow == nil and isLocal == true then localRow = src end
+        if localRow == nil and Secrets.PlainTruth(src.isLocalPlayer) then localRow = src end
         -- Keep walking past the window ONLY while the local row is still
         -- unfound; there is nothing else out there worth the pairs() walk.
         return not (localRow ~= nil and #samples >= FIELD_SAMPLE_ROWS)
@@ -669,12 +669,16 @@ end
 --- next, and counting is a comparison — `distinct` keys a table on the value,
 --- which rule R1 forbids on a secret. `tostring` is applied only after the gate,
 --- so what is keyed is always a plain string.
+---
+--- The gate is IsSecret and nothing else. A `type(value) == "boolean"`
+--- short-circuit ahead of it once waved booleans through as plain, and the
+--- client answers a SECRET boolean's own type, so a secret flag reached
+--- `tostring` and became a table key.
 local function noteValue(entry, value, isLocalRow)
     entry.present = entry.present + 1
     if isLocalRow then entry.local_ = true end
 
-    local plain = type(value) == "boolean" or not Secrets.IsSecret(value)
-    if not plain then
+    if Secrets.IsSecret(value) then
         entry.secret = entry.secret + 1
         return
     end

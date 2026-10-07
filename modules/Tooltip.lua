@@ -29,7 +29,7 @@
 --     is a real ordering and not a fallback to nonsense;
 --   * booleans off the API (isAvoidable, isDeadly) are never truth-tested
 --     directly, because a SECRET boolean raises on a boolean test — they go
---     through `plainTruth`, which asks core/Secrets.lua first;
+--     through `Secrets.PlainTruth`, which asks CanAccess first;
 --   * nil-ness tests use an explicit `~= nil`, which is the one comparison a
 --     non-boolean secret permits.
 --
@@ -186,17 +186,11 @@ end
 -- Secret-safe primitives
 -- ---------------------------------------------------------------------------
 
---- Truth-test a field that MIGHT be a secret boolean.
----
---- `if spell.isAvoidable then` is the natural way to write this and it raises
---- the moment the Combat restriction is active, because a boolean test on a
---- secret boolean is exactly what tainted code may not do. Asking
---- core/Secrets.lua whether the value is accessible first keeps the inspection
---- in the one file allowed to make it, and an inaccessible flag reads as false —
---- the tooltip loses a "Deadly" tag mid-pull rather than erroring.
----
---- @param v any
---- @return boolean
+-- A field that MIGHT be a secret boolean (`hideCaster`, `isAvoidable`) is
+-- truth-tested through core/Secrets.lua's Secrets.PlainTruth, never here: an
+-- inaccessible flag reads as false, so the tooltip loses a tag mid-pull rather
+-- than erroring.
+
 --- Whether a value is present and may NOT be read.
 ---
 --- Distinct from `plainWord` answering nil, which also covers "there is nothing
@@ -219,13 +213,6 @@ local function plainWord(v)
     if S and S.CanAccess and not S.CanAccess(v) then return nil end
     if type(v) ~= "string" then return nil end
     return v
-end
-
-local function plainTruth(v)
-    local Secrets = NS.Secrets
-    if not (Secrets and Secrets.CanAccess) then return false end
-    if not Secrets.CanAccess(v) then return false end
-    return v and true or false
 end
 
 --- A player's display name, or a placeholder.
@@ -1122,7 +1109,6 @@ Internals.formatNumber = formatNumber
 Internals.formatShare = formatShare
 Internals.unreadable = unreadable
 Internals.plainWord = plainWord
-Internals.plainTruth = plainTruth
 Internals.displayName = displayName
 Internals.nameColor = nameColor
 Internals.tooltipConfig = tooltipConfig

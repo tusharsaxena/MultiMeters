@@ -470,18 +470,6 @@ local function owningMember(guid)
     return nil
 end
 
---- Truth-test a field that MIGHT be a secret boolean.
----
---- `if src.isLocalPlayer then` is the natural way to write this and it raises the
---- moment that field is secret, because a boolean test on a secret boolean is
---- exactly what tainted code may not do. Asking core/Secrets.lua first keeps the
---- inspection in the one file allowed to make it, and an inaccessible flag reads
---- as "no claim" — the same shape modules/Tooltip.lua uses for isAvoidable.
-local function plainTruth(v)
-    if not Secrets.CanAccess(v) then return false end
-    return v and true or false
-end
-
 --- The plain GUID a source with an UNKEYABLE GUID can still be attributed to.
 ---
 --- THE MEASURED FACT THIS EXISTS FOR: `C_DamageMeter` returns a SECRET
@@ -505,7 +493,10 @@ end
 ---
 --- @return string|nil  the local player's roster GUID, or nil for no claim
 local function localClaim(src)
-    if not plainTruth(src.isLocalPlayer) then return nil end
+    -- `isLocalPlayer` MIGHT be a secret boolean, so it is never truth-tested
+    -- here: Secrets.PlainTruth asks CanAccess first and reads an inaccessible
+    -- flag as "no claim".
+    if not Secrets.PlainTruth(src.isLocalPlayer) then return nil end
     return Roster.LocalGUID()
 end
 
@@ -875,7 +866,6 @@ Aggregator._identity = {
     isForeignSource   = isForeignSource,
     companionIdentity = companionIdentity,
     admitsUnowned     = admitsUnowned,
-    plainTruth    = plainTruth,
     UNRANKED      = UNRANKED,
 }
 

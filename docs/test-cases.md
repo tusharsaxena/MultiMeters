@@ -123,7 +123,7 @@ Total.
 - Constants: the throttle window is a real range around the shipped default
 - Constants: the row cap covers a full raid and the pool step covers a party
 
-### test_secrets.lua (38)
+### test_secrets.lua (42)
 
 - Secrets: core/Secrets.lua is the only file that names a detection API
 - Secrets: IsRestricted tracks the client's restriction state
@@ -163,6 +163,10 @@ Total.
 - Secrets degraded: SafeIterate and SafeCount are ordinary array walks
 - Secrets degraded: canaccessvalue alone missing still refuses a known secret
 - Secrets degraded: canaccesstable alone missing still refuses a secret table
+- Secrets: PlainTruth answers a plain boolean for every plain value
+- Secrets: PlainTruth reads an inaccessible secret as false without testing it
+- Secrets: no file outside core/Secrets.lua defines its own plainTruth
+- Secrets: the Provider's field probes truth-test a secret isLocalPlayer through PlainTruth
 
 ### test_compat.lua (40)
 
@@ -372,11 +376,12 @@ Total.
 - Diagnostics: a secret renders as the library's sentinel, on both paths
 - Diagnostics: the zero-reader SECRET alias is gone
 
-### test_diagnostics_deathrecap.lua (30)
+### test_diagnostics_deathrecap.lua (31)
 
 - Diagnostics: `/mm debug recap` reaches the probe without the debug log
 - Diagnostics: the probe lists EVERY death, not just the newest per player
 - Diagnostics: it probes a NON-LOCAL id and an OLDER id, not only the newest
+- Diagnostics: a SECRET isLocalPlayer fills no slot, whatever type() answers
 - Diagnostics: a client with no reader is the answer that RE-SCOPES the issue
 - Diagnostics: a reader that refuses an id is reported, not swallowed
 - Diagnostics: the probe survives a client that answers nothing at all
@@ -2455,7 +2460,7 @@ Total.
 | test_lintconfig.lua | 4 |
 | test_prose.lua | 15 |
 | test_constants.lua | 25 |
-| test_secrets.lua | 38 |
+| test_secrets.lua | 42 |
 | test_compat.lua | 40 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
@@ -2463,7 +2468,7 @@ Total.
 | test_database_migrations.lua | 48 |
 | test_migrations.lua | 8 |
 | test_diagnostics.lua | 35 |
-| test_diagnostics_deathrecap.lua | 30 |
+| test_diagnostics_deathrecap.lua | 31 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
 | test_diagnostics_runtime.lua | 18 |
@@ -2527,4 +2532,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2189** |
+| **Total** | **2194** |

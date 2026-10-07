@@ -157,6 +157,35 @@ test("Diagnostics: it probes a NON-LOCAL id and an OLDER id, not only the newest
     end
 end)
 
+test("Diagnostics: a SECRET isLocalPlayer fills no slot, whatever type() answers", function()
+    -- MM-02 (MM-R-07's pattern, found here as well). The slot picker let any
+    -- value whose type() answered "boolean" past the concat-safety gate and then
+    -- compared it `== true`. The client answers a SECRET boolean's own type, so a
+    -- secret flag reached the comparison -- which raises in the client and, here,
+    -- filed a death we cannot place under "other". The simulator's wrapper is a
+    -- table, so the case shims `type` the client's way for the probe.
+    -- red under: `if type(isLocal) ~= "boolean" and not safe(isLocal)` (the
+    -- secret row takes other/newest and id 2002 is probed).
+    local inst = T.load{ enable = true }
+    local m = inst.mocks
+    deathsSession(inst, {
+        death("Player-1-0000000A", "Me",    m.secret(true), 2002, 300),
+        death("Player-1-0000000B", "Notme", false,          3002, 280),
+    })
+    m.setDeathInfo({ GetRecapEvent = function() return nil end })
+
+    m.type = function(v)
+        if m.isSimulatedSecret(v) then return type(m.reveal(v)) end
+        return type(v)
+    end
+    local ok, text = pcall(recapReport, inst)
+    m.type = nil
+
+    assertTrue(ok, "the recap probe raised: " .. tostring(text))
+    assertNil(text:find("/%a+%s+id=2002"), "a death with a secret local flag took a slot and was called")
+    assertTrue(text:find("other/newest%s+id=3002") ~= nil, "the plain non-local death keeps its slot")
+end)
+
 test("Diagnostics: a client with no reader is the answer that RE-SCOPES the issue", function()
     -- The fork the whole probe exists to resolve, and the one outcome a reader
     -- of the report must not have to infer from silence.

@@ -591,7 +591,7 @@ the first ten the API happened to return would produce a "top 5" that is nothing
 `Secrets.SafeCount` — which obtains a length without the `#` operator. A missing `totalAmount` fails
 the pre-pass too: `CanAccess(nil)` is `true`, so a row with no amount would sail through and raise
 inside the comparator with "attempt to compare nil with number". Booleans off the API (`isAvoidable`,
-`isDeadly`) go through `plainTruth`, because a boolean test on a *secret boolean* raises.
+`isDeadly`, `hideCaster`) go through `Secrets.PlainTruth`, because a boolean test on a *secret boolean* raises.
 
 **Drill-down** (`modules/DrillDown.lua`) builds no row frames at all. `BuildRows` returns rows in the
 same shape the aggregator produces, and `modules/Window.lua` feeds them to the same row pool and the
@@ -776,6 +776,7 @@ If you are adding to the data path, these are the only files that may know anyth
 | Is the restriction active? | `NS.Secrets.IsRestricted()` | `InCombatLockdown()` |
 | What state is it in? | `NS.Secrets.GetRestrictionState()` — `Activating` is the last legal read | a boolean |
 | May I compare these two? | `NS.Secrets.CanCompare2(a, b)` | `a < b` and hope |
+| Is this flag set? | `NS.Secrets.PlainTruth(v)` — an inaccessible flag reads `false` | `if v then`, `v == true` |
 | May I walk this array? | `NS.Secrets.SafeIterate(t, fn)` | `ipairs`, `#t` |
 | How long is it? | `NS.Secrets.SafeCount(t)` — returns `nil`, not `0`, when it cannot see | `#t` |
 | Can I print this? | `NS.IsConcatSafe(v)` / `NS.SafeToString(v)` | `tostring(v)` into `table.concat` |
