@@ -9,10 +9,10 @@
 -- WHAT THIS REPLACED
 -- ---------------------------------------------------------------------------
 --
--- `Compat.GetAddOnMetadata`, plus the three inline ladders that had quietly
--- grown around it — core/PerfSetup.lua, settings/Slash.lua and
--- settings/OptionsSetup.lua each re-spelled the `NS.Compat and
--- NS.Compat.GetAddOnMetadata and ...` guard for themselves.
+-- Compat's TOC-manifest reader shim, plus the three inline ladders that had
+-- quietly grown around it — core/PerfSetup.lua, settings/Slash.lua and
+-- settings/OptionsSetup.lua each re-spelled the guard on that Compat member for
+-- themselves.
 --
 -- The reader had been written ELEVEN times across nine addons before the
 -- library had it: six copies in a core/Compat.lua in four different spellings,
@@ -51,18 +51,21 @@
 -- WHAT A DEGRADED INSTALL GETS
 -- ---------------------------------------------------------------------------
 --
--- Exactly what this addon got before the library existed. Both helpers below
--- repeat the ladder the deleted shim ran, so an install missing LibKa0s still
--- reads its own TOC. That is why the fallbacks are written out rather than left
--- to answer nil: this is a seam, not a feature, and nil here is not an error a
--- player would ever see reported — it is a blank version in the options header
--- and "v?" on every capture record.
+-- What this addon got before the library existed, less the dead rung. Both
+-- helpers below repeat the library's ladder — C_AddOns.GetAddOnMetadata, then
+-- nil — so an install missing LibKa0s still reads its own TOC. The bare-global
+-- rung the deleted shim also carried below C_AddOns is gone: no client this
+-- TOC's ## Interface admits lacks C_AddOns, and LibKa0s-Env-1.0 minor 2 dropped
+-- its own copy of that rung for the same reason. That is why the fallbacks are
+-- written out rather than left to answer nil: this is a seam, not a feature,
+-- and nil here is not an error a player would ever see reported — it is a blank
+-- version in the options header and "v?" on every capture record.
 --
 -- ---------------------------------------------------------------------------
 -- WHAT THE SEAM MUST NOT CHANGE
 -- ---------------------------------------------------------------------------
 --
--- Any answer. The deleted shim already agreed with the library rung for rung, so
+-- Any answer. The seam agrees with the library rung for rung, so
 -- a difference in what comes back here is a defect in the adoption rather than
 -- an improvement.
 
@@ -71,6 +74,10 @@ local addonName, NS = ...
 local Env = LibStub and LibStub("LibKa0s-Env-1.0", true)
 
 --- One field of this addon's TOC manifest, or nil.
+---
+--- Two rungs: LibKa0s-Env-1.0 when it is loaded, otherwise
+--- C_AddOns.GetAddOnMetadata, otherwise nil. There is no bare-global rung below
+--- C_AddOns (the compat dead-rung rule): no admitted client can reach one.
 ---
 --- NIL IS A REAL ANSWER, twice over: the client may expose no reader at all
 --- (which is what an older client, and the headless harness with its manifest
@@ -81,7 +88,8 @@ local Env = LibStub and LibStub("LibKa0s-Env-1.0", true)
 --- The `_G.` prefixes are this repo's convention rather than the reference
 --- seam's: architecture-§1 forbids naming a deprecated bare global implicitly,
 --- and the explicit prefix is what makes a client-API read visible in review.
---- It is also what lets tests/wow_mock.lua drive the second rung.
+--- It is also what lets tests/wow_mock.lua drive the C_AddOns rung, and plant
+--- the removed bare global to prove nothing calls it.
 ---
 --- @param field string  a TOC key: "Version", "Title", "Notes", "Author", …
 --- @return string|nil
@@ -89,9 +97,6 @@ function NS.Meta(field)
     if Env then return Env.GetAddOnMetadata(addonName, field) end
     if _G.C_AddOns and _G.C_AddOns.GetAddOnMetadata then
         return _G.C_AddOns.GetAddOnMetadata(addonName, field)
-    end
-    if _G.GetAddOnMetadata then
-        return _G.GetAddOnMetadata(addonName, field)
     end
     return nil
 end

@@ -108,8 +108,8 @@ end)
 
 test("PerfSetup: the manifest is read through NS.Version, never by naming C_AddOns", function()
     -- architecture-§1: core/EnvSetup.lua owns the seam over LibKa0s-Env-1.0, and
-    -- an inline re-spelling both duplicates the ladder and silently drops the
-    -- pre-11.x rung. This file carried exactly such a re-spelling until the seam
+    -- an inline re-spelling duplicates the two-rung ladder (the library, then
+    -- C_AddOns) and silently drifts from it. This file carried exactly such a re-spelling until the seam
     -- landed, which is why the assertion is on the SOURCE and not on the answer:
     -- an inline copy gives the right answer right up until the day it does not.
     local fh = assert(io.open(ROOT .. "/core/PerfSetup.lua", "r"))

@@ -1,7 +1,7 @@
 -- tests/test_envsetup.lua — core/EnvSetup.lua, the LibKa0s-Env-1.0 seam.
 --
 -- What is asserted here is THE SEAM, not the library. The library's own suite covers the
--- C_AddOns reader inside GetAddOnMetadata; a second copy of those cases here is
+-- C_AddOns rung inside GetAddOnMetadata; a second copy of those cases here is
 -- exactly the consumer-side duplication testing-§8 forbids. What only this repo can check is that
 -- this addon's helpers answer what its deleted Compat shim answered, that they ask about THIS
 -- addon, that the fallback constant this addon chose is still reachable, and that the shim is gone.
@@ -161,6 +161,32 @@ test("EnvSetup: with the library loaded, the bare global is no rung; NS.version 
         end }
         assertTrue(inst.mocks.LibStub("LibKa0s-Env-1.0", true) ~= nil,
             "the library must be loaded for this case to say anything about it")
+        assertNil(inst.NS.Meta("Version"))
+        assertEqual(inst.NS.version, inst.NS.FALLBACK_VERSION)
+        assertEqual(calls, 0)
+    end)
+
+test("EnvSetup degraded: with no library and no C_AddOns, the bare global is no rung either",
+    function()
+        -- The library-absent branch of NS.Meta (core/EnvSetup.lua) is a two-rung ladder:
+        -- C_AddOns.GetAddOnMetadata, then nil. The bare _G.GetAddOnMetadata rung that sat below
+        -- C_AddOns is gone, because no client this TOC's ## Interface admits lacks C_AddOns (the
+        -- compat dead-rung rule; LibKa0s-Env-1.0 minor 2 dropped the library's copy). A planted
+        -- bare global must never be called, neither by the load-time read core/Namespace.lua
+        -- makes nor by a later NS.Meta, and NS.Meta answers nil.
+        -- red under: core/EnvSetup.lua keeping `if _G.GetAddOnMetadata then ... end` below the
+        -- C_AddOns rung (the spy is called and NS.Meta answers "9.9.9").
+        local calls = 0
+        local inst = T.load{ libFiles = {}, mutate = function(m)
+            m.C_AddOns = nil
+            m.GetAddOnMetadata = function(_, field)
+                calls = calls + 1
+                return field == "Version" and "9.9.9" or nil
+            end
+        end }
+        local LS = inst.mocks.LibStub
+        assertTrue(not LS or LS("LibKa0s-Env-1.0", true) == nil,
+            "the library must be absent for this case to reach the seam's own ladder")
         assertNil(inst.NS.Meta("Version"))
         assertEqual(inst.NS.version, inst.NS.FALLBACK_VERSION)
         assertEqual(calls, 0)

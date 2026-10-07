@@ -61,9 +61,9 @@ end
 ---
 --- The manifest is read through NS.Meta rather than by naming C_AddOns here:
 --- core/EnvSetup.lua owns the seam over LibKa0s-Env-1.0 (architecture-§1), so an
---- inline re-spelling would both duplicate the ladder and drop the pre-11.x rung
---- it exists to keep. NS.Version() is that pair — manifest first, constant after
---- — resolved once, in one place.
+--- inline re-spelling would duplicate the two-rung ladder (the library, then
+--- C_AddOns) and drift from it the first time either rung changes. NS.Version()
+--- is that pair — manifest first, constant after — resolved once, in one place.
 Sl.Version = NS.Version
 
 -- Forward declarations. See "WHY THE HANDLERS RESOLVE LATE" above — every one of

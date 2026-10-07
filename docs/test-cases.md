@@ -614,7 +614,7 @@ Total.
 - MediaSetup: every name the library ships has a file in the vendored copy
 - MediaSetup: with no library there is no art, and that is not an error
 
-### test_envsetup.lua (12)
+### test_envsetup.lua (13)
 
 - EnvSetup: the vendored library really did register, so the cases below mean something
 - EnvSetup: NS.Meta reads this addon's TOC
@@ -626,6 +626,7 @@ Total.
 - EnvSetup degraded: an install with no LibKa0s still reads its own TOC
 - EnvSetup: the deleted shim is gone from Compat
 - EnvSetup: with the library loaded, the bare global is no rung; NS.version takes its constant
+- EnvSetup degraded: with no library and no C_AddOns, the bare global is no rung either
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
@@ -2478,7 +2479,7 @@ Total.
 | test_perfsetup.lua | 26 |
 | test_debuglogsetup.lua | 32 |
 | test_mediasetup.lua | 7 |
-| test_envsetup.lua | 12 |
+| test_envsetup.lua | 13 |
 | test_launchersetup.lua | 50 |
 | test_lifecycle.lua | 40 |
 | test_vendor_sync.lua | 3 |
@@ -2533,4 +2534,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2195** |
+| **Total** | **2196** |
