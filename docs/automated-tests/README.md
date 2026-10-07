@@ -35,7 +35,7 @@ differs between them, so a bare "gates? yes/no" column cannot be written honestl
 | `lint` | `luacheck .` | **yes** | **yes** |
 | `tests` | `lua tests/run.lua` | **yes** | **yes** |
 | `perf` | `lua tests/perf.lua` | **no — recorded only** | **yes** |
-| `complexity` | `lizard -l lua -x "./libs/*" -x "./tests/_kit/*" .` | **no — recorded only** | **yes** |
+| `complexity` | `bash tests/_kit/run-automated-tests.sh --suite complexity` | **no — recorded only** | **yes** |
 
 **`lint` and `tests` gate the COMMIT.** Both must be green before anything is staged. The runner's
 exit code is non-zero only when the verdict is `red`, which is exactly "a gating suite failed", so

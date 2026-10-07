@@ -391,7 +391,7 @@ the arms (two arms at the same frame time, or at a round one like 8.33 ms).
 Cyclomatic complexity is measured by the same vendored runner, as its `complexity` suite:
 
 ```sh
-lizard -l lua -x "./libs/*" -x "./tests/_kit/*" .
+bash tests/_kit/run-automated-tests.sh --suite complexity
 ```
 
 Recorded and compared, **never thresholded into a build failure** — though the **release** does gate
