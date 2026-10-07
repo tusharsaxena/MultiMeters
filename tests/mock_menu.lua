@@ -9,8 +9,8 @@
 --
 -- WHY A SIBLING AND NOT A BRANCH OF tests/wow_mock.lua. The builder already carries a MenuUtil for
 -- the window header's segment selector (CreateTitle / CreateDivider / CreateButton), and it is on
--- notice under layout-§1's 1500-line cap. This one is installed per case, over that one, only by
--- tests/test_launchersetup.lua:
+-- notice under layout-§1's 1500-line cap. This one is installed per case, over that one, by two
+-- callers only: tests/test_launchersetup.lua's openMenu and tests/test_disabled.lua's 'Disabled 8b':
 --
 --     local menu = assert(loadfile(T.root .. "/tests/mock_menu.lua"))()(inst.mocks)
 --
