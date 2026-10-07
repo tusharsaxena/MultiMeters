@@ -278,6 +278,14 @@ One case is legal in either state and is taken: if the owner has **no cell yet**
 pet did damage its owner did not), the pet's numbers are adopted wholesale. That is not a sum — and
 it is the correct answer, because the owner did that damage, through the pet.
 
+**The sum does not depend on the order of the source list.** A pet that out-ranks its owner arrives
+first in the column, and the cell it adopts is marked pet-seeded. When the owner's own source
+arrives later, `mergeOwnIntoPetSeeded` writes the owner's figures (its `maxAmount`, `deathRecapID`
+and `deathTime` included) and then adds the pet's total and rate back, under exactly `foldPet`'s
+`Secrets.CanCompare2` and number-type guards. So pet-then-owner gives the same total as
+owner-then-pet. If those guards refuse, the owner's own figures stand alone and the refusal is
+counted in the same `unfolded` tally as a refused fold: it is reported, never approximated.
+
 Attribution itself is best-effort. `modules/Roster.lua` builds the owner map by asking `UnitGUID` for
 every member's pet unit (`playerpet`, `party3pet`, `raid17pet`). That is *exact* for what it covers
 and covers nothing else: guardians, totems, temporary summons, a second pet, or a pet whose owner is
@@ -583,7 +591,7 @@ the first ten the API happened to return would produce a "top 5" that is nothing
 `Secrets.SafeCount` — which obtains a length without the `#` operator. A missing `totalAmount` fails
 the pre-pass too: `CanAccess(nil)` is `true`, so a row with no amount would sail through and raise
 inside the comparator with "attempt to compare nil with number". Booleans off the API (`isAvoidable`,
-`isDeadly`) go through `plainTruth`, because a boolean test on a *secret boolean* raises.
+`isDeadly`, `hideCaster`) go through `Secrets.PlainTruth`, because a boolean test on a *secret boolean* raises.
 
 **Drill-down** (`modules/DrillDown.lua`) builds no row frames at all. `BuildRows` returns rows in the
 same shape the aggregator produces, and `modules/Window.lua` feeds them to the same row pool and the
@@ -768,6 +776,7 @@ If you are adding to the data path, these are the only files that may know anyth
 | Is the restriction active? | `NS.Secrets.IsRestricted()` | `InCombatLockdown()` |
 | What state is it in? | `NS.Secrets.GetRestrictionState()` — `Activating` is the last legal read | a boolean |
 | May I compare these two? | `NS.Secrets.CanCompare2(a, b)` | `a < b` and hope |
+| Is this flag set? | `NS.Secrets.PlainTruth(v)` — an inaccessible flag reads `false` | `if v then`, `v == true` |
 | May I walk this array? | `NS.Secrets.SafeIterate(t, fn)` | `ipairs`, `#t` |
 | How long is it? | `NS.Secrets.SafeCount(t)` — returns `nil`, not `0`, when it cannot see | `#t` |
 | Can I print this? | `NS.IsConcatSafe(v)` / `NS.SafeToString(v)` | `tostring(v)` into `table.concat` |

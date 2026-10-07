@@ -688,6 +688,21 @@ test("Rename keeps the uniqueness check the row does not have", function()
     assertEqual(windows[2].name, windows[1].name .. " 2", "a taken name is disambiguated, not refused")
 end)
 
+test("Rename to a different case of its own name keeps that name", function()
+    -- red under: uniqueName counting the window being renamed as a collision
+    -- (Resolve folds case, so Raid -> raid stored "raid 2").
+    local inst, M = loaded()
+    M:Create("Second")
+    local windows = inst.NS.Database.GetWindows()
+    assertEqual(M:Rename(windows[2].id, "Raid"), true)
+    assertEqual(M:Rename(windows[2].id, "raid"), true)
+    assertEqual(windows[2].name, "raid", "a case-only rename of itself is not a collision")
+
+    -- Another window's name in a different case is still taken.
+    assertEqual(M:Rename(windows[1].id, "RAID"), true)
+    assertEqual(windows[1].name, "RAID 2", "another window's name is a collision in any case")
+end)
+
 test("CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it copies", function()
     -- Seventy-odd rows through the seam one at a time would be seventy
     -- re-applies of the target and seventy lines in the log for one click.

@@ -184,12 +184,22 @@ end
 --- An empty base is not an error: it is the caller asking for the default,
 --- which is what settings/Windows.lua's "New window" button and `/mm window
 --- new` with no name both do.
-local function uniqueName(base)
+---
+--- `selfId` is the window being renamed, if any. Resolve folds case, so
+--- without it renaming "Raid" to "raid" would find ITSELF and store "raid 2";
+--- a hit on the window that owns the name is not a collision.
+--- @param base string|nil
+--- @param selfId number|nil
+local function uniqueName(base, selfId)
     base = tostring(base or ""):match("^%s*(.-)%s*$")
     if base == "" then return defaultName() end
-    if not M.Resolve(base) then return base end
+    local function taken(name)
+        local cfg = M.Resolve(name)
+        return cfg ~= nil and (selfId == nil or cfg.id ~= selfId)
+    end
+    if not taken(base) then return base end
     local n = 2
-    while M.Resolve(base .. " " .. n) do n = n + 1 end
+    while taken(base .. " " .. n) do n = n + 1 end
     return base .. " " .. n
 end
 
@@ -322,7 +332,7 @@ function M:Rename(key, newName)
     newName = tostring(newName or ""):match("^%s*(.-)%s*$")
     if newName == "" then return false, L["A window name cannot be empty."] end
 
-    local ok, err = NS.SetByPath("window.name", uniqueName(newName), cfg.id)
+    local ok, err = NS.SetByPath("window.name", uniqueName(newName, cfg.id), cfg.id)
     if not ok then return false, err end
     local inst = instances[cfg.id]
     if inst then inst:ApplyConfig() end

@@ -594,7 +594,7 @@ differs between them, so a bare "gates? yes/no" column cannot be written honestl
 | `lint` | `luacheck .` | **yes** | **yes** |
 | `tests` | `lua tests/run.lua` | **yes** | **yes** |
 | `perf` | `lua tests/perf.lua` | **no — recorded only** | **yes** |
-| `complexity` | `bash tests/_kit/run-automated-tests.sh --suite complexity` (kit 36: `lizard -l lua -L 1500 -x "./libs/*" -x "./tests/_kit/*" .` over the sighted shadow, with function-count parity) | **no — recorded only** | **yes** |
+| `complexity` | `bash tests/_kit/run-automated-tests.sh --suite complexity` (`lizard -l lua -L 1500 -x "./libs/*" -x "./tests/_kit/*" .` over the sighted shadow, with function-count parity) | **no — recorded only** | **yes** |
 
 **`lint` and `tests` gate the COMMIT.** Both green, every time, before anything is staged.
 

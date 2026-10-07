@@ -82,16 +82,16 @@ overlap, and **a parent must never be summed with its children**.
 
 | Bucket | Inside | What it brackets | Call sites |
 |---|---|---|---|
-| `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:484`, `:494`, `:502` |
-| `spellEvent` | — | one `UNIT_SPELLCAST_SUCCEEDED` handler — the Feign Death check, early returns included | `core/MultiMeters.lua:447` |
-| `systemEvent` | — | one `CHAT_MSG_SYSTEM` handler — the whisper-to-nobody check offered to `modules/Export.lua` | `core/MultiMeters.lua:438` |
+| `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:487`, `:497`, `:505` |
+| `spellEvent` | — | one `UNIT_SPELLCAST_SUCCEEDED` handler — the Feign Death check, early returns included | `core/MultiMeters.lua:450` |
+| `systemEvent` | — | one `CHAT_MSG_SYSTEM` handler — the whisper-to-nobody check offered to `modules/Export.lua` | `core/MultiMeters.lua:441` |
 | `refresh` | — | one coalesced window refresh pass | `modules/Window.lua:1140`, `:1150`, `:1173`, `:1180` (every exit) |
 | `providerRead` | — (observed: `aggregate`, `targets`) | one `C_DamageMeter` column read | `modules/Provider.lua:375` |
-| `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1158`, `modules/DrillDown.lua:700`, `:734` |
-| `render` | `refresh` | the window's draw | `modules/Window.lua:1331` |
+| `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1264`, `modules/DrillDown.lua:719`, `:731` |
+| `render` | `refresh` | the window's draw | `modules/Window.lua:1324` |
 | `renderRow` | `render` | one row's cells | `modules/Row.lua:1167` |
 | `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:788`, `:930`, `:948`, `:1010`, `:1024`, `:1038` |
-| `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:396`, `:404`, `:418` |
+| `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:443` (opened only once a player was asked about) |
 
 `spellEvent` and `systemEvent` are **measurement only** (MultiMeters-R-17). Both events stay
 registered for the whole session for one narrow use apiece, and `UNIT_SPELLCAST_SUCCEEDED` fires for
@@ -250,6 +250,7 @@ and every column backed by a real session.
 | `rosterRebuild` | one `ROSTER_CHANGED` plus one refresh | the cache really was invalidated (walks > 0) |
 | `rosterBurst` | **ten** `ROSTER_CHANGED` plus one refresh | the same walk count as a single message — `modules/Roster.lua` rebuilds **lazily**, on the next read, not eagerly in the handler |
 | `rosterCached` | refreshes with an unchanged roster | zero unit reads |
+| `rosterPartial` | refreshes with one raid member's unit token unresolved, so the roster stays **partial** and is retried | more than zero unit reads (the map is still retried) and **no more than one rebuild's** — `Roster.BeginPass` arms one retry per aggregate pass. Measured 2026-10-07: 20 unit reads per refresh against `rosterRebuild`'s 21, 0.70 ms and 314375 bytes/iter; before the fix (retry on every lookup) the same scenario read **3200** units per refresh, 9.76 ms and 3041542 bytes/iter (MM-R-03) |
 | `applyConfig` | a settings change re-applying config and re-laying every row | recorded only |
 | `probeOverheadOff` / `probeOverheadOn` | the same refresh with brackets dormant, then armed | the zero-overhead assertions below |
 | `suspended` | a refresh with the provider suspended | **zero** meter API calls — suspend stops the reads at the source |
@@ -390,7 +391,7 @@ the arms (two arms at the same frame time, or at a round one like 8.33 ms).
 Cyclomatic complexity is measured by the same vendored runner, as its `complexity` suite:
 
 ```sh
-lizard -l lua -x "./libs/*" -x "./tests/_kit/*" .
+bash tests/_kit/run-automated-tests.sh --suite complexity
 ```
 
 Recorded and compared, **never thresholded into a build failure** — though the **release** does gate

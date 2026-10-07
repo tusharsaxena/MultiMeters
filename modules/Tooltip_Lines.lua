@@ -15,7 +15,7 @@
 -- modules/Tooltip.lua's header, and it is not weaker on this side of the seam:
 -- no amount is added, subtracted, divided or compared here either; amounts reach
 -- the screen through string.format or the number formatter; booleans off the API
--- go through `plainTruth`. Read that header before changing anything below.
+-- go through `Secrets.PlainTruth`. Read that header before changing anything below.
 --
 -- TOC POSITION: modules/, immediately after modules\Tooltip.lua. LOAD-BEARING:
 -- every name in the block below is resolved at FILE SCOPE off
@@ -36,7 +36,6 @@ local TOOLTIP_ICON_SIZE = I.TOOLTIP_ICON_SIZE
 local formatNumber = I.formatNumber
 local formatShare = I.formatShare
 local plainWord = I.plainWord
-local plainTruth = I.plainTruth
 local tooltipConfig = I.tooltipConfig
 local mediaPath = I.mediaPath
 local tooltipFont = I.tooltipFont
@@ -768,11 +767,11 @@ local function killingBlowOf(recap)
         return nil, nil
     end
 
-    -- `hideCaster` may be a secret boolean, so it goes through plainTruth -- the
+    -- `hideCaster` may be a secret boolean, so it goes through Secrets.PlainTruth -- the
     -- same gate eventColumns applies to the same field. An environmental death
     -- (a fall, a fire) has no caster to name and says so by setting it.
     local caster = plainWord(newest.sourceName)
-    if plainTruth(newest.hideCaster) then caster = nil end
+    if Secrets and Secrets.PlainTruth(newest.hideCaster) then caster = nil end
 
     -- A MELEE SWING HAS NO SPELL AT ALL -- no id, no name -- and is named the way
     -- Blizzard's own recap names it rather than left blank. Unlike eventColumns

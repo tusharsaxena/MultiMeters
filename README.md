@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2187%2F2187_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2196%2F2196_passing-green)
 
 Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
@@ -94,7 +94,7 @@ Please raise them on GitHub:
 
 | Version | Date | Highlights |
 |---|---|---|
-| 1.1.0 | 2026-09-27 | - Settings are easier to find your way around: three pages (General, Windows and Profiles), and the Windows page has an Active window picker and a side list with its own Defaults button<br>- New minimap button: left-click opens settings, right-click switches Enabled, Locked, Test mode and Show window, and hovering shows the version and status<br>- Bars slide to their new length instead of snapping on every refresh<br>- Test mode ends when combat starts and won't start mid-fight. A bare `/mm` opens settings, `/mm enable` and `/mm disable` turn the addon on and off, and `/mm resetall` asks first<br>- Fixed "Always show yourself" dropping you off the window when you rank below the visible rows, and `/mm diagnostics` now prints a full report to attach to bug reports |
+| 1.1.0 | 2026-09-27 | - Settings are easier to find your way around: three pages (General, Windows and Profiles), and the Windows page has an Active window picker and a side list with its own Defaults button<br>- New minimap button: left-click opens settings, right-click switches Enabled, Locked, Test mode and Show window, and hovering shows the version and status<br>- Bars slide to their new length instead of snapping on every refresh<br>- Test mode ends when combat starts and won't start mid-fight. A bare `/mm` opens settings, `/mm enable` and `/mm disable` turn the addon on and off, and `/mm resetall` asks first<br>- Fixed "Always show yourself" dropping you off the window when you rank below the visible rows, and `/mm diagnostics` now prints a full report to attach to bug reports<br>- The minimap button's slash-command setting has a new name, so update any macro that uses the old one: `/mm set minimap.hide true` is now `/mm set global.minimap.shown true` (`true` still shows the button) |
 | 1.0.1 | 2026-09-11 | - Re-published 1.0.0 unchanged (a rebuild trigger); the TOC still read 1.0.0 |
 | 1.0.0 | 2026-09-10 | - First published release — Multi Meters is now on CurseForge<br>- Fixed test mode drawing breakdown bars with no numbers on them<br>- Roster rows now carry spec identity<br>- Updated for game patch 12.1.0 |
 | 0.1.0 | 2026-08-09 | - First release. Multi-column single-frame group meter sourced from Blizzard's damage meter: Damage, Healing, Interrupts, Dispels, Avoidable Damage and Deaths; current/overall sessions; multiple independently configured windows with copy-settings-from; tooltips, cell drill-down and death recap; per-window visibility. |

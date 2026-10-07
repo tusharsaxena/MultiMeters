@@ -521,3 +521,102 @@ test("Secrets degraded: canaccesstable alone missing still refuses a secret tabl
     assertEqual(S.SafeIterate(m.secretTable({ 1 }), function() end), 0)
     assertTrue(S.CanAccessTable({ 1 }), "an ordinary table is still fine")
 end)
+
+-- ── PlainTruth: the one boolean probe ───────────────────────────────────────
+--
+-- A field that MIGHT be a secret boolean (`isLocalPlayer`, `hideCaster`,
+-- `isAvoidable`) cannot be written `if v then` or `v == true`: both are a
+-- boolean test on the secret, and tainted code may not make one. The question
+-- "is this plainly true?" therefore belongs to core/Secrets.lua like every other
+-- inspection, and it used to be answered by two drifted file-local copies in
+-- modules/Aggregator.lua and modules/Tooltip.lua while modules/Provider.lua's
+-- diagnostics compared the field unguarded.
+
+test("Secrets: PlainTruth answers a plain boolean for every plain value", function()
+    -- red under: no Secrets.PlainTruth -- the copies lived in the modules.
+    assertEqual(type(Secrets.PlainTruth), "function", "core/Secrets.lua must export PlainTruth")
+    assertEqual(Secrets.PlainTruth(true), true)
+    assertEqual(Secrets.PlainTruth(false), false)
+    assertEqual(Secrets.PlainTruth(nil), false, "nil is no claim, and answers false not nil")
+    assertEqual(Secrets.PlainTruth(0), true, "a non-boolean is truthy in Lua, 0 included")
+    assertEqual(Secrets.PlainTruth("x"), true)
+end)
+
+test("Secrets: PlainTruth reads an inaccessible secret as false without testing it", function()
+    -- The simulator cannot trap a truth test (no metamethod exists), so the
+    -- falsifiable half is the ANSWER: a wrapped `true` is a truthy table, and an
+    -- implementation that tested it instead of asking CanAccess first says true.
+    -- red under: `return v and true or false` with no CanAccess guard.
+    local inst = T.load{}
+    local S, m = inst.NS.Secrets, inst.mocks
+    m.setSecretsAccessible(false)
+    local ok, v = pcall(S.PlainTruth, m.secret(true))
+    assertTrue(ok, "PlainTruth raised on a secret: " .. tostring(v))
+    assertEqual(v, false, "an inaccessible flag reads as no claim")
+    m.setSecretsAccessible(true)
+    assertEqual(S.PlainTruth(m.secret(true)), true,
+        "during the Activating edge the same flag may be read")
+end)
+
+test("Secrets: no file outside core/Secrets.lua defines its own plainTruth", function()
+    -- Rule R1 in letter as well as in effect: one probe, one home.
+    -- red under: the file-local copies in modules/Aggregator.lua and modules/Tooltip.lua.
+    for _, rel in ipairs(T.loadedAddonFiles) do
+        local fh = io.open((T.root or ".") .. "/" .. rel, "r")
+        local src = fh and fh:read("*a") or ""
+        if fh then fh:close() end
+        if rel:lower() ~= "core/secrets.lua" then
+            assertNil(src:match("local%s+function%s+plainTruth"),
+                rel .. " defines a plainTruth of its own -- use Secrets.PlainTruth")
+        end
+    end
+end)
+
+test("Secrets: the Provider's field probes truth-test a secret isLocalPlayer through PlainTruth", function()
+    -- MM-R-07. Both diagnostics probes asked `isLocalPlayer == true`, and the
+    -- field census let any value whose type() answered "boolean" through to
+    -- tostring and table keying BEFORE asking IsSecret. The client answers a
+    -- secret boolean's own type; the simulator's wrapper is a table, so the case
+    -- shims `type` the client's way for the length of the two probe calls.
+    -- red under: `isLocal == true` / `src.isLocalPlayer == true` (PlainTruth is
+    -- never asked), and under `type(value) == "boolean" or not IsSecret(value)`
+    -- (the secret flag is counted plain and keyed as "<secret>").
+    local inst = T.load()
+    local m, S, P = inst.mocks, inst.NS.Secrets, inst.NS.Provider
+    m.setSession(1, "*", {
+        combatSources = {
+            { sourceGUID = "P1", classFilename = "MAGE",   totalAmount = 3,
+              isLocalPlayer = m.secret(true) },
+            { sourceGUID = "P2", classFilename = "PRIEST", totalAmount = 2,
+              isLocalPlayer = false },
+        },
+        maxAmount = 3, totalAmount = 5,
+    })
+    m.setRestricted(true)
+
+    local asked, real = 0, S.PlainTruth
+    S.PlainTruth = function(v)
+        if m.isSimulatedSecret(v) then asked = asked + 1 end
+        return real(v)
+    end
+    m.type = function(v)
+        if m.isSimulatedSecret(v) then return type(m.reveal(v)) end
+        return type(v)
+    end
+    local okFields, fields = pcall(P.ProbeSourceFields, 1, "DamageDone")
+    local okLookup, lookup = pcall(P.ProbeSourceLookup, 1, "DamageDone")
+    m.type = nil
+    S.PlainTruth = real
+
+    assertTrue(okFields, "the field probe raised: " .. tostring(fields))
+    assertTrue(okLookup, "the lookup probe raised: " .. tostring(lookup))
+    assertTrue(asked >= 2, "both probes must ask Secrets.PlainTruth about the secret flag, asked "
+        .. asked .. " times")
+
+    local byName = {}
+    for _, f in ipairs(fields) do byName[f.name] = f end
+    local flag = byName.isLocalPlayer
+    assertEqual(flag.secret, 1, "the secret flag is counted secret, not plain")
+    assertEqual(flag.plainCount, 1, "only the plain `false` is plain")
+    assertEqual(flag.distinct, 1, "and only it was keyed -- a secret never becomes a census key")
+end)

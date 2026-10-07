@@ -32,7 +32,7 @@ such rather than listed as a requirement.
 |---|---|---|---|
 | `lua5.1` (+ `luac`) | **5.1 exactly** | the headless suite, `lua tests/run.lua` | `tests/_kit/loader.lua` uses `setfenv` |
 | `luacheck` | any recent | `luacheck .`, the other half of the green gate | `.luacheckrc` at the repo root |
-| `lizard` | **1.24.0** (pinned) | the `complexity` suite of `tests/_kit/run-automated-tests.sh` | `tests/_kit/run-automated-tests.sh` invokes `lizard` over the sighted shadow `tests/_kit/lizard_sighted.lua` builds (kit 36); the sanitizer targets 1.24.0's Lua blind spots, so an upgrade is re-checked against parity before it is taken |
+| `lizard` | any recent (verified with 1.24.0) | the `complexity` suite of `tests/_kit/run-automated-tests.sh` | `tests/_kit/run-automated-tests.sh` invokes `lizard` over the sighted shadow `tests/_kit/lizard_sighted.lua` builds and checks function-count parity, because `lizard` alone is blind in Lua (automated-tests-§3) |
 | `git` | any recent | the headless suite itself, vendoring, `diff -r` against the LibKa0s repo, and the runner's own provenance stamp | `lua tests/run.lua` shells out to `git ls-files` (`tests/test_doc_structure.lua:143`, `tests/test_lintconfig.lua:217`, `tests/test_texture_paths.lua:99`), so the green gate needs it; library-stack-§7; `tests/_kit/run-automated-tests.sh` calls `git describe` / `git rev-parse` / `git status --porcelain` |
 | `bash` | **4.x or later** | `tests/_kit/run-automated-tests.sh` — the whole automated-test bundle | its shebang is `#!/usr/bin/env bash`, and it declares an associative array (`declare -A ST DUR NOTE`), which `dash`/POSIX `sh` has no syntax for |
 
@@ -55,7 +55,7 @@ sudo luarocks install luacheck
 # so `pip install lizard` fails; pipx installs it into its own venv and puts it on PATH.
 sudo apt-get install -y pipx
 pipx ensurepath          # then open a new shell, or: source ~/.bashrc
-pipx install lizard==1.24.0
+pipx install lizard
 
 # verify — each of these must print a version
 lua5.1 -v                # Lua 5.1.5 …   (if `lua` is not 5.1, use lua5.1 explicitly)
@@ -65,9 +65,12 @@ git --version
 bash --version         # GNU bash, version 4.x or 5.x — Ubuntu ships one by default
 ```
 
-Versions are pinned only where a version matters: `lua5.1` is hard, `lizard` is held at 1.24.0
-because the kit's sighted shadow is built against that release's blind spots, and `luacheck` is
-"any recent", where pinning would be false precision.
+Versions are named only where a version matters: `lua5.1` is hard, and `lizard` and `luacheck` are
+"any recent", where pinning would be false precision. `lizard` stays "any recent" even though its
+Lua reader is blind in known places, because the kit's sighted complexity suite checks
+function-count parity on every run: a `lizard` that reads differently shows up as a parity failure
+(a blind file), not as a quiet pass, so no pin is needed to catch it (documentation-§7,
+automated-tests-§3).
 
 ## Release / assets
 
@@ -93,9 +96,9 @@ embeds those from CurseForge's own CDN rather than from this repo.
 ## Am I set up correctly?
 
 ```sh
-lua tests/run.lua                                     # the suite — must be green
-luacheck .                                            # must be 0 warnings / 0 errors
-lizard -l lua -x "./libs/*" -x "./tests/_kit/*" .     # the complexity report (release-time)
+lua tests/run.lua                                                       # the suite — must be green
+luacheck .                                                              # must be 0 warnings / 0 errors
+bash tests/_kit/run-automated-tests.sh --suite complexity --no-bundle   # the complexity report (release-time)
 ```
 
 See `docs/testing.md` for what those commands mean and when each is run.

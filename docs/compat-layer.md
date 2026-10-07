@@ -210,11 +210,11 @@ fails to open must not put an error in front of the player mid-pull.
 - **Shims `LibKa0s` supplies are not counted against this file's trigger and are not restated here**,
   unless this file publishes them on its own `Compat` table. The four `LibKa0s-Compat-1.0` readers
   above are entry points on `NS.Compat`, so they stay in the count. TOC metadata is
-  `LibKa0s-Env-1.0`'s, reached through `core/EnvSetup.lua` — which is also why the
-  `Compat.GetAddOnMetadata` its header names is a historical reference rather than a member of this
-  file.
+  `LibKa0s-Env-1.0`'s, reached through `core/EnvSetup.lua`, whose degraded ladder is
+  `C_AddOns.GetAddOnMetadata` and then nothing: there is no `Compat.GetAddOnMetadata`, and no
+  bare-global rung.
 - **`C_DeathRecap.GetRecapLink`** is left unshimmed until something wants a chat link (spec §10).
-- **`Compat.OpenDeathRecap`** does not exist. `modules/DrillDown.lua:271` probes for it optimiztically
+- **`Compat.OpenDeathRecap`** does not exist. `modules/DrillDown.lua:264` probes for it optimistically
   so that the call site picks it up with no edit if it is ever added; the guard there is the whole of
   its current behavior.
 - **Anything that reads a meter value.** `core/Secrets.lua` owns that, exclusively.

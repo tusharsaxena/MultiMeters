@@ -402,9 +402,10 @@ end
 --- The one [Roster] line a build writes: `built members=…` or `partial build …`.
 ---
 --- CHANGE-GATED, through ONE call site (debug-logging-§9, quiet steady state). A
---- partial build is retried on every refresh, four times a second, and a group
---- whose unit API never fills (a member the client cannot see) used to write the
---- same `partial build (4 of 5)` line on each retry for as long as it lasted.
+--- partial build is retried once per aggregate pass (Roster.BeginPass), so four
+--- times a second while a window refreshes, and a group whose unit API never
+--- fills (a member the client cannot see) used to write the same
+--- `partial build (4 of 5)` line on each retry for as long as it lasted.
 --- Through NS.DebugSteady the first one is written and the rest are counted: the
 --- `(xN)` lands on it when the build finally completes, which is the flush line
 --- the hold waited for. Both shapes share this one site on purpose, so a partial
@@ -456,6 +457,9 @@ end
 --- One pass, three outputs, because they are derived from the same unit walk and
 --- splitting them would walk the group three times on every regroup.
 local function build()
+    -- The armed retry (Roster.BeginPass) is spent by this build, whichever way
+    -- it ends: the rest of the pass answers from what it stores.
+    cache.retryArmed = nil
     local handled, preview = cacheTestModeGroup()
     if handled then return preview end
 
@@ -481,8 +485,9 @@ local function build()
     -- `GetNumGroupMembers` is the cross-check, and it is a fair one: it is
     -- populated well before the individual unit tokens are, so "the API says five
     -- and I found two" is a reliable "ask again in a moment". Leaving the cache
-    -- cold makes the next refresh retry — a quarter of a second later — and the
-    -- map self-corrects instead of being wrong until the group next changes.
+    -- marked makes the next aggregate pass retry — a quarter of a second later —
+    -- and the map self-corrects instead of being wrong until the group next
+    -- changes.
     --
     -- The result is still RETURNED, so this pass renders with what there is
     -- rather than with nothing.
@@ -492,7 +497,8 @@ local function build()
 
     -- MARKED, not withheld. The map is stored either way so every lookup below
     -- has something to answer from; what `partial` changes is that `ensure` will
-    -- build again on the next read instead of trusting it.
+    -- build again on the next aggregate pass (Roster.BeginPass) instead of
+    -- trusting it.
     local expected = numGroupMembers()
     cache.partial = (expected > 1 and #group < expected) or nil
 
@@ -519,8 +525,8 @@ local function build()
     return group
 end
 
---- Build if the cache is cold; otherwise hand back what is there.
---- Build if the cache is cold OR if what is there is known to be short.
+--- Build if the cache is cold, OR if what is there is known to be short AND
+--- this aggregate pass has not retried it yet; otherwise hand back what is there.
 ---
 --- THE RETRY IS THE FIX FOR AN EMPTY WINDOW. The roster is invalidated on
 --- GROUP_ROSTER_UPDATE and PLAYER_ENTERING_WORLD, and both fire BEFORE the unit
@@ -533,16 +539,35 @@ end
 --- `GetNumGroupMembers` is the cross-check and it is a fair one: it populates
 --- well before the individual unit tokens do, so "the API says five and I found
 --- two" is a reliable "ask again in a moment". Retrying costs one unit walk per
---- refresh — a quarter of a second apart — and only until the group resolves.
+--- aggregate pass — a quarter of a second apart — and only until the group
+--- resolves.
+---
+--- ONE WALK PER PASS, NOT PER LOOKUP (MM-R-03). Get, IsGroupMember, OwnerOf and
+--- LocalGUID all come through here, several times per source per column, and a
+--- retry on every one of them made a 7-column pass over a short three-member
+--- group cost 60 UnitGUID calls instead of 3. So the retry is ARMED: Roster.
+--- BeginPass sets it at the top of modules/Aggregator.lua's Build, the first
+--- lookup spends it, and every other lookup in that pass (and every caller
+--- outside a pass: a tooltip, the drill-down) answers from the stored map.
 local function ensure()
     local group = cache.group
-    if group and not cache.partial then return group end
+    if group and not (cache.partial and cache.retryArmed) then return group end
     return build()
 end
 
 -- ---------------------------------------------------------------------------
 -- Public API
 -- ---------------------------------------------------------------------------
+
+--- Arm one retry of a short roster for the aggregate pass about to run.
+---
+--- modules/Aggregator.lua's Build calls this once, before its first lookup. A
+--- partial map is then rebuilt by that first lookup and by no other in the pass;
+--- a complete map is never rebuilt here (only Refresh / Forget drop it), so on a
+--- resolved group this is a flag write and nothing more.
+function Roster.BeginPass()
+    cache.retryArmed = true
+end
 
 --- The group, in display order: the player first, then party1..N / raid1..N.
 ---

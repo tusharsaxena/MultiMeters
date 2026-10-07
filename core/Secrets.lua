@@ -247,6 +247,28 @@ local function isSafeKeyGuard(v)
 end
 Secrets.IsSafeKey = CompatLib and CompatLib.IsSafeKey or isSafeKeyGuard
 
+--- Truth-test a field that MIGHT be a secret boolean: true only when `v` is
+--- accessible and truthy.
+---
+--- `if src.isLocalPlayer then` is the natural way to write this, and so is
+--- `src.isLocalPlayer == true`; both raise the moment the field is secret,
+--- because a boolean test or a comparison on a secret boolean is exactly what
+--- tainted code may not do. Asking CanAccess first keeps the inspection in this
+--- file, and an inaccessible flag reads as "no claim" (false), which is the safe
+--- answer for every caller: the aggregator's local-player attribution, the
+--- identity key's local bit, the tooltip's `hideCaster`, and the provider's
+--- diagnostics probes all treat "not plainly true" as "not set".
+---
+--- This is the ONE copy. modules/Aggregator.lua and modules/Tooltip.lua used to
+--- carry file-local versions, which had already drifted from each other.
+---
+--- @param v any
+--- @return boolean
+function Secrets.PlainTruth(v)
+    if not Secrets.CanAccess(v) then return false end
+    return v and true or false
+end
+
 -- ---------------------------------------------------------------------------
 -- Table inspection
 -- ---------------------------------------------------------------------------

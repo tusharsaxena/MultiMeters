@@ -48,7 +48,6 @@ local formatNumber = I.formatNumber
 local formatShare = I.formatShare
 local unreadable = I.unreadable
 local plainWord = I.plainWord
-local plainTruth = I.plainTruth
 local displayName = I.displayName
 local nameColor = I.nameColor
 local tooltipConfig = I.tooltipConfig
@@ -215,11 +214,12 @@ local function eventColumns(event, secondsBefore)
         name, icon = eventCaption(kind, spellID, icon)
     end
 
-    -- `hideCaster` may be a secret boolean, so it goes through plainTruth. An
+    -- `hideCaster` may be a secret boolean, so it goes through Secrets.PlainTruth. An
     -- absent caster leaves the column EMPTY rather than collapsing it: the
     -- columns have to line up down the whole tooltip.
     local caster = event.sourceName
-    if plainTruth(event.hideCaster) then caster = nil end
+    local Secrets = NS.Secrets
+    if Secrets and Secrets.PlainTruth(event.hideCaster) then caster = nil end
 
     local timeText = eventTimeText(secondsBefore)
 

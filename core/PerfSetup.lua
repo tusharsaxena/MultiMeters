@@ -90,8 +90,9 @@ NS.Perf = lib:New({
     --
     -- Both are resolved by NS.Version() — core/EnvSetup.lua's seam over
     -- LibKa0s-Env-1.0 (architecture-§1) — rather than by an inline ladder here.
-    -- That inline ladder is what this file used to carry, and re-spelling it was
-    -- how a call site quietly dropped the pre-11.x rung. settings/Slash.lua asks
+    -- That inline ladder is what this file used to carry, and a re-spelled copy
+    -- of the two-rung ladder (the library, then C_AddOns) drifts from the seam
+    -- the first time either rung changes. settings/Slash.lua asks
     -- the same function, so `/mm version` and a capture record cannot disagree.
     version = NS.Version(),
 

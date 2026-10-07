@@ -114,7 +114,7 @@ end
 ---
 --- EVERY REGISTRATION ACTUALLY UNREGISTERED, never gated. The order below is the
 --- addon's own dependency order read backwards -- game events first, because
---- core/MultiMeters.lua is the ONLY file that owns one (architecture-4) and
+--- core/MultiMeters.lua is the ONLY file that owns one (architecture-§4) and
 --- stopping it at the source is what stops the whole fan-out; then the bus, whose
 --- subscribers are what the fan-out reaches; then the windows, which are the last
 --- thing still holding a script.

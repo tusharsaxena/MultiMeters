@@ -533,6 +533,36 @@ do
          .. "held"):format(cached.unitsPerIter))
 end
 
+do
+    -- And the short roster (MM-R-03): one member whose unit token has not
+    -- resolved leaves the map PARTIAL, which modules/Roster.lua retries. It used
+    -- to retry on every lookup — Get / IsGroupMember / OwnerOf / LocalGUID,
+    -- several per source per column — so a short raid paid a whole walk per
+    -- lookup, four times a second. Roster.BeginPass arms ONE retry per aggregate
+    -- pass, so a partial refresh costs at most what one full rebuild does.
+    local token = "raid" .. MEMBERS
+    local saved = {
+        guid  = mocks.UnitGUID(token), name = mocks.UnitName(token),
+        class = select(2, mocks.UnitClass(token)), role = mocks.UnitGroupRolesAssigned(token),
+    }
+    mocks.setUnit(token, nil)
+    NS:SendMessage(MSG.ROSTER_CHANGED)
+    local partial = measure("rosterPartial", ITERS, function()
+        inst.dirty = true
+        inst:Refresh()
+    end)
+    assert_(partial.unitsPerIter > 0,
+        "a refresh over a partial roster never retried it — the map can never complete")
+    assert_(partial.unitsPerIter <= rebuild.unitsPerIter,
+        ("a refresh over a partial roster cost %.0f unit reads against one rebuild's %.0f — "
+         .. "modules/Roster.lua is retrying per lookup, not once per pass")
+            :format(partial.unitsPerIter, rebuild.unitsPerIter))
+    mocks.setUnit(token, saved)
+    NS:SendMessage(MSG.ROSTER_CHANGED)
+    inst.dirty = true
+    inst:Refresh()
+end
+
 -- Full window rebuild: a settings change re-applies config and re-lays every row.
 measure("applyConfig", ITERS, function()
     inst:ApplyConfig()

@@ -1,8 +1,10 @@
 # Test Cases
 
 The full inventory of every headless test case in this repo, grouped by the suite file it
-lives in. The `## Totals` table below is the **authoritative pass count** — the README test
-badge and any count quoted in the docs must agree with it.
+lives in. The `## Totals` table below counts the cases that run: its **Total** is the
+authoritative pass count, and the README test badge and any count quoted in the docs must equal
+it. A declared skip is listed by name in its group and counted on the `Skipped` row, never in
+Total.
 
 **Generated — do not hand-edit.** Regenerate with `lua tests/run.lua --list > docs/test-cases.md`.
 
@@ -121,7 +123,7 @@ badge and any count quoted in the docs must agree with it.
 - Constants: the throttle window is a real range around the shipped default
 - Constants: the row cap covers a full raid and the pool step covers a party
 
-### test_secrets.lua (38)
+### test_secrets.lua (42)
 
 - Secrets: core/Secrets.lua is the only file that names a detection API
 - Secrets: IsRestricted tracks the client's restriction state
@@ -161,6 +163,10 @@ badge and any count quoted in the docs must agree with it.
 - Secrets degraded: SafeIterate and SafeCount are ordinary array walks
 - Secrets degraded: canaccessvalue alone missing still refuses a known secret
 - Secrets degraded: canaccesstable alone missing still refuses a secret table
+- Secrets: PlainTruth answers a plain boolean for every plain value
+- Secrets: PlainTruth reads an inaccessible secret as false without testing it
+- Secrets: no file outside core/Secrets.lua defines its own plainTruth
+- Secrets: the Provider's field probes truth-test a secret isLocalPlayer through PlainTruth
 
 ### test_compat.lua (40)
 
@@ -370,11 +376,12 @@ badge and any count quoted in the docs must agree with it.
 - Diagnostics: a secret renders as the library's sentinel, on both paths
 - Diagnostics: the zero-reader SECRET alias is gone
 
-### test_diagnostics_deathrecap.lua (30)
+### test_diagnostics_deathrecap.lua (31)
 
 - Diagnostics: `/mm debug recap` reaches the probe without the debug log
 - Diagnostics: the probe lists EVERY death, not just the newest per player
 - Diagnostics: it probes a NON-LOCAL id and an OLDER id, not only the newest
+- Diagnostics: a SECRET isLocalPlayer fills no slot, whatever type() answers
 - Diagnostics: a client with no reader is the answer that RE-SCOPES the issue
 - Diagnostics: a reader that refuses an id is reported, not swallowed
 - Diagnostics: the probe survives a client that answers nothing at all
@@ -607,7 +614,7 @@ badge and any count quoted in the docs must agree with it.
 - MediaSetup: every name the library ships has a file in the vendored copy
 - MediaSetup: with no library there is no art, and that is not an error
 
-### test_envsetup.lua (12)
+### test_envsetup.lua (13)
 
 - EnvSetup: the vendored library really did register, so the cases below mean something
 - EnvSetup: NS.Meta reads this addon's TOC
@@ -618,7 +625,8 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: NS.Version falls back to this addon's own constant
 - EnvSetup degraded: an install with no LibKa0s still reads its own TOC
 - EnvSetup: the deleted shim is gone from Compat
-- EnvSetup: the deprecated bare global is still a live rung, all the way to NS.version
+- EnvSetup: with the library loaded, the bare global is no rung; NS.version takes its constant
+- EnvSetup degraded: with no library and no C_AddOns, the bare global is no rung either
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
@@ -858,7 +866,7 @@ badge and any count quoted in the docs must agree with it.
 - Distinct PLAIN values are counted, so a constant field reads as one
 - A SECRET value is never compared or keyed on to count distinctness
 
-### test_roster.lua (46)
+### test_roster.lua (48)
 
 - Roster.GetGroup is player-first, then party order
 - Roster.GetGroup carries name, class and role off the unit API
@@ -879,10 +887,12 @@ badge and any count quoted in the docs must agree with it.
 - Entering or leaving test mode invalidates the map
 - Roster subscribes to the roster message; it never sends one
 - modules/Roster.lua registers no game event of its own
-- A partial build is NOT cached, so the next read retries
+- A partial build is NOT trusted, so the next pass retries
 - A partial build retried on every refresh logs once, and the build that completes it says so
 - A complete build IS cached
 - Solo is complete, not partial
+- One aggregate pass over a partial roster rebuilds it once, not per lookup
+- Each pass retries a partial roster once more, and a completed one stops retrying
 - Every member the build learns is remembered in db.global, as a plain copy
 - A pet link is remembered too, and a secret one never reaches SavedVariables
 - Refresh forgets the group but not the people; Forget forgets both
@@ -937,7 +947,7 @@ badge and any count quoted in the docs must agree with it.
 - Feign: with no Roster at all every entry is evicted
 - Feign: the set stops being walked once the last entry goes
 
-### test_aggregator.lua (68)
+### test_aggregator.lua (70)
 
 - Aggregator joins columns on the GUID, which is the only legal key
 - Aggregator's result table IS the row array, and cells aliases values
@@ -955,6 +965,8 @@ badge and any count quoted in the docs must agree with it.
 - Aggregator sums an attributed pet into its owner out of combat
 - Aggregator adopts a pet's numbers into a column the owner has no cell in
 - A pet's position never moves its owner in the provider order
+- A pet ahead of its owner in a column still sums into the owner
+- An owner the gate refuses after its pet shows its own figure, and the refusal is counted
 - A row seen only outside the sort column is parked past every ranked row
 - Aggregator computes percent out of combat
 - ApplyRowLimit truncates to maxRows
@@ -1665,7 +1677,7 @@ badge and any count quoted in the docs must agree with it.
 - Tooltip: a stat key the catalog does not know heads with the key itself
 - Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block
 
-### test_drilldown.lua (62)
+### test_drilldown.lua (59)
 
 - DrillDown.IsActive is a PLAIN BOOLEAN, in both directions
 - Enter captures PLAIN identity fields, never a reference to the row
@@ -1692,9 +1704,6 @@ badge and any count quoted in the docs must agree with it.
 - A Deaths click with no recap id falls through too
 - A Deaths click prefers the Compat shim the moment one exists
 - A click on something that is not a row does nothing
-- The back button is created once and re-used forever after
-- The back button is anchored, never measured
-- The back button exits the drill-down
 - A meter reset leaves every drill-down
 - Deleting a window leaves the drill-down that belonged to it
 - Renaming a window keeps its drill-down open
@@ -1909,7 +1918,7 @@ badge and any count quoted in the docs must agree with it.
 - A visibility field that is not a table reads as `no rules`, not as hide
 - The master enable, test mode and perf suspend are NOT read here
 
-### test_windowmanager.lua (48)
+### test_windowmanager.lua (49)
 
 - WindowManager is published under the flat name every caller uses
 - Init builds one live instance per stored config, and is idempotent
@@ -1950,6 +1959,7 @@ badge and any count quoted in the docs must agree with it.
 - Resume restores from CURRENT state: a window made while suspended comes back
 - Rename writes window.name through the seam, for the window it names
 - Rename keeps the uniqueness check the row does not have
+- Rename to a different case of its own name keeps that name
 - CopyFrom announces CONFIG_CHANGED ONCE, for the target, however much it copies
 - CopyFrom logs ONE [Set] line naming the source, the target and the rows it changed
 - CopyFrom goes through each row's validate, and stores nothing on a refusal
@@ -2197,7 +2207,7 @@ badge and any count quoted in the docs must agree with it.
 - Slash profile: with no library `/mm profile` names what is missing and switches nothing
 - Slash profile: the stub's ProfileSwitch answers false with the same line
 
-### test_disabled.lua (25)
+### test_disabled.lua (26)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -2210,6 +2220,7 @@ badge and any count quoted in the docs must agree with it.
 - Disabled 7: both diagnostics forms reach RunDiagnostics, each once, with no refusal
 - Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam
 - Disabled 8: left-click opens the panel and writes nothing, in either state
+- Disabled 8b: right-click opens the menu with only Enabled live, and writes nothing
 - Disabled 9: re-enabling restores the registration set it had
 - Disabled 9: the rebuild reflects a setting changed WHILE disabled
 - Disabled 10: releasing one hold does not resurrect an addon the other holds down
@@ -2451,7 +2462,7 @@ badge and any count quoted in the docs must agree with it.
 | test_lintconfig.lua | 4 |
 | test_prose.lua | 15 |
 | test_constants.lua | 25 |
-| test_secrets.lua | 38 |
+| test_secrets.lua | 42 |
 | test_compat.lua | 40 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
@@ -2459,7 +2470,7 @@ badge and any count quoted in the docs must agree with it.
 | test_database_migrations.lua | 48 |
 | test_migrations.lua | 8 |
 | test_diagnostics.lua | 35 |
-| test_diagnostics_deathrecap.lua | 30 |
+| test_diagnostics_deathrecap.lua | 31 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
 | test_diagnostics_runtime.lua | 18 |
@@ -2468,7 +2479,7 @@ badge and any count quoted in the docs must agree with it.
 | test_perfsetup.lua | 26 |
 | test_debuglogsetup.lua | 32 |
 | test_mediasetup.lua | 7 |
-| test_envsetup.lua | 12 |
+| test_envsetup.lua | 13 |
 | test_launchersetup.lua | 50 |
 | test_lifecycle.lua | 40 |
 | test_vendor_sync.lua | 3 |
@@ -2476,9 +2487,9 @@ badge and any count quoted in the docs must agree with it.
 | test_provider.lua | 42 |
 | test_provider_recap.lua | 26 |
 | test_provider_fields.lua | 11 |
-| test_roster.lua | 46 |
+| test_roster.lua | 48 |
 | test_feign.lua | 27 |
-| test_aggregator.lua | 68 |
+| test_aggregator.lua | 70 |
 | test_aggregator_identity.lua | 32 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
@@ -2498,11 +2509,11 @@ badge and any count quoted in the docs must agree with it.
 | test_tooltip_lines.lua | 37 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
-| test_drilldown.lua | 62 |
+| test_drilldown.lua | 59 |
 | test_export.lua | 94 |
 | test_export_modal.lua | 32 |
 | test_visibility.lua | 44 |
-| test_windowmanager.lua | 48 |
+| test_windowmanager.lua | 49 |
 | test_schema.lua | 40 |
 | test_schema_paths.lua | 50 |
 | test_schema_batch.lua | 13 |
@@ -2511,7 +2522,7 @@ badge and any count quoted in the docs must agree with it.
 | test_slash_diagnostics.lua | 20 |
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
-| test_disabled.lua | 25 |
+| test_disabled.lua | 26 |
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 46 |
 | test_columnblocks.lua | 35 |
@@ -2520,6 +2531,7 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 5 |
 | test_eol.lua | 2 |
-| test_diagnostics_contract.lua | 9 |
+| test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
-| **Total** | **2188** |
+| Skipped | 1 |
+| **Total** | **2196** |

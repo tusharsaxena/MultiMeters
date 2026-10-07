@@ -1283,19 +1283,12 @@ function WindowProto:Render(entries, preview, isDrill, drillTitle)
 
     entries = entries or {}
 
-    -- The back button belongs to modules/DrillDown.lua and is anchored into this
-    -- window's body at a config-derived offset — nothing measures it, and
-    -- nothing measures the body it lands in (rule R3).
-    local DrillDown = mod("DrillDown")
-    -- NO BACK BUTTON. It used to be acquired here and every drill row shifted
+    -- NO BACK BUTTON. One used to be drawn here and every drill row shifted
     -- down by its height — which is what pushed the last row out through the
     -- bottom of the frame, since `layout.maxRows` is derived from the body
     -- height and knew nothing about a button drawn inside it. Right-click on any
     -- row leaves a breakdown now (modules/Row.lua), so the height is the rows'
     -- again and the overflow cannot recur.
-    if DrillDown and DrillDown.ReleaseBackButton then
-        DrillDown:ReleaseBackButton(self.config)
-    end
 
     -- See the note where this script was installed: the body claims the mouse
     -- only while a breakdown is open, so the grid's hover behavior is untouched.

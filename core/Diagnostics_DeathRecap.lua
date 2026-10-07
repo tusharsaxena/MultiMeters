@@ -105,8 +105,14 @@ end
 --- @return string|nil   the label filled, when one was
 local function fillRecapSlot(slots, src)
     local isLocal = src.isLocalPlayer
+    -- Secrecy is asked FIRST, whatever the type: the client answers a SECRET
+    -- boolean's own type, so the boolean short-circuit below (`safe` is a concat
+    -- probe, and a plain boolean never concatenates) must not be the first
+    -- gate. A death we cannot place fills no slot.
+    local S = NS.Secrets
+    if S.IsSecret(isLocal) then return nil end
     if type(isLocal) ~= "boolean" and not safe(isLocal) then return nil end
-    local mine = (isLocal == true)
+    local mine = S.PlainTruth(isLocal)
     local newest = mine and "local/newest" or "other/newest"
     local older  = mine and "local/older"  or "other/older"
     if slots[newest] == nil then slots[newest] = src return newest end
