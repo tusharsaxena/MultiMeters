@@ -1228,6 +1228,10 @@ function Aggregator.Build(a, b, c)
 
     local t0 = Perf.on and debugprofilestop()
 
+    -- ONE roster retry per pass, armed before the first lookup (MM-R-03): a short
+    -- roster is rebuilt once here and every later lookup answers from cache.
+    Roster.BeginPass()
+
     local pass = newPass(window)
 
     -- TWO BUILDS, chosen by whether the join key exists at all. The GUID join is

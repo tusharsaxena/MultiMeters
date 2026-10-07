@@ -865,7 +865,7 @@ Total.
 - Distinct PLAIN values are counted, so a constant field reads as one
 - A SECRET value is never compared or keyed on to count distinctness
 
-### test_roster.lua (46)
+### test_roster.lua (48)
 
 - Roster.GetGroup is player-first, then party order
 - Roster.GetGroup carries name, class and role off the unit API
@@ -886,10 +886,12 @@ Total.
 - Entering or leaving test mode invalidates the map
 - Roster subscribes to the roster message; it never sends one
 - modules/Roster.lua registers no game event of its own
-- A partial build is NOT cached, so the next read retries
+- A partial build is NOT trusted, so the next pass retries
 - A partial build retried on every refresh logs once, and the build that completes it says so
 - A complete build IS cached
 - Solo is complete, not partial
+- One aggregate pass over a partial roster rebuilds it once, not per lookup
+- Each pass retries a partial roster once more, and a completed one stops retrying
 - Every member the build learns is remembered in db.global, as a plain copy
 - A pet link is remembered too, and a secret one never reaches SavedVariables
 - Refresh forgets the group but not the people; Forget forgets both
@@ -2485,7 +2487,7 @@ Total.
 | test_provider.lua | 42 |
 | test_provider_recap.lua | 26 |
 | test_provider_fields.lua | 11 |
-| test_roster.lua | 46 |
+| test_roster.lua | 48 |
 | test_feign.lua | 27 |
 | test_aggregator.lua | 70 |
 | test_aggregator_identity.lua | 32 |
@@ -2532,4 +2534,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2194** |
+| **Total** | **2196** |

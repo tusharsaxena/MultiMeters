@@ -250,6 +250,7 @@ and every column backed by a real session.
 | `rosterRebuild` | one `ROSTER_CHANGED` plus one refresh | the cache really was invalidated (walks > 0) |
 | `rosterBurst` | **ten** `ROSTER_CHANGED` plus one refresh | the same walk count as a single message — `modules/Roster.lua` rebuilds **lazily**, on the next read, not eagerly in the handler |
 | `rosterCached` | refreshes with an unchanged roster | zero unit reads |
+| `rosterPartial` | refreshes with one raid member's unit token unresolved, so the roster stays **partial** and is retried | more than zero unit reads (the map is still retried) and **no more than one rebuild's** — `Roster.BeginPass` arms one retry per aggregate pass. Measured 2026-10-07: 20 unit reads per refresh against `rosterRebuild`'s 21, 0.70 ms and 314375 bytes/iter; before the fix (retry on every lookup) the same scenario read **3200** units per refresh, 9.76 ms and 3041542 bytes/iter (MM-R-03) |
 | `applyConfig` | a settings change re-applying config and re-laying every row | recorded only |
 | `probeOverheadOff` / `probeOverheadOn` | the same refresh with brackets dormant, then armed | the zero-overhead assertions below |
 | `suspended` | a refresh with the provider suspended | **zero** meter API calls — suspend stops the reads at the source |

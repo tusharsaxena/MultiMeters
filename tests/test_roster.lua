@@ -327,7 +327,7 @@ test("modules/Roster.lua registers no game event of its own", function()
     fh:close()
 end)
 
-test("A partial build is NOT cached, so the next read retries", function()
+test("A partial build is NOT trusted, so the next pass retries", function()
     -- THE EMPTY WINDOW. The roster is invalidated on GROUP_ROSTER_UPDATE and
     -- PLAYER_ENTERING_WORLD, and both fire before the unit API has populated. The
     -- next read built a map with almost nobody in it, cached that, and nothing
@@ -345,16 +345,18 @@ test("A partial build is NOT cached, so the next read retries", function()
 
     assertEqual(#inst.NS.Roster.GetGroup(), 1, "it renders with what there is")
     assertTrue(inst.NS.State.Cache("Roster").partial,
-        "but it must know the map is short, so the next read rebuilds")
+        "but it must know the map is short, so the next pass rebuilds")
 
-    -- The units arrive; the very next read is correct, with no event needed.
+    -- The units arrive; the very next pass is correct, with no event needed.
+    -- (One retry per pass since MM-R-03: Roster.BeginPass arms it.)
     inst.mocks.setGroup(PARTY)
+    inst.NS.Roster.BeginPass()
     assertEqual(#inst.NS.Roster.GetGroup(), 3, "and self-corrects on the next refresh")
 end)
 
 test("A partial build retried on every refresh logs once, and the build that completes it says so", function()
-    -- debug-logging-§9, quiet steady state. A partial build is retried on every
-    -- read, four times a second, and a group whose unit API never fills used to
+    -- debug-logging-§9, quiet steady state. A partial build is retried once per
+    -- aggregate pass, four times a second, and a group whose unit API never fills used to
     -- write the same `partial build` line on each retry for as long as it lasted.
     -- The hold must still be visible (§8, deferred work): one partial line, then
     -- the completing build.
@@ -375,10 +377,11 @@ test("A partial build retried on every refresh logs once, and the build that com
         return n
     end
 
-    for _ = 1, 12 do NS.Roster.GetGroup() end
+    for _ = 1, 12 do NS.Roster.BeginPass() NS.Roster.GetGroup() end
     assertEqual(count("partial build (1 of 3)"), 1, "every retry wrote the same partial line")
 
     inst.mocks.setGroup(PARTY)
+    NS.Roster.BeginPass()
     NS.Roster.GetGroup()
     assertTrue(count("built members=3") == 1, "the completing build was not logged")
     assertTrue(count("(x12)") == 1, "the held run did not say how many retries it stood for")
@@ -404,6 +407,81 @@ test("Solo is complete, not partial", function()
     assertEqual(#inst.NS.Roster.GetGroup(), 1)
     assertNil(inst.NS.State.Cache("Roster").partial,
         "a solo roster must cache, or it rebuilds four times a second forever")
+end)
+
+-- ---------------------------------------------------------------------------
+-- One retry per aggregate pass (MM-R-03)
+-- ---------------------------------------------------------------------------
+--
+-- A partial map used to be rebuilt on EVERY lookup: Get, IsGroupMember, OwnerOf
+-- and LocalGUID each ran a whole unit walk, several times per source per column.
+-- One 7-column build over a three-member group with one unresolved unit cost 60
+-- UnitGUID calls instead of 3, four times a second for as long as the group
+-- stayed short. Roster.BeginPass arms one retry; modules/Aggregator.lua's Build
+-- calls it before its first lookup, and every later lookup answers from cache.
+
+--- A three-member group with party2 not yet resolved, every stat carrying a
+--- source for each member, and a counter of unit walks: every build asks
+--- UnitGUID("player") exactly once, so that count IS the number of builds.
+local function partialPass()
+    local inst = T.load()
+    inst.mocks.setGroup(PARTY)
+    inst.mocks.setUnit("party2", nil)
+    inst.NS.Roster.Refresh()
+    inst.mocks.setSession(1, "*", {
+        combatSources = {
+            { sourceGUID = PARTY[1].guid, name = "Tankadin", classFilename = "PALADIN", totalAmount = 30 },
+            { sourceGUID = PARTY[2].guid, name = "Healbot",  classFilename = "PRIEST",  totalAmount = 20 },
+            { sourceGUID = PARTY[3].guid, name = "Stabby",   classFilename = "ROGUE",   totalAmount = 10 },
+        },
+        maxAmount = 30, totalAmount = 60,
+    })
+    local builds = 0
+    local real = inst.mocks.UnitGUID
+    inst.mocks.UnitGUID = function(token)
+        if token == "player" then builds = builds + 1 end
+        return real(token)
+    end
+    local columns = {}
+    for _, key in ipairs{ "DamageDone", "HealingDone", "Absorbs", "Interrupts",
+                          "Dispels", "DamageTaken", "Deaths" } do
+        columns[#columns + 1] = { stat = key, width = 80, showBar = true }
+    end
+    local window = { id = 1, name = "Test", columns = columns, rows = {},
+        data = { sessionType = 1, sortMode = "provider" } }
+    return inst, window, function() return builds end
+end
+
+test("One aggregate pass over a partial roster rebuilds it once, not per lookup", function()
+    -- red under: ensure() rebuilding whenever cache.partial is set (one walk per
+    -- Get / IsGroupMember / OwnerOf / LocalGUID instead of one per pass).
+    local inst, window, builds = partialPass()
+    inst.NS.Aggregator.Build(window)
+    assertEqual(builds(), 1, "a partial roster was rebuilt on every lookup of the pass")
+    assertTrue(inst.NS.State.Cache("Roster").partial, "the fixture needs a partial roster")
+    -- Outside a pass (a tooltip, the drill-down) a lookup reads the cache.
+    inst.NS.Roster.Get(PARTY[1].guid)
+    inst.NS.Roster.IsGroupMember(PARTY[3].guid)
+    assertEqual(builds(), 1, "a lookup outside a pass rebuilt the partial roster")
+end)
+
+test("Each pass retries a partial roster once more, and a completed one stops retrying", function()
+    -- red under: BeginPass arming nothing (no retry, so the map never completes)
+    -- or arming a rebuild of a complete map.
+    local inst, window, builds = partialPass()
+    inst.NS.Aggregator.Build(window)
+    inst.NS.Aggregator.Build(window)
+    assertEqual(builds(), 2, "the second pass did not retry the partial roster")
+
+    inst.mocks.setGroup(PARTY)
+    local result = inst.NS.Aggregator.Build(window)
+    assertEqual(builds(), 3, "the third pass did not retry")
+    assertEqual(#result, 3, "and the retry completes the grid")
+    assertNil(inst.NS.State.Cache("Roster").partial)
+
+    inst.NS.Aggregator.Build(window)
+    inst.NS.Aggregator.Build(window)
+    assertEqual(builds(), 3, "a complete roster was rebuilt by a later pass")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -566,7 +644,7 @@ end)
 
 test("A partial build is still STORED, so the lookups have something to answer from", function()
     -- MARKED, not withheld. `partial` only makes `ensure` build again on the next
-    -- read; withholding the map as well would leave every lookup answering nil
+    -- pass; withholding the map as well would leave every lookup answering nil
     -- for the quarter-second the group takes to resolve, which is the empty
     -- window all over again in a shorter form.
     local inst = T.load()
@@ -877,7 +955,7 @@ end)
 
 test("A partial build never prunes, so a member the unit API has not reached survives", function()
     -- A short build's live map is missing members who are still in the group; a
-    -- prune taken from it would forget them. The retry on the next read is what
+    -- prune taken from it would forget them. The retry on the next pass is what
     -- completes the map, and the prune waits for it.
     local inst = T.load()
     local R, cap = inst.NS.Roster, 4 * inst.NS.Constants.MAX_ROWS
