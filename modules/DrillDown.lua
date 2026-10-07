@@ -2,8 +2,9 @@
 --
 -- Clicking a cell replaces the window's grid with the story behind that one
 -- number: which spells made up this player's damage, which kicks landed on
--- what, which avoidable hits actually connected. A back button returns to the
--- grid, and nothing about the trip is remembered past the session.
+-- what, which avoidable hits actually connected. A right-click on any row
+-- (modules/Row.lua) or a second click on the same cell returns to the grid, and
+-- nothing about the trip is remembered past the session.
 --
 -- ---------------------------------------------------------------------------
 -- ONE RENDERER, NOT TWO
@@ -23,8 +24,8 @@
 -- applies to the drill-down for free, because it is literally the same code
 -- drawing it.
 --
--- The ONLY widget this module owns is the back button, which the grid has no
--- equivalent of and which is three lines of frame code.
+-- This module owns no widget at all. The Back button it once carried was
+-- retired when right-click on any row became the way out of a breakdown.
 --
 -- ---------------------------------------------------------------------------
 -- COMBAT AND SECRETS
@@ -109,11 +110,6 @@ local Perf = NS.Perf or {}
 -- keep a list fresh that nobody is watching change.
 local views = State.Cache("DrillDown")
 
--- [windowId] = Button. Frames are never destroyed, only hidden and reused —
--- creating one per entry into a drill-down would leak a frame per click for the
--- life of the session.
-local backButtons = {}
-
 -- Bus message announcing that a window entered or left a drill-down.
 --
 -- The catalog in core/Constants.lua is the ONLY source. A hand-spelled `or`
@@ -140,9 +136,6 @@ local NO_CLOCK = "\226\128\148"
 -- an icon reads as a texture that failed to load.
 local DEATH_ICON = 237275
 
-
-local BACK_BUTTON_WIDTH  = 64
-local BACK_BUTTON_HEIGHT = 18
 
 -- ---------------------------------------------------------------------------
 -- Collaborators
@@ -353,8 +346,6 @@ function DrillDown:Exit(window)
     if id == nil or views[id] == nil then return false end
 
     views[id] = nil
-    local button = backButtons[id]
-    if button then button:Hide() end
 
     if State.debug and Debug then
         Debug("DrillDown", "exit window=%s", tostring(id))
@@ -369,8 +360,6 @@ function DrillDown:ExitAll()
     local any = false
     for id in pairs(views) do
         views[id] = nil
-        local button = backButtons[id]
-        if button then button:Hide() end
         announce(id, false)
         any = true
     end
@@ -443,7 +432,7 @@ function DrillDown:OnCellClick(window, row, statKey)
     if type(row) ~= "table" then return "none" end
 
     -- A second click inside a drill-down returns to the grid. Two ways out (this
-    -- and the back button) rather than one, because a player who clicked in
+    -- and a right-click on any row) rather than one, because a player who clicked in
     -- expects the same click to take them out. This is answered BEFORE the
     -- deaths ladder below, never after.
     if isRepeatClick(DrillDown.GetState(window), row, statKey) then
@@ -773,60 +762,6 @@ function DrillDown.Title(window)
     local label = stat and L[stat.label] or view.statKey
     if view.name == nil then return label end
     return string.format("%s - %s", view.name, label)
-end
-
--- ---------------------------------------------------------------------------
--- The back button
--- ---------------------------------------------------------------------------
-
---- The window's back button, created on first use and reused forever after.
----
---- Anchored with SetPoint and never measured. A drill-down window has cells
---- carrying secret values, which makes the frame's own geometry secret and
---- propagates it to anything anchored to it — so this button's position comes
---- from the caller's config-derived offsets, and nothing reads GetPoint,
---- GetWidth or GetLeft back off anything (rule R3).
----
---- No combat gate: this is an unprotected button on an unprotected frame, and
---- leaving a player stuck inside a breakdown until the pull ended would be a bug
---- invented purely out of caution.
----
---- TEST-ONLY TODAY: no in-addon caller; published for the headless suite
---- (tests/test_drilldown.lua).
----
---- @param window table
---- @param parent table  the frame to anchor into (the window's body)
---- @param offsetX number|nil
---- @param offsetY number|nil
---- @return table|nil  the button, or nil where CreateFrame is unavailable
-function DrillDown:AcquireBackButton(window, parent, offsetX, offsetY)
-    local id = windowIdOf(window)
-    if id == nil or not parent or not _G.CreateFrame then return nil end
-
-    local button = backButtons[id]
-    if not button then
-        button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-        button:SetSize(BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT)
-        button:SetText(L["Back"])
-        button:SetScript("OnClick", function()
-            DrillDown:Exit(id)
-        end)
-        backButtons[id] = button
-    end
-
-    button:SetParent(parent)
-    button:ClearAllPoints()
-    button:SetPoint("TOPLEFT", parent, "TOPLEFT", offsetX or 0, offsetY or 0)
-    button:Show()
-    return button
-end
-
---- Hide the window's back button without destroying it.
---- @param window table|number
-function DrillDown:ReleaseBackButton(window)
-    local id = windowIdOf(window)
-    local button = id ~= nil and backButtons[id]
-    if button then button:Hide() end
 end
 
 -- ---------------------------------------------------------------------------

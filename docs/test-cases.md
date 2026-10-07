@@ -1676,7 +1676,7 @@ Total.
 - Tooltip: a stat key the catalog does not know heads with the key itself
 - Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block
 
-### test_drilldown.lua (62)
+### test_drilldown.lua (59)
 
 - DrillDown.IsActive is a PLAIN BOOLEAN, in both directions
 - Enter captures PLAIN identity fields, never a reference to the row
@@ -1703,9 +1703,6 @@ Total.
 - A Deaths click with no recap id falls through too
 - A Deaths click prefers the Compat shim the moment one exists
 - A click on something that is not a row does nothing
-- The back button is created once and re-used forever after
-- The back button is anchored, never measured
-- The back button exits the drill-down
 - A meter reset leaves every drill-down
 - Deleting a window leaves the drill-down that belonged to it
 - Renaming a window keeps its drill-down open
@@ -2511,7 +2508,7 @@ Total.
 | test_tooltip_lines.lua | 37 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
-| test_drilldown.lua | 62 |
+| test_drilldown.lua | 59 |
 | test_export.lua | 94 |
 | test_export_modal.lua | 32 |
 | test_visibility.lua | 44 |
@@ -2536,4 +2533,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2198** |
+| **Total** | **2195** |
