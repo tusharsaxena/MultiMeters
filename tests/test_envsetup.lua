@@ -1,7 +1,7 @@
 -- tests/test_envsetup.lua — core/EnvSetup.lua, the LibKa0s-Env-1.0 seam.
 --
 -- What is asserted here is THE SEAM, not the library. The library's own suite covers the
--- C_AddOns -> bare-global ladder inside GetAddOnMetadata; a second copy of those cases here is
+-- C_AddOns reader inside GetAddOnMetadata; a second copy of those cases here is
 -- exactly the consumer-side duplication testing-§8 forbids. What only this repo can check is that
 -- this addon's helpers answer what its deleted Compat shim answered, that they ask about THIS
 -- addon, that the fallback constant this addon chose is still reachable, and that the shim is gone.
@@ -143,19 +143,27 @@ test("EnvSetup: the deleted shim is gone from Compat", function()
     assertNil(NS.Compat.GetAddOnMetadata)
 end)
 
-test("EnvSetup: the deprecated bare global is still a live rung, all the way to NS.version",
+test("EnvSetup: with the library loaded, the bare global is no rung; NS.version takes its constant",
     function()
-        -- Ported from tests/test_compat.lua with the shim it used to cover. The rung ITSELF is the
-        -- library's to prove (testing-§8); what only this repo can say is that a client old enough
-        -- to have no C_AddOns still resolves core/Namespace.lua's load-time version through it.
-        -- Losing it would stamp `/mm version`, the options header and every capture record with the
-        -- in-code constant on such a client, and all three would agree, so nothing would look wrong.
+        -- LibKa0s-Env-1.0 minor 2 (v1.71.0, LK-06) dropped the bare-global GetAddOnMetadata rung
+        -- the library carried below C_AddOns. This case pinned that rung reaching NS.version under
+        -- minor 1; it now pins the minor-2 contract as this repo sees it: with Env loaded and no
+        -- C_AddOns, a planted bare global is never called, NS.Meta answers nil and
+        -- core/Namespace.lua's load-time version is its own FALLBACK_VERSION. The library-absent
+        -- branch of NS.Meta (core/EnvSetup.lua) is a separate rung and is not exercised here.
+        local calls = 0
         local inst = T.load{ mutate = function(m)
             m.C_AddOns = nil
-            m.GetAddOnMetadata = function(_, field) return field == "Version" and "9.9.9" or nil end
+            m.GetAddOnMetadata = function(_, field)
+                calls = calls + 1
+                return field == "Version" and "9.9.9" or nil
+            end
         end }
-        assertEqual(inst.NS.Meta("Version"), "9.9.9")
-        assertEqual(inst.NS.version, "9.9.9")
+        assertTrue(inst.mocks.LibStub("LibKa0s-Env-1.0", true) ~= nil,
+            "the library must be loaded for this case to say anything about it")
+        assertNil(inst.NS.Meta("Version"))
+        assertEqual(inst.NS.version, inst.NS.FALLBACK_VERSION)
+        assertEqual(calls, 0)
     end)
 
 test("EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION",

@@ -32,7 +32,7 @@ such rather than listed as a requirement.
 |---|---|---|---|
 | `lua5.1` (+ `luac`) | **5.1 exactly** | the headless suite, `lua tests/run.lua` | `tests/_kit/loader.lua` uses `setfenv` |
 | `luacheck` | any recent | `luacheck .`, the other half of the green gate | `.luacheckrc` at the repo root |
-| `lizard` | **1.24.0** (pinned) | the `complexity` suite of `tests/_kit/run-automated-tests.sh` | `tests/_kit/run-automated-tests.sh` invokes `lizard` over the sighted shadow `tests/_kit/lizard_sighted.lua` builds (kit 36); the sanitizer targets 1.24.0's Lua blind spots, so an upgrade is re-checked against parity before it is taken |
+| `lizard` | **1.24.0** (pinned) | the `complexity` suite of `tests/_kit/run-automated-tests.sh` | `tests/_kit/run-automated-tests.sh` invokes `lizard` over the sighted shadow `tests/_kit/lizard_sighted.lua` builds; the sanitizer targets 1.24.0's Lua blind spots, so an upgrade is re-checked against parity before it is taken |
 | `git` | any recent | the headless suite itself, vendoring, `diff -r` against the LibKa0s repo, and the runner's own provenance stamp | `lua tests/run.lua` shells out to `git ls-files` (`tests/test_doc_structure.lua:143`, `tests/test_lintconfig.lua:217`, `tests/test_texture_paths.lua:99`), so the green gate needs it; library-stack-§7; `tests/_kit/run-automated-tests.sh` calls `git describe` / `git rev-parse` / `git status --porcelain` |
 | `bash` | **4.x or later** | `tests/_kit/run-automated-tests.sh` — the whole automated-test bundle | its shebang is `#!/usr/bin/env bash`, and it declares an associative array (`declare -A ST DUR NOTE`), which `dash`/POSIX `sh` has no syntax for |
 

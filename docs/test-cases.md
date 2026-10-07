@@ -1,8 +1,10 @@
 # Test Cases
 
 The full inventory of every headless test case in this repo, grouped by the suite file it
-lives in. The `## Totals` table below is the **authoritative pass count** — the README test
-badge and any count quoted in the docs must agree with it.
+lives in. The `## Totals` table below counts the cases that run: its **Total** is the
+authoritative pass count, and the README test badge and any count quoted in the docs must equal
+it. A declared skip is listed by name in its group and counted on the `Skipped` row, never in
+Total.
 
 **Generated — do not hand-edit.** Regenerate with `lua tests/run.lua --list > docs/test-cases.md`.
 
@@ -618,7 +620,7 @@ badge and any count quoted in the docs must agree with it.
 - EnvSetup: NS.Version falls back to this addon's own constant
 - EnvSetup degraded: an install with no LibKa0s still reads its own TOC
 - EnvSetup: the deleted shim is gone from Compat
-- EnvSetup: the deprecated bare global is still a live rung, all the way to NS.version
+- EnvSetup: with the library loaded, the bare global is no rung; NS.version takes its constant
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
@@ -2520,6 +2522,7 @@ badge and any count quoted in the docs must agree with it.
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 5 |
 | test_eol.lua | 2 |
-| test_diagnostics_contract.lua | 9 |
+| test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
-| **Total** | **2188** |
+| Skipped | 1 |
+| **Total** | **2187** |
