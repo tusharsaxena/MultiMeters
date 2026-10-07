@@ -41,7 +41,7 @@ that a load-time cycle between two majors.
 | `lock` | Lock or unlock every window for dragging. It governs movement and nothing else: unlocking no longer switches Test mode on. General → Master controls' **Lock frame** box is the same switch |
 | `test` | Toggle test mode — placeholder rows, for positioning. The General page's Test mode box is the same switch. Combat starting ends it, and a start during combat is refused |
 | `toggle` | Show or hide one window by name, or all of them |
-| `window` | `list` · `new <name>` · `delete <name>` · `copy <source> <target>` |
+| `window` | `list` · `new <name>` · `delete <name>` · `copy <source/id> <target>` |
 | `reset-positions` | Move every window back to the center of the screen |
 | `export` | Open the export modal for one window's segment: `/mm export [window]` |
 
@@ -72,7 +72,7 @@ by reading the table. Each handler takes the registry and the rest of the line a
 | `list` | Print the registry's own listing (`WindowManager:BuildListLines`). A bare `/mm window` is `list` |
 | `new <name>` | `WindowManager:Create` |
 | `delete <name>` | `WindowManager:Delete` |
-| `copy <source> <target>` | `WindowManager:CopyFrom`. The source is the first word and the target is the rest, so a target name with spaces can be typed; a source with spaces is copied from the settings panel instead |
+| `copy <source/id> <target>` | `WindowManager:CopyFrom`. The source is the first word and the target is the rest, so a target name with spaces can be typed. A source whose name has spaces, such as a default `Multi Meters #1`, is given as its window id instead (`/mm window copy 1 Second`): `WindowManager.Resolve` falls back to `tonumber`, after a name match. The number in a default name is a count of windows, so it equals the id only until a window is deleted; the settings panel's Copy settings route needs neither |
 
 A sub-verb the table does not know prints the usage line, and so does a registry too old to carry the
 member a sub-verb needs, or a `copy` with only one name.
@@ -174,7 +174,7 @@ Every refusal is one line in chat and changes nothing.
 | `/mm profile <name>` in combat | `Can't switch profiles in combat.` |
 | `/mm profile` with no profile store (AceDB missing) | `Profiles are not available.` |
 | `/mm set` or `/mm enable` rejected by the seam | `Invalid value for <path>`, then the seam's reason (Slash minor 15); on the direct `enabled` path, the seam's reason alone |
-| `/mm window` with an unknown sub-verb or a malformed `copy` | `Usage: /mm window list, new <name>, delete <name>, copy <source> <target>` |
+| `/mm window` with an unknown sub-verb or a malformed `copy` | `Usage: /mm window list, new <name>, delete <name>, copy <source/id> <target>` |
 | A host verb with the window layer not loaded | `window management is unavailable — modules/WindowManager.lua did not load.` |
 | `/mm export` while an export may not run | the reason `NS.Export.Available()` gives, or `export is not available right now.` |
 | `/mm export <name>` naming no window | `No window named '<name>'.` |

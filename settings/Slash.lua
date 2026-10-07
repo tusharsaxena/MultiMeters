@@ -79,9 +79,9 @@ local doEnabled
 --
 -- The thirteen reserved verbs first, in the order slash-commands-§3's example
 -- fixes, then this addon's own. Every sub-verb a handler accepts is named in its own `desc`,
--- because the generated help index, the settings landing page and the README's
--- command table all read these strings and nothing else — a sub-verb missing here
--- is a sub-verb nobody can discover (slash-commands-§4).
+-- because the generated help index and the settings landing page read these
+-- strings and nothing else, and docs/slash-dispatch.md documents them — a sub-verb
+-- missing here is a sub-verb nobody can discover (slash-commands-§4).
 NS.COMMANDS = {
     { "help",     "Show this help",            function() cli:PrintHelp() end },
     { "config",   "Open the settings panel",   function() if NS.OpenOptionsPanel then NS.OpenOptionsPanel() end end },
@@ -573,7 +573,7 @@ end
 --- is left exactly as typed because it is a window name.
 local function yellow(s) return "|cFFFFFF00" .. s .. "|r" end
 local WINDOW_USAGE = L["Usage: %s, %s, %s, %s"]:format(yellow("/mm window list"),
-    yellow(L["new <name>"]), yellow(L["delete <name>"]), yellow(L["copy <source> <target>"]))
+    yellow(L["new <name>"]), yellow(L["delete <name>"]), yellow(L["copy <source/id> <target>"]))
 
 -- The sub-verb table, built ONCE at file scope. slash-commands names an
 -- `if verb == "x" then ... elseif` sub-dispatcher as an anti-pattern for the
@@ -608,10 +608,12 @@ function WINDOW_VERBS.delete(M, tail)
 end
 
 --- `<source> <target>`: the source is the first word, the target the rest, so a
---- target name with spaces is expressible and a source with spaces is addressed
---- from the settings panel instead. A two-name command line has no unambiguous
---- split for both, and inventing one is a syntax the user has to learn for a job
---- the panel already does well.
+--- target name with spaces is expressible. A source whose name has spaces (every
+--- default "Multi Meters #N") is given as its window id instead: CopyFrom resolves
+--- through M.Resolve, which falls back to tonumber, so `/mm window copy 1 Second`
+--- works. The settings panel's Copy settings route covers the rest. A two-name
+--- command line has no unambiguous split for both, and inventing one is a syntax
+--- the user has to learn for a job the id and the panel already do.
 function WINDOW_VERBS.copy(M, tail)
     if not M.CopyFrom then return false, WINDOW_USAGE end
     local source, target = tail:match("^(%S+)%s+(.+)$")
@@ -854,7 +856,8 @@ end
 --- stub's RunDiagnostics prints the collection's placeholder line instead.
 ---
 --- It never reads the enabled flag, the debug flag or anything else first: the
---- verb is live while disabled, and the report lands with logging off.
+--- verb is live while disabled. The run itself turns logging on for the report
+--- (D:RunDiagnostics in libs/LibKa0s/DebugLogDiagnostics.lua), so it lands with logging on.
 function doDiagnostics()
     local D = NS.DebugLog
     if D and D.RunDiagnostics then D:RunDiagnostics() end

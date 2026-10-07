@@ -42,7 +42,7 @@ what each degrades to are in [module-map.md](module-map.md#libka0s-seams).
 
 ## Module map
 
-Every file — all fifty-eight of them — what it owns, what it publishes, what it consumes, plus TOC
+Every file, what it owns, what it publishes, what it consumes, plus TOC
 load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The shape at a glance:
 
 | Layer | Files | Responsibility |
@@ -318,24 +318,11 @@ tainted by us. It is `pcall`'d; a failure leaves the `SetOwner` token's placemen
 
 Every `.md` under `docs/` appears in exactly one of the four tables below (`documentation-§3`).
 **A store gets one row; its dated bundles get none.** `docs/automated-tests/` and
-`docs/perf-analysis/` register their live docs — the README that says how a bundle is produced and,
-for the automated-test record, the `RESULTS.md` the runner rewrites — and nothing else under them;
-the dated folders beside those files are frozen evidence, and evidence is not registered.
-`docs/revendor/` and `docs/superpowers/` are frozen through and through and get one row apiece.
-
-The two stores' READMEs do **not** land in the same table, and that is the standard's own
-classification rather than an inconsistency here: `automated-tests/README.md` is an unconditional
-member of `### Verification and record`, while `perf-analysis/README.md` is the one member of that
-group that is *also* a Tier 2 doc with a stated trigger, so `documentation-§3` sends it to
-`### Conditional` — the only table with the Status and Trigger columns that can express the state.
-The trigger decides the table.
-
-`docs/issues/` used to hold image evidence attached to GitHub issues — GitHub's API has no supported
-path for uploading an issue attachment, so a raw link to a committed file is the only way a
-screenshot reaches one. **The directory is gone.** An issue's images are deleted when it closes and
-its links are re-pointed at the commit that last carried them, which keeps resolving forever without
-the repo carrying the weight; issue #1's are pinned to `dcb29ad`. Re-create it only when an open
-issue needs a picture, and expect it to empty itself again.
+`docs/perf-analysis/` register only their live docs; `docs/revendor/` and `docs/superpowers/` are
+frozen through and through and get one row apiece. `perf-analysis/README.md` sits in
+`### Conditional` rather than beside `automated-tests/README.md` because it is the one member of the
+verification group with a Tier 2 trigger. `docs/issues/` (issue screenshots) is gone: a closed
+issue's image links are pinned to the commit that last carried them (issue #1's to `dcb29ad`).
 
 ### Required (documentation-§3, Tier 1)
 
@@ -351,20 +338,18 @@ issue needs a picture, and expect it to empty itself again.
 
 ### Conditional (documentation-§3, Tier 2)
 
-Each trigger was measured against the source, not assumed, and the measurement stays on the row
-whichever way it came out — so a later audit can re-run it rather than re-argue it. **All seven
-ship**, and each row carries the count that decided it, so the number is what a re-check reads, not
-the verdict beside it.
+Each trigger was measured against the source, and each row carries the count that decided it, so a
+re-check re-runs the count rather than re-arguing the verdict. **All seven ship.**
 
 | Doc | Status | Trigger, as measured |
 |---|---|---|
-| `perf-analysis/README.md` | Present | **The performance harness is wired** — `core/PerfSetup.lua` plus `Perf.Note` brackets in eight files — `core/MultiMeters.lua` and seven under `modules/` (Aggregator, Provider, Row, DrillDown, Window, Targets and `Tooltip_Builders.lua`; `Tooltip.lua` only captures `NS.Perf` for the builders) (`performance-§12`). The doc says what a recorded in-game capture bundle is and how to produce one; `docs/perf-analysis/20260909-014604/` is the standing example. |
-| `compat-layer.md` | Present | **`core/Compat.lua` is 770 lines and 30 shims** (4 of them the spell and spec readers bound to `LibKa0s-Compat-1.0` since LibKa0s v1.55.0, 8 of them `C_DamageMeter`, 4 death-recap, plus the recap-namespace probe `RecapMembers` / `RecapAPIs` / `CallRecap` the bar-animation read `BarInterpolation` and the chat sender `ChatSender`), each a guarded namespace check around one passthrough, with no feature decisions, no state, and nothing there inspecting a meter value. The row read *re-measure — the trigger now fires* from the day this addon's Compat passed KickCD's, which ships the doc: 389 lines and 18 shims when the row was last written, 777 and 29 at the v1.55.0 adoption, 746 and 29 after it (`wc -l core/Compat.lua`; the four readers kept their names), and 770 and 30 once `ChatSender` took the chat export off the deprecated global. `documentation-§3` has since given the trigger a number — **three or more** addon-specific shims, counted over this file alone — which settles it at any reading. Written, and registered on this row. |
-| `midnight-quirks.md` | Present | **At least one client-version workaround of the addon's own** — the trigger as §3 states it, and this addon carries four: the isolated event registrations (the newest, `PLAYER_IS_GLIDING_CHANGED`, the likeliest refused), `ADDON_RESTRICTION_STATE_CHANGED` registered against a namespace a client may not have, the settle pass over client state that lags its own event, and the secret-value model itself. It was read as Not applicable on the argument that a third copy of the secret-value rules would be the one that drifts — which was an argument against DUPLICATING them, not against the doc. The detail was MOVED here rather than copied: [Taint notes](#taint-notes) keeps the constraint, the operation lists and R1–R3, and nothing is stated twice. |
-| `debug.md` | Present | The console is `LibKa0s-DebugLog-1.0`'s window; this addon's own surface is the diagnostics report (`/mm diagnostics`, `debug-logging-§14`), the three probe verbs, the `tooltip` channel flag and the `NS.Debug` channels, each listed with what emits it in its `## Coverage` section. **Written 2026-09-09, when this row's own re-check trigger fired.** It had read "Not applicable — print statements with no state and no options for a doc to describe", which was true until `/mm debug tooltip` added a session flag on `NS.State`. The trigger was recorded on the row and the doc followed in the same changeset. |
-| `slash-dispatch.md` | Present | **20 verbs in `NS.COMMANDS` and a sub-command tree**, against a trigger of eight or more commands or any sub-command tree. Thirteen verbs are the standard's reserved set (`diagnostics` joined it with standard v2.68.0); this addon's own seven include `profile` (LibKa0s-Slash minor 17), `window` with its four sub-verbs (list/new/delete/copy), `debug` takes seven words, and `export` an optional window name. The row used to waive it as "carried in a screen", which the trigger does not accept; the hub's `## Slash commands` section was MOVED into the doc (2026-09-24, MultiMeters-A-03) and a summary and link left behind. |
-| `message-bus.md` | Present | **14 distinct messages**, against a trigger of more than ten. All are declared in one catalog (`core/Constants.lua` `MSG`) with one sender each. The row used to waive it as "one table carries it", which the trigger does not accept; the hub's `## Message bus` section was MOVED into the doc (2026-09-24, MultiMeters-A-03) and a summary and link left behind. |
-| `profiles.md` | Present | **User-visible profiles**: `settings/Profiles.lua` registers AceDBOptions-3.0's tree as a settings page. The row used to waive it as "no profile semantics of its own"; the trigger is the visible profiles, not the semantics. The Profiles page moved in from settings-panel.md and the lifecycle from schema.md (2026-09-24, MultiMeters-A-03), with the `PROFILE_CHANGED` fan-out, the reset-all veto, the global-vs-profile split and the migration runner's every-profile rule beside them. |
+| `perf-analysis/README.md` | Present | **The performance harness is wired**: `core/PerfSetup.lua` plus `Perf.Note` brackets in eight files (`performance-§12`). `docs/perf-analysis/20260909-014604/` is the standing example. |
+| `compat-layer.md` | Present | **`core/Compat.lua`: 770 lines, 30 shims** (4 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
+| `midnight-quirks.md` | Present | **Four client-version workarounds of the addon's own** (isolated event registrations, `ADDON_RESTRICTION_STATE_CHANGED` against a namespace a client may lack, the settle pass, the secret-value model), against a trigger of one. The detail moved here from [Taint notes](#taint-notes) rather than being copied. |
+| `debug.md` | Present | **One diagnostics report, three probe verbs, the `tooltip` session flag and the `NS.Debug` channels** (`debug-logging-§14`). Written 2026-09-09, when the row's own re-check trigger fired. |
+| `slash-dispatch.md` | Present | **20 verbs in `NS.COMMANDS` and a sub-command tree** (`window` takes four sub-verbs), against eight or more commands or any tree. The hub's `## Slash commands` detail moved there on 2026-09-24. |
+| `message-bus.md` | Present | **14 distinct messages**, against more than ten; one catalog (`core/Constants.lua` `MSG`), one sender each. Moved out of the hub on 2026-09-24. |
+| `profiles.md` | Present | **User-visible profiles**: `settings/Profiles.lua` registers AceDBOptions-3.0's tree as a settings page. |
 
 ### Verification and record (documentation-§3)
 
@@ -410,52 +395,20 @@ Rows are shaped `| Rule | What differs | Why | Decided | Re-check trigger |`.
 | library-stack-§8 — "where the addon needs a mark it MUST use the catalog's" | `modules/Tooltip.lua:107` hard-codes `Ability_Hunter_FocusedAim` for the TARGET line's icon instead of the catalog's `target`. | A white alpha glyph in a column of colored spell icons reads as foreign ([texture-paths.md](texture-paths.md#the-census)). Ratified as MM-A-25's option (b); the owner's option (a), `NS.Icon("target")` with this path as the nil fallback, stays open. | 2026-09-23 | The catalog ships a colored or iconic variant of `target`, or the tooltip stops drawing spell icons. |
 | options-ui-§15 — the per-instance scale, alpha and lock stay on the instance's own page: "the two are different settings and MUST NOT be conflated" | Master controls' **Lock frame** (`master.locked`) is a view over every window's own `frame.locked`, not a separate addon-wide lock. It reads ticked only when every window is locked (`WindowManager:IsLocked`), and ticking or unticking it writes each window's own lock through `WindowManager:SetLocked`, the same switch as `/mm lock on` and `/mm lock off`. The row is `sessionOnly` and stores nothing; `core/Database.lua`'s v13 → v14 step carried a stored `master.locked = true` onto every window and pruned the key. A window's own padlock (its header, or Frame → Lock window) still locks that window alone. Master scale and Master alpha are unchanged and still compose with the per-window pair. | With a separate master lock ORed over the per-window locks, `/mm lock` set the per-window locks, and the Lock frame checkbox could then neither unlock the windows nor visibly lock them (owner-reported bug, 2026-09-16). The owner chose one switch over two. Implementation: the `master.locked` entry in `settings/Schema_Compose.lua`'s Master controls `dress()`, and `WindowProto:RefreshUpvalues` in `modules/Window.lua`. | 2026-09-16 | The standard defines a master lock that coexists with per-window locks without this trap, or MultiMeters drops per-window locks. |
 
-**Retired on 2026-10-02: the window's size-grabber pair.** The register carried a `library-stack-§8`
-row for `modules/Window.lua` hard-coding the chat `UI-ChatIM-SizeGrabber-Up` / `-Highlight` pair for
-the resize grip instead of the catalog's `resize`. The grip is no longer the addon's: it is
-`LibKa0s-Core-1.0`'s `MakeResizable` (Core minor 10, MultiMeters#58), sizing the anchor and drawn on the
-art frame through `gripParent`, so the paths now live in the library and this repository declares none.
-The row's census lines in `docs/texture-paths.md` went in the same commit.
+Retired rows keep a one-line pointer here; their reasoning stays in the frozen record that holds it.
 
-**Retired on 2026-09-09: the seven mirror suites over the cap.** The register carried a `layout-§1`
-row ratifying seven test files over the 1500-line cap, `tests/test_window.lua` (2737) down to
-`tests/test_export.lua` (1509), on the argument that a mirror suite has no seam of its own and must
-peel along whatever seam its module is peeled on. Its trigger was *"The mirrored module is peeled …
-the suite peels along the same seam, in the same commit."* It fired: on 2026-09-09 every mirrored
-module was peeled and each suite followed it, so a row for a state that no longer exists is retired
-rather than re-dated. Worth keeping from it: the peel had to be the module's commit because the two
-files track each other closely enough that a failing case name tells you which file to open, and the
-peel kept that pairing.
-
-**Retired on 2026-09-08: the composed blocks on a degraded load.** The register carried an
-`options-ui-§15`/`§16` row for the schema a library-less install ends up with — the Master controls
-tab and every font, border and bar group absent, because they are the library's to emit. The
-argument was that a hand-written copy standing behind the composer is anti-pattern #73 and would go
-stale first, and `options-ui-§1` has since ruled exactly that: when the missing content is
-**composed**, the no-copy MUST wins, a stub's composer members answer an empty row list, and — in
-as many words — *"this shape needs no register row, and the rows already written for it retire"*.
-So this one does. The three bounds the ruling attaches are met here and were met before it landed:
-`LibKa0s` is vendored whole so the load that loses the composers loses the schema CLI in the same
-breath, profile defaults merge from `defaults/Profile.lua` and are never read off the schema, and
-`tests/test_degraded.lua` pins the full set, the degraded set and the composed delta by path rather
-than by a single number. Nothing about the behavior changes; what changes is that it stops being
-filed as a departure from a rule that now describes it.
-
-**One row is ratified.** The register also carried a row for the drag-to-reorder block list living
-in `settings/ColumnBlocks.lua` rather than in LibKa0s, adopted because a library widget re-vendors
-into every addon in the collection and one consumer is not enough evidence to freeze a signature on.
-That row was retired on 2026-08-27, on precisely the re-check trigger it was written with:
-ConsumableMaster's priority list wanted the same gesture, the second consumer arrived, and the
-widget moved to `LibKa0s-Widgets-1.0` as `ReorderList` at minor 8 ([issue
-#21](https://github.com/tusharsaxena/MultiMeters/issues/21)). What moved was the gesture alone — the
-handle, the carried copy, the insertion line, the clamp; the row itself stayed here, because the two
-adopting lists draw nothing alike.
-
-**One row is ratified.** The register also carried a row for a root `TODO.md`
-holding work that was decided but unscheduled, adopted as a stopgap until the repo had an issue store.
-That row was retired on 2026-08-11 when the backlog moved to
-[GitHub issues](https://github.com/tusharsaxena/MultiMeters/issues), which is precisely the re-check
-trigger it was written with.
+- **Retired on 2026-10-02: the window's size-grabber pair** (`library-stack-§8`). The grip is
+  `LibKa0s-Core-1.0`'s `MakeResizable` now ([#58](https://github.com/tusharsaxena/MultiMeters/issues/58)),
+  so the paths live in the library. Record: `docs/revendor/2026-10-02-v1.67.0/`.
+- **Retired on 2026-09-09: the seven mirror suites over the cap** (`layout-§1`). Its trigger fired
+  when every mirrored module was peeled and each suite followed. Record: `docs/audits/2026-09-08/`.
+- **Retired on 2026-09-08: the composed blocks on a degraded load** (`options-ui-§15`/`§16`).
+  `options-ui-§1` now rules that composed content needs no row. Record: `docs/audits/2026-09-08/`.
+- **Retired on 2026-08-27: the drag-to-reorder block list.** The second consumer arrived and the
+  gesture moved to `LibKa0s-Widgets-1.0` as `ReorderList`
+  ([#21](https://github.com/tusharsaxena/MultiMeters/issues/21)). Record: `docs/audits/2026-09-07/`.
+- **Retired on 2026-08-11: the root `TODO.md`.** The backlog moved to
+  [GitHub issues](https://github.com/tusharsaxena/MultiMeters/issues). Record: `docs/audits/2026-09-07/`.
 
 Rows above are ratified. The paragraph below is why the section is never *removed* even when it is
 empty: an audit needs to be able to tell "nothing has been ratified" from "the register was never
@@ -508,7 +461,7 @@ measurement stay equal only by there being one.
 
 The census of every hard-coded `Interface\` path in authored source, with a disposition per
 file/path pair and the command that measures it, is **[texture-paths.md](texture-paths.md)**, and
-`tests/test_texture_paths.lua` compares it with the tree in both directions. Its three
+`tests/test_texture_paths.lua` compares it with the tree in both directions. Its two
 `library-stack-§8` declines of a mark the catalog does carry are ratified in the register above.
 
 ## Complexity register

@@ -968,7 +968,7 @@ L["%d shown"] = "%d shown"
 L["Usage: %s, %s, %s, %s"] = "Usage: %s, %s, %s, %s"
 L["new <name>"] = "new <name>"
 L["delete <name>"] = "delete <name>"
-L["copy <source> <target>"] = "copy <source> <target>"
+L["copy <source/id> <target>"] = "copy <source/id> <target>"
 L["window management is unavailable \226\128\148 modules/WindowManager.lua did not load."] =
     "window management is unavailable \226\128\148 modules/WindowManager.lua did not load."
 L["export is unavailable \226\128\148 modules/Export.lua did not load."] =
