@@ -371,13 +371,6 @@ default to total and rate.
   the catalog, not the window's enabled columns, and it ignores the window's row cap and sort — what
   is on screen is a display choice, and "export this" means the data behind it. Only the *segment* is
   inherited, because "export this" said while looking at last pull means last pull.
-- **The export copy window is the third copy-paste window in the collection**, after
-  `LibKa0s/DebugLog.lua`'s and `LootHistory/modules/Export.lua`'s. It is a deliberate local copy
-  rather than an oversight — the three want to evolve apart — but the shape is stable enough to
-  harvest, and the destination is `lib.MakeCopyWindow(name, title)` in LibKa0s Core. Recorded here
-  rather than in the deviations register below, because that register is for departures from a
-  numbered rule of the standard and this is a library-harvest candidate: no rule is being departed
-  from. Filed as a limitation so the issue sweep picks it up as a follow-up.
 - **The tooltip's Targets section is absent for the whole of a pull, not degraded.** It is the one
   place in the addon where restriction costs *information* rather than decoration, and it is
   deliberate, and there are now **two independent reasons**, either of which is sufficient:
