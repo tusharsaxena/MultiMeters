@@ -635,9 +635,6 @@ function Helpers.RestoreActiveSection(ctx)
     Helpers.RestoreDefaults(s.key, ctx)
 end
 
---- Test seam: the ctx the Windows page bound, or nil before its builder ran.
-function Helpers.__windowsCtx() return windowsCtx end
-
 --- Select entry `key` on the Windows page, and optionally its tab: the one seam a
 --- link, a deep link or a suite moves the entry through. A hidden page is marked
 --- owed a render and draws the entry on its next show. Refused in combat, as a tab
