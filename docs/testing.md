@@ -612,6 +612,7 @@ cut without one: it re-published 1.0.0 unchanged to trigger a rebuild, so its TO
 `1.0.0` and no release run was recorded for it (README Version History now carries the row).
 **1.1.0** went through it, and was 1.1.0 rather than 1.0.2 because the v16 schema migration (the
 US-spelled `minimize` keys) landed after 1.0.1; its release run is `docs/automated-tests/20260927-030445/`.
+**1.2.0** went through it as well; its release run is `docs/automated-tests/20261009-191721/`.
 The bump runs the four-suite battery first and refuses unless all four are at `pass` with zero
 functions above CCN 15 — that battery passes before the tag, not after. Which release and when is
 the owner's call; nothing here bumps a version.
