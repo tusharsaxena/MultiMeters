@@ -9,7 +9,7 @@ such rather than listed as a requirement.
 
 ## Runtime (in-game) — what a player needs
 
-- **World of Warcraft (Retail), patch 12.0 or later.** Single `## Interface: 120100` line in
+- **World of Warcraft (Retail), patch 12.0 or later.** Single `## Interface: 120105` line in
   `MultiMeters.toc` — Retail only.
 
   The version floor is a real requirement, not the usual boilerplate: this addon reads
