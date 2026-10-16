@@ -155,7 +155,7 @@ local SECRET_FIELDS = {
     -- GUID, the GUID join ran, the rows came out, and 771 cases agreed with each
     -- other about a client neither of them had asked. Measured in-game it comes
     -- back secret AND inaccessible: NS.Secrets.IsSafeKey refuses it, every
-    -- source is dropped, and the window says "Waiting for combat data" with a
+    -- source is dropped, and the window says "No combat data yet" with a
     -- full session behind it.
     --
     -- A fixture is only worth what it refuses to let you get away with.

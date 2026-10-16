@@ -640,7 +640,7 @@ test("Print to Chat whispers the player currently targeted", function()
 end)
 
 test("Print to Chat says so rather than swallowing a click with nothing to export", function()
-    -- A window showing "Waiting for combat data" has nothing to rank, and a dialog
+    -- A window showing "No combat data yet" has nothing to rank, and a dialog
     -- that answers a press with nothing at all reads as broken rather than empty.
     local ctx = printer(built({}, 60))
     click(ctx)

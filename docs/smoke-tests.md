@@ -22,7 +22,7 @@ secret-value rules the checks refer to.
 | PANEL-1 to PANEL-47 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-38 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip |
+| WIN-1 to WIN-39 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state |
 | VIS-1 to VIS-12 | [Visibility](#vis) | Contexts and hide rules |
 | GRID-1 to GRID-32 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
@@ -568,7 +568,7 @@ right. Open the panel with `/mm config`.
 - **WIN-12. Title bar off takes the strip.** Header → Title bar, turn the title bar off → the whole
   strip goes, export included; turn it on → all seven return. Result: pass (owner-marked 2026-10-10)
 - **WIN-13. Minimize collapses to the title bar.** Click minimize → the plus/minus flips and the column
-  headers, rows, *Waiting for combat data...* notice and resize grip all go (anything still drawn is
+  headers, rows, *No combat data yet* empty state and resize grip all go (anything still drawn is
   parented to the frame, not the body). Result: pass (owner-marked 2026-10-10)
 - **WIN-14. A collapsed window stops updating.** Collapse a window, pull → it does not tick. Result: pass (owner-marked 2026-10-10)
 - **WIN-15. Expanding restores the height.** Collapse, `/reload` → it comes back collapsed; expand →
@@ -580,7 +580,7 @@ right. Open the panel with `/mm config`.
   dialog. A second popup opening on top can pull it up the stack; that is accepted.) Result: pass (owner-marked 2026-10-10)
 - **WIN-17. Reset accepted.** Click reset and accept → Blizzard's own meter window empties too
   (`C_DamageMeter.ResetAllCombatSessions` is account-wide), every open drill-down closes, and the
-  window shows *Waiting for combat data...* Result: pass (owner-marked 2026-10-10)
+  window shows *No combat data yet* Result: pass (owner-marked 2026-10-10)
 - **WIN-18. The divider.** Header → Title bar → **Show divider** ships on. Turn it off → the hairline
   under the title strip goes and nothing else moves (title, session line and controls stay). **Divider
   thickness** grows it downward. **Divider color mode** ships as Ka0s skin (the line as the shared
@@ -647,6 +647,11 @@ right. Open the panel with `/mm config`.
   hides it (for example hide out of instance, or a context rule toggled), let the rule hide the window
   and then show it again → the grip is back and resizes. Lock the window → no grip. Minimize it, then
   `/mm lock off` → no grip over the collapsed window. Expand it → the grip is back. Result: pass (owner-marked 2026-10-10)
+- **WIN-39. The empty state.** Reset the meter (WIN-17) out of combat → in the middle of the grid, under
+  the column headers, a gold *No combat data yet* and, beneath it in white, *Your group's numbers appear
+  here once combat starts.*, both centered and in the window's font (the title a few points larger);
+  nothing at the top of the grid. Narrow the window → the white line wraps rather than runs past the edge.
+  Change the font or text size → both follow. Minimize → it goes; pull a mob → rows replace it. Result:
 
 ## VIS
 
@@ -1009,7 +1014,7 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
 - **EXPORT-47. No line is cut.** A long NPC ally name on a line with a share → the line arrives whole.
   Result: pass (owner-marked 2026-10-10)
 - **EXPORT-48. An empty segment.** Out of combat, click the header's reset control and accept (the
-  window reads *Waiting for combat data...*, WIN-17; a fresh login is no substitute, since the old
+  window reads *No combat data yet*, WIN-17; a fresh login is no substitute, since the old
   fights survive it, INSTALL-5), open the export modal, Channel **Self only**, **Print to Chat**, then
   **Export to CSV** → each prints one line *There is nothing to export.*; nothing is sent, no copy
   window opens, no error. Result: pass (owner-marked 2026-10-10)
@@ -1055,7 +1060,7 @@ stayed empty; "no errors" from a dummy is not evidence here.
   if a name ever blanks, the class icon and bar still carry the row. Result: pass (owner-marked 2026-10-10)
 - **COMBAT-5. The header renders.** "Current", the duration ticking as `m:ss` and the group total for
   the sort column, throughout. Result: pass (owner-marked 2026-10-10)
-- **COMBAT-6. The grid is not empty.** Rows show all pull. *Waiting for combat data...* with a live
+- **COMBAT-6. The grid is not empty.** Rows show all pull. *No combat data yet* with a live
   session means sources are being dropped (`/mm debug on`: `dropped=` equal to the group size). Result: pass (owner-marked 2026-10-10)
 - **COMBAT-7. Percent slots go empty.** With Bars → Text content → **Left text** on **Percent**
   (`/mm set window.text.leftSlot percent`) → the slot empties on the pull and refills between packs

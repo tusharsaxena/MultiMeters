@@ -792,7 +792,8 @@ L["Blizzard's damage meter is not available."] =
 L["Multi Meters reads every number from the game's built-in damage meter. Enable it to see data here."] =
     "Multi Meters reads every number from the game's built-in damage meter. Enable it to see data here."
 L["Reason: %s"] = "Reason: %s"
-L["Waiting for combat data..."] = "Waiting for combat data..."
+L["No combat data yet"] = "No combat data yet"
+L["Your group's numbers appear here once combat starts."] = "Your group's numbers appear here once combat starts."
 -- Shown in gray on the header line for the whole of a pull. The grid is built a
 -- different way while the game restricts combat data — rows come from the
 -- engine's own ranking and are matched across columns by class and spec rather
