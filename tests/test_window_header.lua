@@ -864,6 +864,7 @@ test("A collapsed window keeps the notice hidden", function()
     window:ApplyConfig()
     window:Refresh()
     assertEqual(window.notice:IsShown(), false, "the notice came back over a collapsed window")
+    assertFalse(window.empty ~= nil and window.empty:IsShown(), "the empty state came back over a collapsed window")
 end)
 
 -- ---------------------------------------------------------------------------

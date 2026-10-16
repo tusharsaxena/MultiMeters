@@ -595,7 +595,7 @@ local function onExportCsv()
 
     local result = Export.Build(invoker)
     -- SAYING SO, rather than a button that swallows the click. A window showing
-    -- "Waiting for combat data" has nothing to serialize, and a dialog that
+    -- "No combat data yet" has nothing to serialize, and a dialog that
     -- answers a press with nothing at all reads as broken rather than as empty.
     if not result or #result == 0 then
         refuse("csv", L["There is nothing to export."])

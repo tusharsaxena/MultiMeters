@@ -557,13 +557,25 @@ end)
 
 test("An empty session says so rather than leaving a blank grid", function()
     local inst, window = scene()
+    window:Refresh()
+    assertFalse(window.empty ~= nil and window.empty:IsShown(), "there is data, so no empty state")
     inst.mocks.setSession(CURRENT, "*", { combatSources = {}, maxAmount = 0, totalAmount = 0 })
+    window:MarkDirty()
     window:Refresh()
 
     assertEqual(#window.pool.active, 0)
-    assertEqual(window.notice:IsShown(), true)
-    assertTrue(window.notice:GetText():find("Waiting for combat", 1, true) ~= nil,
-        "an empty grid with no explanation reads as a broken addon")
+    -- red under: one gray "Waiting for combat data..." line at the top of the grid
+    assertFalse(window.notice:IsShown(), "the empty state, not the unavailable notice")
+    local e = window.empty
+    assertTrue(e ~= nil and e:IsShown(), "an empty grid with no explanation reads as a broken addon")
+    assertEqual(e.title:GetText(), "No combat data yet")
+    assertEqual(e.text:GetText(), "Your group's numbers appear here once combat starts.")
+    local r, g, b = e.title:GetTextColor()
+    assertTrue(r == 1 and g > 0.8 and g < 0.83 and b == 0, "the title in gold")
+    assertEqual(select(1, e:GetPoint(1)), "CENTER", "centered in the body")
+
+    window:Render({}, true)
+    assertFalse(e:IsShown(), "the next pass takes it down before it decides")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -1386,11 +1398,11 @@ test("Render's empty notice is for a live grid only, and its pass line names the
     -- line reads `window N drew D/E rows`, with ` (preview)` on a preview.
     local inst, window = scene()
     window:Render({}, true)
-    assertFalse(window.notice:IsShown(), "an empty preview said it was waiting for combat")
+    assertFalse(window.empty ~= nil and window.empty:IsShown(), "an empty preview said it was waiting for combat")
     window:Render({}, false, true, "Title")
-    assertFalse(window.notice:IsShown(), "an empty breakdown said it was waiting for combat")
+    assertFalse(window.empty ~= nil and window.empty:IsShown(), "an empty breakdown said it was waiting for combat")
     window:Render({}, false)
-    assertTrue(window.notice:IsShown(), "an empty live grid said nothing")
+    assertTrue(window.empty:IsShown(), "an empty live grid said nothing")
 
     inst.NS.State.debug = true
     window:Render({}, true)

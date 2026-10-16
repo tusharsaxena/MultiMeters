@@ -797,6 +797,7 @@ function WindowProto:ApplyMinimized()
     -- The notice is re-shown by Refresh whenever there is nothing to draw, so
     -- hiding it here is not enough on its own -- Refresh checks the same flag.
     if self.notice and down then self.notice:Hide() end
+    if self.empty and down then self.empty:Hide() end
     -- ApplyLock is the grip's other author, so expanding must not resurrect a
     -- grip the lock had hidden.
     if self.grip then
