@@ -649,9 +649,10 @@ right. Open the panel with `/mm config`.
   `/mm lock off` → no grip over the collapsed window. Expand it → the grip is back. Result: pass (owner-marked 2026-10-10)
 - **WIN-39. The empty state.** Reset the meter (WIN-17) out of combat → in the middle of the grid, under
   the column headers, a gold *No combat data yet* and, beneath it in white, *Your group's numbers appear
-  here once combat starts.*, both centered and in the window's font (the title a few points larger);
-  nothing at the top of the grid. Narrow the window → the white line wraps rather than runs past the edge.
-  Change the font or text size → both follow. Minimize → it goes; pull a mob → rows replace it. Result:
+  here once combat starts.*, both centered and the size of Ka0s Drop Watcher's *No drops yet* and its line
+  (the game's large and small fonts, whatever the window's text size); nothing at the top of the grid.
+  Narrow the window → the white line wraps rather than runs past the edge. Minimize → it goes; pull a mob
+  → rows replace it. Result:
 
 ## VIS
 

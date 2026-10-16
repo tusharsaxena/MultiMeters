@@ -1256,7 +1256,9 @@ end
 --- session yet — which is the normal state between pulls. A preview and a
 --- breakdown say nothing. Built on first use, inside the body (so a collapsed
 --- window hides it with the body), and kept apart from `notice`, which still
---- says why the meter is unavailable; its fonts follow the window's on each show.
+--- says why the meter is unavailable. Its two lines take the game's own
+--- GameFontNormalLarge and GameFontHighlightSmall, Drop Watcher's empty-state
+--- sizes, not the window's font.
 local function showWaiting(win, preview, isDrill)
     if preview or isDrill then return end
     local e = win.empty
@@ -1264,21 +1266,16 @@ local function showWaiting(win, preview, isDrill)
         e = CreateFrame("Frame", nil, win.body)
         e:SetSize(1, 1)
         e:SetPoint("CENTER", win.body, "CENTER", 0, 0)
-        e.title = e:CreateFontString(nil, "OVERLAY")
+        e.title = e:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         e.title:SetPoint("BOTTOM", e, "CENTER", 0, 2)
         e.title:SetTextColor(1, 0.82, 0)
-        e.text = e:CreateFontString(nil, "OVERLAY")
+        e.text = e:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         e.text:SetPoint("TOPLEFT", win.body, "LEFT", 4, -4)
         e.text:SetPoint("TOPRIGHT", win.body, "RIGHT", -4, -4)
         e.text:SetJustifyH("CENTER")
         e.text:SetTextColor(1, 1, 1)
         win.empty = e
     end
-    -- The font before the text: a font string with none raises "Font not set".
-    local cfg = win.config or {}
-    local face, size = fontPath((cfg.header or {}).font), (cfg.text or {}).size or 11
-    e.title:SetFont(face, size + 4, "")
-    e.text:SetFont(face, size, "")
     e.title:SetText(L["No combat data yet"])
     e.text:SetText(L["Your group's numbers appear here once combat starts."])
     e:Show()

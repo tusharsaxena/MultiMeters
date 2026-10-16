@@ -573,6 +573,10 @@ test("An empty session says so rather than leaving a blank grid", function()
     local r, g, b = e.title:GetTextColor()
     assertTrue(r == 1 and g > 0.8 and g < 0.83 and b == 0, "the title in gold")
     assertEqual(select(1, e:GetPoint(1)), "CENTER", "centered in the body")
+    -- red under: the window's font at its text size (+4 on the title), larger than Drop Watcher's
+    assertEqual(e.title.__template, "GameFontNormalLarge", "the title Drop Watcher's empty-state size")
+    assertEqual(e.text.__template, "GameFontHighlightSmall", "the line Drop Watcher's size")
+    assertTrue(e.title.__font == nil and e.text.__font == nil, "no window font laid over the templates")
 
     window:Render({}, true)
     assertFalse(e:IsShown(), "the next pass takes it down before it decides")
