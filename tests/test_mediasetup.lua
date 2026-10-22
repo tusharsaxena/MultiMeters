@@ -65,35 +65,61 @@ end)
 -- The catalog, against what this addon actually asks for
 -- ---------------------------------------------------------------------------
 
-test("MediaSetup: every icon the header strip draws is one the library ships", function()
-    -- The names are strings in modules/HeaderControls.lua and the catalog is in
-    -- another repo. A rename on either side answers nil, and nil draws nothing.
-    -- red under: any art name here the library does not carry.
-    local inst = T.load()
-    local Media = inst.mocks.LibStub("LibKa0s-Media-1.0", true)
-    local known = {}
-    for _, name in ipairs(Media.ICONS) do known[name] = true end
+--- The `LibKa0s icons:` declaration in CLAUDE.md, parsed by the kit's one parser
+--- (tests/_kit/vendor_sync.lua). Never a second parser here: the prune and the vendor gate read
+--- the line through the same function, so this suite cannot disagree with what shipped.
+local function declaredIcons()
+    local VendorSync = dofile((T.root or ".") .. "/tests/_kit/vendor_sync.lua")
+    local fh = assert(io.open((T.root or ".") .. "/CLAUDE.md", "rb"))
+    local doc = fh:read("*a")
+    fh:close()
+    local decl, err = VendorSync.iconDeclaration(doc)
+    assertTrue(decl ~= nil, "CLAUDE.md carries no readable `LibKa0s icons:` line: " .. tostring(err))
+    local set = {}
+    for _, name in ipairs(decl.names or {}) do set[name] = true end
+    return decl, set
+end
 
-    -- Both halves of every two-state control, because only one of them is drawn
-    -- at a time and a test that took the default state would miss the other.
-    for _, name in ipairs({ "close", "minimise", "expand", "lock", "unlock",
-                            "settings", "segment", "reset", "export",
-                            "sort-up", "sort-down" }) do
-        assertTrue(known[name] == true,
-            "the header draws '" .. name .. "', which LibKa0s-Media does not ship")
+test("MediaSetup: every icon this addon draws is declared and ships", function()
+    -- The names are strings in this addon and the catalog is in another repo; since LibKa0s
+    -- v1.75.0 the build also ships ONLY the declared subset. A drawn name missing from the
+    -- declaration still resolves to a path through NS.Icon, and then draws blank in game.
+    -- red under: dropping a drawn name from the LibKa0s icons: line, or a prune that removed its file
+    local inst = T.load()
+    local _, declared = declaredIcons()
+    local root = (T.root or ".") .. "/libs/LibKa0s/media/icons/"
+
+    -- Every draw site, both halves of every two-state control (only one is drawn at a time, and
+    -- a test that took the default state would miss the other), the library-drawn names for the
+    -- surfaces this addon wires (close: Core.MakeCloseButton through NS.MakeCloseButton, the
+    -- debug console, PerfPanel and W.CopyWindow; copy and clear: the debug console's title bar),
+    -- and the host-passed info mark (W.TestStrip art; OptionsIdList's help mark).
+    for _, name in ipairs({
+        "close", "minimise", "expand", "lock", "unlock",          -- modules/HeaderControls.lua
+        "settings", "segment", "reset", "export",                 -- HeaderControls, Schema labels
+        "sort-up", "sort-down",                                   -- modules/Window_Header.lua
+        "chevron-down", "spreadsheet", "chat",                    -- modules/Export_Modal.lua
+        "copy", "clear",                                          -- library-drawn, DebugLog
+        "info",                                                   -- host-passed, TestStrip/IdList
+    }) do
+        assertTrue(declared[name] == true,
+            "this addon draws '" .. name .. "', which the CLAUDE.md `LibKa0s icons:` line omits")
         assertTrue(inst.NS.Icon(name) ~= nil, "NS.Icon answered nil for " .. name)
+        local fh = io.open(root .. name .. ".tga", "rb")
+        assertTrue(fh ~= nil, "libs/LibKa0s/media/icons/" .. name .. ".tga is not vendored")
+        if fh then fh:close() end
     end
 end)
 
-test("MediaSetup: every name the library ships has a file in the vendored copy", function()
-    -- The library's own suite checks its catalog against its own directory. This
-    -- checks the COPY: a re-vendor that dropped a file, or a packaging step that
-    -- filtered it out, leaves a catalog naming art this build does not carry.
-    local inst = T.load()
-    local Media = inst.mocks.LibStub("LibKa0s-Media-1.0", true)
+test("MediaSetup: every name the declaration lists has a file in the vendored copy", function()
+    -- This checks the COPY against the declaration: a prune or a packaging step that dropped a
+    -- declared file leaves a line naming art this build does not carry. That UNdeclared files do
+    -- not ship is tests/test_vendor_sync.lua's job (the kit gates declared == shipped), so this
+    -- suite does not repeat it.
+    local decl = declaredIcons()
     local root = (T.root or ".") .. "/libs/LibKa0s/media/icons/"
     local missing = {}
-    for _, name in ipairs(Media.ICONS) do
+    for _, name in ipairs(decl.names or {}) do
         local fh = io.open(root .. name .. ".tga", "rb")
         if fh then fh:close() else missing[#missing + 1] = name end
     end

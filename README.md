@@ -103,6 +103,8 @@ Please raise them on GitHub:
 ## Credits
 
 The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL
-Open Font License 1.1, and the header controls draw [Open Iconic](https://github.com/iconic/open-iconic)
-(MIT). Both ship inside the bundled LibKa0s payload, with their license text beside them.
+Open Font License 1.1. The header controls, the column sort arrows, the Export window and the debug
+console draw icons from [Open Iconic](https://github.com/iconic/open-iconic) (MIT). Only the icons
+this addon draws ship. The font and the icons sit inside the bundled LibKa0s payload, each with its
+license text beside it.
 

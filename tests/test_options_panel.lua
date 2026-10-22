@@ -865,10 +865,22 @@ test("Options: the descriptor tells the library the FOLDER name (LibKa0s#42)", f
         "the Options descriptor does not pass addonName = addonName")
 end)
 
-test("Options: the help-mark art the descriptor points at is vendored on disk", function()
+test("Options: the help-mark and test-strip art, info, is declared and vendored", function()
     -- The library's loaded-addon guard catches a wrong folder name, not a wrong
-    -- vendor path: a missing file under the right folder still draws nothing.
-    -- red under: a re-vendor that drops libs/LibKa0s/media/icons/info.tga.
+    -- vendor path: a missing file under the right folder still draws nothing. Since
+    -- LibKa0s v1.75.0 the build ships only the declared icons, so `info` must also
+    -- be on the CLAUDE.md declaration, or the prune removes it.
+    -- red under: an icon line without info, or a prune that removed info.tga
+    local VendorSync = dofile((T.root or ".") .. "/tests/_kit/vendor_sync.lua")
+    local doc = assert(io.open((T.root or ".") .. "/CLAUDE.md", "rb"))
+    local decl, err = VendorSync.iconDeclaration(doc:read("*a"))
+    doc:close()
+    assertTrue(decl ~= nil, "CLAUDE.md carries no readable `LibKa0s icons:` line: " .. tostring(err))
+    local declared = false
+    for _, name in ipairs(decl.names or {}) do
+        if name == "info" then declared = true end
+    end
+    assertTrue(declared, "the CLAUDE.md `LibKa0s icons:` line does not declare info")
     local fh = io.open((T.root or ".") .. "/libs/LibKa0s/media/icons/info.tga", "rb")
     assertTrue(fh ~= nil, "libs/LibKa0s/media/icons/info.tga is missing")
     if fh then fh:close() end

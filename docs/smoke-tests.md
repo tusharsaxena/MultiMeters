@@ -17,9 +17,9 @@ secret-value rules the checks refer to.
 
 | ID range | Theme | What it covers |
 |---|---|---|
-| INSTALL-1 to INSTALL-9 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades |
+| INSTALL-1 to INSTALL-10 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set |
 | SLASH-1 to SLASH-14 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button |
-| PANEL-1 to PANEL-47 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse |
+| PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
 | WIN-1 to WIN-39 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state |
@@ -104,6 +104,16 @@ secret-value rules the checks refer to.
   (`minimized`, `showMinimize`; the v16 step renames the two British-spelled keys and drops them), and
   the collapsed one reads `minimized = true`. A window back expanded, or a minimize control back on
   screen, means the v16 step lost the old key. Result: pass (owner-marked 2026-10-10)
+- **INSTALL-10. Every icon draws from the pruned set.** From LibKa0s v1.75.0 the build ships only the
+  icons the CLAUDE.md `LibKa0s icons:` line declares, and an undeclared name draws a blank square
+  with no Lua error. Check each draw site → every one shows its art, never a blank square:
+  (a) the header controls: close, minimize, then expand while collapsed, lock and unlock, settings,
+  segment, reset, export; and Settings → Header → Controls, where each checkbox label carries its
+  icon; (b) the column headers' sort-up and sort-down arrows, and the Columns editor's block handle
+  (the segment glyph); (c) `/mm export`: the three selectors' chevron, the spreadsheet and chat icons
+  on **Export to CSV** and **Print to Chat**, and the CSV copy window's close X; (d) the debug console
+  (`/mm debug`): the close, copy and clear buttons in its title bar; and the perf panel
+  (`/mm perf start`, then show it): its close X. Result: owed
 
 ## SLASH
 
@@ -418,6 +428,10 @@ right. Open the panel with `/mm config`.
   and visit General, every Windows tab and Profiles → each page renders as before, with no Lua error on
   load or on open, and no `[Cfg] help art:` line in the console (no list here carries help marks, so the
   change is latent). Result: pass (owner-marked 2026-10-10)
+- **PANEL-48. A structural refresh keeps the scroll position.** On LibKa0s v1.73.0 (Options minor 29)
+  a refresh that rebuilds a page keeps where it was scrolled. Open a long page, scroll partway down,
+  then trigger a structural refresh (for example add or remove a column on the Windows page) → the
+  page redraws at the same scroll position, not back at the top. Result: owed
 
 ## PROFILE
 
@@ -1356,7 +1370,9 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 
 ## Pending sign-off
 
-None. On 2026-10-10 the owner marked every check in this file as passed, recorded on its
+On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass
 keeps it. A check added or rewritten after that date is listed here until its `Result:` line records
 a pass.
+
+- INSTALL-10 and PANEL-48 (added 2026-10-22, the LibKa0s v1.75.0 re-vendor).

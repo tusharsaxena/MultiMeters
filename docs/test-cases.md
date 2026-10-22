@@ -610,8 +610,8 @@ Total.
 - MediaSetup: an icon the library does not ship answers nil
 - MediaSetup: NS.MediaFont answers the vendored face
 - MediaSetup: the font this addon names is the face the library registers
-- MediaSetup: every icon the header strip draws is one the library ships
-- MediaSetup: every name the library ships has a file in the vendored copy
+- MediaSetup: every icon this addon draws is declared and ships
+- MediaSetup: every name the declaration lists has a file in the vendored copy
 - MediaSetup: with no library there is no art, and that is not an error
 
 ### test_envsetup.lua (13)
@@ -2286,7 +2286,7 @@ Total.
 - Options: CreateOptionsPanel runs the schema validator
 - Options: AceGUI is resolved once and published for the page builders
 - Options: the descriptor tells the library the FOLDER name (LibKa0s#42)
-- Options: the help-mark art the descriptor points at is vendored on disk
+- Options: the help-mark and test-strip art, info, is declared and vendored
 - Options: the shared LSM30_Border slot is re-registered once, above what AGSMW left in it
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip

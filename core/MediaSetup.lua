@@ -53,7 +53,9 @@
 -- ---------------------------------------------------------------------------
 --
 -- Not a full catalog (the library's own ICONS table is that); just the names
--- whose consumer would not be obvious from the call site alone.
+-- whose consumer would not be obvious from the call site alone. What this build
+-- SHIPS is the CLAUDE.md `LibKa0s icons:` line, which the re-vendor prunes the
+-- payload to: a name used here must be added there, or it draws blank.
 --
 --   "chevron-down" — modules/Export.lua's three modal selectors (Metric,
 --   Channel, Lines). Asked ONCE, in that file's `makeSelector` factory, and
