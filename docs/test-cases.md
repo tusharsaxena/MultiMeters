@@ -630,7 +630,7 @@ Total.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
-### test_launchersetup.lua (50)
+### test_launchersetup.lua (55)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -676,6 +676,11 @@ Total.
 - Database v15: an account that already stored it globally keeps what it has
 - Database v15: a profile that never placed a button leaves the shipped default
 - Database v15: it is idempotent
+- Binding: the Show window binding's button exists, is named MultiMetersToggleWindows, hidden, registered AnyDown, and one click toggles once
+- Binding: the binding labels are the brand and the localized action
+- Binding: the launcher's toggleWindow and the button run the same function
+- Binding: Bindings.xml carries exactly one CLICK MultiMetersToggleWindows:LeftButton, header MULTIMETERS, category ADDONS, no default attribute and no Lua body, and the TOC does not list it
+- Binding: a library-absent load still creates the button
 - Degraded: Register answers false, quietly, when LibDataBroker is absent
 - Degraded: with no LibDBIcon there is still a broker plugin, and no button
 - Degraded: a host with NEITHER broker library loads and enables without raising
@@ -2215,7 +2220,7 @@ Total.
 - Slash profile: with no library `/mm profile` names what is missing and switches nothing
 - Slash profile: the stub's ProfileSwitch answers false with the same line
 
-### test_disabled.lua (26)
+### test_disabled.lua (27)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -2229,6 +2234,7 @@ Total.
 - Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam
 - Disabled 8: left-click opens the panel and writes nothing, in either state
 - Disabled 8b: right-click opens the menu with only Enabled live, and writes nothing
+- Disabled 8c: the key press refuses exactly as /mm toggle does
 - Disabled 9: re-enabling restores the registration set it had
 - Disabled 9: the rebuild reflects a setting changed WHILE disabled
 - Disabled 10: releasing one hold does not resurrect an addon the other holds down
@@ -2488,7 +2494,7 @@ Total.
 | test_debuglogsetup.lua | 32 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 13 |
-| test_launchersetup.lua | 50 |
+| test_launchersetup.lua | 55 |
 | test_lifecycle.lua | 40 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
@@ -2530,7 +2536,7 @@ Total.
 | test_slash_diagnostics.lua | 20 |
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
-| test_disabled.lua | 26 |
+| test_disabled.lua | 27 |
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 46 |
 | test_columnblocks.lua | 35 |
@@ -2542,4 +2548,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2204** |
+| **Total** | **2210** |

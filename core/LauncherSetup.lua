@@ -103,6 +103,64 @@ local function minimapTable()
     return db and db.global and db.global.minimap or nil
 end
 
+--- Run one slash verb's OWN handler, exactly as the dispatcher would for `/mm <verb>` with no
+--- argument. Looked up in NS.COMMANDS at call time (settings/Slash.lua loads after core/), so the
+--- menu and the verb are one function rather than two that agree. A build with no such verb does
+--- nothing rather than raising.
+--- @param verb string
+local function runVerb(verb)
+    for _, entry in ipairs(NS.COMMANDS or {}) do
+        if entry[1] == verb then return entry[3]("") end
+    end
+end
+
+-- ---------------------------------------------------------------------------
+-- The Show window key binding (launcher-§6)
+-- ---------------------------------------------------------------------------
+--
+-- The options menu's Show window entry owes a key. Bindings.xml at the repo root declares one CLICK
+-- binding on the button below, and the button's OnClick is `toggleWindows`, the SAME function the
+-- descriptor's `toggleWindow` is, so the menu, the verb and the key are one path. No default key:
+-- the player picks one under Key Bindings -> AddOns -> Ka0s Multi Meters. A plain, hidden,
+-- non-secure Button: it toggles non-secure windows, so a press in combat taints nothing.
+--
+-- THE KEY REFUSES EXACTLY AS `/mm toggle` DOES. runVerb calls the verb's handler directly and so
+-- skips the dispatcher's disabled gate (settings/Slash.lua), which the menu never needed because
+-- the library grays the entry while disabled. A key cannot be grayed, so `toggleWindows` carries
+-- that gate itself and prints the dispatcher's own line. Under the perf hold alone the addon is not
+-- disabled: the press reaches M:Toggle, which prints its suspend line, as `/mm toggle` does.
+--
+-- BUILT BEFORE THE LIBRARY-ABSENT FORK below, which returns early, so a degraded install still
+-- answers the player's key.
+
+-- PERMANENT: players' keys are stored against this name, so renaming it unbinds every one of them.
+local TOGGLE_BUTTON = "MultiMetersToggleWindows"
+
+--- The Show window toggle, for the menu entry and the key alike. Refuses while disabled with the
+--- dispatcher's own line, resolved at call time: settings/Slash.lua loads after core/, and its
+--- degraded stub answers DisabledLine too.
+local function toggleWindows()
+    if NS.IsDisabled and NS.IsDisabled() then
+        local Sl = NS.Slash
+        if NS.Print and Sl and Sl.DisabledLine then NS.Print(Sl:DisabledLine()) end
+        return
+    end
+    runVerb("toggle")
+end
+
+do
+    local button = CreateFrame("Button", TOGGLE_BUTTON, UIParent)
+    button:RegisterForClicks("AnyDown")
+    button:SetScript("OnClick", toggleWindows)
+    button:Hide()
+end
+
+-- The Key Bindings labels: the brand as the header (launcher-§1's spelling) and the action through
+-- the locale. rawset because the second name holds a space and a colon, and so that neither global
+-- needs a .luacheckrc entry.
+rawset(_G, "BINDING_HEADER_MULTIMETERS", L["Ka0s Multi Meters"])
+rawset(_G, "BINDING_NAME_CLICK " .. TOGGLE_BUTTON .. ":LeftButton", L["Toggle meter windows"])
+
 if not Launcher then
     -- A missing vendored library must degrade, not error at load. The stub answers every member
     -- the addon reaches — `Register` from OnInitialize and `SetShown` from the write seam — plus
@@ -212,17 +270,6 @@ local function isWindowShown()
     return M ~= nil and M.AnyShown ~= nil and M:AnyShown() or false
 end
 
---- Run one slash verb's OWN handler, exactly as the dispatcher would for `/mm <verb>` with no
---- argument. Looked up in NS.COMMANDS at call time (settings/Slash.lua loads after core/), so the
---- menu and the verb are one function rather than two that agree. A build with no such verb does
---- nothing rather than raising.
---- @param verb string
-local function runVerb(verb)
-    for _, entry in ipairs(NS.COMMANDS or {}) do
-        if entry[1] == verb then return entry[3]("") end
-    end
-end
-
 --- The version from the TOC metadata, through the one reader `/mm version` and the options header
 --- use (core/EnvSetup.lua). Never NS.version alone: that is the hardcoded fallback.
 --- @return string|nil
@@ -285,7 +332,7 @@ NS.Launcher = Launcher:New({
     isTestMode     = isTestMode,
     toggleTestMode = function() runVerb("test") end,
     isWindowShown  = isWindowShown,
-    toggleWindow   = function() runVerb("toggle") end,
+    toggleWindow   = toggleWindows,
 
     -- The tooltip's title. The rest of the status block reads the accessors above.
     version        = version,

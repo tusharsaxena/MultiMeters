@@ -1,0 +1,8 @@
+<Bindings>
+	<!-- The Show window key (launcher-§6): clicks the plain, hidden MultiMetersToggleWindows button that
+	     core/LauncherSetup.lua creates at load, whose OnClick is the function the launcher menu's Show
+	     window entry runs, so it refuses exactly as /mm toggle does. Its two labels are set there. No
+	     default key: the player picks one under Key Bindings, AddOns. The button name is permanent;
+	     renaming it unbinds every player's key. Not listed in the TOC: the client reads this file by name. -->
+	<Binding name="CLICK MultiMetersToggleWindows:LeftButton" header="MULTIMETERS" category="ADDONS"/>
+</Bindings>

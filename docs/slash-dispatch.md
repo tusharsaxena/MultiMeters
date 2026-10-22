@@ -138,6 +138,13 @@ to need it (`debug-logging-§14`).
   `diagnostics`, `perf`, `get`, `set`, `list`, `reset`, `resetall`, `profile`, and the bare `/mm`.
 - **Refused while disabled:** `lock`, `test`, `toggle`, `window`, `reset-positions`, `export`.
 
+**The Show window key binding refuses like `/mm toggle`** (`launcher-§6`). The *Toggle meter windows*
+key clicks `MultiMetersToggleWindows`, whose OnClick is the launcher's `toggleWindow` function: it
+runs the `toggle` verb's own handler, the one this dispatcher calls. Called that way the handler skips
+the gate above, so the function carries it: while disabled it prints `NS.Slash:DisabledLine()`, the
+line the dispatcher prints for `/mm toggle`, and returns. Under the perf hold alone it reaches the
+verb, which answers with its suspend line, as `/mm toggle` does.
+
 It asks `NS.IsDisabled`, not `NS.IsStoodDown`. A perf-suspended addon is stood down but not disabled,
 and a line telling someone mid-capture to type `/mm enable` would be the wrong advice.
 

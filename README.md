@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2204%2F2204_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2210%2F2210_passing-green)
 
 Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
@@ -43,7 +43,7 @@ Setting a window up takes four steps. Most of it happens on the Windows page, wh
 - Choose your header controls. The title bar has room for seven: close, minimize, lock, settings, segment, reset and export, and the Header entry's Controls tab picks which ones this window draws. The segment control is the three horizontal lines, and it's the one people miss. It picks which fight the window shows, and your pick sticks through a reload.
 - Dig into the numbers. Hover a cell to see the spells behind it, or hover a name to see everything tracked for that player. Click either one to drill in. Clicking a Deaths cell opens the recap instead, which is usually the more interesting trip.
 
-Want a second window? Click **New window** on the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you four switches: Enabled, Locked, Test mode and Show window.
+Want a second window? Click **New window** on the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you four switches: Enabled, Locked, Test mode and Show window. A key can show and hide the windows too: Key Bindings → AddOns → Ka0s Multi Meters → Toggle meter windows. No key is set for you.
 
 Everything else is on the addon's page under Settings → AddOns, and `/mm` (or `/multimeters`) on its own opens it. `/mm help` prints the full command list.
 

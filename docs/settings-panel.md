@@ -225,7 +225,7 @@ Right-click opens the client's context menu, titled *Ka0s Multi Meters*, with th
 | **Enabled** | the `enabled` row is on | `/mm enable` or `/mm disable` | no |
 | **Locked** | every window is locked (the *Lock frame* row's accessor) | `/mm lock` | yes |
 | **Test mode** | `state.testMode` is on (the *Test mode* row) | `/mm test` | yes |
-| **Show window** | any meter window is on screen (`WindowManager:AnyShown()`) | `/mm toggle` | yes |
+| **Show window** | any meter window is on screen (`WindowManager:AnyShown()`) | `/mm toggle`; the same function is the *Toggle meter windows* key binding (`CLICK MultiMetersToggleWindows:LeftButton`, `launcher-§6`), which, since a key cannot be grayed, refuses while disabled with `/mm toggle`'s own line | yes |
 
 Each entry calls the verb's own handler out of `NS.COMMANDS`, so the chat acknowledgment, the write
 through this page's seam and any refusal (test mode will not start in combat; `/mm toggle` answers a

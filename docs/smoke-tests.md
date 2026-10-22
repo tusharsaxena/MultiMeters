@@ -18,7 +18,7 @@ secret-value rules the checks refer to.
 | ID range | Theme | What it covers |
 |---|---|---|
 | INSTALL-1 to INSTALL-10 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set |
-| SLASH-1 to SLASH-14 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button |
+| SLASH-1 to SLASH-19 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding |
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
@@ -178,6 +178,17 @@ secret-value rules the checks refer to.
   **Enabled** unticked and clickable; **Locked**, **Test mode** and **Show window** grayed, each reading
   *(enable the addon first)*, and not clickable. Tick **Enabled** → the addon comes back, as
   `/mm enable`. Result: pass (owner-marked 2026-10-10)
+- **SLASH-15. The key binding is listed.** Key Bindings → AddOns lists a *Ka0s Multi Meters* header with
+  one *Toggle meter windows* entry and no key preassigned (`launcher-§6`). Result: owed
+- **SLASH-16. The key toggles.** Bind a key and press it → every meter window hides; press again → they
+  show, the same as `/mm toggle`. One press toggles once. Result: owed
+- **SLASH-17. The key while disabled.** `/mm disable`, then press the key → exactly one chat line
+  (*Ka0s Multi Meters is disabled - enable it with /mm enable*), and no window appears. Result: owed
+- **SLASH-18. The key during a perf capture.** Start a perf capture (`/mm perf start`), then press the
+  key → exactly the line `/mm toggle` prints during a capture, once, and the windows do not change.
+  Result: owed
+- **SLASH-19. The key in combat.** Press the key in combat → the windows toggle with no error and no
+  taint message (the windows are not secure). Result: owed
 
 ## PANEL
 
@@ -1394,3 +1405,4 @@ keeps it. A check added or rewritten after that date is listed here until its `R
 a pass.
 
 - INSTALL-10 and PANEL-48 (added 2026-10-22, the LibKa0s v1.75.0 re-vendor).
+- SLASH-15 to SLASH-19 (added 2026-10-22, the Show window key binding, `launcher-§6`).
