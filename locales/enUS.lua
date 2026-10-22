@@ -847,6 +847,10 @@ L["Test"] = "Test"
 -- The red marker in a window's title bar while test mode is on. Upper case in
 -- English on purpose; a translator may lower it.
 L["TEST MODE"] = "TEST MODE"
+-- The test-mode strip across the top of every window (W.TestStrip, MultiMeters#59).
+-- The ending clause is true: combat start ends test mode (M:EndTestModeForCombat).
+L["TEST MODE: placeholder numbers, not your fight. Combat ends it."] =
+    "TEST MODE: placeholder numbers, not your fight. Combat ends it."
 
 -- ---------------------------------------------------------------------------
 -- Export window

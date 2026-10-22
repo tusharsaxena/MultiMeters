@@ -22,7 +22,7 @@ secret-value rules the checks refer to.
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-39 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state |
+| WIN-1 to WIN-46 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip |
 | VIS-1 to VIS-12 | [Visibility](#vis) | Contexts and hide rules |
 | GRID-1 to GRID-32 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
@@ -667,6 +667,24 @@ right. Open the panel with `/mm config`.
   (the game's large and small fonts, whatever the window's text size); nothing at the top of the grid.
   Narrow the window → the white line wraps rather than runs past the edge. Minimize → it goes; pull a mob
   → rows replace it. Result:
+- **WIN-40. The test-mode strip, header shown.** `/mm test` with the header shown → a yellow strip
+  (*TEST MODE: placeholder numbers, not your fight. Combat ends it.*) sits under the title. The column
+  headers sit under it, no row overlaps it, and the red TEST MODE title marker and the session-line
+  *Test* are still there. Result:
+- **WIN-41. The strip with the header hidden.** Hide the header (Settings → Header), then `/mm test` →
+  the strip is at the very top of the window, so the window is still marked as test data. Result:
+- **WIN-42. A narrow window.** Make a window narrow → the strip text truncates with *...* inside the
+  frame and never spills past the window edge. Result:
+- **WIN-43. Test mode off.** `/mm test off` → the strip goes, the column headers and rows move back up,
+  and the visible row count returns. Result:
+- **WIN-44. Minimized in test mode.** Minimize a window while in test mode → the strip hides with the
+  body; expand → it is back. Result:
+- **WIN-45. Combat ends it without a jump.** Test mode on, pull a training dummy → one *Test mode off —
+  combat started* line prints, the strip disappears, and the window does not jump, re-skin or change
+  scale or position. Result:
+- **WIN-46. The minimum height.** Drag a window down to its minimum height in test mode → the resize
+  floor does not move, the strip takes the room of the one row, and the window size saved after test
+  mode ends is the size you dragged to. Result:
 
 ## VIS
 

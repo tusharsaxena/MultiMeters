@@ -1089,7 +1089,7 @@ Total.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (64)
+### test_window.lua (68)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - BuildLayout computes every coordinate from config alone
@@ -1155,8 +1155,12 @@ Total.
 - A second pass re-anchors nothing until ApplyConfig moves the layout
 - A refresh that changes nothing writes no [Aggregator] or [Render] line (quiet steady state)
 - Render's empty notice is for a live grid only, and its pass line names the count
+- BuildLayout reserves the test strip only in test mode
+- At minimum height the strip takes the row and the bounds do not move
+- The strip is born hidden, with the localized line and the info art
+- With no Widgets library the window builds and reserves nothing
 
-### test_window_header.lua (57)
+### test_window_header.lua (60)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -1215,6 +1219,9 @@ Total.
 - Every header sits exactly over the column it labels, from the same layout
 - The Player header is a Button like every other, not a label with a gap beside it
 - The strip background and the per-column ones are mutually exclusive, both ways
+- Test mode: strip under the title, column headers and body pushed down by 22
+- Header hidden plus test mode: the strip is at the top of the window and shown
+- Minimized: the strip hides and comes back on expand
 
 ### test_window_header_sort.lua (17)
 
@@ -1282,7 +1289,7 @@ Total.
 - SaveSize applies the config ONCE per resize-stop, and still applies when the seam refuses
 - A resize logs one [Set] line per dimension, not a row count
 
-### test_window_lifecycle.lua (8)
+### test_window_lifecycle.lua (9)
 
 - Suspend takes the OnUpdate away and Resume puts it back
 - Destroy takes the window off screen and off the bus
@@ -1292,6 +1299,7 @@ Total.
 - CONFIG_CHANGED for ANOTHER window leaves this one alone
 - Destroy takes the window off EVERY message, not just the meter
 - SetConfig re-points the window at a new config without rebuilding it
+- The test-mode toggle runs ApplyTestStrip, never ApplyConfig
 
 ### test_window_segment.lua (10)
 
@@ -2493,11 +2501,11 @@ Total.
 | test_aggregator_identity.lua | 32 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 64 |
-| test_window_header.lua | 57 |
+| test_window.lua | 68 |
+| test_window_header.lua | 60 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 43 |
-| test_window_lifecycle.lua | 8 |
+| test_window_lifecycle.lua | 9 |
 | test_window_segment.lua | 10 |
 | test_headercontrols.lua | 66 |
 | test_row.lua | 62 |
@@ -2534,4 +2542,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2196** |
+| **Total** | **2204** |

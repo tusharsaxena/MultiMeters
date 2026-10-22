@@ -58,6 +58,24 @@ local Perf = NS.Perf
 local Const = NS.Constants
 local L     = NS.L
 
+-- LibKa0s-Widgets-1.0, for the test-mode strip (W.TestStrip, minor 13). Optional:
+-- with no library the window builds without a strip, reserves nothing, and the red
+-- TEST MODE title marker is the only label left (modules/Window_Header.lua).
+local W = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
+
+-- The window's own gap above and below the strip. The library publishes the strip's
+-- HEIGHT and no reserve: the gap is host layout (MultiMeters#59, LibKa0s#48).
+local STRIP_GAP = 2
+
+--- The room the test-mode strip takes under the title: its height plus a gap
+--- above and below while test mode is on (22 at HEIGHT 18), and 0 otherwise or
+--- with no Widgets library. From test-mode state and a library constant, never
+--- from the strip's own geometry.
+local function stripReserve()
+    if not (W and W.TestStrip and NS.State and NS.State.testMode) then return 0 end
+    return STRIP_GAP + W.TEST_STRIP.HEIGHT + STRIP_GAP
+end
+
 local Window = {}
 NS.Window = Window
 
@@ -325,7 +343,7 @@ end
 --- @return number
 local function rowCapacity(frame, rows, layout)
     local bodyHeight = (frame.height or 220) - layout.padding * 2
-        - layout.titleHeight - layout.headerHeight
+        - layout.titleHeight - layout.stripHeight - layout.headerHeight
     local fits = math.floor((bodyHeight + layout.rowSpacing)
         / (layout.rowHeight + layout.rowSpacing))
     if fits < 1 then fits = 1 end
@@ -334,12 +352,14 @@ local function rowCapacity(frame, rows, layout)
     return math.min(fits, Const.MAX_ROWS)
 end
 
---- Compute every coordinate this window will use, from CONFIG ONLY.
+--- Compute every coordinate this window will use, from config and test-mode
+--- state; never from widget geometry.
 ---
 --- Not one widget is consulted. That is the whole point: after a cell has been
 --- handed a secret value its geometry is secret too, so the only trustworthy
 --- source of "where does the third column start" is the arithmetic that put it
---- there. Recomputed on a settings change, never on a refresh.
+--- there. Recomputed on a settings change and on the test-mode toggle (the strip
+--- takes room under the title), never on a refresh.
 ---
 --- @return table layout
 function WindowProto:BuildLayout()
@@ -373,10 +393,30 @@ function WindowProto:BuildLayout()
         rowWidth    = x - COLUMN_GAP,
         bodyWidth   = (frame.width or 694) - pad * 2,
     }
+    -- THE TEST-MODE STRIP takes its room out of the ROWS, never out of the window:
+    -- minHeight below leaves it out, so the resize floor does not move under the
+    -- player on the toggle and SaveSize never persists a test-mode size. At the
+    -- minimum height the strip takes the room of the one row (rowCapacity's floor).
+    layout.stripHeight = stripReserve()
     layout.minHeight = pad * 2 + layout.titleHeight + layout.headerHeight + rowHeight
     layout.maxRows = rowCapacity(frame, rows, layout)
 
     return layout
+end
+
+--- Where the chrome below the title sits, from the layout alone: the strip's top,
+--- the column headers' top and the body's top, each as a distance down from the
+--- frame's top edge. With no strip (stripHeight 0) the headers sit straight under
+--- the title, exactly where they always did.
+---
+--- @return number stripTop
+--- @return number headerTop
+--- @return number bodyTop
+function WindowProto:ChromeOffsets()
+    local layout = self.layout
+    local below = layout.padding + layout.titleHeight
+    local headerTop = below + layout.stripHeight
+    return below + STRIP_GAP, headerTop, headerTop + layout.headerHeight
 end
 
 -- ---------------------------------------------------------------------------
@@ -620,6 +660,16 @@ function WindowProto:BuildFrame()
     self.notice:SetJustifyH("CENTER")
     self.notice:Hide()
 
+    -- THE TEST-MODE STRIP (MultiMeters#59, LibKa0s#48): a yellow band between the
+    -- title and the column headers saying the numbers under it are placeholders.
+    -- It is NOT part of the header, so a window with its header hidden is still
+    -- marked. Born hidden; ApplyTestStrip places and shows it. No tooltip, so the
+    -- mouse stays off. The red title marker and the session-line word stay too.
+    self.testStrip = W and W.TestStrip and W.TestStrip(frame, {
+        text = L["TEST MODE: placeholder numbers, not your fight. Combat ends it."],
+        icon = NS.Icon and NS.Icon("info"),
+    }) or nil
+
     -- ALWAYS BUILT, never gated on a setting. There used to be a `resizeGrip`
     -- checkbox read right here, and because BuildFrame runs ONCE per window,
     -- unticking it did nothing at all until a reload -- the reported bug. The
@@ -710,14 +760,17 @@ function WindowProto:ApplyConfig()
     -- The body is placed from config, and everything below it hangs off the body
     -- rather than off a sibling — one anchor chain, one direction, no cycles.
     local pad = layout.padding
+    local _, _, bodyTop = self:ChromeOffsets()
     self.body:ClearAllPoints()
-    self.body:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -(pad + layout.titleHeight + layout.headerHeight))
+    self.body:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -bodyTop)
     self.body:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -pad, pad)
 
     self.notice:ClearAllPoints()
     self.notice:SetPoint("TOPLEFT", self.body, "TOPLEFT", 4, -8)
     self.notice:SetPoint("TOPRIGHT", self.body, "TOPRIGHT", -4, -8)
     self.notice:SetFont(fontPath((cfg.header or {}).font), (cfg.text or {}).size or 11, "")
+
+    self:PlaceTestStrip()
 
     for _, row in ipairs(self.pool.all) do
         row:ApplyLayout(layout)
