@@ -35,7 +35,7 @@ recap-discovery probe), `modules/DrillDown.lua` and `modules/Tooltip_Lines.lua`
 (`Compat.GetSpellInfo`) with `modules/Tooltip_Builders.lua` (`Compat.GetSpellTexture`),
 `modules/Visibility.lua` (player context), `modules/HeaderControls.lua` (`FirstTexture` and
 `FirstAtlas`) and `modules/Window_Header.lua` (`FirstAtlas`, and the only caller `OpenContextMenu`
-has), `modules/Format.lua` (the formatters), `modules/Row.lua` (`BarInterpolation`, from `Cell:SetValue`), and `modules/Export.lua` (`ChatSender`, the chat export's only sender). `ChatSender` is a host member rather than a `LibKa0s-Compat-1.0` one because it has one consumer in the collection (anti-pattern #55). `modules/Tooltip.lua` and `modules/Window.lua`
+has), `modules/Format.lua` (the formatters), `modules/Row.lua` (`BarInterpolation`, from `Cell:SetValue`), and `modules/Export.lua` (`ChatSender`, the chat export's only sender). `ChatSender` is a host member rather than a `LibKa0s-Compat-1.0` one: it has two consumers in the collection (DropWatcher, MultiMeters) and no content beyond a presence guard, and promotion was rejected at LibKa0s#49. The record is in LibKa0s `docs/api/Compat` ("What is not here") and in the standard's open-evolutions. `modules/Tooltip.lua` and `modules/Window.lua`
 themselves name nothing in this file any more: the CCN peel took the spell shims across to the
 tooltip's builder and line files, and the header art and the menu across to
 `modules/Window_Header.lua`. `modules/Roster.lua` reaches `Compat.GetSpecialization` for the local
