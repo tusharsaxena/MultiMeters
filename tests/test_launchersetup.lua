@@ -847,6 +847,133 @@ test("Database v15: it is idempotent", function()
 end)
 
 -- ---------------------------------------------------------------------------
+-- The Show window key binding (launcher-§6)
+-- ---------------------------------------------------------------------------
+--
+-- The launcher's Show window entry owes a key: one CLICK binding in the root Bindings.xml, on a
+-- plain, hidden, named, non-secure button whose OnClick is the function the menu entry calls. The
+-- button name is permanent (the client stores the player's key against it), so it is asserted as a
+-- literal. A key cannot be grayed the way the menu entry is, so the press carries the disabled
+-- refusal itself and prints what `/mm toggle` prints (slash-commands-§7 step 8).
+
+local TOGGLE_BUTTON = "MultiMetersToggleWindows"
+local TOGGLE_COMMAND = "CLICK " .. TOGGLE_BUTTON .. ":LeftButton"
+
+local function toggleButton(inst) return inst.mocks.__frameByName[TOGGLE_BUTTON] end
+
+local function press(inst)
+    local button = toggleButton(inst)
+    local onClick = button:GetScript("OnClick")
+    assertTrue(onClick ~= nil, "the binding's button has no OnClick")
+    onClick(button, "LeftButton", true)
+end
+
+test("Binding: the Show window binding's button exists, is named MultiMetersToggleWindows, hidden, registered AnyDown, and one click toggles once", function()
+    -- red under: no button (the binding presses nothing), a shown button, or a button registered
+    -- for the default LeftButtonUp, which a key press (a DOWN event) never fires.
+    local inst = T.load{ enable = true }
+    local button = toggleButton(inst)
+    assertTrue(button ~= nil, "no frame named " .. TOGGLE_BUTTON)
+    assertEqual(button.__objectType, "Button")
+    assertEqual(button:GetName(), TOGGLE_BUTTON)
+    assertFalse(button:IsShown(), "the binding's button is shown")
+    assertEqual(table.concat(button.__clicks or {}, ","), "AnyDown")
+    assertEqual(button.__template, nil, "a template would make it a secure or a drawn button")
+
+    local toggles = 0
+    inst.NS.WindowManager.Toggle = function() toggles = toggles + 1 end
+    press(inst)
+    assertEqual(toggles, 1, "one press toggled " .. toggles .. " times")
+end)
+
+test("Binding: the binding labels are the brand and the localized action", function()
+    -- red under: no labels (Key Bindings shows the raw CLICK command), or a header that is not the
+    -- brand name the launcher's label carries.
+    local inst = T.load()
+    local env = inst.mocks._G
+    assertEqual(rawget(env, "BINDING_HEADER_MULTIMETERS"), "Ka0s Multi Meters")
+    assertEqual(rawget(env, "BINDING_NAME_" .. TOGGLE_COMMAND), inst.NS.L["Toggle meter windows"])
+    assertEqual(rawget(env, "BINDING_NAME_" .. TOGGLE_COMMAND), "Toggle meter windows")
+end)
+
+test("Binding: the launcher's toggleWindow and the button run the same function", function()
+    -- red under: a button with a private path to WindowManager:Toggle, or a toggleWindow that kept
+    -- its own closure. Each lands on `/mm toggle`'s own handler, and under the perf hold each
+    -- prints the same suspend line.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+
+    local seen = spyVerb(NS, "toggle")
+    openMenu(inst):Click("Show window")
+    assertEqual(#seen, 1, "the menu entry did not run /mm toggle")
+    press(inst)
+    assertEqual(#seen, 2, "the key did not run /mm toggle")
+    assertEqual(seen[2], "", "the key handed /mm toggle an argument")
+
+    local inst2 = T.load{ enable = true }
+    local NS2 = inst2.NS
+    NS2.Launcher:Register()
+    NS2.Perf.Suspend()
+    local n = #inst2.mocks.__chat
+    openMenu(inst2):Click("Show window")
+    local viaMenu = chatSince(inst2, n)
+    n = #inst2.mocks.__chat
+    press(inst2)
+    local viaKey = chatSince(inst2, n)
+    NS2.Perf.Resume()
+    assertEqual(#viaKey, 1, "the key printed " .. #viaKey .. " lines under the perf hold")
+    assertEqual(table.concat(viaKey, "\n"), table.concat(viaMenu, "\n"))
+
+    -- And the source names one function in both places, so the two cannot drift apart.
+    local fh = assert(io.open(T.root .. "/core/LauncherSetup.lua", "r"))
+    local src = fh:read("*a")
+    fh:close()
+    assertTrue(src:find("toggleWindow%s*=%s*toggleWindows%s*,") ~= nil,
+        "the descriptor's toggleWindow is not the binding's function")
+    assertTrue(src:find('SetScript%("OnClick",%s*toggleWindows%)') ~= nil,
+        "the button's OnClick is not the descriptor's function")
+end)
+
+test("Binding: Bindings.xml carries exactly one CLICK MultiMetersToggleWindows:LeftButton, header MULTIMETERS, category ADDONS, no default attribute and no Lua body, and the TOC does not list it", function()
+    -- red under: a missing file, a preassigned key (a default steals a key the player already
+    -- uses), a Lua body (a CLICK binding needs none), or a TOC line (the client reads Bindings.xml
+    -- from the folder by name; listed in the TOC it would load as a UI file).
+    local fh = assert(io.open(T.root .. "/Bindings.xml", "r"), "no Bindings.xml at the repo root")
+    local xml = fh:read("*a")
+    fh:close()
+
+    local bindings = {}
+    for tag in xml:gmatch("<Binding%s[^>]*>") do bindings[#bindings + 1] = tag end
+    assertEqual(#bindings, 1, "Bindings.xml declares " .. #bindings .. " bindings")
+    local tag = bindings[1]
+    assertEqual(tag:match('name="([^"]*)"'), TOGGLE_COMMAND)
+    assertEqual(tag:match('header="([^"]*)"'), "MULTIMETERS")
+    assertEqual(tag:match('category="([^"]*)"'), "ADDONS")
+    assertTrue(tag:find("/>%s*$") ~= nil, "the binding has a body; a CLICK binding needs no Lua")
+    assertEqual(xml:find("default=", 1, true), nil, "Bindings.xml preassigns a key")
+    assertTrue(xml:find("<Bindings>", 1, true) ~= nil and xml:find("</Bindings>", 1, true) ~= nil)
+    assertTrue(xml:find("core/LauncherSetup.lua", 1, true) ~= nil,
+        "the comment does not name the button's home")
+
+    local toc = assert(io.open(T.root .. "/MultiMeters.toc", "r"))
+    local listed = toc:read("*a"):find("Bindings", 1, true)
+    toc:close()
+    assertEqual(listed, nil, "the TOC lists Bindings.xml")
+end)
+
+test("Binding: a library-absent load still creates the button", function()
+    -- red under: the button built after core/LauncherSetup.lua's library-absent fork, which
+    -- returns early, so a degraded install would leave the player's key pressing nothing.
+    local inst = T.load{ libFiles = {} }
+    local button = toggleButton(inst)
+    assertTrue(button ~= nil, "a degraded load built no " .. TOGGLE_BUTTON)
+    assertFalse(button:IsShown())
+    assertTrue(button:GetScript("OnClick") ~= nil)
+    assertTrue(pcall(press, inst), "a degraded press raised")
+end)
+
+-- ---------------------------------------------------------------------------
 -- Degradation
 -- ---------------------------------------------------------------------------
 

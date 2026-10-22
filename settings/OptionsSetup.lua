@@ -395,6 +395,9 @@ if not lib then
         -- NavRail, new at LibKa0s v1.61.0 (OptionsNav minor 1): drawn only by the Windows page's
         -- render, which never runs with no library, so the same inert no-op applies.
         "NavRail",
+        -- Drawer, new at LibKa0s v1.73.0 (OptionsDrawer minor 1); no page of this addon draws a
+        -- drawer, so the inert no-op applies.
+        "Drawer",
         -- The Windows page's own members (MultiMeters#55), decorated onto the live
         -- instance below the fork. settings/Windows.lua's builder is their only caller,
         -- and it never runs here; the degraded scan and the parity case read them anyway.

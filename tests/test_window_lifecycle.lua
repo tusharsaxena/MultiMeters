@@ -200,3 +200,45 @@ test("SetConfig re-points the window at a new config without rebuilding it", fun
     assertEqual(window.dirty, true)
     assertTrue(window.frame == frame and window.bus == bus, "a settings change must not rebuild")
 end)
+
+test("The test-mode toggle runs ApplyTestStrip, never ApplyConfig", function()
+    -- MultiMeters#59, OWNER_SCOPE D: the toggle is narrow. The full ApplyConfig re-skins,
+    -- re-scales and re-positions, and a combat-start toggle must not make the window jump.
+    -- red under: a TEST_MODE_CHANGED handler that calls ApplyConfig.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    local M = NS.WindowManager
+    local windows = M.All()
+    assertTrue(#windows >= 1)
+
+    local calls = {}
+    local function spy(owner, key)
+        local original = owner[key]
+        owner[key] = function(...)
+            calls[key] = (calls[key] or 0) + 1
+            return original(...)
+        end
+    end
+    spy(NS.WindowProto, "ApplyConfig")
+    spy(NS.WindowProto, "ApplyPosition")
+    spy(NS, "ApplySkin")
+
+    local function versions()
+        local out = {}
+        for i, w in ipairs(windows) do out[i] = w.layoutVersion end
+        return out
+    end
+
+    local before = versions()
+    NS.State.SetTestMode(true)
+    for i, v in ipairs(versions()) do assertEqual(v, before[i] + 1, "one layout rebuild per window") end
+
+    before = versions()
+    M:EndTestModeForCombat()
+    assertFalse(NS.State.testMode)
+    for i, v in ipairs(versions()) do assertEqual(v, before[i] + 1, "one layout rebuild per window") end
+
+    assertNil(calls.ApplyConfig)
+    assertNil(calls.ApplyPosition)
+    assertNil(calls.ApplySkin)
+end)

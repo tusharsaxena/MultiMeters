@@ -1176,3 +1176,59 @@ test("The strip background and the per-column ones are mutually exclusive, both 
     assertTrue(window.headerBg:IsShown(), "the strip texture must come back")
     assertFalse(damage.bg:IsShown(), "and the per-column one must go")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The test-mode strip (MultiMeters#59, LibKa0s#48)
+-- ---------------------------------------------------------------------------
+
+--- The y offset of a region's first point.
+local function pointY(region)
+    local _, _, _, _, y = region:GetPoint(1)
+    return y
+end
+
+test("Test mode: strip under the title, column headers and body pushed down by 22", function()
+    -- red under: anchoring the headerFrame or the body from padding + titleHeight alone.
+    local inst, window = scene()
+    local layout = window.layout
+    local top = layout.padding + layout.titleHeight
+
+    inst.NS.State.SetTestMode(true)
+    assertTrue(window.testStrip:IsShown())
+    assertEqual(pointY(window.testStrip), -(top + 2))
+    assertEqual(pointY(window.headerFrame), -(top + 22))
+    assertEqual(pointY(window.body), -(top + 22 + layout.headerHeight))
+
+    inst.NS.State.SetTestMode(false)
+    assertFalse(window.testStrip:IsShown())
+    assertEqual(pointY(window.headerFrame), -top)
+    assertEqual(pointY(window.body), -(top + layout.headerHeight))
+end)
+
+test("Header hidden plus test mode: the strip is at the top of the window and shown", function()
+    -- OWNER_SCOPE G: the test marker must not vanish when the header is hidden.
+    -- red under: strip visibility tied to header.show.
+    local inst, window = scene{ configure = function(cfg) cfg.header.show = false end }
+    inst.NS.State.SetTestMode(true)
+    assertEqual(window.layout.titleHeight, 0)
+    assertTrue(window.testStrip:IsShown())
+    assertEqual(pointY(window.testStrip), -(window.layout.padding + 2))
+end)
+
+test("Minimized: the strip hides and comes back on expand", function()
+    -- red under: ApplyMinimized leaving the strip out of what it hides, or a toggle that shows
+    -- it over a collapsed window.
+    local inst, window, cfg = scene()
+    inst.NS.State.SetTestMode(true)
+
+    cfg.frame.minimized = true
+    window:ApplyMinimized()
+    assertFalse(window.testStrip:IsShown())
+    inst.NS.State.SetTestMode(false)
+    inst.NS.State.SetTestMode(true)
+    assertFalse(window.testStrip:IsShown(), "a toggle must not draw it over a collapsed window")
+
+    cfg.frame.minimized = false
+    window:ApplyMinimized()
+    assertTrue(window.testStrip:IsShown())
+end)

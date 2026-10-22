@@ -16,8 +16,10 @@ return {
         -- `libs/LibKa0s/media/icons/minimise.tga` and catalogs it under `minimise`; NS.Icon looks
         -- it up by that key, and a respelling answers nil and draws nothing. These files name that
         -- catalog key: the control's `art` (modules/HeaderControls.lua), the Header page's
-        -- `controlLabel` icon (settings/Schema.lua), and the two suites that assert the library
-        -- ships the art the header draws.
+        -- `controlLabel` icon (settings/Schema.lua), the two suites that assert the library
+        -- ships the art the header draws, and CLAUDE.md's `LibKa0s icons:` declaration, which
+        -- lists the catalog key so the prune keeps minimise.tga (LibKa0s v1.75.0).
+        ["CLAUDE.md"] = { minimis = true },
         ["modules/HeaderControls.lua"] = { minimis = true },
         ["settings/Schema.lua"] = { minimis = true },
         ["tests/test_headercontrols.lua"] = { minimis = true },

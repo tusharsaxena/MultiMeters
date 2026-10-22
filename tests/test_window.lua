@@ -65,7 +65,7 @@ end
 --- never touches the provider — which would make every case below vacuous.
 local function scene(opts)
     opts = opts or {}
-    local inst = T.load()
+    local inst = T.load(opts.load)
     local NS, mocks = inst.NS, inst.mocks
 
     mocks.setGroup(GROUP)
@@ -1411,4 +1411,70 @@ test("Render's empty notice is for a live grid only, and its pass line names the
     inst.NS.State.debug = true
     window:Render({}, true)
     assertEqual(countLines(inst.NS, "window " .. window.id .. " drew 0/0 rows (preview)"), 1)
+end)
+
+-- ---------------------------------------------------------------------------
+-- The test-mode strip (MultiMeters#59, LibKa0s#48): W.TestStrip, reserved from
+-- config and test-mode state, never from widget geometry
+-- ---------------------------------------------------------------------------
+
+local STRIP_LINE = "TEST MODE: placeholder numbers, not your fight. Combat ends it."
+
+test("BuildLayout reserves the test strip only in test mode", function()
+    -- red under: a stripHeight that ignores State.testMode, or a minHeight that grows with it.
+    local inst, window, cfg = scene()
+    cfg.frame.height, cfg.rows.maxRows = 220, 0
+    local off = window:BuildLayout()
+    inst.NS.State.testMode = true
+    local on = window:BuildLayout()
+    inst.NS.State.testMode = false
+
+    assertEqual(off.stripHeight, 0)
+    assertEqual(on.stripHeight, 22, "2 + TEST_STRIP.HEIGHT (18) + 2")
+    local body = 220 - on.padding * 2 - on.titleHeight - on.headerHeight - 22
+    assertEqual(on.maxRows, math.floor((body + on.rowSpacing) / (on.rowHeight + on.rowSpacing)))
+    assertTrue(on.maxRows < off.maxRows, "the strip takes rows, not the window's size")
+    assertEqual(on.minHeight, off.minHeight, "the resize floor never moves under the player")
+end)
+
+test("At minimum height the strip takes the row and the bounds do not move", function()
+    -- red under: adding stripHeight to layout.minHeight (the floor would jump on the toggle,
+    -- and SaveSize would persist a test-mode size).
+    local inst, window, cfg = scene()
+    cfg.frame.height = window.layout.minHeight
+    window:ApplyConfig()
+    local w0, h0 = window.anchor:GetResizeBounds()
+
+    inst.NS.State.SetTestMode(true)
+    assertEqual(window.layout.maxRows, 1, "the floor of one row stays")
+    local w1, h1 = window.anchor:GetResizeBounds()
+    assertEqual(w1, w0)
+    assertEqual(h1, h0)
+end)
+
+test("The strip is born hidden, with the localized line and the info art", function()
+    -- red under: building the strip without the L key, or enabling its mouse (it has no tooltip).
+    local inst, window = scene()
+    local strip = window.testStrip
+    assertTrue(strip ~= nil, "W.TestStrip is built in BuildFrame")
+    assertFalse(strip:IsShown())
+    assertEqual(strip.text:GetText(), inst.NS.L[STRIP_LINE])
+    assertFalse(strip:IsMouseEnabled())
+    assertTrue(strip.__icon ~= nil and strip.__icon:GetTexture() == inst.NS.Icon("info"),
+        "the host passes its info icon")
+end)
+
+test("With no Widgets library the window builds and reserves nothing", function()
+    -- red under: an unguarded W.TestStrip / W.TEST_STRIP read in BuildFrame or BuildLayout.
+    local libs = {}
+    for _, path in ipairs(T.libFiles) do
+        if not path:find("/Widgets[^/]*%.lua$") then libs[#libs + 1] = path end
+    end
+    local inst, window = scene{ load = { libFiles = libs } }
+    assertNil(window.testStrip)
+
+    inst.NS.State.SetTestMode(true)
+    assertEqual(window.layout.stripHeight, 0)
+    assertTrue(window.frame.title:GetText():find("TEST MODE", 1, true) ~= nil,
+        "the title marker still says it")
 end)

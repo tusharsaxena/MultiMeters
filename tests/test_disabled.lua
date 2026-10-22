@@ -542,6 +542,57 @@ function()
     assertEqual(#shownFrames(inst), 0, "a disabled right click showed a window")
 end)
 
+test("Disabled 8c: the key press refuses exactly as /mm toggle does", function()
+    -- Step 8 as launcher-§6 extends it: the Show window entry's key binding is a
+    -- feature surface, and a key cannot be grayed the way the menu entry is. The
+    -- launcher's handler calls the verb's own handler directly, which bypasses the
+    -- dispatcher's disabled gate, so the press carries that refusal itself: one line,
+    -- the very line `/mm toggle` prints, no write and no window. Under the perf hold
+    -- alone the addon is not disabled, so the press reaches the manager and prints
+    -- `/mm toggle`'s suspend line instead, never the disabled one.
+    -- red under: a press with no disabled guard (it reaches M:Toggle and prints the
+    -- perf suspend line while the addon is off), or a guard that asked IsStoodDown
+    -- (it would print the disabled line, naming `/mm enable`, mid-capture).
+    local inst, NS = scene()
+    local button = inst.mocks.__frameByName["MultiMetersToggleWindows"]
+    assertTrue(button ~= nil, "no Show window binding button")
+    local function press()
+        local chatN = #inst.mocks.__chat
+        button:GetScript("OnClick")(button, "LeftButton", true)
+        return chatSince(inst, chatN)
+    end
+
+    -- Disabled.
+    assertTrue(NS.SetByPath("enabled", false))
+    local want = say(inst, "toggle")
+    assertEqual(#want, 1, "/mm toggle printed " .. #want .. " lines while disabled")
+    inst.mocks.__resetSvWrites()
+    local got = press()
+    assertEqual(#got, 1, "a disabled press printed " .. #got .. " lines")
+    assertEqual(got[1], want[1], "a disabled press did not refuse as /mm toggle does")
+    assertTrue(got[1]:find(refusalLine(inst), 1, true) ~= nil, "not the disabled line: " .. got[1])
+    assertEqual(#inst.mocks.__svWrites(), 0, "a disabled press wrote SavedVariables")
+    assertEqual(#shownFrames(inst), 0, "a disabled press showed a window")
+
+    -- The perf hold alone.
+    assertTrue(NS.SetByPath("enabled", true))
+    NS.Perf.Suspend()
+    local shown = NS.WindowManager:AnyShown()
+    local perfWant = say(inst, "toggle")
+    assertEqual(#perfWant, 1, "/mm toggle printed " .. #perfWant .. " lines under the perf hold")
+    inst.mocks.__resetSvWrites()
+    local perfGot = press()
+    local after = NS.WindowManager:AnyShown()
+    local writes = #inst.mocks.__svWrites()
+    NS.Perf.Resume()
+
+    assertEqual(#perfGot, 1, "a press under the perf hold printed " .. #perfGot .. " lines")
+    assertEqual(perfGot[1], perfWant[1], "a perf-hold press did not answer as /mm toggle does")
+    assertTrue(perfGot[1] ~= got[1], "a perf-hold press printed the disabled line")
+    assertEqual(after, shown, "a perf-hold press changed the windows")
+    assertEqual(writes, 0, "a perf-hold press wrote SavedVariables")
+end)
+
 -- ---------------------------------------------------------------------------
 -- 9. Restoration, from CURRENT state
 -- ---------------------------------------------------------------------------

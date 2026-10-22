@@ -610,8 +610,8 @@ Total.
 - MediaSetup: an icon the library does not ship answers nil
 - MediaSetup: NS.MediaFont answers the vendored face
 - MediaSetup: the font this addon names is the face the library registers
-- MediaSetup: every icon the header strip draws is one the library ships
-- MediaSetup: every name the library ships has a file in the vendored copy
+- MediaSetup: every icon this addon draws is declared and ships
+- MediaSetup: every name the declaration lists has a file in the vendored copy
 - MediaSetup: with no library there is no art, and that is not an error
 
 ### test_envsetup.lua (13)
@@ -630,7 +630,7 @@ Total.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
-### test_launchersetup.lua (50)
+### test_launchersetup.lua (55)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -676,6 +676,11 @@ Total.
 - Database v15: an account that already stored it globally keeps what it has
 - Database v15: a profile that never placed a button leaves the shipped default
 - Database v15: it is idempotent
+- Binding: the Show window binding's button exists, is named MultiMetersToggleWindows, hidden, registered AnyDown, and one click toggles once
+- Binding: the binding labels are the brand and the localized action
+- Binding: the launcher's toggleWindow and the button run the same function
+- Binding: Bindings.xml carries exactly one CLICK MultiMetersToggleWindows:LeftButton, header MULTIMETERS, category ADDONS, no default attribute and no Lua body, and the TOC does not list it
+- Binding: a library-absent load still creates the button
 - Degraded: Register answers false, quietly, when LibDataBroker is absent
 - Degraded: with no LibDBIcon there is still a broker plugin, and no button
 - Degraded: a host with NEITHER broker library loads and enables without raising
@@ -1089,7 +1094,7 @@ Total.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (64)
+### test_window.lua (68)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - BuildLayout computes every coordinate from config alone
@@ -1155,8 +1160,12 @@ Total.
 - A second pass re-anchors nothing until ApplyConfig moves the layout
 - A refresh that changes nothing writes no [Aggregator] or [Render] line (quiet steady state)
 - Render's empty notice is for a live grid only, and its pass line names the count
+- BuildLayout reserves the test strip only in test mode
+- At minimum height the strip takes the row and the bounds do not move
+- The strip is born hidden, with the localized line and the info art
+- With no Widgets library the window builds and reserves nothing
 
-### test_window_header.lua (57)
+### test_window_header.lua (60)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -1215,6 +1224,9 @@ Total.
 - Every header sits exactly over the column it labels, from the same layout
 - The Player header is a Button like every other, not a label with a gap beside it
 - The strip background and the per-column ones are mutually exclusive, both ways
+- Test mode: strip under the title, column headers and body pushed down by 22
+- Header hidden plus test mode: the strip is at the top of the window and shown
+- Minimized: the strip hides and comes back on expand
 
 ### test_window_header_sort.lua (17)
 
@@ -1282,7 +1294,7 @@ Total.
 - SaveSize applies the config ONCE per resize-stop, and still applies when the seam refuses
 - A resize logs one [Set] line per dimension, not a row count
 
-### test_window_lifecycle.lua (8)
+### test_window_lifecycle.lua (9)
 
 - Suspend takes the OnUpdate away and Resume puts it back
 - Destroy takes the window off screen and off the bus
@@ -1292,6 +1304,7 @@ Total.
 - CONFIG_CHANGED for ANOTHER window leaves this one alone
 - Destroy takes the window off EVERY message, not just the meter
 - SetConfig re-points the window at a new config without rebuilding it
+- The test-mode toggle runs ApplyTestStrip, never ApplyConfig
 
 ### test_window_segment.lua (10)
 
@@ -2207,7 +2220,7 @@ Total.
 - Slash profile: with no library `/mm profile` names what is missing and switches nothing
 - Slash profile: the stub's ProfileSwitch answers false with the same line
 
-### test_disabled.lua (26)
+### test_disabled.lua (27)
 
 - Disabled 1: enabled, the addon registers, arms and draws something at all
 - Disabled 3: every registration the addon made is actually UNREGISTERED
@@ -2221,6 +2234,7 @@ Total.
 - Disabled 7: every FEATURE verb refuses on exactly one line and reaches no seam
 - Disabled 8: left-click opens the panel and writes nothing, in either state
 - Disabled 8b: right-click opens the menu with only Enabled live, and writes nothing
+- Disabled 8c: the key press refuses exactly as /mm toggle does
 - Disabled 9: re-enabling restores the registration set it had
 - Disabled 9: the rebuild reflects a setting changed WHILE disabled
 - Disabled 10: releasing one hold does not resurrect an addon the other holds down
@@ -2286,7 +2300,7 @@ Total.
 - Options: CreateOptionsPanel runs the schema validator
 - Options: AceGUI is resolved once and published for the page builders
 - Options: the descriptor tells the library the FOLDER name (LibKa0s#42)
-- Options: the help-mark art the descriptor points at is vendored on disk
+- Options: the help-mark and test-strip art, info, is declared and vendored
 - Options: the shared LSM30_Border slot is re-registered once, above what AGSMW left in it
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip
@@ -2480,7 +2494,7 @@ Total.
 | test_debuglogsetup.lua | 32 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 13 |
-| test_launchersetup.lua | 50 |
+| test_launchersetup.lua | 55 |
 | test_lifecycle.lua | 40 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
@@ -2493,11 +2507,11 @@ Total.
 | test_aggregator_identity.lua | 32 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 64 |
-| test_window_header.lua | 57 |
+| test_window.lua | 68 |
+| test_window_header.lua | 60 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 43 |
-| test_window_lifecycle.lua | 8 |
+| test_window_lifecycle.lua | 9 |
 | test_window_segment.lua | 10 |
 | test_headercontrols.lua | 66 |
 | test_row.lua | 62 |
@@ -2522,7 +2536,7 @@ Total.
 | test_slash_diagnostics.lua | 20 |
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
-| test_disabled.lua | 26 |
+| test_disabled.lua | 27 |
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 46 |
 | test_columnblocks.lua | 35 |
@@ -2534,4 +2548,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2196** |
+| **Total** | **2210** |

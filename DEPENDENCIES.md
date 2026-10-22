@@ -82,7 +82,9 @@ numpy and `gh`, for `tools/artwork/icon_cleaner.py`. **Both the art and the tool
 (v1.9.1, `LibKa0s-Media-1.0`), so this addon carries them as part of the vendored payload and
 regenerating them is that repo's job and that repo's toolchain -- see
 [LibKa0s' own DEPENDENCIES.md](https://github.com/tusharsaxena/LibKa0s/blob/master/DEPENDENCIES.md).
-Nothing here reads a PNG or writes a TGA any more.
+Nothing here reads a PNG or writes a TGA any more. The payload carries only the icons this addon
+declares on the CLAUDE.md `LibKa0s icons:` line, not the library's whole catalog: the re-vendor
+prunes `libs/LibKa0s/media/icons/` to that line with the library's own `tools/prune-icons.lua`.
 
 Two directories of assets are still in this repo and neither needs a tool.
 `media/logos/multimeters.logo.tga` is what `Constants.LOGO` points the settings landing page at,

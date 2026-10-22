@@ -759,8 +759,10 @@ end
 --- late still wins and a test can swap either one. Nil means the export has no
 --- way to reach a channel, and the caller says so rather than pretending.
 ---
---- A host member, not a LibKa0s-Compat one: it has exactly one consumer in the
---- collection (anti-pattern #55).
+--- A host member, not a LibKa0s-Compat one: it has two consumers in the
+--- collection (DropWatcher, MultiMeters) and no content beyond a presence
+--- guard. Promotion was rejected at LibKa0s#49; the record is LibKa0s
+--- docs/api/Compat "What is not here" and the standard's open-evolutions.
 ---
 --- @return function|nil
 function Compat.ChatSender()

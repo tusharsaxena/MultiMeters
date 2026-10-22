@@ -668,8 +668,9 @@ function WindowProto:ApplyColumnHeaders()
     -- One FontString per drawn column plus the name column's, placed at the same
     -- x offsets the cells will use — from the SAME layout table, so a header can
     -- never drift from the column under it.
+    local _, headerTop = self:ChromeOffsets()
     self.headerFrame:ClearAllPoints()
-    self.headerFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -(pad + layout.titleHeight))
+    self.headerFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -headerTop)
     self.headerFrame:SetSize(layout.rowWidth, layout.headerHeight)
 
     -- PER STATISTIC IS PER COLUMN HERE, so `stat` mode paints each header button
@@ -746,8 +747,59 @@ function WindowProto:ApplyColumnHeaders()
     end
 end
 
---- Title, session line, and the column headers — the whole header strip, in the
---- order it is stacked on screen.
+-- ---------------------------------------------------------------------------
+-- The test-mode strip (MultiMeters#59, LibKa0s#48)
+-- ---------------------------------------------------------------------------
+
+--- Whether the strip is drawn: test mode reserved it, and the window is not
+--- collapsed. NOT tied to `header.show` -- a window with its header hidden is
+--- still marked as test data (OWNER_SCOPE G). Minimized with the header hidden is
+--- the rule's carved-out collapsed state.
+local function stripShown(self)
+    return self.layout.stripHeight > 0
+        and not ((self.config.frame or {}).minimized and true or false)
+end
+
+--- The anchoring half of ApplyTestStrip: place the strip under the title, inset
+--- by the padding on both sides, and show it when it is reserved. ApplyConfig runs
+--- this too, so a settings change that moves the title moves the strip with it.
+--- Positions come from ChromeOffsets, i.e. from the layout, never off a frame.
+function WindowProto:PlaceTestStrip()
+    local strip = self.testStrip
+    if not strip then return end
+    local pad = self.layout.padding
+    local stripTop = self:ChromeOffsets()
+    strip:ClearAllPoints()
+    strip:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -stripTop)
+    strip:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -pad, -stripTop)
+    strip:SetShown(stripShown(self))
+end
+
+--- The test-mode toggle's whole effect on a window, and NARROW on purpose: the
+--- full ApplyConfig re-positions, re-scales, re-skins and re-borders, and a toggle
+--- that combat start fires (M:EndTestModeForCombat) must not make a window jump.
+---
+--- One layout rebuild (RefreshUpvalues, which bumps layoutVersion so every row
+--- re-anchors on its next draw), then the strip, the column headers and the body
+--- re-anchored from ChromeOffsets, the red title marker rewritten and the resize
+--- bounds re-applied (unchanged: the strip never moves layout.minHeight).
+function WindowProto:ApplyTestStrip()
+    if not self.frame then return end
+    self:RefreshUpvalues()
+    self:PlaceTestStrip()
+
+    local pad = self.layout.padding
+    local _, headerTop, bodyTop = self:ChromeOffsets()
+    self.headerFrame:ClearAllPoints()
+    self.headerFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -headerTop)
+    self.body:ClearAllPoints()
+    self.body:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -bodyTop)
+    self.body:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -pad, pad)
+
+    self:ApplyTitle()
+    self:ApplyResizeBounds()
+end
+
 --- Show or hide everything below the title bar, per `frame.minimized`.
 ---
 --- APPLIED FROM CONFIG AT THE TAIL OF ApplyConfig, not from the click. Any
@@ -794,6 +846,9 @@ function WindowProto:ApplyMinimized()
 
     if self.body then self.body:SetShown(not down) end
     if self.headerFrame then self.headerFrame:SetShown(not down) end
+    -- The test-mode strip goes with the body and comes back on expand, if test
+    -- mode still reserves it (PlaceTestStrip asks the same question).
+    self:PlaceTestStrip()
     -- The notice is re-shown by Refresh whenever there is nothing to draw, so
     -- hiding it here is not enough on its own -- Refresh checks the same flag.
     if self.notice and down then self.notice:Hide() end
@@ -805,6 +860,8 @@ function WindowProto:ApplyMinimized()
     end
 end
 
+--- Title, session line, and the column headers — the whole header strip, in the
+--- order it is stacked on screen.
 function WindowProto:ApplyHeader()
     -- FIRST, and the order is load-bearing: ApplyTitle and ApplySessionLine both
     -- read HeaderRightInset, which is derived from what the controls occupy.

@@ -93,11 +93,13 @@ function WindowProto:RegisterBus()
         self:RefreshVisibility()
     end)
     bus:RegisterMessage(MSG.TEST_MODE_CHANGED, function()
-        -- ApplyTitle as well as MarkDirty: the red TEST MODE marker lives in the
-        -- title, and the title is only rewritten on a config change — so without
-        -- this the marker appeared on the next settings edit rather than on the
-        -- toggle that turned it on.
-        self:ApplyTitle()
+        -- ApplyTestStrip as well as MarkDirty: the test-mode strip takes room
+        -- under the title and the red TEST MODE marker lives in the title, and
+        -- both are otherwise only redrawn on a config change. NARROW, never the
+        -- full ApplyConfig: combat start toggles this (M:EndTestModeForCombat),
+        -- and a re-position, re-scale or re-skin then would make the window jump
+        -- (MultiMeters#59).
+        self:ApplyTestStrip()
         self:RefreshVisibility()
         self:MarkDirty()
     end)

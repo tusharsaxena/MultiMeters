@@ -47,6 +47,8 @@ NS.L = L
 -- ---------------------------------------------------------------------------
 
 L["Ka0s Multi Meters"] = "Ka0s Multi Meters"
+-- The Show window key's label under Key Bindings -> AddOns (core/LauncherSetup.lua, launcher-§6).
+L["Toggle meter windows"] = "Toggle meter windows"
 L["A multi-column group meter: one row per player, one column per statistic."] =
     "A multi-column group meter: one row per player, one column per statistic."
 L["Multi Meters"] = "Multi Meters"
@@ -847,6 +849,10 @@ L["Test"] = "Test"
 -- The red marker in a window's title bar while test mode is on. Upper case in
 -- English on purpose; a translator may lower it.
 L["TEST MODE"] = "TEST MODE"
+-- The test-mode strip across the top of every window (W.TestStrip, MultiMeters#59).
+-- The ending clause is true: combat start ends test mode (M:EndTestModeForCombat).
+L["TEST MODE: placeholder numbers, not your fight. Combat ends it."] =
+    "TEST MODE: placeholder numbers, not your fight. Combat ends it."
 
 -- ---------------------------------------------------------------------------
 -- Export window

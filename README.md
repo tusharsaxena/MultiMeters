@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2196%2F2196_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2210%2F2210_passing-green)
 
 Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
@@ -34,7 +34,7 @@ The numbers are Blizzard's. Multi Meters asks the built-in meter for them and ar
 
 ## Usage
 
-The first time you run it after installing, you get a default window, already unlocked. Drag it by the title bar and pull the bottom-right corner to size it. Placing an empty meter between pulls is a pain, so `/mm test` fills every window with placeholder rows and prints TEST in the header while you work. It switches itself off the moment you pull, and `/mm lock` freezes everything once you're happy with the layout.
+The first time you run it after installing, you get a default window, already unlocked. Drag it by the title bar and pull the bottom-right corner to size it. Placing an empty meter between pulls is a pain, so `/mm test` fills every window with placeholder rows while you work, lays a yellow strip across the top of each one saying the numbers are not yours, and puts TEST MODE in the title. It switches itself off the moment you pull, and `/mm lock` freezes everything once you're happy with the layout.
 
 Setting a window up takes four steps. Most of it happens on the Windows page, where the Active window dropdown at the top picks the window you're working on and the list down the left side takes you through the rest.
 
@@ -43,7 +43,7 @@ Setting a window up takes four steps. Most of it happens on the Windows page, wh
 - Choose your header controls. The title bar has room for seven: close, minimize, lock, settings, segment, reset and export, and the Header entry's Controls tab picks which ones this window draws. The segment control is the three horizontal lines, and it's the one people miss. It picks which fight the window shows, and your pick sticks through a reload.
 - Dig into the numbers. Hover a cell to see the spells behind it, or hover a name to see everything tracked for that player. Click either one to drill in. Clicking a Deaths cell opens the recap instead, which is usually the more interesting trip.
 
-Want a second window? Click **New window** on the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you four switches: Enabled, Locked, Test mode and Show window.
+Want a second window? Click **New window** on the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you four switches: Enabled, Locked, Test mode and Show window. A key can show and hide the windows too: Key Bindings → AddOns → Ka0s Multi Meters → Toggle meter windows. No key is set for you.
 
 Everything else is on the addon's page under Settings → AddOns, and `/mm` (or `/multimeters`) on its own opens it. `/mm help` prints the full command list.
 
@@ -103,6 +103,8 @@ Please raise them on GitHub:
 ## Credits
 
 The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL
-Open Font License 1.1, and the header controls draw [Open Iconic](https://github.com/iconic/open-iconic)
-(MIT). Both ship inside the bundled LibKa0s payload, with their license text beside them.
+Open Font License 1.1. The header controls, the column sort arrows, the Export window and the debug
+console draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only
+the icons this addon draws ship. The font and the icons sit inside the bundled LibKa0s payload, each
+with its license text beside it.
 
