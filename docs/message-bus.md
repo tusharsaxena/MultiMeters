@@ -41,7 +41,7 @@ a subscriber's nil-index again. The table below names messages by key.
 | `WINDOWS_CHANGED` | `modules/WindowManager.lua` (`announce`) | `DrillDown`; the settings panel repaints on the same registry actions through `NS.RefreshOptionsPanel`, by direct call rather than by subscription | `{ windowId, action }` |
 | `TEST_MODE_CHANGED` | `core/State.lua` (`State.SetTestMode`) | `Roster`, every `Window` (`ApplyTestStrip`, never `ApplyConfig`) | `{ enabled }` |
 | `DRILLDOWN_CHANGED` | `modules/DrillDown.lua` (`announce`) | the addressed `Window` | `{ windowId, active }` |
-| `SIM_CHANGED` | `modules/Sim.lua` (the start's `Host.Prepare`, and the stop's sixth step) | none yet: the windows' simulation strip subscribes when it lands | `{ active }` |
+| `SIM_CHANGED` | `modules/Sim.lua` (the start's `Host.Prepare`, and the stop's sixth step) | every `Window` (`ApplyTestStrip`, the sim strip; never `ApplyConfig`) | `{ active }` |
 
 ## Two dispatch paths for `METER_RESET`
 

@@ -401,6 +401,11 @@ default to total and rate.
   rows chosen out of a longer list, so scrolling moves an integer offset rather than a scroll child;
   there is no widget to size and nothing measured. The cost is that a player cannot see there are
   rows above or below without trying the wheel.
+- **A minimized window shows no simulation marker.** While a `/mm sim` session runs, the sim strip
+  under the title is the window's only marker, and it goes with the body when the window is
+  collapsed; there is no SIMULATION title word to stand in for it (MultiMeters#60, by the owner's
+  call). The step panel marks the run, so a simulation is never unannounced. With no
+  `LibKa0s-Widgets-1.0` no strip is built at all, and the step panel is the only marker.
 - Debug logging is session-only (`NS.State.debug`) and resets on every `/reload`.
 - **A refresh pass logs on change, not on every pass.** The `[Aggregator]`, `[Render]`,
   `[Visibility]`, `[Roster]` and `[DrillDown]` pass lines go through `NS.DebugSteady`, which emits a

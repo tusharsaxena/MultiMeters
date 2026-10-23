@@ -314,6 +314,12 @@ local function stripShown(self)
         and not ((self.config.frame or {}).minimized and true or false)
 end
 
+--- Whether a /mm sim session runs (MultiMeters#60). It decides WHICH strip the
+--- slot shows: the sim strip while a simulation runs, the test strip otherwise.
+local function simRunning()
+    return (NS.Sim and NS.Sim:IsActive()) and true or false
+end
+
 --- The window's name, in the title bar.
 function WindowProto:ApplyTitle()
     local cfg    = self.config
@@ -345,8 +351,10 @@ function WindowProto:ApplyTitle()
     -- disagree -- a window renamed in the picker kept whatever its header had been
     -- set to, with no way to tell from the header which window you were looking
     -- at. Renaming a window renames its header now.
+    -- A simulation never writes a title word, minimized or not: its marker is
+    -- the sim strip alone, and the step panel marks the run (OWNER_SCOPE A).
     local title = cfg.name or L["Multi Meters"]
-    if NS.State and NS.State.testMode and not stripShown(self) then
+    if NS.State and NS.State.testMode and not stripShown(self) and not simRunning() then
         title = title .. "   |cffff2020" .. L["TEST MODE"] .. "|r"
     end
     frame.title:SetText(title)
@@ -757,22 +765,28 @@ function WindowProto:ApplyColumnHeaders()
 end
 
 -- ---------------------------------------------------------------------------
--- The test-mode strip (MultiMeters#59, LibKa0s#48)
+-- The test-mode and simulation strips (MultiMeters#59, #60, LibKa0s#48)
 -- ---------------------------------------------------------------------------
 
---- The anchoring half of ApplyTestStrip: place the strip under the title, inset
---- by the padding on both sides, and show it when it is reserved. ApplyConfig runs
---- this too, so a settings change that moves the title moves the strip with it.
---- Positions come from ChromeOffsets, i.e. from the layout, never off a frame.
+--- The anchoring half of ApplyTestStrip: place both strips in the one slot under
+--- the title, inset by the padding on both sides, and show the one the slot is
+--- reserved for -- the sim strip while a simulation runs, the test strip
+--- otherwise. ApplyConfig runs this too, so a settings change that moves the
+--- title moves the strips with it. Positions come from ChromeOffsets, i.e. from
+--- the layout, never off a frame.
 function WindowProto:PlaceTestStrip()
-    local strip = self.testStrip
-    if not strip then return end
     local pad = self.layout.padding
     local stripTop = self:ChromeOffsets()
-    strip:ClearAllPoints()
-    strip:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -stripTop)
-    strip:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -pad, -stripTop)
-    strip:SetShown(stripShown(self))
+    local shown, sim = stripShown(self), simRunning()
+    for _, pair in ipairs({ { self.testStrip, not sim }, { self.simStrip, sim } }) do
+        local strip = pair[1]
+        if strip then
+            strip:ClearAllPoints()
+            strip:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -stripTop)
+            strip:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -pad, -stripTop)
+            strip:SetShown(shown and pair[2])
+        end
+    end
 end
 
 --- The test-mode toggle's whole effect on a window, and NARROW on purpose: the

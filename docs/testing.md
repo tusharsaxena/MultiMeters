@@ -155,7 +155,7 @@ whether it is drawn at all. Its save cases **poison** `GetPoint`, `GetWidth` and
 value-carrying frame and then drive a save through them, so a rule-R3 read that crept back in is a
 stack trace rather than something a reviewer has to notice. When the bus wiring and the lifecycle
 tail left for `modules/Window_Lifecycle.lua`, their cases left with them, names unchanged, for
-`tests/test_window_lifecycle.lua`: the exact twelve subscriptions on a private target, the dirty flag
+`tests/test_window_lifecycle.lua`: the exact thirteen subscriptions on a private target, the dirty flag
 every data message sets, `SetConfig`, `Suspend` / `Resume` and `Destroy`.
 
 `tests/test_row_namecell.lua` covers the one cell in the row that never holds a figure. Because it

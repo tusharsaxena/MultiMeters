@@ -169,11 +169,11 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                     refresh. Publishes WindowProto for the three files below
 │   ├── Window_Lifecycle.lua
 │   │                   — how a window is born, re-pointed, stood down and put
-│   │                     away: Window.New, the private bus target's twelve
+│   │                     away: Window.New, the private bus target's thirteen
 │   │                     subscriptions, SetConfig, Destroy, Suspend, Resume
 │   ├── Window_Header.lua
 │   │                   — the header BAND of one window: the title bar, the session
-│   │                     line, the test-mode strip, the column labels, the sort a click on one performs,
+│   │                     line, the test-mode and sim strips, the column labels, the sort a click on one performs,
 │   │                     the segment dropdown, the notices, and NS.HeaderStyle
 │   ├── Window_Placement.lua
 │   │                   — where a window SITS and whether it is there at all:

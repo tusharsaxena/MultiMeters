@@ -1402,7 +1402,7 @@ Total.
 - Suspend takes the OnUpdate away and Resume puts it back
 - Destroy takes the window off screen and off the bus
 - Each window owns a PRIVATE bus target, so two windows cannot clobber each other
-- RegisterBus subscribes exactly the twelve messages a window answers
+- RegisterBus subscribes exactly the thirteen messages a window answers
 - Every data message marks the window dirty
 - CONFIG_CHANGED for ANOTHER window leaves this one alone
 - Destroy takes the window off EVERY message, not just the meter
@@ -1421,6 +1421,13 @@ Total.
 - Segment: the sentinel reads the session TYPE, never the ID shim
 - Segment: the labels and the export read the sentinel as no pin
 - Segment: Database.PinnedSegment answers nil for every spelling of no pin
+
+### test_window_simstrip.lua (4)
+
+- Sim strip: built hidden on every window, sim-flavored, with the localized line
+- Sim strip: shown on every window while a session runs, the reserve re-anchors the chrome
+- Sim strip: minimized hides it with no title word; a hidden header keeps it
+- Sim strip: with no Widgets library no strip, no reserve, and nothing raises
 
 ### test_headercontrols.lua (66)
 
@@ -2624,6 +2631,7 @@ Total.
 | test_window_placement.lua | 43 |
 | test_window_lifecycle.lua | 9 |
 | test_window_segment.lua | 10 |
+| test_window_simstrip.lua | 4 |
 | test_headercontrols.lua | 66 |
 | test_row.lua | 62 |
 | test_row_namecell.lua | 30 |
@@ -2659,4 +2667,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2297** |
+| **Total** | **2301** |

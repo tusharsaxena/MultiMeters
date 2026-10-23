@@ -104,6 +104,13 @@ function WindowProto:RegisterBus()
         self:RefreshVisibility()
         self:MarkDirty()
     end)
+    -- The simulation's edge takes the same narrow path for the sim strip, which
+    -- shares the test strip's slot (MultiMeters#60): no ApplyConfig, so nothing
+    -- jumps. Visibility is re-asked by the session's own resync, not here.
+    bus:RegisterMessage(MSG.SIM_CHANGED, function()
+        self:ApplyTestStrip()
+        self:MarkDirty()
+    end)
 
     -- Entering or leaving a drill-down changes what this window draws entirely.
     -- The name comes from the bus catalog and from nowhere else: a hand-spelled

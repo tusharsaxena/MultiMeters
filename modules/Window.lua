@@ -58,21 +58,26 @@ local Perf = NS.Perf
 local Const = NS.Constants
 local L     = NS.L
 
--- LibKa0s-Widgets-1.0, for the test-mode strip (W.TestStrip, minor 13). Optional:
--- with no library the window builds without a strip, reserves nothing, and the red
--- TEST MODE title word is the label instead (modules/Window_Header.lua).
+-- LibKa0s-Widgets-1.0, for the test-mode strip (W.TestStrip, minor 13) and its sim
+-- flavor (`kind = "sim"`, minor 14). Optional: with no library the window builds
+-- without a strip, reserves nothing, and the red TEST MODE title word is the label
+-- instead (modules/Window_Header.lua); a simulation then has no window marker.
 local W = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
 
 -- The window's own gap above and below the strip. The library publishes the strip's
 -- HEIGHT and no reserve: the gap is host layout (MultiMeters#59, LibKa0s#48).
 local STRIP_GAP = 2
 
---- The room the test-mode strip takes under the title: its height plus a gap
---- above and below while test mode is on (22 at HEIGHT 18), and 0 otherwise or
---- with no Widgets library. From test-mode state and a library constant, never
---- from the strip's own geometry.
+--- The room the strip slot takes under the title: its height plus a gap above
+--- and below while test mode is on OR a simulation runs (22 at HEIGHT 18), and 0
+--- otherwise or with no Widgets library. The test strip and the sim strip share
+--- the one slot. From mode state and a library constant, never from a strip's
+--- own geometry.
 local function stripReserve()
-    if not (W and W.TestStrip and NS.State and NS.State.testMode) then return 0 end
+    if not (W and W.TestStrip) then return 0 end
+    local test = NS.State and NS.State.testMode
+    local sim = NS.Sim and NS.Sim:IsActive()
+    if not (test or sim) then return 0 end
     return STRIP_GAP + W.TEST_STRIP.HEIGHT + STRIP_GAP
 end
 
@@ -668,6 +673,14 @@ function WindowProto:BuildFrame()
     -- minimized window, or no Widgets library); the session-line `Test` stays.
     self.testStrip = W and W.TestStrip and W.TestStrip(frame, {
         text = L["TEST MODE: placeholder numbers, not your fight. Combat ends it."],
+        icon = NS.Icon and NS.Icon("info"),
+    }) or nil
+    -- THE SIMULATION STRIP (MultiMeters#60): the same strip in its sim flavor (its
+    -- own tint), in the same slot, shown while a /mm sim session runs. It replaces
+    -- any title word for the simulation: there is none (OWNER_SCOPE A).
+    self.simStrip = W and W.TestStrip and W.TestStrip(frame, {
+        kind = "sim",
+        text = L["SIMULATION: a scripted fight, not your data. /mm sim stop ends it."],
         icon = NS.Icon and NS.Icon("info"),
     }) or nil
 

@@ -6,7 +6,7 @@
 -- tests/test_window.lua until the bus wiring and the lifecycle tail were peeled
 -- out of modules/Window.lua for layout-§1, and they moved with them, names
 -- unchanged. What they protect is the contract the refresh chain relies on: a
--- window hears exactly the twelve messages it answers, on a PRIVATE target, every
+-- window hears exactly the thirteen messages it answers, on a PRIVATE target, every
 -- data message only marks it dirty, and Suspend / Destroy take the clock and the
 -- bus away without touching what the player configured.
 --
@@ -131,6 +131,7 @@ local BUS_MESSAGES = {
     "METER_UPDATED", "METER_SESSION", "METER_RESET", "RESTRICTION_CHANGED",
     "ROSTER_CHANGED", "ZONE_CHANGED", "ENTERING_WORLD", "PLAYER_STATE_CHANGED",
     "COMBAT_CHANGED", "TEST_MODE_CHANGED", "DRILLDOWN_CHANGED", "CONFIG_CHANGED",
+    "SIM_CHANGED",
 }
 
 --- Every message the window's private target is registered for, as a set.
@@ -142,7 +143,7 @@ local function busSubscriptions(inst, window)
     return out, n
 end
 
-test("RegisterBus subscribes exactly the twelve messages a window answers", function()
+test("RegisterBus subscribes exactly the thirteen messages a window answers", function()
     -- red under: dropping, or adding, any RegisterMessage in WindowProto:RegisterBus.
     local inst, window = scene()
     local MSG = inst.NS.Constants.MSG
