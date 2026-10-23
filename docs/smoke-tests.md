@@ -118,7 +118,7 @@ secret-value rules the checks refer to.
 - **INSTALL-11. The simulator seam installs at load (SM-MM-24).** `/reload` with the addon loaded →
   no Lua error, and `/mm diagnostics` → the report loads. `core/SimSetup.lua` now wraps every
   `NS.Compat` member at load (LibKa0s-Sim-1.0's seam); idle, every read answers as before, so the
-  windows, tooltips and export behave exactly as they did. Result: pending
+  windows, tooltips and export behave exactly as they did. Result: pass (owner-marked 2026-10-23)
 
 ## SLASH
 
@@ -706,9 +706,9 @@ right. Open the panel with `/mm config`.
   floor does not move, the strip takes the room of the one row, and the window size saved after test
   mode ends is the size you dragged to. Result: pass (owner-marked 2026-10-23)
 - **WIN-47. One marker in test mode (SM-MM-01).** `/mm test` with the header shown → the amber strip
-  sits under the title and the title text has NO red TEST MODE. Result: pending
+  sits under the title and the title text has NO red TEST MODE. Result: pass (owner-marked 2026-10-23)
 - **WIN-48. The title word while minimized (SM-MM-02).** Minimize a window in test mode → the title
-  shows the red TEST MODE; expand → the word goes and the strip returns. Result: pending
+  shows the red TEST MODE; expand → the word goes and the strip returns. Result: pass (owner-marked 2026-10-23)
 
 ## VIS
 
@@ -746,11 +746,11 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
 - **VIS-13. Solo and combat rules through Compat (SM-MM-22).** Turn **Hide when solo** on → the window
   hides when you drop group and returns when you group up; turn on the out-of-combat rule and pull a
   dummy → it shows at the pull and hides when combat ends, at the same edges as before. The group and
-  combat reads now go through `core/Compat.lua`. Result: pending
+  combat reads now go through `core/Compat.lua`. Result: pass (owner-marked 2026-10-23)
 - **VIS-14. One dispatch entry for game events (SM-MM-23).** `/reload` → the windows populate. Pull a
   dummy and let combat end, then change zone → each edge still re-evaluates visibility as before.
   `/mm diagnostics` → no rejected events beyond the usual ones. Every game event now reaches its
-  handler through `NS:OnGameEvent` and `NS.DeliverEvent`. Result: pending
+  handler through `NS:OnGameEvent` and `NS.DeliverEvent`. Result: pass (owner-marked 2026-10-23)
 
 ## GRID
 
@@ -859,7 +859,7 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
 - **GRID-33. The roster through Compat (SM-MM-21).** In a real five-player dungeon → the grid shows
   every member with their role icon, and **Roster** sort orders them as before (player first, then
   group order). The unit and group reads now go through `core/Compat.lua`; nothing live should change.
-  Result: pending
+  Result: pass (owner-marked 2026-10-23)
 
 ## TIP
 
@@ -1422,40 +1422,40 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
 
 - **SIM-1. The simulator opens and plays (SM-MM-25).** `/mm sim` → the step panel opens docked to a
   meter window. Start → the run plays at once, with no Run all button, and every Multi Meters window
-  shows the SIMULATION strip. Result: pending
+  shows the SIMULATION strip. Result: pass (owner-marked 2026-10-23)
 - **SIM-2. The simulator refuses where it cannot run (SM-MM-26).** `/mm sim start dungeon` in a real
   group, inside an instance, in combat and with `/mm test` on → each refuses with its own line and no
-  simulation starts. Result: pending
+  simulation starts. Result: pass (owner-marked 2026-10-23)
 - **SIM-3. Real combat ends a simulation (SM-MM-27).** Mid-simulation, pull a training dummy → the
   simulation stops with *Simulation stopped: you entered combat.*, and the windows show live data
-  again. Result: pending
+  again. Result: pass (owner-marked 2026-10-23)
 - **SIM-4. A stop leaves nothing behind (SM-MM-28).** Note each window's segment and pin, run a
   simulation, then `/mm sim stop` → the windows show the same segments and pins as before the start,
-  and `/mm test` works again. Result: pending
+  and `/mm test` works again. Result: pass (owner-marked 2026-10-23)
 - **SIM-5. The dungeon scenario (SM-MM-29).** `/mm sim start dungeon` → the bars grow during each
   fight, the segment dropdown lists Trash then Speaker Shadowcrown, and the boss death shows in the
-  Deaths column with a recap tooltip. Result: pending
+  Deaths column with a recap tooltip. Result: pass (owner-marked 2026-10-23)
 - **SIM-6. The raid scenario (SM-MM-30).** `/mm sim start raid` → a 20-row grid, the pet's damage
-  follows the Merge pets setting, and no duplicate player row. Result: pending
+  follows the Merge pets setting, and no duplicate player row. Result: pass (owner-marked 2026-10-23)
 - **SIM-7. The wipe scenario (SM-MM-31).** `/mm sim start wipe` → everyone dies, Reset meter data
   clears the segments (Blizzard's own meter untouched afterwards), and the re-pull starts a fresh
-  segment. Result: pending
+  segment. Result: pass (owner-marked 2026-10-23)
 - **SIM-8. The zone scenario (SM-MM-32).** `/mm sim start zone` → a window set to hide outside
-  instances hides during the Isle of Dorn step and returns in the second dungeon. Result: pending
+  instances hides during the Isle of Dorn step and returns in the second dungeon. Result: pass (owner-marked 2026-10-23)
 - **SIM-9. An export during a simulation (SM-MM-33).** Mid-simulation, Export to Raid → `[sim]` lines
-  print in chat and nothing is sent to the group. Result: pending
+  print in chat and nothing is sent to the group. Result: pass (owner-marked 2026-10-23)
 - **SIM-10. The sim strip on every window (SM-MM-34).** During a simulation every window shows the
   SIMULATION strip under its title, in its own tint and distinct from the test strip, including a
   window with its header hidden; no title carries a SIMULATION word; the strip goes at the stop.
-  Result: pending
+  Result: pass (owner-marked 2026-10-23)
 - **SIM-11. The diagnostics sim section (SM-MM-36).** Mid-simulation, `/mm diagnostics` → the report
   has a `-- sim --` section reading `active: yes scenario=<name>` and the current `step: N/M`; after
-  `/mm sim stop`, run it again → `active: no` and `last stop: reason=<why>`. Result: pending
+  `/mm sim stop`, run it again → `active: no` and `last stop: reason=<why>`. Result: pass (owner-marked 2026-10-23)
 - **SIM-12. Pause, step and restart (OWNER_SCOPE A, LibKa0s v1.76.0's auto-run).** Start a scenario,
   then press Pause in the step panel → the run holds after the current step (a fight in progress
   finishes its ticks first). Click a later step row → the run steps up to that row and stays paused.
   Resume → it plays on by itself. Restart → it plays again from the first step without a second
-  click. Result: pending
+  click. Result: pass (owner-marked 2026-10-23)
 
 ## Non-English client
 
@@ -1467,13 +1467,7 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
 
 ## Pending sign-off
 
-- WIN-47 and WIN-48 (the red title word only while the test-mode strip is not shown, 2026-10-23).
-- GRID-33 and VIS-13 (the world reads routed through `core/Compat.lua` for the simulator, 2026-10-23).
-- VIS-14 (every game event through the one dispatch entry, 2026-10-23).
-- SIM-1 to SIM-12 (the `/mm sim` simulator, 2026-10-23; SIM-1 to SIM-9 and SIM-11 were SLASH-20 to
-  SLASH-29 until they moved to their own theme).
-
-On 2026-10-10 the owner marked every check in this file as passed, recorded on its
+None. On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass
 keeps it. A check added or rewritten after that date is listed here until its `Result:` line records
 a pass.
