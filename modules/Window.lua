@@ -386,7 +386,7 @@ function WindowProto:BuildLayout()
         padding     = pad,
         rowHeight   = rowHeight,
         rowSpacing  = spacing,
-        titleHeight = (header.show ~= false) and (header.height or 18) or 0,
+        titleHeight = (header.show ~= false) and (header.height or 26) or 0,
         headerHeight = rowHeight * HEADER_ROW_FACTOR,
         growUp      = (rows.growthDirection == "UP"),
         columns     = columns,
@@ -730,7 +730,13 @@ function WindowProto:ApplyConfig()
     local layout   = self.layout
     local frame    = self.frame
 
-    self.anchor:SetSize(frameCfg.width or 694, frameCfg.height or 220)
+    -- NEVER BELOW THE LAYOUT'S OWN FLOOR. The Height slider goes to 60 and the
+    -- floor (title bar, column labels, one row) is 70 shipped since the bar grew
+    -- to 30px, so a stored height under it drew the one row the layout always
+    -- reserves hanging past the frame's bottom edge. The stored value is left
+    -- alone; only the drawn size is held at the floor the resize grip keeps.
+    local height = math.max(frameCfg.height or 220, layout.minHeight or 0)
+    self.anchor:SetSize(frameCfg.width or 694, height)
     self.anchor:SetClampedToScreen(frameCfg.clampToScreen ~= false)
     self:ApplyPosition()
 

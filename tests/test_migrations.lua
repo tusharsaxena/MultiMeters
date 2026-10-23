@@ -310,3 +310,62 @@ test("migrations: the v17 step run twice is a no-op, and survives a junk window"
     assertEqual(inst.NS.db.sv.profiles.Odd.windows[2].header.outline, "NONE",
         "the window after the junk entry was skipped")
 end)
+
+-- ---------------------------------------------------------------------------
+-- v17 -> v18: the title bar grown to Ka0s DPS Race's 30px
+-- ---------------------------------------------------------------------------
+
+--- A v17-shaped window on the old shipped 18px header height, which the template copied into every
+--- stored window -- including the owner's, already stamped v17 by the first header-match build.
+local function v17Window(id, height)
+    return { id = id, header = { height = height or 18, outline = "NONE", shadow = true } }
+end
+
+test("migrations: v18 moves every window still on the 18px header onto the 30px bar", function()
+    -- An account already at v17 never runs migrations[16] again, so the height needs its own step.
+    -- red under: no v17 -> v18 step, or one that walks db.profile alone.
+    local inst = initWith({
+        profiles = { Default = { nextWindowId = 3, windows = { v17Window(1), v17Window(2) } },
+                     Raid    = { nextWindowId = 8, windows = { v17Window(7) } } },
+        global   = { schemaVersion = 17 },
+    })
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
+    for _, name in ipairs({ "Default", "Raid" }) do
+        for i, w in ipairs(inst.NS.db.sv.profiles[name].windows) do
+            assertEqual(w.header.height, 26, name .. " window " .. i .. " kept the 22px bar")
+        end
+    end
+end)
+
+test("migrations: v18 leaves a header height a player chose", function()
+    -- Only the old shipped 18 is taken for the default; any other height is a choice.
+    -- red under: writing 26 unconditionally.
+    local inst = initWith({
+        profiles = { Default = { nextWindowId = 4,
+                                 windows = { v17Window(1, 24), v17Window(2, 30), v17Window(3, 8) } } },
+        global   = { schemaVersion = 17 },
+    })
+    local D = inst.NS.Database
+    assertEqual(D.FindWindow(1).header.height, 24)
+    assertEqual(D.FindWindow(2).header.height, 30)
+    assertEqual(D.FindWindow(3).header.height, 8)
+    assertEqual(D.FindWindow(1).header.outline, "NONE", "the step touched another header key")
+end)
+
+test("migrations: the v18 step run twice is a no-op, and survives a junk window", function()
+    -- red under: a step that indexes a window or its header without a type guard.
+    local inst = initWith({
+        profiles = { Default = { nextWindowId = 2, windows = { v17Window(1) } },
+                     Odd     = { windows = { "junk", { id = 2, header = "junk" }, v17Window(3) } } },
+        global   = { schemaVersion = 17 },
+    })
+    local step = inst.NS.Database.__migrations[17]
+    local before = diff(inst.NS.db.sv.profiles, {})
+    step(inst.NS.db)
+    local after = diff(inst.NS.db.sv.profiles, {})
+    assertEqual(table.concat(after, "; "), table.concat(before, "; "),
+        "a second run of the v18 step changed the account")
+    assertEqual(inst.NS.db.sv.profiles.Odd.windows[1], "junk", "the step rewrote a non-window")
+    assertEqual(inst.NS.db.sv.profiles.Odd.windows[3].header.height, 26,
+        "the window after the junk entries was skipped")
+end)

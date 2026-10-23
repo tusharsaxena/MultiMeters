@@ -472,7 +472,7 @@ NS.Schema = {
         label = L["Alignment"], desc = L["Where the header text sits horizontally."],
     },
     {
-        path = "window.header.height", type = "number", default = 18,
+        path = "window.header.height", type = "number", default = 26,
         min = 8, max = 48, step = 1, fmt = "%d px",
         page = "header", group = L["Title bar"], subgroup = L["Layout"],
         label = L["Header height"], desc = L["Height of the header strip in pixels."],

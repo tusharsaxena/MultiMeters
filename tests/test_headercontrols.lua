@@ -68,17 +68,26 @@ end
 --- written against those would pass whatever the code did.
 local function offsetOf(button)
     for _, p in ipairs(button.__points or {}) do
-        if p.point == "TOPRIGHT" then return p.x end
+        if p.point == "RIGHT" then return p.x end
     end
     return nil
 end
 
---- The y offset a control was actually placed at, off the frame's top edge.
-local function topOf(button)
+--- The y offset a control's MIDDLE was placed at, off the frame's top edge. A
+--- control is anchored RIGHT (its vertical middle), as Ka0s DPS Race anchors its
+--- own, so this is the line the strip is centered on.
+local function midOf(button)
     for _, p in ipairs(button.__points or {}) do
-        if p.point == "TOPRIGHT" then return p.y end
+        if p.point == "RIGHT" then return p.y end
     end
     return nil
+end
+
+--- The y offset the title's middle was placed at: its first point, LEFT.
+local function titleMid(window)
+    local point, _, _, _, y = window.frame.title:GetPoint(1)
+    assertEqual(point, "LEFT", "the title is not anchored by its middle")
+    return y
 end
 
 -- ---------------------------------------------------------------------------
@@ -141,29 +150,101 @@ test("HeaderControls: the strip is CENTERED in the title bar", function()
         cfg.header.height = 26
         cfg.frame.controlSize = 16
     end)
-    -- 6 padding + 26 bar - 2 to the divider = 30 visible; half the 14 left over.
-    assertEqual(topOf(window.controls.settings), -7)
+    -- 6 padding + 26 bar - 2 to the divider = 30 visible; a 16px slot 7 down.
+    assertEqual(midOf(window.controls.settings), -15)
+end)
+
+test("HeaderControls: the shipped bar is DPS Race's 30px, centered on its midline", function()
+    -- Ka0s DPS Race: a 30px title bar (Style.TITLE_BAR_H), the divider at -30,
+    -- the title anchored CENTER and the controls RIGHT at -30 / 2. Shipped here:
+    -- 6 padding + 26 header.height - 2 = 30, so the title, the session line and
+    -- every control share the midline -15 and the divider sits at -30.
+    -- red under: header.height = 18 in defaults/Profile.lua (a 22px bar, -11).
+    local _, window, cfg = scene()
+    assertEqual(cfg.header.height, 26)
+    assertEqual(window:TitleBandHeight(), 30)
+    assertEqual(titleMid(window), -15, "the title is off the midline")
+    local point, _, _, _, y = window.sessionLine:GetPoint(1)
+    assertEqual(point, "RIGHT")
+    assertEqual(y, -15, "the session line is off the midline")
+    for _, key in ipairs({ "close", "minimize", "lock", "settings" }) do
+        assertEqual(midOf(window.controls[key]), -15, key .. " is off the midline")
+    end
+    local _, _, _, _, dy = window.frame.divider:GetPoint(1)
+    assertEqual(dy, -30, "the divider is not at the bottom of the 30px bar")
+    assertEqual(window.dragBar:GetHeight(), 30, "the drag strip stops short of the bar")
 end)
 
 test("HeaderControls: the strip and the title share one center line", function()
     -- Two placements of one row. The whole point of routing both through
-    -- Window:TitleRowTop is that they cannot be centered differently.
+    -- Window:TitleRowMid is that they cannot be centered differently.
     local _, window = scene(function(cfg)
         cfg.header.height = 24
         cfg.header.size = 14
         cfg.frame.controlSize = 18
     end)
-    local iconTop = topOf(window.controls.settings)
-    local textTop = select(5, window.frame.title:GetPoint(1))
-    assertEqual(iconTop - 18 / 2, textTop - 14 / 2,
+    -- 6 + 24 - 2 = 28 visible: a 14px title and an 18px slot both centered at -14.
+    assertEqual(midOf(window.controls.settings), -14)
+    assertEqual(titleMid(window), midOf(window.controls.settings),
         "the icons and the title are on different center lines")
+end)
+
+test("HeaderControls: every edge in the title row lands on a whole pixel", function()
+    -- An odd box, or an odd bar, cannot be centered exactly; its top edge is
+    -- floored rather than left on a half pixel, so it sits half a pixel high.
+    -- red under: -(band / 2) as the middle, which puts a 17px box's edges on .5.
+    for _, c in ipairs({ { bar = 26, size = 18 }, { bar = 27, size = 18 },
+                         { bar = 26, size = 17 }, { bar = 31, size = 23 } }) do
+        local _, window = scene(function(cfg)
+            cfg.header.height = c.bar
+            cfg.frame.controlSize = c.size
+        end)
+        local top = midOf(window.controls.settings) + c.size / 2
+        assertEqual(top, math.floor(top),
+            ("bar %d, slot %d: the top edge is on a half pixel"):format(c.bar, c.size))
+        local band = window:TitleBandHeight()
+        local below = band + top - c.size
+        assertTrue(math.abs(-top - below) <= 1,
+            ("bar %d, slot %d: %d above, %d below"):format(c.bar, c.size, -top, below))
+    end
+end)
+
+test("HeaderControls: a custom header height still centers the whole row", function()
+    -- Every allowed bar height against the slot sizes at both schema ends: the
+    -- title, the session line and the strip each sit on the bar's midline (to
+    -- the half pixel the whole-pixel rule allows), and a box taller than the bar
+    -- hangs from the frame's top edge instead.
+    -- red under: centering any one of the three against something but the band.
+    for _, bar in ipairs({ 8, 18, 26, 37, 48 }) do
+        for _, slot in ipairs({ 10, 18, 32 }) do
+            local _, window, cfg = scene(function(c)
+                c.header.height = bar
+                c.frame.controlSize = slot
+            end)
+            local band = window:TitleBandHeight()
+            assertEqual(band, cfg.frame.padding + bar - 2)
+            local where = ("bar %d, slot %d"):format(bar, slot)
+            local function centered(mid, h, what)
+                if h > band then
+                    assertEqual(mid + h / 2, 0, where .. ": " .. what .. " left the frame")
+                else
+                    assertTrue(math.abs(mid + band / 2) <= 0.5,
+                        where .. ": " .. what .. " is off the midline")
+                end
+            end
+            centered(midOf(window.controls.settings), slot, "the strip")
+            centered(titleMid(window), cfg.header.size, "the title")
+            local _, _, _, _, sy = window.sessionLine:GetPoint(1)
+            centered(sy, math.max(cfg.header.size + 4, 12), "the session line")
+        end
+    end
 end)
 
 test("HeaderControls: the shipped icon fills the title's own 12px box", function()
     -- Ka0s DPS Race centers a 12px icon in an 18px slot on the same line as its
     -- 12px title. Shipped here, the art is 18 * 0.72 floored = 12 -- the header
-    -- font's size -- on a whole-pixel inset of 3, so the icon's top and the
-    -- title's top are ONE number. The old 16px slot drew an 11px icon 2.5px
+    -- font's size -- on a whole-pixel inset of 3, so the icon and the title are
+    -- one 12px box on one midline. The old 16px slot drew an 11px icon 2.5px
     -- into its slot: half a pixel off the title's center line.
     -- COMPUTED (rule R3): the recorded anchors and the configured sizes, never
     -- a geometry read.
@@ -175,19 +256,18 @@ test("HeaderControls: the shipped icon fills the title's own 12px box", function
     assertEqual(art, cfg.header.size, "the icon is not as tall as the title")
     local inset = (slot - art) / 2
     assertEqual(inset, math.floor(inset), "the icon sits on a half pixel")
-    local textTop = select(5, window.frame.title:GetPoint(1))
-    assertEqual(topOf(window.controls.settings) - inset, textTop,
-        "the icon and the title do not share a top edge")
+    assertEqual(midOf(window.controls.settings), titleMid(window),
+        "the icon and the title do not share a center line")
 end)
 
 test("HeaderControls: a control taller than its bar overflows DOWNWARD", function()
-    -- Centering a 32px control in an 18px bar puts its top above the frame, where
-    -- half of it is drawn outside the window.
+    -- Centering a 32px control in a 22px bar puts its top above the frame, where
+    -- part of it is drawn outside the window.
     local _, window = scene(function(cfg)
         cfg.header.height = 18
         cfg.frame.controlSize = 32
     end)
-    assertEqual(topOf(window.controls.settings), 0)
+    assertEqual(midOf(window.controls.settings) + 32 / 2, 0, "the top is not the frame's edge")
 end)
 
 --- The three numbers a control's icon is actually tinted with.

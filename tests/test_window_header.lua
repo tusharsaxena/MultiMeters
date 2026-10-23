@@ -154,7 +154,7 @@ end)
 
 test("The title-bar divider can be switched off, and does not move the title row", function()
     -- The one piece of the window's chrome a player can hide. What matters as much
-    -- as the hiding is that NOTHING ELSE MOVES: TitleRowTop centers the title row
+    -- as the hiding is that NOTHING ELSE MOVES: TitleRowMid centers the title row
     -- against the DIVIDER_INSET constant, not against this texture, so a hidden
     -- line leaves the title, the session line and the control strip exactly where
     -- they were. A layout that measured the divider would shift all three.
@@ -162,13 +162,13 @@ test("The title-bar divider can be switched off, and does not move the title row
     local _, window, cfg = scene()
 
     window:ApplyConfig()
-    local rowTop = window:TitleRowTop(cfg.header.height)
+    local rowMid = window:TitleRowMid(cfg.header.size)
     assertTrue(window.frame.divider:IsShown(), "the divider ships drawn")
 
     cfg.header.divider = false
     window:ApplyConfig()
     assertFalse(window.frame.divider:IsShown(), "the divider ignored its setting")
-    assertEqual(window:TitleRowTop(cfg.header.height), rowTop,
+    assertEqual(window:TitleRowMid(cfg.header.size), rowMid,
         "hiding the divider moved the title row")
 end)
 

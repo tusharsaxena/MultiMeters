@@ -227,7 +227,10 @@ local WINDOW_TEMPLATE = {
         colorMode       = "custom",    -- class | custom
         color           = { r = 1, g = 0.82, b = 0, a = 1 },  -- Blizzard gold
         align           = "LEFT",      -- LEFT | CENTER | RIGHT
-        height          = 18,
+        -- 26, so the bar a player sees -- frame top to divider, 6 padding + 26
+        -- - 2 -- is Ka0s DPS Race's 30px title bar (`Style.TITLE_BAR_H`). It
+        -- shipped 18 (a 22px bar) until 2026-10-24.
+        height          = 26,
         bgColor         = { r = 0, g = 0, b = 0, a = 0.5 },
         -- The hairline between the title bar and the column labels. ON, because
         -- it is what the window has always drawn and a chrome element that

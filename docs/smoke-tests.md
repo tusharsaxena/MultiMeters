@@ -44,7 +44,7 @@ secret-value rules the checks refer to.
 - **A pull** means a real one: a Mythic+ trash pack or a raid pull with the group fighting. A target
   dummy does not activate the restriction and is no substitute where a check says "a pull". Where a
   dummy is enough, the check says so.
-- **Old SavedVariables.** INSTALL-6 to INSTALL-9 and INSTALL-12 need a `MultiMeters.lua` file saved by an older
+- **Old SavedVariables.** INSTALL-6 to INSTALL-9, INSTALL-12 and INSTALL-13 need a `MultiMeters.lua` file saved by an older
   build; copy it aside before INSTALL-1 wipes it.
 - **Several windows.** Checks that say "two windows" start from Windows → General → **New window**.
 - **Reporting a failure.** Give where (dungeon and key level, raid or open world; solo or grouped and
@@ -65,7 +65,7 @@ secret-value rules the checks refer to.
   no `schema error:` line and no "schema path does not resolve" line at any point (either means a
   schema row's path or default disagrees with `defaults/Profile.lua`). Result: pass (owner-marked 2026-10-10)
 - **INSTALL-3. SavedVariables shape.** After INSTALL-1, `/reload`, then read `MultiMeters.lua` on disk
-  → `profileKeys`, `profiles.Default`, `global.schemaVersion = 17`, a one-entry `profile.windows`
+  → `profileKeys`, `profiles.Default`, `global.schemaVersion = 18`, a one-entry `profile.windows`
   whose window has `id = 1`, and `profile.nextWindowId = 2`. Result: pending
 - **INSTALL-4. `/reload` keeps the layout.** Move the window, resize it, change its bar color and its
   column set, `/reload` → position, size, color and columns survive; the window is in the same
@@ -100,8 +100,8 @@ secret-value rules the checks refer to.
   `/dump MultiMetersDB.global.minimap` shows `hide = true` (plus `minimapPos` if the button was ever
   dragged) and no `shown` key; the first window is still collapsed; the second still has no minimize
   control and its Header → Controls → **Show minimize** box reads unticked;
-  `/dump MultiMetersDB.global.schemaVersion` prints `17` (the current version; `16` before the header
-  match); in `/dump
+  `/dump MultiMetersDB.global.schemaVersion` prints `18` (the current version; `17` before the 30px
+  bar, `16` before the header match); in `/dump
   MultiMetersDB.profiles.Default.windows` every window's `frame` keys are spelled the US way
   (`minimized`, `showMinimize`; the v16 step renames the two British-spelled keys and drops them), and
   the collapsed one reads `minimized = true`. A window back expanded, or a minimize control back on
@@ -125,8 +125,14 @@ secret-value rules the checks refer to.
   set Header → Title text → Font outline *Thick outline* and Control size 20; log out, update and log
   in → the first window's title is unoutlined with a drop shadow, its controls are gray at full
   strength in 18px slots (WIN-49 to WIN-51); the second keeps *Thick outline* and size 20;
-  `/dump MultiMetersDB.global.schemaVersion` prints `17`. A first window still outlined, white or
+  `/dump MultiMetersDB.global.schemaVersion` prints `18`. A first window still outlined, white or
   faded means the v17 step did not reach it. Result: pending
+- **INSTALL-13. Upgrade from v17 (the 30px title bar).** On the first header-match build
+  (`schemaVersion` 17), with two windows, leave the first window's Header → Title bar → Header height
+  at the shipped 18 and set the second's to 24; log out, update and log in → the first window's
+  Header height reads 26 and its bar measures 30px from the frame's top edge to the divider (WIN-52);
+  the second keeps 24; `/dump MultiMetersDB.global.schemaVersion` prints `18`. A first window still on
+  the short bar means the v18 step did not reach it. Result: pending
 
 ## SLASH
 
@@ -732,6 +738,15 @@ right. Open the panel with `/mm config`.
   (22px pitch). With Header height and Control size changed, the row stays centered as before. A
   profile that had set its own control color, size, reveal or header outline (any value other than the
   old shipped one) keeps it. Result: pending
+- **WIN-52. The title bar is DPS Race's height, the row on its midline (2026-10-24).** Same profile,
+  a Multi Meters window beside Ka0s DPS Race's HUD (a window from before the update included: the v18
+  step moves it, INSTALL-13) → the two title bars are the same height, frame top to divider (30px);
+  the title, the session line (*Overall*) and every icon are centered on that bar's midline, with as
+  much room above as below; the drag strip answers anywhere in the bar down to the divider; the column
+  labels and rows start under the divider as before. Header → Title bar shows Header height 26. Set
+  Header height to 8, 37 and 48 and Control size to 10 and 32 in turn → the row stays centered (a
+  control taller than the bar hangs from the frame's top edge). The shipped 220px window shows nine
+  rows, and dragging it down stops at 70px with the one row fully inside the frame. Result: pending
 
 ## VIS
 
@@ -1491,7 +1506,8 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
 ## Pending sign-off
 
 WIN-49, WIN-50, WIN-51 and INSTALL-12 (added 2026-10-24, the header matched to Ka0s DPS Race's title
-bar), and INSTALL-3 and INSTALL-9 (rewritten 2026-10-24 for the v17 schema stamp).
+bar), WIN-52 and INSTALL-13 (added 2026-10-24, the 30px title bar), and INSTALL-3 and INSTALL-9
+(rewritten 2026-10-24 for the v18 schema stamp).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

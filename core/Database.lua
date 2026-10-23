@@ -52,11 +52,12 @@ NS.Database = Database
 -- v15 moves LibDBIcon's `minimap` table from the profile to the global store.
 -- v16 spells the window's minimize keys the US way.
 -- v17 matches the header to Ka0s DPS Race.
+-- v18 grows the title bar to Ka0s DPS Race's 30px.
 --
 -- The defaults declare `global.schemaVersion = 0`, which means UNSTAMPED: a fresh
 -- install or an account from before the runner stamped anything. It is never the
 -- current version (savedvariables-§1); see defaults/Profile.lua for why.
-local CURRENT_DB_VERSION = 17
+local CURRENT_DB_VERSION = 18
 
 --- The runner's target, published under the name savedvariables-§1 gives it.
 --- Raising it means registering the step that reaches it; the defaults' 0 never moves.
@@ -1011,6 +1012,27 @@ migrations[16] = function(db)
         if type(profile.windows) == "table" then
             for _, w in pairs(profile.windows) do
                 if type(w) == "table" then v17MatchHeader(w) end
+            end
+        end
+    end
+end
+
+--- v17 -> v18: THE TITLE BAR GROWN TO KA0S DPS RACE'S 30PX.
+---
+--- `header.height` shipped 18 (6 padding + 18 - 2 = a 22px bar to the divider) and ships 26 now
+--- (30px, DPS Race's `Style.TITLE_BAR_H`). A separate step rather than an edit to migrations[16]:
+--- that step has already run on accounts that tried the v17 build, and a step that has run is
+--- never rewritten. Same rule as v17: only a stored 18, the old shipped value, moves; any other
+--- height is the player's and is left alone, and a stored 18 cannot be told apart from a chosen 18.
+---
+--- Every window of every profile, for the reason allProfiles gives. Idempotent: 26 is not 18.
+migrations[17] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" and type(w.header) == "table" and w.header.height == 18 then
+                    w.header.height = 26
+                end
             end
         end
     end

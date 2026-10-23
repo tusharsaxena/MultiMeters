@@ -332,7 +332,7 @@ Total.
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 
-### test_migrations.lua (11)
+### test_migrations.lua (14)
 
 - migrations: the defaults declare schemaVersion 0, never the current version
 - migrations: a fresh install runs every step and lands on the default profile
@@ -345,6 +345,9 @@ Total.
 - migrations: v17 moves every window still on the old shipped header onto the DPS Race match
 - migrations: v17 leaves every value a player chose for themselves
 - migrations: the v17 step run twice is a no-op, and survives a junk window
+- migrations: v18 moves every window still on the 18px header onto the 30px bar
+- migrations: v18 leaves a header height a player chose
+- migrations: the v18 step run twice is a no-op, and survives a junk window
 
 ### test_diagnostics.lua (35)
 
@@ -1358,7 +1361,7 @@ Total.
 - With no art and no atlas the arrow is an ASCII character, and a legible one
 - The refused Player-header click names its guard in the log
 
-### test_window_placement.lua (43)
+### test_window_placement.lua (44)
 
 - Closing HIDES the window; it never deletes it
 - Dragging moves the ANCHOR, never the frame that holds the cells
@@ -1366,6 +1369,7 @@ Total.
 - SavePosition reads GetPoint off the anchor and off nothing else
 - SaveSize uses the size OnSizeChanged was handed, never a getter
 - The window refuses to be dragged smaller than the grid needs
+- The shipped floor counts the 30px title bar, and a lower stored height draws at it
 - ShouldShow STEP 0 is THE LATCH, above even test mode
 - ShouldShow's ladder reads master enable, then test mode, then context
 - RefreshVisibility shows, hides, and marks dirty exactly once on the way in
@@ -1436,14 +1440,17 @@ Total.
 - Sim strip: minimized hides it with no title word; a hidden header keeps it
 - Sim strip: with no Widgets library no strip, no reserve, and nothing raises
 
-### test_headercontrols.lua (68)
+### test_headercontrols.lua (71)
 
 - HeaderControls: every control this addon builds is attached
 - HeaderControls: a control turned off is not placed at all
 - HeaderControls: a hidden control YIELDS its slot
 - HeaderControls: hiding the LAST control moves nothing
 - HeaderControls: the strip is CENTERED in the title bar
+- HeaderControls: the shipped bar is DPS Race's 30px, centered on its midline
 - HeaderControls: the strip and the title share one center line
+- HeaderControls: every edge in the title row lands on a whole pixel
+- HeaderControls: a custom header height still centers the whole row
 - HeaderControls: the shipped icon fills the title's own 12px box
 - HeaderControls: a control taller than its bar overflows DOWNWARD
 - HeaderControls: a control at rest takes the control color
@@ -2603,7 +2610,7 @@ Total.
 | test_locale.lua | 11 |
 | test_database.lua | 28 |
 | test_database_migrations.lua | 48 |
-| test_migrations.lua | 11 |
+| test_migrations.lua | 14 |
 | test_diagnostics.lua | 35 |
 | test_diagnostics_deathrecap.lua | 31 |
 | test_diagnostics_identity.lua | 23 |
@@ -2637,11 +2644,11 @@ Total.
 | test_window.lua | 68 |
 | test_window_header.lua | 62 |
 | test_window_header_sort.lua | 17 |
-| test_window_placement.lua | 43 |
+| test_window_placement.lua | 44 |
 | test_window_lifecycle.lua | 9 |
 | test_window_segment.lua | 10 |
 | test_window_simstrip.lua | 4 |
-| test_headercontrols.lua | 68 |
+| test_headercontrols.lua | 71 |
 | test_row.lua | 62 |
 | test_row_namecell.lua | 30 |
 | test_row_cells.lua | 1 |
@@ -2676,4 +2683,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2310** |
+| **Total** | **2317** |
