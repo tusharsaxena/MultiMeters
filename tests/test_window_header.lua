@@ -596,7 +596,7 @@ test("Test mode: the strip is the marker; the red title word only when minimized
     -- only where the strip cannot be seen: a minimized window (the strip goes with
     -- the body) or a load without the Widgets library (tests/test_window.lua).
     -- red under: ApplyTitle writing the word without asking stripShown, or
-    -- ApplyMinimized not re-running ApplyTitle after a collapse or expand.
+    -- ApplyMinimized not re-running ApplyTitle itself after a collapse or expand.
     local inst, window, cfg = scene()
     local function hasWord()
         return window.frame.title:GetText():find("TEST MODE", 1, true) ~= nil
@@ -607,21 +607,31 @@ test("Test mode: the strip is the marker; the red title word only when minimized
     assertTrue(window.testStrip ~= nil and window.testStrip:IsShown(), "the strip is the marker")
     assertFalse(hasWord(), "the title repeated the strip's word")
 
-    -- Collapse through the window's own config write path, as the minimize
-    -- control does, then the config re-apply that follows.
-    window.controls.minimize:_run("OnClick")
-    assertEqual(cfg.frame.minimized, true)
-    window:ApplyConfig()
+    -- ApplyMinimized ALONE, with the config written directly. The minimize
+    -- control writes through NS.SetByPath, whose CONFIG_CHANGED re-runs
+    -- ApplyConfig -> ApplyHeader -> ApplyTitle before ApplyMinimized is reached,
+    -- which would hide a missing ApplyTitle call in ApplyMinimized itself.
+    cfg.frame.minimized = true
+    window:ApplyMinimized()
     assertFalse(window.testStrip:IsShown(), "the strip goes with the body")
     assertTrue(hasWord(), "a minimized window in test mode must still say so")
     assertTrue(window.frame.title:GetText():find("|cffff2020", 1, true) ~= nil,
         "and it must be red")
 
+    cfg.frame.minimized = false
+    window:ApplyMinimized()
+    assertTrue(window.testStrip:IsShown(), "the strip returns on expand")
+    assertFalse(hasWord(), "the word goes when the strip returns")
+
+    -- The same round trip through the minimize control, the player's route.
+    window.controls.minimize:_run("OnClick")
+    assertEqual(cfg.frame.minimized, true)
+    window:ApplyConfig()
+    assertTrue(hasWord(), "collapsed from the control, test mode on")
     window.controls.minimize:_run("OnClick")
     assertEqual(cfg.frame.minimized, false)
     window:ApplyConfig()
-    assertTrue(window.testStrip:IsShown(), "the strip returns on expand")
-    assertFalse(hasWord(), "the word goes when the strip returns")
+    assertFalse(hasWord(), "expanded from the control")
 
     inst.NS.State.SetTestMode(false)
     assertFalse(hasWord())
