@@ -489,6 +489,65 @@ end
 
 
 
+--- The body frame: wheel scrolling and the right-click that leaves a breakdown.
+--- Split out of BuildFrame to keep it under the CCN gate; runs once, from there.
+function WindowProto:BuildBody(frame)
+    self.body = CreateFrame("Frame", nil, frame)
+
+    -- ── SCROLLING ────────────────────────────────────────────────────────────
+    --
+    -- NOT a ScrollFrame, and not because one would be hard. This window already
+    -- draws `layout.maxRows` rows chosen out of a longer list, so scrolling is
+    -- choosing a DIFFERENT window into that list — one integer, applied at the
+    -- top of the render loop. A ScrollFrame would mean building every row and
+    -- letting the client clip them, which is more frames, more work per refresh,
+    -- and a scroll child whose height would have to be measured.
+    --
+    -- The offset is plain and comes from a wheel event, so nothing here reads
+    -- geometry back off a frame or looks at a meter value (rules R1 and R3 are
+    -- untouched).
+    self.scrollOffset = 0
+    self.body:EnableMouseWheel(true)
+
+    -- RIGHT-CLICK ON EMPTY SPACE leaves a breakdown. The rows handle their own
+    -- (modules/Row.lua), but a short breakdown leaves most of the body bare and
+    -- "right-click anywhere" has to mean anywhere.
+    --
+    -- The body's mouse is enabled ONLY while a breakdown is open. There is a
+    -- comment on the frame above saying the body used to take the mouse and
+    -- "stole every hover from the cells underneath it" — the cells are
+    -- descendants and should still win, but that was learned the hard way, so the
+    -- grid keeps exactly the behavior it has today and only a drilled window
+    -- changes.
+    self.body:SetScript("OnMouseUp", function(_, button)
+        if button ~= "RightButton" then return end
+        local D = mod("DrillDown")
+        if D and D.Exit then D:Exit(self.config) end
+    end)
+    if self.body.RegisterForClicks then
+        self.body:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    end
+    self.body:EnableMouse(false)
+    self.body:SetScript("OnMouseWheel", function(_, delta)
+        -- Up scrolls toward the top, which is `delta > 0` and a SMALLER offset.
+        self:ScrollBy(delta > 0 and -1 or 1)
+    end)
+end
+
+--- The test-mode and simulation strips. Split out of BuildFrame (CCN gate); runs once.
+function WindowProto:BuildStrips(frame)
+    -- THE TEST-MODE STRIP (MultiMeters#59, LibKa0s#48): a yellow band between the
+    -- title and the column headers saying the numbers under it are placeholders.
+    -- It is NOT part of the header, so a window with its header hidden is still
+    -- marked. Born hidden; ApplyTestStrip places and shows it. No tooltip, so the
+    -- mouse stays off. The red title word shows only when the strip cannot (a
+    -- minimized window, or no Widgets library); the session-line `Test` stays.
+    self.testStrip = W and W.TestStrip and W.TestStrip(frame, {
+        text = L["TEST MODE: placeholder numbers, not your fight. Combat ends it."],
+        icon = NS.Icon and NS.Icon("info"),
+    }) or nil
+end
+
 --- Build the two frames, the header and the body. Runs once per window per
 --- session; everything after it is re-application, never reconstruction.
 function WindowProto:BuildFrame()
@@ -604,46 +663,7 @@ function WindowProto:BuildFrame()
     self.sessionText:SetJustifyH("RIGHT")
     self.sessionText:SetAllPoints(self.sessionLine)
 
-    self.body = CreateFrame("Frame", nil, frame)
-
-    -- ── SCROLLING ────────────────────────────────────────────────────────────
-    --
-    -- NOT a ScrollFrame, and not because one would be hard. This window already
-    -- draws `layout.maxRows` rows chosen out of a longer list, so scrolling is
-    -- choosing a DIFFERENT window into that list — one integer, applied at the
-    -- top of the render loop. A ScrollFrame would mean building every row and
-    -- letting the client clip them, which is more frames, more work per refresh,
-    -- and a scroll child whose height would have to be measured.
-    --
-    -- The offset is plain and comes from a wheel event, so nothing here reads
-    -- geometry back off a frame or looks at a meter value (rules R1 and R3 are
-    -- untouched).
-    self.scrollOffset = 0
-    self.body:EnableMouseWheel(true)
-
-    -- RIGHT-CLICK ON EMPTY SPACE leaves a breakdown. The rows handle their own
-    -- (modules/Row.lua), but a short breakdown leaves most of the body bare and
-    -- "right-click anywhere" has to mean anywhere.
-    --
-    -- The body's mouse is enabled ONLY while a breakdown is open. There is a
-    -- comment on the frame above saying the body used to take the mouse and
-    -- "stole every hover from the cells underneath it" — the cells are
-    -- descendants and should still win, but that was learned the hard way, so the
-    -- grid keeps exactly the behavior it has today and only a drilled window
-    -- changes.
-    self.body:SetScript("OnMouseUp", function(_, button)
-        if button ~= "RightButton" then return end
-        local D = mod("DrillDown")
-        if D and D.Exit then D:Exit(self.config) end
-    end)
-    if self.body.RegisterForClicks then
-        self.body:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    end
-    self.body:EnableMouse(false)
-    self.body:SetScript("OnMouseWheel", function(_, delta)
-        -- Up scrolls toward the top, which is `delta > 0` and a SMALLER offset.
-        self:ScrollBy(delta > 0 and -1 or 1)
-    end)
+    self:BuildBody(frame)
 
     -- The column-header strip lives on the BODY and holds plain FontStrings that
     -- never receive a value, so it is one of the few things here that could
@@ -665,16 +685,7 @@ function WindowProto:BuildFrame()
     self.notice:SetJustifyH("CENTER")
     self.notice:Hide()
 
-    -- THE TEST-MODE STRIP (MultiMeters#59, LibKa0s#48): a yellow band between the
-    -- title and the column headers saying the numbers under it are placeholders.
-    -- It is NOT part of the header, so a window with its header hidden is still
-    -- marked. Born hidden; ApplyTestStrip places and shows it. No tooltip, so the
-    -- mouse stays off. The red title word shows only when the strip cannot (a
-    -- minimized window, or no Widgets library); the session-line `Test` stays.
-    self.testStrip = W and W.TestStrip and W.TestStrip(frame, {
-        text = L["TEST MODE: placeholder numbers, not your fight. Combat ends it."],
-        icon = NS.Icon and NS.Icon("info"),
-    }) or nil
+    self:BuildStrips(frame)
     -- THE SIMULATION STRIP (MultiMeters#60): the same strip in its sim flavor (its
     -- own tint), in the same slot, shown while a /mm sim session runs. It replaces
     -- any title word for the simulation: there is none (OWNER_SCOPE A).
