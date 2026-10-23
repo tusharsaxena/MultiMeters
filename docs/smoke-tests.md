@@ -23,7 +23,7 @@ secret-value rules the checks refer to.
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
 | WIN-1 to WIN-48 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown |
-| VIS-1 to VIS-13 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat |
+| VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-33 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
@@ -739,6 +739,10 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   hides when you drop group and returns when you group up; turn on the out-of-combat rule and pull a
   dummy → it shows at the pull and hides when combat ends, at the same edges as before. The group and
   combat reads now go through `core/Compat.lua`. Result: pending
+- **VIS-14. One dispatch entry for game events (SM-MM-23).** `/reload` → the windows populate. Pull a
+  dummy and let combat end, then change zone → each edge still re-evaluates visibility as before.
+  `/mm diagnostics` → no rejected events beyond the usual ones. Every game event now reaches its
+  handler through `NS:OnGameEvent` and `NS.DeliverEvent`. Result: pending
 
 ## GRID
 
@@ -1414,6 +1418,7 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 
 - WIN-47 and WIN-48 (the red title word only while the test-mode strip is not shown, 2026-10-23).
 - GRID-33 and VIS-13 (the world reads routed through `core/Compat.lua` for the simulator, 2026-10-23).
+- VIS-14 (every game event through the one dispatch entry, 2026-10-23).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

@@ -280,6 +280,7 @@ local SUITES = {
     "test_envsetup",
     "test_launchersetup",
     "test_lifecycle",
+    "test_dispatch",
     "test_vendor_sync",
     -- the data path
     "test_format",

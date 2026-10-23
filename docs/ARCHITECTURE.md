@@ -161,11 +161,12 @@ registers any.** Each handler does the minimum translation and republishes onto 
 value and — with two stated exceptions, the feign filter and the system-message filter below — none
 decides anything, which is what lets that section be read as a wiring diagram.
 
-Every registration goes through `NS.SafeRegisterEvent` (`core/CoreSetup.lua`, LibKa0s-Core minor 8,
-`events-frames-taint-§1`), walked off the module-level `EVENTS` array, so one name the client does
-not know costs only itself and lands in `NS.State.rejectedEvents`, which `/mm diagnostics` prints.
+Every `EVENTS` row goes through `NS.SafeRegisterEvent` (`events-frames-taint-§1`; a refused name lands
+in `NS.State.rejectedEvents`) with the ONE handler `NS:OnGameEvent`, which drops the event when
+`NS.RealEventFilter` (the simulator's hook, `nil` outside a session) answers true, else calls
+`NS.DeliverEvent` to run the method `NS.HANDLER_BY_EVENT` names. Detail: [data-flow.md](data-flow.md).
 
-| Event | Handler | Becomes |
+| Event | Dispatch row (method) | Becomes |
 |---|---|---|
 | `PLAYER_ENTERING_WORLD` | `OnEnteringWorld` | `ENTERING_WORLD { isLogin, isReload }` |
 | `GROUP_ROSTER_UPDATE` | `OnRosterUpdate` | wipes the `Roster` cache **first**, then `ROSTER_CHANGED` |

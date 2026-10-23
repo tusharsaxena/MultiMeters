@@ -711,8 +711,9 @@ function()
     local inst = T.load{ libFiles = {}, enable = true, mutate = function(m)
         m.__badEvents = { UNIT_SPELLCAST_SUCCEEDED = true }
     end }
-    assertEqual(inst.NS.__events["DAMAGE_METER_RESET"], "OnMeterReset",
+    assertEqual(inst.NS.__events["DAMAGE_METER_RESET"], "OnGameEvent",
         "the meter events were lost to an earlier refused name")
+    assertEqual(inst.NS.HANDLER_BY_EVENT["DAMAGE_METER_RESET"], "OnMeterReset")
     assertEqual(table.concat(inst.NS.State.rejectedEvents, ","), "UNIT_SPELLCAST_SUCCEEDED")
     assertTrue(inst.NS:GetModule("WindowManager", true) ~= nil, "the cascade did not finish")
 end)

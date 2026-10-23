@@ -736,6 +736,20 @@ Total.
 - Lifecycle: the context and restriction events each leave one [Event] line while logging is on
 - Lifecycle: player-state events and a quiet session leave no [Event] line
 
+### test_dispatch.lua (11)
+
+- Dispatch: every EVENTS row is registered with the one handler OnGameEvent
+- Dispatch: HANDLER_BY_EVENT has exactly one row per registered event
+- Dispatch: OnGameEvent('GROUP_ROSTER_UPDATE') sends ROSTER_CHANGED
+- Dispatch: a fired game event reaches its handler through the dispatch row
+- Dispatch: DeliverEvent answers 1 for a known event and 0 for an unknown one
+- Dispatch: DeliverEvent answers 0 for a rejected event and calls nothing
+- Dispatch: a RealEventFilter answering true consumes the event
+- Dispatch: RealEventFilter is nil until the simulator sets it
+- Dispatch: DeliverEvent ignores the filter
+- Dispatch: the event's arguments reach the handler
+- Dispatch: the real payload still reaches the bus through OnGameEvent
+
 ### test_vendor_sync.lua (3)
 
 - libs/LibKa0s is the LibKa0s release CLAUDE.md says this addon bundles
@@ -2502,6 +2516,7 @@ Total.
 | test_envsetup.lua | 13 |
 | test_launchersetup.lua | 55 |
 | test_lifecycle.lua | 40 |
+| test_dispatch.lua | 11 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
 | test_provider.lua | 42 |
@@ -2554,4 +2569,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2216** |
+| **Total** | **2227** |

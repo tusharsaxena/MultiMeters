@@ -34,6 +34,8 @@ Expanded, with the guards named:
   DAMAGE_METER_COMBAT_SESSION_UPDATED(type, sessionID)
   DAMAGE_METER_RESET
         │  core/MultiMeters.lua — THE SINGLE GAME-EVENT LISTENER
+        │  NS:OnGameEvent -> [NS.RealEventFilter] -> NS.DeliverEvent
+        │    -> NS.HANDLER_BY_EVENT[event]
         │  each handler translates and republishes; none decides anything
         ▼
   MSG.METER_UPDATED / METER_SESSION / METER_RESET        [bucket: meterEvent]
@@ -80,8 +82,13 @@ Expanded, with the guards named:
 
 ## 1. The event stream and the coalescing throttle
 
-`core/MultiMeters.lua` registers all seven game events this addon listens to and is the only file
-that registers any. Each of the three `DAMAGE_METER_*` handlers does the minimum translation and
+`core/MultiMeters.lua` registers every game event this addon listens to and is the only file
+that registers any. Every one is registered with the ONE handler `NS:OnGameEvent`, which consults
+`NS.RealEventFilter` (the simulator host's hook, `nil` outside a simulator session, consulted on the
+real path only) and otherwise calls `NS.DeliverEvent(event, ...)`. That looks the event up in
+`NS.HANDLER_BY_EVENT`, the one-row-per-event table built from the `EVENTS` array at load, and calls
+the named handler exactly as a per-event registration would have; it answers `0` for an event with
+no row or one the client refused, else `1`. Each of the three `DAMAGE_METER_*` handlers does the minimum translation and
 republishes onto the closed message bus; none of them reads a value and none of them decides
 anything. Keeping the decisions out of there is what lets that section be read as a wiring diagram.
 
