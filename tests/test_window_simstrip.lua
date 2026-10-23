@@ -4,7 +4,7 @@
 -- (W.TestStrip(parent, { kind = "sim", ... }), LibKa0s Widgets minor 14) in the test strip's slot
 -- under the title, and NO window's title carries a SIMULATION word (OWNER_SCOPE A). The strip is
 -- not part of the header, so a window with its header hidden is still marked; a minimized window
--- shows no marker during a simulation (README Known Limitations: the step panel marks the run).
+-- shows no marker during a simulation (docs/scope.md#known-limitations: the step panel marks the run).
 -- The reserve comes from the session state and the library's HEIGHT constant, never off a frame,
 -- and like the test strip it takes its room out of the rows, never out of the window.
 
