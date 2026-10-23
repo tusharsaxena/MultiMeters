@@ -332,7 +332,7 @@ Total.
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 
-### test_migrations.lua (8)
+### test_migrations.lua (11)
 
 - migrations: the defaults declare schemaVersion 0, never the current version
 - migrations: a fresh install runs every step and lands on the default profile
@@ -342,6 +342,9 @@ Total.
 - migrations: v16 moves both minimize keys onto the US spelling in every window of every profile
 - migrations: the v16 step run twice is a no-op, and never overwrites a US key
 - migrations: a fresh install stores frame.minimized and no British key
+- migrations: v17 moves every window still on the old shipped header onto the DPS Race match
+- migrations: v17 leaves every value a player chose for themselves
+- migrations: the v17 step run twice is a no-op, and survives a junk window
 
 ### test_diagnostics.lua (35)
 
@@ -2600,7 +2603,7 @@ Total.
 | test_locale.lua | 11 |
 | test_database.lua | 28 |
 | test_database_migrations.lua | 48 |
-| test_migrations.lua | 8 |
+| test_migrations.lua | 11 |
 | test_diagnostics.lua | 35 |
 | test_diagnostics_deathrecap.lua | 31 |
 | test_diagnostics_identity.lua | 23 |
@@ -2673,4 +2676,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2307** |
+| **Total** | **2310** |

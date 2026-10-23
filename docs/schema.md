@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 16,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
+    schemaVersion = 17,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data (+ count, stored)
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -60,8 +60,8 @@ safe because every step is idempotent against a fresh default profile. A step ne
 the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
-**Fifteen steps are wired today**, `migrations[1]` through `migrations[15]`, walking an account from
-the shipped v1 shape to v16. Each is one line of the header block at the top of
+**Sixteen steps are wired today**, `migrations[1]` through `migrations[16]`, walking an account from
+the shipped v1 shape to v17. Each is one line of the header block at the top of
 `core/Database.lua`, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -81,12 +81,13 @@ the shipped v1 shape to v16. Each is one line of the header block at the top of
 | v13 → v14 | the addon-wide `master.locked` is carried onto every window's own `frame.locked` (a stored `true` locks every window) and pruned from every profile; see [`master`](#master--the-addon-wide-master-controls) |
 | v14 → v15 | LibDBIcon's `minimap` table moves from the profile to the global store, carrying `hide` **and** `minimapPos` so an adopted button keeps the angle the player dragged it to; the profile key is pruned. See [`minimap`](#minimap--and-it-lives-under-global) |
 | v15 → v16 | every window of every profile moves its two collapse keys onto the US spelling, `frame.minimized` and `frame.showMinimize`; a US key already stored wins, and the old keys are pruned |
+| v16 → v17 | every window of every profile still holding the header's old shipped values moves onto the Ka0s DPS Race match: `header.outline = "OUTLINE"` with `shadow = false` (as a pair) → `"NONE"` / `true`; a `"custom"`-mode white `frame.controlColor` → 0.7/0.7/0.72; `frame.hoverReveal = true` → `false`; `frame.controlSize = 16` → 18. Any other value is left alone. See [`header`](#header--the-strip-above-the-rows) |
 
-Adding a v17 is two edits and no bootstrap change:
+Adding a v18 is two edits and no bootstrap change:
 
 ```lua
-migrations[16] = function(db) ... end       -- the runner stamps the version
-local CURRENT_DB_VERSION = 17
+migrations[17] = function(db) ... end       -- the runner stamps the version
+local CURRENT_DB_VERSION = 18
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -572,8 +573,14 @@ verb and goes straight to `modules/WindowManager.lua`, which owns re-anchoring a
 because that is what Ka0s DPS Race's title bar draws (`Style.FONT.TITLE`) and the two headers sit side
 by side. Until 2026-10-24 the header shipped `outline = "OUTLINE"` with `shadow = false`; the size was
 already 12, and the outline, which rings every glyph in a pixel of black, is what made this title read
-larger than DPS Race's. No migration: AceDB strips a stored value equal to its default, so a profile
-that never touched these picks up the new pair, and one that set its own keeps it.
+larger than DPS Race's. **A changed default alone would reach only windows created afterwards.** AceDB's
+defaults cannot reach inside the `windows` array, and `EnsureWindowShape` copies the whole template
+into every stored window, so each existing window holds the old values verbatim. `migrations[16]`
+(v16 → v17) therefore rewrites, in every window of every profile, exactly the values that equal the
+old shipped ones — the outline and shadow as a pair, the white control color in `"custom"` mode,
+`hoverReveal = true` and `controlSize = 16` — and leaves any other value alone. A stored old value
+cannot be told apart from a deliberate choice of it; the step takes it for the shipped default, so a
+player who had picked exactly those values sets them again on the Header tab.
 
 **`show` moved here from `window.frame.titleBar` at `schemaVersion` 12 → 13** (`window.header.show`,
 not `window.frame.titleBar` — a path naming `frame` for the Header entry's own master switch misled

@@ -17,7 +17,7 @@ secret-value rules the checks refer to.
 
 | ID range | Theme | What it covers |
 |---|---|---|
-| INSTALL-1 to INSTALL-11 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
+| INSTALL-1 to INSTALL-12 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
 | SLASH-1 to SLASH-19 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding |
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
@@ -44,7 +44,7 @@ secret-value rules the checks refer to.
 - **A pull** means a real one: a Mythic+ trash pack or a raid pull with the group fighting. A target
   dummy does not activate the restriction and is no substitute where a check says "a pull". Where a
   dummy is enough, the check says so.
-- **Old SavedVariables.** INSTALL-6 to INSTALL-9 need a `MultiMeters.lua` file saved by an older
+- **Old SavedVariables.** INSTALL-6 to INSTALL-9 and INSTALL-12 need a `MultiMeters.lua` file saved by an older
   build; copy it aside before INSTALL-1 wipes it.
 - **Several windows.** Checks that say "two windows" start from Windows → General → **New window**.
 - **Reporting a failure.** Give where (dungeon and key level, raid or open world; solo or grouped and
@@ -65,8 +65,8 @@ secret-value rules the checks refer to.
   no `schema error:` line and no "schema path does not resolve" line at any point (either means a
   schema row's path or default disagrees with `defaults/Profile.lua`). Result: pass (owner-marked 2026-10-10)
 - **INSTALL-3. SavedVariables shape.** After INSTALL-1, `/reload`, then read `MultiMeters.lua` on disk
-  → `profileKeys`, `profiles.Default`, `global.schemaVersion = 16`, a one-entry `profile.windows`
-  whose window has `id = 1`, and `profile.nextWindowId = 2`. Result: pass (owner-marked 2026-10-10)
+  → `profileKeys`, `profiles.Default`, `global.schemaVersion = 17`, a one-entry `profile.windows`
+  whose window has `id = 1`, and `profile.nextWindowId = 2`. Result: pending
 - **INSTALL-4. `/reload` keeps the layout.** Move the window, resize it, change its bar color and its
   column set, `/reload` → position, size, color and columns survive; the window is in the same
   visibility state; no error during load; `nextWindowId` has not moved. Result: pass (owner-marked 2026-10-10)
@@ -100,11 +100,12 @@ secret-value rules the checks refer to.
   `/dump MultiMetersDB.global.minimap` shows `hide = true` (plus `minimapPos` if the button was ever
   dragged) and no `shown` key; the first window is still collapsed; the second still has no minimize
   control and its Header → Controls → **Show minimize** box reads unticked;
-  `/dump MultiMetersDB.global.schemaVersion` prints `16`; in `/dump
+  `/dump MultiMetersDB.global.schemaVersion` prints `17` (the current version; `16` before the header
+  match); in `/dump
   MultiMetersDB.profiles.Default.windows` every window's `frame` keys are spelled the US way
   (`minimized`, `showMinimize`; the v16 step renames the two British-spelled keys and drops them), and
   the collapsed one reads `minimized = true`. A window back expanded, or a minimize control back on
-  screen, means the v16 step lost the old key. Result: pass (owner-marked 2026-10-10)
+  screen, means the v16 step lost the old key. Result: pending
 - **INSTALL-10. Every icon draws from the pruned set.** From LibKa0s v1.75.0 the build ships only the
   icons the CLAUDE.md `LibKa0s icons:` line declares, and an undeclared name draws a blank square
   with no Lua error. Check each draw site → every one shows its art, never a blank square:
@@ -119,6 +120,13 @@ secret-value rules the checks refer to.
   no Lua error, and `/mm diagnostics` → the report loads. `core/SimSetup.lua` now wraps every
   `NS.Compat` member at load (LibKa0s-Sim-1.0's seam); idle, every read answers as before, so the
   windows, tooltips and export behave exactly as they did. Result: pass (owner-marked 2026-10-23)
+- **INSTALL-12. Upgrade from v16 (the header matched to DPS Race).** On a build from before v17
+  (`schemaVersion` 16), with two windows, leave the first window's header as shipped and on the second
+  set Header → Title text → Font outline *Thick outline* and Control size 20; log out, update and log
+  in → the first window's title is unoutlined with a drop shadow, its controls are gray at full
+  strength in 18px slots (WIN-49 to WIN-51); the second keeps *Thick outline* and size 20;
+  `/dump MultiMetersDB.global.schemaVersion` prints `17`. A first window still outlined, white or
+  faded means the v17 step did not reach it. Result: pending
 
 ## SLASH
 
@@ -710,7 +718,8 @@ right. Open the panel with `/mm config`.
 - **WIN-48. The title word while minimized (SM-MM-02).** Minimize a window in test mode → the title
   shows the red TEST MODE; expand → the word goes and the strip returns. Result: pass (owner-marked 2026-10-23)
 - **WIN-49. The title matches DPS Race's (2026-10-24).** On a profile that never changed Header →
-  Title text, open a Multi Meters window beside Ka0s DPS Race's HUD → *Multi Meters #1* and the
+  Title text (a window that existed before the update included: the v17 step moves it, INSTALL-12),
+  open a Multi Meters window beside Ka0s DPS Race's HUD → *Multi Meters #1* and the
   session line (*Overall*) read at the same size and weight as *DPS Race*: unoutlined 12px Friz
   Quadrata with a soft drop shadow, gold. Header → Title text shows Font outline *None* and Text
   shadow ticked. Result: pending
@@ -721,7 +730,8 @@ right. Open the panel with `/mm config`.
 - **WIN-51. The controls sit on the title's line (2026-10-24).** Same profile → each icon is 12px in an
   18px slot, its top and bottom level with the title's, and the strip's spacing matches DPS Race's
   (22px pitch). With Header height and Control size changed, the row stays centered as before. A
-  profile that had set its own control color, size, reveal or header outline keeps it. Result: pending
+  profile that had set its own control color, size, reveal or header outline (any value other than the
+  old shipped one) keeps it. Result: pending
 
 ## VIS
 
@@ -1480,7 +1490,8 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
 
 ## Pending sign-off
 
-WIN-49, WIN-50 and WIN-51 (added 2026-10-24, the header matched to Ka0s DPS Race's title bar).
+WIN-49, WIN-50, WIN-51 and INSTALL-12 (added 2026-10-24, the header matched to Ka0s DPS Race's title
+bar), and INSTALL-3 and INSTALL-9 (rewritten 2026-10-24 for the v17 schema stamp).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

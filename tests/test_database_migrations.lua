@@ -108,7 +108,7 @@ test("Database v1: a v1 account walks all the way to the catalog shape", functio
     assertEqual(w.columns[1].width, nil, "width must not survive the walk")
     assertEqual(w.columns[1].showBar, nil, "showBar must not survive the walk")
 
-    assertEqual(inst.NS.db.global.schemaVersion, 16,
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION,
         "the walk must run all the way to the current version, not stop partway")
 end)
 
@@ -189,7 +189,7 @@ test("Database v2: the step is idempotent and survives a malformed window", func
         global = { schemaVersion = 1 },
     })
     inst.NS:RunMigrations()
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 test("Database: RunMigrations with no database is a no-op, not an error", function()
@@ -264,7 +264,7 @@ test("Database v3: the three dead keys are REMOVED, not left to rot", function()
     assertNil(icons.showClass, "showClass survived the migration")
     assertNil(icons.showSpec,  "showSpec survived the migration")
     assertNil(icons.showRole,  "showRole survived the migration")
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 -- ---------------------------------------------------------------------------
@@ -295,7 +295,7 @@ test("Database v4: a stored AUTO channel folds to SELF, in EVERY profile", funct
 
     assertEqual(sv.profiles.Default.export.channel, "SELF")
     assertEqual(sv.profiles.Alt.export.channel, "SELF")
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 test("Database v4: every other channel is left exactly as the player set it", function()
@@ -314,7 +314,7 @@ test("Database v4: a profile with no export block at all survives the step", fun
         profiles = { Default = { nextWindowId = 2, windows = { { id = 1 } } } },
         global   = { schemaVersion = 3 },
     })
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 -- ---------------------------------------------------------------------------
@@ -347,7 +347,7 @@ test("Database v5: the FIRST window's values are the ones lifted", function()
 
     assertEqual(profile.data.mergePets, true)
     assertEqual(profile.data.throttle, 0.5)
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 test("Database v5: the per-window keys are REMOVED from EVERY window", function()
@@ -387,7 +387,7 @@ test("Database v5: a profile whose windows never carried the keys survives", fun
     -- Every profile written before either setting existed is this one, and the
     -- shipped defaults are what it should land on.
     local inst = v4Data({ { id = 1, data = { sortColumn = "Healing" } } })
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
     assertEqual(inst.NS.DataSetting("throttle"), 0.25)
     assertEqual(inst.NS.DataSetting("mergePets"), false)
 end)
@@ -419,7 +419,7 @@ test("Database v6: the two dead row-background keys are pruned from every window
     end
     -- And nothing else in the group was touched.
     assertEqual(inst.NS.Database.FindWindow(1).rows.highlightSelf, false)
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 test("Database v7: a class-color boolean becomes a color mode, on every surface", function()
@@ -462,7 +462,7 @@ test("Database v7: a class-color boolean becomes a color mode, on every surface"
     end
     -- Nothing else in a migrated group was touched.
     assertEqual(w.tooltip.fontSize, 14)
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 test("Database v7: a window that never set one is left to the shipped default", function()
@@ -497,7 +497,7 @@ test("Database v8: the four redundant header keys are pruned from every window",
         assertNil(header[key], "the header kept " .. key)
     end
     assertEqual(header.size, 14, "the rest of the group was touched")
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 test("Database v8: a typed header title becomes the window's NAME, not nothing", function()
@@ -554,7 +554,7 @@ test("Database v9: the title bar's background mode is pruned, the column strip's
     assertNil(w.header.bgColorMode, "the title bar kept a mode it no longer has")
     assertEqual(w.columnHeader.bgColorMode, "stat", "the column strip lost the mode it keeps")
     assertEqual(w.header.bgColor.r, 1, "the color picker went with the dropdown")
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 test("Database v10: a stored cursor anchor becomes TOP, and other anchors are left alone", function()
@@ -576,7 +576,7 @@ test("Database v10: a stored cursor anchor becomes TOP, and other anchors are le
 
     assertEqual(inst.NS.Database.FindWindow(1).tooltip.anchor, "TOP")
     assertEqual(inst.NS.Database.FindWindow(2).tooltip.anchor, "BOTTOMLEFT")
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 test("Database: v12 -> v13 moves the title-bar toggle onto the header", function()
@@ -591,7 +591,7 @@ test("Database: v12 -> v13 moves the title-bar toggle onto the header", function
     })
     local w = inst.NS.Database.FindWindow(1)
 
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
     assertFalse(w.header.show, "the stored value carried across")
     assertNil(w.frame.titleBar,
         "AceDB merges defaults in and never removes what they stopped naming")
@@ -763,7 +763,7 @@ test("Database v5: a first window whose data block is not a table lifts nothing"
     })
 
     assertEqual(inst.NS.DataSetting("throttle"), 0.25)
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
 end)
 
 test("Database v5: EVERY profile lifts from its OWN first window", function()
@@ -867,7 +867,7 @@ test("Database: v12 -> v13 leaves a window with no frame block at all alone", fu
     })
     local w = inst.NS.Database.FindWindow(1)
 
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
     assertTrue(w.header.show, "the shipped default arrived through the merge")
     assertEqual(w.frame.controlColorMode, "custom", "and so did the mode, not from the step")
 end)
@@ -912,7 +912,7 @@ test("Database: v13 -> v14 turns a stored master lock into every window's own lo
     })
     local profile = inst.NS.db.profile
 
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
     assertTrue(inst.NS.Database.FindWindow(1).frame.locked, "window 1 arrived unlocked")
     assertTrue(inst.NS.Database.FindWindow(2).frame.locked,
         "a window with no frame block arrived unlocked")
@@ -935,7 +935,7 @@ test("Database: v13 -> v14 clears an unticked master lock and leaves the windows
             global = { schemaVersion = 13 },
         })
         local what = "master.locked = " .. tostring(stored)
-        assertEqual(inst.NS.db.global.schemaVersion, 16, what)
+        assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION, what)
         assertTrue(inst.NS.Database.FindWindow(1).frame.locked, what .. ": a locked window was unlocked")
         assertFalse(inst.NS.Database.FindWindow(2).frame.locked, what .. ": an unlocked window was locked")
         assertNil(rawget(inst.NS.db.profile.master, "locked"), what .. ": the key survived")
@@ -974,7 +974,7 @@ test("Database: v13 -> v14 survives a profile with no master block and a junk wi
     })
     local odd = inst.NS.db.sv.profiles.Odd
 
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
     assertEqual(odd.windows[1], "junk", "the step rewrote an entry that is not a window")
     assertTrue(odd.windows[2].frame.locked, "the window after the junk entry arrived unlocked")
     assertNil(odd.master.locked)

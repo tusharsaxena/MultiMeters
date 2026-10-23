@@ -181,8 +181,7 @@ test("migrations: v16 moves both minimize keys onto the US spelling in every win
         profiles = { Default = v15Profile(1), Raid = v15Profile(4) },
         global   = { schemaVersion = 15 },
     })
-    assertEqual(inst.NS.SCHEMA_VERSION, 16, "the runner's target is v16")
-    assertEqual(inst.NS.db.global.schemaVersion, 16)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
     for _, name in ipairs({ "Default", "Raid" }) do
         local windows = inst.NS.db.sv.profiles[name].windows
         assertEqual(#windows, 2, name .. " lost a window")
@@ -226,4 +225,88 @@ test("migrations: a fresh install stores frame.minimized and no British key", fu
     assertEqual(frame.showMinimize, true)
     assertEqual(frame.minimised, nil, "the fresh window carries the British collapse key")
     assertEqual(frame.showMinimise, nil, "the fresh window carries the British control key")
+end)
+
+-- ---------------------------------------------------------------------------
+-- v16 -> v17: the header matched to Ka0s DPS Race's title bar
+-- ---------------------------------------------------------------------------
+
+--- A v16-shaped window holding the header and control values every window stored before the
+--- match: the template is copied whole into each window (core/Database.lua fillMissing), so these
+--- sit in the savedvariables whether or not the player ever touched them.
+local function v16Window(id)
+    return {
+        id = id,
+        frame  = { hoverReveal = true, controlSize = 16, controlColorMode = "custom",
+                   controlColor = { r = 1, g = 1, b = 1, a = 1 } },
+        header = { outline = "OUTLINE", shadow = false },
+    }
+end
+
+test("migrations: v17 moves every window still on the old shipped header onto the DPS Race match", function()
+    -- AceDB's defaults cannot reach inside the windows array, so a changed template alone leaves
+    -- every existing window on the old look.
+    -- red under: no v16 -> v17 step, or one that walks db.profile alone.
+    local inst = initWith({
+        profiles = { Default = { nextWindowId = 3, windows = { v16Window(1), v16Window(2) } },
+                     Raid    = { nextWindowId = 8, windows = { v16Window(7) } } },
+        global   = { schemaVersion = 16 },
+    })
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
+    for _, name in ipairs({ "Default", "Raid" }) do
+        for i, w in ipairs(inst.NS.db.sv.profiles[name].windows) do
+            local where = name .. " window " .. i
+            assertEqual(w.header.outline, "NONE", where .. " kept the outline")
+            assertEqual(w.header.shadow, true, where .. " has no shadow")
+            assertEqual(w.frame.hoverReveal, false, where .. " still fades its controls")
+            assertEqual(w.frame.controlSize, 18, where .. " kept the 16px slot")
+            local c = w.frame.controlColor
+            assertEqual(("%s/%s/%s/%s"):format(c.r, c.g, c.b, c.a), "0.7/0.7/0.72/1",
+                where .. " kept the white controls")
+        end
+    end
+end)
+
+test("migrations: v17 leaves every value a player chose for themselves", function()
+    -- A value other than the old shipped one is a choice, and the step has no business with it.
+    -- The outline and shadow move only as the old shipped PAIR: an outline kept with a shadow
+    -- turned on was chosen.
+    -- red under: rewriting any of these keys unconditionally.
+    local w = v16Window(1)
+    w.header.outline = "THICKOUTLINE"
+    w.frame.controlSize = 20
+    w.frame.controlColor = { r = 1, g = 0, b = 0, a = 1 }
+    local paired = v16Window(2)
+    paired.header.shadow = true
+    paired.frame.controlColorMode = "class"
+    local inst = initWith({
+        profiles = { Default = { nextWindowId = 3, windows = { w, paired } } },
+        global   = { schemaVersion = 16 },
+    })
+    local a, b = inst.NS.Database.FindWindow(1), inst.NS.Database.FindWindow(2)
+    assertEqual(a.header.outline, "THICKOUTLINE")
+    assertEqual(a.header.shadow, false, "a chosen outline lost its shadow choice")
+    assertEqual(a.frame.controlSize, 20)
+    assertEqual(a.frame.controlColor.g, 0, "a chosen control color was overwritten")
+    assertEqual(b.header.outline, "OUTLINE", "an outline kept beside a chosen shadow was dropped")
+    assertEqual(b.header.shadow, true)
+    assertEqual(b.frame.controlColor.r, 1, "a class-mode window's stored color was rewritten")
+end)
+
+test("migrations: the v17 step run twice is a no-op, and survives a junk window", function()
+    -- red under: a step that indexes a window or its groups without a type guard.
+    local inst = initWith({
+        profiles = { Default = { nextWindowId = 2, windows = { v16Window(1) } },
+                     Odd     = { windows = { "junk", v16Window(2), { id = 3 } } } },
+        global   = { schemaVersion = 16 },
+    })
+    local step = inst.NS.Database.__migrations[16]
+    local before = diff(inst.NS.db.sv.profiles, {})
+    step(inst.NS.db)
+    local after = diff(inst.NS.db.sv.profiles, {})
+    assertEqual(table.concat(after, "; "), table.concat(before, "; "),
+        "a second run of the v17 step changed the account")
+    assertEqual(inst.NS.db.sv.profiles.Odd.windows[1], "junk", "the step rewrote a non-window")
+    assertEqual(inst.NS.db.sv.profiles.Odd.windows[2].header.outline, "NONE",
+        "the window after the junk entry was skipped")
 end)
