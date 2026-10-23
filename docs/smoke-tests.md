@@ -677,7 +677,7 @@ right. Open the panel with `/mm config`.
   here once combat starts.*, both centered and the size of Ka0s Drop Watcher's *No drops yet* and its line
   (the game's large and small fonts, whatever the window's text size); nothing at the top of the grid.
   Narrow the window → the white line wraps rather than runs past the edge. Minimize → it goes; pull a mob
-  → rows replace it. Result:
+  → rows replace it. Result: pass (owner-marked 2026-10-23)
 - **WIN-40. The test-mode strip, header shown.** `/mm test` with the header shown → a yellow strip
   (*TEST MODE: placeholder numbers, not your fight. Combat ends it.*) sits under the title. The column
   headers sit under it, no row overlaps it, and the red TEST MODE title marker and the session-line
