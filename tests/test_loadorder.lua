@@ -326,6 +326,8 @@ test("loadorder: the file-scope readers of CoreSetup, EnvSetup and OptionsSetup 
     before("modules/roster.lua", "modules/aggregator.lua", "captures NS.Roster at load")
     -- The simulator's world registers its providers on NS.SimSeam at file scope (MM-13).
     before("core/simsetup.lua", "modules/simworld.lua", "registers providers on NS.SimSeam at load")
+    -- The drivers capture NS.SimHost.World at file scope (MM-14).
+    before("modules/simworld.lua", "modules/simdrivers.lua", "captures NS.SimHost.World at load")
     -- Every page file captures NS.Helpers, or registers through its seam, at load.
     for _, page in ipairs({
         "general", "windows", "frame", "header", "bars", "tooltip", "visibility",
@@ -346,6 +348,7 @@ test("loadorder: each load-bearing seam line carries a LOAD-BEARING comment at t
     for _, entry in ipairs({
         "core\\SimSetup.lua", "core\\CoreSetup.lua", "core\\PerfSetup.lua", "modules\\Aggregator.lua",
         "settings\\OptionsSetup.lua", "modules\\SimWorld.lua",
+        "modules\\SimDrivers.lua",
     }) do
         local at
         for i, line in ipairs(lines) do

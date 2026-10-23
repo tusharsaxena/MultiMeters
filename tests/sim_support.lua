@@ -40,4 +40,47 @@ function S.testSession(inst, steps)
     return sim, done
 end
 
+-- THE CLOCK (copied from ../LootHistory/tests/sim_support.lua). Every timer in the kit's queue is
+-- given a due time when first seen, and `advance` moves the mock's GetTime and runs what falls due,
+-- earliest first, so the session's NS.Sim:After bookings (a fight's ticks, the reset's reply) run in
+-- the order and at the times they would in the client.
+
+--- The clock over one instance's mocks.
+--- @param m table  inst.mocks
+--- @return table  { advance = function(dt) }
+function S.clock(m)
+    local C = {}
+
+    local function stamp()
+        for _, t in ipairs(m.__timers) do
+            if t.__due == nil then t.__due = m.__now + (tonumber(t.delay) or 0) end
+        end
+    end
+
+    -- The canceled flag is the kit mock's own field, under AceTimer's name for it
+    -- (tests/_kit/mock_record.lua): a library field name, waived in tests/prose_waivers.lua.
+    local function canceled(t) return t.cancelled or (t.timer and t.timer.cancelled) end
+
+    --- Move the clock `dt` seconds, running every timer that falls due, earliest first (a timer
+    --- set while running is due from the moment it was set).
+    function C.advance(dt)
+        stamp()
+        local target = m.__now + dt
+        while true do
+            stamp()
+            local best, at
+            for i, t in ipairs(m.__timers) do
+                if t.__due <= target and (best == nil or t.__due < best.__due) then best, at = t, i end
+            end
+            if not best then break end
+            table.remove(m.__timers, at)
+            if best.__due > m.__now then m.__now = best.__due end
+            if not canceled(best) then best.fn() end
+        end
+        m.__now = target
+    end
+
+    return C
+end
+
 return S

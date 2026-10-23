@@ -288,6 +288,8 @@ local SUITES = {
     "test_sim_seam",
     -- The simulator's invented world and its providers (modules/SimWorld.lua, MM-13).
     "test_sim_world",
+    -- The simulator's drivers (modules/SimDrivers.lua, MM-14).
+    "test_sim_drivers",
     "test_launchersetup",
     "test_lifecycle",
     "test_dispatch",

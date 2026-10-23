@@ -668,6 +668,18 @@ Total.
 - SimWorld: during a session every meter read answers from the world, never the client
 - SimWorld: solo, the player's role is left to the spec read, as the client's is
 
+### test_sim_drivers.lua (9)
+
+- SimDrivers: FormGroup(5) leaves Roster.GetGroup() with 5 members, player first
+- SimDrivers: Zone('rookery') reads as a dungeon and sends ENTERING_WORLD and ZONE_CHANGED
+- SimDrivers: Pull puts the player in combat, and test mode cannot start
+- SimDrivers: Fight books its ticks, grows the totals and ends with one session event per stat
+- SimDrivers: EndFight sends the stats' session events in catalog order, after REGEN
+- SimDrivers: a death booked for a tick happens on that tick
+- SimDrivers: Reset empties the segments and reaches DAMAGE_METER_RESET through the dispatch
+- SimDrivers: no driver reaches the mock's C_DamageMeter
+- SimDrivers: with no world, every driver changes and fires nothing
+
 ### test_launchersetup.lua (55)
 
 - Launcher: Register creates ONE object and registers it against the global table
@@ -2549,6 +2561,7 @@ Total.
 | test_envsetup.lua | 13 |
 | test_sim_seam.lua | 10 |
 | test_sim_world.lua | 17 |
+| test_sim_drivers.lua | 9 |
 | test_launchersetup.lua | 55 |
 | test_lifecycle.lua | 40 |
 | test_dispatch.lua | 11 |
@@ -2604,4 +2617,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2254** |
+| **Total** | **2263** |

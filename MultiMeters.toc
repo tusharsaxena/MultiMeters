@@ -156,6 +156,10 @@ modules\Visibility.lua
 # registers its providers on NS.SimSeam (core\SimSetup.lua) at FILE SCOPE, and reads NS.Constants at
 # call time. modules\Sim.lua, when it arrives, loads straight ahead of it.
 modules\SimWorld.lua
+# The simulator's drivers: each edits the world, then fires the client's events (MultiMeters#60).
+# LOAD-BEARING POSITION: it captures NS.SimHost.World (modules\SimWorld.lua) at FILE SCOPE, so it
+# must load after it; NS.Sim and the session's world are read at call time.
+modules\SimDrivers.lua
 
 # Settings (last — depend on everything else being initialized)
 # The vocabularies, validators and composed blocks that the schema array is declared
