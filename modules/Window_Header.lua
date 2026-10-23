@@ -305,6 +305,15 @@ function WindowProto:HeaderRightInset()
     return self.layout.padding + used
 end
 
+--- Whether the strip is drawn: test mode reserved it, and the window is not
+--- collapsed. NOT tied to `header.show` -- a window with its header hidden is
+--- still marked as test data (OWNER_SCOPE G). Minimized with the header hidden is
+--- the rule's carved-out collapsed state.
+local function stripShown(self)
+    return self.layout.stripHeight > 0
+        and not ((self.config.frame or {}).minimized and true or false)
+end
+
 --- The window's name, in the title bar.
 function WindowProto:ApplyTitle()
     local cfg    = self.config
@@ -325,19 +334,19 @@ function WindowProto:ApplyTitle()
     frame.title:SetJustifyH(header.align or "LEFT")
     frame.title:SetFont(path, size, flags)
     frame.title:SetShadowOffset(shadowOffset(header.shadow))
-    -- THE TEST-MODE MARKER RIDES ON THE TITLE, in red, the way Loot History
-    -- marks its own. Test mode fills the grid with numbers that look exactly like
-    -- real ones — that is the entire point of it — so the only thing standing
-    -- between a player and reading placeholder data as their own performance is a
-    -- label saying otherwise. It goes in the TITLE rather than in the session
-    -- line because the title is the part of the window nothing else competes for.
+    -- THE RED TEST MODE WORD marks test mode only where the strip does not: a
+    -- minimized window (the strip goes with the body) or a load without the
+    -- Widgets library (no strip is built). Test mode fills the grid with numbers
+    -- that look exactly like real ones, so a label saying otherwise must always be
+    -- on screen -- but once, not twice: with the strip showing, the title saying
+    -- it too was the same word repeated (OWNER_SCOPE 2026-10-23).
     -- THE WINDOW'S NAME, ALWAYS. `header.title` was a second name for a window
     -- that already has one, and two names for one thing is two things that can
     -- disagree -- a window renamed in the picker kept whatever its header had been
     -- set to, with no way to tell from the header which window you were looking
     -- at. Renaming a window renames its header now.
     local title = cfg.name or L["Multi Meters"]
-    if NS.State and NS.State.testMode then
+    if NS.State and NS.State.testMode and not stripShown(self) then
         title = title .. "   |cffff2020" .. L["TEST MODE"] .. "|r"
     end
     frame.title:SetText(title)
@@ -751,15 +760,6 @@ end
 -- The test-mode strip (MultiMeters#59, LibKa0s#48)
 -- ---------------------------------------------------------------------------
 
---- Whether the strip is drawn: test mode reserved it, and the window is not
---- collapsed. NOT tied to `header.show` -- a window with its header hidden is
---- still marked as test data (OWNER_SCOPE G). Minimized with the header hidden is
---- the rule's carved-out collapsed state.
-local function stripShown(self)
-    return self.layout.stripHeight > 0
-        and not ((self.config.frame or {}).minimized and true or false)
-end
-
 --- The anchoring half of ApplyTestStrip: place the strip under the title, inset
 --- by the padding on both sides, and show it when it is reserved. ApplyConfig runs
 --- this too, so a settings change that moves the title moves the strip with it.
@@ -781,8 +781,8 @@ end
 ---
 --- One layout rebuild (RefreshUpvalues, which bumps layoutVersion so every row
 --- re-anchors on its next draw), then the strip, the column headers and the body
---- re-anchored from ChromeOffsets, the red title marker rewritten and the resize
---- bounds re-applied (unchanged: the strip never moves layout.minHeight).
+--- re-anchored from ChromeOffsets, the title rewritten (the red TEST MODE word is
+--- written only when the strip is not shown) and the resize bounds re-applied (unchanged: the strip never moves layout.minHeight).
 function WindowProto:ApplyTestStrip()
     if not self.frame then return end
     self:RefreshUpvalues()
@@ -849,6 +849,9 @@ function WindowProto:ApplyMinimized()
     -- The test-mode strip goes with the body and comes back on expand, if test
     -- mode still reserves it (PlaceTestStrip asks the same question).
     self:PlaceTestStrip()
+    -- The red title word follows the strip: it shows exactly while the strip
+    -- cannot, so a collapse or expand on any path rewrites the title.
+    self:ApplyTitle()
     -- The notice is re-shown by Refresh whenever there is nothing to draw, so
     -- hiding it here is not enough on its own -- Refresh checks the same flag.
     if self.notice and down then self.notice:Hide() end

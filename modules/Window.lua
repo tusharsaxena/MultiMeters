@@ -60,7 +60,7 @@ local L     = NS.L
 
 -- LibKa0s-Widgets-1.0, for the test-mode strip (W.TestStrip, minor 13). Optional:
 -- with no library the window builds without a strip, reserves nothing, and the red
--- TEST MODE title marker is the only label left (modules/Window_Header.lua).
+-- TEST MODE title word is the label instead (modules/Window_Header.lua).
 local W = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
 
 -- The window's own gap above and below the strip. The library publishes the strip's
@@ -664,7 +664,8 @@ function WindowProto:BuildFrame()
     -- title and the column headers saying the numbers under it are placeholders.
     -- It is NOT part of the header, so a window with its header hidden is still
     -- marked. Born hidden; ApplyTestStrip places and shows it. No tooltip, so the
-    -- mouse stays off. The red title marker and the session-line word stay too.
+    -- mouse stays off. The red title word shows only when the strip cannot (a
+    -- minimized window, or no Widgets library); the session-line `Test` stays.
     self.testStrip = W and W.TestStrip and W.TestStrip(frame, {
         text = L["TEST MODE: placeholder numbers, not your fight. Combat ends it."],
         icon = NS.Icon and NS.Icon("info"),

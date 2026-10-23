@@ -34,7 +34,7 @@ The numbers are Blizzard's. Multi Meters asks the built-in meter for them and ar
 
 ## Usage
 
-The first time you run it after installing, you get a default window, already unlocked. Drag it by the title bar and pull the bottom-right corner to size it. Placing an empty meter between pulls is a pain, so `/mm test` fills every window with placeholder rows while you work, lays a yellow strip across the top of each one saying the numbers are not yours, and puts TEST MODE in the title. It switches itself off the moment you pull, and `/mm lock` freezes everything once you're happy with the layout.
+The first time you run it after installing, you get a default window, already unlocked. Drag it by the title bar and pull the bottom-right corner to size it. Placing an empty meter between pulls is a pain, so `/mm test` fills every window with placeholder rows while you work, and lays a yellow strip across the top of each one saying the numbers are not yours. A minimized window, which hides the strip, says TEST MODE in its title instead. It switches itself off the moment you pull, and `/mm lock` freezes everything once you're happy with the layout.
 
 Setting a window up takes four steps. Most of it happens on the Windows page, where the Active window dropdown at the top picks the window you're working on and the list down the left side takes you through the rest.
 

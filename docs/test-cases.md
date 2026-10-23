@@ -1165,7 +1165,7 @@ Total.
 - The strip is born hidden, with the localized line and the info art
 - With no Widgets library the window builds and reserves nothing
 
-### test_window_header.lua (60)
+### test_window_header.lua (61)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -1197,7 +1197,8 @@ Total.
 - Segment: with no provider the pin is left alone rather than rewritten
 - Segment: the session line takes NO mouse
 - Column headers are BUTTONS carrying the full stat label, left-aligned
-- Test mode is marked in RED in the title, and clears when it is off
+- Test mode: the strip is the marker; the red title word only when minimized
+- Test mode with the header hidden: the strip shows, the title stays hidden
 - Building a window sets no text on a fontless FontString
 - Header art falls back to ASCII on a client with none of the atlases
 - Header art prefers an atlas where the client has one
@@ -2508,7 +2509,7 @@ Total.
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 68 |
-| test_window_header.lua | 60 |
+| test_window_header.lua | 61 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 43 |
 | test_window_lifecycle.lua | 9 |
@@ -2548,4 +2549,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2210** |
+| **Total** | **2211** |

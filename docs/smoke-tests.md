@@ -22,7 +22,7 @@ secret-value rules the checks refer to.
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-46 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip |
+| WIN-1 to WIN-48 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown |
 | VIS-1 to VIS-12 | [Visibility](#vis) | Contexts and hide rules |
 | GRID-1 to GRID-32 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
@@ -680,8 +680,9 @@ right. Open the panel with `/mm config`.
   → rows replace it. Result: pass (owner-marked 2026-10-23)
 - **WIN-40. The test-mode strip, header shown.** `/mm test` with the header shown → a yellow strip
   (*TEST MODE: placeholder numbers, not your fight. Combat ends it.*) sits under the title. The column
-  headers sit under it, no row overlaps it, and the red TEST MODE title marker and the session-line
-  *Test* are still there. Result: pass (owner-marked 2026-10-23)
+  headers sit under it, no row overlaps it, and the session-line *Test* is still there. (The red
+  TEST MODE title word left the title on 2026-10-23 while the strip shows: WIN-47 and WIN-48.)
+  Result: pass (owner-marked 2026-10-23)
 - **WIN-41. The strip with the header hidden.** Hide the header (Settings → Header), then `/mm test` →
   the strip is at the very top of the window, so the window is still marked as test data. Result: pass (owner-marked 2026-10-23)
 - **WIN-42. A narrow window.** Make a window narrow → the strip text truncates with *...* inside the
@@ -696,6 +697,10 @@ right. Open the panel with `/mm config`.
 - **WIN-46. The minimum height.** Drag a window down to its minimum height in test mode → the resize
   floor does not move, the strip takes the room of the one row, and the window size saved after test
   mode ends is the size you dragged to. Result: pass (owner-marked 2026-10-23)
+- **WIN-47. One marker in test mode (SM-MM-01).** `/mm test` with the header shown → the amber strip
+  sits under the title and the title text has NO red TEST MODE. Result: pending
+- **WIN-48. The title word while minimized (SM-MM-02).** Minimize a window in test mode → the title
+  shows the red TEST MODE; expand → the word goes and the strip returns. Result: pending
 
 ## VIS
 
@@ -1399,7 +1404,9 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 
 ## Pending sign-off
 
-None. On 2026-10-10 the owner marked every check in this file as passed, recorded on its
+- WIN-47 and WIN-48 (the red title word only while the test-mode strip is not shown, 2026-10-23).
+
+On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass
 keeps it. A check added or rewritten after that date is listed here until its `Result:` line records
 a pass.

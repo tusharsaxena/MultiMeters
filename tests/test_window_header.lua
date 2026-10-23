@@ -590,21 +590,54 @@ test("Column headers are BUTTONS carrying the full stat label, left-aligned", fu
     assertTrue(damage:GetScript("OnClick") ~= nil, "a header has to be clickable to sort")
 end)
 
-test("Test mode is marked in RED in the title, and clears when it is off", function()
-    -- Test mode fills the grid with numbers that look exactly like real ones —
-    -- that is the point of it — so the only thing between a player and reading
-    -- placeholder data as their own performance is a label saying otherwise.
-    -- red under: writing the title without consulting State.testMode.
-    local inst, window = scene()
-    assertFalse(window.frame.title:GetText():find("TEST MODE", 1, true) ~= nil)
+test("Test mode: the strip is the marker; the red title word only when minimized", function()
+    -- OWNER_SCOPE 2026-10-23: the amber strip under the title says TEST MODE, so
+    -- the title saying it too was the same word twice. The red title word stays
+    -- only where the strip cannot be seen: a minimized window (the strip goes with
+    -- the body) or a load without the Widgets library (tests/test_window.lua).
+    -- red under: ApplyTitle writing the word without asking stripShown, or
+    -- ApplyMinimized not re-running ApplyTitle after a collapse or expand.
+    local inst, window, cfg = scene()
+    local function hasWord()
+        return window.frame.title:GetText():find("TEST MODE", 1, true) ~= nil
+    end
+    assertFalse(hasWord())
 
     inst.NS.State.SetTestMode(true)
-    local marked = window.frame.title:GetText()
-    assertTrue(marked:find("TEST MODE", 1, true) ~= nil, "the marker must appear on the toggle")
-    assertTrue(marked:find("|cffff2020", 1, true) ~= nil, "and it must be red")
+    assertTrue(window.testStrip ~= nil and window.testStrip:IsShown(), "the strip is the marker")
+    assertFalse(hasWord(), "the title repeated the strip's word")
+
+    -- Collapse through the window's own config write path, as the minimize
+    -- control does, then the config re-apply that follows.
+    window.controls.minimize:_run("OnClick")
+    assertEqual(cfg.frame.minimized, true)
+    window:ApplyConfig()
+    assertFalse(window.testStrip:IsShown(), "the strip goes with the body")
+    assertTrue(hasWord(), "a minimized window in test mode must still say so")
+    assertTrue(window.frame.title:GetText():find("|cffff2020", 1, true) ~= nil,
+        "and it must be red")
+
+    window.controls.minimize:_run("OnClick")
+    assertEqual(cfg.frame.minimized, false)
+    window:ApplyConfig()
+    assertTrue(window.testStrip:IsShown(), "the strip returns on expand")
+    assertFalse(hasWord(), "the word goes when the strip returns")
 
     inst.NS.State.SetTestMode(false)
-    assertFalse(window.frame.title:GetText():find("TEST MODE", 1, true) ~= nil)
+    assertFalse(hasWord())
+    window.controls.minimize:_run("OnClick")
+    window:ApplyConfig()
+    assertFalse(hasWord(), "no word when test mode is off, minimized")
+end)
+
+test("Test mode with the header hidden: the strip shows, the title stays hidden", function()
+    -- Pinned, unchanged: the strip is not part of the header (OWNER_SCOPE G),
+    -- so a header-less window is still marked, and the hidden title stays hidden.
+    -- red under: tying the strip to header.show, or ApplyTitle showing the title.
+    local inst, window = scene{ configure = function(c) c.header.show = false end }
+    inst.NS.State.SetTestMode(true)
+    assertTrue(window.testStrip ~= nil and window.testStrip:IsShown())
+    assertFalse(window.frame.title:IsShown())
 end)
 
 test("Building a window sets no text on a fontless FontString", function()
