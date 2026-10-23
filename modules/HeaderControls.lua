@@ -547,7 +547,8 @@ local function controlColor(frameCfg, hovered)
     if hovered then
         r, g, b = color(frameCfg.controlHoverColor, 1, 0.82, 0)
     else
-        r, g, b = color(frameCfg.controlColor, 1, 1, 1)
+        -- The shipped rest gray (defaults/Profile.lua), for a config without one.
+        r, g, b = color(frameCfg.controlColor, 0.7, 0.7, 0.72)
     end
 
     -- Spelled out rather than `hovered and A or B`, and the reason survived the type change: a

@@ -515,8 +515,9 @@ only on `FontString:SetAlpha`. The per-row color passes write their own alpha th
 while the names stayed faded — one setting working on half the grid. Folding it in means every color
 write carries the opacity and a later write cannot undo it.
 
-Every one of the new keys ships **off**: `header.shadow`, `columnHeader.shadow`,
-`tooltip.fontShadow` are `false`, and all six `colorMode` / `bgColorMode` keys ship `"custom"`. A setting added to a shipped window
+Every one of the new keys shipped **off**: `columnHeader.shadow` and
+`tooltip.fontShadow` are `false` (`header.shadow` was too, until it became `true` with the header's
+DPS Race match on 2026-10-24 — see `header` below), and all six `colorMode` / `bgColorMode` keys ship `"custom"`. A setting added to a shipped window
 must not change how that window already looks, and a shadow under an outlined face is heavier than
 either alone. `text.shadow` keeps its long-standing `true`.
 
@@ -564,8 +565,15 @@ verb and goes straight to `modules/WindowManager.lua`, which owns re-anchoring a
 ### `header` — the strip above the rows
 
 `show = true` · `font = "Friz Quadrata TT"` · `size = 12` ·
-`outline = "OUTLINE"` · `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "custom"` ·
+`outline = "NONE"` · `shadow = true` · `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "custom"` ·
 `align = "LEFT"` · `height = 18` · `bgColor = { r=0, g=0, b=0, a=0.5 }`.
+
+**The face is `GameFontNormal` spelled out** — Friz Quadrata, 12px, no outline, a 1/-1 drop shadow —
+because that is what Ka0s DPS Race's title bar draws (`Style.FONT.TITLE`) and the two headers sit side
+by side. Until 2026-10-24 the header shipped `outline = "OUTLINE"` with `shadow = false`; the size was
+already 12, and the outline, which rings every glyph in a pixel of black, is what made this title read
+larger than DPS Race's. No migration: AceDB strips a stored value equal to its default, so a profile
+that never touched these picks up the new pair, and one that set its own keeps it.
 
 **`show` moved here from `window.frame.titleBar` at `schemaVersion` 12 → 13** (`window.header.show`,
 not `window.frame.titleBar` — a path naming `frame` for the Header entry's own master switch misled
@@ -777,7 +785,8 @@ window is how you put its grip away. The grip itself is LibKa0s-Core's (`MakeRes
 10): it sizes the window's anchor, is drawn on the window frame, and also refuses to start a resize on
 a locked window. A degraded install (no `libs/LibKa0s`) has no grip.
 
-`hoverReveal = true` fades every control except the one under the pointer — the reveal is per
+`hoverReveal = false` (it shipped `true` until 2026-10-24; Ka0s DPS Race's title-bar controls sit at
+full strength, and a strip faded to 25% read as a dimmer color beside it). On, it fades every control except the one under the pointer — the reveal is per
 control, not per strip, so it *is* the "which one am I about to click" feedback rather than a
 separate highlight drawn behind it. `controlAlpha = 0.25` · `controlHoverAlpha = 1.0` are the two
 ends of that fade and were literals in `restAlpha` until they were rows, so a window that touches
@@ -789,7 +798,8 @@ color mode. Both are clamped to 0..1 on read: they come from a file a player can
 out-of-range alpha is not an error, it is a control drawn at the nearest legal value, which reads as
 the setting not working. `minimized = false`
 collapses the window to that bar — the stored `frame.height` is untouched, so expanding restores it
-exactly. `controlColor = { r=1, g=1, b=1, a=1 }` and `controlHoverColor = { r=1, g=0.82, b=0, a=1 }` — two
+exactly. `controlColor = { r=0.7, g=0.7, b=0.72, a=1 }` (white until 2026-10-24; now the collection's
+control gray — LibKa0s-Core's close control at rest and Ka0s DPS Race's `Style.REST`) and `controlHoverColor = { r=1, g=0.82, b=0, a=1 }` — two
 colors, because hover is the only feedback a control gives, each now paired with its own
 **`controlColorMode`** / **`controlHoverColorMode`** dropdown (`class` / `custom`, both default
 `"custom"`) rather than the `controlClassColor` / `controlHoverClassColor` booleans they replaced at
@@ -798,7 +808,7 @@ answers: a player who wants their class color under the pointer has not asked fo
 it, and a shared mode would make hover and rest the same color for anyone who chose class — the one
 thing a hover color must never be. `migrations[12]` reads each stored boolean and writes `"class"` or
 `"custom"` in its place. The art ships white and is tinted by a
-**multiply**, so the shipped `controlColor` is the identity rather than a recolor: the icons read as
+**multiply**, so the shipped `controlColor` is exactly the gray the icons are drawn in: they read as
 chrome, and the pointer turns exactly one of them the gold the rest of the header uses. Both are
 pickers rather than a "match the header text" switch — one of the two states being unconfigurable was
 the complaint that produced them. (The tint had never run at all before: `HeaderControls.Style` read
@@ -806,9 +816,12 @@ the complaint that produced them. (The tint had never run at all before: `Header
 `modules/Window_Header.lua` publishes it now, and the controls take the header's **font** from it
 while carrying their own colors.)
 
-`controlSize = 16` is the *slot* each control occupies — its click target and the strip's layout
-pitch. The art is drawn centered inside that slot at 72% of it, so a 64px icon lands at 11px in a 16px
-box, on the same line as a 12px title; a glyph that reaches its own edges reads much heavier than the
+`controlSize = 18` is the *slot* each control occupies — its click target and the strip's layout
+pitch (18 + the 4px gap = Ka0s DPS Race's 22px `CONTROL_PITCH`). The art is drawn centered inside that
+slot at 72% of it, floored, so a 64px icon lands at 12px — DPS Race's icon size and the title's own
+height — on a whole-pixel inset of 3, its top level with the title's (both rows are placed by
+`TitleRowTop`). It shipped 16 until 2026-10-24, which drew an 11px icon 2.5px into its slot, half a
+pixel off the title's center line; a glyph that reaches its own edges reads much heavier than the
 header text beside it when it fills the slot outright.
 
 **A collapsed window does not poll.** That is a real clause in `ShouldPoll`, not an emergent

@@ -1270,7 +1270,7 @@ Total.
 - The strip is born hidden, with the localized line and the info art
 - With no Widgets library the window builds and reserves nothing
 
-### test_window_header.lua (61)
+### test_window_header.lua (62)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -1316,6 +1316,7 @@ Total.
 - Minimize leaves the STORED height alone, so expanding restores it
 - A collapsed window does not aggregate or render
 - A collapsed window keeps the notice hidden
+- Header ships GameFontNormal spelled out: 12px, no outline, a 1/-1 shadow
 - Header shadow reaches every line of the strip
 - Column header shadow is its OWN setting, not the header's
 - The header's text answers TWO modes, and the custom one is the picker
@@ -1432,7 +1433,7 @@ Total.
 - Sim strip: minimized hides it with no title word; a hidden header keeps it
 - Sim strip: with no Widgets library no strip, no reserve, and nothing raises
 
-### test_headercontrols.lua (66)
+### test_headercontrols.lua (68)
 
 - HeaderControls: every control this addon builds is attached
 - HeaderControls: a control turned off is not placed at all
@@ -1440,8 +1441,10 @@ Total.
 - HeaderControls: hiding the LAST control moves nothing
 - HeaderControls: the strip is CENTERED in the title bar
 - HeaderControls: the strip and the title share one center line
+- HeaderControls: the shipped icon fills the title's own 12px box
 - HeaderControls: a control taller than its bar overflows DOWNWARD
 - HeaderControls: a control at rest takes the control color
+- HeaderControls: the shipped strip is DPS Race's: gray at rest, full strength
 - HeaderControls: the control under the pointer takes the HOVER color
 - HeaderControls: both colors come from config
 - HeaderControls: each color has its OWN color mode
@@ -2629,13 +2632,13 @@ Total.
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 68 |
-| test_window_header.lua | 61 |
+| test_window_header.lua | 62 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 43 |
 | test_window_lifecycle.lua | 9 |
 | test_window_segment.lua | 10 |
 | test_window_simstrip.lua | 4 |
-| test_headercontrols.lua | 66 |
+| test_headercontrols.lua | 68 |
 | test_row.lua | 62 |
 | test_row_namecell.lua | 30 |
 | test_row_cells.lua | 1 |
@@ -2670,4 +2673,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2304** |
+| **Total** | **2307** |

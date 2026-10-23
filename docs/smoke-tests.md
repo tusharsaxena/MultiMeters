@@ -22,7 +22,7 @@ secret-value rules the checks refer to.
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-48 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown |
+| WIN-1 to WIN-51 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-33 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
@@ -709,6 +709,19 @@ right. Open the panel with `/mm config`.
   sits under the title and the title text has NO red TEST MODE. Result: pass (owner-marked 2026-10-23)
 - **WIN-48. The title word while minimized (SM-MM-02).** Minimize a window in test mode → the title
   shows the red TEST MODE; expand → the word goes and the strip returns. Result: pass (owner-marked 2026-10-23)
+- **WIN-49. The title matches DPS Race's (2026-10-24).** On a profile that never changed Header →
+  Title text, open a Multi Meters window beside Ka0s DPS Race's HUD → *Multi Meters #1* and the
+  session line (*Overall*) read at the same size and weight as *DPS Race*: unoutlined 12px Friz
+  Quadrata with a soft drop shadow, gold. Header → Title text shows Font outline *None* and Text
+  shadow ticked. Result: pending
+- **WIN-50. The controls match DPS Race's color (2026-10-24).** Same profile, pointer away from the
+  window → every header control is the light gray DPS Race's controls rest in, at full strength (none
+  faded); point at one → only it turns gold, and back to gray on leaving. Header → Button style shows
+  Reveal controls on hover unticked and Control color at 70/70/72% gray. Result: pending
+- **WIN-51. The controls sit on the title's line (2026-10-24).** Same profile → each icon is 12px in an
+  18px slot, its top and bottom level with the title's, and the strip's spacing matches DPS Race's
+  (22px pitch). With Header height and Control size changed, the row stays centered as before. A
+  profile that had set its own control color, size, reveal or header outline keeps it. Result: pending
 
 ## VIS
 
@@ -1467,7 +1480,9 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
 
 ## Pending sign-off
 
-None. On 2026-10-10 the owner marked every check in this file as passed, recorded on its
+WIN-49, WIN-50 and WIN-51 (added 2026-10-24, the header matched to Ka0s DPS Race's title bar).
+
+On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass
 keeps it. A check added or rewritten after that date is listed here until its `Result:` line records
 a pass.

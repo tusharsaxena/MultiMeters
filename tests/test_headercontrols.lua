@@ -39,6 +39,13 @@ local function scene(configure)
     return inst, window, cfg
 end
 
+--- A scene with the hover reveal ON. It ships OFF since the header was matched
+--- to Ka0s DPS Race's title bar (full-strength controls), so every case about
+--- the reveal itself has to ask for it.
+local function withReveal(cfg)
+    cfg.frame.hoverReveal = true
+end
+
 --- Take this addon's OWN art away, so a case can reach the rungs beneath it.
 ---
 --- With every texture loadable -- which is the mock's default and a live
@@ -107,9 +114,10 @@ test("HeaderControls: a hidden control YIELDS its slot", function()
     local exportAt   = offsetOf(before.controls.export)
 
     local _, after = scene(function(cfg) cfg.frame.showMinimize = false end)
-    assertEqual(offsetOf(after.controls.settings), settingsAt + 20,
+    -- One step is the shipped 18px slot plus the 4px gap: DPS Race's 22px pitch.
+    assertEqual(offsetOf(after.controls.settings), settingsAt + 22,
         "settings sits one slot further right once minimize goes")
-    assertEqual(offsetOf(after.controls.export), exportAt + 20,
+    assertEqual(offsetOf(after.controls.export), exportAt + 22,
         "and so does everything past it")
 end)
 
@@ -151,6 +159,27 @@ test("HeaderControls: the strip and the title share one center line", function()
         "the icons and the title are on different center lines")
 end)
 
+test("HeaderControls: the shipped icon fills the title's own 12px box", function()
+    -- Ka0s DPS Race centers a 12px icon in an 18px slot on the same line as its
+    -- 12px title. Shipped here, the art is 18 * 0.72 floored = 12 -- the header
+    -- font's size -- on a whole-pixel inset of 3, so the icon's top and the
+    -- title's top are ONE number. The old 16px slot drew an 11px icon 2.5px
+    -- into its slot: half a pixel off the title's center line.
+    -- COMPUTED (rule R3): the recorded anchors and the configured sizes, never
+    -- a geometry read.
+    -- red under: controlSize = 16 in defaults/Profile.lua.
+    local _, window, cfg = scene()
+    local slot = cfg.frame.controlSize
+    local art  = window.controls.settings.tex.__w
+    assertEqual(slot, 18)
+    assertEqual(art, cfg.header.size, "the icon is not as tall as the title")
+    local inset = (slot - art) / 2
+    assertEqual(inset, math.floor(inset), "the icon sits on a half pixel")
+    local textTop = select(5, window.frame.title:GetPoint(1))
+    assertEqual(topOf(window.controls.settings) - inset, textTop,
+        "the icon and the title do not share a top edge")
+end)
+
 test("HeaderControls: a control taller than its bar overflows DOWNWARD", function()
     -- Centering a 32px control in an 18px bar puts its top above the frame, where
     -- half of it is drawn outside the window.
@@ -168,20 +197,37 @@ local function tintOf(button)
 end
 
 test("HeaderControls: a control at rest takes the control color", function()
-    -- The art ships white and is tinted by a MULTIPLY, so the shipped default is
-    -- the identity and the icons read as chrome rather than as a line of the
-    -- header text. It is a picker, not a switch, so a profile can say otherwise.
+    -- The art ships white and is tinted by a MULTIPLY, so the shipped default --
+    -- the collection's control gray, DPS Race's `Style.REST` -- is what the icons
+    -- are drawn in, and they read as chrome rather than as a line of the header
+    -- text. It is a picker, not a switch, so a profile can say otherwise.
     local _, window = scene(function(cfg)
         cfg.header.color = { r = 1, g = 0.82, b = 0, a = 1 }
     end)
     local r, g, b = tintOf(window.controls.settings)
-    assertEqual(r .. "," .. g .. "," .. b, "1,1,1")
+    assertEqual(r .. "," .. g .. "," .. b, "0.7,0.7,0.72")
 
     local _, tinted = scene(function(cfg)
         cfg.frame.controlColor = { r = 0.2, g = 0.4, b = 0.6, a = 1 }
     end)
     local tr, tg, tb = tintOf(tinted.controls.settings)
     assertEqual(tr .. "," .. tg .. "," .. tb, "0.2,0.4,0.6")
+end)
+
+test("HeaderControls: the shipped strip is DPS Race's: gray at rest, full strength", function()
+    -- DPS Race's controls sit at `Style.REST` (0.7, 0.7, 0.72) at full alpha and
+    -- turn gold under the pointer. The reveal ships off, so no control is faded.
+    -- red under: hoverReveal = true or a white controlColor in the defaults.
+    local _, window = scene()
+    for _, key in ipairs({ "close", "minimize", "lock", "settings", "segment", "reset", "export" }) do
+        local b = window.controls[key]
+        assertEqual(b:GetAlpha(), 1, key .. " is faded at rest")
+        local r, g, bl = tintOf(b)
+        assertEqual(r .. "," .. g .. "," .. bl, "0.7,0.7,0.72", key .. " is not the rest gray")
+    end
+    window.controls.lock:_run("OnEnter")
+    local r, g, b = tintOf(window.controls.lock)
+    assertEqual(r .. "," .. g .. "," .. b, "1,0.82,0", "the gold hover is gone")
 end)
 
 test("HeaderControls: the control under the pointer takes the HOVER color", function()
@@ -194,12 +240,12 @@ test("HeaderControls: the control under the pointer takes the HOVER color", func
     local r, g, b = tintOf(window.controls.settings)
     assertEqual(r .. "," .. g .. "," .. b, "1,0.82,0")
     local nr, ng, nb = tintOf(window.controls.lock)
-    assertEqual(nr .. "," .. ng .. "," .. nb, "1,1,1",
+    assertEqual(nr .. "," .. ng .. "," .. nb, "0.7,0.7,0.72",
         "a control the pointer is not on changed color")
 
     window.controls.settings:_run("OnLeave")
     local br, bg, bb = tintOf(window.controls.settings)
-    assertEqual(br .. "," .. bg .. "," .. bb, "1,1,1", "the hover color outlived the pointer")
+    assertEqual(br .. "," .. bg .. "," .. bb, "0.7,0.7,0.72", "the hover color outlived the pointer")
 end)
 
 test("HeaderControls: both colors come from config", function()
@@ -266,7 +312,7 @@ test("HeaderControls: both flags off is the shipped look, unchanged", function()
     -- Every existing window is this one, and neither flag ships on.
     local _, window = scene()
     local r, g, b = tintOf(window.controls.settings)
-    assertEqual(r .. "," .. g .. "," .. b, "1,1,1")
+    assertEqual(r .. "," .. g .. "," .. b, "0.7,0.7,0.72")
 end)
 
 test("HeaderControls: control size comes from config", function()
@@ -287,7 +333,7 @@ test("HeaderControls: the width reserved equals the width occupied", function()
     end
     -- How far in from the frame's right edge the strip actually reaches: the
     -- leftmost control's offset plus its own width.
-    local occupied = -leftmost + 16
+    local occupied = -leftmost + 18
 
     -- What the title reserves. This is the number that has to cover it.
     local reserved = window:HeaderRightInset()
@@ -502,7 +548,7 @@ test("HeaderControls: only the control under the pointer is revealed", function(
     -- controls lighting up answers "the header is live"; what a player is asking
     -- is "which of these am I about to click".
     -- red under: a strip-wide alpha driven off dragBar.
-    local _, window = scene()
+    local _, window = scene(withReveal)
     local rest = window.controls.settings:GetAlpha()
     assertTrue(rest < 1, "the controls start faded")
 
@@ -518,7 +564,7 @@ end)
 test("HeaderControls: the title bar itself reveals nothing", function()
     -- dragBar is still hooked -- a control's OnLeave asks it whether the pointer
     -- merely moved to the bar beside it -- but it no longer brings the strip up.
-    local _, window = scene()
+    local _, window = scene(withReveal)
     local rest = window.controls.settings:GetAlpha()
     window.dragBar:_run("OnEnter")
     for _, key in ipairs({ "minimize", "lock", "settings", "segment", "reset", "export" }) do
@@ -530,7 +576,7 @@ test("HeaderControls: the reveal moves rather than accumulating", function()
     -- A leave can arrive AFTER the next control's enter, and clearing the hover
     -- unconditionally on leave clears one that has already moved on.
     -- red under: window.hoveredControl = nil on every leave.
-    local _, window = scene()
+    local _, window = scene(withReveal)
     window.controls.settings:_run("OnEnter")
     window.controls.lock:_run("OnEnter")
     window.controls.settings:_run("OnLeave")
@@ -558,8 +604,10 @@ test("HeaderControls: both ends of the reveal are settings, and default to what 
     -- 0.25 at rest and 1 under the pointer were literals in restAlpha until they
     -- became these two rows, so the shipped values ARE the old behavior -- a
     -- window that never touches either slider must be drawn exactly as it was.
+    -- The REVEAL ships off now (2026-10-24, to match DPS Race), so this case
+    -- turns it on: the faded end still has to be 0.25 for anyone who does.
     -- red under: a default that is not the number it replaced.
-    local _, window = scene()
+    local _, window = scene(withReveal)
     window.controls.export:_run("OnEnter")
 
     assertEqual(window.controls.export:GetAlpha(), 1, "the hovered control is not at the hover value")
@@ -572,6 +620,7 @@ test("HeaderControls: the two opacity sliders each move their own end", function
     -- lifts one control clear of it.
     -- red under: one slider driving both, or the hover value leaking into rest.
     local _, window = scene(function(cfg)
+        cfg.frame.hoverReveal       = true
         cfg.frame.controlAlpha      = 0.6
         cfg.frame.controlHoverAlpha = 0.8
     end)
@@ -607,6 +656,7 @@ test("HeaderControls: an out-of-range opacity is clamped, not passed through", f
     -- value, which reads as the setting not working.
     -- red under: handing frameCfg straight to SetAlpha.
     local _, window = scene(function(cfg)
+        cfg.frame.hoverReveal       = true
         cfg.frame.controlAlpha      = -3
         cfg.frame.controlHoverAlpha = 42
     end)
@@ -801,8 +851,8 @@ test("HeaderControls: a degraded install still gets its close button", function(
     local window = inst.NS.Window.New(inst.NS.Database.GetWindows()[1])
 
     assertTrue(window.controls.close ~= nil, "the header lost its close button")
-    -- Seven controls at 16, six gaps of 4.
-    assertEqual(inst.NS.HeaderControls.WidthUsed(window), 7 * 16 + 6 * 4)
+    -- Seven controls at the shipped 18, six gaps of 4.
+    assertEqual(inst.NS.HeaderControls.WidthUsed(window), 7 * 18 + 6 * 4)
 end)
 
 test("HeaderControls: the close button closes the window", function()
@@ -830,7 +880,7 @@ test("HeaderControls: a control keeps its reveal as the pointer arrives", functi
     -- bar's own leave must not undo the control's enter, whichever order the two
     -- events arrive in.
     -- red under: dragBar's OnLeave clearing window.hoveredControl unconditionally.
-    local _, window = scene()
+    local _, window = scene(withReveal)
     window.dragBar:_run("OnEnter")
 
     -- The pointer crosses from the bar onto a control, leave first.

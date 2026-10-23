@@ -914,6 +914,23 @@ end)
 -- The header's four text controls
 -- ---------------------------------------------------------------------------
 
+test("Header ships GameFontNormal spelled out: 12px, no outline, a 1/-1 shadow", function()
+    -- Ka0s DPS Race's title bar draws its title in GameFontNormal (Friz Quadrata,
+    -- 12px, unoutlined, shadowed) and the two headers are compared side by side.
+    -- The size was always 12; the OUTLINE is what made this one read larger.
+    -- red under: header.outline = "OUTLINE" or header.shadow = false in
+    -- defaults/Profile.lua.
+    local _, window, cfg = scene()
+    assertEqual(cfg.header.size, 12)
+    assertEqual(cfg.header.outline, "NONE")
+    for _, fs in ipairs({ window.frame.title, window.sessionText }) do
+        assertEqual(fs.__font.size, 12, "the header line is not 12px")
+        assertEqual(fs.__font.flags, nil, "the header line is still outlined")
+        assertEqual(fs.__shadow[1], 1, "the header line has no shadow")
+        assertEqual(fs.__shadow[2], -1)
+    end
+end)
+
 test("Header shadow reaches every line of the strip", function()
     -- The cell text has had a shadow all along and the other three surfaces had
     -- not, so a player styling a window had to discover which of the four had
