@@ -98,7 +98,7 @@ local WINDOW_TEMPLATE = {
         -- the moment every stat went to one uniform width, which reads as a
         -- broken window rather than as a window that needs dragging.
         width          = 694,
-        height         = 223,
+        height         = 228,
         scale          = 1.0,
         alpha          = 1.0,
         strata         = "MEDIUM",     -- LOW | MEDIUM | HIGH | DIALOG

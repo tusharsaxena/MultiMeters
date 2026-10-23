@@ -724,7 +724,7 @@ end)
 --
 -- modules/Aggregator_Order.lua's ApplyRowLimit pins the player against its own cap,
 -- which is MAX_ROWS (40) whenever `rows.maxRows` is 0 — the shipped default. The
--- window then draws only what fits (10 rows at the shipped 223px under the 30px title bar), so a player at
+-- window then draws only what fits (10 rows at the shipped 228px under the 30px title bar), so a player at
 -- rank 15 was never on screen. The pin that counts is the one Render makes
 -- against `layout.maxRows` and the scroll offset (review F-001).
 
@@ -747,7 +747,7 @@ end
 test("alwaysShowSelf pins the player into the last row the default window draws", function()
     -- red under: pinning only in ApplyRowLimit, against the 40-row ceiling.
     local _, window, _, rows = selfScene(20, 15, true)
-    -- 223 - 2 * 6 padding - 26 bar - 16 labels = 169; floor((169 + 1) / 17) = 10 rows, flush.
+    -- 228 - 2 * 6 padding - 26 bar - 16 labels = 174; floor((174 + 1) / 17) = 10 rows, 5px spare.
     assertEqual(window.layout.maxRows, 10, "the shipped window no longer fits ten rows")
     window:Render(rows, false)
 
@@ -1254,7 +1254,7 @@ end)
 
 test("BuildLayout survives a config with the sub-tables missing, on the shipped numbers", function()
     -- Every read in here is `x or <default>`, and those defaults are the shipped
-    -- window: 694x223, 6px padding, 16px rows, 1px spacing, a 26px title height.
+    -- window: 694x228, 6px padding, 16px rows, 1px spacing, a 26px title height.
     -- A profile that lost a sub-table to a failed migration lays out rather than
     -- erroring on a nil index, and it lays out looking like a new window.
     -- red under: a peel that reads `cfg.frame.width` through a helper that was

@@ -380,7 +380,7 @@ local function v18Window(id, height)
     return { id = id, frame = { width = 694, height = height or 220, padding = 6 } }
 end
 
-test("migrations: v19 moves every window still on the 220px height to 223, in every profile", function()
+test("migrations: v19 moves every window still on the 220px height to 228, in every profile", function()
     -- An account already at v18 holds the old 220 verbatim in every window, active profile or not.
     -- red under: no v18 -> v19 step, or one that walks db.profile alone.
     local inst = initWith({
@@ -391,14 +391,14 @@ test("migrations: v19 moves every window still on the 220px height to 223, in ev
     assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
     for _, name in ipairs({ "Default", "Raid" }) do
         for i, w in ipairs(inst.NS.db.sv.profiles[name].windows) do
-            assertEqual(w.frame.height, 223, name .. " window " .. i .. " kept the nine-row 220px")
+            assertEqual(w.frame.height, 228, name .. " window " .. i .. " kept the nine-row 220px")
         end
     end
 end)
 
 test("migrations: v19 leaves a frame height a player chose", function()
     -- Only the old shipped 220 is taken for the default; any other height is a choice.
-    -- red under: writing 223 unconditionally.
+    -- red under: writing 228 unconditionally.
     local inst = initWith({
         profiles = { Default = { nextWindowId = 4,
                                  windows = { v18Window(1, 300), v18Window(2, 221), v18Window(3, 60) } } },
@@ -425,6 +425,6 @@ test("migrations: the v19 step run twice is a no-op, and survives a junk window"
     assertEqual(table.concat(after, "; "), table.concat(before, "; "),
         "a second run of the v19 step changed the account")
     assertEqual(inst.NS.db.sv.profiles.Odd.windows[1], "junk", "the step rewrote a non-window")
-    assertEqual(inst.NS.db.sv.profiles.Odd.windows[3].frame.height, 223,
+    assertEqual(inst.NS.db.sv.profiles.Odd.windows[3].frame.height, 228,
         "the window after the junk entries was skipped")
 end)

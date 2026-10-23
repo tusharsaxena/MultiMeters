@@ -348,7 +348,7 @@ Total.
 - migrations: v18 moves every window still on the 18px header onto the 30px bar
 - migrations: v18 leaves a header height a player chose
 - migrations: the v18 step run twice is a no-op, and survives a junk window
-- migrations: v19 moves every window still on the 220px height to 223, in every profile
+- migrations: v19 moves every window still on the 220px height to 228, in every profile
 - migrations: v19 leaves a frame height a player chose
 - migrations: the v19 step run twice is a no-op, and survives a junk window
 
