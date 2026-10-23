@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 18,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
+    schemaVersion = 19,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data (+ count, stored)
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -60,8 +60,8 @@ safe because every step is idempotent against a fresh default profile. A step ne
 the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
-**Seventeen steps are wired today**, `migrations[1]` through `migrations[17]`, walking an account from
-the shipped v1 shape to v18. Each is one line of the header block at the top of
+**Eighteen steps are wired today**, `migrations[1]` through `migrations[18]`, walking an account from
+the shipped v1 shape to v19. Each is one line of the header block at the top of
 `core/Database.lua`, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -83,12 +83,13 @@ the shipped v1 shape to v18. Each is one line of the header block at the top of
 | v15 → v16 | every window of every profile moves its two collapse keys onto the US spelling, `frame.minimized` and `frame.showMinimize`; a US key already stored wins, and the old keys are pruned |
 | v16 → v17 | every window of every profile still holding the header's old shipped values moves onto the Ka0s DPS Race match: `header.outline = "OUTLINE"` with `shadow = false` (as a pair) → `"NONE"` / `true`; a `"custom"`-mode white `frame.controlColor` → 0.7/0.7/0.72; `frame.hoverReveal = true` → `false`; `frame.controlSize = 16` → 18. Any other value is left alone. See [`header`](#header--the-strip-above-the-rows) |
 | v17 → v18 | every window of every profile still on the old shipped `header.height = 18` (a 22px bar to the divider) moves to 26, Ka0s DPS Race's 30px title bar. Any other height is left alone. A step of its own because v17 had already run on accounts that tried the first header-match build. See [`header`](#header--the-strip-above-the-rows) |
+| v18 → v19 | every window of every profile still on the old shipped `frame.height = 220` (nine rows under the 30px bar) moves to 223, the smallest height that fits ten again. Any other height is left alone. See [`frame`](#frame--the-standalone-window) |
 
-Adding a v19 is two edits and no bootstrap change:
+Adding a v20 is two edits and no bootstrap change:
 
 ```lua
-migrations[18] = function(db) ... end       -- the runner stamps the version
-local CURRENT_DB_VERSION = 19
+migrations[19] = function(db) ... end       -- the runner stamps the version
+local CURRENT_DB_VERSION = 20
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -528,7 +529,7 @@ either alone. `text.shadow` keeps its long-standing `true`.
 | Key | Default | Notes |
 |---|---|---|
 | `width` | `716` | slider 160–1400. Derived from the grid: name column + six default columns at `COLUMN_WIDTH` + seams + padding. |
-| `height` | `220` | slider 60–900 |
+| `height` | `223` | slider 60–900. The smallest height that fits ten rows under the shipped chrome: 223 − 2 × 6 padding − 26 title − 16 column labels = 169, and ⌊(169 + 1) / 17⌋ = 10, the tenth row ending flush with the bottom padding. Shipped 220 until 2026-10-24, which fitted nine once the bar grew to 30px; `migrations[18]` (v18 → v19) moves a stored 220 to 223 in every window of every profile and leaves any other height alone |
 | `scale` | `1.0` | 0.5–2.0. Applied to the anchor **and** the visible frame. Scaling only the frame left the box its original size and shrank its contents, because the frame is pinned TOPLEFT/BOTTOMRIGHT to the anchor and inherits its screen rect. |
 | `alpha` | `1.0` | 0–1, rendered as a percentage |
 | `strata` | `"MEDIUM"` | `LOW` `MEDIUM` `HIGH` `DIALOG` |
@@ -588,7 +589,8 @@ frame's top edge to the divider: `padding` (6) + `height` (26) − `DIVIDER_INSE
 `Style.TITLE_BAR_H`. It shipped 18 (a 22px bar) until 2026-10-24. `migrations[17]` (v17 → v18) moves a
 stored 18 to 26 in every window of every profile, by the same rule as v17: a stored old default is
 taken for the default, and any other height is the player's. The taller bar comes out of the rows, not
-the window: the shipped 220px window fits nine rows where it fitted ten, and the resize floor rises
+the window: the 220px window it shipped beside fitted nine rows where it had fitted ten (the window
+now ships 223px and fits ten again, v19; see `frame` above), and the resize floor rises
 from 62 to 70. That floor (the title bar, the column labels and one row) also holds the DRAWN height:
 `ApplyConfig` draws the window at `max(frame.height, layout floor)`, so a stored `frame.height` below
 it (the Height slider still goes down to 60) is drawn at the floor while the stored value is left as

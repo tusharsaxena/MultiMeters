@@ -53,11 +53,12 @@ NS.Database = Database
 -- v16 spells the window's minimize keys the US way.
 -- v17 matches the header to Ka0s DPS Race.
 -- v18 grows the title bar to Ka0s DPS Race's 30px.
+-- v19 grows the shipped window to 223px, ten rows under that bar.
 --
 -- The defaults declare `global.schemaVersion = 0`, which means UNSTAMPED: a fresh
 -- install or an account from before the runner stamped anything. It is never the
 -- current version (savedvariables-§1); see defaults/Profile.lua for why.
-local CURRENT_DB_VERSION = 18
+local CURRENT_DB_VERSION = 19
 
 --- The runner's target, published under the name savedvariables-§1 gives it.
 --- Raising it means registering the step that reaches it; the defaults' 0 never moves.
@@ -1032,6 +1033,28 @@ migrations[17] = function(db)
             for _, w in pairs(profile.windows) do
                 if type(w) == "table" and type(w.header) == "table" and w.header.height == 18 then
                     w.header.height = 26
+                end
+            end
+        end
+    end
+end
+
+--- v18 -> v19: THE SHIPPED WINDOW GROWN BACK TO TEN ROWS.
+---
+--- `frame.height` shipped 220, which fitted ten rows under the 22px bar and nine under v18's 30px
+--- one. It ships 223 now, the smallest height that fits ten again: 223 - 2 * 6 padding - 26 title -
+--- 16 labels = 169, and floor((169 + 1) / 17) = 10, flush. fillMissing copied the old template
+--- into every stored window, so each one holds 220 verbatim. Same rule as v17 and v18: only a
+--- stored 220, the old shipped value, moves; any other height is the player's and is left alone,
+--- and a stored 220 cannot be told apart from a chosen 220.
+---
+--- Every window of every profile, for the reason allProfiles gives. Idempotent: 223 is not 220.
+migrations[18] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" and type(w.frame) == "table" and w.frame.height == 220 then
+                    w.frame.height = 223
                 end
             end
         end

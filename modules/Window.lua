@@ -347,7 +347,7 @@ end
 ---        rowHeight and rowSpacing are all already resolved on it
 --- @return number
 local function rowCapacity(frame, rows, layout)
-    local bodyHeight = (frame.height or 220) - layout.padding * 2
+    local bodyHeight = (frame.height or 223) - layout.padding * 2
         - layout.titleHeight - layout.stripHeight - layout.headerHeight
     local fits = math.floor((bodyHeight + layout.rowSpacing)
         / (layout.rowHeight + layout.rowSpacing))
@@ -559,7 +559,7 @@ function WindowProto:BuildFrame()
 
     -- The clean geometry frame. Empty on purpose — see the file header.
     local anchor = CreateFrame("Frame", name .. "Anchor", UIParent)
-    anchor:SetSize(frameCfg.width or 694, frameCfg.height or 220)
+    anchor:SetSize(frameCfg.width or 694, frameCfg.height or 223)
     anchor:SetMovable(true)
     anchor:SetClampedToScreen(frameCfg.clampToScreen ~= false)
     anchor.mmWindow = self
@@ -746,7 +746,7 @@ function WindowProto:ApplyConfig()
     -- to 30px, so a stored height under it drew the one row the layout always
     -- reserves hanging past the frame's bottom edge. The stored value is left
     -- alone; only the drawn size is held at the floor the resize grip keeps.
-    local height = math.max(frameCfg.height or 220, layout.minHeight or 0)
+    local height = math.max(frameCfg.height or 223, layout.minHeight or 0)
     self.anchor:SetSize(frameCfg.width or 694, height)
     self.anchor:SetClampedToScreen(frameCfg.clampToScreen ~= false)
     self:ApplyPosition()
