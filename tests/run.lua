@@ -286,6 +286,8 @@ local SUITES = {
     "test_envsetup",
     -- The simulator's answer seam (core/SimSetup.lua, MM-12): pure, guarded, the stubs.
     "test_sim_seam",
+    -- The simulator's invented world and its providers (modules/SimWorld.lua, MM-13).
+    "test_sim_world",
     "test_launchersetup",
     "test_lifecycle",
     "test_dispatch",

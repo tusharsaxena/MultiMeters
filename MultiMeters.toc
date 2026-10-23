@@ -152,6 +152,10 @@ modules\Export.lua
 # it resolves that file's three published file-locals at FILE SCOPE, so it must load after it.
 modules\Export_Modal.lua
 modules\Visibility.lua
+# The simulator's invented world and its answers (MultiMeters#60). LOAD-BEARING POSITION: it
+# registers its providers on NS.SimSeam (core\SimSetup.lua) at FILE SCOPE, and reads NS.Constants at
+# call time. modules\Sim.lua, when it arrives, loads straight ahead of it.
+modules\SimWorld.lua
 
 # Settings (last — depend on everything else being initialized)
 # The vocabularies, validators and composed blocks that the schema array is declared

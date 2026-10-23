@@ -648,6 +648,26 @@ Total.
 - TOC: core/SimSetup.lua loads immediately after core/Compat.lua, annotated LOAD-BEARING
 - Sim seam: with LibKa0s absent, NS.SimSeam and NS.Sim are the stubs, at full parity
 
+### test_sim_world.lua (17)
+
+- SimWorld: the same seed gives the same members, names and totals after N ticks
+- SimWorld: the local player is the real player, first, with the live role
+- SimWorld: SetGroup(5) gives party tokens
+- SimWorld: SetGroup(20, true) gives raid tokens with the player once and the pets resolvable
+- SimWorld: Session('current') is sorted descending with maxAmount first and the true total
+- SimWorld: pets deal a quarter of their owner's damage as their own row
+- SimWorld: enemies appear only in EnemyDamageTaken, with a creature id and no GUID
+- SimWorld: Overall equals the sum of two segments
+- SimWorld: a session id the world does not hold answers nil
+- SimWorld: Die gives a Deaths row and a recap with events newest first
+- SimWorld: ResetSegments empties the list
+- SimWorld: every answer is a fresh table, so mutating one leaves the next alone
+- SimWorld: a source breakdown is three real spells, descending, summing to the source
+- SimWorld: every provider calls fallback when there is no world
+- SimWorld: every wrapped key that is not guarded has a provider
+- SimWorld: during a session every meter read answers from the world, never the client
+- SimWorld: solo, the player's role is left to the spec read, as the client's is
+
 ### test_launchersetup.lua (55)
 
 - Launcher: Register creates ONE object and registers it against the global table
@@ -2528,6 +2548,7 @@ Total.
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 13 |
 | test_sim_seam.lua | 10 |
+| test_sim_world.lua | 17 |
 | test_launchersetup.lua | 55 |
 | test_lifecycle.lua | 40 |
 | test_dispatch.lua | 11 |
@@ -2583,4 +2604,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2237** |
+| **Total** | **2254** |

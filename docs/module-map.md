@@ -3,7 +3,7 @@
 Where each responsibility lives, what each file publishes, and what it consumes. `MultiMeters.toc`
 is the source of truth for load order — check this map against it before editing.
 
-Sixty-four non-vendored source files: 1 locale, 21 `core/`, 1 `defaults/`, 26 `modules/`,
+Sixty-five non-vendored source files: 1 locale, 21 `core/`, 1 `defaults/`, 27 `modules/`,
 15 `settings/`.
 
 Thirteen of those arrived on one day, 2026-09-09, and **not one of them is a new module.** They are
@@ -224,8 +224,12 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                     buttons and the copy-paste window. Every frame this
 │   │                     feature draws is here. Re-checks the combat refusal on
 │   │                     every click, because a pull can start while it is open
-│   └── Visibility.lua  — the context predicate. Publishes no message and touches
-│                         no frame; refuses at the source
+│   ├── Visibility.lua  — the context predicate. Publishes no message and touches
+│   │                     no frame; refuses at the source
+│   └── SimWorld.lua    — the simulator's invented world (the real player plus
+│                         seeded mates, zones, segments, deaths and recaps) and
+│                         every provider the seam answers from. Plain invented
+│                         numbers only; registers on NS.SimSeam at FILE SCOPE
 └── settings/
     ├── Schema_Compose.lua
     │                   — WHAT THE ARRAY IS DECLARED OUT OF and nothing else: the
@@ -345,6 +349,7 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 | `Export.lua` | plain table | **The pure half**, which is the seam this file's own header had been naming since it was written: the two serializers and everything they need. `HeaderName`, `CsvField` and `Columns` derive the CSV shape from the stat catalog rather than restating it; `SessionConfig` builds the synthetic window config the aggregator is asked with; `ResolveChannel`, `ChatBatch`, `SendDelay` and `Send` carry the throttled dump and its whisper-failure watch. **Draws no frame.** **Refuses entire while the Combat restriction is active** — `tostring` is not a permitted operation on a secret | `NS.Export` — `Available`, `HeaderName`, `CsvField`, `Columns`, `SessionConfig`, `Build`, `SessionLabel`, `CSV`, `ChatLines`, `ResolveChannel`, `TargetName`, `NeedsHardwareEvent`, `ChatBatch`, `SendDelay`, `Send`, `NoteSystemMessage` — plus the three privates the modal reads, `Export.__EM_DASH`, `__cfgOf` and `__channelRow` | `NS.Aggregator.Build`, `NS.Format`, `NS.Constants` (`STATS`, `STAT_BY_KEY`, `MAX_ROWS`, `SESSION_TYPE`, `EXPORT_CHANNELS`, `EXPORT_CHANNEL_BY_KEY`), `NS.Compat.ChatSender` (the only way `Send` reaches a channel), and `NS.Secrets` — resolved through its own `mod()` lookup at **call** time, never captured, so the pure half holds no sibling as an upvalue |
 | `Export_Modal.lua` | — | **The UI half**: the dialog the header glyph and `/mm export` open, its three selectors — `LibKa0s-Widgets-1.0` dropdowns since the collection grew a shared one — the whisper row, the two action buttons and the copy-paste window. Every frame this feature draws is here and nowhere else; all of it is built lazily on the first `Open` and reused forever, so a session in which nobody exports never pays for it. The combat refusal is enforced **again** here, and deliberately more than once — `Available()` on open, again inside each click handler, and once more inside the serializers — because the restriction can activate while the modal sits open, and the click is the last moment anyone can check | `NS.Export.Open`, `NS.Export.ResolveMetric` | `Export.__EM_DASH` / `__cfgOf` / `__channelRow` **at file scope**, which is what pins its TOC line after `modules/Export.lua`; plus `NS.Constants` (including `FONT_MONO` for the copy window), `NS.L`, `NS.GetSetting` / `NS.SetByPath`, `NS.ApplySkin`, `NS.MakeCloseButton`, `NS.NewBusTarget`, and `LibKa0s-Widgets-1.0` looked up directly — the one library this pair reaches for itself rather than through a `core/*Setup.lua` seam, because the widget is built lazily inside `Open` rather than wired at load; it calls `W.CloseMenu()` from the modal's `OnHide`, since the popup is process-wide and the modal's own `Hide` does not reach it. Subscribes exactly one message — `RESTRICTION_CHANGED`, on a private target taken with the modal frame, so an open dialog grays itself when a pull starts — and sends none |
 | `Visibility.lua` | AceAddon | The context translation table and the predicate: context first, then the hide-shaped vetoes, then the two combat rules. No frame is touched and no message is sent | `NS.Visibility` — `GetContext`, `ShouldShow`, `Allows`, `Evaluate`, `Refresh`, `LastResult`, `Forget` | `NS.Database.GetWindows`, the instance and player-state APIs through `_G`, and `NS.Compat` for the delve / skyriding / housing probes. Subscribes `ZONE_CHANGED`, `ENTERING_WORLD`, `ROSTER_CHANGED`, `COMBAT_CHANGED`, `PLAYER_STATE_CHANGED`, `PROFILE_CHANGED` — for the Evaluate pass only, which runs only under debug and feeds its debug line and `/mm diagnostics`'s per-window "last pass" lines; the window re-runs the ladder off the same two messages, because this module publishes nothing |
+| `SimWorld.lua` | plain table | The simulator's **invented world** (MultiMeters#60) and its answers. `World.New(seed, player)` builds it from a seeded Park-Miller generator: the real player first (GUID, name, class and live spec role read by the caller inside `NS.SimSeam:Live`), then fixed seeded mates `Player-9998-SIM%04d` from forty invented names, hunters and warlocks with pets `Pet-0-9998-SIM%04d`. Pure functions of the world table edit it: `SetGroup` (party or raid tokens, the player at a seeded raid index), `SetZone`, `OpenSegment` / `CloseSegment`, `Tick` (rate x seconds per stat, pets dealing a quarter of their owner's damage as their own row, the enemy taking the group's damage), `Die` (a Deaths row and a recap in `Aggregator.TestRecap`'s shape), `ResetSegments`; `Session`, `SourceDetail` and `AvailableSessions` answer fresh tables in the client's shape. **Plain invented numbers only**: it never reads a client meter value, so `core/Secrets.lua` stays the only inspector of client values, and it never spells a `Compat.`-prefixed meter shim (the `test_provider` scan) | `NS.SimHost.World` (`New`, `SetGroup`, `Unit`, `SetZone`, `OpenSegment`, `CloseSegment`, `Tick`, `Die`, `ResetSegments`, `Session`, `SourceDetail`, `AvailableSessions`, `PROVIDED`, `PROVIDERS`, and the `ZONES` / `NAMES` / `CLASSES` tables); 22 providers registered by key on `NS.SimSeam` **at file scope** | `NS.SimSeam` **at file scope**; `NS.SimHost.world`, `NS.Constants.STAT_TYPE` / `SESSION_TYPE` / `SOURCE_DISPLAY_TYPE` at call time |
 
 ### `settings/`
 
@@ -440,7 +445,11 @@ binding (`launcher-§6`) and no Lua; the button it clicks and both labels come f
    **`Aggregator_Identity` → `Aggregator_Preview` → `Aggregator_Order`** → `WindowManager` → `Window` →
    **`Window_Lifecycle` → `Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_Border`** → **`Row_Cells`** → **`Row_NameCell`** →
    `Targets` → `Tooltip` → **`Tooltip_Lines` → `Tooltip_Builders`** → `DrillDown` → `Export` →
-   **`Export_Modal`** → `Visibility`.
+   **`Export_Modal`** → `Visibility` → `SimWorld`.
+
+   `SimWorld` registers its providers on `NS.SimSeam` at *file scope*, so it must follow
+   `core/SimSetup.lua` (a LOAD-BEARING TOC note); it sits last in the block, where the simulator's
+   other files (`modules/Sim.lua` ahead of it) join it.
 
    The twelve in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
    for the same reason: each resolves something its parent publishes at *file scope*, so a peel
