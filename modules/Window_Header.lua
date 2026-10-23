@@ -62,7 +62,7 @@ end
 
 -- How far up from the bottom of the tinted title band the divider hairline is
 -- drawn. Named because two things depend on it agreeing: the divider itself, and
--- `TitleRowTop`, which centers the whole title row in the space ABOVE it.
+-- `TitleBandHeight`, which the title row is centered in and the drag strip spans.
 local DIVIDER_INSET = 2
 
 -- How much of the header the session line is allowed to run across, right to
@@ -270,21 +270,43 @@ end
 --- the text hard against the divider, which is exactly what "everything is
 --- anchored to the bottom" meant when it was reported.
 ---
+--- ANCHORED BY ITS MIDDLE, the way Ka0s DPS Race places its title (CENTER) and
+--- controls (RIGHT) at half its 30px bar. The row used to be placed by its TOP
+--- edge at `(band - h) / 2`, which is the same line only while the widget is
+--- exactly `h` tall; a FontString is as tall as its font's line, not its point
+--- size, so a top-anchored title hung off a center it never had. A middle
+--- anchor is centered whatever the box turns out to be.
+---
+--- WHOLE PIXELS. The gap above the box is floored, so a box of a whole-pixel
+--- height has both edges on whole pixels: an even box lands exactly on the
+--- band's midline, an odd one (or an odd band) half a pixel above it rather
+--- than smeared across two.
+---
 --- COMPUTED, NEVER MEASURED (rule R3): `h` is the caller's own configured size,
 --- not something read back off a widget. Clamped at the frame's top edge so a
 --- control larger than the bar it sits in overflows downward rather than off the
 --- window.
 ---
 --- @param h number  the height of the thing being placed
---- @return number y  the offset to anchor its TOP at, relative to the frame's top
-function WindowProto:TitleRowTop(h)
+--- @return number y  the offset to anchor its MIDDLE at, relative to the frame's top
+function WindowProto:TitleRowMid(h)
+    h = h or 0
+    local gap = math.floor((self:TitleBandHeight() - h) / 2)
+    if gap < 0 then gap = 0 end
+    return -(gap + h / 2)
+end
+
+--- How tall the title bar a player sees is: the frame's top edge down to the
+--- divider hairline, which sits DIVIDER_INSET up from the bottom of the tinted
+--- band. 6 padding + 26 bar - 2 = 30 shipped, Ka0s DPS Race's `TITLE_BAR_H`.
+--- One number for the row's center, the divider and the drag strip, so the
+--- three cannot disagree about where the bar ends. 0 with the header hidden.
+---
+--- @return number
+function WindowProto:TitleBandHeight()
     local layout = self.layout
-    -- The divider sits 2px up from the bottom of the tinted band; see
-    -- ApplyHeaderStrip, which draws it at exactly this offset.
-    local visible = layout.padding + layout.titleHeight - DIVIDER_INSET
-    local inset = (visible - (h or 0)) / 2
-    if inset < 0 then inset = 0 end
-    return -inset
+    if layout.titleHeight <= 0 then return 0 end
+    return layout.padding + layout.titleHeight - DIVIDER_INSET
 end
 
 --- Where the header's two text lines must stop on the right: the frame padding,
@@ -333,10 +355,10 @@ function WindowProto:ApplyTitle()
     -- the close button, and the session line keeps its own RIGHT anchor — the
     -- two halves of the strip are placed from opposite ends, so aligning one can
     -- never push the other off the frame.
-    local y = self:TitleRowTop(size)
+    local y = self:TitleRowMid(size)
     frame.title:ClearAllPoints()
-    frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, y)
-    frame.title:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -self:HeaderRightInset(), y)
+    frame.title:SetPoint("LEFT", frame, "TOPLEFT", 8, y)
+    frame.title:SetPoint("RIGHT", frame, "TOPRIGHT", -self:HeaderRightInset(), y)
     frame.title:SetJustifyH(header.align or "LEFT")
     frame.title:SetFont(path, size, flags)
     frame.title:SetShadowOffset(shadowOffset(header.shadow))
@@ -400,9 +422,13 @@ function WindowProto:ApplyHeaderStrip()
     self.headerBG:SetColorTexture(ar, ag, ab, aa)
     self.headerBG:SetShown(layout.titleHeight > 0)
 
-    -- The drag strip covers exactly the title bar. Sized from the layout like
-    -- every other coordinate — never measured off the title FontString.
-    self.dragBar:SetHeight(layout.titleHeight > 0 and layout.titleHeight or 1)
+    -- The drag strip covers exactly the title bar a player sees: the frame's top
+    -- edge down to the divider. It used to be `titleHeight` tall, which left the
+    -- bottom `padding - DIVIDER_INSET` pixels of the bar (4 shipped) dead to a
+    -- drag. Sized from the layout like every other coordinate — never measured
+    -- off the title FontString.
+    local band = self:TitleBandHeight()
+    self.dragBar:SetHeight(band > 0 and band or 1)
     self.dragBar:SetShown(layout.titleHeight > 0)
 
     -- THE HAIRLINE UNDER THE TITLE BAR, and the one piece of the window's chrome
@@ -423,14 +449,14 @@ function WindowProto:ApplyHeaderStrip()
     -- ApplySkin owns the accent, and a setting that claims to govern it writes
     -- after the library rather than instead of it.
     --
-    -- The TITLE ROW DOES NOT MOVE when it is switched off. `TitleRowTop` centers
+    -- The TITLE ROW DOES NOT MOVE when it is switched off. `TitleRowMid` centers
     -- the row in the space above DIVIDER_INSET, which is a constant and not a
     -- measurement of this texture -- so hiding the line leaves every other thing
     -- in the header exactly where it was, which is what a player toggling it
     -- expects and the opposite of what a measured layout would have done.
     if frame.divider then
         frame.divider:ClearAllPoints()
-        local dy = -(pad + layout.titleHeight - DIVIDER_INSET)
+        local dy = -band
         frame.divider:SetHeight(header.dividerThickness or 1)
         frame.divider:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, dy)
         frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, dy)
@@ -485,8 +511,8 @@ function WindowProto:ApplySessionLine()
     -- time the group total ticks over a magnitude.
     self.sessionLine:ClearAllPoints()
     local height = math.max(size + 4, 12)
-    self.sessionLine:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT",
-        -self:HeaderRightInset(), self:TitleRowTop(height))
+    self.sessionLine:SetPoint("RIGHT", self.frame, "TOPRIGHT",
+        -self:HeaderRightInset(), self:TitleRowMid(height))
     self.sessionLine:SetSize(SESSION_LINE_WIDTH, height)
     self.sessionLine:SetShown(shown)
 

@@ -17,12 +17,12 @@ secret-value rules the checks refer to.
 
 | ID range | Theme | What it covers |
 |---|---|---|
-| INSTALL-1 to INSTALL-11 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
+| INSTALL-1 to INSTALL-13 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
 | SLASH-1 to SLASH-19 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding |
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-48 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown |
+| WIN-1 to WIN-52 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-33 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
@@ -44,7 +44,7 @@ secret-value rules the checks refer to.
 - **A pull** means a real one: a Mythic+ trash pack or a raid pull with the group fighting. A target
   dummy does not activate the restriction and is no substitute where a check says "a pull". Where a
   dummy is enough, the check says so.
-- **Old SavedVariables.** INSTALL-6 to INSTALL-9 need a `MultiMeters.lua` file saved by an older
+- **Old SavedVariables.** INSTALL-6 to INSTALL-9, INSTALL-12 and INSTALL-13 need a `MultiMeters.lua` file saved by an older
   build; copy it aside before INSTALL-1 wipes it.
 - **Several windows.** Checks that say "two windows" start from Windows → General → **New window**.
 - **Reporting a failure.** Give where (dungeon and key level, raid or open world; solo or grouped and
@@ -65,8 +65,8 @@ secret-value rules the checks refer to.
   no `schema error:` line and no "schema path does not resolve" line at any point (either means a
   schema row's path or default disagrees with `defaults/Profile.lua`). Result: pass (owner-marked 2026-10-10)
 - **INSTALL-3. SavedVariables shape.** After INSTALL-1, `/reload`, then read `MultiMeters.lua` on disk
-  → `profileKeys`, `profiles.Default`, `global.schemaVersion = 16`, a one-entry `profile.windows`
-  whose window has `id = 1`, and `profile.nextWindowId = 2`. Result: pass (owner-marked 2026-10-10)
+  → `profileKeys`, `profiles.Default`, `global.schemaVersion = 18`, a one-entry `profile.windows`
+  whose window has `id = 1`, and `profile.nextWindowId = 2`. Result: pending
 - **INSTALL-4. `/reload` keeps the layout.** Move the window, resize it, change its bar color and its
   column set, `/reload` → position, size, color and columns survive; the window is in the same
   visibility state; no error during load; `nextWindowId` has not moved. Result: pass (owner-marked 2026-10-10)
@@ -100,11 +100,12 @@ secret-value rules the checks refer to.
   `/dump MultiMetersDB.global.minimap` shows `hide = true` (plus `minimapPos` if the button was ever
   dragged) and no `shown` key; the first window is still collapsed; the second still has no minimize
   control and its Header → Controls → **Show minimize** box reads unticked;
-  `/dump MultiMetersDB.global.schemaVersion` prints `16`; in `/dump
+  `/dump MultiMetersDB.global.schemaVersion` prints `18` (the current version; `17` before the 30px
+  bar, `16` before the header match); in `/dump
   MultiMetersDB.profiles.Default.windows` every window's `frame` keys are spelled the US way
   (`minimized`, `showMinimize`; the v16 step renames the two British-spelled keys and drops them), and
   the collapsed one reads `minimized = true`. A window back expanded, or a minimize control back on
-  screen, means the v16 step lost the old key. Result: pass (owner-marked 2026-10-10)
+  screen, means the v16 step lost the old key. Result: pending
 - **INSTALL-10. Every icon draws from the pruned set.** From LibKa0s v1.75.0 the build ships only the
   icons the CLAUDE.md `LibKa0s icons:` line declares, and an undeclared name draws a blank square
   with no Lua error. Check each draw site → every one shows its art, never a blank square:
@@ -119,6 +120,19 @@ secret-value rules the checks refer to.
   no Lua error, and `/mm diagnostics` → the report loads. `core/SimSetup.lua` now wraps every
   `NS.Compat` member at load (LibKa0s-Sim-1.0's seam); idle, every read answers as before, so the
   windows, tooltips and export behave exactly as they did. Result: pass (owner-marked 2026-10-23)
+- **INSTALL-12. Upgrade from v16 (the header matched to DPS Race).** On a build from before v17
+  (`schemaVersion` 16), with two windows, leave the first window's header as shipped and on the second
+  set Header → Title text → Font outline *Thick outline* and Control size 20; log out, update and log
+  in → the first window's title is unoutlined with a drop shadow, its controls are gray at full
+  strength in 18px slots (WIN-49 to WIN-51); the second keeps *Thick outline* and size 20;
+  `/dump MultiMetersDB.global.schemaVersion` prints `18`. A first window still outlined, white or
+  faded means the v17 step did not reach it. Result: pending
+- **INSTALL-13. Upgrade from v17 (the 30px title bar).** On the first header-match build
+  (`schemaVersion` 17), with two windows, leave the first window's Header → Title bar → Header height
+  at the shipped 18 and set the second's to 24; log out, update and log in → the first window's
+  Header height reads 26 and its bar measures 30px from the frame's top edge to the divider (WIN-52);
+  the second keeps 24; `/dump MultiMetersDB.global.schemaVersion` prints `18`. A first window still on
+  the short bar means the v18 step did not reach it. Result: pending
 
 ## SLASH
 
@@ -709,6 +723,30 @@ right. Open the panel with `/mm config`.
   sits under the title and the title text has NO red TEST MODE. Result: pass (owner-marked 2026-10-23)
 - **WIN-48. The title word while minimized (SM-MM-02).** Minimize a window in test mode → the title
   shows the red TEST MODE; expand → the word goes and the strip returns. Result: pass (owner-marked 2026-10-23)
+- **WIN-49. The title matches DPS Race's (2026-10-24).** On a profile that never changed Header →
+  Title text (a window that existed before the update included: the v17 step moves it, INSTALL-12),
+  open a Multi Meters window beside Ka0s DPS Race's HUD → *Multi Meters #1* and the
+  session line (*Overall*) read at the same size and weight as *DPS Race*: unoutlined 12px Friz
+  Quadrata with a soft drop shadow, gold. Header → Title text shows Font outline *None* and Text
+  shadow ticked. Result: pending
+- **WIN-50. The controls match DPS Race's color (2026-10-24).** Same profile, pointer away from the
+  window → every header control is the light gray DPS Race's controls rest in, at full strength (none
+  faded); point at one → only it turns gold, and back to gray on leaving. Header → Button style shows
+  Reveal controls on hover unticked and Control color at 70/70/72% gray. Result: pending
+- **WIN-51. The controls sit on the title's line (2026-10-24).** Same profile → each icon is 12px in an
+  18px slot, its top and bottom level with the title's, and the strip's spacing matches DPS Race's
+  (22px pitch). With Header height and Control size changed, the row stays centered as before. A
+  profile that had set its own control color, size, reveal or header outline (any value other than the
+  old shipped one) keeps it. Result: pending
+- **WIN-52. The title bar is DPS Race's height, the row on its midline (2026-10-24).** Same profile,
+  a Multi Meters window beside Ka0s DPS Race's HUD (a window from before the update included: the v18
+  step moves it, INSTALL-13) → the two title bars are the same height, frame top to divider (30px);
+  the title, the session line (*Overall*) and every icon are centered on that bar's midline, with as
+  much room above as below; the drag strip answers anywhere in the bar down to the divider; the column
+  labels and rows start under the divider as before. Header → Title bar shows Header height 26. Set
+  Header height to 8, 37 and 48 and Control size to 10 and 32 in turn → the row stays centered (a
+  control taller than the bar hangs from the frame's top edge). The shipped 220px window shows nine
+  rows, and dragging it down stops at 70px with the one row fully inside the frame. Result: pending
 
 ## VIS
 
@@ -1467,7 +1505,11 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
 
 ## Pending sign-off
 
-None. On 2026-10-10 the owner marked every check in this file as passed, recorded on its
+WIN-49, WIN-50, WIN-51 and INSTALL-12 (added 2026-10-24, the header matched to Ka0s DPS Race's title
+bar), WIN-52 and INSTALL-13 (added 2026-10-24, the 30px title bar), and INSTALL-3 and INSTALL-9
+(rewritten 2026-10-24 for the v18 schema stamp).
+
+On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass
 keeps it. A check added or rewritten after that date is listed here until its `Result:` line records
 a pass.

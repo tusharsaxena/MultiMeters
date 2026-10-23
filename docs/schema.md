@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 16,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
+    schemaVersion = 18,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data (+ count, stored)
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -60,8 +60,8 @@ safe because every step is idempotent against a fresh default profile. A step ne
 the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
-**Fifteen steps are wired today**, `migrations[1]` through `migrations[15]`, walking an account from
-the shipped v1 shape to v16. Each is one line of the header block at the top of
+**Seventeen steps are wired today**, `migrations[1]` through `migrations[17]`, walking an account from
+the shipped v1 shape to v18. Each is one line of the header block at the top of
 `core/Database.lua`, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -81,12 +81,14 @@ the shipped v1 shape to v16. Each is one line of the header block at the top of
 | v13 → v14 | the addon-wide `master.locked` is carried onto every window's own `frame.locked` (a stored `true` locks every window) and pruned from every profile; see [`master`](#master--the-addon-wide-master-controls) |
 | v14 → v15 | LibDBIcon's `minimap` table moves from the profile to the global store, carrying `hide` **and** `minimapPos` so an adopted button keeps the angle the player dragged it to; the profile key is pruned. See [`minimap`](#minimap--and-it-lives-under-global) |
 | v15 → v16 | every window of every profile moves its two collapse keys onto the US spelling, `frame.minimized` and `frame.showMinimize`; a US key already stored wins, and the old keys are pruned |
+| v16 → v17 | every window of every profile still holding the header's old shipped values moves onto the Ka0s DPS Race match: `header.outline = "OUTLINE"` with `shadow = false` (as a pair) → `"NONE"` / `true`; a `"custom"`-mode white `frame.controlColor` → 0.7/0.7/0.72; `frame.hoverReveal = true` → `false`; `frame.controlSize = 16` → 18. Any other value is left alone. See [`header`](#header--the-strip-above-the-rows) |
+| v17 → v18 | every window of every profile still on the old shipped `header.height = 18` (a 22px bar to the divider) moves to 26, Ka0s DPS Race's 30px title bar. Any other height is left alone. A step of its own because v17 had already run on accounts that tried the first header-match build. See [`header`](#header--the-strip-above-the-rows) |
 
-Adding a v17 is two edits and no bootstrap change:
+Adding a v19 is two edits and no bootstrap change:
 
 ```lua
-migrations[16] = function(db) ... end       -- the runner stamps the version
-local CURRENT_DB_VERSION = 17
+migrations[18] = function(db) ... end       -- the runner stamps the version
+local CURRENT_DB_VERSION = 19
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -515,8 +517,9 @@ only on `FontString:SetAlpha`. The per-row color passes write their own alpha th
 while the names stayed faded — one setting working on half the grid. Folding it in means every color
 write carries the opacity and a later write cannot undo it.
 
-Every one of the new keys ships **off**: `header.shadow`, `columnHeader.shadow`,
-`tooltip.fontShadow` are `false`, and all six `colorMode` / `bgColorMode` keys ship `"custom"`. A setting added to a shipped window
+Every one of the new keys shipped **off**: `columnHeader.shadow` and
+`tooltip.fontShadow` are `false` (`header.shadow` was too, until it became `true` with the header's
+DPS Race match on 2026-10-24 — see `header` below), and all six `colorMode` / `bgColorMode` keys ship `"custom"`. A setting added to a shipped window
 must not change how that window already looks, and a shadow under an outlined face is heavier than
 either alone. `text.shadow` keeps its long-standing `true`.
 
@@ -564,8 +567,32 @@ verb and goes straight to `modules/WindowManager.lua`, which owns re-anchoring a
 ### `header` — the strip above the rows
 
 `show = true` · `font = "Friz Quadrata TT"` · `size = 12` ·
-`outline = "OUTLINE"` · `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "custom"` ·
-`align = "LEFT"` · `height = 18` · `bgColor = { r=0, g=0, b=0, a=0.5 }`.
+`outline = "NONE"` · `shadow = true` · `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "custom"` ·
+`align = "LEFT"` · `height = 26` · `bgColor = { r=0, g=0, b=0, a=0.5 }`.
+
+**The face is `GameFontNormal` spelled out** — Friz Quadrata, 12px, no outline, a 1/-1 drop shadow —
+because that is what Ka0s DPS Race's title bar draws (`Style.FONT.TITLE`) and the two headers sit side
+by side. Until 2026-10-24 the header shipped `outline = "OUTLINE"` with `shadow = false`; the size was
+already 12, and the outline, which rings every glyph in a pixel of black, is what made this title read
+larger than DPS Race's. **A changed default alone would reach only windows created afterwards.** AceDB's
+defaults cannot reach inside the `windows` array, and `EnsureWindowShape` copies the whole template
+into every stored window, so each existing window holds the old values verbatim. `migrations[16]`
+(v16 → v17) therefore rewrites, in every window of every profile, exactly the values that equal the
+old shipped ones — the outline and shadow as a pair, the white control color in `"custom"` mode,
+`hoverReveal = true` and `controlSize = 16` — and leaves any other value alone. A stored old value
+cannot be told apart from a deliberate choice of it; the step takes it for the shipped default, so a
+player who had picked exactly those values sets them again on the Header tab.
+
+**`height = 26` makes the bar Ka0s DPS Race's 30px.** What a player sees as the title bar runs from the
+frame's top edge to the divider: `padding` (6) + `height` (26) − `DIVIDER_INSET` (2) = 30, DPS Race's
+`Style.TITLE_BAR_H`. It shipped 18 (a 22px bar) until 2026-10-24. `migrations[17]` (v17 → v18) moves a
+stored 18 to 26 in every window of every profile, by the same rule as v17: a stored old default is
+taken for the default, and any other height is the player's. The taller bar comes out of the rows, not
+the window: the shipped 220px window fits nine rows where it fitted ten, and the resize floor rises
+from 62 to 70. That floor (the title bar, the column labels and one row) also holds the DRAWN height:
+`ApplyConfig` draws the window at `max(frame.height, layout floor)`, so a stored `frame.height` below
+it (the Height slider still goes down to 60) is drawn at the floor while the stored value is left as
+it is. A Height of 60 to 69 therefore looks the same as 70 with the shipped header.
 
 **`show` moved here from `window.frame.titleBar` at `schemaVersion` 12 → 13** (`window.header.show`,
 not `window.frame.titleBar` — a path naming `frame` for the Header entry's own master switch misled
@@ -731,7 +758,14 @@ bar grows rightward (`SetReverseFill(false)`).
 ### The header's controls
 
 The whole title row — name, session line and controls — is centered on one line through
-`Window:TitleRowTop`, computed from the padding, `header.height` and each item's own configured size.
+`Window:TitleRowMid`, computed from the padding, `header.height` and each item's own configured size.
+Each is anchored by its **middle** — the title `LEFT`/`RIGHT`, the session line and every control
+`RIGHT` — on the bar's midline, the way Ka0s DPS Race anchors its title `CENTER` and its controls
+`RIGHT` at half its bar; a FontString is as tall as its font's line rather than its point size, so a
+top anchor centered a box the text never filled. The gap above each box is floored, so every edge
+lands on a whole pixel and an odd box sits half a pixel above the midline. `Window:TitleBandHeight`
+(padding + height − 2, 30 shipped) is the one number the midline, the divider and the drag strip are
+all placed from.
 The band it centers in runs from the frame's **top edge** down to the divider, not the tinted band
 alone: the padding above is not a margin to anyone looking at the window, so centering in the band
 leaves it as dead space above the row and lands the text against the divider. Nothing in the title
@@ -740,7 +774,7 @@ bar is anchored to a hand-picked offset any more.
 `divider = true` · `dividerThickness = 1` · `dividerColorMode = "skin"` ·
 `dividerColor = { r=0.5, g=0.5, b=0.5, a=0.85 }` — the hairline between the title bar and the column
 labels, and the one piece of the window's chrome a player can switch off outright. Hiding it moves
-nothing else: `TitleRowTop` centers the title row against the `DIVIDER_INSET` constant rather than
+nothing else: `TitleRowMid` centers the title row against the `DIVIDER_INSET` constant rather than
 against the texture.
 
 **`skin` is the shipped mode, and it writes nothing.** It does not resolve `SKIN.divider` and apply
@@ -777,7 +811,8 @@ window is how you put its grip away. The grip itself is LibKa0s-Core's (`MakeRes
 10): it sizes the window's anchor, is drawn on the window frame, and also refuses to start a resize on
 a locked window. A degraded install (no `libs/LibKa0s`) has no grip.
 
-`hoverReveal = true` fades every control except the one under the pointer — the reveal is per
+`hoverReveal = false` (it shipped `true` until 2026-10-24; Ka0s DPS Race's title-bar controls sit at
+full strength, and a strip faded to 25% read as a dimmer color beside it). On, it fades every control except the one under the pointer — the reveal is per
 control, not per strip, so it *is* the "which one am I about to click" feedback rather than a
 separate highlight drawn behind it. `controlAlpha = 0.25` · `controlHoverAlpha = 1.0` are the two
 ends of that fade and were literals in `restAlpha` until they were rows, so a window that touches
@@ -789,7 +824,8 @@ color mode. Both are clamped to 0..1 on read: they come from a file a player can
 out-of-range alpha is not an error, it is a control drawn at the nearest legal value, which reads as
 the setting not working. `minimized = false`
 collapses the window to that bar — the stored `frame.height` is untouched, so expanding restores it
-exactly. `controlColor = { r=1, g=1, b=1, a=1 }` and `controlHoverColor = { r=1, g=0.82, b=0, a=1 }` — two
+exactly. `controlColor = { r=0.7, g=0.7, b=0.72, a=1 }` (white until 2026-10-24; now the collection's
+control gray — LibKa0s-Core's close control at rest and Ka0s DPS Race's `Style.REST`) and `controlHoverColor = { r=1, g=0.82, b=0, a=1 }` — two
 colors, because hover is the only feedback a control gives, each now paired with its own
 **`controlColorMode`** / **`controlHoverColorMode`** dropdown (`class` / `custom`, both default
 `"custom"`) rather than the `controlClassColor` / `controlHoverClassColor` booleans they replaced at
@@ -798,7 +834,7 @@ answers: a player who wants their class color under the pointer has not asked fo
 it, and a shared mode would make hover and rest the same color for anyone who chose class — the one
 thing a hover color must never be. `migrations[12]` reads each stored boolean and writes `"class"` or
 `"custom"` in its place. The art ships white and is tinted by a
-**multiply**, so the shipped `controlColor` is the identity rather than a recolor: the icons read as
+**multiply**, so the shipped `controlColor` is exactly the gray the icons are drawn in: they read as
 chrome, and the pointer turns exactly one of them the gold the rest of the header uses. Both are
 pickers rather than a "match the header text" switch — one of the two states being unconfigurable was
 the complaint that produced them. (The tint had never run at all before: `HeaderControls.Style` read
@@ -806,9 +842,12 @@ the complaint that produced them. (The tint had never run at all before: `Header
 `modules/Window_Header.lua` publishes it now, and the controls take the header's **font** from it
 while carrying their own colors.)
 
-`controlSize = 16` is the *slot* each control occupies — its click target and the strip's layout
-pitch. The art is drawn centered inside that slot at 72% of it, so a 64px icon lands at 11px in a 16px
-box, on the same line as a 12px title; a glyph that reaches its own edges reads much heavier than the
+`controlSize = 18` is the *slot* each control occupies — its click target and the strip's layout
+pitch (18 + the 4px gap = Ka0s DPS Race's 22px `CONTROL_PITCH`). The art is drawn centered inside that
+slot at 72% of it, floored, so a 64px icon lands at 12px — DPS Race's icon size and the title's own
+height — on a whole-pixel inset of 3, one 12px box with the title on one midline (both are placed by
+`TitleRowMid`). It shipped 16 until 2026-10-24, which drew an 11px icon 2.5px into its slot, half a
+pixel off the title's center line; a glyph that reaches its own edges reads much heavier than the
 header text beside it when it fills the slot outright.
 
 **A collapsed window does not poll.** That is a real clause in `ShouldPoll`, not an emergent

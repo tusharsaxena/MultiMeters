@@ -188,6 +188,26 @@ test("The window refuses to be dragged smaller than the grid needs", function()
     assertTrue(minW >= Const.NAME_COLUMN_WIDTH + #window.layout.columns * Const.COLUMN_MIN_WIDTH)
 end)
 
+test("The shipped floor counts the 30px title bar, and a lower stored height draws at it", function()
+    -- 2 * 6 padding + 26 bar + 16 labels + one 16px row = 70 (62 before the bar
+    -- grew). The Height slider goes to 60, so a stored height under the floor is
+    -- drawn AT the floor -- never with its one reserved row past the bottom edge
+    -- -- and the stored value is left alone.
+    -- red under: SetSize(width, frameCfg.height) with no floor.
+    local _, window, cfg = scene()
+    window:ApplyConfig()
+    assertEqual(window.layout.minHeight, 70)
+
+    cfg.frame.height = 60
+    window:ApplyConfig()
+    assertEqual(window.anchor:GetHeight(), 70, "drawn under the layout's own floor")
+    assertEqual(cfg.frame.height, 60, "the stored height was rewritten")
+
+    cfg.frame.height = 220
+    window:ApplyConfig()
+    assertEqual(window.anchor:GetHeight(), 220, "a height above the floor is drawn as stored")
+end)
+
 -- ---------------------------------------------------------------------------
 -- The show ladder
 -- ---------------------------------------------------------------------------

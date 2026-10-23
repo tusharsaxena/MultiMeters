@@ -909,7 +909,7 @@ local HEADER_TEXT_ROWS = compose("FontGroup", {
     defaults = {
         font = "Friz Quadrata TT", fontSize = 12,
         fontColor = { r = 1, g = 0.82, b = 0, a = 1 },
-        fontFlags = "OUTLINE", fontShadow = false,
+        fontFlags = "NONE", fontShadow = true,
     },
     classColor = { source = "player" },
 })

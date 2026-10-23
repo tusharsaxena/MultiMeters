@@ -472,7 +472,7 @@ NS.Schema = {
         label = L["Alignment"], desc = L["Where the header text sits horizontally."],
     },
     {
-        path = "window.header.height", type = "number", default = 18,
+        path = "window.header.height", type = "number", default = 26,
         min = 8, max = 48, step = 1, fmt = "%d px",
         page = "header", group = L["Title bar"], subgroup = L["Layout"],
         label = L["Header height"], desc = L["Height of the header strip in pixels."],
@@ -722,12 +722,12 @@ NS.Schema = {
     -- the two lines rather than across one. The opacity pair is unaffected and
     -- still reads across, which is what it always did.
     {
-        path = "window.frame.hoverReveal", type = "bool", default = true,
+        path = "window.frame.hoverReveal", type = "bool", default = false,
         page = "header", group = L["Button style"], subgroup = L["Icon"],
         label = L["Reveal controls on hover"], desc = L["Fade every control except the one under the pointer. Off keeps them all visible."],
     },
     {
-        path = "window.frame.controlSize", type = "number", default = 16,
+        path = "window.frame.controlSize", type = "number", default = 18,
         min = 10, max = 32, step = 1,
         page = "header", group = L["Button style"], subgroup = L["Icon"],
         label = L["Control size"], desc = L["How large each header control is drawn, in pixels."],
@@ -742,7 +742,7 @@ NS.Schema = {
     -- headerColor makes for the title beside them.
     {
         path = "window.frame.controlColor", type = "color",
-        default = { r = 1, g = 1, b = 1, a = 1 },
+        default = { r = 0.7, g = 0.7, b = 0.72, a = 1 },
         page = "header", group = L["Button style"], subgroup = L["Color"],
         startsLine = true,
         label = L["Control color"], desc = L["Color the header controls are drawn in."],

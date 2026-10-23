@@ -476,7 +476,8 @@ function HeaderControls:Apply(window)
     -- title and the session line are placed against the same number: the strip
     -- used to be pinned a pixel under the frame padding, which put it 3px below
     -- the text beside it and read as the icons hanging off the bottom of the bar.
-    local y = window.TitleRowTop and window:TitleRowTop(size) or -(layout.padding - 1)
+    -- Anchored by the MIDDLE (RIGHT), as Ka0s DPS Race anchors its own controls.
+    local y = window.TitleRowMid and window:TitleRowMid(size) or -(layout.padding - 1 + size / 2)
     local used = 0
 
     for i = 1, #CONTROLS do
@@ -499,7 +500,7 @@ function HeaderControls:Apply(window)
                 -- one addition.
                 local dx = -(layout.padding + used)
                 button:ClearAllPoints()
-                button:SetPoint("TOPRIGHT", window.frame, "TOPRIGHT", dx, y)
+                button:SetPoint("RIGHT", window.frame, "TOPRIGHT", dx, y)
                 button:SetSize(size, size)
                 -- The art, inset inside the slot. Floored rather than rounded so
                 -- a texture can never come out a pixel wider than the box it is
@@ -547,7 +548,8 @@ local function controlColor(frameCfg, hovered)
     if hovered then
         r, g, b = color(frameCfg.controlHoverColor, 1, 0.82, 0)
     else
-        r, g, b = color(frameCfg.controlColor, 1, 1, 1)
+        -- The shipped rest gray (defaults/Profile.lua), for a config without one.
+        r, g, b = color(frameCfg.controlColor, 0.7, 0.7, 0.72)
     end
 
     -- Spelled out rather than `hovered and A or B`, and the reason survived the type change: a

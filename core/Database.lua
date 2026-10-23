@@ -51,11 +51,13 @@ NS.Database = Database
 --     prunes it.
 -- v15 moves LibDBIcon's `minimap` table from the profile to the global store.
 -- v16 spells the window's minimize keys the US way.
+-- v17 matches the header to Ka0s DPS Race.
+-- v18 grows the title bar to Ka0s DPS Race's 30px.
 --
 -- The defaults declare `global.schemaVersion = 0`, which means UNSTAMPED: a fresh
 -- install or an account from before the runner stamped anything. It is never the
 -- current version (savedvariables-§1); see defaults/Profile.lua for why.
-local CURRENT_DB_VERSION = 16
+local CURRENT_DB_VERSION = 18
 
 --- The runner's target, published under the name savedvariables-§1 gives it.
 --- Raising it means registering the step that reaches it; the defaults' 0 never moves.
@@ -966,6 +968,71 @@ migrations[15] = function(db)
         if type(profile.windows) == "table" then
             for _, w in pairs(profile.windows) do
                 if type(w) == "table" then v16RenameFrameKeys(w.frame) end
+            end
+        end
+    end
+end
+
+--- True when a stored color is exactly the old shipped white control color.
+local function v17IsOldControlColor(c)
+    return type(c) == "table" and c.r == 1 and c.g == 1 and c.b == 1 and c.a == 1
+end
+
+--- Move one window's header and control keys off the values every window shipped with before
+--- 2026-10-24, and ONLY those: a value equal to the old default is rewritten, and any other value
+--- is the player's choice and is left alone. The outline and shadow move as a pair, since an
+--- outline kept beside a shadow that was turned on was chosen. The control color moves only in
+--- "custom" mode, the one mode that draws it.
+local function v17MatchHeader(w)
+    local header, frame = w.header, w.frame
+    if type(header) == "table" and header.outline == "OUTLINE" and header.shadow == false then
+        header.outline, header.shadow = "NONE", true
+    end
+    if type(frame) ~= "table" then return end
+    if frame.controlColorMode == "custom" and v17IsOldControlColor(frame.controlColor) then
+        frame.controlColor = { r = 0.7, g = 0.7, b = 0.72, a = 1 }
+    end
+    if frame.hoverReveal == true then frame.hoverReveal = false end
+    if frame.controlSize == 16 then frame.controlSize = 18 end
+end
+
+--- v16 -> v17: THE HEADER MATCHED TO KA0S DPS RACE'S TITLE BAR.
+---
+--- defaults/Profile.lua's WINDOW_TEMPLATE changed four groups of values (an unoutlined, shadowed
+--- title; gray controls at full strength; an 18px slot). Changing the template alone reaches only
+--- windows created afterwards: AceDB's defaults cannot reach inside the windows array, and
+--- fillMissing copied the whole old template into every stored window, so each one holds the old
+--- values verbatim. A stored old value cannot be told apart from a deliberate choice of it; the
+--- step takes it for the shipped default, which is what nearly every one of them is.
+---
+--- Every window of every profile, for the reason allProfiles gives. Idempotent: no value the step
+--- writes is one it rewrites.
+migrations[16] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" then v17MatchHeader(w) end
+            end
+        end
+    end
+end
+
+--- v17 -> v18: THE TITLE BAR GROWN TO KA0S DPS RACE'S 30PX.
+---
+--- `header.height` shipped 18 (6 padding + 18 - 2 = a 22px bar to the divider) and ships 26 now
+--- (30px, DPS Race's `Style.TITLE_BAR_H`). A separate step rather than an edit to migrations[16]:
+--- that step has already run on accounts that tried the v17 build, and a step that has run is
+--- never rewritten. Same rule as v17: only a stored 18, the old shipped value, moves; any other
+--- height is the player's and is left alone, and a stored 18 cannot be told apart from a chosen 18.
+---
+--- Every window of every profile, for the reason allProfiles gives. Idempotent: 26 is not 18.
+migrations[17] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" and type(w.header) == "table" and w.header.height == 18 then
+                    w.header.height = 26
+                end
             end
         end
     end

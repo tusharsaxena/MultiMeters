@@ -657,6 +657,14 @@ local function applyTestMode(enabled, keepShown)
     if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
 end
 
+--- Print a refused test-mode start and repaint the panel's checkbox.
+--- @return boolean false
+local function refuseTestStart(msg)
+    if NS.Print then NS.Print(msg) end
+    if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
+    return false
+end
+
 --- Placeholder data on or off, BY HAND -- the one switch `/mm test` and the
 --- General page's Test mode box both go through.
 ---
@@ -681,17 +689,13 @@ function M:SetTestMode(enabled)
     -- Test mode and a simulation are exclusive (MultiMeters#60): each refuses
     -- while the other runs, and the simulation's start refuses test mode.
     if enabled and NS.Sim and NS.Sim:IsActive() then
-        if NS.Print then NS.Print(L["Test mode is not available while a simulation runs."]) end
-        if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
-        return false
+        return refuseTestStart(L["Test mode is not available while a simulation runs."])
     end
     if enabled and not M:IsTest() and fighting() then
         -- The refusal names its guard in the log too (debug-logging-§8,
         -- Diagnosis), since the [Test] line a start writes never comes.
         if NS.State and NS.State.debug and NS.Debug then NS.Debug("Test", "start refused: in combat") end
-        if NS.Print then NS.Print(L["Cannot start test mode during combat"]) end
-        if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
-        return false
+        return refuseTestStart(L["Cannot start test mode during combat"])
     end
     applyTestMode(enabled, not enabled and not (NS.IsStoodDown and NS.IsStoodDown()))
     return true

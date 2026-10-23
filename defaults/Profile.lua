@@ -138,30 +138,37 @@ local WINDOW_TEMPLATE = {
         showSegment     = true,
         showReset       = true,
         showExport      = true,
-        -- Chrome fades until the pointer is over the title strip. Off is the
-        -- behavior every version before this one had, so it is the honest
-        -- fallback rather than a degraded one.
-        hoverReveal     = true,
+        -- Chrome fades until the pointer is over the title strip when this is on.
+        -- OFF BY DEFAULT since the header was matched to Ka0s DPS Race's title
+        -- bar (2026-10-24): that bar draws its controls at full strength in the
+        -- rest gray, and a faded strip at 25% read as a different, dimmer color
+        -- beside it. The reveal is still one checkbox away, and `controlAlpha`
+        -- below keeps its old 0.25 for a player who switches it back on.
+        hoverReveal     = false,
         -- STATE, not a preference, and deliberately not a settings row: the
         -- header's minimize control writes it, and a window left collapsed comes
         -- back collapsed. Persisted like every other window fact.
         minimized       = false,
         -- TWO COLORS, BECAUSE HOVER IS THE ONLY FEEDBACK A CONTROL GIVES. The
-        -- art ships white and is tinted by a multiply, so white is the identity
-        -- and the icons read as chrome against any header color a player picks;
-        -- the pointer turns one of them the gold the rest of the header text
-        -- uses. Both are pickers rather than a "match the header" switch: the
-        -- strip is the only part of the window whose two states a player sees
-        -- constantly, and one of them being unconfigurable was the complaint.
-        -- One color MODE each, and both ship "custom" so no window changes
-        -- appearance. Two rather than one because hover and rest are two
-        -- independent answers: sharing a mode would make the pointer's color
+        -- art ships white and is tinted by a multiply, so the rest color is
+        -- exactly the color the icons are drawn in, and they read as chrome
+        -- against any header color a player picks; the pointer turns one of them
+        -- the gold the rest of the header text uses. Both are pickers rather
+        -- than a "match the header" switch: the strip is the only part of the
+        -- window whose two states a player sees constantly, and one of them
+        -- being unconfigurable was the complaint.
+        -- THE REST COLOR IS THE COLLECTION'S CONTROL GRAY, 0.7 / 0.7 / 0.72 --
+        -- LibKa0s-Core-1.0's close control at rest and Ka0s DPS Race's
+        -- `Style.REST` -- rather than the white it shipped as until 2026-10-24,
+        -- so this strip and DPS Race's title bar draw their controls alike.
+        -- One color MODE each, and both ship "custom". Two rather than one
+        -- because hover and rest are two independent answers: sharing a mode would make the pointer's color
         -- identical to the resting one for anybody who chose class, which is the
         -- one thing a hover color must never be. The LOCAL player's class, like
         -- every other header surface — the strip is about the window, not about
         -- any row in it.
         controlColorMode       = "custom",
-        controlColor           = { r = 1, g = 1, b = 1, a = 1 },
+        controlColor           = { r = 0.7, g = 0.7, b = 0.72, a = 1 },
         controlHoverColorMode  = "custom",
         controlHoverColor      = { r = 1, g = 0.82, b = 0, a = 1 },
         -- THE TWO ENDS OF THE REVEAL, which were a hardcoded 0.25 and 1 before
@@ -172,10 +179,13 @@ local WINDOW_TEMPLATE = {
         controlAlpha           = 0.25,
         controlHoverAlpha      = 1.0,
         -- The SLOT a control occupies -- its click target and the strip's layout
-        -- pitch. The art is drawn centered inside it at 72% of it, so 16 puts an
-        -- 11px icon on the same line as a 12px title and the strip stops
-        -- outweighing the text beside it.
-        controlSize     = 16,
+        -- pitch. The art is drawn centered inside it at 72% of it, floored.
+        -- 18 IS DPS RACE'S SLOT (`Style.CONTROL`, and LibKa0s' close control's):
+        -- it puts a 12px icon -- DPS Race's own art size -- in a box exactly as
+        -- tall as the 12px title, on a whole-pixel inset of 3. The old 16 drew
+        -- an 11px icon on a 2.5px inset, half a pixel off the title's center
+        -- line, so the strip read as sitting a touch low (2026-10-24).
+        controlSize     = 18,
         -- NO `resizeGrip` KEY. The grip follows the LOCK -- drawn while the
         -- window is unlocked, hidden while it is locked -- and a second setting
         -- for it was one that could disagree with the lock, and did: it was read
@@ -200,13 +210,16 @@ local WINDOW_TEMPLATE = {
     header = {
         show            = true,
         font            = "Friz Quadrata TT",
+        -- GameFontNormal, SPELLED OUT: Friz Quadrata at 12px, no outline, a 1/-1
+        -- drop shadow. That is what Ka0s DPS Race's title bar draws in
+        -- (`Style.FONT.TITLE`), and the two headers sit side by side. The size
+        -- was already 12; what made this one read LARGER was the OUTLINE, which
+        -- rings every glyph in a pixel of black and thickens the face. The
+        -- header used to ship OUTLINE with no shadow (until 2026-10-24); a
+        -- player who wants that back has both controls on the Header tab.
         size            = 12,
-        outline         = "OUTLINE",   -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
-        -- OFF, on both new keys, and deliberately: a setting added to a shipped
-        -- window must not change how that window already looks. A shadow under
-        -- an outlined face is heavier than either alone, and a class-colored
-        -- header is a taste rather than an improvement.
-        shadow          = false,
+        outline         = "NONE",      -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
+        shadow          = true,
         -- CUSTOM, so a window that never opens the dropdown is drawn from the
         -- picker below exactly as it was before there was a dropdown. `class` is
         -- the only other answer: see the note in settings/Schema.lua for why
@@ -214,7 +227,10 @@ local WINDOW_TEMPLATE = {
         colorMode       = "custom",    -- class | custom
         color           = { r = 1, g = 0.82, b = 0, a = 1 },  -- Blizzard gold
         align           = "LEFT",      -- LEFT | CENTER | RIGHT
-        height          = 18,
+        -- 26, so the bar a player sees -- frame top to divider, 6 padding + 26
+        -- - 2 -- is Ka0s DPS Race's 30px title bar (`Style.TITLE_BAR_H`). It
+        -- shipped 18 (a 22px bar) until 2026-10-24.
+        height          = 26,
         bgColor         = { r = 0, g = 0, b = 0, a = 0.5 },
         -- The hairline between the title bar and the column labels. ON, because
         -- it is what the window has always drawn and a chrome element that

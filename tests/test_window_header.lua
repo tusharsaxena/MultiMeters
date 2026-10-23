@@ -154,22 +154,38 @@ end)
 
 test("The title-bar divider can be switched off, and does not move the title row", function()
     -- The one piece of the window's chrome a player can hide. What matters as much
-    -- as the hiding is that NOTHING ELSE MOVES: TitleRowTop centers the title row
+    -- as the hiding is that NOTHING ELSE MOVES: TitleRowMid centers the title row
     -- against the DIVIDER_INSET constant, not against this texture, so a hidden
     -- line leaves the title, the session line and the control strip exactly where
     -- they were. A layout that measured the divider would shift all three.
-    -- red under: gating the title row on the divider, or hiding it by height 0.
+    -- It reads the anchors ApplyConfig actually SET, not TitleRowMid: that pure
+    -- function never sees the divider, so comparing it with itself proved nothing.
+    -- red under: gating the title row on the divider, or hiding it by height 0,
+    -- or any placement (title, session line, controls) offset by the divider.
     local _, window, cfg = scene()
 
+    local function placed()
+        local _, _, _, _, titleY = window.frame.title:GetPoint(1)
+        local _, _, _, _, lineY  = window.sessionLine:GetPoint(1)
+        local gearY
+        for _, p in ipairs(window.controls.settings.__points or {}) do
+            if p.point == "RIGHT" then gearY = p.y end
+        end
+        return titleY, lineY, gearY
+    end
+
     window:ApplyConfig()
-    local rowTop = window:TitleRowTop(cfg.header.height)
+    local titleY, lineY, gearY = placed()
     assertTrue(window.frame.divider:IsShown(), "the divider ships drawn")
+    assertTrue(gearY ~= nil, "the gear was not anchored by its RIGHT point")
 
     cfg.header.divider = false
     window:ApplyConfig()
     assertFalse(window.frame.divider:IsShown(), "the divider ignored its setting")
-    assertEqual(window:TitleRowTop(cfg.header.height), rowTop,
-        "hiding the divider moved the title row")
+    local titleY2, lineY2, gearY2 = placed()
+    assertEqual(titleY2, titleY, "hiding the divider moved the title")
+    assertEqual(lineY2, lineY, "hiding the divider moved the session line")
+    assertEqual(gearY2, gearY, "hiding the divider moved the control strip")
 end)
 
 test("The divider's thickness is a setting", function()
@@ -913,6 +929,23 @@ end)
 -- ---------------------------------------------------------------------------
 -- The header's four text controls
 -- ---------------------------------------------------------------------------
+
+test("Header ships GameFontNormal spelled out: 12px, no outline, a 1/-1 shadow", function()
+    -- Ka0s DPS Race's title bar draws its title in GameFontNormal (Friz Quadrata,
+    -- 12px, unoutlined, shadowed) and the two headers are compared side by side.
+    -- The size was always 12; the OUTLINE is what made this one read larger.
+    -- red under: header.outline = "OUTLINE" or header.shadow = false in
+    -- defaults/Profile.lua.
+    local _, window, cfg = scene()
+    assertEqual(cfg.header.size, 12)
+    assertEqual(cfg.header.outline, "NONE")
+    for _, fs in ipairs({ window.frame.title, window.sessionText }) do
+        assertEqual(fs.__font.size, 12, "the header line is not 12px")
+        assertEqual(fs.__font.flags, nil, "the header line is still outlined")
+        assertEqual(fs.__shadow[1], 1, "the header line has no shadow")
+        assertEqual(fs.__shadow[2], -1)
+    end
+end)
 
 test("Header shadow reaches every line of the strip", function()
     -- The cell text has had a shadow all along and the other three surfaces had
