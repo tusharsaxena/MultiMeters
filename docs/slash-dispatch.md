@@ -16,9 +16,9 @@ A bare `/mm` (empty, or whitespace only) runs the `config` verb with `""` and op
 panel on its landing page; `/mm help` prints the index (`slash-commands-§4`, LibKa0s-Slash minor 11).
 The library-absent stub in `settings/Slash.lua` mirrors the rule, so there `config` answers that the
 panel is unavailable.
-`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **20 verbs**, the
-thirteen reserved ones first in the order the standard fixes, then this addon's seven: `profile`, then
-the six window verbs. The dispatcher, the
+`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **21 verbs**, the
+thirteen reserved ones first in the order the standard fixes, then this addon's eight: `profile`, the
+six window verbs, then `sim`. The dispatcher, the
 help renderer and the schema CLI are LibKa0s-Slash-1.0's; the verb table stays this addon's and is
 passed *in*, because the settings landing page renders the same rows and library ownership would make
 that a load-time cycle between two majors.

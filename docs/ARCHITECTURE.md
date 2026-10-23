@@ -138,12 +138,15 @@ Fifteen `AceEvent` messages, declared once in `core/Constants.lua`'s `MSG` catal
 `LibKa0s-Bus-1.0`'s `Catalog`, are the only channel between modules. Each has **one sender**, and every
 receiver that is not an AceAddon module owns a private target from `NS.NewBusTarget()`. The catalog
 with sender, consumers and payload, the two `METER_RESET` paths and the stand-down record:
-**[message-bus.md](message-bus.md)**.
+**[message-bus.md](message-bus.md)**. The newest is `SIM_CHANGED { active }`, which `modules/Sim.lua`
+sends at a simulation's start and stop so every window shows or hides its sim strip; that stop is
+also the one sanctioned second sender of `ENTERING_WORLD`, `METER_SESSION` and `COMBAT_CHANGED`.
 
 ## Slash commands
 
 `/mm` and `/multimeters` dispatch `NS.COMMANDS` (`settings/Slash.lua`) through LibKa0s-Slash-1.0:
-**20 verbs**, the thirteen reserved ones then this addon's seven, plus the `window` sub-tree. A bare `/mm`
+**21 verbs**, the thirteen reserved ones then this addon's eight, plus the `window` sub-tree. The eighth
+is `sim`, the simulator (MultiMeters#60), whose whole grammar is LibKa0s-Sim-1.0's `RunVerb`. A bare `/mm`
 opens the settings panel. The verb table, the sub-tree, the `debug` words, the degraded behavior and
 every refusal line: **[slash-dispatch.md](slash-dispatch.md)**.
 
@@ -165,7 +168,11 @@ decides anything, which is what lets that section be read as a wiring diagram.
 Every `EVENTS` row goes through `NS.SafeRegisterEvent` (`events-frames-taint-§1`; a refused name lands
 in `NS.State.rejectedEvents`) with the ONE handler `NS:OnGameEvent`, which drops the event when
 `NS.RealEventFilter` (the simulator's hook, `nil` outside a session) answers true, else calls
-`NS.DeliverEvent` to run the method `NS.HANDLER_BY_EVENT` names. Detail: [data-flow.md](data-flow.md).
+`NS.DeliverEvent` to run the method `NS.HANDLER_BY_EVENT` names. While a `/mm sim` session runs, the
+filter is `modules/Sim.lua`'s real-event classifier: real `DAMAGE_METER_*` traffic, a roster edge while
+still solo and a zone edge while still outside an instance are consumed (the invented world owns them);
+real combat, a loading screen, a real group or a real instance stop the session, then deliver. Detail:
+[data-flow.md](data-flow.md#10-the-simulator-path).
 
 | Event | Dispatch row (method) | Becomes |
 |---|---|---|
@@ -192,9 +199,7 @@ The player-state block exists for `modules/Visibility.lua`'s rules and carries *
 because those rules read their inputs live at the moment they are asked.
 
 While debug logging is on, the world-entry, roster, zone, restriction and both `PLAYER_REGEN_*`
-handlers also write one `[Event]` line each (`traceEvent`, gated before anything is read). The
-player-state block, the spellcast and system-message handlers and the `DAMAGE_METER_*` traffic do
-not; the line format is in [debug.md](debug.md).
+handlers write one `[Event]` line each; the rest do not ([debug.md](debug.md)).
 
 **These edges are load-bearing, not an optimization** — there is no fallback poll, so a visibility
 input with no edge on the bus is a rule that never fires. Why, and which rule it cost, is in
@@ -208,11 +213,8 @@ Everything else is a bus subscription. Registration by module is tabulated in
 
 Perf buckets, declared in `core/PerfSetup.lua` with their nesting: `meterEvent` · `spellEvent` ·
 `systemEvent` · `refresh` (→ `aggregate` → `providerRead`, `render` → `renderRow`) · `tooltip`
-(→ `targets` → `providerRead`).
-`providerRead` has two parents, so it declares none, and every nested bracket passes the parent it
-ran inside, so a capture reports the tree as observed. A parent is never summed with its children.
-Detail in [performance.md](performance.md) and
-[perf-analysis/README.md](perf-analysis/README.md).
+(→ `targets` → `providerRead`). The tree and why `providerRead` declares no parent:
+[performance.md](performance.md) and [perf-analysis/README.md](perf-analysis/README.md).
 
 ## Taint notes
 
@@ -309,6 +311,13 @@ thing is in it before opening it:
   out of the window, so the resize floor does not move. At the minimum height the one row it leaves is
   pushed 22 px down, partly past the window's bottom edge (22 px less the padding), until test mode
   ends or the window is made taller ([#59](https://github.com/tusharsaxena/MultiMeters/issues/59)).
+- **What `/mm sim` does not simulate** ([#60](https://github.com/tusharsaxena/MultiMeters/issues/60)).
+  No secret value and no `Combat` restriction: its numbers are plain, so a session runs the
+  out-of-combat build and the secret paths keep their proof in the headless `mock_secrets` suites. The
+  feign filter and the player-state hide rules stay live. A window pinned to a real segment reads no
+  session for the length of a run and shows the empty state; no window is force-shown at the start; a
+  minimized window shows no sim marker (the step panel marks the run); and a `/reload` mid-run leaves a
+  simulated pin in the profile that heals on the next refresh.
 - **Deliberate ceilings.** English only, Retail only, a 40-row export cap, no in-window column drag
   editor (rule R3), wheel-only scrolling, a sticky roster, a drill-down list that is a snapshot, and
   session-only debug logging.
@@ -355,8 +364,8 @@ re-check re-runs the count rather than re-arguing the verdict. **All seven ship.
 | `compat-layer.md` | Present | **`core/Compat.lua`: 886 lines, 42 shims** (4 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
 | `midnight-quirks.md` | Present | **Four client-version workarounds of the addon's own** (isolated event registrations, `ADDON_RESTRICTION_STATE_CHANGED` against a namespace a client may lack, the settle pass, the secret-value model), against a trigger of one. The detail moved here from [Taint notes](#taint-notes) rather than being copied. |
 | `debug.md` | Present | **One diagnostics report, three probe verbs, the `tooltip` session flag and the `NS.Debug` channels** (`debug-logging-§14`). Written 2026-09-09, when the row's own re-check trigger fired. |
-| `slash-dispatch.md` | Present | **20 verbs in `NS.COMMANDS` and a sub-command tree** (`window` takes four sub-verbs), against eight or more commands or any tree. The hub's `## Slash commands` detail moved there on 2026-09-24. |
-| `message-bus.md` | Present | **14 distinct messages**, against more than ten; one catalog (`core/Constants.lua` `MSG`), one sender each. Moved out of the hub on 2026-09-24. |
+| `slash-dispatch.md` | Present | **21 verbs in `NS.COMMANDS` and a sub-command tree** (`window` takes four sub-verbs), against eight or more commands or any tree. The hub's `## Slash commands` detail moved there on 2026-09-24. |
+| `message-bus.md` | Present | **15 distinct messages**, against more than ten; one catalog (`core/Constants.lua` `MSG`), one sender each. Moved out of the hub on 2026-09-24. |
 | `profiles.md` | Present | **User-visible profiles**: `settings/Profiles.lua` registers AceDBOptions-3.0's tree as a settings page. |
 
 ### Verification and record (documentation-§3)
@@ -376,7 +385,7 @@ re-check re-runs the count rather than re-arguing the verdict. **All seven ship.
 |---|---|
 | `disabled-state.md` | What *disabled* means here — the one latch, its two holds, the full teardown and rebuild, what survives because it is setup, and the slash and launcher surfaces while the addon is off |
 | `texture-paths.md` | The hard-coded texture-path census (`library-stack-§8`): every `Interface\` path in authored source, its disposition, and the command that measures it |
-| `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact |
+| `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact. The `/mm sim` simulator's is `specs/2026-10-23-simulator-design.md` (MultiMeters#60) |
 | `revendor/` | Frozen — one dated bundle per LibKa0s re-vendor: the payload delta and what was adopted, declined or filed from it |
 | `audits/` | Frozen — one dated bundle per `/dev-copilot:wow-standards-audit` run: the state, the deviations and the evidence as they stood on that date |
 | `reviews/` | Frozen — one dated bundle per `/dev-copilot:review` run: the findings, the proposed changes and the plan as they stood on that date |

@@ -18,7 +18,7 @@ secret-value rules the checks refer to.
 | ID range | Theme | What it covers |
 |---|---|---|
 | INSTALL-1 to INSTALL-11 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
-| SLASH-1 to SLASH-28 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding, the `/mm sim` simulator |
+| SLASH-1 to SLASH-19 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding |
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
@@ -30,6 +30,7 @@ secret-value rules the checks refer to.
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-42 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-10 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip |
+| SIM-1 to SIM-12 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
 ## Before you start
@@ -193,33 +194,9 @@ secret-value rules the checks refer to.
   Result: pass (owner-marked 2026-10-23)
 - **SLASH-19. The key in combat.** Press the key in combat → the windows toggle with no error and no
   taint message (the windows are not secure). Result: pass (owner-marked 2026-10-23)
-- **SLASH-20. The simulator opens and plays (SM-MM-25).** Solo, outside an instance, `/mm sim` → the
-  step panel opens docked to a meter window. Start → the run plays at once, and every Multi Meters
-  window shows the SIMULATION strip. Result: pending
-- **SLASH-21. The simulator refuses where it cannot run (SM-MM-26).** `/mm sim start dungeon` in a
-  real group, inside an instance, in combat and with `/mm test` on → each refuses with its own line
-  and no simulation starts. Result: pending
-- **SLASH-22. Real combat ends a simulation (SM-MM-27).** Mid-simulation, pull a training dummy → the
-  simulation stops with *Simulation stopped: you entered combat.*, and the windows show live data
-  again. Result: pending
-- **SLASH-23. A stop leaves nothing behind (SM-MM-28).** Note each window's segment and pin, run a
-  simulation, then `/mm sim stop` → the windows show the same segments and pins as before the start,
-  and `/mm test` works again. Result: pending
-- **SLASH-24. The dungeon scenario (SM-MM-29).** `/mm sim start dungeon` → the bars grow during each
-  fight, the segment dropdown lists Trash then Speaker Shadowcrown, and the boss death shows in the
-  Deaths column with a recap tooltip. Result: pending
-- **SLASH-25. The raid scenario (SM-MM-30).** `/mm sim start raid` → a 20-row grid, the pet's damage
-  follows the Merge pets setting, and no duplicate player row. Result: pending
-- **SLASH-26. The wipe scenario (SM-MM-31).** `/mm sim start wipe` → everyone dies, Reset meter data
-  clears the segments (Blizzard's own meter untouched afterwards), and the re-pull starts a fresh
-  segment. Result: pending
-- **SLASH-27. The zone scenario (SM-MM-32).** `/mm sim start zone` → a window set to hide outside
-  instances hides during the Isle of Dorn step and returns in the second dungeon. Result: pending
-- **SLASH-28. An export during a simulation (SM-MM-33).** Mid-simulation, Export to Raid → `[sim]` lines
-  print in chat and nothing is sent to the group. Result: pending
-- **SLASH-29. The diagnostics sim section (SM-MM-36).** Mid-simulation, `/mm diagnostics` → the
-  report has a `-- sim --` section reading `active: yes scenario=<name>` and the current `step: N/M`;
-  after `/mm sim stop`, run it again → `active: no` and `last stop: reason=<why>`. Result: pending
+- SLASH-20 to SLASH-29 were the first cut of the simulator checks (2026-10-23). They moved whole to
+  the [SIM](#sim) theme, SLASH-20 to SLASH-28 as SIM-1 to SIM-9 and SLASH-29 as SIM-11, and the
+  numbers are retired; the next SLASH check is SLASH-30.
 
 ## PANEL
 
@@ -1437,6 +1414,49 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
   grip rather than re-implementing the library's). Result: pass (owner-marked 2026-10-10)
 - **DEGRADED-9. Restoring.** Rename the folder back, `/reload` → everything returns. Result: pass (owner-marked 2026-10-10)
 
+## SIM
+
+The `/mm sim` simulator (MultiMeters#60): a scripted fight through the real meter, solo and outside
+an instance. Each check mirrors one of the run bundle's SM-MM-25 to SM-MM-36 checks, named in
+brackets. Start each from a `/reload`, solo, in the open world, with test mode off.
+
+- **SIM-1. The simulator opens and plays (SM-MM-25).** `/mm sim` → the step panel opens docked to a
+  meter window. Start → the run plays at once, with no Run all button, and every Multi Meters window
+  shows the SIMULATION strip. Result: pending
+- **SIM-2. The simulator refuses where it cannot run (SM-MM-26).** `/mm sim start dungeon` in a real
+  group, inside an instance, in combat and with `/mm test` on → each refuses with its own line and no
+  simulation starts. Result: pending
+- **SIM-3. Real combat ends a simulation (SM-MM-27).** Mid-simulation, pull a training dummy → the
+  simulation stops with *Simulation stopped: you entered combat.*, and the windows show live data
+  again. Result: pending
+- **SIM-4. A stop leaves nothing behind (SM-MM-28).** Note each window's segment and pin, run a
+  simulation, then `/mm sim stop` → the windows show the same segments and pins as before the start,
+  and `/mm test` works again. Result: pending
+- **SIM-5. The dungeon scenario (SM-MM-29).** `/mm sim start dungeon` → the bars grow during each
+  fight, the segment dropdown lists Trash then Speaker Shadowcrown, and the boss death shows in the
+  Deaths column with a recap tooltip. Result: pending
+- **SIM-6. The raid scenario (SM-MM-30).** `/mm sim start raid` → a 20-row grid, the pet's damage
+  follows the Merge pets setting, and no duplicate player row. Result: pending
+- **SIM-7. The wipe scenario (SM-MM-31).** `/mm sim start wipe` → everyone dies, Reset meter data
+  clears the segments (Blizzard's own meter untouched afterwards), and the re-pull starts a fresh
+  segment. Result: pending
+- **SIM-8. The zone scenario (SM-MM-32).** `/mm sim start zone` → a window set to hide outside
+  instances hides during the Isle of Dorn step and returns in the second dungeon. Result: pending
+- **SIM-9. An export during a simulation (SM-MM-33).** Mid-simulation, Export to Raid → `[sim]` lines
+  print in chat and nothing is sent to the group. Result: pending
+- **SIM-10. The sim strip on every window (SM-MM-34).** During a simulation every window shows the
+  SIMULATION strip under its title, in its own tint and distinct from the test strip, including a
+  window with its header hidden; no title carries a SIMULATION word; the strip goes at the stop.
+  Result: pending
+- **SIM-11. The diagnostics sim section (SM-MM-36).** Mid-simulation, `/mm diagnostics` → the report
+  has a `-- sim --` section reading `active: yes scenario=<name>` and the current `step: N/M`; after
+  `/mm sim stop`, run it again → `active: no` and `last stop: reason=<why>`. Result: pending
+- **SIM-12. Pause, step and restart (OWNER_SCOPE A, LibKa0s v1.76.0's auto-run).** Start a scenario,
+  then press Pause in the step panel → the run holds after the current step (a fight in progress
+  finishes its ticks first). Click a later step row → the run steps up to that row and stays paused.
+  Resume → it plays on by itself. Restart → it plays again from the first step without a second
+  click. Result: pending
+
 ## Non-English client
 
 - **LOC-1. The CSV header does not translate.** On a non-English client (German, for example), export
@@ -1450,10 +1470,8 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 - WIN-47 and WIN-48 (the red title word only while the test-mode strip is not shown, 2026-10-23).
 - GRID-33 and VIS-13 (the world reads routed through `core/Compat.lua` for the simulator, 2026-10-23).
 - VIS-14 (every game event through the one dispatch entry, 2026-10-23).
-- SLASH-20 to SLASH-23 (the `/mm sim` session host, 2026-10-23; SLASH-20's strip and its scenarios
-  arrive with the rest of the simulator).
-- SLASH-24 to SLASH-28 (the four `/mm sim` scenarios and the export during a simulation, 2026-10-23).
-- SLASH-29 (the diagnostics report's `sim` section, 2026-10-23).
+- SIM-1 to SIM-12 (the `/mm sim` simulator, 2026-10-23; SIM-1 to SIM-9 and SIM-11 were SLASH-20 to
+  SLASH-29 until they moved to their own theme).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

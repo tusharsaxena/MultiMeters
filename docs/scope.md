@@ -57,6 +57,12 @@ Retail only · English only.
 - **AceDB profiles**, all characters starting on the shared `"Default"` profile.
 - **Test mode** (the General page's Master controls box, or `/mm test`; combat ends it) and an
   unlock/drag cycle, so a window can be laid out anywhere between pulls.
+- **A simulator** (`/mm sim`, LibKa0s-Sim-1.0, [issue #60](https://github.com/tusharsaxena/MultiMeters/issues/60)):
+  a scripted fight through the real meter engine, solo and outside an instance, in four scenarios
+  (`dungeon`, `raid`, `wipe`, `zone`) with a step panel and a sim strip on every window. The group,
+  the zones and the numbers are invented; nothing is saved or sent. Its design is
+  `docs/superpowers/specs/2026-10-23-simulator-design.md` and its path through the engine is
+  [data-flow.md](data-flow.md#10-the-simulator-path).
 - **A launcher** — one LibDataBroker object drawn as a minimap button and in any broker display,
   from `LibKa0s-Launcher-1.0`. Left-click opens the settings; right-click opens an options menu
   with Enabled, Locked, Test mode and Show window, each running its slash verb (`launcher-§2`,
@@ -401,6 +407,18 @@ default to total and rate.
   rows chosen out of a longer list, so scrolling moves an integer offset rather than a scroll child;
   there is no widget to size and nothing measured. The cost is that a player cannot see there are
   rows above or below without trying the wheel.
+- **The simulator simulates no secret and no restriction.** Its numbers are plain, so a session runs
+  the out-of-combat build only; the secret paths keep their proof in the headless `mock_secrets`
+  suites ([data-flow.md](data-flow.md#10-the-simulator-path)). The feign filter and the player-state
+  hide rules (mounted, dead, vehicle and the rest) stay live during a session, because the simulated
+  player is the real one (MultiMeters#60).
+- **A window pinned to a real segment reads no session during a simulation.** The simulated world is
+  closed, so a pin to a segment the client holds answers nothing until the stop restores it, and the
+  window shows its empty state. No window is force-shown at the start either: each window's
+  visibility rules answer the simulated world, which is part of what a session exercises.
+- **A `/reload` mid-simulation leaves a simulated pin behind.** A window pinned to a simulated segment
+  keeps that id in the profile; the next refresh finds no such session and `DropStaleSegment` clears
+  it. Nothing else a session touches persists.
 - **A minimized window shows no simulation marker.** While a `/mm sim` session runs, the sim strip
   under the title is the window's only marker, and it goes with the body when the window is
   collapsed; there is no SIMULATION title word to stand in for it (MultiMeters#60, by the owner's
