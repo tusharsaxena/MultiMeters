@@ -113,7 +113,7 @@ secret-value rules the checks refer to.
   (the segment glyph); (c) `/mm export`: the three selectors' chevron, the spreadsheet and chat icons
   on **Export to CSV** and **Print to Chat**, and the CSV copy window's close X; (d) the debug console
   (`/mm debug`): the close, copy and clear buttons in its title bar; and the perf panel
-  (`/mm perf start`, then show it): its close X. Result: owed
+  (`/mm perf start`, then show it): its close X. Result: pass (owner-marked 2026-10-23)
 
 ## SLASH
 
@@ -179,16 +179,16 @@ secret-value rules the checks refer to.
   *(enable the addon first)*, and not clickable. Tick **Enabled** → the addon comes back, as
   `/mm enable`. Result: pass (owner-marked 2026-10-10)
 - **SLASH-15. The key binding is listed.** Key Bindings → AddOns lists a *Ka0s Multi Meters* header with
-  one *Toggle meter windows* entry and no key preassigned (`launcher-§6`). Result: owed
+  one *Toggle meter windows* entry and no key preassigned (`launcher-§6`). Result: pass (owner-marked 2026-10-23)
 - **SLASH-16. The key toggles.** Bind a key and press it → every meter window hides; press again → they
-  show, the same as `/mm toggle`. One press toggles once. Result: owed
+  show, the same as `/mm toggle`. One press toggles once. Result: pass (owner-marked 2026-10-23)
 - **SLASH-17. The key while disabled.** `/mm disable`, then press the key → exactly one chat line
-  (*Ka0s Multi Meters is disabled - enable it with /mm enable*), and no window appears. Result: owed
+  (*Ka0s Multi Meters is disabled - enable it with /mm enable*), and no window appears. Result: pass (owner-marked 2026-10-23)
 - **SLASH-18. The key during a perf capture.** Start a perf capture (`/mm perf start`), then press the
   key → exactly the line `/mm toggle` prints during a capture, once, and the windows do not change.
-  Result: owed
+  Result: pass (owner-marked 2026-10-23)
 - **SLASH-19. The key in combat.** Press the key in combat → the windows toggle with no error and no
-  taint message (the windows are not secure). Result: owed
+  taint message (the windows are not secure). Result: pass (owner-marked 2026-10-23)
 
 ## PANEL
 
@@ -442,7 +442,7 @@ right. Open the panel with `/mm config`.
 - **PANEL-48. A structural refresh keeps the scroll position.** On LibKa0s v1.73.0 (Options minor 29)
   a refresh that rebuilds a page keeps where it was scrolled. Open a long page, scroll partway down,
   then trigger a structural refresh (for example add or remove a column on the Windows page) → the
-  page redraws at the same scroll position, not back at the top. Result: owed
+  page redraws at the same scroll position, not back at the top. Result: pass (owner-marked 2026-10-23)
 
 ## PROFILE
 
@@ -681,21 +681,21 @@ right. Open the panel with `/mm config`.
 - **WIN-40. The test-mode strip, header shown.** `/mm test` with the header shown → a yellow strip
   (*TEST MODE: placeholder numbers, not your fight. Combat ends it.*) sits under the title. The column
   headers sit under it, no row overlaps it, and the red TEST MODE title marker and the session-line
-  *Test* are still there. Result:
+  *Test* are still there. Result: pass (owner-marked 2026-10-23)
 - **WIN-41. The strip with the header hidden.** Hide the header (Settings → Header), then `/mm test` →
-  the strip is at the very top of the window, so the window is still marked as test data. Result:
+  the strip is at the very top of the window, so the window is still marked as test data. Result: pass (owner-marked 2026-10-23)
 - **WIN-42. A narrow window.** Make a window narrow → the strip text truncates with *...* inside the
-  frame and never spills past the window edge. Result:
+  frame and never spills past the window edge. Result: pass (owner-marked 2026-10-23)
 - **WIN-43. Test mode off.** `/mm test off` → the strip goes, the column headers and rows move back up,
-  and the visible row count returns. Result:
+  and the visible row count returns. Result: pass (owner-marked 2026-10-23)
 - **WIN-44. Minimized in test mode.** Minimize a window while in test mode → the strip hides with the
-  body; expand → it is back. Result:
+  body; expand → it is back. Result: pass (owner-marked 2026-10-23)
 - **WIN-45. Combat ends it without a jump.** Test mode on, pull a training dummy → one *Test mode off —
   combat started* line prints, the strip disappears, and the window does not jump, re-skin or change
-  scale or position. Result:
+  scale or position. Result: pass (owner-marked 2026-10-23)
 - **WIN-46. The minimum height.** Drag a window down to its minimum height in test mode → the resize
   floor does not move, the strip takes the room of the one row, and the window size saved after test
-  mode ends is the size you dragged to. Result:
+  mode ends is the size you dragged to. Result: pass (owner-marked 2026-10-23)
 
 ## VIS
 
@@ -1399,10 +1399,7 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 
 ## Pending sign-off
 
-On 2026-10-10 the owner marked every check in this file as passed, recorded on its
+None. On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass
 keeps it. A check added or rewritten after that date is listed here until its `Result:` line records
 a pass.
-
-- INSTALL-10 and PANEL-48 (added 2026-10-22, the LibKa0s v1.75.0 re-vendor).
-- SLASH-15 to SLASH-19 (added 2026-10-22, the Show window key binding, `launcher-§6`).
