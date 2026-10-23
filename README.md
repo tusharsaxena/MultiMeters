@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2263%2F2263_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2287%2F2287_passing-green)
 
 Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
@@ -103,8 +103,8 @@ Please raise them on GitHub:
 ## Credits
 
 The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL
-Open Font License 1.1. The header controls, the column sort arrows, the Export window and the debug
-console draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only
+Open Font License 1.1. The header controls, the column sort arrows, the Export window, the debug
+console and the simulator's step panel draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only
 the icons this addon draws ship. The font and the icons sit inside the bundled LibKa0s payload, each
 with its license text beside it.
 

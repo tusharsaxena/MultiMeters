@@ -832,3 +832,25 @@ test("Slash: `set window.name` keeps every word of a multi-word name", function(
     assertEqual(inst.NS.Database.GetWindows()[1].name, "Raid Damage Meter",
         "the window record carries the whole name")
 end)
+
+-- ---------------------------------------------------------------------------
+-- sim: the simulator's feature verb (modules/Sim.lua, MultiMeters#60)
+-- ---------------------------------------------------------------------------
+
+test("Slash: `sim` is listed, and a bare `/mm sim` prints the simulator's status", function()
+    -- red under: dropping the `sim` row from NS.COMMANDS.
+    local inst = T.load{ enable = true }
+    assertTrue(findVerb(inst.NS.COMMANDS, "sim") ~= nil, "no `sim` row in NS.COMMANDS")
+    local text = joined(say(inst, "sim"))
+    assertTrue(text:find("/mm sim", 1, true) ~= nil, "the bare verb printed no status: " .. text)
+    assertFalse(inst.NS.Sim:IsActive(), "a bare `/mm sim` started a session")
+end)
+
+test("Slash: `sim` is a feature verb, refused while disabled", function()
+    -- red under: adding `sim` to the live-while-disabled set.
+    local inst = T.load{ enable = true }
+    say(inst, "disable")
+    local text = joined(say(inst, "sim start case"))
+    assertTrue(text:find(inst.NS.Slash:DisabledLine(), 1, true) ~= nil, "not refused: " .. text)
+    assertFalse(inst.NS.Sim:IsActive())
+end)

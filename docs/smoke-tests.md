@@ -18,7 +18,7 @@ secret-value rules the checks refer to.
 | ID range | Theme | What it covers |
 |---|---|---|
 | INSTALL-1 to INSTALL-11 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
-| SLASH-1 to SLASH-19 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding |
+| SLASH-1 to SLASH-23 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding, the `/mm sim` simulator |
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
@@ -193,6 +193,18 @@ secret-value rules the checks refer to.
   Result: pass (owner-marked 2026-10-23)
 - **SLASH-19. The key in combat.** Press the key in combat → the windows toggle with no error and no
   taint message (the windows are not secure). Result: pass (owner-marked 2026-10-23)
+- **SLASH-20. The simulator opens and plays (SM-MM-25).** Solo, outside an instance, `/mm sim` → the
+  step panel opens docked to a meter window. Start → the run plays at once, and every Multi Meters
+  window shows the SIMULATION strip. Result: pending
+- **SLASH-21. The simulator refuses where it cannot run (SM-MM-26).** `/mm sim start dungeon` in a
+  real group, inside an instance, in combat and with `/mm test` on → each refuses with its own line
+  and no simulation starts. Result: pending
+- **SLASH-22. Real combat ends a simulation (SM-MM-27).** Mid-simulation, pull a training dummy → the
+  simulation stops with *Simulation stopped: you entered combat.*, and the windows show live data
+  again. Result: pending
+- **SLASH-23. A stop leaves nothing behind (SM-MM-28).** Note each window's segment and pin, run a
+  simulation, then `/mm sim stop` → the windows show the same segments and pins as before the start,
+  and `/mm test` works again. Result: pending
 
 ## PANEL
 
@@ -1423,6 +1435,8 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 - WIN-47 and WIN-48 (the red title word only while the test-mode strip is not shown, 2026-10-23).
 - GRID-33 and VIS-13 (the world reads routed through `core/Compat.lua` for the simulator, 2026-10-23).
 - VIS-14 (every game event through the one dispatch entry, 2026-10-23).
+- SLASH-20 to SLASH-23 (the `/mm sim` session host, 2026-10-23; SLASH-20's strip and its scenarios
+  arrive with the rest of the simulator).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

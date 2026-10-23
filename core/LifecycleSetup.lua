@@ -133,6 +133,9 @@ end
 --- goes to empty. An addon that later grows secure work adds the hold-pending
 --- here and releases it on that one event -- it does not start gating handlers.
 local function standDown()
+    -- 0. A running simulation stops first (MultiMeters#60, H6), while every
+    -- module it resyncs is still up.
+    if NS.Sim then NS.Sim:Stop("standDown") end
     standDownEvents()
     standDownModules()
 

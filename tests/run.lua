@@ -290,6 +290,8 @@ local SUITES = {
     "test_sim_world",
     -- The simulator's drivers (modules/SimDrivers.lua, MM-14).
     "test_sim_drivers",
+    -- The simulator's session host (modules/Sim.lua, MM-15): refusals, auto-stop, the stores.
+    "test_sim_session",
     "test_launchersetup",
     "test_lifecycle",
     "test_dispatch",

@@ -2,40 +2,55 @@
 --
 -- Loaded with dofile by the suites that need a running session; it registers no case of its own.
 --
--- A THROWAWAY SESSION. Until modules/Sim.lua builds the live NS.Sim, a case that wants the seam's
--- providers to answer needs a session bound to the instance's NS.SimSeam. `S.testSession` builds
--- one in the shape of LibKa0s tests/test_sim_host.lua: a bare `LibKa0s-Sim-1.0` instance over
--- that seam, delivering through NS.DeliverEvent, with one scenario whose timeline is the case's own
--- steps, and points NS.Sim at it for the case. One seam binds one session for good, so every case
--- takes a FRESH instance (T.load{}) and hands it here; `done()` stops the session and restores
--- NS.Sim.
-
 local S = {}
 
---- Start a bare session on `inst`'s own seam.
+-- AN INJECTED SCENARIO. modules/Sim.lua binds the instance's one seam to the live NS.Sim at load,
+-- and one seam binds one session for good, so every suite drives that instance. `S.inject` lists a
+-- scenario named "case" whose timeline is the case's own steps, each played by its `run` function,
+-- and answers a function that takes it back out. It changes nothing else: the start still runs
+-- the host's real refusal and prepare (tests/test_sim_session.lua relies on exactly that).
+--
+-- A THROWAWAY SESSION. `S.testSession` starts that scenario for a suite that wants the seam's
+-- providers answering out of a world it built itself (tests/test_sim_world.lua,
+-- tests/test_sim_drivers.lua): the host's refusal and prepare are swapped for the case, so the
+-- world the case put on NS.SimHost.world stays the session's. `done()` stops the session and puts
+-- everything back. Each case takes a FRESH instance (T.load{}).
+
+--- List the "case" scenario on `inst`'s host.
 --- @param inst table  a fresh instance from T.load{}
 --- @param steps table|nil  the scenario's timeline: { { label, run = fn }, ... }
+--- @return function  undo
+function S.inject(inst, steps)
+    local Host = inst.NS.SimHost
+    local names, defs = Host.SCENARIOS.names, Host.SCENARIOS.defs
+    local savedPlay = Host.Play
+    names[#names + 1] = "case"
+    defs.case = { label = "Case", timeline = function() return steps or {} end }
+    Host.Play = function(step) if step.run then return step.run() end end
+    return function()
+        for i = #names, 1, -1 do if names[i] == "case" then table.remove(names, i) end end
+        defs.case = nil
+        Host.Play = savedPlay
+    end
+end
+
+--- Start the injected scenario on the live NS.Sim, keeping the case's own world.
+--- @param inst table  a fresh instance from T.load{}
+--- @param steps table|nil  the scenario's timeline
 --- @return table sim, function done
 function S.testSession(inst, steps)
-    local ns, m = inst.NS, inst.mocks
-    local Sim = assert(m.LibStub("LibKa0s-Sim-1.0", true), "the instance has no LibKa0s-Sim-1.0")
-    local saved = ns.Sim
-    local sim = Sim:New{
-        name = "MultiMetersTest", seam = ns.SimSeam, slash = "/mm sim",
-        deliver = ns.DeliverEvent,
-        isStoodDown = function() return false end,
-        scenarios = { names = { "case" }, defs = { case = {
-            label = "Case", timeline = function() return steps or {} end,
-        } } },
-        prepare = function(_, _, _, ready) ready() end,
-        play = function(step) if step.run then step.run() end end,
-        print = function() end,
-    }
-    ns.Sim = sim
+    local ns = inst.NS
+    local Host, sim = ns.SimHost, ns.Sim
+    local preset = Host.world
+    local undo = S.inject(inst, steps)
+    local savedPrepare, savedRefusal = Host.Prepare, Host.Refusal
+    Host.Prepare = function(_, _, _, ready) Host.world = preset; ready() end
+    Host.Refusal = function() return nil end
     assert(sim:Start{ scenario = "case" }, "the test session did not start")
     local function done()
         sim:Stop()
-        ns.Sim = saved
+        Host.Prepare, Host.Refusal = savedPrepare, savedRefusal
+        undo()
     end
     return sim, done
 end
@@ -81,6 +96,43 @@ function S.clock(m)
     end
 
     return C
+end
+
+-- THE SNAPSHOT. A deep serialization of NS.db.profile and NS.db.global, keys sorted, so a suite can
+-- prove a session leaves both SavedVariables stores byte-identical (H4).
+
+local function serialize(v, out, seen)
+    local t = type(v)
+    if t == "string" then out[#out + 1] = ("%q"):format(v); return end
+    if t ~= "table" then out[#out + 1] = tostring(v); return end
+    if seen[v] then out[#out + 1] = "<cycle>"; return end
+    seen[v] = true
+    local keys = {}
+    for k in pairs(v) do keys[#keys + 1] = k end
+    table.sort(keys, function(a, b)
+        local ta, tb = type(a), type(b)
+        if ta ~= tb then return ta < tb end
+        if ta == "number" or ta == "string" then return a < b end
+        return tostring(a) < tostring(b)
+    end)
+    out[#out + 1] = "{"
+    for _, k in ipairs(keys) do
+        serialize(k, out, seen)
+        out[#out + 1] = "="
+        serialize(v[k], out, seen)
+        out[#out + 1] = ","
+    end
+    out[#out + 1] = "}"
+    seen[v] = nil
+end
+
+--- The instance's profile and global stores as one string.
+--- @param ns table  inst.NS
+--- @return string
+function S.snapshot(ns)
+    local out = {}
+    serialize({ profile = ns.db.profile, global = ns.db.global }, out, {})
+    return table.concat(out)
 end
 
 return S

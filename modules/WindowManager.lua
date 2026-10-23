@@ -678,6 +678,13 @@ end
 --- @param enabled boolean
 --- @return boolean applied  false when the start was refused
 function M:SetTestMode(enabled)
+    -- Test mode and a simulation are exclusive (MultiMeters#60): each refuses
+    -- while the other runs, and the simulation's start refuses test mode.
+    if enabled and NS.Sim and NS.Sim:IsActive() then
+        if NS.Print then NS.Print(L["Test mode is not available while a simulation runs."]) end
+        if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
+        return false
+    end
     if enabled and not M:IsTest() and fighting() then
         -- The refusal names its guard in the log too (debug-logging-§8,
         -- Diagnosis), since the [Test] line a start writes never comes.

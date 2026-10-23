@@ -11,7 +11,7 @@ that outgrows a screen belongs in its topic doc with a summary and a link left b
 ## Overview
 
 
-Sixty-six non-vendored source files: 1 locale, 21 `core/`, 1 `defaults/`, 28 `modules/`, 15 `settings/`.
+Sixty-seven non-vendored source files: 1 locale, 21 `core/`, 1 `defaults/`, 29 `modules/`, 15 `settings/`.
 
 The addon is built on the **private namespace** WoW hands each file. `core/MultiMeters.lua` calls
 `AceAddon-3.0:NewAddon(NS, addonName, …)`, which promotes that table in place — so **`NS` *is* the
@@ -58,7 +58,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
 | `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`, `_Order`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret; `Aggregator_Order` holds the orderings and the row cap. |
 | `modules/` display | `WindowManager`, `Window` (+ `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Border`, `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window (with its test-mode strip, `LibKa0s-Widgets-1.0`'s `TestStrip` under the title, placed by `Window_Header`'s narrow `ApplyTestStrip` on the toggle; the red TEST MODE title word is written only while the strip is not shown — a minimized window, or a load without the Widgets library), one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
-| `modules/` simulator | `SimWorld`, `SimDrivers` | `/mm sim`'s invented world (MultiMeters#60): the real player plus seeded mates, zones, segments, deaths and recaps, and the providers `core/SimSetup.lua`'s seam answers from while a session runs. Plain invented numbers; it never reads a client meter value. The drivers edit that world and fire the client's events through `NS.Sim:Fire`, in the client's order; a fight's ticks are booked on the session's timer. |
+| `modules/` simulator | `Sim`, `SimWorld`, `SimDrivers` | `/mm sim`'s session host (`modules/Sim.lua`: `NS.Sim` on LibKa0s-Sim-1.0, the refusals, the real-event classifier, the session-only stores and the stop's resync) and its invented world (MultiMeters#60): the real player plus seeded mates, zones, segments, deaths and recaps, and the providers `core/SimSetup.lua`'s seam answers from while a session runs. Plain invented numbers; it never reads a client meter value. The drivers edit that world and fire the client's events through `NS.Sim:Fire`, in the client's order; a fight's ticks are booked on the session's timer. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
 | `settings/` | `Schema_Compose` → `Schema` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 3 pages and 6 Windows-page entries | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, and the path and write seams. `ColumnBlocks` is the Columns entry's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
 
@@ -134,7 +134,7 @@ through the seam by window id; the pin's none is `NO_SEGMENT` (0) ([schema.md](s
 
 ## Message bus
 
-Fourteen `AceEvent` messages, declared once in `core/Constants.lua`'s `MSG` catalog through
+Fifteen `AceEvent` messages, declared once in `core/Constants.lua`'s `MSG` catalog through
 `LibKa0s-Bus-1.0`'s `Catalog`, are the only channel between modules. Each has **one sender**, and every
 receiver that is not an AceAddon module owns a private target from `NS.NewBusTarget()`. The catalog
 with sender, consumers and payload, the two `METER_RESET` paths and the stand-down record:
@@ -150,7 +150,7 @@ every refusal line: **[slash-dispatch.md](slash-dispatch.md)**.
 ### Disabled — total, and the slash surface is not
 
 `slash-commands-§7`. Disabled means the addon is not running, and the command surface stays: all
-thirteen reserved verbs and the `profile` verb answer and only the six feature verbs refuse, on one line naming `/mm enable`.
+thirteen reserved verbs and the `profile` verb answer and only the seven feature verbs refuse, on one line naming `/mm enable`.
 The gate and its live list: [slash-dispatch.md](slash-dispatch.md#disabled--total-and-the-slash-surface-is-not);
 the teardown: [disabled-state.md](disabled-state.md).
 

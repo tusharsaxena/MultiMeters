@@ -163,6 +163,15 @@ local cache = State.Cache("Roster")
 ---
 --- @return table  { byGuid = {...}, pets = {...}, count = n }
 local function remembered()
+    -- A simulation's own store (MultiMeters#60, H4): while a session runs, the
+    -- remembered roster is the session's, so a simulated build never writes
+    -- db.global.roster. modules/Sim.lua's stop drops the session with it.
+    local sim = NS.Sim
+    if sim and sim:IsActive() then
+        local s = sim:Session()
+        s.mmRoster = s.mmRoster or { byGuid = {}, pets = {}, count = 0 }
+        return s.mmRoster
+    end
     local db = NS.db
     local g = db and db.global
     if not g then
@@ -700,6 +709,13 @@ end
 --- gate (§9).
 function Roster.Forget()
     State.WipeCache("Roster")
+    -- A simulated reset forgets only the session's store (H4): the real map
+    -- belongs to the client's segments, which a simulation never touches.
+    local sim = NS.Sim
+    if sim and sim:IsActive() then
+        sim:Session().mmRoster = { byGuid = {}, pets = {}, count = 0 }
+        return
+    end
     local db = NS.db
     if not (db and db.global) then return end
     if State.debug then

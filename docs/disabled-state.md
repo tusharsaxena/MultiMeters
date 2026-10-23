@@ -32,6 +32,7 @@ second was written.
 
 | On the way down (`standDown`) | What it reaches |
 |---|---|
+| `NS.Sim:Stop("standDown")` | **first**, a running simulation (`/mm sim`, MultiMeters#60, host contract H6), while every module its resync reaches is still up |
 | `NS:UnregisterAllEvents()` | all twenty-one game events — `core/MultiMeters.lua` is the only file that owns one |
 | `NS:CancelAllTimers()` + `NS.ResetStatePending()` | the player-state settle pass, and the flag that would otherwise never re-book one |
 | every AceAddon child's `UnregisterAllMessages()` | each module is its own AceEvent target, so the addon object's own call reaches none of them |
@@ -88,8 +89,8 @@ all or the pair is one-way. The diagnostics report is live under both its forms,
 and `/mm debug diagnostics`, and `tests/test_disabled.lua` pins that each one reaches
 `RunDiagnostics` exactly once with the addon off.
 
-**Only this addon's own six feature verbs refuse** — `lock`, `test`, `toggle`, `window`,
-`reset-positions`, `export` — on exactly one line, in the collection's one wording, naming
+**Only this addon's own seven feature verbs refuse** — `lock`, `test`, `toggle`, `window`,
+`reset-positions`, `export`, `sim` — on exactly one line, in the collection's one wording, naming
 `/mm enable`. That is `slash-commands-§2`'s SHOULD and this addon takes it. `lock` is on that list
 under `slash-commands-§8`'s own ruling (unlocking a frame that is not drawn is not a coherent
 request), which says nothing about what `lock` *means* here — that is this addon's ratified deviation

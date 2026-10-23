@@ -1006,6 +1006,10 @@ end
 
 --- Forget a pinned segment the client no longer holds. See Refresh.
 function WindowProto:DropStaleSegment()
+    -- Never while a simulation runs (MultiMeters#60, H4): the session list is the
+    -- simulated world's, so every real pin would look stale and be dropped.
+    -- modules/Sim.lua's stop restores the pins it snapshotted instead.
+    if NS.Sim and NS.Sim:IsActive() then return end
     local pinned = NS.Database.PinnedSegment(self.config.data)
     if pinned == nil then return end
 

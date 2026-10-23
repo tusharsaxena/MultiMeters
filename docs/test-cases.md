@@ -680,6 +680,31 @@ Total.
 - SimDrivers: no driver reaches the mock's C_DamageMeter
 - SimDrivers: with no world, every driver changes and fires nothing
 
+### test_sim_session.lua (22)
+
+- Sim session: stood down refuses the start with its own line and leaves no session
+- Sim session: test mode refuses the start with its own line and leaves no session
+- Sim session: combat refuses the start with its own line and leaves no session
+- Sim session: the restriction refuses the start with its own line and leaves no session
+- Sim session: an instance refuses the start with its own line and leaves no session
+- Sim session: a group refuses the start with its own line and leaves no session
+- Sim session: General visibility never refuses the start with its own line and leaves no session
+- Sim session: a typed start prints STARTED, shows the panel and installs the filter
+- Sim session: the gate holds while fight ticks are booked
+- Sim session: the status verb adds segments, ticks pending and sends
+- Sim session: real combat stops with `combat` and then runs the real handler
+- Sim session: a restriction edge other than Inactive stops with `combat`
+- Sim session: a solo roster update is consumed; a real group stops with `group`
+- Sim session: a zone move outside an instance is consumed; an instance stops with `instance`
+- Sim session: a world entry stops with `world`
+- Sim session: a real meter update is consumed: the world owns the meter
+- Sim session: an event the classifier has no rule for runs live and keeps the session
+- Sim session: the stand-down stops the session first, with `standDown`
+- Sim session: a profile change stops the session with `profile`
+- Sim session: test mode is refused while a session runs
+- Sim session: SavedVariables come back byte-identical after a session that pins and resets
+- Sim session: DropStaleSegment writes nothing while a session runs
+
 ### test_launchersetup.lua (55)
 
 - Launcher: Register creates ONE object and registers it against the global table
@@ -2181,7 +2206,7 @@ Total.
 - ValidateSchema: answers 0 when there is no profile tree to compare against
 - ValidateSchema: counts every failure, in schema order, with nothing listening
 
-### test_slash.lua (50)
+### test_slash.lua (52)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -2233,6 +2258,8 @@ Total.
 - Slash: Register is a no-op rather than a raise when there is no AceConsole
 - Slash: /mm list heads each block with the page AND the tab
 - Slash: `set window.name` keeps every word of a multi-word name
+- Slash: `sim` is listed, and a bare `/mm sim` prints the simulator's status
+- Slash: `sim` is a feature verb, refused while disabled
 
 ### test_slash_diagnostics.lua (20)
 
@@ -2562,6 +2589,7 @@ Total.
 | test_sim_seam.lua | 10 |
 | test_sim_world.lua | 17 |
 | test_sim_drivers.lua | 9 |
+| test_sim_session.lua | 22 |
 | test_launchersetup.lua | 55 |
 | test_lifecycle.lua | 40 |
 | test_dispatch.lua | 11 |
@@ -2601,7 +2629,7 @@ Total.
 | test_schema_paths.lua | 50 |
 | test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
-| test_slash.lua | 50 |
+| test_slash.lua | 52 |
 | test_slash_diagnostics.lua | 20 |
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
@@ -2617,4 +2645,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2263** |
+| **Total** | **2287** |

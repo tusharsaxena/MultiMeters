@@ -27,7 +27,7 @@ that a load-time cycle between two majors.
 |---|---|
 | `help` | Show the command index |
 | `config` | Open the settings panel on its landing page (`options` is accepted as an alias). A bare `/mm` runs this verb |
-| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgment is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: nothing unregisters the chat command, tears down `NS.COMMANDS` or drops the dispatcher, so every reserved verb — and the bare `/mm`, which opens the panel — still works with the addon off, and the pair is never one-way. `disable` **stands the addon down** rather than hiding its windows; what that means, and what the six feature verbs answer instead, is [disabled-state.md](disabled-state.md). **On a library-absent or partial load they keep working, by `options-ui-§1` route (a)**: the `enabled` row is composed by LibKa0s-Options-1.0's MasterControls, so with that major missing there is no row for `CliSet` to parse against (and with the Slash major missing `CliSet` is the stub's). The pair then calls `NS.SetByPath("enabled", want)` directly; the Schema seam, live or stub, stores the path through its `writeThrough` list and pulls the latch in its `announce` ([schema.md](schema.md#the-degradation-stub)). The reply is `enabled = <value>`, or the seam's refusal |
+| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgment is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: nothing unregisters the chat command, tears down `NS.COMMANDS` or drops the dispatcher, so every reserved verb — and the bare `/mm`, which opens the panel — still works with the addon off, and the pair is never one-way. `disable` **stands the addon down** rather than hiding its windows; what that means, and what the seven feature verbs answer instead, is [disabled-state.md](disabled-state.md). **On a library-absent or partial load they keep working, by `options-ui-§1` route (a)**: the `enabled` row is composed by LibKa0s-Options-1.0's MasterControls, so with that major missing there is no row for `CliSet` to parse against (and with the Slash major missing `CliSet` is the stub's). The pair then calls `NS.SetByPath("enabled", want)` directly; the Schema seam, live or stub, stores the path through its `writeThrough` list and pulls the latch in its `announce` ([schema.md](schema.md#the-degradation-stub)). The reply is `enabled = <value>`, or the seam's refusal |
 | `list` | List every setting and its current value |
 | `get <path>` | Read one setting |
 | `set <path> <value>` | Write one setting |
@@ -44,11 +44,14 @@ that a load-time cycle between two majors.
 | `window` | `list` · `new <name>` · `delete <name>` · `copy <source/id> <target>` |
 | `reset-positions` | Move every window back to the center of the screen |
 | `export` | Open the export modal for one window's segment: `/mm export [window]` |
+| `sim` | The simulator (MultiMeters#60): a scripted fight through the real meter. The grammar (`start`, `stop`, `step`, `run`, `pause`, `resume`, `restart`, `panel`, and the bare verb's status) is LibKa0s-Sim-1.0's `RunVerb`; the host is `modules/Sim.lua`. A feature verb, so refused while disabled. No launcher entry and no key binding |
 
 ## The host verbs
 
-Seven verbs are this addon's own. `profile` works on the profile store and has
-[its own section](#the-profile-verb). The other six act on **windows** — instances the registry owns — rather than on schema rows, so
+Eight verbs are this addon's own. `profile` works on the profile store and has
+[its own section](#the-profile-verb). `sim` is the simulator's feature verb: its whole grammar is
+LibKa0s-Sim-1.0's `RunVerb`, bound to this addon by `modules/Sim.lua`, and it is refused while
+disabled like the window verbs. The other six act on **windows** — instances the registry owns — rather than on schema rows, so
 they are untouched by the library's absence and route straight into `modules/WindowManager.lua`
 rather than duplicating its rules. Window keys accept either an id or a name: a number is an id, a
 string is a name, matched case-insensitively but stored exactly as typed.
@@ -120,7 +123,7 @@ nothing written from a game event. It is one `LibKa0s-Lifecycle-1.0` latch with 
 stands up an addon the other still holds down. It replaced a draw gate.
 
 **The command surface is deliberately unchanged.** All thirteen reserved verbs and `profile` answer,
-and the bare `/mm` opens the settings panel; only this addon's own six feature verbs refuse, on one line naming
+and the bare `/mm` opens the settings panel; only this addon's own seven feature verbs refuse, on one line naming
 `/mm enable`. Full detail, the teardown table and the launcher's options menu while disabled:
 [disabled-state.md](disabled-state.md).
 
@@ -136,7 +139,7 @@ to need it (`debug-logging-§14`).
 
 - **Still answers while disabled:** `help`, `config`, `version`, `enable`, `disable`, `debug`,
   `diagnostics`, `perf`, `get`, `set`, `list`, `reset`, `resetall`, `profile`, and the bare `/mm`.
-- **Refused while disabled:** `lock`, `test`, `toggle`, `window`, `reset-positions`, `export`.
+- **Refused while disabled:** `lock`, `test`, `toggle`, `window`, `reset-positions`, `export`, `sim`.
 
 **The Show window key binding refuses like `/mm toggle`** (`launcher-§6`). The *Toggle meter windows*
 key clicks `MultiMetersToggleWindows`, whose OnClick is the launcher's `toggleWindow` function: it

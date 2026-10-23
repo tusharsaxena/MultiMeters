@@ -1072,3 +1072,36 @@ L["Time of day"] = "Time of day"
 L["How long ago"] = "How long ago"
 L["Death timestamps"] = "Death timestamps"
 L["How a death is labeled in the Deaths tooltip and the death list."] = "How a death is labeled in the Deaths tooltip and the death list."
+
+-- The simulator's host (modules/Sim.lua, MultiMeters#60): the start's refusals, the gate's line,
+-- the stop lines, the started line, the status verb's extra line and the step panel's fields; and
+-- the test-mode refusal while a simulation runs (modules/WindowManager.lua).
+L["A simulation cannot start in an instance."] = "A simulation cannot start in an instance."
+L["A simulation cannot start in combat."] = "A simulation cannot start in combat."
+L["A simulation cannot start while General visibility hides every window."] =
+    "A simulation cannot start while General visibility hides every window."
+L["A simulation cannot start while the addon is disabled."] = "A simulation cannot start while the addon is disabled."
+L["Ends"] = "Ends"
+L["Leave your group before starting a simulation."] = "Leave your group before starting a simulation."
+L["Multi Meters - Simulation"] = "Multi Meters - Simulation"
+L["Plays"] = "Plays"
+L["Restores"] = "Restores"
+L["Saves"] = "Saves"
+L["Segments held: %d, ticks pending: %d, sends: %d."] = "Segments held: %d, ticks pending: %d, sends: %d."
+L["Simulation started (%s): a scripted fight through the real meter. Nothing is saved or sent; /mm sim stop ends it."] =
+    "Simulation started (%s): a scripted fight through the real meter. Nothing is saved or sent; /mm sim stop ends it."
+L["Simulation stopped: the addon stood down (disabled, or a performance capture)."] =
+    "Simulation stopped: the addon stood down (disabled, or a performance capture)."
+L["Simulation stopped: the profile changed."] = "Simulation stopped: the profile changed."
+L["Simulation stopped: you entered an instance."] = "Simulation stopped: you entered an instance."
+L["Simulation stopped: you entered combat."] = "Simulation stopped: you entered combat."
+L["Simulation stopped: you entered the world (a loading screen)."] =
+    "Simulation stopped: you entered the world (a loading screen)."
+L["Simulation stopped: you joined a group."] = "Simulation stopped: you joined a group."
+L["The fight is still running."] = "The fight is still running."
+L["Turn test mode off before starting a simulation."] = "Turn test mode off before starting a simulation."
+L["a scripted fight through the real meter"] = "a scripted fight through the real meter"
+L["nothing: your roster and segment pins are not touched"] = "nothing: your roster and segment pins are not touched"
+L["the simulation"] = "the simulation"
+L["your live meter in every window"] = "your live meter in every window"
+L["Test mode is not available while a simulation runs."] = "Test mode is not available while a simulation runs."
