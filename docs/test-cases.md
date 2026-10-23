@@ -332,7 +332,7 @@ Total.
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 
-### test_migrations.lua (14)
+### test_migrations.lua (17)
 
 - migrations: the defaults declare schemaVersion 0, never the current version
 - migrations: a fresh install runs every step and lands on the default profile
@@ -348,6 +348,9 @@ Total.
 - migrations: v18 moves every window still on the 18px header onto the 30px bar
 - migrations: v18 leaves a header height a player chose
 - migrations: the v18 step run twice is a no-op, and survives a junk window
+- migrations: v19 moves every window still on the 220px height to 228, in every profile
+- migrations: v19 leaves a frame height a player chose
+- migrations: the v19 step run twice is a no-op, and survives a junk window
 
 ### test_diagnostics.lua (35)
 
@@ -2610,7 +2613,7 @@ Total.
 | test_locale.lua | 11 |
 | test_database.lua | 28 |
 | test_database_migrations.lua | 48 |
-| test_migrations.lua | 14 |
+| test_migrations.lua | 17 |
 | test_diagnostics.lua | 35 |
 | test_diagnostics_deathrecap.lua | 31 |
 | test_diagnostics_identity.lua | 23 |
@@ -2683,4 +2686,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2317** |
+| **Total** | **2320** |

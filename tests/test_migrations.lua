@@ -369,3 +369,62 @@ test("migrations: the v18 step run twice is a no-op, and survives a junk window"
     assertEqual(inst.NS.db.sv.profiles.Odd.windows[3].header.height, 26,
         "the window after the junk entries was skipped")
 end)
+
+-- ---------------------------------------------------------------------------
+-- v18 -> v19: the default window grown back to ten rows under the 30px bar
+-- ---------------------------------------------------------------------------
+
+--- A v18-shaped window on the old shipped 220px frame height, which the template copied into every
+--- stored window. The 30px bar of v18 took the tenth row out of it.
+local function v18Window(id, height)
+    return { id = id, frame = { width = 694, height = height or 220, padding = 6 } }
+end
+
+test("migrations: v19 moves every window still on the 220px height to 228, in every profile", function()
+    -- An account already at v18 holds the old 220 verbatim in every window, active profile or not.
+    -- red under: no v18 -> v19 step, or one that walks db.profile alone.
+    local inst = initWith({
+        profiles = { Default = { nextWindowId = 3, windows = { v18Window(1), v18Window(2) } },
+                     Raid    = { nextWindowId = 8, windows = { v18Window(7) } } },
+        global   = { schemaVersion = 18 },
+    })
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
+    for _, name in ipairs({ "Default", "Raid" }) do
+        for i, w in ipairs(inst.NS.db.sv.profiles[name].windows) do
+            assertEqual(w.frame.height, 228, name .. " window " .. i .. " kept the nine-row 220px")
+        end
+    end
+end)
+
+test("migrations: v19 leaves a frame height a player chose", function()
+    -- Only the old shipped 220 is taken for the default; any other height is a choice.
+    -- red under: writing 228 unconditionally.
+    local inst = initWith({
+        profiles = { Default = { nextWindowId = 4,
+                                 windows = { v18Window(1, 300), v18Window(2, 221), v18Window(3, 60) } } },
+        global   = { schemaVersion = 18 },
+    })
+    local D = inst.NS.Database
+    assertEqual(D.FindWindow(1).frame.height, 300)
+    assertEqual(D.FindWindow(2).frame.height, 221)
+    assertEqual(D.FindWindow(3).frame.height, 60)
+    assertEqual(D.FindWindow(1).frame.width, 694, "the step touched another frame key")
+end)
+
+test("migrations: the v19 step run twice is a no-op, and survives a junk window", function()
+    -- red under: a step that indexes a window or its frame without a type guard.
+    local inst = initWith({
+        profiles = { Default = { nextWindowId = 2, windows = { v18Window(1) } },
+                     Odd     = { windows = { "junk", { id = 2, frame = "junk" }, v18Window(3) } } },
+        global   = { schemaVersion = 18 },
+    })
+    local step = inst.NS.Database.__migrations[18]
+    local before = diff(inst.NS.db.sv.profiles, {})
+    step(inst.NS.db)
+    local after = diff(inst.NS.db.sv.profiles, {})
+    assertEqual(table.concat(after, "; "), table.concat(before, "; "),
+        "a second run of the v19 step changed the account")
+    assertEqual(inst.NS.db.sv.profiles.Odd.windows[1], "junk", "the step rewrote a non-window")
+    assertEqual(inst.NS.db.sv.profiles.Odd.windows[3].frame.height, 228,
+        "the window after the junk entries was skipped")
+end)

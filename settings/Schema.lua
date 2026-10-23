@@ -308,7 +308,7 @@ NS.Schema = {
         label = L["Width"], desc = L["Window width in pixels."],
     },
     {
-        path = "window.frame.height", type = "number", default = 220,
+        path = "window.frame.height", type = "number", default = 228,
         min = 60, max = 900, step = 10, fmt = "%d px",
         page = "frame", group = L["Size and position"],
         label = L["Height"], desc = L["Window height in pixels."],
