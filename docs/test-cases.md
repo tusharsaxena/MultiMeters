@@ -705,6 +705,19 @@ Total.
 - Sim session: SavedVariables come back byte-identical after a session that pins and resets
 - Sim session: DropStaleSegment writes nothing while a session runs
 
+### test_sim_e2e.lua (10)
+
+- Sim e2e: SimScenario lists the four #60 scenarios, each with labeled, tipped steps
+- Sim e2e: dungeon by step
+- Sim e2e: dungeon by run
+- Sim e2e: raid by step
+- Sim e2e: raid by run
+- Sim e2e: wipe by step
+- Sim e2e: wipe by run
+- Sim e2e: zone by step
+- Sim e2e: zone by run
+- Sim e2e: the panel's rows are the step labels, and a step waits while the gate is closed
+
 ### test_launchersetup.lua (55)
 
 - Launcher: Register creates ONE object and registers it against the global table
@@ -2590,6 +2603,7 @@ Total.
 | test_sim_world.lua | 17 |
 | test_sim_drivers.lua | 9 |
 | test_sim_session.lua | 22 |
+| test_sim_e2e.lua | 10 |
 | test_launchersetup.lua | 55 |
 | test_lifecycle.lua | 40 |
 | test_dispatch.lua | 11 |
@@ -2645,4 +2659,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2287** |
+| **Total** | **2297** |

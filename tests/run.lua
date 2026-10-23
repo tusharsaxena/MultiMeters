@@ -292,6 +292,8 @@ local SUITES = {
     "test_sim_drivers",
     -- The simulator's session host (modules/Sim.lua, MM-15): refusals, auto-stop, the stores.
     "test_sim_session",
+    -- The four #60 scenarios end to end, stepped and auto-run (modules/SimScenario.lua, MM-16).
+    "test_sim_e2e",
     "test_launchersetup",
     "test_lifecycle",
     "test_dispatch",

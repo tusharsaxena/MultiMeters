@@ -349,6 +349,7 @@ test("loadorder: each load-bearing seam line carries a LOAD-BEARING comment at t
         "core\\SimSetup.lua", "core\\CoreSetup.lua", "core\\PerfSetup.lua", "modules\\Aggregator.lua",
         "settings\\OptionsSetup.lua", "modules\\SimWorld.lua",
         "modules\\SimDrivers.lua",
+        "modules\\SimScenario.lua",
     }) do
         local at
         for i, line in ipairs(lines) do

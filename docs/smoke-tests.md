@@ -18,7 +18,7 @@ secret-value rules the checks refer to.
 | ID range | Theme | What it covers |
 |---|---|---|
 | INSTALL-1 to INSTALL-11 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
-| SLASH-1 to SLASH-23 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding, the `/mm sim` simulator |
+| SLASH-1 to SLASH-28 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding, the `/mm sim` simulator |
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
@@ -205,6 +205,18 @@ secret-value rules the checks refer to.
 - **SLASH-23. A stop leaves nothing behind (SM-MM-28).** Note each window's segment and pin, run a
   simulation, then `/mm sim stop` → the windows show the same segments and pins as before the start,
   and `/mm test` works again. Result: pending
+- **SLASH-24. The dungeon scenario (SM-MM-29).** `/mm sim start dungeon` → the bars grow during each
+  fight, the segment dropdown lists Trash then Speaker Shadowcrown, and the boss death shows in the
+  Deaths column with a recap tooltip. Result: pending
+- **SLASH-25. The raid scenario (SM-MM-30).** `/mm sim start raid` → a 20-row grid, the pet's damage
+  follows the Merge pets setting, and no duplicate player row. Result: pending
+- **SLASH-26. The wipe scenario (SM-MM-31).** `/mm sim start wipe` → everyone dies, Reset meter data
+  clears the segments (Blizzard's own meter untouched afterwards), and the re-pull starts a fresh
+  segment. Result: pending
+- **SLASH-27. The zone scenario (SM-MM-32).** `/mm sim start zone` → a window set to hide outside
+  instances hides during the Isle of Dorn step and returns in the second dungeon. Result: pending
+- **SLASH-28. An export during a simulation (SM-MM-33).** Mid-simulation, Export to Raid → `[sim]` lines
+  print in chat and nothing is sent to the group. Result: pending
 
 ## PANEL
 
@@ -1437,6 +1449,7 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 - VIS-14 (every game event through the one dispatch entry, 2026-10-23).
 - SLASH-20 to SLASH-23 (the `/mm sim` session host, 2026-10-23; SLASH-20's strip and its scenarios
   arrive with the rest of the simulator).
+- SLASH-24 to SLASH-28 (the four `/mm sim` scenarios and the export during a simulation, 2026-10-23).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

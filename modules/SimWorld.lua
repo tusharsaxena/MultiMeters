@@ -384,12 +384,14 @@ local function allyRow(w, guid, total, duration)
     }
 end
 
+--- Per source, the sum of each segment's WHOLE amount: floored per segment, so Overall is exactly
+--- the sum of the segments it spans, as the client's is.
 local function sumBy(segs, statKey)
     local sums, order = {}, {}
     for _, seg in ipairs(segs) do
         for guid, amount in pairs(seg.totals[statKey]) do
             if sums[guid] == nil then order[#order + 1] = guid end
-            sums[guid] = (sums[guid] or 0) + amount
+            sums[guid] = (sums[guid] or 0) + floor(amount)
         end
     end
     sort(order)

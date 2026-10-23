@@ -3,7 +3,7 @@
 Where each responsibility lives, what each file publishes, and what it consumes. `MultiMeters.toc`
 is the source of truth for load order — check this map against it before editing.
 
-Sixty-seven non-vendored source files: 1 locale, 21 `core/`, 1 `defaults/`, 29 `modules/`,
+Sixty-eight non-vendored source files: 1 locale, 21 `core/`, 1 `defaults/`, 30 `modules/`,
 15 `settings/`.
 
 Thirteen of those arrived on one day, 2026-09-09, and **not one of them is a new module.** They are
@@ -234,9 +234,12 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                     seeded mates, zones, segments, deaths and recaps) and
 │   │                     every provider the seam answers from. Plain invented
 │   │                     numbers only; registers on NS.SimSeam at FILE SCOPE
-│   └── SimDrivers.lua  — the simulator's drivers: each edits the world, then
-│                         fires the client's events through NS.Sim:Fire in the
-│                         client's order; a fight's ticks ride NS.Sim:After
+│   ├── SimDrivers.lua  — the simulator's drivers: each edits the world, then
+│   │                     fires the client's events through NS.Sim:Fire in the
+│   │                     client's order; a fight's ticks ride NS.Sim:After
+│   └── SimScenario.lua — the four #60 scenarios (dungeon, raid, wipe, zone):
+│                         labeled, tipped steps, and NS.SimHost.Play, which
+│                         plays each step through the drivers
 └── settings/
     ├── Schema_Compose.lua
     │                   — WHAT THE ARRAY IS DECLARED OUT OF and nothing else: the
@@ -359,6 +362,7 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 | `Sim.lua` | plain table | The simulator's **session host** (MultiMeters#60). Builds `NS.Sim` with `LibKa0s-Sim-1.0`'s `New` over `NS.SimSeam`, delivering through `NS.DeliverEvent`. The start's refusals, in order (stood down, test mode, combat, an instance, a group, General visibility `never`), each run inside `NS.SimSeam:Live` and each a `[Sim]` debug line naming its guard; the gate (closed while `w.pending` fight ticks are booked); `Prepare` (the world from the real player, the window pin snapshot in `session.mmPins`, `NS.RealEventFilter`, `SIM_CHANGED { active = true }`, the simulated `DAMAGE_METER_RESET`, the step panel); the real-event classifier `OnRealEvent` (`EVENT_RULES`: combat and a restriction edge stop with `combat`, a world entry with `world`, a live group with `group`, a live instance with `instance`, the client's meter events are consumed); and the seven stop steps (the filter cleared, the pins restored unless the reason is `profile`, the caches wiped, the resync through `ENTERING_WORLD`, `METER_SESSION` and `COMBAT_CHANGED`, never `METER_RESET`, the drill-down closed, `SIM_CHANGED { active = false }`, `Host.lastStop`). The step delay is the constant `Host.STEP_DELAY` (1 s). With the library absent `NS.Sim` stays `core/SimSetup.lua`'s stub | `NS.Sim` (live), `NS.SimHost` — `SCENARIOS`, `PANEL`, `STEP_DELAY`, `StepDelay`, `Refusal`, `Gate`, `Prepare`, `OnRealEvent`, `EVENT_RULES`, `StatusLine`, `PanelAnchor`, `world`, `lastStop`. **The one `SIM_CHANGED` sender** | `LibKa0s-Sim-1.0`, `NS.SimSeam`, `NS.Constants.MSG` **at file scope**; `NS.SimHost.World`, `NS.Compat`, `NS.Database`, `NS.WindowManager`, `NS.SetByPaths`, `NS.DrillDown`, `NS.Slash` at call time |
 | `SimWorld.lua` | plain table | The simulator's **invented world** (MultiMeters#60) and its answers. `World.New(seed, player)` builds it from a seeded Park-Miller generator: the real player first (GUID, name, class and live spec role read by the caller inside `NS.SimSeam:Live`), then fixed seeded mates `Player-9998-SIM%04d` from forty invented names, hunters and warlocks with pets `Pet-0-9998-SIM%04d`. Pure functions of the world table edit it: `SetGroup` (party or raid tokens, the player at a seeded raid index), `SetZone`, `OpenSegment` / `CloseSegment`, `Tick` (rate x seconds per stat, pets dealing a quarter of their owner's damage as their own row, the enemy taking the group's damage), `Die` (a Deaths row and a recap in `Aggregator.TestRecap`'s shape), `ResetSegments`; `Session`, `SourceDetail` and `AvailableSessions` answer fresh tables in the client's shape. **Plain invented numbers only**: it never reads a client meter value, so `core/Secrets.lua` stays the only inspector of client values, and it never spells a `Compat.`-prefixed meter shim (the `test_provider` scan) | `NS.SimHost.World` (`New`, `SetGroup`, `Unit`, `SetZone`, `OpenSegment`, `CloseSegment`, `Tick`, `Die`, `ResetSegments`, `Session`, `SourceDetail`, `AvailableSessions`, `PROVIDED`, `PROVIDERS`, and the `ZONES` / `NAMES` / `CLASSES` tables); 22 providers registered by key on `NS.SimSeam` **at file scope** | `NS.SimSeam` **at file scope**; `NS.SimHost.world`, `NS.Constants.STAT_TYPE` / `SESSION_TYPE` / `SOURCE_DISPLAY_TYPE` at call time |
 | `SimDrivers.lua` | plain table | The simulator's **drivers** (MultiMeters#60). Each edits the world (`NS.SimHost.world`) first, then fires the client's events through `NS.Sim:Fire`, read at call time, with the client's payloads and order: `FormGroup(n, raid)` and `Disband()` (`GROUP_ROSTER_UPDATE`); `Zone(key)` (`PLAYER_ENTERING_WORLD(false, false)`, then `ZONE_CHANGED_NEW_AREA`); `Pull(fight)` (a new segment, combat on, `PLAYER_REGEN_DISABLED`, then the first `Tick`); `Tick(fight)` (the world grows by `secondsPerTick`, any death booked for that tick, `DAMAGE_METER_CURRENT_SESSION_UPDATED`); `EndFight(fight)` (combat off, `PLAYER_REGEN_ENABLED`, then one `DAMAGE_METER_COMBAT_SESSION_UPDATED(enumValue, sessionID)` per `Constants.STATS` entry in order, then `DAMAGE_METER_CURRENT_SESSION_UPDATED`); `Reset()` (the player's own `Provider.Reset`, which the guarded `ResetAllCombatSessions` answers); `Fight(fight)` (the pull and first tick now, ticks 2..n booked `TICK` = 0.5 s apart with `NS.Sim:After`, counted on `w.pending`, the last ending the fight). Sends no bus message and never calls the client's meter; every timer is a session timer, so a stop cancels a fight in flight | `NS.SimHost.Drivers` (`FormGroup`, `Disband`, `Zone`, `Pull`, `Tick`, `EndFight`, `Reset`, `Fight`, `TICK`) | `NS.SimHost.World` **at file scope**; `NS.Sim`, `NS.SimHost.world`, `NS.Provider` and `NS.Constants.STATS` at call time |
+| `SimScenario.lua` | plain tables | The simulator's **scenarios** (MultiMeters#60), filled into `NS.SimHost.SCENARIOS` in place: `dungeon` (a 5-player group, The Rookery, Trash 6 x 4 s, Speaker Shadowcrown 10 x 18 s with a damage dealer dying at tick 7), `raid` (a 20-player raid, Liberation of Undermine, Vexie and the Geargrinders 12 x 25 s with two deaths), `wipe` (the boss as `Speaker Shadowcrown (wipe)`, everyone dead by tick 8, a meter reset, a 4-tick re-pull) and `zone` (Trash in The Rookery, the Isle of Dorn, the Priory of the Sacred Flame, Trash again). No `sizes`. Each timeline builds fresh `{ kind, label, tip, ... }` steps (the library stamps the steps it plays), with localized labels and tips naming the events the step fires and what the world holds after it. `Host.Play(step, session)` runs `PLAY[step.kind]` (`form`, `zone`, `fight`, `reset`) through the drivers and answers the step's detail | `NS.SimHost.Play`, `NS.SimHost.PLAY`, `NS.SimHost.FIGHTS`, the four `SCENARIOS` entries | `NS.SimHost.Drivers` and `NS.SimHost.World` **at file scope**; `NS.L` |
 
 ### `settings/`
 
@@ -454,13 +458,15 @@ binding (`launcher-§6`) and no Lua; the button it clicks and both labels come f
    **`Aggregator_Identity` → `Aggregator_Preview` → `Aggregator_Order`** → `WindowManager` → `Window` →
    **`Window_Lifecycle` → `Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_Border`** → **`Row_Cells`** → **`Row_NameCell`** →
    `Targets` → `Tooltip` → **`Tooltip_Lines` → `Tooltip_Builders`** → `DrillDown` → `Export` →
-   **`Export_Modal`** → `Visibility` → `Sim` → `SimWorld` → `SimDrivers`.
+   **`Export_Modal`** → `Visibility` → `Sim` → `SimWorld` → `SimDrivers` → `SimScenario`.
 
    `Sim` builds `NS.Sim` with the host's own tables (`NS.SimHost.SCENARIOS` and `PANEL`), which the
    simulator files after it fill in place, so it loads ahead of all of them (a LOAD-BEARING TOC
    note); the library reads every descriptor table at use. `SimWorld` registers its providers on
    `NS.SimSeam` at *file scope*, so it must follow `core/SimSetup.lua` (a LOAD-BEARING TOC note). `SimDrivers` captures `NS.SimHost.World` at
-   *file scope*, so it follows `SimWorld` (its own LOAD-BEARING note).
+   *file scope*, so it follows `SimWorld` (its own LOAD-BEARING note). `SimScenario` fills
+   `NS.SimHost.SCENARIOS` and sets `NS.SimHost.Play` at *file scope* and captures `NS.SimHost.Drivers`
+   and `NS.SimHost.World` there, so it follows `SimDrivers` (its own LOAD-BEARING note).
 
    The twelve in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
    for the same reason: each resolves something its parent publishes at *file scope*, so a peel

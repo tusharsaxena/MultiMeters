@@ -166,6 +166,10 @@ modules\SimWorld.lua
 # LOAD-BEARING POSITION: it captures NS.SimHost.World (modules\SimWorld.lua) at FILE SCOPE, so it
 # must load after it; NS.Sim and the session's world are read at call time.
 modules\SimDrivers.lua
+# The simulator's four scenarios (MultiMeters#60). LOAD-BEARING POSITION: it fills
+# NS.SimHost.SCENARIOS in place and sets NS.SimHost.Play at FILE SCOPE, and captures NS.SimHost.Drivers
+# (modules\SimDrivers.lua) and NS.SimHost.World there too, so it loads after both.
+modules\SimScenario.lua
 
 # Settings (last — depend on everything else being initialized)
 # The vocabularies, validators and composed blocks that the schema array is declared
