@@ -634,8 +634,7 @@ end
 --- show ladder's own reading (core/MultiMeters.lua's `fighting`), so "in combat"
 --- means the same thing to the refusal below as to the window it would show.
 local function fighting()
-    local f = _G.UnitAffectingCombat
-    return (f and f("player")) and true or false
+    return NS.Compat.UnitAffectingCombat("player")
 end
 
 --- What every start and stop does: the flag, through core/State.lua for the same

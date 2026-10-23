@@ -23,8 +23,8 @@ secret-value rules the checks refer to.
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
 | WIN-1 to WIN-48 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown |
-| VIS-1 to VIS-12 | [Visibility](#vis) | Contexts and hide rules |
-| GRID-1 to GRID-32 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments |
+| VIS-1 to VIS-13 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat |
+| GRID-1 to GRID-33 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
@@ -735,6 +735,10 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   `ShouldShow -> false (in combat)` or `(out of combat)`). Result: pass (owner-marked 2026-10-10)
 - **VIS-12. Test mode overrides context.** With a hide rule in force, `/mm test` → the window shows
   wherever you stand. Result: pass (owner-marked 2026-10-10)
+- **VIS-13. Solo and combat rules through Compat (SM-MM-22).** Turn **Hide when solo** on → the window
+  hides when you drop group and returns when you group up; turn on the out-of-combat rule and pull a
+  dummy → it shows at the pull and hides when combat ends, at the same edges as before. The group and
+  combat reads now go through `core/Compat.lua`. Result: pending
 
 ## GRID
 
@@ -840,6 +844,10 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   fight → each pins. `/mm get window.data.sessionID` answers the pinned id; after picking Overall it
   answers `0`. `/mm set window.data.sessionID 0` unpins; `/mm set window.data.sessionID -1` → *Invalid
   value for window.data.sessionID*. Record the lowest and highest ids seen. Result: pass (owner-marked 2026-10-10)
+- **GRID-33. The roster through Compat (SM-MM-21).** In a real five-player dungeon → the grid shows
+  every member with their role icon, and **Roster** sort orders them as before (player first, then
+  group order). The unit and group reads now go through `core/Compat.lua`; nothing live should change.
+  Result: pending
 
 ## TIP
 
@@ -1405,6 +1413,7 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 ## Pending sign-off
 
 - WIN-47 and WIN-48 (the red title word only while the test-mode strip is not shown, 2026-10-23).
+- GRID-33 and VIS-13 (the world reads routed through `core/Compat.lua` for the simulator, 2026-10-23).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

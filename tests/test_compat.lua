@@ -665,3 +665,123 @@ test("Compat: a delve namespace present but missing its member does not raise", 
     assertFalse(inst.NS.Compat.IsInHousing())
     assertFalse(inst.NS.Compat.IsSkyriding())
 end)
+
+-- ── world reads the simulator answers (MultiMeters#60, Sim host contract H1) ──
+--
+-- The unit, group, instance, combat and death-recap reads go through
+-- core/Compat.lua so `/mm sim` has ONE seam to answer them from. Each member
+-- resolves its global at CALL time, so these cases drive the mock's knobs after
+-- load and nil the global on the live instance for the absent rung.
+
+test("Compat: the unit reads answer the mock's group", function()
+    local inst = T.load()
+    local m, C = inst.mocks, inst.NS.Compat
+    m.setGroup({
+        { guid = "Player-1-A", name = "Alpha", class = "WARRIOR", role = "TANK" },
+        { guid = "Player-1-B", name = "Bravo", class = "PRIEST",  role = "HEALER" },
+    })
+    assertEqual(C.UnitGUID("party1"), "Player-1-B")
+    assertEqual(C.UnitName("player"), "Alpha")
+    local n, vals = pack(C.UnitName("player"))
+    assertEqual(n, 1, "UnitName answers its first return only")
+    assertEqual(vals[1], "Alpha")
+    assertTrue(C.UnitExists("party1"))
+    assertFalse(C.UnitExists("party4"))
+    local _, classFile = C.UnitClass("party1")
+    assertEqual(classFile, "PRIEST")
+    assertEqual(C.UnitGroupRolesAssigned("player"), "TANK")
+    m.setSpecRole("HEALER")
+    assertEqual(C.GetSpecializationRole(1), "HEALER")
+end)
+
+test("Compat: the group, instance and combat reads answer the mock's knobs", function()
+    local inst = T.load()
+    local m, C = inst.mocks, inst.NS.Compat
+    m.setGroup({ {}, {}, {} }, { raid = true })
+    assertEqual(C.GetNumGroupMembers(), 3)
+    assertTrue(C.IsInRaid())
+    assertTrue(C.IsInGroup())
+    m.setSolo()
+    assertFalse(C.IsInRaid())
+    assertFalse(C.IsInGroup())
+
+    m.setInstance("party")
+    local inInstance, instanceType = C.IsInInstance()
+    assertTrue(inInstance)
+    assertEqual(instanceType, "party")
+    m.setInstance(nil)
+    inInstance, instanceType = C.IsInInstance()
+    assertFalse(inInstance)
+    assertEqual(instanceType, "none")
+
+    m.setInCombat(true)
+    assertTrue(C.UnitAffectingCombat("player"))
+    m.setInCombat(false)
+    assertFalse(C.UnitAffectingCombat("player"))
+end)
+
+test("Compat: OpenDeathRecap calls the client's recap UI and answers true", function()
+    local inst = T.load()
+    assertTrue(inst.NS.Compat.OpenDeathRecap(42))
+    assertEqual(inst.mocks.__lastRecapID, 42)
+    assertEqual(inst.mocks.__deathRecaps, 1)
+end)
+
+test("Compat: every world read answers its absent value when the global is gone", function()
+    local inst = T.load()
+    local m, C = inst.mocks, inst.NS.Compat
+    m.setGroup({ {}, {} })
+    m.setInstance("raid")
+    m.setInCombat(true)
+    for _, name in ipairs{ "UnitGUID", "UnitName", "UnitExists", "UnitClass",
+            "UnitGroupRolesAssigned", "GetSpecializationRole", "GetNumGroupMembers",
+            "IsInRaid", "IsInGroup", "IsInInstance", "UnitAffectingCombat",
+            "OpenDeathRecapUI" } do
+        m[name] = nil
+    end
+    assertNil(C.UnitGUID("player"))
+    assertNil(C.UnitName("player"))
+    assertFalse(C.UnitExists("player"))
+    assertNil(C.UnitClass("player"))
+    assertNil(C.UnitGroupRolesAssigned("player"))
+    assertNil(C.GetSpecializationRole(1))
+    assertEqual(C.GetNumGroupMembers(), 0)
+    assertFalse(C.IsInRaid())
+    assertFalse(C.IsInGroup())
+    local inInstance, instanceType = C.IsInInstance()
+    assertFalse(inInstance)
+    assertEqual(instanceType, "none")
+    assertFalse(C.UnitAffectingCombat("player"))
+    m.OpenDeathRecapUI = "not a function"
+    assertFalse(C.OpenDeathRecap(42))
+end)
+
+test("Compat: the simulator's world reads are named nowhere but core/Compat.lua", function()
+    -- The seam is only a seam if nothing goes round it. A direct `_G.UnitGUID`,
+    -- or a bare `IsInGroup()`, in one of these files is a read `/mm sim` cannot
+    -- answer. `Compat.X` spellings are stripped before the scan.
+    local NAMES = { "UnitGUID", "UnitName", "UnitExists", "UnitClass",
+        "UnitGroupRolesAssigned", "GetSpecializationRole", "GetNumGroupMembers",
+        "IsInRaid", "IsInGroup", "IsInInstance", "UnitAffectingCombat", "OpenDeathRecapUI" }
+    local FILES = { "modules/Roster.lua", "modules/Visibility.lua",
+        "modules/WindowManager.lua", "modules/Tooltip.lua", "modules/DrillDown.lua",
+        "core/MultiMeters.lua" }
+    local offenders = {}
+    for _, rel in ipairs(FILES) do
+        local fh = assert(io.open(T.root .. "/" .. rel, "r"))
+        local n = 0
+        for line in fh:lines() do
+            n = n + 1
+            if not line:match("^%s*%-%-") then
+                local text = " " .. line:gsub("%s%-%-.*$", ""):gsub("Compat%.[%w_]+", "")
+                for _, name in ipairs(NAMES) do
+                    if text:find("[^%w_]" .. name .. "[^%w_]") or text:find("[^%w_]" .. name .. "$") then
+                        offenders[#offenders + 1] = rel .. ":" .. n .. " " .. name
+                    end
+                end
+            end
+        end
+        fh:close()
+    end
+    assertEqual(#offenders, 0, "world read outside Compat: " .. table.concat(offenders, ", "))
+end)

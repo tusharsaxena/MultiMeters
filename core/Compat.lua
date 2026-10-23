@@ -729,6 +729,120 @@ function Compat.IsInHousing()
     return housing.IsInsideHouseOrPlot() and true or false
 end
 
+-- ---------------------------------------------------------------------------
+-- World reads the simulator answers (preview-mode, H1)
+-- ---------------------------------------------------------------------------
+--
+-- The unit, group, instance, combat and death-recap reads the roster, the
+-- visibility rules, the show ladder, the tooltip and the drill-down make. None
+-- of them is deprecated; they live here because they are exactly the reads
+-- `/mm sim` answers (MultiMeters#60, the LibKa0s Sim host contract H1), and the
+-- standard (compat.md, preview-mode.md "The in-game simulator") routes a
+-- simulator-answered read through compat even when nothing is deprecated, so
+-- the seam is one file rather than a dozen call sites.
+--
+-- Every member resolves its global through _G at CALL time — the headless
+-- harness installs its unit mocks after load, and the simulator swaps answers
+-- live — and answers a safe absent value where the global is missing. None of
+-- them touches a meter value: a GUID, a name or a role is never secret here.
+
+--- @param unit string
+--- @return string|nil
+function Compat.UnitGUID(unit)
+    local f = _G.UnitGUID
+    if not f then return nil end
+    return f(unit)
+end
+
+--- The unit's name, first return only (the realm is dropped).
+--- @param unit string
+--- @return string|nil
+function Compat.UnitName(unit)
+    local f = _G.UnitName
+    if not f then return nil end
+    local name = f(unit)
+    return name
+end
+
+--- @param unit string
+--- @return boolean
+function Compat.UnitExists(unit)
+    local f = _G.UnitExists
+    return (f and f(unit)) and true or false
+end
+
+--- The client's three returns (className, classFilename, classID), or nil.
+--- @param unit string
+function Compat.UnitClass(unit)
+    local f = _G.UnitClass
+    if not f then return nil end
+    return f(unit)
+end
+
+--- @param unit string
+--- @return string|nil  "TANK", "HEALER", "DAMAGER" or "NONE"
+function Compat.UnitGroupRolesAssigned(unit)
+    local f = _G.UnitGroupRolesAssigned
+    if not f then return nil end
+    return f(unit)
+end
+
+--- The role of the given specialization INDEX. No Ka0s addon but this one reads
+--- it, so it is a host member rather than a LibKa0s-Compat one.
+--- @param spec number
+--- @return string|nil
+function Compat.GetSpecializationRole(spec)
+    local f = _G.GetSpecializationRole
+    if not f then return nil end
+    return f(spec)
+end
+
+--- @return number  0 when the call is missing
+function Compat.GetNumGroupMembers()
+    local f = _G.GetNumGroupMembers
+    return (f and f()) or 0
+end
+
+--- @return boolean
+function Compat.IsInRaid()
+    local f = _G.IsInRaid
+    return (f and f()) and true or false
+end
+
+--- Any group, home or instance: no category argument.
+--- @return boolean
+function Compat.IsInGroup()
+    local f = _G.IsInGroup
+    return (f and f()) and true or false
+end
+
+--- @return boolean inInstance
+--- @return string  instanceType ("none" when absent)
+function Compat.IsInInstance()
+    local f = _G.IsInInstance
+    if not f then return false, "none" end
+    local inInstance, instanceType = f()
+    return inInstance and true or false, instanceType or "none"
+end
+
+--- Combat as the unit reports it, never InCombatLockdown (Visibility's rule).
+--- @param unit string
+--- @return boolean
+function Compat.UnitAffectingCombat(unit)
+    local f = _G.UnitAffectingCombat
+    return (f and f(unit)) and true or false
+end
+
+--- Open Blizzard's death recap on the given recap.
+--- @param recapID number
+--- @return boolean  whether the client's recap UI was called
+function Compat.OpenDeathRecap(recapID)
+    local open = _G.OpenDeathRecapUI
+    if type(open) ~= "function" then return false end
+    open(recapID)
+    return true
+end
+
 --- The interpolation a StatusBar setter takes to slide rather than snap, or nil.
 ---
 --- Patch 12.0 gave `StatusBar:SetValue` and `:SetMinMaxValues` an optional

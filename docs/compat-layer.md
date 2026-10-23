@@ -8,7 +8,7 @@ shim degrades to a stated default rather than erroring at the call site.
 It is first in the TOC's core block. Nothing depends on that any more — the TOC-manifest reader that
 made it load-bearing is `core/EnvSetup.lua`'s now — but it costs nothing and it reads correctly.
 
-**Thirty shims**, counted the way `documentation-§3` counts them: entry points published on
+**Forty-two shims**, counted the way `documentation-§3` counts them: entry points published on
 this addon's own `Compat` table, over this file alone. The threshold is three. This addon's
 "might not exist" surface is unusually large because `C_DamageMeter` — its entire data source — is
 new in 12.0, so a client one patch behind has none of it and a PTR build can carry the namespace
@@ -28,6 +28,7 @@ without one of its members.
 | Icon art | `FirstTexture`, `FirstAtlas` | `nil` |
 | Player context | `IsInDelve`, `IsSkyriding`, `IsInHousing` | `false` |
 | Bar animation | `BarInterpolation` | `nil`, and the caller omits the argument, so the bar snaps as it did on every client before 12.0 |
+| World reads (the simulator seam) | `UnitGUID`, `UnitName`, `UnitExists`, `UnitClass`, `UnitGroupRolesAssigned`, `GetSpecializationRole`, `GetNumGroupMembers`, `IsInRaid`, `IsInGroup`, `IsInInstance`, `UnitAffectingCombat`, `OpenDeathRecap` (`OpenDeathRecapUI`) | `nil` for the unit, role and class reads, `0` members, `false` for the booleans, `false, "none"` for the instance, and `false` (nothing opened) for the recap |
 | Chat sending | `ChatSender` (`C_ChatInfo.SendChatMessage`, else the deprecated `SendChatMessage` global) | `nil`, and `modules/Export.lua` prints the export to the player, after one notice line when a real channel was asked for |
 
 Callers, by weight: `modules/Provider.lua` (the meter, the four `C_DeathRecap` readers and the
@@ -40,6 +41,18 @@ themselves name nothing in this file any more: the CCN peel took the spell shims
 tooltip's builder and line files, and the header art and the menu across to
 `modules/Window_Header.lua`. `modules/Roster.lua` reaches `Compat.GetSpecialization` for the local
 player's fallback role. It read the deprecated global directly until LibKa0s v1.55.0.
+
+**The world reads** are here although nothing about them is deprecated. They are the reads the
+in-game simulator answers (`/mm sim`, MultiMeters#60, the LibKa0s Sim host contract H1), and the
+standard (`compat`, and `preview-mode`'s "The in-game simulator") routes a simulator-answered read
+through compat so the seam is this one file rather than a dozen call sites. Each resolves its global
+through `_G` at call time and never touches a meter value. Callers: `modules/Roster.lua` (the unit,
+role and group reads), `modules/Visibility.lua` (`IsInInstance`, `IsInGroup`, `UnitAffectingCombat`),
+`core/MultiMeters.lua` (the show ladder's `fighting` and the feign GUID), `modules/WindowManager.lua`
+and `modules/Tooltip.lua` (`UnitAffectingCombat`) and `modules/DrillDown.lua` (`OpenDeathRecap`).
+`tests/test_compat.lua` scans those files for a direct read of any of the twelve names. The other
+player-state probes in `modules/Visibility.lua`, `modules/Feign.lua`, the Export target and
+hardware-event reads, `core/Secrets.lua` and the Diagnostics reads stay where they are.
 
 ## What `LibKa0s-Compat-1.0` answers
 
@@ -214,9 +227,6 @@ fails to open must not put an error in front of the player mid-pull.
   `C_AddOns.GetAddOnMetadata` and then nothing: there is no `Compat.GetAddOnMetadata`, and no
   bare-global rung.
 - **`C_DeathRecap.GetRecapLink`** is left unshimmed until something wants a chat link (spec §10).
-- **`Compat.OpenDeathRecap`** does not exist. `modules/DrillDown.lua:264` probes for it optimistically
-  so that the call site picks it up with no edit if it is ever added; the guard there is the whole of
-  its current behavior.
 - **Anything that reads a meter value.** `core/Secrets.lua` owns that, exclusively.
 
 ## Adding a shim

@@ -48,7 +48,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | Layer | Files | Responsibility |
 |---|---|---|
 | `locales/` | `enUS.lua` | `NS.L`, with the key-is-the-string fallback. Loads first. |
-| `core/` boundary | `Compat.lua` | All 30 cross-patch shims, including the eight `C_DamageMeter` reads and the chat export's `ChatSender`. Four of them, the spell and spec readers, are bound to `LibKa0s-Compat-1.0` and answer `nil` without it. No logic. |
+| `core/` boundary | `Compat.lua` | All 42 shims, including the twelve world reads the simulator answers, the eight `C_DamageMeter` reads and the chat export's `ChatSender`. Four of them, the spell and spec readers, are bound to `LibKa0s-Compat-1.0` and answer `nil` without it. No logic. |
 | `core/` boundary | `EnvSetup.lua` | The `LibKa0s-Env-1.0` seam: `NS.Meta` / `NS.Version`, the TOC-manifest reader `Compat.lua` used to own. |
 | `core/` values | `Constants.lua`, `Namespace.lua`, `State.lua` | The stat catalog, the bus catalog, identity, session-only flags and the shared cache. |
 | `core/` the rule | `Secrets.lua` | **The only file that inspects a meter value.** Its guards `IsSecret` / `CanAccess` / `IsSafeKey` are `LibKa0s-Compat-1.0`'s, with a guard arm that re-implements each body when the library is absent. |
@@ -350,7 +350,7 @@ re-check re-runs the count rather than re-arguing the verdict. **All seven ship.
 | Doc | Status | Trigger, as measured |
 |---|---|---|
 | `perf-analysis/README.md` | Present | **The performance harness is wired**: `core/PerfSetup.lua` plus `Perf.Note` brackets in eight files (`performance-§12`). `docs/perf-analysis/20260909-014604/` is the standing example. |
-| `compat-layer.md` | Present | **`core/Compat.lua`: 772 lines, 30 shims** (4 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
+| `compat-layer.md` | Present | **`core/Compat.lua`: 886 lines, 42 shims** (4 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
 | `midnight-quirks.md` | Present | **Four client-version workarounds of the addon's own** (isolated event registrations, `ADDON_RESTRICTION_STATE_CHANGED` against a namespace a client may lack, the settle pass, the secret-value model), against a trigger of one. The detail moved here from [Taint notes](#taint-notes) rather than being copied. |
 | `debug.md` | Present | **One diagnostics report, three probe verbs, the `tooltip` session flag and the `NS.Debug` channels** (`debug-logging-§14`). Written 2026-09-09, when the row's own re-check trigger fired. |
 | `slash-dispatch.md` | Present | **20 verbs in `NS.COMMANDS` and a sub-command tree** (`window` takes four sub-verbs), against eight or more commands or any tree. The hub's `## Slash commands` detail moved there on 2026-09-24. |

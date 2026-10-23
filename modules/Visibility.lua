@@ -108,11 +108,8 @@ local CONTEXT_BY_INSTANCE_TYPE = {
 --- @return string  "delve", "dungeon", "raid", "arena", "battleground",
 ---                 "scenario" or "world"
 function Visibility.GetContext()
-    if not _G.IsInInstance then return "world" end
-    if NS.Compat and NS.Compat.IsInDelve and NS.Compat.IsInDelve() then
-        return "delve"
-    end
-    local _, instanceType = IsInInstance()
+    if NS.Compat.IsInDelve() then return "delve" end
+    local _, instanceType = NS.Compat.IsInInstance()
     return CONTEXT_BY_INSTANCE_TYPE[instanceType] or "world"
 end
 
@@ -131,8 +128,7 @@ end
 --- Whether the player is in a party or raid.
 --- @return boolean
 local function inGroup()
-    if not _G.IsInGroup then return false end
-    return IsInGroup() and true or false
+    return NS.Compat.IsInGroup()
 end
 
 --- Whether the player is alone — the state `hideWhenSolo` hides on.
@@ -154,8 +150,7 @@ end
 ---
 --- @return boolean
 local function inCombat()
-    if not _G.UnitAffectingCombat then return false end
-    return UnitAffectingCombat("player") and true or false
+    return NS.Compat.UnitAffectingCombat("player")
 end
 
 -- The druid shapeshift form ids that are TRAVEL, not combat: Travel (3),

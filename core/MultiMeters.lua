@@ -404,9 +404,7 @@ local function noteFeignCast(unit, spellID)
     local F = NS.Feign
     if not (F and F.Note) then return end
 
-    local getGUID = _G.UnitGUID
-    if not getGUID then return end
-    F.Note(getGUID(unit), unit)
+    F.Note(NS.Compat.UnitGUID(unit), unit)
 end
 
 --- CHAT_MSG_SYSTEM -> modules/Export.lua, and NOTHING onto the bus.
@@ -529,8 +527,7 @@ end
 --- legal, and as a proxy for "the player is fighting" it latches early and
 --- releases late.
 local function fighting()
-    local f = _G.UnitAffectingCombat
-    return (f and f("player")) and true or false
+    return NS.Compat.UnitAffectingCombat("player")
 end
 
 --- The addon-wide General visibility answer (options-ui-§15's Master controls tab),

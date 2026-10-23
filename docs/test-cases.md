@@ -168,7 +168,7 @@ Total.
 - Secrets: no file outside core/Secrets.lua defines its own plainTruth
 - Secrets: the Provider's field probes truth-test a secret isLocalPlayer through PlainTruth
 
-### test_compat.lua (40)
+### test_compat.lua (45)
 
 - Compat: GetSpellInfo flattens C_Spell's struct to the old multi-return
 - Compat: GetSpellInfo answers nil for an unknown spell rather than raising
@@ -210,6 +210,11 @@ Total.
 - Compat.BarInterpolation answers the client's ease-out, and nil below 12.0 (#23)
 - Compat.ChatSender prefers C_ChatInfo, falls back to the global, and is nil with neither
 - Compat: a delve namespace present but missing its member does not raise
+- Compat: the unit reads answer the mock's group
+- Compat: the group, instance and combat reads answer the mock's knobs
+- Compat: OpenDeathRecap calls the client's recap UI and answers true
+- Compat: every world read answers its absent value when the global is gone
+- Compat: the simulator's world reads are named nowhere but core/Compat.lua
 
 ### test_state.lua (17)
 
@@ -2478,7 +2483,7 @@ Total.
 | test_prose.lua | 15 |
 | test_constants.lua | 25 |
 | test_secrets.lua | 42 |
-| test_compat.lua | 40 |
+| test_compat.lua | 45 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 28 |
@@ -2549,4 +2554,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2211** |
+| **Total** | **2216** |
