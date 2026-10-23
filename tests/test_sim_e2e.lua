@@ -62,6 +62,10 @@ end
 --- What the engine shows after a step.
 local function observe(inst, pos)
     local ns = inst.NS
+    -- The session's roster store as the step left it, read before GetGroup can refill it.
+    local live = ns.Sim:Session()
+    local store = live and live.mmRoster
+    local storeCount = store and store.count or 0
     local group = ns.Roster.GetGroup()
     local roster = {}
     for i, m in ipairs(group) do roster[i] = m.guid end
@@ -76,6 +80,7 @@ local function observe(inst, pos)
     for _, s in ipairs(sessions) do o.bySegment[s.id] = grid(ns, "current", s.id) end
     local session = ns.Sim:Session()
     o.mmRosterCount = session and session.mmRoster and session.mmRoster.count or 0
+    o.mmRosterStore, o.mmRosterStoreCount = store, storeCount
     o.world = ns.SimHost.world
     return o
 end
@@ -305,6 +310,9 @@ CHECK.dungeon = function(obs, tag)
     local row = rowOf(a, dead[1].guid)
     assertEqual(boss.world.known[dead[1].guid].role, "DAMAGER", tag .. ": the boss death is a damage dealer")
     assertEqual(row.deaths, 1, tag .. ": the dead member's Deaths cell")
+    assertTrue(dead[1].recapID ~= nil, tag .. ": the world's death carries no recap id")
+    assertEqual(row.recapID, dead[1].recapID, tag .. ": the dead member's row lost its deathRecapID")
+    assertEqual(boss.recapRowID, row.recapID, tag .. ": GetRecap was not called with the row's id")
     local recap = boss.recap
     assertTrue(type(recap) == "table" and recap.events and #recap.events > 0,
         tag .. ": Provider.GetRecap answers no events for the death")
@@ -357,6 +365,9 @@ CHECK.wipe = function(obs, tag)
     assertEqual(#reset.sessions, 0, tag .. ": GetAvailableSessions after the reset")
     assertEqual(reset.current.reason, "no session", tag .. ": the Current window's reason after the reset")
     assertEqual(#reset.current.rows, 0)
+    assertTrue(wipe.mmRosterStore ~= nil and wipe.mmRosterStoreCount == 5, tag .. ": no session roster before the reset")
+    assertTrue(reset.mmRosterStore ~= wipe.mmRosterStore, tag .. ": the reset kept the session's roster store")
+    assertEqual(reset.mmRosterStoreCount, 0, tag .. ": the session roster was not emptied by the reset")
     assertEqual(reset.mmRosterCount, 5, tag .. ": the session roster was not rebuilt after the reset")
     assertEqual(reset.globalRoster, reset.globalBefore, tag .. ": the reset touched db.global.roster")
     local repull = obs[5]
@@ -382,8 +393,11 @@ end
 MID = {
     dungeon = {
         [4] = function(inst, o)
+            -- The recap id comes from the engine's row (what SM-MM-29's tooltip reads), not the world.
             local dead = o.world.segments[1].deaths[1]
-            o.recap = dead and inst.NS.Provider.GetRecap(dead.recapID)
+            local row = dead and o.sessions[1] and rowOf(o.bySegment[o.sessions[1].id], dead.guid)
+            o.recapRowID = row and row.recapID
+            o.recap = o.recapRowID and inst.NS.Provider.GetRecap(o.recapRowID)
         end,
     },
     raid = {
