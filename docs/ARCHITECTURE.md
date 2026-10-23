@@ -500,8 +500,10 @@ the TOC: the client reads it from the addon folder by name. The binding constrai
 1. `libs/` — Ace3, LibKa0s, LibSharedMedia, AceGUI-3.0-SharedMediaWidgets, LibDataBroker, LibDBIcon.
 2. `locales/enUS.lua` — first, so `NS.L` exists for every declaration below.
 3. `core/Compat.lua` **first** in the core block — it is the boundary every later file's cross-patch
-   call goes through — and `core/EnvSetup.lua` immediately after it and **before
-   `core/Namespace.lua`**, whose `resolveVersion()` runs at *file scope* and reads the TOC manifest
+   call goes through — then `core/SimSetup.lua` **straight after it** (LibKa0s-Sim-1.0's seam wraps
+   every `NS.Compat` member in place at load, so a file between the two could capture or call a member
+   before the wrap: host contract H2, a LOAD-BEARING TOC note), and `core/EnvSetup.lua` after that and
+   **before `core/Namespace.lua`**, whose `resolveVersion()` runs at *file scope* and reads the TOC manifest
    through the `NS.Meta` seam that file publishes. A seam that loaded later would pin `NS.version` to
    `FALLBACK_VERSION` for the whole session, silently.
 4. `core/MediaSetup.lua` **before `core/Constants.lua`**, which resolves `FONT_MONO` from the

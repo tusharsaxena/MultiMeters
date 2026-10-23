@@ -635,6 +635,19 @@ Total.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
+### test_sim_seam.lua (10)
+
+- Sim seam: the vendored LibKa0s-Sim-1.0 registered and NS.SimSeam is its seam
+- Sim seam: Unwrapped() is EMPTY after the whole addon loads (host contract H2)
+- Sim seam: Keys() is every non-PURE Compat function, and no PURE key is wrapped
+- Sim seam: idle, a wrapped member reaches the client
+- Sim seam: a guarded ResetAllCombatSessions never reaches the client and replies by timer
+- Sim seam: a guarded ResetAllCombatSessions is inert with no simulated world
+- Sim seam: a guarded ChatSender prints '[sim] RAID: x' and sends nothing
+- Sim seam: a guarded OpenDeathRecap prints, answers false and never opens the client's recap
+- TOC: core/SimSetup.lua loads immediately after core/Compat.lua, annotated LOAD-BEARING
+- Sim seam: with LibKa0s absent, NS.SimSeam and NS.Sim are the stubs, at full parity
+
 ### test_launchersetup.lua (55)
 
 - Launcher: Register creates ONE object and registers it against the global table
@@ -2514,6 +2527,7 @@ Total.
 | test_debuglogsetup.lua | 32 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 13 |
+| test_sim_seam.lua | 10 |
 | test_launchersetup.lua | 55 |
 | test_lifecycle.lua | 40 |
 | test_dispatch.lua | 11 |
@@ -2569,4 +2583,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2227** |
+| **Total** | **2237** |

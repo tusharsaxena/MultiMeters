@@ -6,7 +6,9 @@ and gets a shape that matches a modern Midnight 12.x client; where the underlyin
 shim degrades to a stated default rather than erroring at the call site.
 
 It is first in the TOC's core block. Nothing depends on that any more — the TOC-manifest reader that
-made it load-bearing is `core/EnvSetup.lua`'s now — but it costs nothing and it reads correctly.
+made it load-bearing is `core/EnvSetup.lua`'s now — but it costs nothing and it reads correctly. What
+*is* load-bearing is the line after it: `core/SimSetup.lua`, the simulator seam below, loads straight
+after this file, and the two move together.
 
 **Forty-two shims**, counted the way `documentation-§3` counts them: entry points published on
 this addon's own `Compat` table, over this file alone. The threshold is three. This addon's
@@ -53,6 +55,34 @@ and `modules/Tooltip.lua` (`UnitAffectingCombat`) and `modules/DrillDown.lua` (`
 `tests/test_compat.lua` scans those files for a direct read of any of the twelve names. The other
 player-state probes in `modules/Visibility.lua`, `modules/Feign.lua`, the Export target and
 hardware-event reads, `core/Secrets.lua` and the Diagnostics reads stay where they are.
+
+## The simulator seam
+
+`core/SimSetup.lua` loads straight after this file (a LOAD-BEARING TOC note, LibKa0s Sim host contract
+H2) and calls `LibKa0s-Sim-1.0`'s `Sim:NewSeam(NS.Compat, …)`, which wraps every function member of
+this table **in place, once**. While a simulation session runs, a wrapped member asks the simulator's
+provider first; idle, it calls straight through, at the cost of one field test. So every caller keeps
+reading `NS.Compat.X(...)` at call time and never captures a member (`local x = NS.Compat.X` would
+hold the live function and escape the seam, H1). The seam sorts the members three ways:
+
+- **Pure, never wrapped** (seventeen): `GetSpellInfo`, `GetSpellTexture`, `GetSpecialization`,
+  `GetSpecializationInfo`, `GetSpecializationRole` (the real player and real spells), `RecapMembers`,
+  `RecapAPIs`, `CallRecap` (the diagnostics probes of the real recap API), the three number
+  formatters, `OpenContextMenu`, `FirstTexture`, `FirstAtlas`, `BarInterpolation`, `IsSkyriding` and
+  `IsInHousing` (the real player's travel state).
+- **Guarded** (three): the members that act on the world. While a session runs their live bodies
+  never run, inside `seam:Live` included. `ResetAllCombatSessions` clears the simulated world's
+  segments and fires `DAMAGE_METER_RESET` on the session's timer, never calling the client;
+  `ChatSender` answers a sender that prints `[sim] <chatType>[ -> target]: <text>` and counts the send
+  on the session; `OpenDeathRecap` prints one line and answers `false`, so the drill-down falls back
+  to its own breakdown. Idle, each calls live.
+- **Wrapped**: every other member. The simulator's world module registers a provider for each.
+
+A member added to `NS.Compat` after the seam is made, or one replaced by assignment, escapes the wrap.
+`NS.SimSeam:Unwrapped()` lists such members, and `tests/test_sim_seam.lua` asserts the list is
+**empty** after the whole addon loads. Adding a shim therefore needs no seam edit, unless the new
+member is pure or acts on the world: then it joins `PURE` or `GUARDED` in `core/SimSetup.lua`. With
+LibKa0s absent nothing is wrapped, and `NS.SimSeam` and `NS.Sim` are the library's reference stubs.
 
 ## What `LibKa0s-Compat-1.0` answers
 

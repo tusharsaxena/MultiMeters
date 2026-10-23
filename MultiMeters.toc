@@ -35,9 +35,14 @@ locales\enUS.lua
 # Core
 # Conventional order within this group for core\Compat.lua, core\PoolSetup.lua, core\State.lua,
 # core\Secrets.lua and core\Database.lua: no other core\ file resolves them at FILE SCOPE, so they may
-# move within the group. Every other line is pinned by a LOAD-BEARING note, its own or one naming it.
+# move within the group -- except that core\Compat.lua and core\SimSetup.lua move TOGETHER, the seam
+# straight after Compat (its LOAD-BEARING note below). Every other line is pinned by a LOAD-BEARING
+# note, its own or one naming it.
 # core\MultiMeters.lua also reads NS.Constants.MSG at FILE SCOPE, so it stays below core\Constants.lua.
 core\Compat.lua
+# LOAD-BEARING: wraps every NS.Compat member at load (LibKa0s-Sim-1.0's seam). It must load straight
+# after the Compat files and before any file that reads a Compat member.
+core\SimSetup.lua
 # The LibKa0s-Env seam. LOAD-BEARING POSITION, and not merely "after Compat, whose metadata
 # shim it replaced": core\Namespace.lua resolves the version at FILE SCOPE, so the seam has to
 # be published before it. A seam that loaded later would leave NS.version as the hardcoded

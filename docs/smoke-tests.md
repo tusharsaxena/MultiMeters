@@ -17,7 +17,7 @@ secret-value rules the checks refer to.
 
 | ID range | Theme | What it covers |
 |---|---|---|
-| INSTALL-1 to INSTALL-10 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set |
+| INSTALL-1 to INSTALL-11 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
 | SLASH-1 to SLASH-19 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding |
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
@@ -114,6 +114,10 @@ secret-value rules the checks refer to.
   on **Export to CSV** and **Print to Chat**, and the CSV copy window's close X; (d) the debug console
   (`/mm debug`): the close, copy and clear buttons in its title bar; and the perf panel
   (`/mm perf start`, then show it): its close X. Result: pass (owner-marked 2026-10-23)
+- **INSTALL-11. The simulator seam installs at load (SM-MM-24).** `/reload` with the addon loaded →
+  no Lua error, and `/mm diagnostics` → the report loads. `core/SimSetup.lua` now wraps every
+  `NS.Compat` member at load (LibKa0s-Sim-1.0's seam); idle, every read answers as before, so the
+  windows, tooltips and export behave exactly as they did. Result: pending
 
 ## SLASH
 

@@ -1006,6 +1006,12 @@ L["%s is unavailable. %s."] = "%s is unavailable. %s."
 -- `/mm diagnostics`.
 L["%s is unavailable: the LibKa0s library did not load."] =
     "%s is unavailable: the LibKa0s library did not load."
+
+-- The simulator (core/SimSetup.lua, MultiMeters#60). The first is the guarded OpenDeathRecap's line
+-- while a simulation runs; the second is what the degradation stub says when LibKa0s-Sim-1.0 is absent.
+L["Blizzard\226\128\153s death recap cannot open a simulated death."] =
+    "Blizzard\226\128\153s death recap cannot open a simulated death."
+L["The simulator needs LibKa0s-Sim-1.0."] = "The simulator needs LibKa0s-Sim-1.0."
 L["v%s"] = "v%s"
 L["v%s slash commands"] = "v%s slash commands"
 L["unknown command '%s'"] = "unknown command '%s'"

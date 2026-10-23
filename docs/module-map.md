@@ -43,6 +43,8 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │                         C_StringUtil.CreateNumericRuleFormatter and the chat
 │                         sender C_ChatInfo.SendChatMessage, plus the world reads the
 │                         simulator answers. 42 shims, no logic
+│   ├── SimSetup.lua    — the LibKa0s-Sim-1.0 seam: wraps every NS.Compat member at
+│                         load (pure, guarded, the rest). STRAIGHT after Compat.lua
 │   ├── EnvSetup.lua    — the LibKa0s-Env seam: NS.Meta / NS.Version, the TOC-manifest
 │                         reader Compat used to own. BEFORE Namespace.lua, which
 │                         resolves NS.version at file scope
@@ -279,6 +281,7 @@ own strings entirely.
 |---|---|---|---|
 | `Compat.lua` | All 42 shims, the world reads the simulator answers among them — the TOC-manifest reader is no longer among them; it moved to `EnvSetup.lua`. Never inspects a meter value; reading a field off a session table and passing it on is not inspection. The four spell and spec readers are bound to `LibKa0s-Compat-1.0`, and each answers `nil` without it | `NS.Compat` | `_G`, `LibKa0s-Compat-1.0` |
 | `Constants.lua` | The stat catalog, the **shipped** per-stat palette (`STAT_COLORS`, the seed for the `statColors.*` setting and the fallback every `NS.StatColor` call degrades to, plus the `STAT_DIM` factor), the two stat lookups — `STAT_BY_KEY` ("may this be a column") and `READABLE_STAT_BY_KEY` ("may this be read", the catalog plus `OFF_CATALOG_STATS`), enum resolutions, the `MSG` catalog (strict through `LibKa0s-Bus-1.0`'s `Catalog`), timing and pool bounds, the monospace font path (resolved from the LibKa0s payload, falling back to the client font) and its LSM key | `NS.Constants`, `NS.Const` | `_G.Enum`, `NS.MediaFont`, `LibKa0s-Bus-1.0` (`Catalog`) |
+| `SimSetup.lua` | The LibKa0s-Sim-1.0 seam: wraps every `NS.Compat` function member in place at load, except the seventeen pure ones, with three guarded answers (`ResetAllCombatSessions`, `ChatSender`, `OpenDeathRecap`) that never reach the client while a session runs. With the library absent, the reference seam and session stubs | `NS.SimSeam`, `NS.SimHost` (`.Guarded`), and `NS.Sim` (the stub) when the library is absent | `LibKa0s-Sim-1.0`, `NS.Compat`; `NS.Sim`, `NS.SimHost.World`/`.world`, `NS.Print`, `NS.Debug` at call time |
 | `EnvSetup.lua` | The LibKa0s-Env seam: this addon's TOC manifest, and the one place the manifest-then-constant version pair is resolved. Repeats the reader ladder itself on a degraded install, so an install missing LibKa0s still reports its packaged version | `NS.Meta`, `NS.Version` | `LibKa0s-Env-1.0`, `NS.version` at call time. Owns no state and registers no event |
 | `Namespace.lua` | Addon identity, the collection's one class-color reader (four surfaces can wear one — the bars and cell text in `Row.lua`, both header strips in `Window.lua`, the tooltip), the one **statistic**-palette reader beside it (`NS.StatColor`, which reads the `statColors.*` setting and falls back to `Constants.STAT_COLORS`) and the bus-target factory, whose record is `LibKa0s-Bus-1.0`'s, with the untracked-target stub when the library is absent. No side effects at all: building the record is bookkeeping, and nothing registers | `NS.PREFIX`, `NS.GRAY`, `NS.name`, `NS.version`, `NS.FALLBACK_VERSION`, `NS.ClassRGB`, `NS.PlayerClassRGB`, `NS.StatColor`, `NS.NewBusTarget`, `NS.BusStandDown`, `NS.BusStandUp`, `NS.busRecord`, `NS.BusLib` | `NS.Meta`, `_G.RAID_CLASS_COLORS`, `_G.UnitClass`, `LibKa0s-Bus-1.0`, `NS.IsStoodDown` (late-bound) |
 | `State.lua` | The five session flags, each with exactly one named writer — `debugTooltip` is the tooltip log channel, off by default and written only by `/mm debug tooltip` (see [debug.md](debug.md)) — and `State.Cache` / `State.WipeCache` (wipes **in place**, so a module may hold its sub-table as an upvalue) | `NS.State` | `NS.Constants.MSG` |
@@ -386,7 +389,10 @@ binding (`launcher-§6`) and no Lua; the button it clicks and both labels come f
 2. **`locales/enUS.lua`** — first, so `NS.L` exists for every declaration below.
 3. **`core/`**, in this order and for these reasons:
    1. `Compat.lua` — first in the block, though nothing now depends on that: the TOC-manifest
-      reader that used to make it load-bearing has moved to `EnvSetup.lua`.
+      reader that used to make it load-bearing has moved to `EnvSetup.lua`. **`SimSetup.lua` follows
+      it straight away, and that is load-bearing**: the seam wraps every `NS.Compat` member in place
+      at load, so a file between the two could capture or call a member before the wrap (LibKa0s Sim
+      host contract H2). The two move together.
    2. `EnvSetup.lua` — **before `Namespace.lua`**, which calls the `NS.Meta` it publishes at file
       scope. A seam loading later would neither raise nor log; `NS.version` would simply be the
       hardcoded `FALLBACK_VERSION` for the session. Load-bearing, not conventional.
@@ -560,15 +566,16 @@ roll-call, and it used to sit in `docs/ARCHITECTURE.md` → `## Overview`.
 
 Chrome comes from LibKa0s-Core-1.0's shared `SKIN` / `ApplySkin`, never a private lookalike, so the
 meter window, the debug console and the perf step panel wear the same Ka0s edge as every sibling
-addon. Ten LibKa0s majors are consumed — Core, Media, Perf, DebugLog, Env, Pool, Launcher, Slash, Options
-and Widgets. Nine are reached through a seam file of their own (`core/CoreSetup.lua`,
-`core/MediaSetup.lua`, `core/PerfSetup.lua`, `core/DebugLogSetup.lua`, `core/EnvSetup.lua`,
+addon. Eleven LibKa0s majors are consumed — Core, Media, Perf, DebugLog, Env, Pool, Launcher, Slash, Options,
+Sim and Widgets. Ten are reached through a seam file of their own (`core/CoreSetup.lua`,
+`core/MediaSetup.lua`, `core/PerfSetup.lua`, `core/DebugLogSetup.lua`, `core/EnvSetup.lua`, `core/SimSetup.lua`,
 `core/PoolSetup.lua`, `core/LauncherSetup.lua`, `settings/Slash.lua`,
 `settings/OptionsSetup.lua`); Widgets has no seam file and
 is resolved at each of its two call sites — `modules/Export_Modal.lua`, which builds the addon's only
 dropdowns, and `settings/ColumnBlocks.lua`, whose block list is the library's `ReorderList` — because
-both widgets are built lazily on first use rather than wired at load. Every one of the ten degrades
-rather than erroring when `libs/LibKa0s` is absent. Three of them pass the addon's own **folder name** to the library, and all three now say so
+both widgets are built lazily on first use rather than wired at load. Every one of the eleven degrades
+rather than erroring when `libs/LibKa0s` is absent (Sim to its reference stubs, which say so only when
+`/mm sim` is typed). Three of them pass the addon's own **folder name** to the library, and all three now say so
 explicitly: `core/CoreSetup.lua`'s `MakeCloseButton` wrapper, and the descriptors in
 `core/DebugLogSetup.lua` and `core/PerfSetup.lua`. The perf one used to reach the right answer only
 through `name` — `PerfPanel.lua` minor 4 reads `addonName or name`, so it was right by luck and one

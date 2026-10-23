@@ -96,6 +96,12 @@ do
         -- settings/Schema_Paths.lua takes its degradation stub without this one, so every settings
         -- read and write in the suite would measure the stub instead of LibKa0s-Schema-1.0.
         "Schema.lua",
+        -- The simulator major and its two attachment files (MM-12, MultiMeters#60). Without them
+        -- core/SimSetup.lua takes its stub and every sim suite measures the stub: Sim.lua is the seam
+        -- and the session, SimTimeline.lua the step machine and verbs, SimPanel.lua the step panel,
+        -- and the two attachment files are loaded only when present, so a payload missing one raises
+        -- nothing.
+        "Sim.lua", "SimTimeline.lua", "SimPanel.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do
@@ -278,6 +284,8 @@ local SUITES = {
     "test_debuglogsetup",
     "test_mediasetup",
     "test_envsetup",
+    -- The simulator's answer seam (core/SimSetup.lua, MM-12): pure, guarded, the stubs.
+    "test_sim_seam",
     "test_launchersetup",
     "test_lifecycle",
     "test_dispatch",
