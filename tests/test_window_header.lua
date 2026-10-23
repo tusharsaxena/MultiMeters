@@ -158,18 +158,34 @@ test("The title-bar divider can be switched off, and does not move the title row
     -- against the DIVIDER_INSET constant, not against this texture, so a hidden
     -- line leaves the title, the session line and the control strip exactly where
     -- they were. A layout that measured the divider would shift all three.
-    -- red under: gating the title row on the divider, or hiding it by height 0.
+    -- It reads the anchors ApplyConfig actually SET, not TitleRowMid: that pure
+    -- function never sees the divider, so comparing it with itself proved nothing.
+    -- red under: gating the title row on the divider, or hiding it by height 0,
+    -- or any placement (title, session line, controls) offset by the divider.
     local _, window, cfg = scene()
 
+    local function placed()
+        local _, _, _, _, titleY = window.frame.title:GetPoint(1)
+        local _, _, _, _, lineY  = window.sessionLine:GetPoint(1)
+        local gearY
+        for _, p in ipairs(window.controls.settings.__points or {}) do
+            if p.point == "RIGHT" then gearY = p.y end
+        end
+        return titleY, lineY, gearY
+    end
+
     window:ApplyConfig()
-    local rowMid = window:TitleRowMid(cfg.header.size)
+    local titleY, lineY, gearY = placed()
     assertTrue(window.frame.divider:IsShown(), "the divider ships drawn")
+    assertTrue(gearY ~= nil, "the gear was not anchored by its RIGHT point")
 
     cfg.header.divider = false
     window:ApplyConfig()
     assertFalse(window.frame.divider:IsShown(), "the divider ignored its setting")
-    assertEqual(window:TitleRowMid(cfg.header.size), rowMid,
-        "hiding the divider moved the title row")
+    local titleY2, lineY2, gearY2 = placed()
+    assertEqual(titleY2, titleY, "hiding the divider moved the title")
+    assertEqual(lineY2, lineY, "hiding the divider moved the session line")
+    assertEqual(gearY2, gearY, "hiding the divider moved the control strip")
 end)
 
 test("The divider's thickness is a setting", function()

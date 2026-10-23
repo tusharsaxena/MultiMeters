@@ -589,7 +589,10 @@ frame's top edge to the divider: `padding` (6) + `height` (26) − `DIVIDER_INSE
 stored 18 to 26 in every window of every profile, by the same rule as v17: a stored old default is
 taken for the default, and any other height is the player's. The taller bar comes out of the rows, not
 the window: the shipped 220px window fits nine rows where it fitted ten, and the resize floor rises
-from 62 to 70.
+from 62 to 70. That floor (the title bar, the column labels and one row) also holds the DRAWN height:
+`ApplyConfig` draws the window at `max(frame.height, layout floor)`, so a stored `frame.height` below
+it (the Height slider still goes down to 60) is drawn at the floor while the stored value is left as
+it is. A Height of 60 to 69 therefore looks the same as 70 with the shipped header.
 
 **`show` moved here from `window.frame.titleBar` at `schemaVersion` 12 → 13** (`window.header.show`,
 not `window.frame.titleBar` — a path naming `frame` for the Header entry's own master switch misled
