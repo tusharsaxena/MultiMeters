@@ -56,7 +56,7 @@ hardware-event reads, `core/Secrets.lua` and the Diagnostics reads stay where th
 
 ## What `LibKa0s-Compat-1.0` answers
 
-Since LibKa0s v1.55.0, four of the thirty are the library's:
+Since LibKa0s v1.55.0, four of the forty-two are the library's:
 
 - `GetSpellInfo`
 - `GetSpellTexture`
