@@ -463,7 +463,7 @@ Total.
 - Diagnostics: a cast line survives a full ring of judge rows
 - Diagnostics: the ring keeps its newest entries and reads them oldest first
 
-### test_diagnostics_runtime.lua (18)
+### test_diagnostics_runtime.lua (21)
 
 - Diagnostics runtime: the addon's state leads, the probes follow, rejected events close
 - Diagnostics runtime: the state section prints the latch, its holds and the schema stamps
@@ -483,6 +483,9 @@ Total.
 - Diagnostics runtime: while stood down the runtime sections say so instead of printing empty
 - Diagnostics runtime: an over-cap report ends in the truncated line, then the end marker
 - Diagnostics runtime: under the restriction with secret values no runtime section fails
+- Diagnostics runtime: the sim section follows roster and caches and reads idle when idle
+- Diagnostics runtime: during a simulation the sim section names the scenario and the step
+- Diagnostics runtime: with LibKa0s absent the sim section says so and does not raise
 
 ### test_defaults.lua (24)
 
@@ -2599,7 +2602,7 @@ Total.
 | test_diagnostics_deathrecap.lua | 31 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
-| test_diagnostics_runtime.lua | 18 |
+| test_diagnostics_runtime.lua | 21 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 31 |
 | test_perfsetup.lua | 26 |
@@ -2667,4 +2670,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2301** |
+| **Total** | **2304** |

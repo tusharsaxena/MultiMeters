@@ -4,8 +4,8 @@
 -- (debug-logging-§14, DX-MM): the latch and its holds, the restriction and the
 -- session flags, the settings that differ from what shipped (per profile, and per
 -- window against NS.DefaultWindow), every window, the sessions the client holds
--- and which one each window reads, the aggregator's last render pass, and the
--- roster and cache counts.
+-- and which one each window reads, the aggregator's last render pass, the
+-- roster and cache counts, and the simulator's session, last stop and seam.
 --
 -- ---------------------------------------------------------------------------
 -- WHY A SIBLING
@@ -373,4 +373,46 @@ function Runtime.rosterAndCaches(w)
     local parts = {}
     for i, name in ipairs(names) do parts[i] = name .. "=" .. countKeys(caches[name]) end
     w:joined(TAG, "caches:", parts)
+end
+
+-- ---------------------------------------------------------------------------
+-- sim: the simulator's session, its last stop and the seam (MultiMeters#60)
+-- ---------------------------------------------------------------------------
+
+local function yesNo(v) return v and "yes" or "no" end
+
+--- The live session's step and counters (NS.Sim:Status() and the host's own fields).
+local function simSessionLines(w, sim, st)
+    w:add(TAG, "active: yes scenario=%s", st.scenario)
+    w:add(TAG, "step: %s/%s playing=%s paused=%s settling=%s", st.pos, st.total,
+        yesNo(st.playing), yesNo(st.paused), yesNo(st.settling))
+    local session = sim.Session and sim:Session() or nil
+    local world = session and session.mm or (NS.SimHost and NS.SimHost.world)
+    w:add(TAG, "events=%s ticks pending=%s segments held=%s sends=%s", session and session.events or 0,
+        world and world.pending or 0, world and type(world.segments) == "table" and #world.segments or 0,
+        session and session.mmSends or 0)
+end
+
+--- Whether LibKa0s-Sim-1.0 is loaded, the session (scenario, step, play state, counters), the last
+--- stop, and the seam: how many Compat keys it wraps and how many escaped the wrap (expected 0). Read
+--- only: Status, Session, Keys and Unwrapped change nothing.
+function Runtime.sim(w)
+    heading(w, "sim")
+    local lib = LibStub and LibStub("LibKa0s-Sim-1.0", true)
+    w:add(TAG, "library: %s", lib and "present" or "absent")
+    local sim = NS.Sim
+    local st = sim and sim.Status and sim:Status() or { active = false }
+    if st.active then simSessionLines(w, sim, st) else w:add(TAG, "%s", "active: no") end
+    local last = NS.SimHost and NS.SimHost.lastStop
+    if type(last) == "table" then
+        w:add(TAG, "last stop: reason=%s events=%s sends=%s segments=%s", last.reason, last.events,
+            last.sends, last.segments)
+    else
+        w:add(TAG, "%s", "last stop: none")
+    end
+    local seam = NS.SimSeam
+    local keys = seam and seam.Keys and seam:Keys() or {}
+    local unwrapped = seam and seam.Unwrapped and seam:Unwrapped() or {}
+    w:add(TAG, "seam keys: %s unwrapped: %s", #keys, #unwrapped)
+    if #unwrapped > 0 then w:add(TAG, "  unwrapped keys: %s", table.concat(unwrapped, " ")) end
 end

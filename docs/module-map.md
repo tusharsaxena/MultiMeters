@@ -125,7 +125,8 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   └── Diagnostics_Runtime.lua
 │                       — the addon-state sections that open `/mm diagnostics`:
 │                         state, settings, per-window settings, windows, sessions,
-│                         the aggregator's last pass, roster and caches. Read-only
+│                         the aggregator's last pass, roster and caches, sim.
+│                         Read-only
 ├── defaults/
 │   └── Profile.lua     — NS.defaults, NS.WINDOW_TEMPLATE, NS.DefaultWindow(). The
 │                         only place a profile default is hardcoded

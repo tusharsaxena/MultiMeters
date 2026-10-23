@@ -924,6 +924,7 @@ local RUNTIME = {
     { "sessions",          "sessions" },
     { "aggregator",        "aggregator" },
     { "roster and caches", "rosterAndCaches" },
+    { "sim",               "sim" },
 }
 
 --- Every client-probe section of the full report, in the order it prints, after

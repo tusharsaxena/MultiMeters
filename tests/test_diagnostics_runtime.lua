@@ -83,7 +83,7 @@ test("Diagnostics runtime: the addon's state leads, the probes follow, rejected 
     local inst = T.load{ enable = true }
     local _, lines = report(inst)
     local order = { "state", "settings", "window settings", "windows", "sessions",
-                    "aggregator", "roster and caches", "atlases", "provider order", "events" }
+                    "aggregator", "roster and caches", "sim", "atlases", "provider order", "events" }
     local last = 0
     for _, name in ipairs(order) do
         local at = indexOf(lines, "-- " .. name .. " --")
@@ -374,7 +374,66 @@ test("Diagnostics runtime: under the restriction with secret values no runtime s
     inst.mocks.setSecretValues(true)
     local text = report(inst)
     for _, name in ipairs({ "state", "settings", "window settings", "windows", "sessions",
-                            "aggregator", "roster and caches" }) do
+                            "aggregator", "roster and caches", "sim" }) do
         assertFalse(text:find("section " .. name .. " failed", 1, true) ~= nil, text)
     end
+end)
+
+-- ---------------------------------------------------------------------------
+-- sim: the simulator's session, its last stop and the seam (MultiMeters#60, MM-19)
+-- ---------------------------------------------------------------------------
+
+local SimSupport = dofile((T.root or ".") .. "/tests/sim_support.lua")
+
+test("Diagnostics runtime: the sim section follows roster and caches and reads idle when idle", function()
+    -- red under: a section list without `sim`.
+    local inst = T.load{ enable = true }
+    local _, lines = report(inst)
+    local roster, sim = indexOf(lines, "-- roster and caches --"), indexOf(lines, "-- sim --")
+    assertTrue(sim ~= nil, "no sim section")
+    assertTrue(roster ~= nil and sim > roster, "the sim section does not follow roster and caches")
+    local section = sectionOf(lines, "sim")
+    assertTrue(section:find("library: present", 1, true) ~= nil, section)
+    assertTrue(section:find("active: no", 1, true) ~= nil, section)
+    assertTrue(section:find("last stop: none", 1, true) ~= nil, section)
+    assertTrue(section:find("unwrapped: 0", 1, true) ~= nil, section)
+    local keys = #inst.NS.SimSeam:Keys()
+    assertTrue(keys > 0, "the live seam wraps nothing")
+    assertTrue(section:find("seam keys: " .. keys, 1, true) ~= nil, section)
+end)
+
+test("Diagnostics runtime: during a simulation the sim section names the scenario and the step", function()
+    local inst = T.load{ enable = true }
+    local undo = SimSupport.inject(inst, { { kind = "noop", label = "One", run = function() end } })
+    local ok, line = inst.NS.Sim:Start{ scenario = "case", seed = 3 }
+    assertTrue(ok, "the session did not start: " .. tostring(line))
+    local section = sectionOf(select(2, report(inst)), "sim")
+    assertTrue(section:find("active: yes scenario=case", 1, true) ~= nil, section)
+    assertTrue(section:find("step: 0/1", 1, true) ~= nil, section)
+    assertTrue(section:find("events=", 1, true) ~= nil and section:find("ticks pending=0", 1, true) ~= nil,
+        section)
+    assertTrue(section:find("segments held=0 sends=0", 1, true) ~= nil, section)
+    assertTrue(inst.NS.Sim:IsActive(), "the report changed the session")
+    inst.NS.Sim:Stop("group")
+    section = sectionOf(select(2, report(inst)), "sim")
+    assertTrue(section:find("active: no", 1, true) ~= nil, section)
+    assertTrue(section:find("last stop: reason=group", 1, true) ~= nil, section)
+    undo()
+end)
+
+test("Diagnostics runtime: with LibKa0s absent the sim section says so and does not raise", function()
+    local deg = T.load{ libFiles = {} }
+    local out = {}
+    local w = {}
+    function w.add(_, _, fmt, ...)
+        local args = { ... }
+        for i = 1, select("#", ...) do args[i] = tostring(args[i]) end
+        out[#out + 1] = fmt:format(unpack(args, 1, select("#", ...)))
+    end
+    function w.str(_, v) return tostring(v) end
+    deg.NS.Diagnostics.Runtime.sim(w)
+    local text = table.concat(out, "\n")
+    assertTrue(text:find("library: absent", 1, true) ~= nil, text)
+    assertTrue(text:find("active: no", 1, true) ~= nil, text)
+    assertTrue(text:find("unwrapped: 0", 1, true) ~= nil, text)
 end)

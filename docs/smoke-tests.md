@@ -217,6 +217,9 @@ secret-value rules the checks refer to.
   instances hides during the Isle of Dorn step and returns in the second dungeon. Result: pending
 - **SLASH-28. An export during a simulation (SM-MM-33).** Mid-simulation, Export to Raid → `[sim]` lines
   print in chat and nothing is sent to the group. Result: pending
+- **SLASH-29. The diagnostics sim section (SM-MM-36).** Mid-simulation, `/mm diagnostics` → the
+  report has a `-- sim --` section reading `active: yes scenario=<name>` and the current `step: N/M`;
+  after `/mm sim stop`, run it again → `active: no` and `last stop: reason=<why>`. Result: pending
 
 ## PANEL
 
@@ -1450,6 +1453,7 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
 - SLASH-20 to SLASH-23 (the `/mm sim` session host, 2026-10-23; SLASH-20's strip and its scenarios
   arrive with the rest of the simulator).
 - SLASH-24 to SLASH-28 (the four `/mm sim` scenarios and the export during a simulation, 2026-10-23).
+- SLASH-29 (the diagnostics report's `sim` section, 2026-10-23).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass
