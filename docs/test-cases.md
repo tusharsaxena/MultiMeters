@@ -168,7 +168,7 @@ Total.
 - Secrets: no file outside core/Secrets.lua defines its own plainTruth
 - Secrets: the Provider's field probes truth-test a secret isLocalPlayer through PlainTruth
 
-### test_compat.lua (40)
+### test_compat.lua (45)
 
 - Compat: GetSpellInfo flattens C_Spell's struct to the old multi-return
 - Compat: GetSpellInfo answers nil for an unknown spell rather than raising
@@ -210,6 +210,11 @@ Total.
 - Compat.BarInterpolation answers the client's ease-out, and nil below 12.0 (#23)
 - Compat.ChatSender prefers C_ChatInfo, falls back to the global, and is nil with neither
 - Compat: a delve namespace present but missing its member does not raise
+- Compat: the unit reads answer the mock's group
+- Compat: the group, instance and combat reads answer the mock's knobs
+- Compat: OpenDeathRecap calls the client's recap UI and answers true
+- Compat: every world read answers its absent value when the global is gone
+- Compat: the simulator's world reads are named nowhere but core/Compat.lua
 
 ### test_state.lua (17)
 
@@ -458,7 +463,7 @@ Total.
 - Diagnostics: a cast line survives a full ring of judge rows
 - Diagnostics: the ring keeps its newest entries and reads them oldest first
 
-### test_diagnostics_runtime.lua (18)
+### test_diagnostics_runtime.lua (21)
 
 - Diagnostics runtime: the addon's state leads, the probes follow, rejected events close
 - Diagnostics runtime: the state section prints the latch, its holds and the schema stamps
@@ -478,6 +483,9 @@ Total.
 - Diagnostics runtime: while stood down the runtime sections say so instead of printing empty
 - Diagnostics runtime: an over-cap report ends in the truncated line, then the end marker
 - Diagnostics runtime: under the restriction with secret values no runtime section fails
+- Diagnostics runtime: the sim section follows roster and caches and reads idle when idle
+- Diagnostics runtime: during a simulation the sim section names the scenario and the step
+- Diagnostics runtime: with LibKa0s absent the sim section says so and does not raise
 
 ### test_defaults.lua (24)
 
@@ -630,6 +638,89 @@ Total.
 - EnvSetup: with no reader at all, core/Namespace.lua takes its own FALLBACK_VERSION
 - EnvSetup: the version was resolved at load, not deferred
 
+### test_sim_seam.lua (10)
+
+- Sim seam: the vendored LibKa0s-Sim-1.0 registered and NS.SimSeam is its seam
+- Sim seam: Unwrapped() is EMPTY after the whole addon loads (host contract H2)
+- Sim seam: Keys() is every non-PURE Compat function, and no PURE key is wrapped
+- Sim seam: idle, a wrapped member reaches the client
+- Sim seam: a guarded ResetAllCombatSessions never reaches the client and replies by timer
+- Sim seam: a guarded ResetAllCombatSessions is inert with no simulated world
+- Sim seam: a guarded ChatSender prints '[sim] RAID: x' and sends nothing
+- Sim seam: a guarded OpenDeathRecap prints, answers false and never opens the client's recap
+- TOC: core/SimSetup.lua loads immediately after core/Compat.lua, annotated LOAD-BEARING
+- Sim seam: with LibKa0s absent, NS.SimSeam and NS.Sim are the stubs, at full parity
+
+### test_sim_world.lua (17)
+
+- SimWorld: the same seed gives the same members, names and totals after N ticks
+- SimWorld: the local player is the real player, first, with the live role
+- SimWorld: SetGroup(5) gives party tokens
+- SimWorld: SetGroup(20, true) gives raid tokens with the player once and the pets resolvable
+- SimWorld: Session('current') is sorted descending with maxAmount first and the true total
+- SimWorld: pets deal a quarter of their owner's damage as their own row
+- SimWorld: enemies appear only in EnemyDamageTaken, with a creature id and no GUID
+- SimWorld: Overall equals the sum of two segments
+- SimWorld: a session id the world does not hold answers nil
+- SimWorld: Die gives a Deaths row and a recap with events newest first
+- SimWorld: ResetSegments empties the list
+- SimWorld: every answer is a fresh table, so mutating one leaves the next alone
+- SimWorld: a source breakdown is three real spells, descending, summing to the source
+- SimWorld: every provider calls fallback when there is no world
+- SimWorld: every wrapped key that is not guarded has a provider
+- SimWorld: during a session every meter read answers from the world, never the client
+- SimWorld: solo, the player's role is left to the spec read, as the client's is
+
+### test_sim_drivers.lua (9)
+
+- SimDrivers: FormGroup(5) leaves Roster.GetGroup() with 5 members, player first
+- SimDrivers: Zone('rookery') reads as a dungeon and sends ENTERING_WORLD and ZONE_CHANGED
+- SimDrivers: Pull puts the player in combat, and test mode cannot start
+- SimDrivers: Fight books its ticks, grows the totals and ends with one session event per stat
+- SimDrivers: EndFight sends the stats' session events in catalog order, after REGEN
+- SimDrivers: a death booked for a tick happens on that tick
+- SimDrivers: Reset empties the segments and reaches DAMAGE_METER_RESET through the dispatch
+- SimDrivers: no driver reaches the mock's C_DamageMeter
+- SimDrivers: with no world, every driver changes and fires nothing
+
+### test_sim_session.lua (22)
+
+- Sim session: stood down refuses the start with its own line and leaves no session
+- Sim session: test mode refuses the start with its own line and leaves no session
+- Sim session: combat refuses the start with its own line and leaves no session
+- Sim session: the restriction refuses the start with its own line and leaves no session
+- Sim session: an instance refuses the start with its own line and leaves no session
+- Sim session: a group refuses the start with its own line and leaves no session
+- Sim session: General visibility never refuses the start with its own line and leaves no session
+- Sim session: a typed start prints STARTED, shows the panel and installs the filter
+- Sim session: the gate holds while fight ticks are booked
+- Sim session: the status verb adds segments, ticks pending and sends
+- Sim session: real combat stops with `combat` and then runs the real handler
+- Sim session: a restriction edge other than Inactive stops with `combat`
+- Sim session: a solo roster update is consumed; a real group stops with `group`
+- Sim session: a zone move outside an instance is consumed; an instance stops with `instance`
+- Sim session: a world entry stops with `world`
+- Sim session: a real meter update is consumed: the world owns the meter
+- Sim session: an event the classifier has no rule for runs live and keeps the session
+- Sim session: the stand-down stops the session first, with `standDown`
+- Sim session: a profile change stops the session with `profile`
+- Sim session: test mode is refused while a session runs
+- Sim session: SavedVariables come back byte-identical after a session that pins and resets
+- Sim session: DropStaleSegment writes nothing while a session runs
+
+### test_sim_e2e.lua (10)
+
+- Sim e2e: SimScenario lists the four #60 scenarios, each with labeled, tipped steps
+- Sim e2e: dungeon by step
+- Sim e2e: dungeon by run
+- Sim e2e: raid by step
+- Sim e2e: raid by run
+- Sim e2e: wipe by step
+- Sim e2e: wipe by run
+- Sim e2e: zone by step
+- Sim e2e: zone by run
+- Sim e2e: the panel's rows are the step labels, and a step waits while the gate is closed
+
 ### test_launchersetup.lua (55)
 
 - Launcher: Register creates ONE object and registers it against the global table
@@ -730,6 +821,20 @@ Total.
 - ShouldShow: a missing Visibility module fails OPEN
 - Lifecycle: the context and restriction events each leave one [Event] line while logging is on
 - Lifecycle: player-state events and a quiet session leave no [Event] line
+
+### test_dispatch.lua (11)
+
+- Dispatch: every EVENTS row is registered with the one handler OnGameEvent
+- Dispatch: HANDLER_BY_EVENT has exactly one row per registered event
+- Dispatch: OnGameEvent('GROUP_ROSTER_UPDATE') sends ROSTER_CHANGED
+- Dispatch: a fired game event reaches its handler through the dispatch row
+- Dispatch: DeliverEvent answers 1 for a known event and 0 for an unknown one
+- Dispatch: DeliverEvent answers 0 for a rejected event and calls nothing
+- Dispatch: a RealEventFilter answering true consumes the event
+- Dispatch: RealEventFilter is nil until the simulator sets it
+- Dispatch: DeliverEvent ignores the filter
+- Dispatch: the event's arguments reach the handler
+- Dispatch: the real payload still reaches the bus through OnGameEvent
 
 ### test_vendor_sync.lua (3)
 
@@ -1165,7 +1270,7 @@ Total.
 - The strip is born hidden, with the localized line and the info art
 - With no Widgets library the window builds and reserves nothing
 
-### test_window_header.lua (60)
+### test_window_header.lua (61)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -1197,7 +1302,8 @@ Total.
 - Segment: with no provider the pin is left alone rather than rewritten
 - Segment: the session line takes NO mouse
 - Column headers are BUTTONS carrying the full stat label, left-aligned
-- Test mode is marked in RED in the title, and clears when it is off
+- Test mode: the strip is the marker; the red title word only when minimized
+- Test mode with the header hidden: the strip shows, the title stays hidden
 - Building a window sets no text on a fontless FontString
 - Header art falls back to ASCII on a client with none of the atlases
 - Header art prefers an atlas where the client has one
@@ -1299,7 +1405,7 @@ Total.
 - Suspend takes the OnUpdate away and Resume puts it back
 - Destroy takes the window off screen and off the bus
 - Each window owns a PRIVATE bus target, so two windows cannot clobber each other
-- RegisterBus subscribes exactly the twelve messages a window answers
+- RegisterBus subscribes exactly the thirteen messages a window answers
 - Every data message marks the window dirty
 - CONFIG_CHANGED for ANOTHER window leaves this one alone
 - Destroy takes the window off EVERY message, not just the meter
@@ -1318,6 +1424,13 @@ Total.
 - Segment: the sentinel reads the session TYPE, never the ID shim
 - Segment: the labels and the export read the sentinel as no pin
 - Segment: Database.PinnedSegment answers nil for every spelling of no pin
+
+### test_window_simstrip.lua (4)
+
+- Sim strip: built hidden on every window, sim-flavored, with the localized line
+- Sim strip: shown on every window while a session runs, the reserve re-anchors the chrome
+- Sim strip: minimized hides it with no title word; a hidden header keeps it
+- Sim strip: with no Widgets library no strip, no reserve, and nothing raises
 
 ### test_headercontrols.lua (66)
 
@@ -2116,7 +2229,7 @@ Total.
 - ValidateSchema: answers 0 when there is no profile tree to compare against
 - ValidateSchema: counts every failure, in schema order, with nothing listening
 
-### test_slash.lua (50)
+### test_slash.lua (52)
 
 - Slash: NS.COMMANDS entries are positional triples, not named fields
 - Slash: no verb is declared twice
@@ -2168,6 +2281,8 @@ Total.
 - Slash: Register is a no-op rather than a raise when there is no AceConsole
 - Slash: /mm list heads each block with the page AND the tab
 - Slash: `set window.name` keeps every word of a multi-word name
+- Slash: `sim` is listed, and a bare `/mm sim` prints the simulator's status
+- Slash: `sim` is a feature verb, refused while disabled
 
 ### test_slash_diagnostics.lua (20)
 
@@ -2477,7 +2592,7 @@ Total.
 | test_prose.lua | 15 |
 | test_constants.lua | 25 |
 | test_secrets.lua | 42 |
-| test_compat.lua | 40 |
+| test_compat.lua | 45 |
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 28 |
@@ -2487,15 +2602,21 @@ Total.
 | test_diagnostics_deathrecap.lua | 31 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
-| test_diagnostics_runtime.lua | 18 |
+| test_diagnostics_runtime.lua | 21 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 31 |
 | test_perfsetup.lua | 26 |
 | test_debuglogsetup.lua | 32 |
 | test_mediasetup.lua | 7 |
 | test_envsetup.lua | 13 |
+| test_sim_seam.lua | 10 |
+| test_sim_world.lua | 17 |
+| test_sim_drivers.lua | 9 |
+| test_sim_session.lua | 22 |
+| test_sim_e2e.lua | 10 |
 | test_launchersetup.lua | 55 |
 | test_lifecycle.lua | 40 |
+| test_dispatch.lua | 11 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
 | test_provider.lua | 42 |
@@ -2508,11 +2629,12 @@ Total.
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 68 |
-| test_window_header.lua | 60 |
+| test_window_header.lua | 61 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 43 |
 | test_window_lifecycle.lua | 9 |
 | test_window_segment.lua | 10 |
+| test_window_simstrip.lua | 4 |
 | test_headercontrols.lua | 66 |
 | test_row.lua | 62 |
 | test_row_namecell.lua | 30 |
@@ -2532,7 +2654,7 @@ Total.
 | test_schema_paths.lua | 50 |
 | test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
-| test_slash.lua | 50 |
+| test_slash.lua | 52 |
 | test_slash_diagnostics.lua | 20 |
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
@@ -2548,4 +2670,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2210** |
+| **Total** | **2304** |

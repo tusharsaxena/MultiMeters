@@ -249,26 +249,17 @@ end
 --- which is the only reason this can be a click action at all rather than an
 --- out-of-combat nicety.
 ---
---- The shim is preferred over the global: core/Compat.lua is where every
---- cross-patch API call is supposed to live (architecture-§1). It does not carry
---- one for the recap yet, so the guarded global is the fallback, and the moment
---- `Compat.OpenDeathRecap(recapID)` exists this call site picks it up with no
---- edit. Returning a boolean rather than erroring is what lets the caller
---- degrade to the ordinary spell breakdown.
+--- Through `Compat.OpenDeathRecap`, the one place that names the client's
+--- recap UI: it is a read `/mm sim` answers (MultiMeters#60). Returning a
+--- boolean rather than erroring is what lets the caller degrade to the ordinary
+--- spell breakdown.
 ---
 --- @param recapID number
 --- @return boolean  whether the recap was opened
 local function openDeathRecap(recapID)
     if recapID == nil then return false end
 
-    if Compat and Compat.OpenDeathRecap then
-        return Compat.OpenDeathRecap(recapID) and true or false
-    end
-
-    local open = _G.OpenDeathRecapUI
-    if type(open) ~= "function" then return false end
-    open(recapID)
-    return true
+    return Compat.OpenDeathRecap(recapID) and true or false
 end
 
 -- ---------------------------------------------------------------------------

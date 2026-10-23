@@ -853,6 +853,10 @@ L["TEST MODE"] = "TEST MODE"
 -- The ending clause is true: combat start ends test mode (M:EndTestModeForCombat).
 L["TEST MODE: placeholder numbers, not your fight. Combat ends it."] =
     "TEST MODE: placeholder numbers, not your fight. Combat ends it."
+-- The simulation strip in the same slot (W.TestStrip kind "sim", MultiMeters#60),
+-- shown while a /mm sim session runs. There is no SIMULATION title word.
+L["SIMULATION: a scripted fight, not your data. /mm sim stop ends it."] =
+    "SIMULATION: a scripted fight, not your data. /mm sim stop ends it."
 
 -- ---------------------------------------------------------------------------
 -- Export window
@@ -1006,6 +1010,12 @@ L["%s is unavailable. %s."] = "%s is unavailable. %s."
 -- `/mm diagnostics`.
 L["%s is unavailable: the LibKa0s library did not load."] =
     "%s is unavailable: the LibKa0s library did not load."
+
+-- The simulator (core/SimSetup.lua, MultiMeters#60). The first is the guarded OpenDeathRecap's line
+-- while a simulation runs; the second is what the degradation stub says when LibKa0s-Sim-1.0 is absent.
+L["Blizzard\226\128\153s death recap cannot open a simulated death."] =
+    "Blizzard\226\128\153s death recap cannot open a simulated death."
+L["The simulator needs LibKa0s-Sim-1.0."] = "The simulator needs LibKa0s-Sim-1.0."
 L["v%s"] = "v%s"
 L["v%s slash commands"] = "v%s slash commands"
 L["unknown command '%s'"] = "unknown command '%s'"
@@ -1066,3 +1076,62 @@ L["Time of day"] = "Time of day"
 L["How long ago"] = "How long ago"
 L["Death timestamps"] = "Death timestamps"
 L["How a death is labeled in the Deaths tooltip and the death list."] = "How a death is labeled in the Deaths tooltip and the death list."
+
+-- The simulator's host (modules/Sim.lua, MultiMeters#60): the start's refusals, the gate's line,
+-- the stop lines, the started line, the status verb's extra line and the step panel's fields; and
+-- the test-mode refusal while a simulation runs (modules/WindowManager.lua).
+L["A simulation cannot start in an instance."] = "A simulation cannot start in an instance."
+L["A simulation cannot start in combat."] = "A simulation cannot start in combat."
+L["A simulation cannot start while General visibility hides every window."] =
+    "A simulation cannot start while General visibility hides every window."
+L["A simulation cannot start while the addon is disabled."] = "A simulation cannot start while the addon is disabled."
+L["Ends"] = "Ends"
+L["Leave your group before starting a simulation."] = "Leave your group before starting a simulation."
+L["Multi Meters - Simulation"] = "Multi Meters - Simulation"
+L["Plays"] = "Plays"
+L["Restores"] = "Restores"
+L["Saves"] = "Saves"
+L["Segments held: %d, ticks pending: %d, sends: %d."] = "Segments held: %d, ticks pending: %d, sends: %d."
+L["Simulation started (%s): a scripted fight through the real meter. Nothing is saved or sent; /mm sim stop ends it."] =
+    "Simulation started (%s): a scripted fight through the real meter. Nothing is saved or sent; /mm sim stop ends it."
+L["Simulation stopped: the addon stood down (disabled, or a performance capture)."] =
+    "Simulation stopped: the addon stood down (disabled, or a performance capture)."
+L["Simulation stopped: the profile changed."] = "Simulation stopped: the profile changed."
+L["Simulation stopped: you entered an instance."] = "Simulation stopped: you entered an instance."
+L["Simulation stopped: you entered combat."] = "Simulation stopped: you entered combat."
+L["Simulation stopped: you entered the world (a loading screen)."] =
+    "Simulation stopped: you entered the world (a loading screen)."
+L["Simulation stopped: you joined a group."] = "Simulation stopped: you joined a group."
+L["The fight is still running."] = "The fight is still running."
+L["Turn test mode off before starting a simulation."] = "Turn test mode off before starting a simulation."
+L["a scripted fight through the real meter"] = "a scripted fight through the real meter"
+L["nothing: your roster and segment pins are not touched"] = "nothing: your roster and segment pins are not touched"
+L["the simulation"] = "the simulation"
+L["your live meter in every window"] = "your live meter in every window"
+L["Test mode is not available while a simulation runs."] = "Test mode is not available while a simulation runs."
+
+-- The simulator's scenarios (modules/SimScenario.lua, MultiMeters#60): the scenario labels, the step
+-- labels, the step tips' words and the details a played step reports in the step panel.
+L["Dungeon: pull and boss (5)"] = "Dungeon: pull and boss (5)"
+L["Raid boss (20)"] = "Raid boss (20)"
+L["Wipe and reset (5)"] = "Wipe and reset (5)"
+L["Zone change between segments (5)"] = "Zone change between segments (5)"
+L["Form a %d-player group"] = "Form a %d-player group"
+L["Form a %d-player raid"] = "Form a %d-player raid"
+L["Enter %s"] = "Enter %s"
+L["Leave to %s (open world)"] = "Leave to %s (open world)"
+L["Pull %s (%d ticks x %d s)"] = "Pull %s (%d ticks x %d s)"
+L["Reset meter data"] = "Reset meter data"
+L["Fires"] = "Fires"
+L["Ends with"] = "Ends with"
+L["World"] = "World"
+L["%d members, you first"] = "%d members, you first"
+L["inside %s (%s)"] = "inside %s (%s)"
+L["the open world (%s)"] = "the open world (%s)"
+L["a new segment, %s; %s"] = "a new segment, %s; %s"
+L["everyone dies"] = "everyone dies"
+L["no deaths"] = "no deaths"
+L["%d deaths"] = "%d deaths"
+L["no segments; Blizzard's own meter is not touched"] = "no segments; Blizzard's own meter is not touched"
+L["%d members"] = "%d members"
+L["segments cleared"] = "segments cleared"

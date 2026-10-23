@@ -39,6 +39,11 @@ A third follows from the widget side: a frame handed a secret via `SetValue` has
 data, so **layout is computed from config and never read back off a frame**. Read
 `docs/data-flow.md` before touching the data path.
 
+While `/mm sim` runs, the eight meter shims are answered by `modules/SimWorld.lua` through the
+LibKa0s-Sim seam (`core/SimSetup.lua`, whose guarded reset clears only the invented segments) with
+plain invented numbers. Nothing in the simulator reaches `C_DamageMeter` or reads a client meter
+value back.
+
 Start here, then read the docs:
 
 - **`docs/ARCHITECTURE.md`** — module map, settings schema, message bus, slash surface, event
@@ -52,5 +57,5 @@ Start here, then read the docs:
 Green gate before every commit: `lua tests/run.lua` and `luacheck .` (0/0). Never auto-stage/commit/
 push and never bump the version without an explicit instruction.
 
-Bundles [LibKa0s](https://github.com/tusharsaxena/LibKa0s) v1.75.2 (MIT).
-LibKa0s icons: chat, chevron-down, clear, close, copy, expand, export, info, lock, minimise, reset, segment, settings, sort-down, sort-up, spreadsheet, unlock.
+Bundles [LibKa0s](https://github.com/tusharsaxena/LibKa0s) v1.76.0 (MIT).
+LibKa0s icons: chat, chevron-down, clear, close, confirm, copy, expand, export, info, lock, minimise, reset, segment, settings, sort-down, sort-up, spreadsheet, unlock.

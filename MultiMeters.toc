@@ -35,9 +35,14 @@ locales\enUS.lua
 # Core
 # Conventional order within this group for core\Compat.lua, core\PoolSetup.lua, core\State.lua,
 # core\Secrets.lua and core\Database.lua: no other core\ file resolves them at FILE SCOPE, so they may
-# move within the group. Every other line is pinned by a LOAD-BEARING note, its own or one naming it.
+# move within the group -- except that core\Compat.lua and core\SimSetup.lua move TOGETHER, the seam
+# straight after Compat (its LOAD-BEARING note below). Every other line is pinned by a LOAD-BEARING
+# note, its own or one naming it.
 # core\MultiMeters.lua also reads NS.Constants.MSG at FILE SCOPE, so it stays below core\Constants.lua.
 core\Compat.lua
+# LOAD-BEARING: wraps every NS.Compat member at load (LibKa0s-Sim-1.0's seam). It must load straight
+# after the Compat files and before any file that reads a Compat member.
+core\SimSetup.lua
 # The LibKa0s-Env seam. LOAD-BEARING POSITION, and not merely "after Compat, whose metadata
 # shim it replaced": core\Namespace.lua resolves the version at FILE SCOPE, so the seam has to
 # be published before it. A seam that loaded later would leave NS.version as the hardcoded
@@ -147,6 +152,24 @@ modules\Export.lua
 # it resolves that file's three published file-locals at FILE SCOPE, so it must load after it.
 modules\Export_Modal.lua
 modules\Visibility.lua
+# The simulator's session host (MultiMeters#60). LOAD-BEARING POSITION: it builds NS.Sim with the
+# host's own tables (NS.SimHost.SCENARIOS and PANEL), which modules\SimWorld.lua, modules\SimDrivers.lua
+# and modules\SimScenario.lua fill IN PLACE, so it loads BEFORE all three; the library reads every
+# descriptor table at use. It also binds NS.SimSeam (core\SimSetup.lua) and reads NS.Constants.MSG
+# at FILE SCOPE.
+modules\Sim.lua
+# The simulator's invented world and its answers (MultiMeters#60). LOAD-BEARING POSITION: it
+# registers its providers on NS.SimSeam (core\SimSetup.lua) at FILE SCOPE, and reads NS.Constants at
+# call time. It loads after modules\Sim.lua (that file's note).
+modules\SimWorld.lua
+# The simulator's drivers: each edits the world, then fires the client's events (MultiMeters#60).
+# LOAD-BEARING POSITION: it captures NS.SimHost.World (modules\SimWorld.lua) at FILE SCOPE, so it
+# must load after it; NS.Sim and the session's world are read at call time.
+modules\SimDrivers.lua
+# The simulator's four scenarios (MultiMeters#60). LOAD-BEARING POSITION: it fills
+# NS.SimHost.SCENARIOS in place and sets NS.SimHost.Play at FILE SCOPE, and captures NS.SimHost.Drivers
+# (modules\SimDrivers.lua) and NS.SimHost.World there too, so it loads after both.
+modules\SimScenario.lua
 
 # Settings (last — depend on everything else being initialized)
 # The vocabularies, validators and composed blocks that the schema array is declared

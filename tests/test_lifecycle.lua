@@ -181,9 +181,13 @@ end)
 
 test("Lifecycle: OnEnable registers exactly the events the fan-out handles", function()
     local inst = T.load{ enable = true }
+    -- Every row is registered with the ONE dispatch entry (MultiMeters#60), and
+    -- the dispatch table names the handler the entry delivers to.
     local registered = inst.NS.__events
     for event, handler in pairs(EVENTS) do
-        assertEqual(registered[event], handler, event .. " is not registered to " .. handler)
+        assertEqual(registered[event], "OnGameEvent", event .. " is not registered to OnGameEvent")
+        assertEqual(inst.NS.HANDLER_BY_EVENT[event], handler,
+            event .. " has no dispatch row naming " .. handler)
         assertEqual(type(inst.NS[handler]), "function", handler .. " is not a function on NS")
     end
     local extra = {}
@@ -396,8 +400,9 @@ test("Lifecycle: a client with no PLAYER_IS_GLIDING_CHANGED still enables", func
         m.setEventInvalid("PLAYER_IS_GLIDING_CHANGED")
     end }
     assertNil(inst.NS.__events["PLAYER_IS_GLIDING_CHANGED"])
-    assertEqual(inst.NS.__events["PLAYER_CAN_GLIDE_CHANGED"], "OnPlayerStateChanged",
+    assertEqual(inst.NS.__events["PLAYER_CAN_GLIDE_CHANGED"], "OnGameEvent",
         "the rest of the set must still be registered")
+    assertEqual(inst.NS.HANDLER_BY_EVENT["PLAYER_CAN_GLIDE_CHANGED"], "OnPlayerStateChanged")
 end)
 
 -- ── registration isolation (events-frames-taint-§1) ─────────────────────────

@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2210%2F2210_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2304%2F2304_passing-green)
 
 Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
@@ -34,7 +34,7 @@ The numbers are Blizzard's. Multi Meters asks the built-in meter for them and ar
 
 ## Usage
 
-The first time you run it after installing, you get a default window, already unlocked. Drag it by the title bar and pull the bottom-right corner to size it. Placing an empty meter between pulls is a pain, so `/mm test` fills every window with placeholder rows while you work, lays a yellow strip across the top of each one saying the numbers are not yours, and puts TEST MODE in the title. It switches itself off the moment you pull, and `/mm lock` freezes everything once you're happy with the layout.
+The first time you run it after installing, you get a default window, already unlocked. Drag it by the title bar and pull the bottom-right corner to size it. Placing an empty meter between pulls is a pain, so `/mm test` fills every window with placeholder rows while you work, and lays a yellow strip across the top of each one saying the numbers are not yours. A minimized window, which hides the strip, says TEST MODE in its title instead. It switches itself off the moment you pull, and `/mm lock` freezes everything once you're happy with the layout.
 
 Setting a window up takes four steps. Most of it happens on the Windows page, where the Active window dropdown at the top picks the window you're working on and the list down the left side takes you through the rest.
 
@@ -45,11 +45,13 @@ Setting a window up takes four steps. Most of it happens on the Windows page, wh
 
 Want a second window? Click **New window** on the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you four switches: Enabled, Locked, Test mode and Show window. A key can show and hide the windows too: Key Bindings → AddOns → Ka0s Multi Meters → Toggle meter windows. No key is set for you.
 
+Want to see the meter work without a group? `/mm sim` runs a scripted fight through it. It only starts when you're solo and outside an instance, and it offers four scenarios: a dungeon pull and boss, a 20-player raid boss, a wipe and reset, and a zone change between fights. Every window shows a SIMULATION strip while it plays, and you can pause it and step through it one row at a time. The group, the fights and the numbers are made up. Nothing is saved, nothing is sent to chat, and your real segments come back when it stops.
+
 Everything else is on the addon's page under Settings → AddOns, and `/mm` (or `/multimeters`) on its own opens it. `/mm help` prints the full command list.
 
 ## How it works
 
-Blizzard's meter already tracks all of these and exposes them through an in-game API. Multi Meters asks it for the figures and lays them out as a grid, so what you read here is what the built-in meter would have told you. Nothing chews through the combat log a second time.
+Blizzard's meter already tracks all of these and exposes them through an in-game API. Multi Meters asks it for the figures and lays them out as a grid, so what you read here is what the built-in meter would have told you. Nothing chews through the combat log a second time. The simulator behind `/mm sim` runs that same engine: it stands in for the game's answers with an invented group and invented numbers, and everything after that is the code a real pull runs.
 
 That design is also where the one odd behavior comes from. In Midnight, addons get combat numbers as secret values: an addon can draw a bar for a number without being able to read it. The tag that says which row a number belongs to is sealed the same way. So Multi Meters builds the grid in two different ways. Out of combat, it matches rows by identity. In combat, the rows come from the game's own live ranking of the sort column, and every other column is matched onto them by class and spec. If two players share both, there's no telling them apart, so their cells stay empty and the header says so in gray.
 
@@ -103,8 +105,8 @@ Please raise them on GitHub:
 ## Credits
 
 The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL
-Open Font License 1.1. The header controls, the column sort arrows, the Export window and the debug
-console draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only
+Open Font License 1.1. The header controls, the column sort arrows, the Export window, the debug
+console and the simulator's step panel draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only
 the icons this addon draws ship. The font and the icons sit inside the bundled LibKa0s payload, each
 with its license text beside it.
 

@@ -94,13 +94,21 @@ function WindowProto:RegisterBus()
     end)
     bus:RegisterMessage(MSG.TEST_MODE_CHANGED, function()
         -- ApplyTestStrip as well as MarkDirty: the test-mode strip takes room
-        -- under the title and the red TEST MODE marker lives in the title, and
-        -- both are otherwise only redrawn on a config change. NARROW, never the
+        -- under the title and the red TEST MODE title word (shown only while the
+        -- strip is not) lives in the title, and both are otherwise only redrawn
+        -- on a config change. NARROW, never the
         -- full ApplyConfig: combat start toggles this (M:EndTestModeForCombat),
         -- and a re-position, re-scale or re-skin then would make the window jump
         -- (MultiMeters#59).
         self:ApplyTestStrip()
         self:RefreshVisibility()
+        self:MarkDirty()
+    end)
+    -- The simulation's edge takes the same narrow path for the sim strip, which
+    -- shares the test strip's slot (MultiMeters#60): no ApplyConfig, so nothing
+    -- jumps. Visibility is re-asked by the session's own resync, not here.
+    bus:RegisterMessage(MSG.SIM_CHANGED, function()
+        self:ApplyTestStrip()
         self:MarkDirty()
     end)
 

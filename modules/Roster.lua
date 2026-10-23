@@ -114,6 +114,7 @@ NS.Roster = Roster
 local State   = NS.State
 local Secrets = NS.Secrets
 local Const   = NS.Constants
+local Compat  = NS.Compat
 local MSG     = Const.MSG
 
 -- NO PERF BRACKET IN THIS FILE. The rebuild is lazy, so it happens INSIDE
@@ -162,6 +163,15 @@ local cache = State.Cache("Roster")
 ---
 --- @return table  { byGuid = {...}, pets = {...}, count = n }
 local function remembered()
+    -- A simulation's own store (MultiMeters#60, H4): while a session runs, the
+    -- remembered roster is the session's, so a simulated build never writes
+    -- db.global.roster. modules/Sim.lua's stop drops the session with it.
+    local sim = NS.Sim
+    if sim and sim:IsActive() then
+        local s = sim:Session()
+        s.mmRoster = s.mmRoster or { byGuid = {}, pets = {}, count = 0 }
+        return s.mmRoster
+    end
     local db = NS.db
     local g = db and db.global
     if not g then
@@ -214,19 +224,18 @@ local function pruneRemembered(seenMap, live)
     end
 end
 
--- Unit APIs are reached through _G at CALL time rather than captured at load.
--- Two reasons, and both are real: the headless test harness installs its unit
--- mocks after the files load, so a load-time capture would freeze the real
--- globals (or nil) in place; and a client missing one of them must degrade to a
--- solo roster rather than error, which a guarded read gives for free.
-local function unitGUID(unit)  local f = _G.UnitGUID  return f and f(unit) end
-local function unitName(unit)  local f = _G.UnitName  return f and f(unit) end
-local function unitExists(unit) local f = _G.UnitExists return f and f(unit) and true or false end
+-- Unit APIs are reached through core/Compat.lua, whose members resolve their
+-- globals at CALL time rather than at load. Three reasons, all real: the
+-- headless test harness installs its unit mocks after the files load; a client
+-- missing one of them must degrade to a solo roster rather than error; and
+-- these are the reads `/mm sim` answers (MultiMeters#60), so they go through
+-- the one seam it can answer from.
+local function unitGUID(unit)   return Compat.UnitGUID(unit) end
+local function unitName(unit)   return Compat.UnitName(unit) end
+local function unitExists(unit) return Compat.UnitExists(unit) end
 
 local function unitClassFile(unit)
-    local f = _G.UnitClass
-    if not f then return nil end
-    local _, classFilename = f(unit)
+    local _, classFilename = Compat.UnitClass(unit)
     return classFilename
 end
 
@@ -244,20 +253,15 @@ end
 --- such call for an arbitrary unit — which is exactly the case the assigned role
 --- fails to cover.
 local function unitRole(unit)
-    local f = _G.UnitGroupRolesAssigned
-    local role = f and f(unit)
+    local role = Compat.UnitGroupRolesAssigned(unit)
     if role == "TANK" or role == "HEALER" or role == "DAMAGER" then return role end
 
     if unit == "player" then
-        -- The spec INDEX goes through core/Compat.lua, which is LibKa0s-Compat-1.0's
-        -- ladder: C_SpecializationInfo first, the deprecated global only where the
-        -- namespace is missing. The role read beside it stays direct: no Ka0s addon
-        -- but this one reads it, so it has no shim in the library, and it is
-        -- recorded as this file's one remaining compat read rather than hidden.
-        local compat      = NS.Compat
-        local getSpecRole = _G.GetSpecializationRole
-        local spec = compat and compat.GetSpecialization and compat.GetSpecialization()
-        local specRole = spec and getSpecRole and getSpecRole(spec)
+        -- Both reads go through core/Compat.lua: the spec INDEX is
+        -- LibKa0s-Compat-1.0's ladder (C_SpecializationInfo first), and the role
+        -- beside it is a host member, since no other Ka0s addon reads it.
+        local spec = Compat.GetSpecialization and Compat.GetSpecialization()
+        local specRole = spec and Compat.GetSpecializationRole(spec)
         if specRole == "TANK" or specRole == "HEALER" or specRole == "DAMAGER" then
             return specRole
         end
@@ -274,11 +278,11 @@ end
 
 --- How many members the group API says there are, 0 when the call is missing.
 ---
---- Read through _G at call time for the same reason as the unit readers above,
---- and answered as a number so both callers can compare against it without
+--- Read through core/Compat.lua for the same reason as the unit readers above,
+--- which answers a number so both callers can compare against it without
 --- repeating the guard.
 local function numGroupMembers()
-    return (_G.GetNumGroupMembers and _G.GetNumGroupMembers()) or 0
+    return Compat.GetNumGroupMembers()
 end
 
 --- The ordered unit tokens of the current group: the player first, then the
@@ -295,7 +299,7 @@ end
 local function groupUnits()
     local units = { "player" }
 
-    local inRaid   = _G.IsInRaid and _G.IsInRaid()
+    local inRaid   = Compat.IsInRaid()
     local numGroup = numGroupMembers()
 
     if inRaid then
@@ -519,7 +523,7 @@ local function build()
 
     if State.debug then
         logBuild(("built members=%d pets=%d raid=%s"):format(#group, petCount,
-            (_G.IsInRaid and _G.IsInRaid()) and "yes" or "no"))
+            Compat.IsInRaid() and "yes" or "no"))
     end
 
     return group
@@ -705,6 +709,13 @@ end
 --- gate (§9).
 function Roster.Forget()
     State.WipeCache("Roster")
+    -- A simulated reset forgets only the session's store (H4): the real map
+    -- belongs to the client's segments, which a simulation never touches.
+    local sim = NS.Sim
+    if sim and sim:IsActive() then
+        sim:Session().mmRoster = { byGuid = {}, pets = {}, count = 0 }
+        return
+    end
     local db = NS.db
     if not (db and db.global) then return end
     if State.debug then

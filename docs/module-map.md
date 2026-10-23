@@ -3,7 +3,7 @@
 Where each responsibility lives, what each file publishes, and what it consumes. `MultiMeters.toc`
 is the source of truth for load order — check this map against it before editing.
 
-Sixty-three non-vendored source files: 1 locale, 20 `core/`, 1 `defaults/`, 26 `modules/`,
+Sixty-eight non-vendored source files: 1 locale, 21 `core/`, 1 `defaults/`, 30 `modules/`,
 15 `settings/`.
 
 Thirteen of those arrived on one day, 2026-09-09, and **not one of them is a new module.** They are
@@ -41,7 +41,10 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   ├── Compat.lua      — every cross-patch API call: C_Spell,
 │                         C_SpecializationInfo, all eight C_DamageMeter reads,
 │                         C_StringUtil.CreateNumericRuleFormatter and the chat
-│                         sender C_ChatInfo.SendChatMessage. 30 shims, no logic
+│                         sender C_ChatInfo.SendChatMessage, plus the world reads the
+│                         simulator answers. 42 shims, no logic
+│   ├── SimSetup.lua    — the LibKa0s-Sim-1.0 seam: wraps every NS.Compat member at
+│                         load (pure, guarded, the rest). STRAIGHT after Compat.lua
 │   ├── EnvSetup.lua    — the LibKa0s-Env seam: NS.Meta / NS.Version, the TOC-manifest
 │                         reader Compat used to own. BEFORE Namespace.lua, which
 │                         resolves NS.version at file scope
@@ -122,7 +125,8 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   └── Diagnostics_Runtime.lua
 │                       — the addon-state sections that open `/mm diagnostics`:
 │                         state, settings, per-window settings, windows, sessions,
-│                         the aggregator's last pass, roster and caches. Read-only
+│                         the aggregator's last pass, roster and caches, sim.
+│                         Read-only
 ├── defaults/
 │   └── Profile.lua     — NS.defaults, NS.WINDOW_TEMPLATE, NS.DefaultWindow(). The
 │                         only place a profile default is hardcoded
@@ -166,11 +170,11 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                     refresh. Publishes WindowProto for the three files below
 │   ├── Window_Lifecycle.lua
 │   │                   — how a window is born, re-pointed, stood down and put
-│   │                     away: Window.New, the private bus target's twelve
+│   │                     away: Window.New, the private bus target's thirteen
 │   │                     subscriptions, SetConfig, Destroy, Suspend, Resume
 │   ├── Window_Header.lua
 │   │                   — the header BAND of one window: the title bar, the session
-│   │                     line, the test-mode strip, the column labels, the sort a click on one performs,
+│   │                     line, the test-mode and sim strips, the column labels, the sort a click on one performs,
 │   │                     the segment dropdown, the notices, and NS.HeaderStyle
 │   ├── Window_Placement.lua
 │   │                   — where a window SITS and whether it is there at all:
@@ -221,8 +225,22 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                     buttons and the copy-paste window. Every frame this
 │   │                     feature draws is here. Re-checks the combat refusal on
 │   │                     every click, because a pull can start while it is open
-│   └── Visibility.lua  — the context predicate. Publishes no message and touches
-│                         no frame; refuses at the source
+│   ├── Visibility.lua  — the context predicate. Publishes no message and touches
+│   │                     no frame; refuses at the source
+│   ├── Sim.lua         — the simulator's session host: NS.Sim on LibKa0s-Sim-1.0,
+│   │                     the refusals, the gate, the real-event classifier, the
+│   │                     pin snapshot and the stop's resync. Loads BEFORE the
+│   │                     world and drivers, which fill its tables in place
+│   ├── SimWorld.lua    — the simulator's invented world (the real player plus
+│   │                     seeded mates, zones, segments, deaths and recaps) and
+│   │                     every provider the seam answers from. Plain invented
+│   │                     numbers only; registers on NS.SimSeam at FILE SCOPE
+│   ├── SimDrivers.lua  — the simulator's drivers: each edits the world, then
+│   │                     fires the client's events through NS.Sim:Fire in the
+│   │                     client's order; a fight's ticks ride NS.Sim:After
+│   └── SimScenario.lua — the four #60 scenarios (dungeon, raid, wipe, zone):
+│                         labeled, tipped steps, and NS.SimHost.Play, which
+│                         plays each step through the drivers
 └── settings/
     ├── Schema_Compose.lua
     │                   — WHAT THE ARRAY IS DECLARED OUT OF and nothing else: the
@@ -276,8 +294,9 @@ own strings entirely.
 
 | File | Owns | Publishes | Consumes |
 |---|---|---|---|
-| `Compat.lua` | All 30 cross-patch shims — the TOC-manifest reader is no longer among them; it moved to `EnvSetup.lua`. Never inspects a meter value; reading a field off a session table and passing it on is not inspection. The four spell and spec readers are bound to `LibKa0s-Compat-1.0`, and each answers `nil` without it | `NS.Compat` | `_G`, `LibKa0s-Compat-1.0` |
+| `Compat.lua` | All 42 shims, the world reads the simulator answers among them — the TOC-manifest reader is no longer among them; it moved to `EnvSetup.lua`. Never inspects a meter value; reading a field off a session table and passing it on is not inspection. The four spell and spec readers are bound to `LibKa0s-Compat-1.0`, and each answers `nil` without it | `NS.Compat` | `_G`, `LibKa0s-Compat-1.0` |
 | `Constants.lua` | The stat catalog, the **shipped** per-stat palette (`STAT_COLORS`, the seed for the `statColors.*` setting and the fallback every `NS.StatColor` call degrades to, plus the `STAT_DIM` factor), the two stat lookups — `STAT_BY_KEY` ("may this be a column") and `READABLE_STAT_BY_KEY` ("may this be read", the catalog plus `OFF_CATALOG_STATS`), enum resolutions, the `MSG` catalog (strict through `LibKa0s-Bus-1.0`'s `Catalog`), timing and pool bounds, the monospace font path (resolved from the LibKa0s payload, falling back to the client font) and its LSM key | `NS.Constants`, `NS.Const` | `_G.Enum`, `NS.MediaFont`, `LibKa0s-Bus-1.0` (`Catalog`) |
+| `SimSetup.lua` | The LibKa0s-Sim-1.0 seam: wraps every `NS.Compat` function member in place at load, except the seventeen pure ones, with three guarded answers (`ResetAllCombatSessions`, `ChatSender`, `OpenDeathRecap`) that never reach the client while a session runs. With the library absent, the reference seam and session stubs | `NS.SimSeam`, `NS.SimHost` (`.Guarded`), and `NS.Sim` (the stub) when the library is absent | `LibKa0s-Sim-1.0`, `NS.Compat`; `NS.Sim`, `NS.SimHost.World`/`.world`, `NS.Print`, `NS.Debug` at call time |
 | `EnvSetup.lua` | The LibKa0s-Env seam: this addon's TOC manifest, and the one place the manifest-then-constant version pair is resolved. Repeats the reader ladder itself on a degraded install, so an install missing LibKa0s still reports its packaged version | `NS.Meta`, `NS.Version` | `LibKa0s-Env-1.0`, `NS.version` at call time. Owns no state and registers no event |
 | `Namespace.lua` | Addon identity, the collection's one class-color reader (four surfaces can wear one — the bars and cell text in `Row.lua`, both header strips in `Window.lua`, the tooltip), the one **statistic**-palette reader beside it (`NS.StatColor`, which reads the `statColors.*` setting and falls back to `Constants.STAT_COLORS`) and the bus-target factory, whose record is `LibKa0s-Bus-1.0`'s, with the untracked-target stub when the library is absent. No side effects at all: building the record is bookkeeping, and nothing registers | `NS.PREFIX`, `NS.GRAY`, `NS.name`, `NS.version`, `NS.FALLBACK_VERSION`, `NS.ClassRGB`, `NS.PlayerClassRGB`, `NS.StatColor`, `NS.NewBusTarget`, `NS.BusStandDown`, `NS.BusStandUp`, `NS.busRecord`, `NS.BusLib` | `NS.Meta`, `_G.RAID_CLASS_COLORS`, `_G.UnitClass`, `LibKa0s-Bus-1.0`, `NS.IsStoodDown` (late-bound) |
 | `State.lua` | The five session flags, each with exactly one named writer — `debugTooltip` is the tooltip log channel, off by default and written only by `/mm debug tooltip` (see [debug.md](debug.md)) — and `State.Cache` / `State.WipeCache` (wipes **in place**, so a module may hold its sub-table as an upvalue) | `NS.State` | `NS.Constants.MSG` |
@@ -289,7 +308,7 @@ own strings entirely.
 | `DebugLogSetup.lua` | The console descriptor (including `addonName`, which is what makes the console's own close/copy/clear draw the collection's art), the debug sink, and the steady-state sink a timer-driven pass logs through (re-armed by turning logging on and by the console's Clear, through `onClear`), and the console's at-enable queue for a state line written while logging is off | `NS.DebugLog`, `NS.Debug`, `NS.DebugAtEnable`, `NS.DebugSteady`, `NS.DebugSteadyReset` | `NS.Constants.FONT_MONO`, `NS.State.debug`, `NS.Print`, `NS.SafeToString` |
 | `PoolSetup.lua` | The LibKa0s-Pool seam: the free/active halves of the window row pool. What stays in `modules/Window.lua` is what the library holds no opinion about — `pool.all` (every row ever built, so a **parked** row is re-laid-out too) and batch growth, folded into the `Acquire` factory closure. The degraded fallback is the same three members locally, parking **backward** exactly as `LibKa0s-Pool-1.0` minor 3 does; a forward-parked degraded install is the rank flicker back | `NS.Pool` | `LibKa0s-Pool-1.0`. Owns no state and registers no event |
 | `LauncherSetup.lua` | The LibKa0s-Launcher seam: the descriptor for the ONE LibDataBroker object LibDBIcon and any broker display both draw from (`launcher-§1`). Holds what is genuinely this addon's — the **folder** name (LibDBIcon keys the button's saved position by it), the logo, `version` from the TOC for the status tooltip's title (Launcher minor 3; the library draws the tooltip and this file passes no `onTooltipShow`), and the options menu's four accessor-and-toggle pairs (Launcher minor 4, `launcher-§2` at v2.67.0): `isEnabled` = `not NS.IsDisabled()` with `setEnabled` → the `enable`/`disable` verb, `isLocked` = `WindowManager:IsLocked` with `toggleLock` → `lock`, `isTestMode` = `NS.State.testMode` with `toggleTestMode` → `test`, `isWindowShown` = `WindowManager:AnyShown` with `toggleWindow` → `toggle`. Every toggle is the verb's own handler, looked up in `NS.COMMANDS` at click time. Left-click opens the panel (`openSettings`), in either state. The `minimap` field is a **closure**, never the table: `db.global.minimap` does not exist when core/ loads. `debug` is the gated sink and `debugAtEnable` the console's at-enable queue (Launcher minor 5), so the library's `registered` line, written at login with logging off, lands when logging is turned on. The inversion is NOT here — it is the write seam's carve-out. It also builds the Show window key binding's button (`launcher-§6`): the plain, hidden, non-secure `MultiMetersToggleWindows` Button the root `Bindings.xml` clicks, registered `AnyDown`, whose OnClick is `toggleWindows`, the very function the descriptor's `toggleWindow` is. A key cannot be grayed, so `toggleWindows` prints `NS.Slash:DisabledLine()` while disabled, as the dispatcher does for `/mm toggle`; otherwise it runs the verb. Built **before** the library-absent fork, with the `BINDING_HEADER_MULTIMETERS` and `BINDING_NAME_CLICK MultiMetersToggleWindows:LeftButton` labels set by `rawset` | `NS.Launcher` — `Register`, `IsRegistered`, `Object`, `IsShown`, `SetShown` | `LibKa0s-Launcher-1.0`, `NS.Constants.LOGO_128` (at file scope), `NS.db.global.minimap`, `NS.WindowManager`, `NS.OpenOptionsPanel`, `NS.COMMANDS`, `NS.IsDisabled` (all at call time) |
-| `MultiMeters.lua` | AceAddon promotion, the printer reclaim, all 22 game-event registrations (the `EVENTS` array, each through `NS.SafeRegisterEvent`, refusals in `NS.State.rejectedEvents`), the fan-out onto the bus, and `NS.ShouldShow` | `NS.addon`, `NS.ShouldShow`, `NS:OnInitialize` / `OnEnable` | `NS.Constants.MSG`, `NS.State`, `NS.Secrets`, `NS.Launcher`, `NS.CreateOptionsPanel`, `NS.Slash` |
+| `MultiMeters.lua` | AceAddon promotion, the printer reclaim, all 22 game-event registrations (the `EVENTS` array, each through `NS.SafeRegisterEvent` with the one handler `OnGameEvent`, refusals in `NS.State.rejectedEvents`), the dispatch table, the fan-out onto the bus, and `NS.ShouldShow` | `NS.addon`, `NS.ShouldShow`, `NS:OnInitialize` / `OnEnable`, `NS:OnGameEvent`, `NS.DeliverEvent`, `NS.HANDLER_BY_EVENT`, `NS.RealEventFilter` (the simulator's hook) | `NS.Constants.MSG`, `NS.State`, `NS.Secrets`, `NS.Launcher`, `NS.CreateOptionsPanel`, `NS.Slash` |
 | `Database.lua` | The AceDB instance, window shape key-fill, the monotonic id counter, seeding, migrations, and the AceDB profile callbacks | `NS.Database` (`GetWindows`, `FindWindow`, `NextWindowId`, `SeedWindows`, `EnsureWindowShape`), `NS.db`, `NS:InitDB`, `NS:RunMigrations` | `NS.defaults`, `NS.WINDOW_TEMPLATE`, `NS.DefaultWindow`, `NS.Constants.MSG` |
 | `Diagnostics.lua` | The section list of the `/mm diagnostics` report and its client probes: atlas probes, the formatter ladder, visibility, header, name column, cells, tooltip font and width, the Targets cross-reference, the provider-order probe, and the rejected events, which close the report. The addon-state sections that open it live in `Diagnostics_Runtime.lua` and are reached through `NS.Diagnostics.Runtime` when they run. LibKa0s-DebugLog-1.0 runs them (`RunDiagnostics`, through the descriptor's `diagnostics` field in `core/DebugLogSetup.lua`), each under its own pcall, and nothing here inspects a meter value. It is also the FRAME the three probe files hang off — the print helpers are defined once, here | `NS.Diagnostics` (`Sections`, `SetEmit`) and, for the three files below, the shared helpers `out` / `safe` / `shown` / `probe` | `NS.DebugLog`, `NS.Print`, `NS.SECRET`, `NS.Provider`, `NS.Constants.STATS`, `NS.Database`, `NS.Secrets`, `NS.WindowManager` |
 | `Diagnostics_DeathRecap.lua` | `/mm debug recap` — issue #1's question, asked in one place: can a Death Recap window be built at all, and what does the recap API actually hand back. Self-contained, so it can be deleted with its issue; it also rides along in `/mm diagnostics`, which is why its section function goes back onto the shared table | `Diagnostics.ReportDeathRecap`, `Diagnostics.reportDeathRecap` (the section the frame calls) | `NS.Diagnostics` and its print helpers, **at file scope** — the reason its TOC line must follow `core/Diagnostics.lua` |
@@ -317,7 +336,7 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 |---|---|---|---|---|
 | `Format.lua` | plain table | The `NumericRuleFormatter` instances and the three-rung degradation ladder. No division of a meter value, anywhere | `NS.Format` (callable table), `NS.Numbers`, `NS.NumberFormat` — `Number`, `Rate`, `Duration`, `Percent`, `Invalidate` | `NS.Compat.CreateNumericRuleFormatter`, `NS.Secrets`, `NS.State.Cache("Format")`, `NS.L`. Subscribes `CONFIG_CHANGED`, `PROFILE_CHANGED` on a private bus target |
 | `Provider.lua` | AceAddon | Every meter read, the memoized availability answer, and the suspend flag | `NS.Provider` — `GetColumn`, `GetSourceDetail`, `GetAvailableSessions`, `GetSessionDuration`, `IsAvailable`, `AvailabilityMemo`, `InvalidateAvailability`, `ProbeSourceByGuid`, `ProbeSourceLookup`, `ProbeSourceFields`, `Reset`, `Suspend` / `Resume` / `IsSuspended` | `NS.Compat`, `NS.Secrets`, `NS.Constants.STAT_BY_KEY`. Subscribes `METER_RESET`, `METER_SESSION`, `ENTERING_WORLD`. **Sends `METER_RESET`** from `Provider.Reset` |
-| `Roster.lua` | AceAddon | The group array, the GUID index, the pet→owner map, roles. Rebuilt lazily on first read after an invalidation; a **partial** map (fewer members than `GetNumGroupMembers`) is retried once per aggregate pass, armed by `BeginPass`, never per lookup | `NS.Roster` — `GetGroup`, `LocalGUID`, `Get`, `IsGroupMember`, `OwnerOf`, `RoleOf`, `Refresh`, `Forget`, `BeginPass` (called once at the top of `Aggregator.Build`) | the unit API through `_G` at call time, the local player's spec index through `NS.Compat.GetSpecialization`, `NS.State.Cache("Roster")`, and the remembered map at `db.global.roster`, which it owns. Subscribes `ROSTER_CHANGED`, `ENTERING_WORLD`, `PROFILE_CHANGED`, `TEST_MODE_CHANGED`, and `METER_RESET`, which is what forgets the remembered map. A complete build past `4 * MAX_ROWS` remembered members prunes it to the live group (smoke INSTALL-5, branch B) |
+| `Roster.lua` | AceAddon | The group array, the GUID index, the pet→owner map, roles. Rebuilt lazily on first read after an invalidation; a **partial** map (fewer members than `GetNumGroupMembers`) is retried once per aggregate pass, armed by `BeginPass`, never per lookup | `NS.Roster` — `GetGroup`, `LocalGUID`, `Get`, `IsGroupMember`, `OwnerOf`, `RoleOf`, `Refresh`, `Forget`, `BeginPass` (called once at the top of `Aggregator.Build`) | the unit, role and group API through `NS.Compat` (resolved at call time; the simulator's seam), the local player's spec index through `NS.Compat.GetSpecialization`, `NS.State.Cache("Roster")`, and the remembered map at `db.global.roster`, which it owns. Subscribes `ROSTER_CHANGED`, `ENTERING_WORLD`, `PROFILE_CHANGED`, `TEST_MODE_CHANGED`, and `METER_RESET`, which is what forgets the remembered map. A complete build past `4 * MAX_ROWS` remembered members prunes it to the live group (smoke INSTALL-5, branch B) |
 | `Feign.lua` | AceAddon | The set of GUIDs believed to be feigning rather than dead. `C_DamageMeter` hands a Feign Death a valid `deathRecapID`, so the Deaths column counts it. **Cannot run while restricted**: it joins a plain GUID against `sourceGUID`, which is secret for the whole of a pull | `NS.Feign` — `Note`, `IsFeigned`, `Prune`, `Clear` | the unit API through `_G` at call time, `NS.Roster.GetGroup`, `NS.Secrets`. Subscribes `METER_RESET`, `ENTERING_WORLD`, `ROSTER_CHANGED`. Fed by `core/MultiMeters.lua`'s `UNIT_SPELLCAST_SUCCEEDED` handler, which owns the only game event |
 | `Aggregator.lua` | AceAddon | The exact GUID join — filter, pet folding, the sort ladder, the one-stage-at-a-time scan — and `percent`, and the choice, once per pass, between that join and the identity build next door. The build pipeline is **one algorithm** and issue #30 forbids cutting inside it, which is what decided where the peels went | `NS.Aggregator` — `Build`, `LastIdentityStats`, `LastPass` (the last render pass per window, for `/mm diagnostics`); plus `Aggregator._identity`, the private seam carrying the row-assembly helpers (`newRow`, `setCell`, `isEnemySource`, `UNRANKED`) the identity build shares with the join, and `Aggregator._order`, the seam that carries `UNRANKED` out to the orderings and brings them back | `NS.Provider`, `NS.Roster`, `NS.Secrets`, `NS.State.Cache("Aggregator")`. Subscribes `METER_RESET`, `PROFILE_CHANGED` |
 | `Aggregator_Identity.lua` | — | The grid drawn while `sourceGUID` is secret, and the rectangle that measures how much of it got filled: the correlation pass, the collision bookkeeping and the per-pass identity statistics. It exists because the client stopped handing out GUIDs, and it asks a question the join never asks | `Aggregator._identity.buildByIdentity`, and `lastIdentityStats` on the same seam — the one private the peel had to publish, written at the end of a pass here and read by `Aggregator.LastIdentityStats` there | `NS.Aggregator`, `NS.Provider`, `NS.Roster`, `NS.Secrets`, `NS.Constants`, and the five `Aggregator._identity` helpers — all **at file scope**, which is what pins its TOC line after `modules/Aggregator.lua` |
@@ -341,6 +360,10 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 | `Export.lua` | plain table | **The pure half**, which is the seam this file's own header had been naming since it was written: the two serializers and everything they need. `HeaderName`, `CsvField` and `Columns` derive the CSV shape from the stat catalog rather than restating it; `SessionConfig` builds the synthetic window config the aggregator is asked with; `ResolveChannel`, `ChatBatch`, `SendDelay` and `Send` carry the throttled dump and its whisper-failure watch. **Draws no frame.** **Refuses entire while the Combat restriction is active** — `tostring` is not a permitted operation on a secret | `NS.Export` — `Available`, `HeaderName`, `CsvField`, `Columns`, `SessionConfig`, `Build`, `SessionLabel`, `CSV`, `ChatLines`, `ResolveChannel`, `TargetName`, `NeedsHardwareEvent`, `ChatBatch`, `SendDelay`, `Send`, `NoteSystemMessage` — plus the three privates the modal reads, `Export.__EM_DASH`, `__cfgOf` and `__channelRow` | `NS.Aggregator.Build`, `NS.Format`, `NS.Constants` (`STATS`, `STAT_BY_KEY`, `MAX_ROWS`, `SESSION_TYPE`, `EXPORT_CHANNELS`, `EXPORT_CHANNEL_BY_KEY`), `NS.Compat.ChatSender` (the only way `Send` reaches a channel), and `NS.Secrets` — resolved through its own `mod()` lookup at **call** time, never captured, so the pure half holds no sibling as an upvalue |
 | `Export_Modal.lua` | — | **The UI half**: the dialog the header glyph and `/mm export` open, its three selectors — `LibKa0s-Widgets-1.0` dropdowns since the collection grew a shared one — the whisper row, the two action buttons and the copy-paste window. Every frame this feature draws is here and nowhere else; all of it is built lazily on the first `Open` and reused forever, so a session in which nobody exports never pays for it. The combat refusal is enforced **again** here, and deliberately more than once — `Available()` on open, again inside each click handler, and once more inside the serializers — because the restriction can activate while the modal sits open, and the click is the last moment anyone can check | `NS.Export.Open`, `NS.Export.ResolveMetric` | `Export.__EM_DASH` / `__cfgOf` / `__channelRow` **at file scope**, which is what pins its TOC line after `modules/Export.lua`; plus `NS.Constants` (including `FONT_MONO` for the copy window), `NS.L`, `NS.GetSetting` / `NS.SetByPath`, `NS.ApplySkin`, `NS.MakeCloseButton`, `NS.NewBusTarget`, and `LibKa0s-Widgets-1.0` looked up directly — the one library this pair reaches for itself rather than through a `core/*Setup.lua` seam, because the widget is built lazily inside `Open` rather than wired at load; it calls `W.CloseMenu()` from the modal's `OnHide`, since the popup is process-wide and the modal's own `Hide` does not reach it. Subscribes exactly one message — `RESTRICTION_CHANGED`, on a private target taken with the modal frame, so an open dialog grays itself when a pull starts — and sends none |
 | `Visibility.lua` | AceAddon | The context translation table and the predicate: context first, then the hide-shaped vetoes, then the two combat rules. No frame is touched and no message is sent | `NS.Visibility` — `GetContext`, `ShouldShow`, `Allows`, `Evaluate`, `Refresh`, `LastResult`, `Forget` | `NS.Database.GetWindows`, the instance and player-state APIs through `_G`, and `NS.Compat` for the delve / skyriding / housing probes. Subscribes `ZONE_CHANGED`, `ENTERING_WORLD`, `ROSTER_CHANGED`, `COMBAT_CHANGED`, `PLAYER_STATE_CHANGED`, `PROFILE_CHANGED` — for the Evaluate pass only, which runs only under debug and feeds its debug line and `/mm diagnostics`'s per-window "last pass" lines; the window re-runs the ladder off the same two messages, because this module publishes nothing |
+| `Sim.lua` | plain table | The simulator's **session host** (MultiMeters#60). Builds `NS.Sim` with `LibKa0s-Sim-1.0`'s `New` over `NS.SimSeam`, delivering through `NS.DeliverEvent`. The start's refusals, in order (stood down, test mode, combat, an instance, a group, General visibility `never`), each run inside `NS.SimSeam:Live` and each a `[Sim]` debug line naming its guard; the gate (closed while `w.pending` fight ticks are booked); `Prepare` (the world from the real player, the window pin snapshot in `session.mmPins`, `NS.RealEventFilter`, `SIM_CHANGED { active = true }`, the simulated `DAMAGE_METER_RESET`, the step panel); the real-event classifier `OnRealEvent` (`EVENT_RULES`: combat and a restriction edge stop with `combat`, a world entry with `world`, a live group with `group`, a live instance with `instance`, the client's meter events are consumed); and the seven stop steps (the filter cleared, the pins restored unless the reason is `profile`, the caches wiped, the resync through `ENTERING_WORLD`, `METER_SESSION` and `COMBAT_CHANGED`, never `METER_RESET`, the drill-down closed, `SIM_CHANGED { active = false }`, `Host.lastStop`). The step delay is the constant `Host.STEP_DELAY` (1 s). With the library absent `NS.Sim` stays `core/SimSetup.lua`'s stub | `NS.Sim` (live), `NS.SimHost` — `SCENARIOS`, `PANEL`, `STEP_DELAY`, `StepDelay`, `Refusal`, `Gate`, `Prepare`, `OnRealEvent`, `EVENT_RULES`, `StatusLine`, `PanelAnchor`, `world`, `lastStop`. **The one `SIM_CHANGED` sender** | `LibKa0s-Sim-1.0`, `NS.SimSeam`, `NS.Constants.MSG` **at file scope**; `NS.SimHost.World`, `NS.Compat`, `NS.Database`, `NS.WindowManager`, `NS.SetByPaths`, `NS.DrillDown`, `NS.Slash` at call time |
+| `SimWorld.lua` | plain table | The simulator's **invented world** (MultiMeters#60) and its answers. `World.New(seed, player)` builds it from a seeded Park-Miller generator: the real player first (GUID, name, class and live spec role read by the caller inside `NS.SimSeam:Live`), then fixed seeded mates `Player-9998-SIM%04d` from forty invented names, hunters and warlocks with pets `Pet-0-9998-SIM%04d`. Pure functions of the world table edit it: `SetGroup` (party or raid tokens, the player at a seeded raid index), `SetZone`, `OpenSegment` / `CloseSegment`, `Tick` (rate x seconds per stat, pets dealing a quarter of their owner's damage as their own row, the enemy taking the group's damage), `Die` (a Deaths row and a recap in `Aggregator.TestRecap`'s shape), `ResetSegments`; `Session`, `SourceDetail` and `AvailableSessions` answer fresh tables in the client's shape. **Plain invented numbers only**: it never reads a client meter value, so `core/Secrets.lua` stays the only inspector of client values, and it never spells a `Compat.`-prefixed meter shim (the `test_provider` scan) | `NS.SimHost.World` (`New`, `SetGroup`, `Unit`, `SetZone`, `OpenSegment`, `CloseSegment`, `Tick`, `Die`, `ResetSegments`, `Session`, `SourceDetail`, `AvailableSessions`, `PROVIDED`, `PROVIDERS`, and the `ZONES` / `NAMES` / `CLASSES` tables); 22 providers registered by key on `NS.SimSeam` **at file scope** | `NS.SimSeam` **at file scope**; `NS.SimHost.world`, `NS.Constants.STAT_TYPE` / `SESSION_TYPE` / `SOURCE_DISPLAY_TYPE` at call time |
+| `SimDrivers.lua` | plain table | The simulator's **drivers** (MultiMeters#60). Each edits the world (`NS.SimHost.world`) first, then fires the client's events through `NS.Sim:Fire`, read at call time, with the client's payloads and order: `FormGroup(n, raid)` and `Disband()` (`GROUP_ROSTER_UPDATE`); `Zone(key)` (`PLAYER_ENTERING_WORLD(false, false)`, then `ZONE_CHANGED_NEW_AREA`); `Pull(fight)` (a new segment, combat on, `PLAYER_REGEN_DISABLED`, then the first `Tick`); `Tick(fight)` (the world grows by `secondsPerTick`, any death booked for that tick, `DAMAGE_METER_CURRENT_SESSION_UPDATED`); `EndFight(fight)` (combat off, `PLAYER_REGEN_ENABLED`, then one `DAMAGE_METER_COMBAT_SESSION_UPDATED(enumValue, sessionID)` per `Constants.STATS` entry in order, then `DAMAGE_METER_CURRENT_SESSION_UPDATED`); `Reset()` (the player's own `Provider.Reset`, which the guarded `ResetAllCombatSessions` answers); `Fight(fight)` (the pull and first tick now, ticks 2..n booked `TICK` = 0.5 s apart with `NS.Sim:After`, counted on `w.pending`, the last ending the fight). Sends no bus message and never calls the client's meter; every timer is a session timer, so a stop cancels a fight in flight | `NS.SimHost.Drivers` (`FormGroup`, `Disband`, `Zone`, `Pull`, `Tick`, `EndFight`, `Reset`, `Fight`, `TICK`) | `NS.SimHost.World` **at file scope**; `NS.Sim`, `NS.SimHost.world`, `NS.Provider` and `NS.Constants.STATS` at call time |
+| `SimScenario.lua` | plain tables | The simulator's **scenarios** (MultiMeters#60), filled into `NS.SimHost.SCENARIOS` in place: `dungeon` (a 5-player group, The Rookery, Trash 6 x 4 s, Speaker Shadowcrown 10 x 18 s with a damage dealer dying at tick 7), `raid` (a 20-player raid, Liberation of Undermine, Vexie and the Geargrinders 12 x 25 s with two deaths), `wipe` (the boss as `Speaker Shadowcrown (wipe)`, everyone dead by tick 8, a meter reset, a 4-tick re-pull) and `zone` (Trash in The Rookery, the Isle of Dorn, the Priory of the Sacred Flame, Trash again). No `sizes`. Each timeline builds fresh `{ kind, label, tip, ... }` steps (the library stamps the steps it plays), with localized labels and tips naming the events the step fires and what the world holds after it. `Host.Play(step, session)` runs `PLAY[step.kind]` (`form`, `zone`, `fight`, `reset`) through the drivers and answers the step's detail | `NS.SimHost.Play`, `NS.SimHost.PLAY`, `NS.SimHost.FIGHTS`, the four `SCENARIOS` entries | `NS.SimHost.Drivers` and `NS.SimHost.World` **at file scope**; `NS.L` |
 
 ### `settings/`
 
@@ -385,7 +408,10 @@ binding (`launcher-§6`) and no Lua; the button it clicks and both labels come f
 2. **`locales/enUS.lua`** — first, so `NS.L` exists for every declaration below.
 3. **`core/`**, in this order and for these reasons:
    1. `Compat.lua` — first in the block, though nothing now depends on that: the TOC-manifest
-      reader that used to make it load-bearing has moved to `EnvSetup.lua`.
+      reader that used to make it load-bearing has moved to `EnvSetup.lua`. **`SimSetup.lua` follows
+      it straight away, and that is load-bearing**: the seam wraps every `NS.Compat` member in place
+      at load, so a file between the two could capture or call a member before the wrap (LibKa0s Sim
+      host contract H2). The two move together.
    2. `EnvSetup.lua` — **before `Namespace.lua`**, which calls the `NS.Meta` it publishes at file
       scope. A seam loading later would neither raise nor log; `NS.version` would simply be the
       hardcoded `FALLBACK_VERSION` for the session. Load-bearing, not conventional.
@@ -433,7 +459,15 @@ binding (`launcher-§6`) and no Lua; the button it clicks and both labels come f
    **`Aggregator_Identity` → `Aggregator_Preview` → `Aggregator_Order`** → `WindowManager` → `Window` →
    **`Window_Lifecycle` → `Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_Border`** → **`Row_Cells`** → **`Row_NameCell`** →
    `Targets` → `Tooltip` → **`Tooltip_Lines` → `Tooltip_Builders`** → `DrillDown` → `Export` →
-   **`Export_Modal`** → `Visibility`.
+   **`Export_Modal`** → `Visibility` → `Sim` → `SimWorld` → `SimDrivers` → `SimScenario`.
+
+   `Sim` builds `NS.Sim` with the host's own tables (`NS.SimHost.SCENARIOS` and `PANEL`), which the
+   simulator files after it fill in place, so it loads ahead of all of them (a LOAD-BEARING TOC
+   note); the library reads every descriptor table at use. `SimWorld` registers its providers on
+   `NS.SimSeam` at *file scope*, so it must follow `core/SimSetup.lua` (a LOAD-BEARING TOC note). `SimDrivers` captures `NS.SimHost.World` at
+   *file scope*, so it follows `SimWorld` (its own LOAD-BEARING note). `SimScenario` fills
+   `NS.SimHost.SCENARIOS` and sets `NS.SimHost.Play` at *file scope* and captures `NS.SimHost.Drivers`
+   and `NS.SimHost.World` there, so it follows `SimDrivers` (its own LOAD-BEARING note).
 
    The twelve in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
    for the same reason: each resolves something its parent publishes at *file scope*, so a peel
@@ -508,11 +542,12 @@ Immediately after `NewAddon`, `NS.Print` is reclaimed from AceConsole's mixin by
 5. `NS.Slash:Register()` — `/mm` and `/multimeters`, through AceConsole. If the settings layer never
    loaded, both verbs are claimed anyway and say so rather than going silent.
 
-**`NS:OnEnable`** registers the game events — **21** `self:RegisterEvent` calls routed to **11**
-handlers, and a twenty-second event, `PLAYER_IS_GLIDING_CHANGED`, which is *probed* through
-`C_EventUtils.IsEventValid` rather than registered outright and therefore may or may not take. Ten of
-the 21 are the player-state block behind `OnPlayerStateChanged` alone, and the probed one would make
-eleven. Which event becomes which message is tabulated in `docs/ARCHITECTURE.md` →
+**`NS:OnEnable`** registers the game events — the **22** rows of the `EVENTS` array, each through
+`NS.SafeRegisterEvent`, all with the ONE handler name `OnGameEvent` (MultiMeters#60). The rows name
+**12** handler methods, folded at load into `NS.HANDLER_BY_EVENT`; `NS:OnGameEvent` consults
+`NS.RealEventFilter` (the simulator's hook, `nil` outside a session) and otherwise calls
+`NS.DeliverEvent`, which calls the named method. Eleven of the 22 are the player-state block behind
+`OnPlayerStateChanged`. Which event becomes which message is tabulated in `docs/ARCHITECTURE.md` →
 [Event subscriptions](ARCHITECTURE.md#event-subscriptions); why none of them may be dropped is
 [below](#game-event-edges-are-load-bearing).
 
@@ -558,15 +593,16 @@ roll-call, and it used to sit in `docs/ARCHITECTURE.md` → `## Overview`.
 
 Chrome comes from LibKa0s-Core-1.0's shared `SKIN` / `ApplySkin`, never a private lookalike, so the
 meter window, the debug console and the perf step panel wear the same Ka0s edge as every sibling
-addon. Ten LibKa0s majors are consumed — Core, Media, Perf, DebugLog, Env, Pool, Launcher, Slash, Options
-and Widgets. Nine are reached through a seam file of their own (`core/CoreSetup.lua`,
-`core/MediaSetup.lua`, `core/PerfSetup.lua`, `core/DebugLogSetup.lua`, `core/EnvSetup.lua`,
+addon. Eleven LibKa0s majors are consumed — Core, Media, Perf, DebugLog, Env, Pool, Launcher, Slash, Options,
+Sim and Widgets. Ten are reached through a seam file of their own (`core/CoreSetup.lua`,
+`core/MediaSetup.lua`, `core/PerfSetup.lua`, `core/DebugLogSetup.lua`, `core/EnvSetup.lua`, `core/SimSetup.lua`,
 `core/PoolSetup.lua`, `core/LauncherSetup.lua`, `settings/Slash.lua`,
 `settings/OptionsSetup.lua`); Widgets has no seam file and
 is resolved at each of its two call sites — `modules/Export_Modal.lua`, which builds the addon's only
 dropdowns, and `settings/ColumnBlocks.lua`, whose block list is the library's `ReorderList` — because
-both widgets are built lazily on first use rather than wired at load. Every one of the ten degrades
-rather than erroring when `libs/LibKa0s` is absent. Three of them pass the addon's own **folder name** to the library, and all three now say so
+both widgets are built lazily on first use rather than wired at load. Every one of the eleven degrades
+rather than erroring when `libs/LibKa0s` is absent (Sim to its reference stubs, which say so only when
+`/mm sim` is typed). Three of them pass the addon's own **folder name** to the library, and all three now say so
 explicitly: `core/CoreSetup.lua`'s `MakeCloseButton` wrapper, and the descriptors in
 `core/DebugLogSetup.lua` and `core/PerfSetup.lua`. The perf one used to reach the right answer only
 through `name` — `PerfPanel.lua` minor 4 reads `addonName or name`, so it was right by luck and one

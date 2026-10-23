@@ -396,8 +396,10 @@ test("Entering a vehicle hides the window on its own edge", function()
     -- The registration is asserted as well as the behavior: calling the handler
     -- by hand proves the fan-out works and proves nothing about whether the game
     -- can ever reach it, which is exactly the gap this rule fell into.
-    assertEqual(NS.__events["UNIT_ENTERED_VEHICLE"], "OnPlayerStateChanged")
-    assertEqual(NS.__events["UNIT_EXITED_VEHICLE"], "OnPlayerStateChanged")
+    assertEqual(NS.__events["UNIT_ENTERED_VEHICLE"], "OnGameEvent")
+    assertEqual(NS.__events["UNIT_EXITED_VEHICLE"], "OnGameEvent")
+    assertEqual(NS.HANDLER_BY_EVENT["UNIT_ENTERED_VEHICLE"], "OnPlayerStateChanged")
+    assertEqual(NS.HANDLER_BY_EVENT["UNIT_EXITED_VEHICLE"], "OnPlayerStateChanged")
 
     local window = NS.Window.New(cfg)
     assertTrue(window:IsShown())

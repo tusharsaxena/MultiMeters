@@ -557,7 +557,7 @@ end
 local function openTooltip(anchorFrame, config)
     if not _G.GameTooltip or not anchorFrame then return false end
 
-    if config.hideInCombat and _G.UnitAffectingCombat and UnitAffectingCombat("player") then
+    if config.hideInCombat and NS.Compat.UnitAffectingCombat("player") then
         return false
     end
 

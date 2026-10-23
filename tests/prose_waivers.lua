@@ -2,8 +2,8 @@
 --
 -- Read by `tests/_kit/test_prose.lua` (localization-§5). Per FILE and per WORD, never per file
 -- alone: a whole-file waiver hides every OTHER British spelling in a file this repository edits
--- often. Every file below is waived for `minimis` and for nothing else, so a `colour` that lands in
--- any of them still reddens.
+-- often. Every file below is waived for one word and for nothing else (`minimis`, or the kit's
+-- `cancelled` field), so a `colour` that lands in any of them still reddens.
 --
 -- This addon's own spelling is `minimize` everywhere it owns the word: the header control's key,
 -- its `showMinimize` setting, the `window.frame.minimized` path, the locale keys and the prose.
@@ -31,5 +31,9 @@ return {
         -- the same old keys into a fixture account to prove the move.
         ["core/Database.lua"] = { minimis = true },
         ["tests/test_migrations.lua"] = { minimis = true },
+        -- A LIBRARY'S FIELD NAME. The kit's timer mock (tests/_kit/mock_record.lua) marks a
+        -- canceled handle with AceTimer's own field, `cancelled`; the simulator suites' clock
+        -- reads that field to skip a canceled timer, so it spells it the way the kit writes it.
+        ["tests/sim_support.lua"] = { cancelled = true },
     },
 }

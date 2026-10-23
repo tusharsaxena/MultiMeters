@@ -78,7 +78,7 @@ the flood.
 
 `NS.Debug(channel, format, ...)` is the sink; the channel is the bracketed tag at the head of the
 line. This section is the map of what writes each tag and when, so a log read back after a repro can
-be matched to the code that wrote it (`debug-logging-§8`). Twenty-one tags come from this addon's own
+be matched to the code that wrote it (`debug-logging-§8`). Twenty-two tags come from this addon's own
 call sites; `Perf` is written straight to the buffer by the perf harness with `DebugLog:Add`.
 
 **The library's tags.** `Cmd`, `Lifecycle`, `Cfg`, `Launcher` and part of `Set` are written by
@@ -143,6 +143,7 @@ the route for a host that keeps its own.
 | `Blocks` | `settings/ColumnBlocks.lua` | column blocks released, and the drag list's own trace | — |
 | `Cfg` | `LibKa0s-Options-1.0` (the library's) | the settings panel opened, or its open or register held in combat and the parked register's `register flushed (combat ended)`; each write, Defaults, tab, rail or page show the combat lock refused, as `<what> refused (in combat)`, once per text per combat | — |
 | `Launcher` | `LibKa0s-Launcher-1.0` (the library's) | the minimap and compartment button's own trace; its state lines (`registered`, a broker library absent) are held by the at-enable queue and written when logging is turned on | — |
+| `Sim` | `modules/Sim.lua`, `core/SimSetup.lua` (through the seam's `debug`), LibKa0s-Sim-1.0 (through the descriptor's `debug`) | `/mm sim`: a start refused (`start refused: <guard>`), the world built, a real event consumed or delivered during a session, the stop with its counts (`simulation stopped (<reason>): N events, N sends`), and the library's own session lines (a step, gate or listener that failed) | — |
 | `Perf` | the perf harness | a capture's steps | — |
 
 **Deliberately not logged.** The player-state block (mount, vehicle, form, gliding, pet battle,
@@ -237,6 +238,7 @@ descriptor field `diagnostics`, in this order:
 | `sessions` | same | the sessions the client holds, each window's pin, and the fallback a stale pin takes |
 | `aggregator` | same | the last render pass per window |
 | `roster and caches` | same | the cached group, the remembered map, every `State.cache` table's size |
+| `sim` | same | whether LibKa0s-Sim-1.0 loaded (`library: present` / `absent`); `active: no`, or `active: yes scenario=<name>` with the step (`pos/total`, playing, paused, settling) and the counters (events, ticks pending, segments held, sends); `last stop:` with its reason, events, sends and segments, or `none`; the seam's wrapped key count and `unwrapped:` (expected 0, the escaped keys named when not) |
 | `atlases` … `death recap` | `core/Diagnostics.lua`, `core/Diagnostics_DeathRecap.lua` | the client probes: atlases, number formatting, visibility, header, name column, cells, tooltip font and width, targets, provider order, death recap |
 | `events` | `core/Diagnostics.lua` | the event registrations the client refused, last |
 

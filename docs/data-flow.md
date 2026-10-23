@@ -34,6 +34,8 @@ Expanded, with the guards named:
   DAMAGE_METER_COMBAT_SESSION_UPDATED(type, sessionID)
   DAMAGE_METER_RESET
         │  core/MultiMeters.lua — THE SINGLE GAME-EVENT LISTENER
+        │  NS:OnGameEvent -> [NS.RealEventFilter] -> NS.DeliverEvent
+        │    -> NS.HANDLER_BY_EVENT[event]
         │  each handler translates and republishes; none decides anything
         ▼
   MSG.METER_UPDATED / METER_SESSION / METER_RESET        [bucket: meterEvent]
@@ -80,8 +82,13 @@ Expanded, with the guards named:
 
 ## 1. The event stream and the coalescing throttle
 
-`core/MultiMeters.lua` registers all seven game events this addon listens to and is the only file
-that registers any. Each of the three `DAMAGE_METER_*` handlers does the minimum translation and
+`core/MultiMeters.lua` registers every game event this addon listens to and is the only file
+that registers any. Every one is registered with the ONE handler `NS:OnGameEvent`, which consults
+`NS.RealEventFilter` (the simulator host's hook, `nil` outside a simulator session, consulted on the
+real path only) and otherwise calls `NS.DeliverEvent(event, ...)`. That looks the event up in
+`NS.HANDLER_BY_EVENT`, the one-row-per-event table built from the `EVENTS` array at load, and calls
+the named handler exactly as a per-event registration would have; it answers `0` for an event with
+no row or one the client refused, else `1`. Each of the three `DAMAGE_METER_*` handlers does the minimum translation and
 republishes onto the closed message bus; none of them reads a value and none of them decides
 anything. Keeping the decisions out of there is what lets that section be read as a wiring diagram.
 
@@ -724,6 +731,57 @@ A refusal is never stored, and could not pin the section shut even if it were: a
 re-derived on the next call, because the cache lookup answers nil for "no key" and "key present, map
 nil" alike.
 
+## 10. The simulator path
+
+`/mm sim` (MultiMeters#60) plays a scripted fight through **this same pipeline**. Nothing above is
+forked for it: the simulator changes what the shims answer and which events arrive, and every hop
+from the event stream to the widget setters runs the code a real pull runs.
+
+**The seam.** `core/SimSetup.lua` loads straight after `core/Compat.lua` and, through LibKa0s-Sim-1.0's
+`NewSeam`, wraps every `NS.Compat` function member in place, except the pure ones (the real player's
+spec and real spells, the number formatters, the menu and art helpers, the travel probes and the recap
+diagnostics). Idle, a wrapped member calls straight through to the live one. While a session runs it
+asks the session's provider instead. Three members are **guarded** and never reach the client during
+a session: `ResetAllCombatSessions` clears only the invented segments and fires the reply event on the
+session's timer, `ChatSender` prints `[sim]` lines instead of sending, and `OpenDeathRecap` declines,
+so the drill-down falls back to its own breakdown. `modules/Provider.lua` is still the only caller of
+the meter shims; it cannot tell a simulated answer from a live one, which is the point.
+
+**The providers.** `modules/SimWorld.lua` registers one provider per wrapped member by key string
+(`SetProvider`), so no simulator file spells `Compat.<meter shim>` and `tests/test_provider.lua`'s
+source scan is unchanged. The world is the real player plus seeded, invented group mates
+(`Player-9998-SIM…` GUIDs, a range no client issues), a zone, a combat flag, the segments and their
+death recaps. It is **closed**: `GetCombatSessionFromID` answers nil for any id it did not invent, and
+`modules/Sim.lua`'s real-event classifier consumes the client's own `DAMAGE_METER_*` events, so no real
+number mixes into a simulated grid. Every provider builds a fresh table per call, so nothing the engine
+does can edit the world. `modules/SimDrivers.lua` edits the world and fires the client's events through
+`NS.Sim:Fire`, which delivers them through `NS.DeliverEvent`, the same function the real path calls
+(section 1).
+
+**The numbers are plain and invented.** A member's rate per stat is a seeded draw (a base rate times the
+role's shape times a jitter of plus or minus 20%), a tick adds rate times seconds to each stat, and `amountPerSecond` is total over
+duration. They are ordinary Lua numbers, so `Secrets.CanCompare` answers true and a session takes the
+GUID join and the value sort, exactly as the client's data does out of combat. **The simulator never
+produces a secret and never simulates the `Combat` restriction.** `Secrets.IsRestricted()` stays live,
+and a session cannot coexist with real combat: it is refused at the start and stopped at
+`PLAYER_REGEN_DISABLED` and at the restriction edge. Simulating the restriction with plain values
+would run the identity build on values that never raise, which proves nothing and reads as though it
+does. The secret paths keep their proof in the headless `mock_secrets` suites.
+
+**Why `core/Secrets.lua` stays the only inspector.** The rule is about **client** values: a number out
+of `C_DamageMeter` may be secret, so only `Secrets` may look at one. The simulator's arithmetic is on
+numbers it made itself, inside `modules/SimWorld.lua`, before it hands them to the seam; it never
+reads a value back from the client. Downstream of the seam the engine treats a simulated value as an
+opaque handle like any other and asks `Secrets` exactly as it would in a real pull, so a session
+exercises the guards rather than going around them.
+
+**What a session must not leave behind.** The only SavedVariables a session could reach are the
+remembered roster and each window's segment pin. While a session runs, `modules/Roster.lua` keeps the
+roster in a session-only table and `WindowProto:DropStaleSegment` stands aside. The stop restores
+every pin from the snapshot taken at the start and resyncs through `ENTERING_WORLD`, `METER_SESSION`
+and `COMBAT_CHANGED`, never through `METER_RESET`, which would make `Roster.Forget` wipe the real
+remembered roster.
+
 ## The segment selector
 
 The **segment control** in the header strip — the three horizontal lines — opens a context menu of
@@ -782,6 +840,9 @@ If you are adding to the data path, these are the only files that may know anyth
 | How long is it? | `NS.Secrets.SafeCount(t)` — returns `nil`, not `0`, when it cannot see | `#t` |
 | Can I print this? | `NS.IsConcatSafe(v)` / `NS.SafeToString(v)` | `tostring(v)` into `table.concat` |
 | Can I abbreviate this? | `NS.Format.Number(v, mode)` | any division |
+
+The simulator adds no row to this table: its values are plain numbers it invented, and the engine
+asks these same guards about them ([section 10](#10-the-simulator-path)).
 
 `core/State.lua`'s `restricted` flag is a **mirror** for the render path, not an authority: anything
 that must be right rather than fast asks `NS.Secrets.IsRestricted()` directly.

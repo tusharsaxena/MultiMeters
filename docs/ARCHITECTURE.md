@@ -11,7 +11,7 @@ that outgrows a screen belongs in its topic doc with a summary and a link left b
 ## Overview
 
 
-Sixty-three non-vendored source files: 1 locale, 20 `core/`, 1 `defaults/`, 26 `modules/`, 15 `settings/`.
+Sixty-eight non-vendored source files: 1 locale, 21 `core/`, 1 `defaults/`, 30 `modules/`, 15 `settings/`.
 
 The addon is built on the **private namespace** WoW hands each file. `core/MultiMeters.lua` calls
 `AceAddon-3.0:NewAddon(NS, addonName, …)`, which promotes that table in place — so **`NS` *is* the
@@ -48,7 +48,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | Layer | Files | Responsibility |
 |---|---|---|
 | `locales/` | `enUS.lua` | `NS.L`, with the key-is-the-string fallback. Loads first. |
-| `core/` boundary | `Compat.lua` | All 30 cross-patch shims, including the eight `C_DamageMeter` reads and the chat export's `ChatSender`. Four of them, the spell and spec readers, are bound to `LibKa0s-Compat-1.0` and answer `nil` without it. No logic. |
+| `core/` boundary | `Compat.lua` | All 42 shims, including the twelve world reads the simulator answers, the eight `C_DamageMeter` reads and the chat export's `ChatSender`. Four of them, the spell and spec readers, are bound to `LibKa0s-Compat-1.0` and answer `nil` without it. No logic. |
 | `core/` boundary | `EnvSetup.lua` | The `LibKa0s-Env-1.0` seam: `NS.Meta` / `NS.Version`, the TOC-manifest reader `Compat.lua` used to own. |
 | `core/` values | `Constants.lua`, `Namespace.lua`, `State.lua` | The stat catalog, the bus catalog, identity, session-only flags and the shared cache. |
 | `core/` the rule | `Secrets.lua` | **The only file that inspects a meter value.** Its guards `IsSecret` / `CanAccess` / `IsSafeKey` are `LibKa0s-Compat-1.0`'s, with a guard arm that re-implements each body when the library is absent. |
@@ -57,7 +57,8 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_Runtime`, `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm diagnostics`, its addon-state sections (`_Runtime`), and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
 | `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`, `_Order`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret; `Aggregator_Order` holds the orderings and the row cap. |
-| `modules/` display | `WindowManager`, `Window` (+ `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Border`, `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window (with its test-mode strip, `LibKa0s-Widgets-1.0`'s `TestStrip` under the title, placed by `Window_Header`'s narrow `ApplyTestStrip` on the toggle), one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
+| `modules/` display | `WindowManager`, `Window` (+ `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Border`, `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window (with its test-mode strip, `LibKa0s-Widgets-1.0`'s `TestStrip` under the title, placed by `Window_Header`'s narrow `ApplyTestStrip` on the toggle; the red TEST MODE title word is written only while the strip is not shown — a minimized window, or a load without the Widgets library — and never while a simulation runs; and its simulation strip, the same `TestStrip` in its `kind = "sim"` flavor, in the same slot and on the same narrow path on `SIM_CHANGED`, shown while a `/mm sim` session runs, with no title word at all), one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
+| `modules/` simulator | `Sim`, `SimWorld`, `SimDrivers`, `SimScenario` | `/mm sim`'s session host (`modules/Sim.lua`: `NS.Sim` on LibKa0s-Sim-1.0, the refusals, the real-event classifier, the session-only stores and the stop's resync) and its invented world (MultiMeters#60): the real player plus seeded mates, zones, segments, deaths and recaps, and the providers `core/SimSetup.lua`'s seam answers from while a session runs. Plain invented numbers; it never reads a client meter value. The drivers edit that world and fire the client's events through `NS.Sim:Fire`, in the client's order; a fight's ticks are booked on the session's timer. The four #60 scenarios (`dungeon`, `raid`, `wipe`, `zone`) are timelines of labeled, tipped steps that `NS.SimHost.Play` plays through the drivers; `tests/test_sim_e2e.lua` runs each one stepped and auto-run through the real engine. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
 | `settings/` | `Schema_Compose` → `Schema` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 3 pages and 6 Windows-page entries | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, and the path and write seams. `ColumnBlocks` is the Columns entry's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
 
@@ -133,23 +134,26 @@ through the seam by window id; the pin's none is `NO_SEGMENT` (0) ([schema.md](s
 
 ## Message bus
 
-Fourteen `AceEvent` messages, declared once in `core/Constants.lua`'s `MSG` catalog through
+Fifteen `AceEvent` messages, declared once in `core/Constants.lua`'s `MSG` catalog through
 `LibKa0s-Bus-1.0`'s `Catalog`, are the only channel between modules. Each has **one sender**, and every
 receiver that is not an AceAddon module owns a private target from `NS.NewBusTarget()`. The catalog
 with sender, consumers and payload, the two `METER_RESET` paths and the stand-down record:
-**[message-bus.md](message-bus.md)**.
+**[message-bus.md](message-bus.md)**. The newest is `SIM_CHANGED { active }`, which `modules/Sim.lua`
+sends at a simulation's start and stop so every window shows or hides its sim strip; that stop is
+also the one sanctioned second sender of `ENTERING_WORLD`, `METER_SESSION` and `COMBAT_CHANGED`.
 
 ## Slash commands
 
 `/mm` and `/multimeters` dispatch `NS.COMMANDS` (`settings/Slash.lua`) through LibKa0s-Slash-1.0:
-**20 verbs**, the thirteen reserved ones then this addon's seven, plus the `window` sub-tree. A bare `/mm`
+**21 verbs**, the thirteen reserved ones then this addon's eight, plus the `window` sub-tree. The eighth
+is `sim`, the simulator (MultiMeters#60), whose whole grammar is LibKa0s-Sim-1.0's `RunVerb`. A bare `/mm`
 opens the settings panel. The verb table, the sub-tree, the `debug` words, the degraded behavior and
 every refusal line: **[slash-dispatch.md](slash-dispatch.md)**.
 
 ### Disabled — total, and the slash surface is not
 
 `slash-commands-§7`. Disabled means the addon is not running, and the command surface stays: all
-thirteen reserved verbs and the `profile` verb answer and only the six feature verbs refuse, on one line naming `/mm enable`.
+thirteen reserved verbs and the `profile` verb answer and only the seven feature verbs refuse, on one line naming `/mm enable`.
 The gate and its live list: [slash-dispatch.md](slash-dispatch.md#disabled--total-and-the-slash-surface-is-not);
 the teardown: [disabled-state.md](disabled-state.md).
 
@@ -161,11 +165,16 @@ registers any.** Each handler does the minimum translation and republishes onto 
 value and — with two stated exceptions, the feign filter and the system-message filter below — none
 decides anything, which is what lets that section be read as a wiring diagram.
 
-Every registration goes through `NS.SafeRegisterEvent` (`core/CoreSetup.lua`, LibKa0s-Core minor 8,
-`events-frames-taint-§1`), walked off the module-level `EVENTS` array, so one name the client does
-not know costs only itself and lands in `NS.State.rejectedEvents`, which `/mm diagnostics` prints.
+Every `EVENTS` row goes through `NS.SafeRegisterEvent` (`events-frames-taint-§1`; a refused name lands
+in `NS.State.rejectedEvents`) with the ONE handler `NS:OnGameEvent`, which drops the event when
+`NS.RealEventFilter` (the simulator's hook, `nil` outside a session) answers true, else calls
+`NS.DeliverEvent` to run the method `NS.HANDLER_BY_EVENT` names. While a `/mm sim` session runs, the
+filter is `modules/Sim.lua`'s real-event classifier: real `DAMAGE_METER_*` traffic, a roster edge while
+still solo and a zone edge while still outside an instance are consumed (the invented world owns them);
+real combat, a loading screen, a real group or a real instance stop the session, then deliver. Detail:
+[data-flow.md](data-flow.md#10-the-simulator-path).
 
-| Event | Handler | Becomes |
+| Event | Dispatch row (method) | Becomes |
 |---|---|---|
 | `PLAYER_ENTERING_WORLD` | `OnEnteringWorld` | `ENTERING_WORLD { isLogin, isReload }` |
 | `GROUP_ROSTER_UPDATE` | `OnRosterUpdate` | wipes the `Roster` cache **first**, then `ROSTER_CHANGED` |
@@ -190,9 +199,7 @@ The player-state block exists for `modules/Visibility.lua`'s rules and carries *
 because those rules read their inputs live at the moment they are asked.
 
 While debug logging is on, the world-entry, roster, zone, restriction and both `PLAYER_REGEN_*`
-handlers also write one `[Event]` line each (`traceEvent`, gated before anything is read). The
-player-state block, the spellcast and system-message handlers and the `DAMAGE_METER_*` traffic do
-not; the line format is in [debug.md](debug.md).
+handlers write one `[Event]` line each; the rest do not ([debug.md](debug.md)).
 
 **These edges are load-bearing, not an optimization** — there is no fallback poll, so a visibility
 input with no edge on the bus is a rule that never fires. Why, and which rule it cost, is in
@@ -206,11 +213,8 @@ Everything else is a bus subscription. Registration by module is tabulated in
 
 Perf buckets, declared in `core/PerfSetup.lua` with their nesting: `meterEvent` · `spellEvent` ·
 `systemEvent` · `refresh` (→ `aggregate` → `providerRead`, `render` → `renderRow`) · `tooltip`
-(→ `targets` → `providerRead`).
-`providerRead` has two parents, so it declares none, and every nested bracket passes the parent it
-ran inside, so a capture reports the tree as observed. A parent is never summed with its children.
-Detail in [performance.md](performance.md) and
-[perf-analysis/README.md](perf-analysis/README.md).
+(→ `targets` → `providerRead`). The tree and why `providerRead` declares no parent:
+[performance.md](performance.md) and [perf-analysis/README.md](perf-analysis/README.md).
 
 ## Taint notes
 
@@ -255,8 +259,8 @@ Three design rules follow, and they are enforced in one place each rather than r
   proves comparability in a separate pass *before* `table.sort` is entered, because a comparator that
   discovers an illegal comparison halfway through has already raised.
 - **R3 — layout is computed from config and test-mode state, never read back off a frame.** The
-  test-mode strip's room (`layout.stripHeight`, 22 px while test mode is on) is the one input that is
-  not config, and it too is arithmetic over state rather than a measurement. `SetValue(secret)` marks a
+  strip slot's room (`layout.stripHeight`, 22 px while test mode is on or a simulation runs) is the one
+  input that is not config, and it too is arithmetic over state rather than a measurement. `SetValue(secret)` marks a
   frame `HasSecretValues`, which makes its position data secret and propagates that to anything
   anchored to it. There is not one `GetPoint` / `GetWidth` / `GetLeft` in `modules/Row.lua`, in
   `modules/Row_NameCell.lua`, the name cell peeled out of it, in `modules/Row_Border.lua` or in `modules/Row_Cells.lua`; a window keeps drag and resize on a
@@ -307,6 +311,13 @@ thing is in it before opening it:
   out of the window, so the resize floor does not move. At the minimum height the one row it leaves is
   pushed 22 px down, partly past the window's bottom edge (22 px less the padding), until test mode
   ends or the window is made taller ([#59](https://github.com/tusharsaxena/MultiMeters/issues/59)).
+- **What `/mm sim` does not simulate** ([#60](https://github.com/tusharsaxena/MultiMeters/issues/60)).
+  No secret value and no `Combat` restriction: its numbers are plain, so a session runs the
+  out-of-combat build and the secret paths keep their proof in the headless `mock_secrets` suites. The
+  feign filter and the player-state hide rules stay live. A window pinned to a real segment reads no
+  session for the length of a run and shows the empty state; no window is force-shown at the start; a
+  minimized window shows no sim marker (the step panel marks the run); and a `/reload` mid-run leaves a
+  simulated pin in the profile that heals on the next refresh.
 - **Deliberate ceilings.** English only, Retail only, a 40-row export cap, no in-window column drag
   editor (rule R3), wheel-only scrolling, a sticky roster, a drill-down list that is a snapshot, and
   session-only debug logging.
@@ -350,11 +361,11 @@ re-check re-runs the count rather than re-arguing the verdict. **All seven ship.
 | Doc | Status | Trigger, as measured |
 |---|---|---|
 | `perf-analysis/README.md` | Present | **The performance harness is wired**: `core/PerfSetup.lua` plus `Perf.Note` brackets in eight files (`performance-§12`). `docs/perf-analysis/20260909-014604/` is the standing example. |
-| `compat-layer.md` | Present | **`core/Compat.lua`: 772 lines, 30 shims** (4 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
+| `compat-layer.md` | Present | **`core/Compat.lua`: 886 lines, 42 shims** (4 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
 | `midnight-quirks.md` | Present | **Four client-version workarounds of the addon's own** (isolated event registrations, `ADDON_RESTRICTION_STATE_CHANGED` against a namespace a client may lack, the settle pass, the secret-value model), against a trigger of one. The detail moved here from [Taint notes](#taint-notes) rather than being copied. |
 | `debug.md` | Present | **One diagnostics report, three probe verbs, the `tooltip` session flag and the `NS.Debug` channels** (`debug-logging-§14`). Written 2026-09-09, when the row's own re-check trigger fired. |
-| `slash-dispatch.md` | Present | **20 verbs in `NS.COMMANDS` and a sub-command tree** (`window` takes four sub-verbs), against eight or more commands or any tree. The hub's `## Slash commands` detail moved there on 2026-09-24. |
-| `message-bus.md` | Present | **14 distinct messages**, against more than ten; one catalog (`core/Constants.lua` `MSG`), one sender each. Moved out of the hub on 2026-09-24. |
+| `slash-dispatch.md` | Present | **21 verbs in `NS.COMMANDS` and a sub-command tree** (`window` takes four sub-verbs), against eight or more commands or any tree. The hub's `## Slash commands` detail moved there on 2026-09-24. |
+| `message-bus.md` | Present | **15 distinct messages**, against more than ten; one catalog (`core/Constants.lua` `MSG`), one sender each. Moved out of the hub on 2026-09-24. |
 | `profiles.md` | Present | **User-visible profiles**: `settings/Profiles.lua` registers AceDBOptions-3.0's tree as a settings page. |
 
 ### Verification and record (documentation-§3)
@@ -374,7 +385,7 @@ re-check re-runs the count rather than re-arguing the verdict. **All seven ship.
 |---|---|
 | `disabled-state.md` | What *disabled* means here — the one latch, its two holds, the full teardown and rebuild, what survives because it is setup, and the slash and launcher surfaces while the addon is off |
 | `texture-paths.md` | The hard-coded texture-path census (`library-stack-§8`): every `Interface\` path in authored source, its disposition, and the command that measures it |
-| `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact |
+| `superpowers/` | Tier 3 planning history, frozen — the approved design specs and build plans behind each feature, under `specs/` and `plans/`, dated and never revised after the fact. The `/mm sim` simulator's is `specs/2026-10-23-simulator-design.md` (MultiMeters#60) |
 | `revendor/` | Frozen — one dated bundle per LibKa0s re-vendor: the payload delta and what was adopted, declined or filed from it |
 | `audits/` | Frozen — one dated bundle per `/dev-copilot:wow-standards-audit` run: the state, the deviations and the evidence as they stood on that date |
 | `reviews/` | Frozen — one dated bundle per `/dev-copilot:review` run: the findings, the proposed changes and the plan as they stood on that date |
@@ -499,8 +510,10 @@ the TOC: the client reads it from the addon folder by name. The binding constrai
 1. `libs/` — Ace3, LibKa0s, LibSharedMedia, AceGUI-3.0-SharedMediaWidgets, LibDataBroker, LibDBIcon.
 2. `locales/enUS.lua` — first, so `NS.L` exists for every declaration below.
 3. `core/Compat.lua` **first** in the core block — it is the boundary every later file's cross-patch
-   call goes through — and `core/EnvSetup.lua` immediately after it and **before
-   `core/Namespace.lua`**, whose `resolveVersion()` runs at *file scope* and reads the TOC manifest
+   call goes through — then `core/SimSetup.lua` **straight after it** (LibKa0s-Sim-1.0's seam wraps
+   every `NS.Compat` member in place at load, so a file between the two could capture or call a member
+   before the wrap: host contract H2, a LOAD-BEARING TOC note), and `core/EnvSetup.lua` after that and
+   **before `core/Namespace.lua`**, whose `resolveVersion()` runs at *file scope* and reads the TOC manifest
    through the `NS.Meta` seam that file publishes. A seam that loaded later would pin `NS.version` to
    `FALLBACK_VERSION` for the whole session, silently.
 4. `core/MediaSetup.lua` **before `core/Constants.lua`**, which resolves `FONT_MONO` from the

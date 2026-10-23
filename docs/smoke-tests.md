@@ -17,19 +17,20 @@ secret-value rules the checks refer to.
 
 | ID range | Theme | What it covers |
 |---|---|---|
-| INSTALL-1 to INSTALL-10 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set |
+| INSTALL-1 to INSTALL-11 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
 | SLASH-1 to SLASH-19 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding |
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-46 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip |
-| VIS-1 to VIS-12 | [Visibility](#vis) | Contexts and hide rules |
-| GRID-1 to GRID-32 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments |
+| WIN-1 to WIN-48 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown |
+| VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
+| GRID-1 to GRID-33 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-42 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-10 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip |
+| SIM-1 to SIM-12 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
 ## Before you start
@@ -114,6 +115,10 @@ secret-value rules the checks refer to.
   on **Export to CSV** and **Print to Chat**, and the CSV copy window's close X; (d) the debug console
   (`/mm debug`): the close, copy and clear buttons in its title bar; and the perf panel
   (`/mm perf start`, then show it): its close X. Result: pass (owner-marked 2026-10-23)
+- **INSTALL-11. The simulator seam installs at load (SM-MM-24).** `/reload` with the addon loaded →
+  no Lua error, and `/mm diagnostics` → the report loads. `core/SimSetup.lua` now wraps every
+  `NS.Compat` member at load (LibKa0s-Sim-1.0's seam); idle, every read answers as before, so the
+  windows, tooltips and export behave exactly as they did. Result: pass (owner-marked 2026-10-23)
 
 ## SLASH
 
@@ -189,6 +194,9 @@ secret-value rules the checks refer to.
   Result: pass (owner-marked 2026-10-23)
 - **SLASH-19. The key in combat.** Press the key in combat → the windows toggle with no error and no
   taint message (the windows are not secure). Result: pass (owner-marked 2026-10-23)
+- SLASH-20 to SLASH-29 were the first cut of the simulator checks (2026-10-23). They moved whole to
+  the [SIM](#sim) theme, SLASH-20 to SLASH-28 as SIM-1 to SIM-9 and SLASH-29 as SIM-11, and the
+  numbers are retired; the next SLASH check is SLASH-30.
 
 ## PANEL
 
@@ -680,8 +688,9 @@ right. Open the panel with `/mm config`.
   → rows replace it. Result: pass (owner-marked 2026-10-23)
 - **WIN-40. The test-mode strip, header shown.** `/mm test` with the header shown → a yellow strip
   (*TEST MODE: placeholder numbers, not your fight. Combat ends it.*) sits under the title. The column
-  headers sit under it, no row overlaps it, and the red TEST MODE title marker and the session-line
-  *Test* are still there. Result: pass (owner-marked 2026-10-23)
+  headers sit under it, no row overlaps it, and the session-line *Test* is still there. (The red
+  TEST MODE title word left the title on 2026-10-23 while the strip shows: WIN-47 and WIN-48.)
+  Result: pass (owner-marked 2026-10-23)
 - **WIN-41. The strip with the header hidden.** Hide the header (Settings → Header), then `/mm test` →
   the strip is at the very top of the window, so the window is still marked as test data. Result: pass (owner-marked 2026-10-23)
 - **WIN-42. A narrow window.** Make a window narrow → the strip text truncates with *...* inside the
@@ -696,6 +705,10 @@ right. Open the panel with `/mm config`.
 - **WIN-46. The minimum height.** Drag a window down to its minimum height in test mode → the resize
   floor does not move, the strip takes the room of the one row, and the window size saved after test
   mode ends is the size you dragged to. Result: pass (owner-marked 2026-10-23)
+- **WIN-47. One marker in test mode (SM-MM-01).** `/mm test` with the header shown → the amber strip
+  sits under the title and the title text has NO red TEST MODE. Result: pass (owner-marked 2026-10-23)
+- **WIN-48. The title word while minimized (SM-MM-02).** Minimize a window in test mode → the title
+  shows the red TEST MODE; expand → the word goes and the strip returns. Result: pass (owner-marked 2026-10-23)
 
 ## VIS
 
@@ -730,6 +743,14 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   `ShouldShow -> false (in combat)` or `(out of combat)`). Result: pass (owner-marked 2026-10-10)
 - **VIS-12. Test mode overrides context.** With a hide rule in force, `/mm test` → the window shows
   wherever you stand. Result: pass (owner-marked 2026-10-10)
+- **VIS-13. Solo and combat rules through Compat (SM-MM-22).** Turn **Hide when solo** on → the window
+  hides when you drop group and returns when you group up; turn on the out-of-combat rule and pull a
+  dummy → it shows at the pull and hides when combat ends, at the same edges as before. The group and
+  combat reads now go through `core/Compat.lua`. Result: pass (owner-marked 2026-10-23)
+- **VIS-14. One dispatch entry for game events (SM-MM-23).** `/reload` → the windows populate. Pull a
+  dummy and let combat end, then change zone → each edge still re-evaluates visibility as before.
+  `/mm diagnostics` → no rejected events beyond the usual ones. Every game event now reaches its
+  handler through `NS:OnGameEvent` and `NS.DeliverEvent`. Result: pass (owner-marked 2026-10-23)
 
 ## GRID
 
@@ -835,6 +856,10 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   fight → each pins. `/mm get window.data.sessionID` answers the pinned id; after picking Overall it
   answers `0`. `/mm set window.data.sessionID 0` unpins; `/mm set window.data.sessionID -1` → *Invalid
   value for window.data.sessionID*. Record the lowest and highest ids seen. Result: pass (owner-marked 2026-10-10)
+- **GRID-33. The roster through Compat (SM-MM-21).** In a real five-player dungeon → the grid shows
+  every member with their role icon, and **Roster** sort orders them as before (player first, then
+  group order). The unit and group reads now go through `core/Compat.lua`; nothing live should change.
+  Result: pass (owner-marked 2026-10-23)
 
 ## TIP
 
@@ -1388,6 +1413,49 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
   Lua error, and `/mm lock` then `/mm lock off` raise nothing (MultiMeters#58: the seam answers no
   grip rather than re-implementing the library's). Result: pass (owner-marked 2026-10-10)
 - **DEGRADED-9. Restoring.** Rename the folder back, `/reload` → everything returns. Result: pass (owner-marked 2026-10-10)
+
+## SIM
+
+The `/mm sim` simulator (MultiMeters#60): a scripted fight through the real meter, solo and outside
+an instance. Each check mirrors one of the run bundle's SM-MM-25 to SM-MM-36 checks, named in
+brackets. Start each from a `/reload`, solo, in the open world, with test mode off.
+
+- **SIM-1. The simulator opens and plays (SM-MM-25).** `/mm sim` → the step panel opens docked to a
+  meter window. Start → the run plays at once, with no Run all button, and every Multi Meters window
+  shows the SIMULATION strip. Result: pass (owner-marked 2026-10-23)
+- **SIM-2. The simulator refuses where it cannot run (SM-MM-26).** `/mm sim start dungeon` in a real
+  group, inside an instance, in combat and with `/mm test` on → each refuses with its own line and no
+  simulation starts. Result: pass (owner-marked 2026-10-23)
+- **SIM-3. Real combat ends a simulation (SM-MM-27).** Mid-simulation, pull a training dummy → the
+  simulation stops with *Simulation stopped: you entered combat.*, and the windows show live data
+  again. Result: pass (owner-marked 2026-10-23)
+- **SIM-4. A stop leaves nothing behind (SM-MM-28).** Note each window's segment and pin, run a
+  simulation, then `/mm sim stop` → the windows show the same segments and pins as before the start,
+  and `/mm test` works again. Result: pass (owner-marked 2026-10-23)
+- **SIM-5. The dungeon scenario (SM-MM-29).** `/mm sim start dungeon` → the bars grow during each
+  fight, the segment dropdown lists Trash then Speaker Shadowcrown, and the boss death shows in the
+  Deaths column with a recap tooltip. Result: pass (owner-marked 2026-10-23)
+- **SIM-6. The raid scenario (SM-MM-30).** `/mm sim start raid` → a 20-row grid, the pet's damage
+  follows the Merge pets setting, and no duplicate player row. Result: pass (owner-marked 2026-10-23)
+- **SIM-7. The wipe scenario (SM-MM-31).** `/mm sim start wipe` → everyone dies, Reset meter data
+  clears the segments (Blizzard's own meter untouched afterwards), and the re-pull starts a fresh
+  segment. Result: pass (owner-marked 2026-10-23)
+- **SIM-8. The zone scenario (SM-MM-32).** `/mm sim start zone` → a window set to hide outside
+  instances hides during the Isle of Dorn step and returns in the second dungeon. Result: pass (owner-marked 2026-10-23)
+- **SIM-9. An export during a simulation (SM-MM-33).** Mid-simulation, Export to Raid → `[sim]` lines
+  print in chat and nothing is sent to the group. Result: pass (owner-marked 2026-10-23)
+- **SIM-10. The sim strip on every window (SM-MM-34).** During a simulation every window shows the
+  SIMULATION strip under its title, in its own tint and distinct from the test strip, including a
+  window with its header hidden; no title carries a SIMULATION word; the strip goes at the stop.
+  Result: pass (owner-marked 2026-10-23)
+- **SIM-11. The diagnostics sim section (SM-MM-36).** Mid-simulation, `/mm diagnostics` → the report
+  has a `-- sim --` section reading `active: yes scenario=<name>` and the current `step: N/M`; after
+  `/mm sim stop`, run it again → `active: no` and `last stop: reason=<why>`. Result: pass (owner-marked 2026-10-23)
+- **SIM-12. Pause, step and restart (OWNER_SCOPE A, LibKa0s v1.76.0's auto-run).** Start a scenario,
+  then press Pause in the step panel → the run holds after the current step (a fight in progress
+  finishes its ticks first). Click a later step row → the run steps up to that row and stays paused.
+  Resume → it plays on by itself. Restart → it plays again from the first step without a second
+  click. Result: pass (owner-marked 2026-10-23)
 
 ## Non-English client
 

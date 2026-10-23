@@ -128,6 +128,10 @@ NS.COMMANDS = {
                                                                      function(a) doResetPositions(a) end },
     { "export",   "Export a window's segment \226\128\148 /mm export [window]",
                                                                      function(a) doExport(a) end },
+    -- The simulator (MultiMeters#60, modules/Sim.lua): a FEATURE verb, so refused while disabled
+    -- (not in `liveVerbs`). No launcher entry and no binding; LibKa0s-Sim-1.0 owns its grammar.
+    { "sim",      "Simulator \226\128\148 a scripted fight through the real meter; try /mm sim",
+                                                                     function(a) NS.Sim:RunVerb(a) end },
 }
 
 -- ---------------------------------------------------------------------

@@ -634,8 +634,7 @@ end
 --- show ladder's own reading (core/MultiMeters.lua's `fighting`), so "in combat"
 --- means the same thing to the refusal below as to the window it would show.
 local function fighting()
-    local f = _G.UnitAffectingCombat
-    return (f and f("player")) and true or false
+    return NS.Compat.UnitAffectingCombat("player")
 end
 
 --- What every start and stop does: the flag, through core/State.lua for the same
@@ -679,6 +678,13 @@ end
 --- @param enabled boolean
 --- @return boolean applied  false when the start was refused
 function M:SetTestMode(enabled)
+    -- Test mode and a simulation are exclusive (MultiMeters#60): each refuses
+    -- while the other runs, and the simulation's start refuses test mode.
+    if enabled and NS.Sim and NS.Sim:IsActive() then
+        if NS.Print then NS.Print(L["Test mode is not available while a simulation runs."]) end
+        if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
+        return false
+    end
     if enabled and not M:IsTest() and fighting() then
         -- The refusal names its guard in the log too (debug-logging-§8,
         -- Diagnosis), since the [Test] line a start writes never comes.

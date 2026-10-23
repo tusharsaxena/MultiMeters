@@ -194,6 +194,34 @@ local EVENTS = {
     { "DAMAGE_METER_RESET",                   "OnMeterReset" },
 }
 
+-- THE DISPATCH TABLE, `{ [event] = methodName }`, built once from EVENTS above
+-- and never edited by hand: EVENTS stays the single source, and this is the
+-- shape a lookup wants (MultiMeters#60, Sim host contract H3). OnEnable
+-- registers every row with the ONE handler name "OnGameEvent", and
+-- NS.DeliverEvent below reads this table to call what the client's per-event
+-- registration used to call.
+--
+-- ONE ROW PER EVENT IS THE CONTRACT, so a second row for an event raises here,
+-- at load, rather than silently shadowing the first handler: two methods for one
+-- event would mean the table answers only one of them.
+local HANDLER_BY_EVENT = {}
+for i = 1, #EVENTS do
+    local event, method = EVENTS[i][1], EVENTS[i][2]
+    if HANDLER_BY_EVENT[event] then
+        error("core/MultiMeters.lua: " .. event .. " has two EVENTS rows; one row per event is the dispatch contract", 2)
+    end
+    HANDLER_BY_EVENT[event] = method
+end
+NS.HANDLER_BY_EVENT = HANDLER_BY_EVENT
+
+-- THE SIMULATOR HOST'S HOOK on the real event path, `function(event, ...) -> consumed`.
+-- nil whenever no simulator session runs, which is always outside one. Only
+-- modules/Sim.lua sets it, for the length of a session, so a real event that
+-- would contradict the simulated world can be held back. It is consulted by
+-- NS:OnGameEvent (the real path) ONLY; NS.DeliverEvent never asks it, because
+-- the simulator's own deliveries arrive through that function.
+NS.RealEventFilter = nil
+
 function NS:OnEnable()
     -- THE LATCH DECIDES WHETHER REGISTRATIONS EXIST AT ALL (slash-commands-§7).
     -- AceAddon runs this cascade at load whether or not the player has the addon
@@ -214,7 +242,7 @@ function NS:OnEnable()
     if NS.State then NS.State.rejectedEvents = rejected end
     local register = NS.SafeRegisterEvent
     for i = 1, #EVENTS do
-        register(self, EVENTS[i][1], EVENTS[i][2], rejected)
+        register(self, EVENTS[i][1], "OnGameEvent", rejected)
     end
     -- A STATE line, written while logging is off at login: the console's at-enable
     -- queue holds it until logging is turned on (debug-logging-§8). A stand-up
@@ -243,6 +271,50 @@ end
 -- treat this section as a wiring diagram.
 
 local MSG = NS.Constants.MSG
+
+--- Is `event` one the client refused at the last enable? A linear scan: the
+--- list is empty on a healthy client and a handful of names at worst.
+local function wasRejected(event)
+    local rejected = NS.State and NS.State.rejectedEvents
+    if not rejected then return false end
+    for i = 1, #rejected do
+        if rejected[i] == event then return true end
+    end
+    return false
+end
+
+--- Deliver a game event to its handler, exactly as the client's per-event
+--- registration would have: `NS[method](NS, event, ...)`.
+---
+--- Answers 0 and calls nothing when the dispatch table has no row for `event`,
+--- or when the client refused the name at enable (it is in
+--- NS.State.rejectedEvents, so the real path could never have reached the
+--- handler either). Otherwise answers 1.
+---
+--- It does NOT consult NS.RealEventFilter. That is the simulator's hook on the
+--- real path, and the simulator passes this function as its `deliver`, so its
+--- own synthetic events must not be filtered by itself.
+---
+--- @param event string
+--- @return integer delivered  1 when a handler ran, else 0
+function NS.DeliverEvent(event, ...)
+    local method = HANDLER_BY_EVENT[event]
+    if not method or wasRejected(event) then return 0 end
+    NS[method](NS, event, ...)
+    return 1
+end
+
+--- THE ONE HANDLER every game event is registered with. The real path: ask
+--- NS.RealEventFilter first -- the simulator host's hook, set only by
+--- modules/Sim.lua while a session runs and consulted on this path only -- and
+--- drop the event when it answers true; otherwise hand it to NS.DeliverEvent.
+---
+--- @param event string
+function NS:OnGameEvent(event, ...)
+    local f = NS.RealEventFilter
+    if f and f(event, ...) then return end
+    NS.DeliverEvent(event, ...)
+end
 
 -- Feign Death. Spelled here as well as in modules/Feign.lua because this handler
 -- must not reach into a module to ask a question it can answer with a constant,
@@ -404,9 +476,7 @@ local function noteFeignCast(unit, spellID)
     local F = NS.Feign
     if not (F and F.Note) then return end
 
-    local getGUID = _G.UnitGUID
-    if not getGUID then return end
-    F.Note(getGUID(unit), unit)
+    F.Note(NS.Compat.UnitGUID(unit), unit)
 end
 
 --- CHAT_MSG_SYSTEM -> modules/Export.lua, and NOTHING onto the bus.
@@ -529,8 +599,7 @@ end
 --- legal, and as a proxy for "the player is fighting" it latches early and
 --- releases late.
 local function fighting()
-    local f = _G.UnitAffectingCombat
-    return (f and f("player")) and true or false
+    return NS.Compat.UnitAffectingCombat("player")
 end
 
 --- The addon-wide General visibility answer (options-ui-§15's Master controls tab),

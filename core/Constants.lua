@@ -582,6 +582,10 @@ local MSG = {
     -- hand-written wire string in the sender and another in the subscriber is
     -- exactly the pair this catalog exists to make impossible to mistype.
     DRILLDOWN_CHANGED   = "Ka0s_MultiMeters_DrillDownChanged",   -- { windowId, active }
+
+    -- modules/Sim.lua, when a simulation session starts or stops (MultiMeters#60):
+    -- the start's prepare and the stop's last-but-one step. One sender: modules/Sim.lua.
+    SIM_CHANGED         = "Ka0s_MultiMeters_SimChanged",         -- { active }
 }
 
 local BusLib = LibStub and LibStub("LibKa0s-Bus-1.0", true)

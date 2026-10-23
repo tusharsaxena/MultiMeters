@@ -66,6 +66,9 @@ NS.SCHEMA_VERSION = CURRENT_DB_VERSION
 -- swap, a copy, a reset — routes here rather than writing its own SendMessage,
 -- so the bus catalog in docs/message-bus.md names one site and stays true.
 local function fireProfileChanged(key)
+    -- A profile swap, copy or reset ends a simulation first (MultiMeters#60):
+    -- its pin snapshot belongs to the profile that is going away.
+    if NS.Sim and NS.Sim:IsActive() then NS.Sim:Stop("profile") end
     if NS.SendMessage then
         NS:SendMessage(NS.Constants.MSG.PROFILE_CHANGED, { newProfileKey = key })
     end

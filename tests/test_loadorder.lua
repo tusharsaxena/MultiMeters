@@ -235,6 +235,13 @@ test("loadorder: the LibKa0s seams load in the order their headers pin", functio
     -- Constants.lua resolves FONT_MONO from the NS.MediaFont it publishes, and a
     -- Constants that loaded first would resolve it to the fallback on a perfectly
     -- healthy install.
+    -- core/SimSetup.lua wraps every NS.Compat member in place at load (LibKa0s-Sim-1.0's seam, host
+    -- contract H2), so it sits STRAIGHT after core/Compat.lua: a file between the two could capture
+    -- or call a member before the seam wrapped it.
+    local sim = index["core/simsetup.lua"]
+    assertTrue(sim ~= nil, "core/SimSetup.lua is not in the TOC")
+    assertEqual(sim, index["core/compat.lua"] + 1, "core/SimSetup.lua must load straight after core/Compat.lua")
+
     local media = index["core/mediasetup.lua"]
     assertTrue(media ~= nil, "core/MediaSetup.lua is not in the TOC")
     assertTrue(media < index["core/constants.lua"],
@@ -317,6 +324,10 @@ test("loadorder: the file-scope readers of CoreSetup, EnvSetup and OptionsSetup 
     -- Aggregator captures both modules as upvalues at file scope.
     before("modules/provider.lua", "modules/aggregator.lua", "captures NS.Provider at load")
     before("modules/roster.lua", "modules/aggregator.lua", "captures NS.Roster at load")
+    -- The simulator's world registers its providers on NS.SimSeam at file scope (MM-13).
+    before("core/simsetup.lua", "modules/simworld.lua", "registers providers on NS.SimSeam at load")
+    -- The drivers capture NS.SimHost.World at file scope (MM-14).
+    before("modules/simworld.lua", "modules/simdrivers.lua", "captures NS.SimHost.World at load")
     -- Every page file captures NS.Helpers, or registers through its seam, at load.
     for _, page in ipairs({
         "general", "windows", "frame", "header", "bars", "tooltip", "visibility",
@@ -335,8 +346,10 @@ test("loadorder: each load-bearing seam line carries a LOAD-BEARING comment at t
     local lines = {}
     for line in (src or ""):gmatch("([^\n]*)\n?") do lines[#lines + 1] = (line:gsub("\r$", "")) end
     for _, entry in ipairs({
-        "core\\CoreSetup.lua", "core\\PerfSetup.lua", "modules\\Aggregator.lua",
-        "settings\\OptionsSetup.lua",
+        "core\\SimSetup.lua", "core\\CoreSetup.lua", "core\\PerfSetup.lua", "modules\\Aggregator.lua",
+        "settings\\OptionsSetup.lua", "modules\\SimWorld.lua",
+        "modules\\SimDrivers.lua",
+        "modules\\SimScenario.lua",
     }) do
         local at
         for i, line in ipairs(lines) do

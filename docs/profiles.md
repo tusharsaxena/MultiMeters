@@ -74,7 +74,10 @@ All three share one `rebuild`. It runs `NS:RunMigrations()`, because the newly a
 copy authored at an older version or a reset back to an empty registry. It clears
 `NS.State.activeWindowId` and wipes every session cache. It re-takes or releases the `disabled` hold
 for the new profile's `enabled` (`slash-commands-§7`: a profile switch can flip it with no verb and no
-checkbox touched). Then it fires **one** `PROFILE_CHANGED` message. `fireProfileChanged` is the single
+checkbox touched). Then it fires **one** `PROFILE_CHANGED` message. **A running simulation ends first**
+(`/mm sim`, MultiMeters#60): `fireProfileChanged` calls `NS.Sim:Stop("profile")` before the message goes
+out, so a swap, a copy, a reset and `/mm resetall` all stop it. The stop skips its pin restore on this
+reason, because the pins it snapshotted belong to the profile that is gone. `fireProfileChanged` is the single
 emitter: every path that makes the active profile a different thing routes through it, so the bus
 catalog names one site and stays true.
 
@@ -155,5 +158,5 @@ brought to the current shape whatever its own history. The ladder and the stamp 
 
 - [schema.md](schema.md) — the persisted shape and the migration ladder
 - [settings-panel.md](settings-panel.md) — the other eight pages and the reset-all act in full
-- [message-bus.md](message-bus.md) — `PROFILE_CHANGED` among the fourteen
+- [message-bus.md](message-bus.md) — `PROFILE_CHANGED` among the fifteen
 - [disabled-state.md](disabled-state.md) — why the three AceDB callbacks survive the stand-down

@@ -9,9 +9,13 @@ rather than in the hub. It moved here whole from the hub's `## Message bus` sect
 
 ## The catalog
 
-Fourteen `AceEvent` messages are the only inter-module communication channel — modules never call each
+Fifteen `AceEvent` messages are the only inter-module communication channel — modules never call each
 other across boundaries. Every name is declared once in `core/Constants.lua`'s `MSG` catalog.
-**One sender each**; a second sender is a bug, not a convenience.
+**One sender each**; a second sender is a bug, not a convenience. The one sanctioned exception is the
+simulator's stop (`modules/Sim.lua`, MultiMeters#60): once the seam is off it resyncs every
+receiver from the live client by sending `ENTERING_WORLD`, `METER_SESSION` and `COMBAT_CHANGED`
+itself, and **never** `METER_RESET`, which would make `Roster.Forget` wipe the real remembered
+roster.
 
 The catalog goes through **`LibKa0s-Bus-1.0`'s `Catalog`** (LibKa0s v1.55.0). It checks the table at
 load: SCREAMING_SNAKE keys, and wire strings of the form `Ka0s_MultiMeters_<PascalCase>`, as in
@@ -37,6 +41,7 @@ a subscriber's nil-index again. The table below names messages by key.
 | `WINDOWS_CHANGED` | `modules/WindowManager.lua` (`announce`) | `DrillDown`; the settings panel repaints on the same registry actions through `NS.RefreshOptionsPanel`, by direct call rather than by subscription | `{ windowId, action }` |
 | `TEST_MODE_CHANGED` | `core/State.lua` (`State.SetTestMode`) | `Roster`, every `Window` (`ApplyTestStrip`, never `ApplyConfig`) | `{ enabled }` |
 | `DRILLDOWN_CHANGED` | `modules/DrillDown.lua` (`announce`) | the addressed `Window` | `{ windowId, active }` |
+| `SIM_CHANGED` | `modules/Sim.lua` (the start's `Host.Prepare`, and the stop's sixth step) | every `Window` (`ApplyTestStrip`, the sim strip; never `ApplyConfig`) | `{ active }` |
 
 ## Two dispatch paths for `METER_RESET`
 
