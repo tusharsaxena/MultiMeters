@@ -223,15 +223,19 @@ secret-value rules the checks refer to.
   Keybindings shows a section titled *Ka0s Multi Meters*, holding the one *Toggle meter windows*
   entry, with no blank spacer row above it and no entry left under *AddOns*. A key bound before the
   update is still bound. Result: pending
-- **SLASH-31. The two surfaces are one store** (SM-MM-KB2). `/mm config` → General → the strip ends in
-  **Keybindings**, with one *Toggle meter windows* row: Key 1, Key 2 and Clear. Bind a key there →
-  Options → Keybindings → Ka0s Multi Meters shows it; set the other slot on the client's page → the
-  tab shows it the next time it is looked at. Under the tab's rows the set line reads *Saved for: all
-  characters*; tick *Character Specific Keybindings* on the client's page and repeat → it reads
-  *Saved for: this character only*, and both surfaces still agree. Result: pending
-- **SLASH-32. The tab's key toggles, Escape cancels, combat refuses** (SM-MM-KB3). The key bound on
-  the tab toggles the windows as SLASH-16 does. Click a slot so it reads *Press a key...*, press
-  Escape → the capture cancels and Settings stays open. In combat, click a slot → the outcome line
+- **SLASH-31. The two surfaces are one store** (SM-MM-KB2, SM-MM-RV3; rewritten 2026-10-24 for the
+  one key button). `/mm config` → General → the strip ends in **Keybindings**, with one *Toggle meter
+  windows* row: one key button and Clear, and no second key slot. Bind a key with the button →
+  Options → Keybindings → Ka0s Multi Meters shows it; set a second key on the client's page → the
+  tab's button reads *<key> +1* the next time it is looked at, and its tooltip names both keys and
+  says the other was set on the game's Key Bindings page. Clear removes every key. Under the tab's
+  rows the set line reads *Saved for: all characters*; tick *Character Specific Keybindings* on the
+  client's page and repeat → it reads *Saved for: this character only*, and both surfaces still
+  agree. Result: pending
+- **SLASH-32. The tab's key toggles, Escape cancels, combat refuses** (SM-MM-KB3, SM-MM-RV3;
+  rewritten 2026-10-24 for the one key button). The key bound with the tab's button still toggles
+  the windows as SLASH-16 does. Click the key button so it reads *Press a key...*, press Escape →
+  the capture cancels and Settings stays open. In combat, click the key button → the outcome line
   reads *Key bindings can be changed after combat.* and no key changes. Result: pending
 
 ## PANEL
@@ -1618,7 +1622,8 @@ passed 2026-10-24), WIN-52 and INSTALL-13 (added 2026-10-24, the 30px title bar)
 ten-row 228px window), and INSTALL-3, INSTALL-9, INSTALL-12 and INSTALL-13 (rewritten 2026-10-24 for
 the v19 schema stamp). PANEL-49, GRID-34, WIN-53 and WIN-54 (added 2026-10-24, the frame-layering
 table and its strata changes). PANEL-50 to PANEL-57 (added 2026-10-24, the settings-layout pass,
-item 020).
+item 020). SLASH-30 (added 2026-10-24, the binding's own section), and SLASH-31 and SLASH-32
+(added 2026-10-24, rewritten the same day for the one key button and Clear per row).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

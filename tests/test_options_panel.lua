@@ -1338,12 +1338,16 @@ end)
 test("Keybindings: a key bound through the tab is the client's, and a key set elsewhere shows in the tab", function()
     -- One store, both surfaces (options-ui-§20): the tab writes SetBinding then SaveBindings to the
     -- set in force, and repaints on UPDATE_BINDINGS when Options -> Keybindings (here, a plain
-    -- SetBinding) changes a key.
-    -- red under: a tab that keeps its own key (GetBindingKey never answers it), or one that caches
-    -- the key it drew.
+    -- SetBinding) changes a key. The row is ONE key button and Clear (OptionsKeybinds minor 4, the
+    -- owner's follow-up to 015): a second key set on the client's page is counted on that button
+    -- ("K +1"), never drawn as a second slot.
+    -- red under: a tab that keeps its own key (GetBindingKey never answers it), one that caches
+    -- the key it drew, or a row that still draws a second key slot.
     local inst = bindingScene()
     local M = inst.mocks
     local _, rows = openKeybindings(inst)
+    assertEqual(rows[1].slots[2], nil, "the row draws a second key slot")
+    assertTrue(rows[1].clear ~= nil, "the row has no Clear button")
     T.keybindThroughTab(rows[1], 1, "K")
     assertEqual(M.GetBindingKey(KB_COMMAND), "K")
     assertEqual(M.__savedBindingSets[#M.__savedBindingSets], M.GetCurrentBindingSet())
@@ -1355,12 +1359,12 @@ test("Keybindings: a key bound through the tab is the client's, and a key set el
     local lib = M.LibStub("LibKa0s-Options-1.0")
     local f = lib.__keybindEventFrame
     M.SetBinding("F7", KB_COMMAND)
-    assertEqual(rows[1].slots[2].text, M.NOT_BOUND, "the tab repainted before any event")
+    assertEqual(rows[1].slots[1].text, "K", "the tab repainted before any event")
     assertTrue(f ~= nil and f:IsEventRegistered("UPDATE_BINDINGS"),
         "the tab does not hear UPDATE_BINDINGS while its row is on screen")
     f:GetScript("OnEvent")(f, "UPDATE_BINDINGS")
     if M.__flushTimers then M.__flushTimers() end
-    assertEqual(rows[1].slots[2].text, "F7", "the tab did not repaint after UPDATE_BINDINGS")
+    assertEqual(rows[1].slots[1].text, "K +1", "the tab did not count the second key after UPDATE_BINDINGS")
     M.clearBindings()
 end)
 
