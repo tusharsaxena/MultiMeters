@@ -1444,6 +1444,18 @@ Total.
 - Sim strip: minimized hides it with no title word; a hidden header keeps it
 - Sim strip: with no Widgets library no strip, no reserve, and nothing raises
 
+### test_layers.lua (9)
+
+- LAYERS: one table names the addon's strata and level bands
+- LAYERS: no strata literal and no absolute or sibling level in the addon
+- Window: the art frame takes the strata setting, is toplevel, and the anchor stays MEDIUM
+- Window: header controls sit at frame + CONTROLS, above the drag bar
+- Window: dragging raises the whole window and re-levels its controls and grip
+- Window: a header-control click raises the window it belongs to
+- Row: the self edge and the hover wash live on a mouse-off overlay above the cells
+- Export modal: DIALOG, toplevel, clamped, and raised on every open
+- Frame strata row: its tooltip is the library's O.StrataTooltip over its own values
+
 ### test_headercontrols.lua (71)
 
 - HeaderControls: every control this addon builds is attached
@@ -1694,7 +1706,7 @@ Total.
 - The half-size gap survives the post-layout pass
 - The gap is restored with every other line it was applied alongside
 
-### test_tooltip_lines.lua (37)
+### test_tooltip_lines.lua (38)
 
 - A spell line carries a real class-colored BAR, not a run of characters
 - Bars are released between hovers, never stacked
@@ -1713,6 +1725,7 @@ Total.
 - The bar border answers a color mode, and its class is the HOVERED player's
 - The bar border's shipped mode is Custom, so it still reads the swatch
 - A bar sits UNDER the tooltip's text, not over it
+- A pooled line follows GameTooltip's level when something re-levels the tooltip
 - Bars come down when GameTooltip closes, whoever closed it
 - A spell line carries its SHARE of the player's total beside the amount
 - The percent slot GOES QUIET mid-pull rather than approximating
@@ -2657,6 +2670,7 @@ Total.
 | test_window_lifecycle.lua | 9 |
 | test_window_segment.lua | 10 |
 | test_window_simstrip.lua | 4 |
+| test_layers.lua | 9 |
 | test_headercontrols.lua | 71 |
 | test_row.lua | 62 |
 | test_row_namecell.lua | 30 |
@@ -2664,7 +2678,7 @@ Total.
 | test_row_mouse.lua | 17 |
 | test_targets.lua | 28 |
 | test_tooltip.lua | 20 |
-| test_tooltip_lines.lua | 37 |
+| test_tooltip_lines.lua | 38 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
 | test_drilldown.lua | 59 |
@@ -2692,4 +2706,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2326** |
+| **Total** | **2336** |

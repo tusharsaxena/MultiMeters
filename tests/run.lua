@@ -317,6 +317,7 @@ local SUITES = {
     "test_window_lifecycle",
     "test_window_segment",
     "test_window_simstrip",
+    "test_layers",
     "test_headercontrols",
     "test_row",
     "test_row_namecell",

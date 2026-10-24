@@ -19,12 +19,12 @@ secret-value rules the checks refer to.
 |---|---|---|
 | INSTALL-1 to INSTALL-14 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
 | SLASH-1 to SLASH-32 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding and the General page's Keybindings tab |
-| PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
+| PANEL-1 to PANEL-49 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-52 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
+| WIN-1 to WIN-54 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
-| GRID-1 to GRID-33 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
+| GRID-1 to GRID-34 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
@@ -487,6 +487,12 @@ right. Open the panel with `/mm config`.
   a refresh that rebuilds a page keeps where it was scrolled. Open a long page, scroll partway down,
   then trigger a structural refresh (for example add or remove a column on the Windows page) → the
   page redraws at the same scroll position, not back at the top. Result: pass (owner-marked 2026-10-23)
+- **PANEL-49. The Frame strata tooltip (SM-MM-ZS, 2026-10-24).** Windows → Frame → hover **Frame
+  strata** → the tooltip is the library's shared strata text: Background and Low under most of the
+  interface, Medium the default, High over other windows in the Settings window's layer, then a
+  second sentence that Dialog and above also cover confirmation dialogs, the debug console and the
+  Settings window. The four choices (Low, Medium, High, Dialog) and the stored value are unchanged.
+  Result: pending
 
 ## PROFILE
 
@@ -769,6 +775,18 @@ right. Open the panel with `/mm config`.
   Header height to 8, 37 and 48 and Control size to 10 and 32 in turn → the row stays centered (a
   control taller than the bar hangs from the frame's top edge). The shipped 228px window shows ten
   rows, and dragging it down stops at 70px with the one row fully inside the frame. Result: pending
+- **WIN-53. Overlapping windows stack whole (SM-MM-ZS, 2026-10-24).** Two windows, unlocked, dragged
+  so they half overlap → the one on top hides the other completely where they overlap: no cells,
+  rows or text of the lower window show through the upper one's backdrop. Drag the LOWER one by its
+  title bar → it comes to the front as you start the drag. Click a header control (the lock) on the
+  window now behind → it comes to the front. After each raise, every header control still answers
+  its click on the whole button and the resize grip still sizes the window (neither has fallen under
+  the window's own body). Result: pending
+- **WIN-54. The export modal opens over a Dialog-strata meter (SM-MM-ZS, 2026-10-24).** Set a
+  window's Frame strata to **Dialog**, then open Export from its header → the export window is fully
+  on top of the meter, and its Metric menu opens over both. With `/mm debug on` and the debug console
+  open, open Export → it comes up over the console; click the console → the console comes forward.
+  Result: pending
 
 ## VIS
 
@@ -920,6 +938,12 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   every member with their role icon, and **Roster** sort orders them as before (player first, then
   group order). The unit and group reads now go through `core/Compat.lua`; nothing live should change.
   Result: pass (owner-marked 2026-10-23)
+- **GRID-34. The row marks draw over the cells (SM-MM-ZS, 2026-10-24).** Rows → tick **Highlight
+  yourself** and **Highlight on mouseover**, and do some damage so your own bar is filled → the 3px
+  gold edge shows at the left of your row ON TOP of the filled name cell (before, it hid under the
+  fill and showed only through the empty part). Point at any row → the faint white wash covers every
+  cell of it, fill and text included. Hovering a cell still opens its tooltip, a click still drills
+  down, and the edge covers at most the first pixel of a left class icon or name. Result: pending
 
 ## TIP
 
@@ -1530,7 +1554,8 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
 INSTALL-12 (added 2026-10-24, the header matched to Ka0s DPS Race's title bar; WIN-49 to WIN-51
 passed 2026-10-24), WIN-52 and INSTALL-13 (added 2026-10-24, the 30px title bar), INSTALL-14 (added 2026-10-24, the
 ten-row 228px window), and INSTALL-3, INSTALL-9, INSTALL-12 and INSTALL-13 (rewritten 2026-10-24 for
-the v19 schema stamp).
+the v19 schema stamp). PANEL-49, GRID-34, WIN-53 and WIN-54 (added 2026-10-24, the frame-layering
+table and its strata changes).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

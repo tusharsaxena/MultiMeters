@@ -110,6 +110,7 @@ local SIDE_VALUES          = SC.SIDE_VALUES
 local SLOT_SORT            = SC.SLOT_SORT
 local SLOT_VALUES          = SC.SLOT_VALUES
 local STRATA_SORT          = SC.STRATA_SORT
+local STRATA_TIP           = SC.STRATA_TIP
 local STRATA_VALUES        = SC.STRATA_VALUES
 local TEXTCOLOR_SORT       = SC.TEXTCOLOR_SORT
 local TEXTCOLOR_VALUES     = SC.TEXTCOLOR_VALUES
@@ -328,10 +329,10 @@ NS.Schema = {
         validate = isNumberIn(0, 1),
     },
     {
-        path = "window.frame.strata", type = "string", default = "MEDIUM",
+        path = "window.frame.strata", type = "string", default = Const.LAYERS.STRATA.HUD,
         values = STRATA_VALUES, sorting = STRATA_SORT,
         page = "frame", group = L["Size and position"],
-        label = L["Frame strata"], desc = L["Which layer the window sits in relative to the rest of your interface."],
+        label = L["Frame strata"], desc = STRATA_TIP,
     },
     {
         path = "window.frame.padding", type = "number", default = 6,

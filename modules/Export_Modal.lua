@@ -729,13 +729,14 @@ local function EnsureFrame()
     modal = CreateFrame("Frame", MODAL_NAME, UIParent, "BackdropTemplate")
     modal:SetSize(MODAL_WIDTH, MODAL_HEIGHT)
     modal:SetPoint("CENTER")
-    -- DIALOG, which is BELOW the FULLSCREEN strata the shared dropdown menu puts
-    -- its click-catcher on (FULLSCREEN_DIALOG for the menu itself, FULLSCREEN for
-    -- the catcher beneath it — LibKa0s-Widgets-1.0's own popup, one instance
-    -- shared by every dropdown in the process). That ordering is what lets a
-    -- click outside an open selector menu close the menu instead of landing on
-    -- the modal — and the copy window, also FULLSCREEN, still opens above this.
-    modal:SetFrameStrata("DIALOG")
+    -- DIALOG (LAYERS.STRATA.MODAL): above the HUD windows, below the copy window
+    -- (FULLSCREEN) and the shared dropdown menu (FULLSCREEN_DIALOG), so a menu
+    -- opened from the modal draws over it and the copy window opens above it.
+    -- TOPLEVEL and raised on every open (Export.Open), so it comes up over a meter
+    -- the player put at Dialog strata and over the library's debug, perf and sim
+    -- panels, which share DIALOG with it (frame-layering-§4).
+    modal:SetFrameStrata(Const.LAYERS.STRATA.MODAL)
+    modal:SetToplevel(true)
     modal:EnableMouse(true)
     modal:SetMovable(true)
     modal:SetClampedToScreen(true)
@@ -937,6 +938,7 @@ function Export.Open(a, b)
     refreshModal()
     centerOnWindow(frame, win)
     frame:Show()
+    frame:Raise()
 
     return frame
 end

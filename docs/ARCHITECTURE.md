@@ -284,6 +284,18 @@ and `modules/Provider.lua` stays the only caller of `C_DamageMeter`. The menu, t
 this control keeps a context menu rather than a dropdown are in
 **[data-flow.md](data-flow.md#the-segment-selector)**.
 
+## Frame layering
+
+Every strata and level the addon sets is read from one table, `NS.Constants.LAYERS` in
+`core/Constants.lua`, whose header comment is the stack (frame-layering-§5); the tiers are not
+copied here. Back to front: the window **anchor** (invisible, MEDIUM, fixed); each meter window at
+`STRATA.HUD` or the player's Frame strata, toplevel and raised on drag and on a header-control click,
+with its chrome, rows, cells, the rows' mouse-off **overlay** (self edge, hover wash), header controls
+and the library grip on named bands over it; the export modal at `STRATA.MODAL`, toplevel and raised
+on open, beside the library's DIALOG tool windows; the library's copy window, menus and the tooltip
+tiers above. Tooltip spell lines share GameTooltip's level, re-stated per draw. In-client checks:
+[smoke-tests.md](smoke-tests.md) WIN-53, WIN-54, GRID-34 and PANEL-49.
+
 ## Known limitations
 
 Every one of them, with its measurement and its issue number, is in

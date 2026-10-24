@@ -487,6 +487,13 @@ do
     end
 end
 
+-- THE FRAME STRATA ROW'S TOOLTIP is the library's (frame-layering-§1, options-ui-§16):
+-- O.StrataTooltip over the row's own values, which offer Dialog, so it carries the
+-- sentence saying what a Dialog-strata window can cover. The values themselves stay
+-- as shipped (CALL-04). A degraded load with no compose layer keeps the old line.
+local STRATA_TIP = C.StrataTooltip and C.StrataTooltip(STRATA_VALUES)
+    or L["Which layer the window sits in relative to the rest of your interface."]
+
 --- Compose one canonical block, or nothing at all when there is no library.
 ---
 --- @param name string  the composer's member name
@@ -1390,6 +1397,7 @@ NS.SchemaCompose = {
     SLOT_SORT            = SLOT_SORT,
     SLOT_VALUES          = SLOT_VALUES,
     STRATA_SORT          = STRATA_SORT,
+    STRATA_TIP           = STRATA_TIP,
     STRATA_VALUES        = STRATA_VALUES,
     TEXTCOLOR_SORT       = TEXTCOLOR_SORT,
     TEXTCOLOR_VALUES     = TEXTCOLOR_VALUES,

@@ -409,6 +409,8 @@ local function onClick(frame)
     -- an unrecognized one included. Behind the lookup instead, a window with no
     -- config would raise only for the names that have a row.
     local frameCfg = window.config.frame or {}
+    -- The window you touch comes to the front of any it overlaps.
+    if window.BringToFront then window:BringToFront() end
 
     local action = ACTIONS[control]
     if not action then return end
@@ -449,6 +451,26 @@ function HeaderControls:Attach(window)
 end
 
 -- ---------------------------------------------------------------------------
+-- Level
+-- ---------------------------------------------------------------------------
+
+--- ABOVE THE DRAG BAR, EXPLICITLY. `dragBar` is an invisible mouse-enabled frame
+--- spanning the whole title strip -- exactly the band these sit in -- and two
+--- frames at one level compete for a click; the symptom is a button that works
+--- sometimes, or only on part of itself. Stated against the WINDOW's level, never
+--- the drag bar's (frame-layering-§3): the drag bar is on the chrome band, these
+--- are on the controls band (LAYERS.LEVEL, core/Constants.lua). Called from Apply
+--- and from WindowProto:ApplyLevels, which runs after every raise.
+function HeaderControls:ApplyLevels(window)
+    local controls, frame = window.controls, window.frame
+    if not (controls and frame) then return end
+    local LEVEL = NS.Constants.LAYERS.LEVEL
+    for _, button in pairs(controls) do
+        button:SetFrameLevel(frame:GetFrameLevel() + LEVEL.CONTROLS)
+    end
+end
+
+-- ---------------------------------------------------------------------------
 -- Layout
 -- ---------------------------------------------------------------------------
 
@@ -464,13 +486,7 @@ function HeaderControls:Apply(window)
     local visible  = ((cfg.header or {}).show ~= false)
 
     local style = HeaderControls.Style(window)
-
-    -- ABOVE THE DRAG BAR, EXPLICITLY. `dragBar` is an invisible mouse-enabled
-    -- frame spanning the whole title strip -- exactly the band these sit in --
-    -- and two siblings at one frame level compete for a click. The symptom of
-    -- getting this wrong is a button that works sometimes, or only on part of
-    -- itself.
-    local level = window.dragBar and (window.dragBar:GetFrameLevel() + 5) or nil
+    HeaderControls:ApplyLevels(window)
 
     -- ONE CENTER FOR THE WHOLE TITLE ROW. modules/Window.lua owns it, because the
     -- title and the session line are placed against the same number: the strip
@@ -508,7 +524,6 @@ function HeaderControls:Apply(window)
                 local art = math.floor(size * ART_SCALE)
                 button.tex:SetSize(art, art)
                 used = used + size + GAP
-                if level then button:SetFrameLevel(level) end
                 -- The hit rect is grown past the art: 18px is a small target and
                 -- the only thing behind these is a drag handle.
                 if button.SetHitRectInsets then button:SetHitRectInsets(-3, -3, -3, -3) end
