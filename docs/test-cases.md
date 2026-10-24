@@ -2153,7 +2153,7 @@ Total.
 - Schema: no tab holds fewer than two controls
 - Schema: a hidden row is filed under a tab that exists, and draws nothing
 - Schema: every tab name and row label is a localized string, not a bare literal
-- Schema: every Controls row carries its own icon in front of its words
+- Schema: every Controls > Shown row carries its own icon in front of its words
 - Schema: a control label degrades to its words when there is no art
 - Schema: the active tab is session state and has no home in the schema
 - Schema: the column header strip is styled on the page where columns are chosen
@@ -2258,6 +2258,19 @@ Total.
 - ValidateSchema: answers 0 when there is no window template to compare against
 - ValidateSchema: answers 0 when there is no profile tree to compare against
 - ValidateSchema: counts every failure, in schema order, with nothing listening
+
+### test_settings_pin.lua (2)
+
+- Settings pin: the schema holds exactly the pinned rows, keys and defaults unchanged
+- Settings pin: the row count is the pinned count
+
+### test_settings_layout.lua (5)
+
+- Layout: Frame's Size and position holds Geometry, then Placement with the lock, the clamp and the strata
+- Layout: Death timestamps lives on Tooltip > Contents > Deaths, first and on its own line
+- Layout: the composed font blocks wear options-ui-§16's canonical labels
+- Layout: the relabels of the pass
+- Layout: every color mode that offers Per-statistic says where that palette is edited
 
 ### test_slash.lua (52)
 
@@ -2514,16 +2527,18 @@ Total.
 - Columns: a refused write is REPORTED and the page is not repainted
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
-- Columns: the page draws three tabs, Columns then Header text then Header background
-- Columns: the Header text tab renders exactly its group's rows, with no headings
+- Columns: the page draws two tabs, Columns then Column header
+- Columns: the Column header tab renders exactly its group's rows, Text then Background, with no group heading
 - Columns: leaving the Columns tab mid-drag cancels the reorder BEFORE the scroll clear
 
-### test_windows_rail.lua (14)
+### test_windows_rail.lua (16)
 
 - Windows rail: the seven entries register under their page keys, on both builds
 - Windows rail: the band, then the rail General..Columns, 120 wide, opening on General
+- Windows rail: the band carries New window beside the picker, and it creates and selects a window
 - Windows rail: the draw order is PageBanner, NavRail, TabStrip
 - Windows rail: General is one General tab holding the window's acts and a Copy settings from block
+- Windows rail: Settings to copy names what is copied, in rail order
 - Windows rail: a rail click draws that entry's own strip under the same band
 - Windows rail: each entry keeps its own tab, including one chosen by the library's own strip click
 - Windows rail: choosing another window in the band keeps the entry and its tab
@@ -2690,6 +2705,8 @@ Total.
 | test_schema_paths.lua | 50 |
 | test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
+| test_settings_pin.lua | 2 |
+| test_settings_layout.lua | 5 |
 | test_slash.lua | 52 |
 | test_slash_diagnostics.lua | 20 |
 | test_slash_refusal.lua | 11 |
@@ -2699,11 +2716,11 @@ Total.
 | test_options_panel.lua | 51 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
-| test_windows_rail.lua | 14 |
+| test_windows_rail.lua | 16 |
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 5 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2336** |
+| **Total** | **2345** |

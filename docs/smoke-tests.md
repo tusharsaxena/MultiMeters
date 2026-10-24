@@ -19,7 +19,7 @@ secret-value rules the checks refer to.
 |---|---|---|
 | INSTALL-1 to INSTALL-14 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
 | SLASH-1 to SLASH-32 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding and the General page's Keybindings tab |
-| PANEL-1 to PANEL-49 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
+| PANEL-1 to PANEL-57 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
 | WIN-1 to WIN-54 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
@@ -493,6 +493,68 @@ right. Open the panel with `/mm config`.
   second sentence that Dialog and above also cover confirmation dialogs, the debug console and the
   Settings window. The four choices (Low, Medium, High, Dialog) and the stored value are unchanged.
   Result: pending
+- **PANEL-50. The settings-layout pass keeps every setting (SM-MM-LY, item 020, 2026-10-24).** Before
+  updating, note a few non-default values on each Windows entry (for example Width, Lock window,
+  Row height, Show fight name, Bar color mode, Death timestamps, Tooltip X offset, one Visibility
+  rule and a Column header font) and General's Master opacity. Update, `/reload`, and open the
+  settings → every value reads as you left it, on its new tab; no setting is missing, none has
+  changed its default (press nothing yet), and a value changed on its new tab survives another
+  `/reload`. Older checks in this file that name a retired tab (Frame → General, Header → Button
+  style, Bars → Background / Border / Text content / Text style, Tooltip → Bar background / Bar
+  border, Visibility → Where to show this window / When to hide this window, Columns → Header text /
+  Header background) mean the tab that now holds the row: PANEL-51 to PANEL-57 give the map.
+  Result: pending
+- **PANEL-51. General page (item 020).** General → Master controls reads *Master scale* beside
+  **Master opacity**. Statistic colors → the note under the swatches names Windows > Bars > Bar,
+  Windows > Bars > Text and Windows > Columns > Column header. Result: pending
+- **PANEL-52. Windows band and General entry (item 020).** The band shows the Active window picker
+  with **New window** beside it; clicking it creates a window and the band follows it. The General
+  entry shows Window name, then **Duplicate window** and **Delete window** on one line, then Copy
+  settings from. Hover Source window → "The window to copy from. Pick what to copy beside it, then
+  press Copy."; hover Copy → "Copy the chosen settings from the source window onto this one.".
+  Settings to copy lists Everything, Frame and header buttons, Rows, Title bar and title text, Bars,
+  Bar text and death timestamps, Icons, Tooltip, Visibility, Column list, Sort and segment; copying
+  *Frame and header buttons* from a window with different header buttons copies the buttons. Hover
+  the page's Defaults → "Restore every tab of the entry selected on the left, for the window in the
+  band, to its defaults." then the Columns and General clauses. Result: pending
+- **PANEL-53. Frame (item 020).** The strip reads Size and position, Quick style, Background and
+  border, Rows, and the entry opens on Size and position: a *Geometry* heading (Width | Height,
+  **Window scale** | **Window opacity**, Padding) and a *Placement* heading (Lock window | Keep on
+  screen, then Frame strata alone on its line). Hover Window scale and Window opacity → each ends
+  "Multiplied by Master scale (or Master opacity) on the General page > Master controls.". Quick
+  style holds only the four "(all surfaces)" rows under *All surfaces*. Rows has *Grid* (Row height |
+  Row spacing, Maximum rows | Growth direction, Always show yourself) and *Highlighting* (Highlight
+  yourself | Highlight on mouseover, Alternating background, whose tooltip points to Windows > Bars >
+  Bar). Result: pending
+- **PANEL-54. Header (item 020).** The strip reads Title bar, Title text, Controls. Title bar → *Layout*
+  shows Show title bar | **Title bar height**, and *Background* shows **Title bar background**. Title
+  text → Font, Font size, **Font color** | **Font color mode**, **Font flags** | **Font shadow**, then
+  **Text alignment** alone on the last line; hover Font → "Font for the window's title and the fight
+  name beside it.". Controls → *Shown* (**Show fight name** first, then the seven icon toggles; hover
+  Show segment picker → it names Show fight name and no longer promises a clickable session line),
+  *Size* (Control size), *Color* (the two color pairs), *Opacity* (Reveal controls on hover alone, then
+  Control opacity | Control hover opacity). Every control still does what it did. Result: pending
+- **PANEL-55. Bars (item 020).** The strip reads Bar, Text, Icons. Bar → *Fill* (the bar rows, fill
+  direction, Animate bar fills), *Background* (the three bar background rows) and *Border* (**Show
+  border** leads, then style, thickness, color and its mode). Text → *Content* (Left text | Right
+  text, Number format | **Maximum name length**; no Death timestamps here) and *Style* (the font rows
+  with Font color / Font color mode / Font flags / Font shadow, then Text opacity). Hover Bar color
+  mode, Bar background color mode and Font color mode → each ends "Per-statistic colors are set on
+  the General page > Statistic colors.". Result: pending
+- **PANEL-56. Tooltip (item 020).** The strip reads General, Contents, Bar, Text. General shows **X
+  offset** | **Y offset**. Contents → *Breakdown* (spells and targets), *Deaths* (**Death
+  timestamps** alone on its line, then Name the killer | **Name the killing spell**) and *Player name*
+  (**Show all statistics on name hover**); changing Death timestamps changes the Deaths tooltip and
+  the window's death list, and Tooltip's Defaults puts it back (Bars' Defaults no longer does). Bar →
+  *Fill* (with **Line spacing**), *Background* (Background color, Background color mode, Background
+  opacity) and *Border* (Border style, Border thickness, Border color, Border color mode). Text → the
+  canonical font labels. Result: pending
+- **PANEL-57. Visibility and Columns (item 020).** Visibility shows one tab, **Rules**, with *Show in*
+  (the seven contexts), *Hide when* (the eight hide rules) and *Combat* (the two combat rules); every
+  rule still hides and shows the window as before. Columns' strip reads Columns, **Column header**;
+  Column header shows a *Text* heading over the font rows and a *Background* heading over the
+  background pair, with no heading repeating the tab name. Leaving the Columns tab mid-drag still
+  leaves no handle behind (PANEL-42). Result: pending
 
 ## PROFILE
 
@@ -1555,7 +1617,8 @@ INSTALL-12 (added 2026-10-24, the header matched to Ka0s DPS Race's title bar; W
 passed 2026-10-24), WIN-52 and INSTALL-13 (added 2026-10-24, the 30px title bar), INSTALL-14 (added 2026-10-24, the
 ten-row 228px window), and INSTALL-3, INSTALL-9, INSTALL-12 and INSTALL-13 (rewritten 2026-10-24 for
 the v19 schema stamp). PANEL-49, GRID-34, WIN-53 and WIN-54 (added 2026-10-24, the frame-layering
-table and its strata changes).
+table and its strata changes). PANEL-50 to PANEL-57 (added 2026-10-24, the settings-layout pass,
+item 020).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass
