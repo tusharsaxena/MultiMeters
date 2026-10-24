@@ -37,3 +37,24 @@ One commit carries both payloads, the provenance line, the prune and the stub fi
   0 failed, 1 skipped (2321 total), `test_vendor_sync` green against v1.77.0; `luacheck .`
   0 warnings / 0 errors in 159 files; no authored `.lua` file over 1500 lines (largest
   `tests/test_window.lua`, 1481).
+
+## Re-vendor after the tag moved (M3)
+
+LK-95 moved the local annotated tag v1.77.0 to carry the settings-layout surfaces. Old tag `7380d36`
+(commit `78240f7`), new tag `b2b8ee2` (commit `afae2f75cb7ff61c57156d9a3d8a6b2b9f4c5e10`). The
+provenance line stays v1.77.0 and records no sha or kit revision, so it did not move. Both payloads
+were copied whole from `git -C ../LibKa0s archive v1.77.0 LibKa0s testkit`; both diffs were empty
+before the prune.
+
+- **Minors that moved:** OptionsCompose 8 -> 11 (the only file that changed; it adds
+  `O.ResetAllTooltip`). Kit revision 42 -> 42, `tests/_kit/` byte-identical.
+- **Blocker, fixed here:** the surface-parity case went red on `ResetAllTooltip`. The Options
+  degradation stub in `settings/OptionsSetup.lua` now carries it as an inert member answering `""`.
+- **Icon line kept:** the 18 names; the prune kept 19 files and removed 5,821, as before.
+- **Adopted here:** nothing. MM-LY adopts the layout surfaces.
+- **Standard reference:** standard still v2.88.0. WS-95 and the commits since `897fbd3` only add
+  text (options-ui §21, open-evolutions entries) and remove no section, so every citation still
+  resolves and the three-place reference needs no edit.
+- **Gate**, through `ka0s-bounded`: `lua tests/run.lua` 2336 passed, 0 failed, 1 skipped (2337
+  total); `luacheck .` 0 warnings / 0 errors in 160 files; no authored `.lua` file over 1500 lines
+  (largest `tests/test_window.lua`, 1481).

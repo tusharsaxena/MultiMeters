@@ -422,6 +422,9 @@ if not lib then
     -- than a copy of the library's words.
     Helpers.StrataTooltip      = function() return "" end
     Helpers.KEYBINDS_UNCHANGED = ""
+    -- ResetAllTooltip, new when the v1.77.0 tag moved (OptionsCompose minor 11): the reset-all
+    -- sentence, read only by a page builder. With no library it answers an empty string too.
+    Helpers.ResetAllTooltip    = function() return "" end
     Helpers.__pages    = function() return {} end
     Helpers.__panels   = function() return {} end
     Helpers.__panelFor = function() return nil end
