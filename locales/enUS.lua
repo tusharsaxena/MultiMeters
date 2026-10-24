@@ -47,8 +47,16 @@ NS.L = L
 -- ---------------------------------------------------------------------------
 
 L["Ka0s Multi Meters"] = "Ka0s Multi Meters"
--- The Show window key's label under Key Bindings -> AddOns (core/LauncherSetup.lua, launcher-§6).
+-- The Show window key's label in this addon's section of Options -> Keybindings, and its row on the
+-- General page's Keybindings tab, with the row's tooltip (core/LauncherSetup.lua's NS.BINDINGS,
+-- launcher-§6).
 L["Toggle meter windows"] = "Toggle meter windows"
+L["Shows or hides every meter window, as /mm toggle does."] =
+    "Shows or hides every meter window, as /mm toggle does."
+-- The General page's Defaults tooltip; settings/General.lua appends the library's "Key bindings are
+-- not changed." (options-ui-§20).
+L["Restore the settings on this page to their shipped values."] =
+    "Restore the settings on this page to their shipped values."
 L["A multi-column group meter: one row per player, one column per statistic."] =
     "A multi-column group meter: one row per player, one column per statistic."
 L["Multi Meters"] = "Multi Meters"

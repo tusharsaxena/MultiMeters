@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2320%2F2320_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2326%2F2326_passing-green)
 
 Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
@@ -43,7 +43,7 @@ Setting a window up takes four steps. Most of it happens on the Windows page, wh
 - Choose your header controls. The title bar has room for seven: close, minimize, lock, settings, segment, reset and export, and the Header entry's Controls tab picks which ones this window draws. The segment control is the three horizontal lines, and it's the one people miss. It picks which fight the window shows, and your pick sticks through a reload.
 - Dig into the numbers. Hover a cell to see the spells behind it, or hover a name to see everything tracked for that player. Click either one to drill in. Clicking a Deaths cell opens the recap instead, which is usually the more interesting trip.
 
-Want a second window? Click **New window** on the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you four switches: Enabled, Locked, Test mode and Show window. A key can show and hide the windows too: Key Bindings → AddOns → Ka0s Multi Meters → Toggle meter windows. No key is set for you.
+Want a second window? Click **New window** on the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you four switches: Enabled, Locked, Test mode and Show window. A key can show and hide the windows too: *Toggle meter windows*, under Options → Keybindings → Ka0s Multi Meters, or on General → Keybindings in this addon's settings. Both places set the same key. No key is set for you.
 
 Want to see the meter work without a group? `/mm sim` runs a scripted fight through it. It only starts when you're solo and outside an instance, and it offers four scenarios: a dungeon pull and boss, a 20-player raid boss, a wipe and reset, and a zone change between fights. Every window shows a SIMULATION strip while it plays, and you can pause it and step through it one row at a time. The group, the fights and the numbers are made up. Nothing is saved, nothing is sent to chat, and your real segments come back when it stops.
 

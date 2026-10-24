@@ -730,7 +730,7 @@ Total.
 - Sim e2e: zone by run
 - Sim e2e: the panel's rows are the step labels, and a step waits while the gate is closed
 
-### test_launchersetup.lua (55)
+### test_launchersetup.lua (56)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -779,7 +779,8 @@ Total.
 - Binding: the Show window binding's button exists, is named MultiMetersToggleWindows, hidden, registered AnyDown, and one click toggles once
 - Binding: the binding labels are the brand and the localized action
 - Binding: the launcher's toggleWindow and the button run the same function
-- Binding: Bindings.xml carries exactly one CLICK MultiMetersToggleWindows:LeftButton, header MULTIMETERS, category ADDONS, no default attribute and no Lua body, and the TOC does not list it
+- Binding: Bindings.xml carries one CLICK MultiMetersToggleWindows:LeftButton in category BINDING_HEADER_MULTIMETERS, no header, no default, no Lua body, and the TOC does not list it
+- Binding: NS.BINDINGS is the one bindings table, Show window first, with a localized tooltip
 - Binding: a library-absent load still creates the button
 - Degraded: Register answers false, quietly, when LibDataBroker is absent
 - Degraded: with no LibDBIcon there is still a broker plugin, and no button
@@ -2395,7 +2396,7 @@ Total.
 - Library lines: rejected events, recorded at OnEnable, land when logging turns on
 - Library lines: after a Clear, an unchanged steady-state pass speaks again
 
-### test_options_panel.lua (46)
+### test_options_panel.lua (51)
 
 - Options: General is the FIRST page, above Windows
 - Options: the tree is General, Windows, Profiles, with no nesting mark
@@ -2443,6 +2444,11 @@ Total.
 - Panel: choosing a window in the banner retargets every page and keeps the tab
 - Panel: Reset all settings' tooltip says it is the same act as Profiles -> Reset Profile
 - scheduleTimer schedules once through C_Timer.After with the given delay
+- Keybindings: the General page's strip ends in a Keybindings tab, after every schema tab
+- Keybindings: the tab's rows are NS.BINDINGS in order, labeled with the BINDING_NAME_ globals
+- Keybindings: a key bound through the tab is the client's, and a key set elsewhere shows in the tab
+- Keybindings: the tab refuses to bind a key in combat
+- Keybindings: the General page's Defaults tooltip ends with the library's keys-unchanged sentence
 
 ### test_columnblocks.lua (35)
 
@@ -2630,7 +2636,7 @@ Total.
 | test_sim_drivers.lua | 9 |
 | test_sim_session.lua | 22 |
 | test_sim_e2e.lua | 10 |
-| test_launchersetup.lua | 55 |
+| test_launchersetup.lua | 56 |
 | test_lifecycle.lua | 40 |
 | test_dispatch.lua | 11 |
 | test_vendor_sync.lua | 3 |
@@ -2676,7 +2682,7 @@ Total.
 | test_slash_profile.lua | 11 |
 | test_disabled.lua | 27 |
 | test_library_lines.lua | 11 |
-| test_options_panel.lua | 46 |
+| test_options_panel.lua | 51 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 14 |
@@ -2686,4 +2692,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2320** |
+| **Total** | **2326** |

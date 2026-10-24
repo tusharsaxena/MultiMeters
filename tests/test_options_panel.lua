@@ -1233,3 +1233,156 @@ test("scheduleTimer schedules once through C_Timer.After with the given delay", 
     assertEqual(ret, nil, "the return is unused by the library (OptionsWidgets minor 31); "
         .. "nothing here may start depending on a handle")
 end)
+
+-- ---------------------------------------------------------------------------
+-- The Keybindings tab (options-ui-§20, LibKa0s v1.77.0's O.KeybindingsTab)
+-- ---------------------------------------------------------------------------
+--
+-- The General page's LAST tab, drawn by the library from NS.BINDINGS (core/LauncherSetup.lua,
+-- launcher-§6). What is this addon's, and asserted here, is the wiring: the tab is there and last,
+-- its rows are NS.BINDINGS in order, a row's label is the client's BINDING_NAME_ text, and a key set
+-- on either surface is the one store's. Capture, slots, conflicts, sync debouncing and the
+-- never-touches-SettingsPanel cases are the library's (LibKa0s tests/test_options_keybinds*.lua)
+-- and are not repeated (testing-§8).
+--
+-- THE SHARED INSTANCE, because Kit.keybindThroughTab presses its key into the capture listener of
+-- the library the harness exposed (T.mocks' LibStub); an isolated instance carries a library of
+-- its own, whose listener the driver cannot reach. The kit's binding mock is installed on it once,
+-- fill-only. Its GetBindingName reads the MOCK table, while this addon's labels land in the chunk
+-- environment (`rawset(_G, ...)` in core/LauncherSetup.lua writes mocks._G), so the client's
+-- answer -- the label the Keybindings page shows -- is restated over the environment first.
+
+local KB_COMMAND = "CLICK MultiMetersToggleWindows:LeftButton"
+
+local function bindingScene()
+    local inst = { NS = T.NS, mocks = T.mocks }
+    local M = inst.mocks
+    if not M.__kbInstalled then
+        M.GetBindingName = M.GetBindingName or function(command)
+            local v = rawget(M._G, "BINDING_NAME_" .. tostring(command))
+            if v ~= nil then return v end
+            return command
+        end
+        dofile(T.root .. "/tests/_kit/mock_bindings.lua")(M)
+        M.__kbInstalled = true
+    end
+    M.clearBindings()
+    M.setRestricted(false)
+    return inst
+end
+
+--- Show General and open its Keybindings tab, answering the ctx and the row records the library's
+--- KeybindRows drew (captured off the instance member the tab's render calls).
+local function openKeybindings(inst)
+    local H = inst.NS.Helpers
+    local ctx = showPage(inst, "general")
+    local rows
+    local real = H.KeybindRows
+    H.KeybindRows = function(...)
+        rows = real(...)
+        return rows
+    end
+    local tab
+    for _, kid in ipairs(ctx.__tabKids or {}) do
+        if kid.__ka0sTabTipLabel == "Keybindings" then tab = kid end
+    end
+    assertTrue(tab ~= nil, "the General page draws no Keybindings tab")
+    -- The shared instance may already be on the tab, and a click on the active tab draws nothing:
+    -- leave for the first tab, then come back, so the rows are drawn now.
+    local ok, err = pcall(function()
+        ctx.__tabKids[1]:__fire("OnClick")
+        tab:__fire("OnClick")
+    end)
+    H.KeybindRows = real
+    assertTrue(ok, tostring(err))
+    return ctx, rows
+end
+
+test("Keybindings: the General page's strip ends in a Keybindings tab, after every schema tab", function()
+    -- options-ui-§20: the LAST tab of the General page, labeled exactly Keybindings, a host tab with
+    -- no `before`; Master controls stays first (options-ui-§15).
+    -- red under: no tab (the page passes no opts.tabs), a tab placed ahead of a schema tab, or a
+    -- relabeled one.
+    local inst = bindingScene()
+    local L = inst.NS.L
+    local ctx = showPage(inst, "general")
+    local labels = {}
+    -- The ledger also holds the strip's panel, which carries no tab label.
+    for _, kid in ipairs(ctx.__tabKids or {}) do
+        if kid.__ka0sTabTipLabel then labels[#labels + 1] = kid.__ka0sTabTipLabel end
+    end
+    assertEqual(table.concat(labels, " | "),
+        table.concat({ L["Master controls"], L["Behavior"], L["Statistic colors"], "Keybindings" }, " | "))
+end)
+
+test("Keybindings: the tab's rows are NS.BINDINGS in order, labeled with the BINDING_NAME_ globals", function()
+    -- red under: a tab drawn from a second list of commands, or a row label of the addon's own
+    -- rather than the text the client's Keybindings page shows for the action.
+    local inst = bindingScene()
+    local ctx, rows = openKeybindings(inst)
+    assertEqual(ctx.activeTab, "Keybindings")
+    assertTrue(type(rows) == "table", "the tab drew no rows")
+    assertEqual(#rows, #inst.NS.BINDINGS)
+    for i, b in ipairs(inst.NS.BINDINGS) do
+        assertEqual(rows[i].command, b.command)
+        assertEqual(rows[i].label.text, rawget(inst.mocks._G, "BINDING_NAME_" .. b.command))
+    end
+    assertEqual(rows[1].label.text, "Toggle meter windows")
+end)
+
+test("Keybindings: a key bound through the tab is the client's, and a key set elsewhere shows in the tab", function()
+    -- One store, both surfaces (options-ui-§20): the tab writes SetBinding then SaveBindings to the
+    -- set in force, and repaints on UPDATE_BINDINGS when Options -> Keybindings (here, a plain
+    -- SetBinding) changes a key.
+    -- red under: a tab that keeps its own key (GetBindingKey never answers it), or one that caches
+    -- the key it drew.
+    local inst = bindingScene()
+    local M = inst.mocks
+    local _, rows = openKeybindings(inst)
+    T.keybindThroughTab(rows[1], 1, "K")
+    assertEqual(M.GetBindingKey(KB_COMMAND), "K")
+    assertEqual(M.__savedBindingSets[#M.__savedBindingSets], M.GetCurrentBindingSet())
+
+    -- Options -> Keybindings sets a second key. The client fires UPDATE_BINDINGS at the frame
+    -- registered for it; the library registers through Core's SafeRegisterEvent, which the kit's
+    -- recorder does not survey, so the event is delivered to that frame once its registration is
+    -- confirmed (it is registered only while a row is on screen).
+    local lib = M.LibStub("LibKa0s-Options-1.0")
+    local f = lib.__keybindEventFrame
+    M.SetBinding("F7", KB_COMMAND)
+    assertEqual(rows[1].slots[2].text, M.NOT_BOUND, "the tab repainted before any event")
+    assertTrue(f ~= nil and f:IsEventRegistered("UPDATE_BINDINGS"),
+        "the tab does not hear UPDATE_BINDINGS while its row is on screen")
+    f:GetScript("OnEvent")(f, "UPDATE_BINDINGS")
+    if M.__flushTimers then M.__flushTimers() end
+    assertEqual(rows[1].slots[2].text, "F7", "the tab did not repaint after UPDATE_BINDINGS")
+    M.clearBindings()
+end)
+
+test("Keybindings: the tab refuses to bind a key in combat", function()
+    -- options-ui-§20: no key is bound, cleared or saved in combat.
+    -- red under: a host editor of the addon's own that skips the library's combat lock.
+    local inst = bindingScene()
+    local M = inst.mocks
+    local _, rows = openKeybindings(inst)
+    M.setRestricted(true)
+    local ok, outcome = pcall(T.keybindThroughTab, rows[1], 1, "K")
+    M.setRestricted(false)
+    assertTrue(ok, tostring(outcome))
+    assertEqual(outcome, "Key bindings can be changed after combat.")
+    assertEqual(M.GetBindingKey(KB_COMMAND), nil, "a key was bound in combat")
+    assertEqual(#M.__bindingWrites, 0, "SetBinding ran in combat")
+end)
+
+test("Keybindings: the General page's Defaults tooltip ends with the library's keys-unchanged sentence", function()
+    -- options-ui-§20 (SHOULD): Defaults and Reset all settings never reach a key, and the Defaults
+    -- button says so before it is clicked, in the library's own words (O.KEYBINDS_UNCHANGED).
+    -- red under: no defaultsTooltip on the General page, or a host rewording of the sentence.
+    local inst = T.load()
+    local ctx = panelFor(inst, "general")
+    local tip = ctx.panel.defaultsTooltip
+    assertEqual(type(tip), "string", "the General page's Defaults button has no tooltip")
+    local tail = inst.NS.Helpers.KEYBINDS_UNCHANGED
+    assertEqual(tail, "Key bindings are not changed.")
+    assertEqual(tip:sub(-#tail), tail)
+end)

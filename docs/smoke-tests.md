@@ -18,7 +18,7 @@ secret-value rules the checks refer to.
 | ID range | Theme | What it covers |
 |---|---|---|
 | INSTALL-1 to INSTALL-14 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
-| SLASH-1 to SLASH-19 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding |
+| SLASH-1 to SLASH-32 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding and the General page's Keybindings tab |
 | PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
@@ -206,6 +206,7 @@ secret-value rules the checks refer to.
   `/mm enable`. Result: pass (owner-marked 2026-10-10)
 - **SLASH-15. The key binding is listed.** Key Bindings → AddOns lists a *Ka0s Multi Meters* header with
   one *Toggle meter windows* entry and no key preassigned (`launcher-§6`). Result: pass (owner-marked 2026-10-23)
+  Superseded from the 2026-10-24 keybindings run by SLASH-30: the binding moved to a section of its own.
 - **SLASH-16. The key toggles.** Bind a key and press it → every meter window hides; press again → they
   show, the same as `/mm toggle`. One press toggles once. Result: pass (owner-marked 2026-10-23)
 - **SLASH-17. The key while disabled.** `/mm disable`, then press the key → exactly one chat line
@@ -217,7 +218,21 @@ secret-value rules the checks refer to.
   taint message (the windows are not secure). Result: pass (owner-marked 2026-10-23)
 - SLASH-20 to SLASH-29 were the first cut of the simulator checks (2026-10-23). They moved whole to
   the [SIM](#sim) theme, SLASH-20 to SLASH-28 as SIM-1 to SIM-9 and SLASH-29 as SIM-11, and the
-  numbers are retired; the next SLASH check is SLASH-30.
+  numbers are retired. SLASH-30 to SLASH-32 follow; the next SLASH check is SLASH-33.
+- **SLASH-30. The binding has a section of its own** (run 2026-10-24, SM-MM-KB1). Options →
+  Keybindings shows a section titled *Ka0s Multi Meters*, holding the one *Toggle meter windows*
+  entry, with no blank spacer row above it and no entry left under *AddOns*. A key bound before the
+  update is still bound. Result: pending
+- **SLASH-31. The two surfaces are one store** (SM-MM-KB2). `/mm config` → General → the strip ends in
+  **Keybindings**, with one *Toggle meter windows* row: Key 1, Key 2 and Clear. Bind a key there →
+  Options → Keybindings → Ka0s Multi Meters shows it; set the other slot on the client's page → the
+  tab shows it the next time it is looked at. Under the tab's rows the set line reads *Saved for: all
+  characters*; tick *Character Specific Keybindings* on the client's page and repeat → it reads
+  *Saved for: this character only*, and both surfaces still agree. Result: pending
+- **SLASH-32. The tab's key toggles, Escape cancels, combat refuses** (SM-MM-KB3). The key bound on
+  the tab toggles the windows as SLASH-16 does. Click a slot so it reads *Press a key...*, press
+  Escape → the capture cancels and Settings stays open. In combat, click a slot → the outcome line
+  reads *Key bindings can be changed after combat.* and no key changes. Result: pending
 
 ## PANEL
 

@@ -193,9 +193,14 @@ local function Build(mainCategory)
     if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
     if not (H and H.CreatePanel) then return nil end
 
+    -- The Defaults tooltip ENDS with the library's O.KEYBINDS_UNCHANGED (options-ui-§20): a page
+    -- with a Keybindings tab beside its Defaults button says, before the click, that keys are not
+    -- a setting it restores.
     local ctx = H.CreatePanel("MultiMetersGeneralPanel", L["General"], {
-        pageKey        = PAGE,
-        defaultsButton = true,
+        pageKey         = PAGE,
+        defaultsButton  = true,
+        defaultsTooltip = L["Restore the settings on this page to their shipped values."] .. " "
+            .. (H.KEYBINDS_UNCHANGED or ""),
     })
     ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end
 
@@ -245,9 +250,16 @@ local function Build(mainCategory)
         -- page (settings/Schema.lua, `sessionOnly`), so rendering the schema
         -- renders them — drawing either one here as well is what produced the
         -- duplicate checkboxes and the duplicate "Debug" heading.
+        --
+        -- THE KEYBINDINGS TAB (options-ui-§20) is the strip's LAST: a host tab the library draws
+        -- from NS.BINDINGS (core/LauncherSetup.lua), with no `before`, so it lands after every
+        -- schema tab. It edits the client's key store, never the profile, which is why Defaults and
+        -- Reset all settings leave it alone.
         H.RenderTabbedSchema(c, PAGE, {
             [L["Master controls"]]   = afterMaster,
             [L["Statistic colors"]]  = afterStatColors,
+        }, nil, {
+            tabs = { H.KeybindingsTab({ bindings = NS.BINDINGS }) },
         })
     end)
 
