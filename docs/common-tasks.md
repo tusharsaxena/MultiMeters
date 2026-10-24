@@ -316,7 +316,7 @@ add to an existing tab; see [Split an over-full tab](#split-an-over-full-tab) be
 ```lua
 {
     path = "window.rows.compactMode", type = "bool", default = false,
-    page = "frame", group = L["Row"],
+    page = "frame", group = L["Rows"], subgroup = L["Grid"],
     label = L["Compact mode"], desc = L["Draw rows without spacing."],
 },
 ```
@@ -388,9 +388,10 @@ hand-writing one is anti-pattern #73. In practice:
 
 ## Split an over-full tab
 
-Worth doing once a tab is long enough to scroll past comfortably — Bars and Tooltip already sit at
-six tabs each, so a seventh on either is the point to ask whether it should be its own tab instead of
-added to one of the six.
+Worth doing once a tab is long enough to scroll past comfortably. Item 020 went the other way and
+merged tabs (no Windows entry has more than four now, under `options-ui-§13`'s six for a railed page),
+so first ask whether a subsection heading (`subgroup`) inside the existing tab says enough; a tab that
+covers more than one subject needs those headings anyway (`options-ui-§7`).
 
 **1. `settings/Schema.lua`** — pick the rows moving to the new tab and give them a `group` no other
 row on that `page` uses. `RenderTabbedSchema` draws the new tab in the position its first row's

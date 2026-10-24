@@ -295,8 +295,10 @@ local function renderBlockEditor(ctx)
     })
 end
 
--- Three tabs: the block editor (bespoke, not schema rows) and the two schema groups that used
--- to sit under it with no heading saying which window they belonged to. The strip is drawn
+-- Two tabs: the block editor (bespoke, not schema rows) and the column header strip's one schema
+-- group, "Column header", with its Text and Background subsections (item 020, MUL-L16 -- it was
+-- two tabs, "Header text" and "Header background", whose names a Header rail entry next door made
+-- ambiguous). The strip is drawn
 -- directly with H.TabStrip and each schema tab renders its own filtered row list through
 -- H.RenderRows.
 --
@@ -305,10 +307,9 @@ end
 -- re-enters itself, not the Windows page's renderer, so NS.CancelReorder could no longer run
 -- before the clear (Helpers.RenderWindowPage cancels first). It needs a hook that runs before
 -- the clear, and it has none.
--- tests/test_columns.lua pins the three tabs and the cancel-then-clear order.
+-- tests/test_columns.lua pins the two tabs and the cancel-then-clear order.
 local TAB_COLUMNS = L["Columns"]
-local TAB_HEADER_TEXT = L["Header text"]
-local TAB_HEADER_BG = L["Header background"]
+local TAB_COLUMN_HEADER = L["Column header"]
 
 --- The Columns entry's strip and body, drawn under the band and the rail by the
 --- Windows page's renderer (settings/OptionsSetup.lua, Helpers.RenderWindowPage).
@@ -321,9 +322,8 @@ local function renderSection(ctx)
 
     H.TabStrip(ctx, {
         tabs = {
-            { key = TAB_COLUMNS,    label = TAB_COLUMNS },
-            { key = TAB_HEADER_TEXT, label = TAB_HEADER_TEXT },
-            { key = TAB_HEADER_BG,   label = TAB_HEADER_BG },
+            { key = TAB_COLUMNS,       label = TAB_COLUMNS },
+            { key = TAB_COLUMN_HEADER, label = TAB_COLUMN_HEADER },
         },
         value = ctx.activeTab or TAB_COLUMNS,
         onSelect = function(key)
@@ -337,10 +337,11 @@ local function renderSection(ctx)
     })
     ctx.activeTab = ctx.activeTab or TAB_COLUMNS
 
-    if ctx.activeTab == TAB_HEADER_TEXT then
-        H.RenderRows(ctx, rowsOfGroup(TAB_HEADER_TEXT), nil, nil, { noHeadings = true })
-    elseif ctx.activeTab == TAB_HEADER_BG then
-        H.RenderRows(ctx, rowsOfGroup(TAB_HEADER_BG), nil, nil, { noHeadings = true })
+    -- `noHeadings` suppresses only the GROUP heading, which would repeat the tab just
+    -- clicked (options-ui-§7); the Text and Background SUBSECTION headings are drawn
+    -- whatever it says (LibKa0s OptionsWidgets' subsection emitter).
+    if ctx.activeTab == TAB_COLUMN_HEADER then
+        H.RenderRows(ctx, rowsOfGroup(TAB_COLUMN_HEADER), nil, nil, { noHeadings = true })
     else
         renderBlockEditor(ctx)
     end
@@ -348,7 +349,7 @@ end
 
 --- The Columns Defaults: TWO RESETS BEHIND ONE BUTTON, because this entry carries both a bespoke
 --- array (the column list, addressable only as a whole -- see restoreShippedColumns above) and
---- eight window.columnHeader.* schema rows on its other two tabs. The button restores the whole
+--- eight window.columnHeader.* schema rows on its other tab. The button restores the whole
 --- entry, not the visible tab (options-ui-§13), so both halves come back whichever tab is showing.
 ---
 --- ONE LOG LINE FOR BOTH (debug-logging-§10). The pair is bracketed here, so the array write sits

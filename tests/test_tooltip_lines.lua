@@ -467,6 +467,24 @@ test("A bar sits UNDER the tooltip's text, not over it", function()
         "the fill must still sit above the bar's own backdrop")
 end)
 
+test("A pooled line follows GameTooltip's level when something re-levels the tooltip", function()
+    -- The interleave above needs EQUAL levels, and GameTooltip's level is not this
+    -- addon's to keep: a tooltip skin or Blizzard may move it after a line was pooled.
+    -- red under: the level taken once, at creation (MUL-Z07).
+    local inst, cfg, anchor = bench()
+    local tip = inst.mocks.GameTooltip
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
+    tip:Hide()
+    tip:SetFrameLevel(tip:GetFrameLevel() + 7)
+    tip:ClearLines()
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
+
+    local b = tooltipBars(inst)[1]
+    assertTrue(b ~= nil, "no bar was drawn")
+    assertEqual(b.__parent.__level, tip:GetFrameLevel(), "the carrier kept the old level")
+    assertEqual(b.__level, tip:GetFrameLevel(), "the bar kept the old level")
+end)
+
 test("Bars come down when GameTooltip closes, whoever closed it", function()
     -- GameTooltip is SHARED and RECYCLED, and hiding it does not un-Show the
     -- frames parented to it. A bar left Shown reappears the instant a unit or an

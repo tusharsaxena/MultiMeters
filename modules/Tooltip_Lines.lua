@@ -63,6 +63,17 @@ local linePool = I.linePool
 local applyLineFont = I.applyLineFont
 local ensureTooltipHook = I.ensureTooltipHook
 
+--- Level a carrier and its bar at GameTooltip's own level (the layering note in
+--- modules/Tooltip.lua). Run at creation AND on every draw: the carrier is pooled
+--- for the session, and a tooltip skin, another addon or the client may re-level
+--- GameTooltip after it was built. A lower level would put the bar under the
+--- tooltip's backdrop, a higher one over its spell-name text.
+local function levelLine(frame)
+    local LEVEL = NS.Constants.LAYERS.LEVEL
+    frame:SetFrameLevel(GameTooltip:GetFrameLevel() + LEVEL.TOOLTIP_LINE)
+    if frame.bar then frame.bar:SetFrameLevel(frame:GetFrameLevel() + LEVEL.TOOLTIP_LINE) end
+end
+
 --- The nth pooled line's carrier frame, created on first use. Its bar and its two
 --- number slots hang off it under `.bar`, `.amount` and `.share`.
 local function lineWidget(index)
@@ -79,15 +90,14 @@ local function lineWidget(index)
     -- is what keeps it clear of rule R3.
     local frame = CreateFrame("Frame", nil, GameTooltip, "BackdropTemplate")
     frame:SetHeight(BAR_HEIGHT)
-    -- The tooltip's own level, NOT one above it: see the layering note above.
-    frame:SetFrameLevel(GameTooltip:GetFrameLevel())
+    -- The tooltip's own level, NOT one above it: see the layering note in
+    -- modules/Tooltip.lua. levelLine re-states it once the bar exists, and per draw.
 
     -- BackdropTemplate on the BAR as well as on the carrier: the border is drawn
     -- on the bar (see applyLineBorder), and a template cannot be added to a frame
     -- after it exists.
     local b = CreateFrame("StatusBar", nil, frame, "BackdropTemplate")
     b:SetAllPoints(frame)
-    b:SetFrameLevel(frame:GetFrameLevel())
     local bg = b:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints(b)
     bg:SetColorTexture(0, 0, 0, 0.35)
@@ -149,6 +159,7 @@ local function lineWidget(index)
 
     frame.bar, frame.amount, frame.share, frame.label = b, amount, share, label
     frame.time, frame.caster = time, caster
+    levelLine(frame)
     linePool[index] = frame
     return frame
 end
@@ -597,6 +608,7 @@ local function drawLine(lineIndex, amount, share, value, max, style, label, mode
     -- now empty — the numbers moved onto this carrier.
     frame:SetPoint("LEFT", left, "LEFT", BAR_INSET_LEFT, 0)
     frame:SetPoint("RIGHT", GameTooltip, "RIGHT", -(TOOLTIP_H_PADDING / 2), 0)
+    levelLine(frame)
     frame:Show()
 
     frame.amount:SetText(amount)

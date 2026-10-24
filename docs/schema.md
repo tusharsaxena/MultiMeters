@@ -621,9 +621,9 @@ that "the header" is the whole block a player points at — which meant `columnH
 drawn underneath it and could not be seen, and a color picked for the title bar restyled the grid's
 column labels too. Two strips, two settings, two rectangles.
 
-`show`, `align`, `height` and `bgColor` are edited under Windows > Header's **Title bar** tab — the strip's
-own shape; `font`, `size`, `outline`, `shadow` and `color` are the **Title text** tab — the face drawn
-on it. The two used to be one group ("Header text" and "Header background" before that, which put
+`show`, `height` and `bgColor` are edited under Windows > Header's **Title bar** tab — the strip's
+own shape; `font`, `size`, `outline`, `shadow`, `color` and, since item 020, `align` (*Text
+alignment*, a property of the text) are the **Title text** tab — the face drawn on it. The two used to be one group ("Header text" and "Header background" before that, which put
 `align` and `height` — both properties of the text — under a heading that said background); splitting
 shape from face is what makes each tab's rows a single answerable question rather than a mix of two.
 
@@ -675,8 +675,9 @@ pixel-identical after the upgrade — what changed is that the settings exist an
 it defaults fully transparent.
 
 **Edited under Windows > Columns, not the Header entry.** These eight rows carry `page = "columns"` —
-**Header text** (`font`, `size`, `outline`, `shadow`, `color`, `colorMode`) and **Header background**
-(`bgColorMode`, `bgColor`) are two of that page's three tabs, alongside the bespoke block editor. They
+the **Column header** tab, beside the bespoke block editor, with a *Text* subsection (`font`, `size`,
+`outline`, `shadow`, `color`, `colorMode`) and a *Background* subsection (`bgColor`, `bgColorMode`).
+They were two tabs, Header text and Header background, until item 020. They
 moved off Header because Columns is the page that labels the strip they style; the storage paths are
 untouched (`window.columnHeader.*`), so a row's page is where it is edited and its path is where it
 is stored, same as `frame`/`header` above.
@@ -913,7 +914,10 @@ the characters of a value, and doing that to a secret is what rule R1 forbids, s
 name reaches the widget untouched and uncapped.
 
 `deathTimeFormat` labels a death in the Deaths tooltip and the death drill-down — the time of day,
-or how long ago. A third value, "time into the fight", was built and removed: nothing on the client
+or how long ago. It is stored here, under `window.text.*`, and **edited on Windows > Tooltip >
+Contents > Deaths** since item 020: no cell reads it, so its row carries `page = "tooltip"` (Tooltip's
+Defaults resets it, `/mm list` lists it under tooltip) while Copy settings from still carries it with
+the bar text, because a copy follows the stored group. A third value, "time into the fight", was built and removed: nothing on the client
 can date a past death against the run it happened in, and the captures that establish that are on
 [issue #18](https://github.com/tusharsaxena/MultiMeters/issues/18). Both surviving values read the
 recap's own newest event timestamp, which is absolute epoch and always present.
@@ -1037,10 +1041,12 @@ about the player, not about whether secure writes are currently legal.
 
 ### `visibility`
 
-**Where to show this window** — every context `true`: `dungeon` · `raid` · `arena` ·
+All seventeen are on one tab, **Rules**, under three subsection headings (item 020).
+
+**Show in** — every context `true`: `dungeon` · `raid` · `arena` ·
 `battleground` · `delve` · `scenario` · `world`.
 
-**When to hide this window** — every rule `false`: `hideWhenSolo` · `hideInVehicle` ·
+**Hide when** — every rule `false`: `hideWhenSolo` · `hideInVehicle` ·
 `hideWhenMounted` · `hideWhenSkyriding` · `hideOnTaxi` · `hideInHousing` · `hideInPetBattle` ·
 `hideWhenDead`.
 

@@ -1061,6 +1061,21 @@ function Row.New(window)
     row.bg:SetAllPoints(frame)
     row.bg:Hide()
 
+    -- THE ROW'S OVERLAY FRAME, and the two marks below live on it rather than on
+    -- the row. The cells are CHILD FRAMES of the row, and a child draws over every
+    -- region of its parent whatever the draw layer, so an OVERLAY texture on the
+    -- row sat UNDER the very cells it was meant to mark: the self edge under the
+    -- name cell's fill, the hover wash under every cell (frame-layering-§3). The
+    -- overlay is a child of the row one band above the cells, leveled relative to
+    -- the row (LAYERS.LEVEL, core/Constants.lua). It MUST stay mouse-off -- a Frame
+    -- is by default, and nothing here may call EnableMouse on it -- or it would
+    -- take every cell's hover and its tooltip. Built once, here: a pooled row keeps
+    -- its overlay, and the row is never re-parented.
+    local overlay = CreateFrame("Frame", nil, frame)
+    overlay:SetAllPoints(frame)
+    row.overlay = overlay
+    row:ApplyLevel()
+
     -- Two separate overlays rather than one re-tinted texture: "this is you" and
     -- "the cursor is here" are independent facts and a player wants to see both
     -- at once.
@@ -1071,16 +1086,17 @@ function Row.New(window)
     -- warlock's purple into the same yellow every other class got, so the one row
     -- a player looks at first was the one row whose class color was gone.
     --
-    -- A left edge says the same thing and takes nothing away — it is in a part of
-    -- the row the tint does not use, and it reads at a glance precisely because
-    -- nothing else in the grid is a vertical bar.
-    row.selfHighlight = frame:CreateTexture(nil, "OVERLAY")
+    -- A left edge says the same thing and takes nothing away, and it reads at a
+    -- glance precisely because nothing else in the grid is a vertical bar. It draws
+    -- OVER the name cell's fill (it is on the overlay frame), so it covers the
+    -- first pixel of a left icon or name, which start 2px in.
+    row.selfHighlight = overlay:CreateTexture(nil, "OVERLAY")
     row.selfHighlight:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
     row.selfHighlight:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
     row.selfHighlight:SetWidth(SELF_EDGE_WIDTH)
     row.selfHighlight:Hide()
 
-    row.mouseHighlight = frame:CreateTexture(nil, "OVERLAY")
+    row.mouseHighlight = overlay:CreateTexture(nil, "OVERLAY")
     row.mouseHighlight:SetAllPoints(frame)
     row.mouseHighlight:SetColorTexture(1, 1, 1, 0.10)
     row.mouseHighlight:Hide()
@@ -1088,6 +1104,14 @@ function Row.New(window)
     row.nameCell = newCell(row, "name")
 
     return row
+end
+
+--- Put the overlay frame back one band above the cells, relative to the row. Called
+--- at creation and by the window whenever it re-levels itself (WindowProto:ApplyLevels),
+--- because an explicit level does not follow a parent that moved.
+function RowProto:ApplyLevel()
+    local LEVEL = Const.LAYERS.LEVEL
+    self.overlay:SetFrameLevel(self.frame:GetFrameLevel() + (LEVEL.ROW_OVERLAY - LEVEL.ROWS))
 end
 
 --- Re-place every widget from the window's config. Called on creation and on any

@@ -630,3 +630,53 @@ Constants.POOL_GROW_STEP = 5
 -- A 40-player raid is the largest real group; the cap exists so a corrupted
 -- config cannot ask the pool for thousands of frames.
 Constants.MAX_ROWS = 40
+
+-- ---------------------------------------------------------------------------
+-- Frame layering (frame-layering-§5)
+-- ---------------------------------------------------------------------------
+
+-- THE ONE LAYERS TABLE. Every SetFrameStrata and SetFrameLevel in the addon reads
+-- it, so the whole draw order is written down here and nowhere else. Back to front:
+--
+--   MEDIUM (fixed)     the window ANCHOR: invisible geometry, never parent anything
+--                      visible to it (it does not follow the strata setting)
+--   STRATA.HUD         a meter window's art frame: MEDIUM by default, or the
+--                      player's `window.frame.strata` (Low / Medium / High / Dialog,
+--                      kept as shipped: CALL-04); toplevel, raised on drag and on a
+--                      header-control click, so overlapping windows stack whole.
+--                      Inside a window of base level W:
+--                        W + CHROME       drag bar, session line, column-header strip,
+--                                         body, test and sim strips (implicit + 1)
+--                        W + ROWS         rows, column-header buttons, empty state
+--                        W + CELLS        the cells (implicit + 1 over their row)
+--                        W + ROW_OVERLAY  a row's overlay frame: the self edge and the
+--                                         hover wash, mouse-off, above the cells it marks
+--                        W + CONTROLS     the header controls, frame-relative
+--                        W + GRIP         LibKa0s-Core-1.0's resize grip (its GRIP_LEVEL)
+--   STRATA.MODAL       the export modal: DIALOG, toplevel, clamped, raised on open;
+--                      beside the library's debug console, perf and sim panels and the
+--                      Blizzard StaticPopups
+--   FULLSCREEN         the library's copy window, one strata above the modal
+--   FULLSCREEN_DIALOG  the library's dropdown menu, AceGUI pullouts, Blizzard menus
+--   TOOLTIP            GameTooltip and its spell lines at the tooltip's own level
+--                      (+ TOOLTIP_LINE, re-stated per draw); the reorder drag ghost;
+--                      the LSM30 media pullouts
+--
+-- The library's reorder drop line (+20) belongs to the settings panel, not to a
+-- window. Levels are always `base:GetFrameLevel() + LEVEL.<NAME>`, never absolute
+-- and never relative to a sibling.
+Constants.LAYERS = {
+    STRATA = {
+        HUD   = "MEDIUM",
+        MODAL = "DIALOG",
+    },
+    LEVEL = {
+        CHROME       = 1,
+        ROWS         = 2,
+        CELLS        = 3,
+        ROW_OVERLAY  = 4,
+        CONTROLS     = 6,
+        GRIP         = 10,
+        TOOLTIP_LINE = 0,
+    },
+}

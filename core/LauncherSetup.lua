@@ -121,7 +121,8 @@ end
 -- The options menu's Show window entry owes a key. Bindings.xml at the repo root declares one CLICK
 -- binding on the button below, and the button's OnClick is `toggleWindows`, the SAME function the
 -- descriptor's `toggleWindow` is, so the menu, the verb and the key are one path. No default key:
--- the player picks one under Key Bindings -> AddOns -> Ka0s Multi Meters. A plain, hidden,
+-- the player picks one under Options -> Keybindings -> Ka0s Multi Meters, or on the General page's
+-- Keybindings tab (options-ui-§20), which edits the same client store. A plain, hidden,
 -- non-secure Button: it toggles non-secure windows, so a press in combat taints nothing.
 --
 -- THE KEY REFUSES EXACTLY AS `/mm toggle` DOES. runVerb calls the verb's handler directly and so
@@ -155,11 +156,23 @@ do
     button:Hide()
 end
 
--- The Key Bindings labels: the brand as the header (launcher-§1's spelling) and the action through
--- the locale. rawset because the second name holds a space and a colon, and so that neither global
--- needs a .luacheckrc entry.
+-- The Keybindings labels: the brand (launcher-§1's spelling, the launcher label's own constant) and
+-- the action through the locale. Bindings.xml names BINDING_HEADER_MULTIMETERS as every binding's
+-- CATEGORY (launcher-§6, v2.88.0), so the brand is also the title of this addon's own section on
+-- the client's Keybindings page; the client reads it at registration, hence file scope. rawset
+-- because the second name holds a space and a colon, and so that neither global needs a
+-- .luacheckrc entry.
+local TOGGLE_COMMAND = "CLICK " .. TOGGLE_BUTTON .. ":LeftButton"
 rawset(_G, "BINDING_HEADER_MULTIMETERS", L["Ka0s Multi Meters"])
-rawset(_G, "BINDING_NAME_CLICK " .. TOGGLE_BUTTON .. ":LeftButton", L["Toggle meter windows"])
+rawset(_G, "BINDING_NAME_" .. TOGGLE_COMMAND, L["Toggle meter windows"])
+
+-- THE ONE BINDINGS TABLE (launcher-§6): every Bindings.xml command, in that file's order, Show
+-- window first. The General page's Keybindings tab draws one row per entry (settings/General.lua,
+-- O.KeybindingsTab) and the suite checks Bindings.xml against it. Declared here, beside the button
+-- and ahead of the library-absent fork, so a degraded load declares it too.
+NS.BINDINGS = {
+    { command = TOGGLE_COMMAND, tooltip = L["Shows or hides every meter window, as /mm toggle does."] },
+}
 
 if not Launcher then
     -- A missing vendored library must degrade, not error at load. The stub answers every member

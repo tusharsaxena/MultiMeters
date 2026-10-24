@@ -278,18 +278,18 @@ local PARTITION = {
     -- or splitting the canonical set; it does not forbid an addon's own rows after
     -- it, and the case below pins that the seven come FIRST and contiguous.
     general    = { { "Master controls", 8 }, { "Behavior", 2 }, { "Statistic colors", 8 } },
+    -- The Windows rail's strips after item 020 (the settings-layout pass): Size and position
+    -- leads Frame, the broadcasts are Quick style, one Bar tab per styled surface on Bars and
+    -- Tooltip, one Controls tab on Header, one Rules tab on Visibility and one Column header
+    -- tab on Columns.
     windows    = { { "Window", 1 } },
-    frame      = { { "General", 6 }, { "Size and position", 6 },
-                   { "Background and border", 6 }, { "Row", 8 } },
-    header     = { { "Title bar", 8 }, { "Title text", 6 }, { "Controls", 8 },
-                   { "Button style", 8 } },
-    bars       = { { "Bar", 6 }, { "Background", 3 }, { "Border", 5 },
-                   { "Text content", 5 }, { "Text style", 7 }, { "Icons", 3 } },
-    tooltip    = { { "General", 5 }, { "Bar", 5 }, { "Bar background", 3 },
-                   { "Bar border", 4 }, { "Text", 6 }, { "Contents", 7 } },
-    visibility = { { "Where to show this window", 7 }, { "When to hide this window", 8 },
-                   { "Combat", 2 } },
-    columns    = { { "Header text", 6 }, { "Header background", 2 } },
+    frame      = { { "Size and position", 8 }, { "Quick style", 4 },
+                   { "Background and border", 6 }, { "Rows", 8 } },
+    header     = { { "Title bar", 7 }, { "Title text", 7 }, { "Controls", 16 } },
+    bars       = { { "Bar", 14 }, { "Text", 11 }, { "Icons", 3 } },
+    tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 12 }, { "Text", 6 } },
+    visibility = { { "Rules", 17 } },
+    columns    = { { "Column header", 8 } },
 }
 
 test("Schema: every page's tabs are the designed ones, in order, at the designed size",
@@ -338,7 +338,7 @@ local MASTER_ROWS = {
     { "enabled",            "Enable Multi Meters" },
     { "master.visibility",  "General visibility"  },
     { "master.scale",       "Master scale"        },
-    { "master.alpha",       "Master alpha"        },
+    { "master.alpha",       "Master opacity"      },
     { "master.locked",      "Lock frame"          },
     { "state.debugConsole", "Debug console"       },
     -- THE FOURTH LINE OF THE SET, in options-ui-§15's column order: the minimap button
@@ -531,8 +531,8 @@ function()
 
     local perWindow = {
         ["window.frame.locked"] = L["Lock window"],
-        ["window.frame.scale"]  = L["Scale"],
-        ["window.frame.alpha"]  = L["Opacity"],
+        ["window.frame.scale"]  = L["Window scale"],
+        ["window.frame.alpha"]  = L["Window opacity"],
     }
     for path, label in pairs(perWindow) do
         local row = NS.FindSchemaRow(path)
@@ -693,10 +693,18 @@ test("Schema: a tab that mixes kinds of control names each kind between them", f
     local NS, L = inst.NS, inst.NS.L
 
     local MIXED = {
-        { "frame",  L["General"],               { L["Window"], L["All surfaces"] } },
+        { "frame",  L["Size and position"],     { L["Geometry"], L["Placement"] } },
+        { "frame",  L["Quick style"],           { L["All surfaces"] } },
         { "frame",  L["Background and border"], { L["Background"], L["Border"] } },
+        { "frame",  L["Rows"],                  { L["Grid"], L["Highlighting"] } },
         { "header", L["Title bar"],             { L["Layout"], L["Background"], L["Divider"] } },
-        { "header", L["Button style"],          { L["Icon"], L["Color"], L["Opacity"] } },
+        { "header", L["Controls"],              { L["Shown"], L["Size"], L["Color"], L["Opacity"] } },
+        { "bars",   L["Bar"],                   { L["Fill"], L["Background"], L["Border"] } },
+        { "bars",   L["Text"],                  { L["Content"], L["Style"] } },
+        { "tooltip", L["Contents"],             { L["Breakdown"], L["Deaths"], L["Player name"] } },
+        { "tooltip", L["Bar"],                  { L["Fill"], L["Background"], L["Border"] } },
+        { "visibility", L["Rules"],             { L["Show in"], L["Hide when"], L["Combat"] } },
+        { "columns", L["Column header"],        { L["Text"], L["Background"] } },
     }
 
     for _, case in ipairs(MIXED) do
@@ -849,8 +857,8 @@ test("Schema: every tab name and row label is a localized string, not a bare lit
         "these strings are not in locales/enUS.lua")
 end)
 
-test("Schema: every Controls row carries its own icon in front of its words", function()
-    -- The strip is the index into that tab: eight checkboxes named "Show close",
+test("Schema: every Controls > Shown row carries its own icon in front of its words", function()
+    -- The strip is the index into that subsection: eight checkboxes named "Show close",
     -- "Show lock", "Show segment picker" ask a reader to translate a word back
     -- into the glyph they were looking at. The icon removes the translation.
     -- red under: a row added to Controls without one, which is the row a player
@@ -867,7 +875,10 @@ test("Schema: every Controls row carries its own icon in front of its words", fu
 
     local bare = {}
     for _, row in ipairs(NS.Schema) do
-        if row.page == "header" and row.group == L["Controls"]
+        -- The Shown subsection only: the Size, Color and Opacity rows below it style
+        -- the strip as a whole (they were the Button style tab until item 020) and
+        -- name no single glyph.
+        if row.page == "header" and row.group == L["Controls"] and row.subgroup == L["Shown"]
            and not row.hidden and not NO_GLYPH[row.path] then
             if not row.label:find("^|T") then bare[#bare + 1] = row.path end
         end
@@ -937,7 +948,7 @@ test("Schema: the header controls are EDITED on Header and STORED under frame", 
     -- red under: moving the group back to Frame, or renaming the paths to match the page.
     local inst = T.load()
     local NS, L = inst.NS, inst.NS.L
-    local TABS = { [L["Controls"]] = true, [L["Button style"]] = true }
+    local TABS = { [L["Controls"]] = true }
 
     -- The five hidden `window.data.*` rows the segment menu and a column-header click write
     -- (issue #50) are filed under Controls too, but they are the window's sort and session,
@@ -955,8 +966,9 @@ test("Schema: the header controls are EDITED on Header and STORED under frame", 
             end
         end
     end
-    -- Exactly 17: Controls (close/showMinimize/showLock/showSettings, the hidden
-    -- `window.frame.minimized`, and the four meter buttons) + Button style (8). Walked over
+    -- Exactly 17: Controls > Shown (close/showMinimize/showLock/showSettings, the hidden
+    -- `window.frame.minimized`, and the four meter buttons) + its Size, Color and Opacity
+    -- subsections (8, the Button style tab until item 020). Walked over
     -- NS.Schema, not SchemaForPage, so the hidden row counts.
     assertEqual(n, 17, "the whole set moved, not one row of it")
     assertEqual(view, 5, "sessionType, sessionID, sortColumn, sortMode and sortAscending")

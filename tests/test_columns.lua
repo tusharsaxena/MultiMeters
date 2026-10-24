@@ -310,7 +310,8 @@ end)
 -- H.RenderTabbedSchema's host tabs, because the library's tab click clears the scroll ITSELF and
 -- re-enters RenderTabbedSchema, not this page's render -- so NS.CancelReorder could no longer run
 -- before the clear. These three cases pin what the page does today, so any later adoption has to
--- keep all three.
+-- keep all three. Two tabs since item 020 (MUL-L16): the block editor, then Column header, which
+-- merged the Header text and Header background tabs into one with Text and Background subsections.
 
 --- Every tab button of the strip, by its label, in strip order.
 local function tabLabels(ctx)
@@ -319,20 +320,21 @@ local function tabLabels(ctx)
     return out
 end
 
-test("Columns: the page draws three tabs, Columns then Header text then Header background",
+test("Columns: the page draws two tabs, Columns then Column header",
 function()
     -- red under: letting a group partition order the strip, which would put the block editor last.
     local inst, ctx = openPage()
     local L = inst.NS.L
     assertEqual(table.concat(tabLabels(ctx), "|"),
-        table.concat({ L["Columns"], L["Header text"], L["Header background"] }, "|"))
+        table.concat({ L["Columns"], L["Column header"] }, "|"))
     assertEqual(ctx.activeTab, L["Columns"], "the page opens on the block editor")
 end)
 
-test("Columns: the Header text tab renders exactly its group's rows, with no headings",
+test("Columns: the Column header tab renders exactly its group's rows, Text then Background, with no group heading",
 function()
-    -- red under: rendering the whole page's rows on a schema tab, or dropping noHeadings so the
-    -- tab's own name is repeated as a heading under it.
+    -- red under: rendering the whole page's rows on a schema tab, dropping noHeadings so the
+    -- tab's own name is repeated as a heading under it, or losing a row's subsection. noHeadings
+    -- suppresses only the GROUP heading; the library draws the subsection headings regardless.
     local inst, ctx = openPage()
     local L, NS = inst.NS.L, inst.NS
     local calls = {}
@@ -345,17 +347,24 @@ function()
     NS.Helpers.RenderRows = real
     assertTrue(ok, tostring(err))
 
-    assertEqual(ctx.activeTab, L["Header text"])
-    assertEqual(#calls, 1, "the Header text tab must render one row list")
+    assertEqual(ctx.activeTab, L["Column header"])
+    assertEqual(#calls, 1, "the Column header tab must render one row list")
     local want = {}
     for _, row in ipairs(NS.SchemaForPage("columns")) do
-        if row.group == L["Header text"] then want[#want + 1] = row.path end
+        if row.group == L["Column header"] then want[#want + 1] = row.path end
     end
-    local got = {}
-    for i, row in ipairs(calls[1].rows) do got[i] = row.path end
-    assertTrue(#want > 0, "the page declares no Header text rows")
+    local got, subs, seen = {}, {}, {}
+    for i, row in ipairs(calls[1].rows) do
+        got[i] = row.path
+        if row.subgroup and not seen[row.subgroup] then
+            seen[row.subgroup] = true
+            subs[#subs + 1] = row.subgroup
+        end
+    end
+    assertEqual(#want, 8, "the page declares the eight column-header rows")
     assertEqual(table.concat(got, ","), table.concat(want, ","))
-    assertTrue(calls[1].opts and calls[1].opts.noHeadings == true, "the tab drew headings")
+    assertEqual(table.concat(subs, "|"), L["Text"] .. "|" .. L["Background"])
+    assertTrue(calls[1].opts and calls[1].opts.noHeadings == true, "the tab drew its group heading")
 end)
 
 test("Columns: leaving the Columns tab mid-drag cancels the reorder BEFORE the scroll clear",
@@ -387,7 +396,7 @@ function()
     inst.mocks.setMouseDown("LeftButton", false)
     assertTrue(ok, tostring(err))
 
-    assertEqual(ctx.activeTab, NS.L["Header text"], "the tab click did not switch tabs")
+    assertEqual(ctx.activeTab, NS.L["Column header"], "the tab click did not switch tabs")
     assertEqual(order[1], "cancel-live", "the first thing the switch did was not the cancel: "
         .. table.concat(order, ","))
     assertEqual(order[2], "clear", "no scroll clear followed the cancel: " .. table.concat(order, ","))

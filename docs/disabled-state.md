@@ -123,8 +123,8 @@ capture runs.* and shows nothing. Through Launcher minor 3 the left click was re
 while stood down, reading `disabledLine` (`NS.Slash:DisabledLine()`); minor 4 retired that refusal,
 and the descriptor no longer passes `disabledLine`.
 
-**The key binding** (`launcher-§6`). *Show window*'s key, *Toggle meter windows* under Key Bindings →
-AddOns, is a feature surface too, and a key cannot be grayed the way the menu entry is. Its button's
+**The key binding** (`launcher-§6`). *Show window*'s key, *Toggle meter windows* under Options →
+Keybindings → Ka0s Multi Meters, is a feature surface too, and a key cannot be grayed the way the menu entry is. Its button's
 OnClick is the descriptor's `toggleWindow` function (`core/LauncherSetup.lua`), which runs the verb's
 handler directly and so would skip the dispatcher's gate; it therefore asks `NS.IsDisabled()` itself
 and refuses **exactly as `/mm toggle` does**: one line, `NS.Slash:DisabledLine()`, no write and no

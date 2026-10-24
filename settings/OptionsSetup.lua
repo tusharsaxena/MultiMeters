@@ -398,6 +398,10 @@ if not lib then
         -- Drawer, new at LibKa0s v1.73.0 (OptionsDrawer minor 1); no page of this addon draws a
         -- drawer, so the inert no-op applies.
         "Drawer",
+        -- KeybindingsTab and KeybindRows, new at LibKa0s v1.77.0 (OptionsKeybinds minor 2): a tab
+        -- entry and the rows it draws, reached only from a page builder, which never runs here.
+        -- KeybindRows answers nil when degraded on the live path too.
+        "KeybindingsTab", "KeybindRows",
         -- The Windows page's own members (MultiMeters#55), decorated onto the live
         -- instance below the fork. settings/Windows.lua's builder is their only caller,
         -- and it never runs here; the degraded scan and the parity case read them anyway.
@@ -412,6 +416,15 @@ if not lib then
     Helpers.ResolveId         = function() return nil end
     Helpers.UnnamedCandidates = function() return nil end
     Helpers.ID_NAME_HINT      = {}
+    -- Value-answering members new at LibKa0s v1.77.0: StrataTooltip (OptionsCompose minor 8) is read
+    -- when a strata row is declared, and KEYBINDS_UNCHANGED (OptionsKeybinds minor 2) is a tooltip
+    -- sentence. With no library both answer an empty string, a tooltip with nothing to add, rather
+    -- than a copy of the library's words.
+    Helpers.StrataTooltip      = function() return "" end
+    Helpers.KEYBINDS_UNCHANGED = ""
+    -- ResetAllTooltip, new when the v1.77.0 tag moved (OptionsCompose minor 11): the reset-all
+    -- sentence, read only by a page builder. With no library it answers an empty string too.
+    Helpers.ResetAllTooltip    = function() return "" end
     Helpers.__pages    = function() return {} end
     Helpers.__panels   = function() return {} end
     Helpers.__panelFor = function() return nil end

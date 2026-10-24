@@ -465,6 +465,7 @@ end
 local function onDragStart(frame)
     local inst = frame.mmWindow
     if not inst or inst.locked then return end
+    inst:BringToFront()
     inst.anchor:StartMoving()
 end
 
@@ -574,6 +575,9 @@ function WindowProto:BuildFrame()
     -- dragged as one object, and that is exactly what stole every hover from the
     -- cells underneath it. Dragging is the title bar's job now (dragBar, below).
     frame:EnableMouse(false)
+    -- TOPLEVEL, so overlapping windows stack whole instead of interleaving their
+    -- cells and backdrops (frame-layering-§4). BringToFront does the raising.
+    frame:SetToplevel(true)
     frame.mmWindow = self
     self.frame = frame
 
@@ -776,7 +780,7 @@ function WindowProto:ApplyConfig()
     self.anchor:SetScale(scale)
     frame:SetScale(scale)
     frame:SetAlpha((frameCfg.alpha or 1.0) * masterSetting("alpha"))
-    frame:SetFrameStrata(frameCfg.strata or "MEDIUM")
+    frame:SetFrameStrata(frameCfg.strata or Const.LAYERS.STRATA.HUD)
 
     -- The skin is re-applied rather than patched: ApplySkin owns the backdrop,
     -- the inner border and the two accent tints, and re-running it is how a

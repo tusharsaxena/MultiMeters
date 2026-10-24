@@ -487,6 +487,13 @@ do
     end
 end
 
+-- THE FRAME STRATA ROW'S TOOLTIP is the library's (frame-layering-§1, options-ui-§16):
+-- O.StrataTooltip over the row's own values, which offer Dialog, so it carries the
+-- sentence saying what a Dialog-strata window can cover. The values themselves stay
+-- as shipped (CALL-04). A degraded load with no compose layer keeps the old line.
+local STRATA_TIP = C.StrataTooltip and C.StrataTooltip(STRATA_VALUES)
+    or L["Which layer the window sits in relative to the rest of your interface."]
+
 --- Compose one canonical block, or nothing at all when there is no library.
 ---
 --- @param name string  the composer's member name
@@ -683,7 +690,6 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
         enabled      = L["Enable Multi Meters"],
         visibility   = L["General visibility"],
         scale        = L["Master scale"],
-        alpha        = L["Master alpha"],
         locked       = L["Lock frame"],
         debugConsole = L["Debug console"],
         testMode     = L["Test mode"],
@@ -729,16 +735,16 @@ dress(MASTER_ROWS, {
     },
     ["master.visibility"] = {
         values = MASTERVIS_VALUES, sorting = MASTERVIS_SORT,
-        desc = L["When this addon's windows are shown at all, whatever one window's own settings under Windows > Visibility say. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."],
+        desc = L["When this addon's windows are shown at all, whatever one window's own settings under Windows > Visibility > Rules say. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."],
         onChange = refreshVisibility,
     },
     ["master.scale"] = {
         fmt = "%.2fx",
-        desc = L["Scale multiplier for every window, multiplied into each window's own Scale under Windows > Frame. A window at 0.80 under a master of 0.50 draws at 0.40."],
+        desc = L["Scale multiplier for every window, multiplied into each window's own Window scale under Windows > Frame > Size and position. A window at 0.80 under a master of 0.50 draws at 0.40."],
         validate = isNumberIn(0.5, 2.0),
     },
     ["master.alpha"] = {
-        desc = L["Opacity multiplier for every window, multiplied into each window's own Opacity under Windows > Frame."],
+        desc = L["Opacity multiplier for every window, multiplied into each window's own Window opacity under Windows > Frame > Size and position."],
         validate = isNumberIn(0, 1),
     },
     -- LOCK FRAME IS A VIEW, NOT A LOCK OF ITS OWN (docs/ARCHITECTURE.md's deviation
@@ -754,7 +760,7 @@ dress(MASTER_ROWS, {
     -- partial install then answers unticked rather than freezing a nil in.
     ["master.locked"] = {
         sessionOnly = true,
-        desc = L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Windows > Frame, or the lock button in its header) still locks it on its own."],
+        desc = L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Windows > Frame > Size and position, or the lock button in its header) still locks it on its own."],
         get = function()
             local M = NS.WindowManager
             return M ~= nil and M.IsLocked ~= nil and M:IsLocked() or false
@@ -902,10 +908,6 @@ local HEADER_TEXT_ROWS = compose("FontGroup", {
     page = "header", group = L["Title text"],
     keys = { fontSize = "size", fontColor = "color", fontFlags = "outline", fontShadow = "shadow" },
     omit = { useClassColorFont = true },
-    labels = {
-        font = L["Font"], fontSize = L["Font size"], fontColor = L["Text color"],
-        fontFlags = L["Font outline"], fontShadow = L["Text shadow"],
-    },
     defaults = {
         font = "Friz Quadrata TT", fontSize = 12,
         fontColor = { r = 1, g = 0.82, b = 0, a = 1 },
@@ -916,10 +918,10 @@ local HEADER_TEXT_ROWS = compose("FontGroup", {
 dress(HEADER_TEXT_ROWS, {
     ["window.header.font"] = {
         values = lsmValues("font"),
-        desc = L["Font used for every number in the grid. A monospace font such as JetBrains Mono keeps columns from shifting as the numbers change; the default matches the window header."],
+        desc = L["Font for the window's title and the fight name beside it."],
     },
     ["window.header.size"] = { fmt = "%d px", desc = L["Text size in pixels."] },
-    ["window.header.color"] = { desc = L["Color of the header's own lines."] },
+    ["window.header.color"] = { desc = L["Color of the window's title and the fight name beside it."] },
     ["window.header.outline"] = {
         values = OUTLINE_VALUES, sorting = OUTLINE_SORT,
         desc = L["Outline and monochrome flags applied to the text."],
@@ -932,15 +934,19 @@ withMode(HEADER_TEXT_ROWS, "window.header.color", {
     path = "window.header.colorMode", type = "string", default = "custom",
     values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
     page = "header", group = L["Title text"],
-    label = L["Text color mode"],
+    label = L["Font color mode"],
     classColorSource = "player",
-    desc = L["What colors the window's title and the session line beside it. Class color is your own -- a window-wide strip has no other class it could mean."],
+    desc = L["What colors the window's title and the fight name beside it. Class color is your own -- a window-wide strip has no other class it could mean."],
 })
 
--- ── Bars > Bar, Background and Border (options-ui-§16) ──────────────────────
+-- ── Bars > Bar: Fill, Background and Border (options-ui-§16) ────────────────
+--
+-- ONE TAB, "Bar", with a subsection per composed block (item 020, MUL-L10): one
+-- tab per styled surface, which is options-ui-§16's own shape. Only `group` and
+-- `subgroup` changed; the composed order is untouched.
 local BARS_BAR_ROWS = compose("BarGroup", {
     prefix = "window.bars.",
-    page = "bars", group = L["Bar"],
+    page = "bars", group = L["Bar"], subgroup = L["Fill"],
     keys = { barTexture = "texture", barAlpha = "alpha", barColor = "customColor" },
     omit = { useClassColorBar = true },
     labels = {
@@ -985,7 +991,7 @@ dress(BARS_BAR_ROWS, {
 withMode(BARS_BAR_ROWS, "window.bars.customColor", {
     path = "window.bars.colorMode", type = "string", default = "class",
     values = BARCOLOR_VALUES, sorting = BARCOLOR_SORT,
-    page = "bars", group = L["Bar"],
+    page = "bars", group = L["Bar"], subgroup = L["Fill"],
     label = L["Bar color mode"],
     classColorSource = "unit",
     desc = L["Color bars by the player's class, by which statistic the column shows, or with one color everywhere."],
@@ -997,7 +1003,7 @@ withMode(BARS_BAR_ROWS, "window.bars.customColor", {
 -- nothing.
 local BARS_BG_ROWS = compose("ColorPair", {
     prefix = "window.bars.",
-    page = "bars", group = L["Background"],
+    page = "bars", group = L["Bar"], subgroup = L["Background"],
     key = "bgColor", label = L["Bar background color"],
     omit = { useClassColorBgColor = true },
     defaults = { bgColor = { r = 0, g = 0, b = 0, a = 1 } },
@@ -1016,7 +1022,7 @@ dress(BARS_BG_ROWS, {
 withMode(BARS_BG_ROWS, "window.bars.bgColor", {
     path = "window.bars.bgColorMode", type = "string", default = "class",
     values = BARBG_VALUES, sorting = BARBG_SORT,
-    page = "bars", group = L["Background"],
+    page = "bars", group = L["Bar"], subgroup = L["Background"],
     label = L["Bar background color mode"],
     classColorSource = "unit",
     desc = L["What colors the tint behind each bar. Class is the default and keeps working mid-fight, because a class is never hidden the way a number is."],
@@ -1024,14 +1030,14 @@ withMode(BARS_BG_ROWS, "window.bars.bgColor", {
 
 local BARS_BORDER_ROWS = compose("BorderGroup", {
     prefix = "window.bars.",
-    page = "bars", group = L["Border"],
+    page = "bars", group = L["Bar"], subgroup = L["Border"],
     -- The group's own "Show border" toggle, which options-ui-§16 allows to lead the
     -- block and is the only thing that may.
     show = true,
     keys = { borderShow = "border", borderSize = "borderThickness" },
     omit = { useClassColorBorder = true },
     labels = {
-        borderShow = L["Bar border"], borderStyle = L["Border style"],
+        borderShow = L["Show border"], borderStyle = L["Border style"],
         borderSize = L["Border thickness"], borderColor = L["Border color"],
     },
     defaults = {
@@ -1062,22 +1068,18 @@ dress(BARS_BORDER_ROWS, {
 withMode(BARS_BORDER_ROWS, "window.bars.borderColor", {
     path = "window.bars.borderColorMode", type = "string", default = "custom",
     values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
-    page = "bars", group = L["Border"],
+    page = "bars", group = L["Bar"], subgroup = L["Border"],
     label = L["Border color mode"],
     classColorSource = "unit",
     desc = L["What colors the outline around each bar. Class is the class of the row being drawn."],
 })
 
--- ── Bars > Text style (options-ui-§16's font block) ─────────────────────────
+-- ── Bars > Text > Style (options-ui-§16's font block) ───────────────────────
 local BARS_TEXT_ROWS = compose("FontGroup", {
     prefix = "window.text.",
-    page = "bars", group = L["Text style"],
+    page = "bars", group = L["Text"], subgroup = L["Style"],
     keys = { fontSize = "size", fontColor = "color", fontFlags = "outline", fontShadow = "shadow" },
     omit = { useClassColorFont = true },
-    labels = {
-        font = L["Font"], fontSize = L["Font size"], fontColor = L["Text color"],
-        fontFlags = L["Font outline"], fontShadow = L["Text shadow"],
-    },
     defaults = {
         font = "Friz Quadrata TT", fontSize = 11,
         fontColor = { r = 1, g = 1, b = 1, a = 1 },
@@ -1109,16 +1111,19 @@ dress(BARS_TEXT_ROWS, {
 withMode(BARS_TEXT_ROWS, "window.text.color", {
     path = "window.text.colorMode", type = "string", default = "custom",
     values = TEXTCOLOR_VALUES, sorting = TEXTCOLOR_SORT,
-    page = "bars", group = L["Text style"],
-    label = L["Text color mode"],
+    page = "bars", group = L["Text"], subgroup = L["Style"],
+    label = L["Font color mode"],
     classColorSource = "unit",
     desc = L["What colors the numbers and names. Class is the class of the row being drawn; Per-statistic is the color of the column each cell sits in."],
 })
 
--- ── Tooltip > Bar, Bar background, Bar border and Text ──────────────────────
+-- ── Tooltip > Bar (Fill, Background, Border) and Text ────────────────────────
+--
+-- The Bar tab has the same shape as Bars > Bar (item 020, MUL-L12), and the rows
+-- read alike: the subsection heading carries the "Bar" the labels used to repeat.
 local TIP_BAR_ROWS = compose("BarGroup", {
     prefix = "window.tooltip.",
-    page = "tooltip", group = L["Bar"],
+    page = "tooltip", group = L["Bar"], subgroup = L["Fill"],
     omit = { useClassColorBar = true },
     labels = {
         barTexture = L["Bar texture"], barAlpha = L["Bar opacity"], barColor = L["Bar color"],
@@ -1133,7 +1138,7 @@ local TIP_BAR_ROWS = compose("BarGroup", {
     extra = { {
         path = "window.tooltip.barSpacing", type = "number", default = 1,
         min = 0, max = 12, step = 1, fmt = "%d px",
-        label = L["Bar spacing"], desc = L["Gap in pixels between one tooltip line and the next."],
+        label = L["Line spacing"], desc = L["Gap in pixels between one tooltip line and the next."],
         validate = isNumberIn(0, 12),
     } },
 })
@@ -1153,7 +1158,7 @@ dress(TIP_BAR_ROWS, {
 withMode(TIP_BAR_ROWS, "window.tooltip.barColor", {
     path = "window.tooltip.barColorMode", type = "string", default = "class",
     values = TEXTCOLOR_VALUES, sorting = TEXTCOLOR_SORT,
-    page = "tooltip", group = L["Bar"],
+    page = "tooltip", group = L["Bar"], subgroup = L["Fill"],
     label = L["Bar color mode"],
     classColorSource = "unit",
     desc = L["What colors the filled part of each tooltip bar. Class is the player you are hovering; Per-statistic is the color of the column the grid is sorted by."],
@@ -1161,15 +1166,15 @@ withMode(TIP_BAR_ROWS, "window.tooltip.barColor", {
 
 local TIP_BARBG_ROWS = compose("ColorPair", {
     prefix = "window.tooltip.",
-    page = "tooltip", group = L["Bar background"],
-    key = "barBgColor", label = L["Bar background color"],
+    page = "tooltip", group = L["Bar"], subgroup = L["Background"],
+    key = "barBgColor", label = L["Background color"],
     omit = { useClassColorBarBgColor = true },
     defaults = { barBgColor = { r = 0, g = 0, b = 0, a = 1 } },
     classColor = { source = "unit" },
     extra = { {
         path = "window.tooltip.barBgAlpha", type = "number", default = 0.1,
         min = 0, max = 1, step = 0.01, isPercent = true,
-        label = L["Bar background opacity"],
+        label = L["Background opacity"],
         desc = L["Opacity of the unfilled part of each tooltip bar."],
         validate = isNumberIn(0, 1),
     } },
@@ -1182,20 +1187,20 @@ dress(TIP_BARBG_ROWS, {
 withMode(TIP_BARBG_ROWS, "window.tooltip.barBgColor", {
     path = "window.tooltip.barBgColorMode", type = "string", default = "custom",
     values = TEXTCOLOR_VALUES, sorting = TEXTCOLOR_SORT,
-    page = "tooltip", group = L["Bar background"],
-    label = L["Bar background color mode"],
+    page = "tooltip", group = L["Bar"], subgroup = L["Background"],
+    label = L["Background color mode"],
     classColorSource = "unit",
     desc = L["What colors the unfilled part of each tooltip bar."],
 })
 
 local TIP_BARBORDER_ROWS = compose("BorderGroup", {
     prefix = "window.tooltip.",
-    page = "tooltip", group = L["Bar border"],
+    page = "tooltip", group = L["Bar"], subgroup = L["Border"],
     keys = { borderStyle = "barBorderStyle", borderSize = "barBorderSize", borderColor = "barBorderColor" },
     omit = { useClassColorBorder = true },
     labels = {
-        borderStyle = L["Bar border style"], borderSize = L["Bar border thickness"],
-        borderColor = L["Bar border color"],
+        borderStyle = L["Border style"], borderSize = L["Border thickness"],
+        borderColor = L["Border color"],
     },
     defaults = {
         borderStyle = "None", borderSize = 1,
@@ -1220,8 +1225,8 @@ dress(TIP_BARBORDER_ROWS, {
 withMode(TIP_BARBORDER_ROWS, "window.tooltip.barBorderColor", {
     path = "window.tooltip.barBorderColorMode", type = "string", default = "custom",
     values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
-    page = "tooltip", group = L["Bar border"],
-    label = L["Bar border color mode"],
+    page = "tooltip", group = L["Bar"], subgroup = L["Border"],
+    label = L["Border color mode"],
     classColorSource = "unit",
     desc = L["What colors the border around each spell bar. Class is the player you are hovering."],
 })
@@ -1231,10 +1236,6 @@ local TIP_TEXT_ROWS = compose("FontGroup", {
     page = "tooltip", group = L["Text"],
     keys = { fontColor = "textColor", fontFlags = "fontOutline" },
     omit = { useClassColorFont = true },
-    labels = {
-        font = L["Font"], fontSize = L["Font size"], fontColor = L["Text color"],
-        fontFlags = L["Font outline"], fontShadow = L["Text shadow"],
-    },
     defaults = {
         font = "Friz Quadrata TT", fontSize = 12,
         fontColor = { r = 1, g = 1, b = 1, a = 1 },
@@ -1267,21 +1268,17 @@ withMode(TIP_TEXT_ROWS, "window.tooltip.textColor", {
     path = "window.tooltip.colorMode", type = "string", default = "custom",
     values = TEXTCOLOR_VALUES, sorting = TEXTCOLOR_SORT,
     page = "tooltip", group = L["Text"],
-    label = L["Text color mode"],
+    label = L["Font color mode"],
     classColorSource = "unit",
     desc = L["What colors the tooltip's text. Class is the class of the player you are hovering; Per-statistic is the color of the column the grid is sorted by."],
 })
 
--- ── Columns > Header text and Header background ─────────────────────────────
+-- ── Columns > Column header: Text and Background ────────────────────────────
 local COLHEAD_TEXT_ROWS = compose("FontGroup", {
     prefix = "window.columnHeader.",
-    page = "columns", group = L["Header text"],
+    page = "columns", group = L["Column header"], subgroup = L["Text"],
     keys = { fontSize = "size", fontColor = "color", fontFlags = "outline", fontShadow = "shadow" },
     omit = { useClassColorFont = true },
-    labels = {
-        font = L["Font"], fontSize = L["Font size"], fontColor = L["Text color"],
-        fontFlags = L["Font outline"], fontShadow = L["Text shadow"],
-    },
     defaults = {
         font = "Friz Quadrata TT", fontSize = 11,
         fontColor = { r = 1, g = 0.82, b = 0, a = 1 },
@@ -1312,15 +1309,15 @@ dress(COLHEAD_TEXT_ROWS, {
 withMode(COLHEAD_TEXT_ROWS, "window.columnHeader.color", {
     path = "window.columnHeader.colorMode", type = "string", default = "custom",
     values = TEXTCOLOR_VALUES, sorting = TEXTCOLOR_SORT,
-    page = "columns", group = L["Header text"],
-    label = L["Text color mode"],
+    page = "columns", group = L["Column header"], subgroup = L["Text"],
+    label = L["Font color mode"],
     classColorSource = "player",
     desc = L["What colors the column labels. Per-statistic gives each label its own column's color, which is the one surface where that is literally per column."],
 })
 
 local COLHEAD_BG_ROWS = compose("ColorPair", {
     prefix = "window.columnHeader.",
-    page = "columns", group = L["Header background"],
+    page = "columns", group = L["Column header"], subgroup = L["Background"],
     key = "bgColor", label = L["Background color"],
     omit = { useClassColorBgColor = true },
     defaults = { bgColor = { r = 0, g = 0, b = 0, a = 0 } },
@@ -1338,7 +1335,7 @@ dress(COLHEAD_BG_ROWS, {
 withMode(COLHEAD_BG_ROWS, "window.columnHeader.bgColor", {
     path = "window.columnHeader.bgColorMode", type = "string", default = "custom",
     values = TEXTCOLOR_VALUES, sorting = TEXTCOLOR_SORT,
-    page = "columns", group = L["Header background"],
+    page = "columns", group = L["Column header"], subgroup = L["Background"],
     label = L["Background color mode"],
     classColorSource = "player",
     desc = L["What colors the strip behind the column labels. Per-statistic tints each label's own cell with that column's color, which is the one surface where that is literally per column."],
@@ -1390,6 +1387,7 @@ NS.SchemaCompose = {
     SLOT_SORT            = SLOT_SORT,
     SLOT_VALUES          = SLOT_VALUES,
     STRATA_SORT          = STRATA_SORT,
+    STRATA_TIP           = STRATA_TIP,
     STRATA_VALUES        = STRATA_VALUES,
     TEXTCOLOR_SORT       = TEXTCOLOR_SORT,
     TEXTCOLOR_VALUES     = TEXTCOLOR_VALUES,

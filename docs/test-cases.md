@@ -730,7 +730,7 @@ Total.
 - Sim e2e: zone by run
 - Sim e2e: the panel's rows are the step labels, and a step waits while the gate is closed
 
-### test_launchersetup.lua (55)
+### test_launchersetup.lua (56)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -779,7 +779,8 @@ Total.
 - Binding: the Show window binding's button exists, is named MultiMetersToggleWindows, hidden, registered AnyDown, and one click toggles once
 - Binding: the binding labels are the brand and the localized action
 - Binding: the launcher's toggleWindow and the button run the same function
-- Binding: Bindings.xml carries exactly one CLICK MultiMetersToggleWindows:LeftButton, header MULTIMETERS, category ADDONS, no default attribute and no Lua body, and the TOC does not list it
+- Binding: Bindings.xml carries one CLICK MultiMetersToggleWindows:LeftButton in category BINDING_HEADER_MULTIMETERS, no header, no default, no Lua body, and the TOC does not list it
+- Binding: NS.BINDINGS is the one bindings table, Show window first, with a localized tooltip
 - Binding: a library-absent load still creates the button
 - Degraded: Register answers false, quietly, when LibDataBroker is absent
 - Degraded: with no LibDBIcon there is still a broker plugin, and no button
@@ -1443,6 +1444,18 @@ Total.
 - Sim strip: minimized hides it with no title word; a hidden header keeps it
 - Sim strip: with no Widgets library no strip, no reserve, and nothing raises
 
+### test_layers.lua (9)
+
+- LAYERS: one table names the addon's strata and level bands
+- LAYERS: no strata literal and no absolute or sibling level in the addon
+- Window: the art frame takes the strata setting, is toplevel, and the anchor stays MEDIUM
+- Window: header controls sit at frame + CONTROLS, above the drag bar
+- Window: dragging raises the whole window and re-levels its controls and grip
+- Window: a header-control click raises the window it belongs to
+- Row: the self edge and the hover wash live on a mouse-off overlay above the cells
+- Export modal: DIALOG, toplevel, clamped, and raised on every open
+- Frame strata row: its tooltip is the library's O.StrataTooltip over its own values
+
 ### test_headercontrols.lua (71)
 
 - HeaderControls: every control this addon builds is attached
@@ -1693,7 +1706,7 @@ Total.
 - The half-size gap survives the post-layout pass
 - The gap is restored with every other line it was applied alongside
 
-### test_tooltip_lines.lua (37)
+### test_tooltip_lines.lua (38)
 
 - A spell line carries a real class-colored BAR, not a run of characters
 - Bars are released between hovers, never stacked
@@ -1712,6 +1725,7 @@ Total.
 - The bar border answers a color mode, and its class is the HOVERED player's
 - The bar border's shipped mode is Custom, so it still reads the swatch
 - A bar sits UNDER the tooltip's text, not over it
+- A pooled line follows GameTooltip's level when something re-levels the tooltip
 - Bars come down when GameTooltip closes, whoever closed it
 - A spell line carries its SHARE of the player's total beside the amount
 - The percent slot GOES QUIET mid-pull rather than approximating
@@ -2139,7 +2153,7 @@ Total.
 - Schema: no tab holds fewer than two controls
 - Schema: a hidden row is filed under a tab that exists, and draws nothing
 - Schema: every tab name and row label is a localized string, not a bare literal
-- Schema: every Controls row carries its own icon in front of its words
+- Schema: every Controls > Shown row carries its own icon in front of its words
 - Schema: a control label degrades to its words when there is no art
 - Schema: the active tab is session state and has no home in the schema
 - Schema: the column header strip is styled on the page where columns are chosen
@@ -2244,6 +2258,19 @@ Total.
 - ValidateSchema: answers 0 when there is no window template to compare against
 - ValidateSchema: answers 0 when there is no profile tree to compare against
 - ValidateSchema: counts every failure, in schema order, with nothing listening
+
+### test_settings_pin.lua (2)
+
+- Settings pin: the schema holds exactly the pinned rows, keys and defaults unchanged
+- Settings pin: the row count is the pinned count
+
+### test_settings_layout.lua (5)
+
+- Layout: Frame's Size and position holds Geometry, then Placement with the lock, the clamp and the strata
+- Layout: Death timestamps lives on Tooltip > Contents > Deaths, first and on its own line
+- Layout: the composed font blocks wear options-ui-§16's canonical labels
+- Layout: the relabels of the pass
+- Layout: every color mode that offers Per-statistic says where that palette is edited
 
 ### test_slash.lua (52)
 
@@ -2395,7 +2422,7 @@ Total.
 - Library lines: rejected events, recorded at OnEnable, land when logging turns on
 - Library lines: after a Clear, an unchanged steady-state pass speaks again
 
-### test_options_panel.lua (46)
+### test_options_panel.lua (51)
 
 - Options: General is the FIRST page, above Windows
 - Options: the tree is General, Windows, Profiles, with no nesting mark
@@ -2443,6 +2470,11 @@ Total.
 - Panel: choosing a window in the banner retargets every page and keeps the tab
 - Panel: Reset all settings' tooltip says it is the same act as Profiles -> Reset Profile
 - scheduleTimer schedules once through C_Timer.After with the given delay
+- Keybindings: the General page's strip ends in a Keybindings tab, after every schema tab
+- Keybindings: the tab's rows are NS.BINDINGS in order, labeled with the BINDING_NAME_ globals
+- Keybindings: a key bound through the tab is the client's, and a key set elsewhere shows in the tab
+- Keybindings: the tab refuses to bind a key in combat
+- Keybindings: the General page's Defaults tooltip ends with the library's keys-unchanged sentence
 
 ### test_columnblocks.lua (35)
 
@@ -2495,16 +2527,18 @@ Total.
 - Columns: a refused write is REPORTED and the page is not repainted
 - Columns: an accepted write IS repainted
 - Columns: the stored array is never the page's own working copy
-- Columns: the page draws three tabs, Columns then Header text then Header background
-- Columns: the Header text tab renders exactly its group's rows, with no headings
+- Columns: the page draws two tabs, Columns then Column header
+- Columns: the Column header tab renders exactly its group's rows, Text then Background, with no group heading
 - Columns: leaving the Columns tab mid-drag cancels the reorder BEFORE the scroll clear
 
-### test_windows_rail.lua (14)
+### test_windows_rail.lua (16)
 
 - Windows rail: the seven entries register under their page keys, on both builds
 - Windows rail: the band, then the rail General..Columns, 120 wide, opening on General
+- Windows rail: the band carries New window beside the picker, and it creates and selects a window
 - Windows rail: the draw order is PageBanner, NavRail, TabStrip
 - Windows rail: General is one General tab holding the window's acts and a Copy settings from block
+- Windows rail: Settings to copy names what is copied, in rail order
 - Windows rail: a rail click draws that entry's own strip under the same band
 - Windows rail: each entry keeps its own tab, including one chosen by the library's own strip click
 - Windows rail: choosing another window in the band keeps the entry and its tab
@@ -2630,7 +2664,7 @@ Total.
 | test_sim_drivers.lua | 9 |
 | test_sim_session.lua | 22 |
 | test_sim_e2e.lua | 10 |
-| test_launchersetup.lua | 55 |
+| test_launchersetup.lua | 56 |
 | test_lifecycle.lua | 40 |
 | test_dispatch.lua | 11 |
 | test_vendor_sync.lua | 3 |
@@ -2651,6 +2685,7 @@ Total.
 | test_window_lifecycle.lua | 9 |
 | test_window_segment.lua | 10 |
 | test_window_simstrip.lua | 4 |
+| test_layers.lua | 9 |
 | test_headercontrols.lua | 71 |
 | test_row.lua | 62 |
 | test_row_namecell.lua | 30 |
@@ -2658,7 +2693,7 @@ Total.
 | test_row_mouse.lua | 17 |
 | test_targets.lua | 28 |
 | test_tooltip.lua | 20 |
-| test_tooltip_lines.lua | 37 |
+| test_tooltip_lines.lua | 38 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 57 |
 | test_drilldown.lua | 59 |
@@ -2670,20 +2705,22 @@ Total.
 | test_schema_paths.lua | 50 |
 | test_schema_batch.lua | 13 |
 | test_schema_defaults.lua | 18 |
+| test_settings_pin.lua | 2 |
+| test_settings_layout.lua | 5 |
 | test_slash.lua | 52 |
 | test_slash_diagnostics.lua | 20 |
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
 | test_disabled.lua | 27 |
 | test_library_lines.lua | 11 |
-| test_options_panel.lua | 46 |
+| test_options_panel.lua | 51 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
-| test_windows_rail.lua | 14 |
+| test_windows_rail.lua | 16 |
 | test_degraded.lua | 38 |
 | test_surface_parity.lua | 5 |
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2320** |
+| **Total** | **2345** |

@@ -935,24 +935,31 @@ test("Binding: the launcher's toggleWindow and the button run the same function"
         "the button's OnClick is not the descriptor's function")
 end)
 
-test("Binding: Bindings.xml carries exactly one CLICK MultiMetersToggleWindows:LeftButton, header MULTIMETERS, category ADDONS, no default attribute and no Lua body, and the TOC does not list it", function()
-    -- red under: a missing file, a preassigned key (a default steals a key the player already
-    -- uses), a Lua body (a CLICK binding needs none), or a TOC line (the client reads Bindings.xml
-    -- from the folder by name; listed in the TOC it would load as a UI file).
+test("Binding: Bindings.xml carries one CLICK MultiMetersToggleWindows:LeftButton in category BINDING_HEADER_MULTIMETERS, no header, no default, no Lua body, and the TOC does not list it", function()
+    -- launcher-§6 at v2.88.0: the binding sits in the addon's OWN category, titled with the brand,
+    -- rather than the shared ADDONS bucket with a header row that drew as a blank spacer. The kit's
+    -- shape check reads the category on every Binding, no header= and no default=, the names in
+    -- NS.BINDINGS order, a BINDING_NAME_ label for each, and the category global reading the brand.
+    -- red under: the old header="MULTIMETERS" category="ADDONS" line, a preassigned key (a default
+    -- steals a key the player already uses), a renamed binding (it unbinds every player's key), a
+    -- Lua body (a CLICK binding needs none), or a TOC line (the client reads Bindings.xml from the
+    -- folder by name; listed in the TOC it would load as a UI file).
+    local inst = T.load()
+    local list = T.assertBindingsXml(T.root .. "/Bindings.xml", {
+        category = "BINDING_HEADER_MULTIMETERS",
+        commands = inst.NS.BINDINGS,
+        brand    = inst.NS.L["Ka0s Multi Meters"],
+        globals  = inst.mocks._G,
+        labels   = { [TOGGLE_COMMAND] = "Toggle meter windows" },
+    })
+    assertEqual(#list, 1)
+    assertEqual(list[1].name, TOGGLE_COMMAND, "the binding's name moved; every saved key is lost")
+
     local fh = assert(io.open(T.root .. "/Bindings.xml", "r"), "no Bindings.xml at the repo root")
     local xml = fh:read("*a")
     fh:close()
-
-    local bindings = {}
-    for tag in xml:gmatch("<Binding%s[^>]*>") do bindings[#bindings + 1] = tag end
-    assertEqual(#bindings, 1, "Bindings.xml declares " .. #bindings .. " bindings")
-    local tag = bindings[1]
-    assertEqual(tag:match('name="([^"]*)"'), TOGGLE_COMMAND)
-    assertEqual(tag:match('header="([^"]*)"'), "MULTIMETERS")
-    assertEqual(tag:match('category="([^"]*)"'), "ADDONS")
+    local tag = xml:gsub("<!%-%-.-%-%->", ""):match("<Binding%s[^>]*>")
     assertTrue(tag:find("/>%s*$") ~= nil, "the binding has a body; a CLICK binding needs no Lua")
-    assertEqual(xml:find("default=", 1, true), nil, "Bindings.xml preassigns a key")
-    assertTrue(xml:find("<Bindings>", 1, true) ~= nil and xml:find("</Bindings>", 1, true) ~= nil)
     assertTrue(xml:find("core/LauncherSetup.lua", 1, true) ~= nil,
         "the comment does not name the button's home")
 
@@ -960,6 +967,24 @@ test("Binding: Bindings.xml carries exactly one CLICK MultiMetersToggleWindows:L
     local listed = toc:read("*a"):find("Bindings", 1, true)
     toc:close()
     assertEqual(listed, nil, "the TOC lists Bindings.xml")
+end)
+
+test("Binding: NS.BINDINGS is the one bindings table, Show window first, with a localized tooltip", function()
+    -- launcher-§6: one table, in Bindings.xml order, declared in the module that creates the button;
+    -- the General page's Keybindings tab (options-ui-§20) and this suite both read it.
+    -- red under: no table (the tab draws no row), a second command, or a tooltip that is not a
+    -- locale string.
+    local inst = T.load()
+    local NS = inst.NS
+    assertEqual(type(NS.BINDINGS), "table", "NS.BINDINGS is not declared")
+    assertEqual(#NS.BINDINGS, 1)
+    assertEqual(NS.BINDINGS[1].command, TOGGLE_COMMAND)
+    local tip = NS.BINDINGS[1].tooltip
+    assertEqual(tip, NS.L["Shows or hides every meter window, as /mm toggle does."])
+    assertEqual(tip, "Shows or hides every meter window, as /mm toggle does.")
+    -- A degraded load declares it too: the table is built beside the button, ahead of the fork.
+    local degraded = T.load{ libFiles = {} }
+    assertEqual(degraded.NS.BINDINGS and degraded.NS.BINDINGS[1].command, TOGGLE_COMMAND)
 end)
 
 test("Binding: a library-absent load still creates the button", function()

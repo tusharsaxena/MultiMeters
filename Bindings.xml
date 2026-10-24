@@ -1,8 +1,12 @@
 <Bindings>
 	<!-- The Show window key (launcher-§6): clicks the plain, hidden MultiMetersToggleWindows button that
 	     core/LauncherSetup.lua creates at load, whose OnClick is the function the launcher menu's Show
-	     window entry runs, so it refuses exactly as /mm toggle does. Its two labels are set there. No
-	     default key: the player picks one under Key Bindings, AddOns. The button name is permanent;
-	     renaming it unbinds every player's key. Not listed in the TOC: the client reads this file by name. -->
-	<Binding name="CLICK MultiMetersToggleWindows:LeftButton" header="MULTIMETERS" category="ADDONS"/>
+	     window entry runs, so it refuses exactly as /mm toggle does. Its labels and NS.BINDINGS, the
+	     table the General page's Keybindings tab draws, are set there. Every Binding is in the
+	     category BINDING_HEADER_MULTIMETERS, the brand, so the client gives this addon a section of
+	     its own; no header attribute, which inside a category draws as a blank row. No default key:
+	     the player picks one under Options -> Keybindings -> Ka0s Multi Meters, or on General >
+	     Keybindings in this addon's settings. The binding name is permanent; renaming it unbinds
+	     every player's key. Not listed in the TOC: the client reads this file by name. -->
+	<Binding name="CLICK MultiMetersToggleWindows:LeftButton" category="BINDING_HEADER_MULTIMETERS"/>
 </Bindings>

@@ -707,9 +707,11 @@ end
 -- It starts past the icon so the icon reads as its own column and is not tinted,
 -- and the spell NAME sits fully inside the track.
 --
--- LAYERING. The carrier and the bar sit at the tooltip's OWN frame level, which
--- makes their draw layers interleave with the tooltip's rather than stack above
--- them. Track is BACKGROUND, fill is BORDER, GameTooltip draws its line
+-- LAYERING. The carrier and the bar sit at the tooltip's OWN frame level
+-- (LAYERS.LEVEL.TOOLTIP_LINE, re-stated on every draw because the tooltip's level
+-- is not this addon's to keep), which makes their draw layers interleave with the
+-- tooltip's rather than stack above them. Track is BACKGROUND sublevel 0, fill is
+-- BACKGROUND sublevel 1, the LSM edge is BORDER, GameTooltip draws its line
 -- FontStrings in ARTWORK, and the two number slots are OVERLAY. So the spell name
 -- lands on top of the bar and the numbers land on top of everything.
 --

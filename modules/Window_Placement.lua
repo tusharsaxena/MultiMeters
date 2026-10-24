@@ -31,6 +31,36 @@ local _, NS = ...
 
 local WindowProto = NS.WindowProto
 
+-- ---------------------------------------------------------------------------
+-- Stacking among peer windows (frame-layering-§3, §4)
+-- ---------------------------------------------------------------------------
+
+--- Put every explicitly leveled child back on its band over the art frame:
+--- the header controls, the library's resize grip and each pooled row's overlay.
+--- An explicit level does not follow a parent that moved, so whatever re-levels
+--- the art frame calls this after it (frame-layering-§3, "re-assert what moves").
+function WindowProto:ApplyLevels()
+    local frame = self.frame
+    if not frame then return end
+    local LEVEL = NS.Constants.LAYERS.LEVEL
+    if NS.HeaderControls then NS.HeaderControls:ApplyLevels(self) end
+    -- The grip is the library's (LibKa0s-Core-1.0 draws it at GRIP_LEVEL over its
+    -- parent, once, at creation); LEVEL.GRIP mirrors that number.
+    if self.grip then self.grip:SetFrameLevel(frame:GetFrameLevel() + LEVEL.GRIP) end
+    for _, row in ipairs(self.pool and self.pool.all or {}) do row:ApplyLevel() end
+end
+
+--- Bring this window in front of its overlapping peers. The art frame is toplevel,
+--- but it takes no mouse (the cells and the title bar do), so a click never raises
+--- it by itself: the drag start and the header-control click call this instead.
+--- Nothing here is protected, so it is safe in combat.
+function WindowProto:BringToFront()
+    local frame = self.frame
+    if not frame then return end
+    frame:Raise()
+    self:ApplyLevels()
+end
+
 --- Position from the STORED anchor. Never from the frame — see the file header.
 function WindowProto:ApplyPosition()
     local pos = (self.config.frame or {}).position or {}

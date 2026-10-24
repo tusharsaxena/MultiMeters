@@ -18,13 +18,13 @@ secret-value rules the checks refer to.
 | ID range | Theme | What it covers |
 |---|---|---|
 | INSTALL-1 to INSTALL-14 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load |
-| SLASH-1 to SLASH-19 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding |
-| PANEL-1 to PANEL-48 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh |
+| SLASH-1 to SLASH-32 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding and the General page's Keybindings tab |
+| PANEL-1 to PANEL-57 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-52 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
+| WIN-1 to WIN-54 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
-| GRID-1 to GRID-33 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
+| GRID-1 to GRID-34 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
@@ -206,6 +206,7 @@ secret-value rules the checks refer to.
   `/mm enable`. Result: pass (owner-marked 2026-10-10)
 - **SLASH-15. The key binding is listed.** Key Bindings → AddOns lists a *Ka0s Multi Meters* header with
   one *Toggle meter windows* entry and no key preassigned (`launcher-§6`). Result: pass (owner-marked 2026-10-23)
+  Superseded from the 2026-10-24 keybindings run by SLASH-30: the binding moved to a section of its own.
 - **SLASH-16. The key toggles.** Bind a key and press it → every meter window hides; press again → they
   show, the same as `/mm toggle`. One press toggles once. Result: pass (owner-marked 2026-10-23)
 - **SLASH-17. The key while disabled.** `/mm disable`, then press the key → exactly one chat line
@@ -217,7 +218,25 @@ secret-value rules the checks refer to.
   taint message (the windows are not secure). Result: pass (owner-marked 2026-10-23)
 - SLASH-20 to SLASH-29 were the first cut of the simulator checks (2026-10-23). They moved whole to
   the [SIM](#sim) theme, SLASH-20 to SLASH-28 as SIM-1 to SIM-9 and SLASH-29 as SIM-11, and the
-  numbers are retired; the next SLASH check is SLASH-30.
+  numbers are retired. SLASH-30 to SLASH-32 follow; the next SLASH check is SLASH-33.
+- **SLASH-30. The binding has a section of its own** (run 2026-10-24, SM-MM-KB1). Options →
+  Keybindings shows a section titled *Ka0s Multi Meters*, holding the one *Toggle meter windows*
+  entry, with no blank spacer row above it and no entry left under *AddOns*. A key bound before the
+  update is still bound. Result: pending
+- **SLASH-31. The two surfaces are one store** (SM-MM-KB2, SM-MM-RV3; rewritten 2026-10-24 for the
+  one key button). `/mm config` → General → the strip ends in **Keybindings**, with one *Toggle meter
+  windows* row: one key button and Clear, and no second key slot. Bind a key with the button →
+  Options → Keybindings → Ka0s Multi Meters shows it; set a second key on the client's page → the
+  tab's button reads *<key> +1* the next time it is looked at, and its tooltip names both keys and
+  says the other was set on the game's Key Bindings page. Clear removes every key. Under the tab's
+  rows the set line reads *Saved for: all characters*; tick *Character Specific Keybindings* on the
+  client's page and repeat → it reads *Saved for: this character only*, and both surfaces still
+  agree. Result: pending
+- **SLASH-32. The tab's key toggles, Escape cancels, combat refuses** (SM-MM-KB3, SM-MM-RV3;
+  rewritten 2026-10-24 for the one key button). The key bound with the tab's button still toggles
+  the windows as SLASH-16 does. Click the key button so it reads *Press a key...*, press Escape →
+  the capture cancels and Settings stays open. In combat, click the key button → the outcome line
+  reads *Key bindings can be changed after combat.* and no key changes. Result: pending
 
 ## PANEL
 
@@ -472,6 +491,74 @@ right. Open the panel with `/mm config`.
   a refresh that rebuilds a page keeps where it was scrolled. Open a long page, scroll partway down,
   then trigger a structural refresh (for example add or remove a column on the Windows page) → the
   page redraws at the same scroll position, not back at the top. Result: pass (owner-marked 2026-10-23)
+- **PANEL-49. The Frame strata tooltip (SM-MM-ZS, 2026-10-24).** Windows → Frame → hover **Frame
+  strata** → the tooltip is the library's shared strata text: Background and Low under most of the
+  interface, Medium the default, High over other windows in the Settings window's layer, then a
+  second sentence that Dialog and above also cover confirmation dialogs, the debug console and the
+  Settings window. The four choices (Low, Medium, High, Dialog) and the stored value are unchanged.
+  Result: pending
+- **PANEL-50. The settings-layout pass keeps every setting (SM-MM-LY, item 020, 2026-10-24).** Before
+  updating, note a few non-default values on each Windows entry (for example Width, Lock window,
+  Row height, Show fight name, Bar color mode, Death timestamps, Tooltip X offset, one Visibility
+  rule and a Column header font) and General's Master opacity. Update, `/reload`, and open the
+  settings → every value reads as you left it, on its new tab; no setting is missing, none has
+  changed its default (press nothing yet), and a value changed on its new tab survives another
+  `/reload`. Older checks in this file that name a retired tab (Frame → General, Header → Button
+  style, Bars → Background / Border / Text content / Text style, Tooltip → Bar background / Bar
+  border, Visibility → Where to show this window / When to hide this window, Columns → Header text /
+  Header background) mean the tab that now holds the row: PANEL-51 to PANEL-57 give the map.
+  Result: pending
+- **PANEL-51. General page (item 020).** General → Master controls reads *Master scale* beside
+  **Master opacity**. Statistic colors → the note under the swatches names Windows > Bars > Bar,
+  Windows > Bars > Text and Windows > Columns > Column header. Result: pending
+- **PANEL-52. Windows band and General entry (item 020).** The band shows the Active window picker
+  with **New window** beside it; clicking it creates a window and the band follows it. The General
+  entry shows Window name, then **Duplicate window** and **Delete window** on one line, then Copy
+  settings from. Hover Source window → "The window to copy from. Pick what to copy beside it, then
+  press Copy."; hover Copy → "Copy the chosen settings from the source window onto this one.".
+  Settings to copy lists Everything, Frame and header buttons, Rows, Title bar and title text, Bars,
+  Bar text and death timestamps, Icons, Tooltip, Visibility, Column list, Sort and segment; copying
+  *Frame and header buttons* from a window with different header buttons copies the buttons. Hover
+  the page's Defaults → "Restore every tab of the entry selected on the left, for the window in the
+  band, to its defaults." then the Columns and General clauses. Result: pending
+- **PANEL-53. Frame (item 020).** The strip reads Size and position, Quick style, Background and
+  border, Rows, and the entry opens on Size and position: a *Geometry* heading (Width | Height,
+  **Window scale** | **Window opacity**, Padding) and a *Placement* heading (Lock window | Keep on
+  screen, then Frame strata alone on its line). Hover Window scale and Window opacity → each ends
+  "Multiplied by Master scale (or Master opacity) on the General page > Master controls.". Quick
+  style holds only the four "(all surfaces)" rows under *All surfaces*. Rows has *Grid* (Row height |
+  Row spacing, Maximum rows | Growth direction, Always show yourself) and *Highlighting* (Highlight
+  yourself | Highlight on mouseover, Alternating background, whose tooltip points to Windows > Bars >
+  Bar). Result: pending
+- **PANEL-54. Header (item 020).** The strip reads Title bar, Title text, Controls. Title bar → *Layout*
+  shows Show title bar | **Title bar height**, and *Background* shows **Title bar background**. Title
+  text → Font, Font size, **Font color** | **Font color mode**, **Font flags** | **Font shadow**, then
+  **Text alignment** alone on the last line; hover Font → "Font for the window's title and the fight
+  name beside it.". Controls → *Shown* (**Show fight name** first, then the seven icon toggles; hover
+  Show segment picker → it names Show fight name and no longer promises a clickable session line),
+  *Size* (Control size), *Color* (the two color pairs), *Opacity* (Reveal controls on hover alone, then
+  Control opacity | Control hover opacity). Every control still does what it did. Result: pending
+- **PANEL-55. Bars (item 020).** The strip reads Bar, Text, Icons. Bar → *Fill* (the bar rows, fill
+  direction, Animate bar fills), *Background* (the three bar background rows) and *Border* (**Show
+  border** leads, then style, thickness, color and its mode). Text → *Content* (Left text | Right
+  text, Number format | **Maximum name length**; no Death timestamps here) and *Style* (the font rows
+  with Font color / Font color mode / Font flags / Font shadow, then Text opacity). Hover Bar color
+  mode, Bar background color mode and Font color mode → each ends "Per-statistic colors are set on
+  the General page > Statistic colors.". Result: pending
+- **PANEL-56. Tooltip (item 020).** The strip reads General, Contents, Bar, Text. General shows **X
+  offset** | **Y offset**. Contents → *Breakdown* (spells and targets), *Deaths* (**Death
+  timestamps** alone on its line, then Name the killer | **Name the killing spell**) and *Player name*
+  (**Show all statistics on name hover**); changing Death timestamps changes the Deaths tooltip and
+  the window's death list, and Tooltip's Defaults puts it back (Bars' Defaults no longer does). Bar →
+  *Fill* (with **Line spacing**), *Background* (Background color, Background color mode, Background
+  opacity) and *Border* (Border style, Border thickness, Border color, Border color mode). Text → the
+  canonical font labels. Result: pending
+- **PANEL-57. Visibility and Columns (item 020).** Visibility shows one tab, **Rules**, with *Show in*
+  (the seven contexts), *Hide when* (the eight hide rules) and *Combat* (the two combat rules); every
+  rule still hides and shows the window as before. Columns' strip reads Columns, **Column header**;
+  Column header shows a *Text* heading over the font rows and a *Background* heading over the
+  background pair, with no heading repeating the tab name. Leaving the Columns tab mid-drag still
+  leaves no handle behind (PANEL-42). Result: pending
 
 ## PROFILE
 
@@ -754,6 +841,18 @@ right. Open the panel with `/mm config`.
   Header height to 8, 37 and 48 and Control size to 10 and 32 in turn → the row stays centered (a
   control taller than the bar hangs from the frame's top edge). The shipped 228px window shows ten
   rows, and dragging it down stops at 70px with the one row fully inside the frame. Result: pending
+- **WIN-53. Overlapping windows stack whole (SM-MM-ZS, 2026-10-24).** Two windows, unlocked, dragged
+  so they half overlap → the one on top hides the other completely where they overlap: no cells,
+  rows or text of the lower window show through the upper one's backdrop. Drag the LOWER one by its
+  title bar → it comes to the front as you start the drag. Click a header control (the lock) on the
+  window now behind → it comes to the front. After each raise, every header control still answers
+  its click on the whole button and the resize grip still sizes the window (neither has fallen under
+  the window's own body). Result: pending
+- **WIN-54. The export modal opens over a Dialog-strata meter (SM-MM-ZS, 2026-10-24).** Set a
+  window's Frame strata to **Dialog**, then open Export from its header → the export window is fully
+  on top of the meter, and its Metric menu opens over both. With `/mm debug on` and the debug console
+  open, open Export → it comes up over the console; click the console → the console comes forward.
+  Result: pending
 
 ## VIS
 
@@ -905,6 +1004,12 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   every member with their role icon, and **Roster** sort orders them as before (player first, then
   group order). The unit and group reads now go through `core/Compat.lua`; nothing live should change.
   Result: pass (owner-marked 2026-10-23)
+- **GRID-34. The row marks draw over the cells (SM-MM-ZS, 2026-10-24).** Rows → tick **Highlight
+  yourself** and **Highlight on mouseover**, and do some damage so your own bar is filled → the 3px
+  gold edge shows at the left of your row ON TOP of the filled name cell (before, it hid under the
+  fill and showed only through the empty part). Point at any row → the faint white wash covers every
+  cell of it, fill and text included. Hovering a cell still opens its tooltip, a click still drills
+  down, and the edge covers at most the first pixel of a left class icon or name. Result: pending
 
 ## TIP
 
@@ -1515,7 +1620,10 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
 INSTALL-12 (added 2026-10-24, the header matched to Ka0s DPS Race's title bar; WIN-49 to WIN-51
 passed 2026-10-24), WIN-52 and INSTALL-13 (added 2026-10-24, the 30px title bar), INSTALL-14 (added 2026-10-24, the
 ten-row 228px window), and INSTALL-3, INSTALL-9, INSTALL-12 and INSTALL-13 (rewritten 2026-10-24 for
-the v19 schema stamp).
+the v19 schema stamp). PANEL-49, GRID-34, WIN-53 and WIN-54 (added 2026-10-24, the frame-layering
+table and its strata changes). PANEL-50 to PANEL-57 (added 2026-10-24, the settings-layout pass,
+item 020). SLASH-30 (added 2026-10-24, the binding's own section), and SLASH-31 and SLASH-32
+(added 2026-10-24, rewritten the same day for the one key button and Clear per row).
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

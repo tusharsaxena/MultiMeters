@@ -1,20 +1,20 @@
 -- settings/Bars.lua
 --
--- The Windows page's Bars entry — THE GRID AND EVERYTHING DRAWN IN IT, in seven groups, from the
--- outside in: the row (how tall, how many, which way they grow, who is pinned and
--- highlighted), then the StatusBar itself (texture, color, opacity, fill
--- direction), the tint behind it, its border, the two TEXT slots, and the name
--- column's icon.
+-- The Windows page's Bars entry — EVERYTHING ONE CELL DRAWS, in three tabs: Bar (the
+-- StatusBar's Fill -- texture, color, opacity, fill direction -- then the tint behind it
+-- and its border, one subsection each), Text (what the two text slots say, then how
+-- they are written) and Icons (the name column's icon).
 --
--- THE ROWS, TEXT AND ICONS PAGES ALL FOLDED IN HERE. They were their own tree entries and
--- their own canvases, which meant styling one cell — the bar behind the number,
--- the number, and the icon beside the name — was three pages and two clicks
--- between each change you wanted to compare. Everything a cell draws is on one
--- page now, in the order it is drawn: the row first, because its height and its
--- count decide the shape of every bar under them, and then back to front.
+-- THE TEXT AND ICONS PAGES FOLDED IN HERE. They were their own tree entries and their
+-- own canvases, which meant styling one cell — the bar behind the number, the number,
+-- and the icon beside the name — was three pages and two clicks between each change you
+-- wanted to compare. The ROWS left again, for Windows > Frame > Rows: how tall a row
+-- is, how many there are and which way they grow shape the grid every bar is drawn in,
+-- not the bar itself. Death timestamps left too, for Windows > Tooltip > Contents >
+-- Deaths: no cell reads it (item 020).
 --
--- Pure schema — every widget is a `window.rows.*`, `window.bars.*`,
--- `window.text.*` or `window.icons.*` row in NS.Schema. The PATHS did not move with the page and
+-- Pure schema — every widget is a `window.bars.*`, `window.text.*` or
+-- `window.icons.*` row in NS.Schema. The PATHS did not move with the page and
 -- must not: a row's page is where it is edited, its path is where it is stored,
 -- and renaming `text.size` to `bars.textSize` for tidiness would migrate every
 -- saved profile in the collection for nothing anybody can see.

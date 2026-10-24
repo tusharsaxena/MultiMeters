@@ -47,8 +47,16 @@ NS.L = L
 -- ---------------------------------------------------------------------------
 
 L["Ka0s Multi Meters"] = "Ka0s Multi Meters"
--- The Show window key's label under Key Bindings -> AddOns (core/LauncherSetup.lua, launcher-§6).
+-- The Show window key's label in this addon's section of Options -> Keybindings, and its row on the
+-- General page's Keybindings tab, with the row's tooltip (core/LauncherSetup.lua's NS.BINDINGS,
+-- launcher-§6).
 L["Toggle meter windows"] = "Toggle meter windows"
+L["Shows or hides every meter window, as /mm toggle does."] =
+    "Shows or hides every meter window, as /mm toggle does."
+-- The General page's Defaults tooltip; settings/General.lua appends the library's "Key bindings are
+-- not changed." (options-ui-§20).
+L["Restore the settings on this page to their shipped values."] =
+    "Restore the settings on this page to their shipped values."
 L["A multi-column group meter: one row per player, one column per statistic."] =
     "A multi-column group meter: one row per player, one column per statistic."
 L["Multi Meters"] = "Multi Meters"
@@ -107,7 +115,11 @@ L["Icons"] = "Icons"
 L["Tooltip"] = "Tooltip"
 L["Visibility"] = "Visibility"
 L["Columns"] = "Columns"
-L["Data"] = "Data"
+L["Sort and segment"] = "Sort and segment"
+L["Frame and header buttons"] = "Frame and header buttons"
+L["Title bar and title text"] = "Title bar and title text"
+L["Bar text and death timestamps"] = "Bar text and death timestamps"
+L["Column list"] = "Column list"
 L["General"] = "General"
 L["Master controls"] = "Master controls"
 L["Behavior"] = "Behavior"
@@ -123,15 +135,15 @@ L["Statistic colors"] = "Statistic colors"
 -- tab is.
 --
 -- "Background" and "Border" are not repeated here: they are already declared
--- below as Bars-page TAB names, and one key is one string whichever surface asks
--- for it.
+-- below, and one key is one string whichever surface asks for it. Since item 020
+-- they are subsection headings on Bars > Bar and Tooltip > Bar.
 L["Divider"] = "Divider"
 L["Layout"] = "Layout"
 L["Color"] = "Color"
 L["Icon"] = "Icon"
 L["All surfaces"] = "All surfaces"
-L["These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Windows > Bars), the numbers on it (Windows > Bars > Text style), and the column header strip (Windows > Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."] =
-    "These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Windows > Bars), the numbers on it (Windows > Bars > Text style), and the column header strip (Windows > Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."
+L["These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Windows > Bars > Bar), the numbers on it (Windows > Bars > Text), and the column header strip (Windows > Columns > Column header). The name tooltip's all-statistics list always uses them, whatever those modes say."] =
+    "These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Windows > Bars > Bar), the numbers on it (Windows > Bars > Text), and the column header strip (Windows > Columns > Column header). The name tooltip's all-statistics list always uses them, whatever those modes say."
 L["Profiles"] = "Profiles"
 
 -- ---------------------------------------------------------------------------
@@ -158,23 +170,25 @@ L["Delete the active window. This cannot be undone."] =
     "Delete the active window. This cannot be undone."
 L["Delete the window '%s'?"] = "Delete the window '%s'?"
 L["Copy settings from"] = "Copy settings from"
-L["Copy another window's settings onto this one. Choose which group of settings to copy below."] =
-    "Copy another window's settings onto this one. Choose which group of settings to copy below."
+L["The window to copy from. Pick what to copy beside it, then press Copy."] =
+    "The window to copy from. Pick what to copy beside it, then press Copy."
 L["Settings to copy"] = "Settings to copy"
-L["Copy every setting, or just one group."] = "Copy every setting, or just one group."
+L["Copy every setting, or just one group. Groups follow where a setting is stored, so header buttons copy with the frame."] = "Copy every setting, or just one group. Groups follow where a setting is stored, so header buttons copy with the frame."
 L["Everything"] = "Everything"
 L["Copy"] = "Copy"
+L["Copy the chosen settings from the source window onto this one."] =
+    "Copy the chosen settings from the source window onto this one."
 L["The last window cannot be deleted."] = "The last window cannot be deleted."
 L["Source window"] = "Source window"
 L["General has no settings to restore. The window's name is kept."] =
     "General has no settings to restore. The window's name is kept."
-L["Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."] =
-    "Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."
+L["Restore every tab of the entry selected on the left, for the window in the band, to its defaults. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."] =
+    "Restore every tab of the entry selected on the left, for the window in the band, to its defaults. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."
 -- The Windows page's rail (MultiMeters#55): one tooltip per entry.
-L["Rename, create, duplicate or delete windows, and copy settings from another window."] =
-    "Rename, create, duplicate or delete windows, and copy settings from another window."
-L["This window's size, position, background, border and rows."] =
-    "This window's size, position, background, border and rows."
+L["Rename, duplicate or delete this window, and copy settings from another window. New window is beside the picker above."] =
+    "Rename, duplicate or delete this window, and copy settings from another window. New window is beside the picker above."
+L["This window's size, position, quick style, background, border and rows."] =
+    "This window's size, position, quick style, background, border and rows."
 L["This window's title bar, its text and its buttons."] = "This window's title bar, its text and its buttons."
 L["How this window's bars, their text and their icons look."] =
     "How this window's bars, their text and their icons look."
@@ -191,15 +205,19 @@ L["Copied %s from '%s'."] = "Copied %s from '%s'."
 -- ---------------------------------------------------------------------------
 
 L["Size and position"] = "Size and position"
+L["Geometry"] = "Geometry"
+L["Placement"] = "Placement"
+L["Quick style"] = "Quick style"
 L["Width"] = "Width"
 L["Window width in pixels."] = "Window width in pixels."
 L["Height"] = "Height"
 L["Window height in pixels."] = "Window height in pixels."
-L["Scale"] = "Scale"
-L["Scale multiplier applied to the whole window."] =
-    "Scale multiplier applied to the whole window."
+L["Window scale"] = "Window scale"
+L["Scale multiplier applied to the whole window. Multiplied by Master scale on the General page > Master controls."] =
+    "Scale multiplier applied to the whole window. Multiplied by Master scale on the General page > Master controls."
 L["Opacity"] = "Opacity"
-L["Overall opacity of the window."] = "Overall opacity of the window."
+L["Window opacity"] = "Window opacity"
+L["Overall opacity of the window. Multiplied by Master opacity on the General page > Master controls."] = "Overall opacity of the window. Multiplied by Master opacity on the General page > Master controls."
 L["Frame strata"] = "Frame strata"
 L["Which layer the window sits in relative to the rest of your interface."] =
     "Which layer the window sits in relative to the rest of your interface."
@@ -221,6 +239,8 @@ L["Padding"] = "Padding"
 L["Gap in pixels between the window edge and the rows inside it."] =
     "Gap in pixels between the window edge and the rows inside it."
 L["Lock window"] = "Lock window"
+L["When unlocked you can drag the window to reposition it and drag its corner to resize. Nothing else changes \226\128\148 for placeholder rows use Test mode (the General page > Master controls). Lock frame there locks or unlocks every window at once."] =
+    "When unlocked you can drag the window to reposition it and drag its corner to resize. Nothing else changes \226\128\148 for placeholder rows use Test mode (the General page > Master controls). Lock frame there locks or unlocks every window at once."
 L["When unlocked you can drag the window to reposition it, and it fills with placeholder data so you can see the layout."] =
     "When unlocked you can drag the window to reposition it, and it fills with placeholder data so you can see the layout."
 L["Keep on screen"] = "Keep on screen"
@@ -238,11 +258,11 @@ L["Show lock"] = "Show lock"
 L["Lock or unlock the window for dragging."] = "Lock or unlock the window for dragging."
 L["Show settings"] = "Show settings"
 L["Open this addon's settings at the window you clicked."] = "Open this addon's settings at the window you clicked."
-L["Show segment"] = "Show segment"
+L["Show fight name"] = "Show fight name"
 L["Name the fight this window is showing, in the header to the left of the controls."] =
     "Name the fight this window is showing, in the header to the left of the controls."
 L["Show segment picker"] = "Show segment picker"
-L["Choose which fight this window shows. The session line stays clickable either way."] = "Choose which fight this window shows. The session line stays clickable either way."
+L["Choose which fight this window shows. The fight name beside the buttons is turned on and off by Show fight name."] = "Choose which fight this window shows. The fight name beside the buttons is turned on and off by Show fight name."
 L["Show reset"] = "Show reset"
 L["Clear every recorded combat session. Asks first -- it wipes the game's own meter data too, not just this addon's."] = "Clear every recorded combat session. Asks first -- it wipes the game's own meter data too, not just this addon's."
 L["Show export"] = "Show export"
@@ -294,16 +314,22 @@ L["Move the window selected on the Windows page back to the center of the screen
 
 L["Title bar"] = "Title bar"
 L["Title text"] = "Title text"
+L["Font for the window's title and the fight name beside it."] =
+    "Font for the window's title and the fight name beside it."
+L["What colors the window's title and the fight name beside it. Class color is your own -- a window-wide strip has no other class it could mean."] =
+    "What colors the window's title and the fight name beside it. Class color is your own -- a window-wide strip has no other class it could mean."
+L["Color of the window's title and the fight name beside it."] =
+    "Color of the window's title and the fight name beside it."
 L["Controls"] = "Controls"
-L["Button style"] = "Button style"
+L["Shown"] = "Shown"
+L["Size"] = "Size"
 
-L["Text color mode"] = "Text color mode"
+L["Font color mode"] = "Font color mode"
 L["Background color mode"] = "Background color mode"
 -- The three color modes options-ui-§17 asked this addon to add beside swatches
 -- that had none. Two values each, class and custom, because a border and a window
 -- backdrop are the surfaces "per statistic" cannot say anything true about.
 L["Border color mode"] = "Border color mode"
-L["Bar border color mode"] = "Bar border color mode"
 L["What colors the fill inside the window. Class color is your own -- a window is not about any one row."] =
     "What colors the fill inside the window. Class color is your own -- a window is not about any one row."
 L["What colors the edge around the window. Class color is your own."] =
@@ -321,11 +347,11 @@ L["What colors the numbers and names. Class is the class of the row being drawn;
 L["What colors the tooltip's text. Class is the class of the player you are hovering; Per-statistic is the color of the column the grid is sorted by."] =
     "What colors the tooltip's text. Class is the class of the player you are hovering; Per-statistic is the color of the column the grid is sorted by."
 
--- TWO tabs for the title bar now: "Title bar" for whether it shows, its
--- alignment, its height and its background, and "Title text" for the face
--- drawn on it. The column-label strip below it moved to its own page (the
+-- TWO tabs for the title bar now: "Title bar" for whether it shows, its height
+-- and its background, and "Title text" for the face drawn on it and its
+-- alignment. The column-label strip below it moved to its own page (the
 -- Columns page it labels), and the meter's own controls (close, minimize,
--- segment picker...) sort into two further tabs of their own.
+-- segment picker...) and how they are drawn share one Controls tab.
 L["Color mode (all surfaces)"] = "Color mode (all surfaces)"
 L["Set the color mode of every bar and header in this window at once. Text colors are left alone — they sit on top of these surfaces and have to contrast with them. Each surface is still its own setting, so you can change one afterwards without changing the rest."] =
     "Set the color mode of every bar and header in this window at once. Text colors are left alone — they sit on top of these surfaces and have to contrast with them. Each surface is still its own setting, so you can change one afterwards without changing the rest."
@@ -343,9 +369,9 @@ L["Set the font outline for the cell text, both header strips and the tooltip at
 -- The header's own Title box and its three "show this too" checkboxes are gone
 -- with the strings that labeled them: each said something already on screen.
 -- The header draws the window's name now.
-L["Header height"] = "Header height"
-L["Height of the header strip in pixels."] = "Height of the header strip in pixels."
-L["Header background"] = "Header background"
+L["Title bar height"] = "Title bar height"
+L["Height of the title bar in pixels."] = "Height of the title bar in pixels."
+L["Title bar background"] = "Title bar background"
 L["Show divider"] = "Show divider"
 L["Draw the hairline between the title bar and the column labels."] =
     "Draw the hairline between the title bar and the column labels."
@@ -359,10 +385,10 @@ L["Color of the hairline under the title bar, used when the mode above is Custom
     "Color of the hairline under the title bar, used when the mode above is Custom color."
 L["How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."] =
     "How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."
-L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns."] =
-    "Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns."
-L["Alignment"] = "Alignment"
-L["Where the header text sits horizontally."] = "Where the header text sits horizontally."
+L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header."] =
+    "Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header."
+L["Text alignment"] = "Text alignment"
+L["Where the window's title and the fight name beside it sit horizontally."] = "Where the window's title and the fight name beside it sit horizontally."
 
 -- ---------------------------------------------------------------------------
 -- Rows page
@@ -378,7 +404,8 @@ L["Gap in pixels between adjacent rows."] = "Gap in pixels between adjacent rows
 L["Growth direction"] = "Growth direction"
 L["Whether rows stack downward from the header or upward from the bottom."] =
     "Whether rows stack downward from the header or upward from the bottom."
-L["Row"] = "Row"
+L["Grid"] = "Grid"
+L["Highlighting"] = "Highlighting"
 L["Always show yourself"] = "Always show yourself"
 L["Keep your own row visible even when it would fall outside the maximum row count."] =
     "Keep your own row visible even when it would fall outside the maximum row count."
@@ -404,29 +431,32 @@ L["Color bars by the player's class, by which statistic the column shows, or wit
     "Color bars by the player's class, by which statistic the column shows, or with one color everywhere."
 L["Class color"] = "Class color"
 L["Per-statistic color"] = "Per-statistic color"
+L["Per-statistic colors are set on the General page > Statistic colors."] =
+    "Per-statistic colors are set on the General page > Statistic colors."
 L["Custom color"] = "Custom color"
 L["Bar color"] = "Bar color"
 L["Fill color used when the color mode is set to Custom color."] =
     "Fill color used when the color mode is set to Custom color."
 L["Background"] = "Background"
-L["Bar background"] = "Bar background"
+L["Fill"] = "Fill"
 L["Bar background color"] = "Bar background color"
 L["Color drawn behind the unfilled part of each bar."] =
     "Color drawn behind the unfilled part of each bar."
 L["Bar background opacity"] = "Bar background opacity"
+L["Background opacity"] = "Background opacity"
 L["Opacity of the unfilled part of each bar."] =
     "Opacity of the unfilled part of each bar."
 L["Bar opacity"] = "Bar opacity"
 L["Opacity of the filled part of each bar."] = "Opacity of the filled part of each bar."
 L["Border"] = "Border"
-L["Bar border"] = "Bar border"
+L["Show border"] = "Show border"
 L["Draw an outline around each bar."] = "Draw an outline around each bar."
 L["How thick the outline around each bar is, in pixels."] =
     "How thick the outline around each bar is, in pixels."
 L["Color of the outline around each bar. It used to be the skin's own edge color, which no setting could reach."] =
     "Color of the outline around each bar. It used to be the skin's own edge color, which no setting could reach."
-L["Shade every other row slightly so the grid is easier to read across. Sits behind the bar background above, so a strong tint will hide it."] =
-    "Shade every other row slightly so the grid is easier to read across. Sits behind the bar background above, so a strong tint will hide it."
+L["Shade every other row slightly so the grid is easier to read across. Sits behind each cell's bar background (Windows > Bars > Bar), so a strong tint there will hide it."] =
+    "Shade every other row slightly so the grid is easier to read across. Sits behind each cell's bar background (Windows > Bars > Bar), so a strong tint there will hide it."
 L["Draw a thin outline around each bar."] = "Draw a thin outline around each bar."
 L["Fill direction"] = "Fill direction"
 L["Which edge of the cell each bar grows from."] =
@@ -441,7 +471,7 @@ L["Slide each bar to its new length between refreshes instead of jumping. The ga
 -- Text page
 -- ---------------------------------------------------------------------------
 
-L["Text content"] = "Text content"
+L["Content"] = "Content"
 L["Left text"] = "Left text"
 L["What to show on the left of each cell. Set it to Total for the `1.41M  83.2K` pair; leave it empty for the per-second figure alone."] =
     "What to show on the left of each cell. Set it to Total for the `1.41M  83.2K` pair; leave it empty for the per-second figure alone."
@@ -455,23 +485,23 @@ L["Abbreviated (12.4M)"] = "Abbreviated (12.4M)"
 L["Abbreviated, no decimals (12M)"] = "Abbreviated, no decimals (12M)"
 L["Abbreviated, two decimals (12.40M)"] = "Abbreviated, two decimals (12.40M)"
 L["Full (12400000)"] = "Full (12400000)"
-L["Max name length"] = "Max name length"
+L["Maximum name length"] = "Maximum name length"
 L["Truncate a name past this many characters. 0 shows the whole name. The realm is always stripped."] =
     "Truncate a name past this many characters. 0 shows the whole name. The realm is always stripped."
-L["Text style"] = "Text style"
+L["Style"] = "Style"
 L["Font"] = "Font"
 L["Font used for every number in the grid. A monospace font keeps the columns from shifting as the numbers change."] =
     "Font used for every number in the grid. A monospace font keeps the columns from shifting as the numbers change."
 L["Font size"] = "Font size"
 L["Text size in pixels."] = "Text size in pixels."
-L["Font outline"] = "Font outline"
+L["Font flags"] = "Font flags"
 L["Outline and monochrome flags applied to the text."] =
     "Outline and monochrome flags applied to the text."
-L["Text shadow"] = "Text shadow"
+L["Font shadow"] = "Font shadow"
 L["Use class color"] = "Use class color"
 L["Draw a drop shadow behind the text so it stays readable over a bright bar."] =
     "Draw a drop shadow behind the text so it stays readable over a bright bar."
-L["Text color"] = "Text color"
+L["Font color"] = "Font color"
 L["Color of the numbers and names."] = "Color of the numbers and names."
 L["Text opacity"] = "Text opacity"
 L["Opacity of the numbers and names."] = "Opacity of the numbers and names."
@@ -515,19 +545,21 @@ L["Where the tooltip appears relative to the cursor or the window."] =
 -- No "At cursor": over a grid it lands wherever the pointer happens to be inside
 -- a cell, so the same hover puts the tooltip somewhere different every time.
 L["Contents"] = "Contents"
+L["Breakdown"] = "Breakdown"
+L["Player name"] = "Player name"
 L["Show spell breakdown"] = "Show spell breakdown"
 L["List the individual spells behind a cell's number when you hover it."] =
     "List the individual spells behind a cell's number when you hover it."
-L["Horizontal offset"] = "Horizontal offset"
+L["X offset"] = "X offset"
 L["Nudge the tooltip sideways from wherever the anchor puts it. Positive moves it right."] =
     "Nudge the tooltip sideways from wherever the anchor puts it. Positive moves it right."
-L["Vertical offset"] = "Vertical offset"
+L["Y offset"] = "Y offset"
 L["Nudge the tooltip up or down from wherever the anchor puts it. Positive moves it up."] =
     "Nudge the tooltip up or down from wherever the anchor puts it. Positive moves it up."
 L["Maximum spells"] = "Maximum spells"
 L["How many spells to list in the breakdown before stopping. 0 lists every spell the breakdown found."] =
     "How many spells to list in the breakdown before stopping. 0 lists every spell the breakdown found."
-L["Summarize on the name"] = "Summarize on the name"
+L["Show all statistics on name hover"] = "Show all statistics on name hover"
 L["Hovering a player's name shows every enabled statistic for that player at once."] =
     "Hovering a player's name shows every enabled statistic for that player at once."
 L["Hide tooltips in combat"] = "Hide tooltips in combat"
@@ -536,14 +568,11 @@ L["Suppress tooltips while you are in combat so nothing sits under your cursor m
 
 L["LibSharedMedia statusbar texture drawn behind each spell line."] =
     "LibSharedMedia statusbar texture drawn behind each spell line."
-L["Bar spacing"] = "Bar spacing"
+L["Line spacing"] = "Line spacing"
 L["Gap in pixels between one tooltip line and the next."] =
     "Gap in pixels between one tooltip line and the next."
-L["Bar border style"] = "Bar border style"
 L["LibSharedMedia border drawn around each spell bar. Most border art is cut for a window rather than a 14px line, so it may look heavy here."] =
     "LibSharedMedia border drawn around each spell bar. Most border art is cut for a window rather than a 14px line, so it may look heavy here."
-L["Bar border thickness"] = "Bar border thickness"
-L["Bar border color"] = "Bar border color"
 L["Color of the border around each spell bar."] =
     "Color of the border around each spell bar."
 
@@ -558,7 +587,7 @@ L["Show targets"] = "Show targets"
 L["Name the killer"] = "Name the killer"
 L["Add whoever landed the killing blow to each line of the Deaths list. Left off a death with no caster to name, such as a fall or a fire."] =
     "Add whoever landed the killing blow to each line of the Deaths list. Left off a death with no caster to name, such as a fall or a fire."
-L["Name the killing blow"] = "Name the killing blow"
+L["Name the killing spell"] = "Name the killing spell"
 L["Add the spell that landed the killing blow to each line of the Deaths list. A melee swing is named Melee; a spell the client cannot name is left off."] =
     "Add the spell that landed the killing blow to each line of the Deaths list. A melee swing is named Melee; a spell the client cannot name is left off."
 L["On a Damage cell, list which enemies this player hit. Cross-referenced from the enemy damage taken column, so it is unavailable while a pull is in progress."] =
@@ -576,7 +605,7 @@ L["How many enemies to list before stopping."] =
 -- page where the columns are chosen. Its paths stay under window.columnHeader,
 -- unchanged: a row's page is where it is edited, its path where it is stored.
 
-L["Header text"] = "Header text"
+L["Column header"] = "Column header"
 L["Font used for the column header strip above the rows."] =
     "Font used for the column header strip above the rows."
 L["Column header text size in pixels."] = "Column header text size in pixels."
@@ -606,7 +635,8 @@ L["No data yet"] = "No data yet"
 -- Visibility page
 -- ---------------------------------------------------------------------------
 
-L["Where to show this window"] = "Where to show this window"
+L["Show in"] = "Show in"
+L["Rules"] = "Rules"
 L["Dungeons"] = "Dungeons"
 L["Show this window in five-player dungeons, including Mythic+."] =
     "Show this window in five-player dungeons, including Mythic+."
@@ -618,7 +648,7 @@ L["Battlegrounds"] = "Battlegrounds"
 L["Show this window in battlegrounds."] = "Show this window in battlegrounds."
 L["Open world"] = "Open world"
 L["Show this window outside instances."] = "Show this window outside instances."
-L["When to hide this window"] = "When to hide this window"
+L["Hide when"] = "Hide when"
 L["Hide when solo"] = "Hide when solo"
 L["Hide the window whenever you are not in a party or raid."] =
     "Hide the window whenever you are not in a party or raid."
@@ -733,19 +763,19 @@ L["Enable Multi Meters"] = "Enable Multi Meters"
 L["Master switch for the addon. When off, no window is drawn and no data is read."] =
     "Master switch for the addon. When off, no window is drawn and no data is read."
 L["General visibility"] = "General visibility"
-L["When this addon's windows are shown at all, whatever one window's own settings under Windows > Visibility say. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."] =
-    "When this addon's windows are shown at all, whatever one window's own settings under Windows > Visibility say. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."
+L["When this addon's windows are shown at all, whatever one window's own settings under Windows > Visibility > Rules say. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."] =
+    "When this addon's windows are shown at all, whatever one window's own settings under Windows > Visibility > Rules say. Never is the master switch's quieter half and is read beside it; the two combat answers are read with the per-window context rules, so Test mode still forces a window on."
 L["Only in combat"] = "Only in combat"
 L["Only out of combat"] = "Only out of combat"
 L["Master scale"] = "Master scale"
-L["Scale multiplier for every window, multiplied into each window's own Scale under Windows > Frame. A window at 0.80 under a master of 0.50 draws at 0.40."] =
-    "Scale multiplier for every window, multiplied into each window's own Scale under Windows > Frame. A window at 0.80 under a master of 0.50 draws at 0.40."
-L["Master alpha"] = "Master alpha"
-L["Opacity multiplier for every window, multiplied into each window's own Opacity under Windows > Frame."] =
-    "Opacity multiplier for every window, multiplied into each window's own Opacity under Windows > Frame."
+L["Scale multiplier for every window, multiplied into each window's own Window scale under Windows > Frame > Size and position. A window at 0.80 under a master of 0.50 draws at 0.40."] =
+    "Scale multiplier for every window, multiplied into each window's own Window scale under Windows > Frame > Size and position. A window at 0.80 under a master of 0.50 draws at 0.40."
+L["Master opacity"] = "Master opacity"
+L["Opacity multiplier for every window, multiplied into each window's own Window opacity under Windows > Frame > Size and position."] =
+    "Opacity multiplier for every window, multiplied into each window's own Window opacity under Windows > Frame > Size and position."
 L["Lock frame"] = "Lock frame"
-L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Windows > Frame, or the lock button in its header) still locks it on its own."] =
-    "Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Windows > Frame, or the lock button in its header) still locks it on its own."
+L["Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Windows > Frame > Size and position, or the lock button in its header) still locks it on its own."] =
+    "Lock or unlock every window at once, the same as /mm lock on and /mm lock off. Ticked when every window is locked; a window's own Lock window (Windows > Frame > Size and position, or the lock button in its header) still locks it on its own."
 -- Said once, appended to every non-palette color swatch's tooltip
 -- (settings/Schema.lua's SWATCH_NOTE). options-ui-§17 forbids graying a swatch
 -- out under a non-custom mode, because its ALPHA is still read.
@@ -1075,7 +1105,7 @@ L["Heal"] = "Heal"
 L["Time of day"] = "Time of day"
 L["How long ago"] = "How long ago"
 L["Death timestamps"] = "Death timestamps"
-L["How a death is labeled in the Deaths tooltip and the death list."] = "How a death is labeled in the Deaths tooltip and the death list."
+L["How a death is labeled in the Deaths tooltip. Also used by the death list in the window's breakdown."] = "How a death is labeled in the Deaths tooltip. Also used by the death list in the window's breakdown."
 
 -- The simulator's host (modules/Sim.lua, MultiMeters#60): the start's refusals, the gate's line,
 -- the stop lines, the started line, the status verb's extra line and the step panel's fields; and
