@@ -318,8 +318,8 @@ end)
 
 test("Options: the Columns page's Defaults button ALSO restores the window.columnHeader.* schema rows",
 function()
-    -- This branch moved eight window.columnHeader.* schema rows onto the Columns page's "Header
-    -- text" and "Header background" tabs. options-ui-§13 makes the Defaults button page-wide, not
+    -- This branch moved eight window.columnHeader.* schema rows onto the Columns page's "Column
+    -- header" tab. options-ui-§13 makes the Defaults button page-wide, not
     -- tab-wide, so a click on the block-editor tab must still put those rows back even though they
     -- are not the tab on screen. red under: defaultsOnClick pointed only at restoreShippedColumns.
     local inst = T.load()
@@ -661,11 +661,12 @@ test("Options: a widget's set() routes through NS.SetByPath", function()
     local inst = T.load()
     local ctx = showSection(inst, "frame")
 
-    -- Width is on Size and position, the page's SECOND tab, so the tab is clicked and the
-    -- widgets counted after it: the strip re-renders on select, and anything created before
-    -- the click belongs to the tab we left.
-    local before = #aceGUI(inst).__created
+    -- Width is on Size and position, the page's FIRST tab (item 020). The tab is still clicked
+    -- -- away and back -- and the widgets counted after it: the strip re-renders on select, and
+    -- anything created before the click belongs to the tab we left.
     ctx.__tabKids[2]:__fire("OnClick")
+    local before = #aceGUI(inst).__created
+    ctx.__tabKids[1]:__fire("OnClick")
 
     local slider = findWidget(widgetsSince(inst, before), "Slider", inst.NS.L["Width"])
     assertTrue(slider ~= nil, "the Frame page's Width slider was not rendered")
@@ -688,7 +689,7 @@ end)
 test("Options: a checkbox's set() routes through NS.SetByPath too", function()
     local inst = T.load()
     -- The HEADER page, whose first tab opens on a checkbox -- so this needs no tab click and is
-    -- not coupled to tab order. (Frame's checkboxes live on its "General" tab, and reaching them
+    -- not coupled to tab order. (Frame's checkboxes live on its "Size and position" tab, and reaching them
     -- by index would break silently the day the tabs are reordered.) This is the same control the
     -- case used before the settings redesign moved it off Frame, now at its new path -- matching
     -- the file's own idiom above (panelFor, capture `before`, THEN render) rather than showPage,
@@ -947,13 +948,17 @@ local TABBED = {
     -- do I put it back" is one place under one name.
     general    = "Master controls",
     windows    = "General",
-    frame      = "General",
+    frame      = "Size and position",
     header     = "Title bar",
     bars       = "Bar",
     tooltip    = "General",
-    visibility = "Where to show this window",
+    visibility = "Rules",
     columns    = "Columns",
 }
+
+-- The pages whose strip is ONE tab (options-ui-§13: a page with one section draws a one-tab
+-- strip). Windows' General entry and, since item 020 merged its three tabs, Visibility's Rules.
+local ONE_TAB = { windows = true, visibility = true }
 
 test("Panel: every tabbed page opens on its first tab and draws a strip", function()
     -- red under: a page left on RenderSchema, or one whose renderer draws the strip after the
@@ -963,7 +968,7 @@ test("Panel: every tabbed page opens on its first tab and draws a strip", functi
     for page, firstTab in pairs(TABBED) do
         local ctx = page == "general" and showPage(inst, page) or showSection(inst, page)
         assertEqual(ctx.activeTab, L[firstTab], page .. ": opens on its first tab")
-        assertTrue(#(ctx.__tabKids or {}) >= 2, page .. ": drew a strip")
+        assertTrue(#(ctx.__tabKids or {}) >= (ONE_TAB[page] and 1 or 2), page .. ": drew a strip")
     end
 end)
 
@@ -978,7 +983,7 @@ end)
 
 test("Panel: switching tabs re-renders without leaving the previous tab's widgets behind",
 function()
-    -- The Frame page's second tab is Size and position. Asserting on the TAB rather than on a child count is
+    -- The Frame page's second tab is Quick style. Asserting on the TAB rather than on a child count is
     -- deliberate: a renderer that appended instead of clearing would still change the count, so
     -- a count assertion passes for the wrong reason. What proves the clear is that a widget from
     -- the tab we LEFT is gone.
@@ -996,10 +1001,10 @@ function()
         return false
     end
 
-    assertTrue(labeled(L["Lock window"]), "the Frame page did not open on General")
+    assertTrue(labeled(L["Lock window"]), "the Frame page did not open on Size and position")
     ctx.__tabKids[2]:__fire("OnClick")
-    assertEqual(ctx.activeTab, L["Size and position"])
-    assertTrue(labeled(L["Width"]), "the Size and position tab did not render")
+    assertEqual(ctx.activeTab, L["Quick style"])
+    assertTrue(labeled(L["Color mode (all surfaces)"]), "the Quick style tab did not render")
     assertFalse(labeled(L["Lock window"]), "the previous tab's widgets were left behind")
 end)
 
@@ -1033,7 +1038,7 @@ function()
 
     assertEqual(table.concat(lines, "\n"), table.concat({
         L["Enable Multi Meters"] .. " | " .. L["General visibility"],
-        L["Master scale"] .. " | " .. L["Master alpha"],
+        L["Master scale"] .. " | " .. L["Master opacity"],
         L["Lock frame"] .. " | " .. L["Debug console"],
         L["Minimap button"] .. " | " .. L["Test mode"],
         L["Reset position"] .. " | " .. L["Reset all settings"],
@@ -1103,7 +1108,7 @@ test("Panel: the Statistic colors tab says where its colors are actually worn", 
         return table.concat(out, "\n")
     end
 
-    local note = L["These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Windows > Bars), the numbers on it (Windows > Bars > Text style), and the column header strip (Windows > Columns). The name tooltip's all-statistics list always uses them, whatever those modes say."]
+    local note = L["These colors are worn wherever an element's color mode is set to Per-statistic \226\128\148 a cell's bar and its background (Windows > Bars > Bar), the numbers on it (Windows > Bars > Text), and the column header strip (Windows > Columns > Column header). The name tooltip's all-statistics list always uses them, whatever those modes say."]
     assertTrue(textOnPage():find(note, 1, true) == nil,
         "the note is on the Master controls tab, which is not the tab it describes")
 
@@ -1155,13 +1160,13 @@ test("Panel: choosing a window in the banner retargets every page and keeps the 
 
     local ctx = showSection(inst, "bars")
     ctx.__tabKids[3]:__fire("OnClick")
-    assertEqual(ctx.activeTab, inst.NS.L["Border"])
+    assertEqual(ctx.activeTab, inst.NS.L["Icons"])
 
     local banner = ctx.__bannerWidget
     banner:__fire("OnValueChanged", list[2].id)
 
     assertEqual(inst.NS.State.activeWindowId, list[2].id)
-    assertEqual(ctx.activeTab, inst.NS.L["Border"], "the tab survived the retarget")
+    assertEqual(ctx.activeTab, inst.NS.L["Icons"], "the tab survived the retarget")
 end)
 
 -- ---------------------------------------------------------------------------

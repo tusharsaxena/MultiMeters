@@ -142,6 +142,23 @@ test("Windows rail: the band, then the rail General..Columns, 120 wide, opening 
         "the band is the Active window picker")
 end)
 
+test("Windows rail: the band carries New window beside the picker, and it creates and selects a window", function()
+    -- options-ui-§14: the band MUST carry the identity controls -- the picker, and the create control
+    -- where the page has one (item 020, MUL-L17, through PageBanner's `action`).
+    -- red under: New window drawn back on the General entry, or the action wired to nothing.
+    local P = env()
+    local NS = P.NS
+    local ctx = P.show()
+    local btn = ctx.__bannerAction
+    assertTrue(btn ~= nil, "the band drew no action button")
+    assertEqual(btn.text, P.L["New window"])
+    local before = #NS.Database.GetWindows()
+    btn:__fire("OnClick")
+    local list = NS.Database.GetWindows()
+    assertEqual(#list, before + 1, "New window in the band did not create a window")
+    assertEqual(NS.State.activeWindowId, list[#list].id, "the panel did not follow the new window")
+end)
+
 test("Windows rail: the draw order is PageBanner, NavRail, TabStrip", function()
     local P = env()
     P.show()
@@ -157,14 +174,47 @@ test("Windows rail: General is one General tab holding the window's acts and a C
     -- red under: the old Window / Copy from pair, or Copy from left on a tab of its own
     assertEqual(P.tabLabels(), L["General"])
     assertEqual(ctx.activeTab, L["General"])
-    for _, b in ipairs({ "New window", "Duplicate window", "Delete window", "Copy" }) do
+    for _, b in ipairs({ "Duplicate window", "Delete window", "Copy" }) do
         assertTrue(has(ctx.scroll, "Button", L[b]), "General draws " .. b)
     end
+    -- New window is the band's create control (options-ui-§14, item 020 MUL-L17), not a General act.
+    assertFalse(has(ctx.scroll, "Button", L["New window"]), "New window is still drawn on General")
     assertTrue(has(ctx.scroll, "EditBox", L["Window name"]), "General draws the name box")
     assertTrue(has(ctx.scroll, "Dropdown", L["Source window"]), "General draws the copy source")
     assertTrue(has(ctx.scroll, "Dropdown", L["Settings to copy"]), "General draws the group filter")
     assertTrue(has(ctx.scroll, "Heading", L["Copy settings from"]), "the copy block has its own heading")
     assertFalse(has(ctx.scroll, "Dropdown", L["Active window"]), "the band is the only picker")
+end)
+
+--- The first widget under `root` of type `wtype` labeled `label`.
+local function find(root, wtype, label)
+    for _, c in ipairs(root and root.children or {}) do
+        if c.type == wtype and c.labelText == label then return c end
+        local hit = find(c, wtype, label)
+        if hit then return hit end
+    end
+    return nil
+end
+
+test("Windows rail: Settings to copy names what is copied, in rail order", function()
+    -- options-ui-§21's copy-from rule (item 020, MUL-L19): the labels name what the player sees,
+    -- while the KEYS stay modules/WindowManager.lua's stored groups.
+    -- red under: a label naming a storage subtree again, or a key renamed with its label.
+    local P = env()
+    local ctx = P.show()
+    local L = P.L
+    local dd = find(ctx.scroll, "Dropdown", L["Settings to copy"])
+    assertTrue(dd ~= nil, "General draws no Settings to copy dropdown")
+    local got = {}
+    for i, key in ipairs(dd.order or {}) do got[i] = key .. "=" .. tostring(dd.list[key]) end
+    assertEqual(table.concat(got, "|"), table.concat({
+        "*=" .. L["Everything"],
+        "frame=" .. L["Frame and header buttons"], "rows=" .. L["Rows"],
+        "header=" .. L["Title bar and title text"], "bars=" .. L["Bars"],
+        "text=" .. L["Bar text and death timestamps"], "icons=" .. L["Icons"],
+        "tooltip=" .. L["Tooltip"], "visibility=" .. L["Visibility"],
+        "columns=" .. L["Column list"], "data=" .. L["Sort and segment"],
+    }, "|"))
 end)
 
 test("Windows rail: a rail click draws that entry's own strip under the same band", function()
@@ -178,7 +228,7 @@ test("Windows rail: a rail click draws that entry's own strip under the same ban
     assertEqual(P.tabLabels(), groupsOf(P.NS, "bars"))
     assertEqual(ctx.__bannerWidget.labelText, L["Active window"], "the band is drawn with the entry")
     P.rail("columns")
-    assertEqual(P.tabLabels(), table.concat({ L["Columns"], L["Header text"], L["Header background"] }, "|"))
+    assertEqual(P.tabLabels(), table.concat({ L["Columns"], L["Column header"] }, "|"))
 end)
 
 test("Windows rail: each entry keeps its own tab, including one chosen by the library's own strip click", function()
@@ -187,23 +237,23 @@ test("Windows rail: each entry keeps its own tab, including one chosen by the li
     local L = P.L
     local ctx = P.rail("frame")
     ctx.__tabKids[2]:__fire("OnClick")              -- the library's own strip click: no host render
-    assertEqual(ctx.activeTab, L["Size and position"])
+    assertEqual(ctx.activeTab, L["Quick style"])
     P.rail("bars")
     assertEqual(ctx.activeTab, L["Bar"], "Bars opens on its first tab")
     ctx.__tabKids[3]:__fire("OnClick")
-    assertEqual(ctx.activeTab, L["Border"])
+    assertEqual(ctx.activeTab, L["Icons"])
     P.rail("frame")
-    -- red under: one scalar activeTab for the page (Frame reopens on Border's slot or its first tab),
+    -- red under: one scalar activeTab for the page (Frame reopens on Icons' slot or its first tab),
     -- or a stash only on host renders (the strip click above never reaches the host)
-    assertEqual(ctx.activeTab, L["Size and position"])
+    assertEqual(ctx.activeTab, L["Quick style"])
     P.rail("columns")
-    ctx.__tabKids[3]:__fire("OnClick")              -- Columns' own strip: a host render
-    assertEqual(ctx.activeTab, L["Header background"])
+    ctx.__tabKids[2]:__fire("OnClick")              -- Columns' own strip: a host render
+    assertEqual(ctx.activeTab, L["Column header"])
     P.rail("windows")
     P.rail("bars")
-    assertEqual(ctx.activeTab, L["Border"], "and through General")
+    assertEqual(ctx.activeTab, L["Icons"], "and through General")
     P.rail("columns")
-    assertEqual(ctx.activeTab, L["Header background"])
+    assertEqual(ctx.activeTab, L["Column header"])
 end)
 
 test("Windows rail: choosing another window in the band keeps the entry and its tab", function()
@@ -214,12 +264,12 @@ test("Windows rail: choosing another window in the band keeps the entry and its 
     P.show()
     local ctx = P.rail("bars")
     ctx.__tabKids[3]:__fire("OnClick")
-    assertEqual(ctx.activeTab, L["Border"])
+    assertEqual(ctx.activeTab, L["Icons"])
     ctx.__bannerWidget:__fire("OnValueChanged", list[2].id)
     assertEqual(NS.State.activeWindowId, list[2].id)
     -- red under: a window switch resetting the entry or the tab (options-ui-§14: the rail is not a picker)
     assertEqual(ctx.activeSection, "bars")
-    assertEqual(ctx.activeTab, L["Border"])
+    assertEqual(ctx.activeTab, L["Icons"])
     assertEqual(ctx.unit, list[2].id, "the page now edits the second window")
 end)
 
@@ -316,7 +366,7 @@ test("Windows rail: the page offers one Defaults button whose tooltip fits every
     local ctx = P.show()
     assertTrue(ctx.panel.wantsDefaultsButton, "the Windows page offers Defaults since #55")
     assertEqual(ctx.panel.defaultsTooltip,
-        P.L["Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."])
+        P.L["Restore every tab of the entry selected on the left, for the window in the band, to its defaults. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."])
 end)
 
 -- ── deep links, SelectTab (NR-MM-03) ────────────────────────────────────────────────────────

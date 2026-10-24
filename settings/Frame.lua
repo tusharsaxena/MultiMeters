@@ -1,6 +1,7 @@
 -- settings/Frame.lua
 --
--- The Windows page's Frame entry: the window's own geometry, chrome and lock state.
+-- The Windows page's Frame entry: the window's own geometry, placement (the lock, the
+-- clamp and the strata), the four Quick style broadcasts, its chrome and its rows.
 --
 -- Every widget on this page is a row in NS.Schema with a `window.frame.*` path,
 -- so the page body is one RenderSchema call. Adding a frame option means adding
@@ -24,5 +25,5 @@ local L = NS.L
 -- renderer (settings/OptionsSetup.lua, Helpers.RenderWindowPage) through
 -- H.RenderTabbedSchema(ctx, "frame"): the entry's tabs are the rows' groups.
 NS.RegisterWindowSection("frame", L["Frame"], {
-    tooltip = L["This window's size, position, background, border and rows."],
+    tooltip = L["This window's size, position, quick style, background, border and rows."],
 })

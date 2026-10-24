@@ -1,7 +1,8 @@
 -- settings/Tooltip.lua
 --
--- The Windows page's Tooltip entry: the per-cell spell breakdown, the all-statistics summary on
--- a player's name, and where the tooltip anchors.
+-- The Windows page's Tooltip entry: where the tooltip anchors (General), what it lists --
+-- the per-cell spell breakdown, the Deaths list and its death timestamps, the
+-- all-statistics summary on a player's name (Contents) -- and how its bars and text look.
 --
 -- Pure schema — every widget is a `window.tooltip.*` row in NS.Schema.
 --

@@ -4,8 +4,9 @@
 -- picker is the band, the nav rail chooses General, Frame, Header, Bars,
 -- Tooltip, Visibility or Columns, and each entry keeps its own tab strip
 -- (settings/OptionsSetup.lua, Helpers.RenderWindowPage). This file owns the band
--- (H.WindowBanner) and the General entry: the registry actions (new, rename,
--- delete, duplicate) and "copy settings from", with a group filter.
+-- (H.WindowBanner, which carries the picker and New window) and the General
+-- entry: the other registry actions (rename, duplicate, delete) and "copy
+-- settings from", with a group filter.
 --
 -- ---------------------------------------------------------------------------
 -- WHY THIS PAGE EXISTS AT ALL
@@ -146,21 +147,30 @@ local function windowList()
     return list, order
 end
 
--- The config groups a copy can be filtered to, in the order the settings pages
--- appear. "*" is the everything option and is deliberately not a group name, so
--- a group can never be added that collides with it.
+-- The config groups a copy can be filtered to. "*" is the everything option and
+-- is deliberately not a group name, so a group can never be added that collides
+-- with it.
+--
+-- THE KEYS ARE STORED SUBTREES, the labels say what the player sees (item 020,
+-- MUL-L19, options-ui-§21's copy-from rule). A copy follows where a setting is
+-- STORED, not where it is edited, so `frame` carries every header button
+-- (window.frame.*, edited on Header > Controls), `header` is only the title bar
+-- and its text, and `text` carries the death timestamps that are edited on
+-- Tooltip > Contents. The labels name that, and the order follows the rail. This
+-- is the DISPLAY list only: modules/WindowManager.lua's COPY_GROUPS and its keys
+-- are untouched.
 local COPY_ALL    = "*"
 local COPY_GROUPS = {
-    { key = "frame",      label = L["Frame"] },
-    { key = "header",     label = L["Header"] },
+    { key = "frame",      label = L["Frame and header buttons"] },
     { key = "rows",       label = L["Rows"] },
+    { key = "header",     label = L["Title bar and title text"] },
     { key = "bars",       label = L["Bars"] },
-    { key = "text",       label = L["Text"] },
+    { key = "text",       label = L["Bar text and death timestamps"] },
     { key = "icons",      label = L["Icons"] },
     { key = "tooltip",    label = L["Tooltip"] },
     { key = "visibility", label = L["Visibility"] },
-    { key = "columns",    label = L["Columns"] },
-    { key = "data",       label = L["Data"] },
+    { key = "columns",    label = L["Column list"] },
+    { key = "data",       label = L["Sort and segment"] },
 }
 
 local function groupList()
@@ -208,6 +218,10 @@ local function afterRegistryChange()
     if NS.RefreshOptionsPanel then NS.RefreshOptionsPanel() end
 end
 
+-- The band's New window button (H.WindowBanner) creates a window; the function is
+-- defined with the other registry actions below.
+local doCreate
+
 --- The page banner: which window this page is editing, and the picker for it.
 ---
 --- Decorated onto the instance, and drawn once, as the Windows page's band above its rail
@@ -225,12 +239,21 @@ H.WindowBanner = function(ctx)
 
     local list, order = windowList()
     local active = activeWindow()
-    local dd = H.PageBanner(ctx, {
+    local dd, newButton = H.PageBanner(ctx, {
         label   = L["Active window"],
         tooltip = L["Which window every section of this page applies to. Each window is configured independently."],
         list    = list,
         order   = order,
         value   = active and active.id,
+        -- THE CREATE CONTROL, in the band beside the picker (options-ui-§14's MUST,
+        -- item 020 MUL-L17): the library's PageBanner `action` slot (OptionsTabs
+        -- minor 4). doCreate is forward-declared above and defined below; a click
+        -- is the only thing that reaches it.
+        action  = {
+            text    = L["New window"],
+            tooltip = L["Create a new window with the default settings."],
+            onClick = function() doCreate() end,
+        },
         onSelect = function(id)
             if not id or (NS.State and id == NS.State.activeWindowId) then return end
             -- The SAME two calls the dropdown this replaces made, in the same order. Assigning
@@ -245,6 +268,7 @@ H.WindowBanner = function(ctx)
     -- keeps its own widgets private and a test that cannot reach this one cannot prove the
     -- retarget happens at all.
     ctx.__bannerWidget = dd
+    ctx.__bannerAction = newButton
     return dd
 end
 
@@ -261,7 +285,7 @@ local function selectLast()
     if last and NS.State then NS.State.SetActiveWindow(last.id) end
 end
 
-local function doCreate()
+function doCreate()
     local M = manager("Create")
     if not M then return end
     -- No name: the registry mints "Multi Meters #<n>" off how many windows
@@ -385,7 +409,7 @@ local function renderCopySource(_, parent, relativeWidth)
 
     return H.ActionDropdown(parent, relativeWidth, {
         label   = L["Source window"],
-        tooltip = L["Copy another window's settings onto this one. Choose which group of settings to copy below."],
+        tooltip = L["The window to copy from. Pick what to copy beside it, then press Copy."],
         list    = list,
         order   = order,
         value   = copySourceId,
@@ -397,7 +421,7 @@ local function renderCopyGroup(_, parent, relativeWidth)
     local list, order = groupList()
     return H.ActionDropdown(parent, relativeWidth, {
         label    = L["Settings to copy"],
-        tooltip  = L["Copy every setting, or just one group."],
+        tooltip  = L["Copy every setting, or just one group. Groups follow where a setting is stored, so header buttons copy with the frame."],
         list     = list,
         order    = order,
         value    = copyGroup,
@@ -405,32 +429,29 @@ local function renderCopyGroup(_, parent, relativeWidth)
     })
 end
 
---- The General entry's Window block: the name row and the three registry buttons.
+--- The General entry's Window block: the name row, then Duplicate and Delete on one
+--- line. New window is in the band (H.WindowBanner's action), where options-ui-§14
+--- puts the create control.
 local function renderWindowTab(ctx)
     H.RenderGrid(ctx, {
         { make = renderNameBox },
     })
     H.InlineButtonPair(ctx,
         {
-            text    = L["New window"],
-            tooltip = L["Create a new window with the default settings."],
-            onClick = doCreate,
-        },
-        {
             text    = L["Duplicate window"],
             tooltip = L["Create a copy of the active window, including every setting and column."],
             onClick = doDuplicate,
+        },
+        {
+            text    = L["Delete window"],
+            tooltip = L["Delete the active window. This cannot be undone."],
+            onClick = function()
+                local w = activeWindow()
+                if not w then return print_(L["No window is selected."]) end
+                if #windows() <= 1 then return print_(L["The last window cannot be deleted."]) end
+                StaticPopup_Show("MULTIMETERS_DELETE_WINDOW", w.name or "")
+            end,
         })
-    H.InlineButtonPair(ctx, {
-        text    = L["Delete window"],
-        tooltip = L["Delete the active window. This cannot be undone."],
-        onClick = function()
-            local w = activeWindow()
-            if not w then return print_(L["No window is selected."]) end
-            if #windows() <= 1 then return print_(L["The last window cannot be deleted."]) end
-            StaticPopup_Show("MULTIMETERS_DELETE_WINDOW", w.name or "")
-        end,
-    }, nil)
 end
 
 --- The General entry's Copy settings from block: the source picker, the group filter and the Copy button.
@@ -441,7 +462,7 @@ local function renderCopyTab(ctx)
     })
     H.InlineButtonPair(ctx, {
         text    = L["Copy"],
-        tooltip = L["Copy another window's settings onto this one. Choose which group of settings to copy below."],
+        tooltip = L["Copy the chosen settings from the source window onto this one."],
         onClick = doCopy,
     }, nil)
 end
@@ -479,7 +500,7 @@ local function Build(mainCategory)
     local ctx = H.CreatePanel("MultiMetersWindowsPanel", L["Windows"], {
         pageKey         = PAGE,
         defaultsButton  = true,
-        defaultsTooltip = L["Restore the active window's settings in the section on screen to their shipped values. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."],
+        defaultsTooltip = L["Restore every tab of the entry selected on the left, for the window in the band, to its defaults. On Columns that includes the shipped column list. General has nothing to restore: the window's name is kept."],
     })
     ctx.panel.defaultsOnClick = function() H.RestoreActiveSection(ctx) end
 
@@ -491,7 +512,7 @@ end
 
 -- The General entry of the Windows page (MultiMeters#55), first on the rail.
 NS.RegisterWindowSection(PAGE, L["General"], {
-    tooltip  = L["Rename, create, duplicate or delete windows, and copy settings from another window."],
+    tooltip  = L["Rename, duplicate or delete this window, and copy settings from another window. New window is beside the picker above."],
     render   = renderGeneral,
     defaults = function() print_(L["General has no settings to restore. The window's name is kept."]) end,
 })

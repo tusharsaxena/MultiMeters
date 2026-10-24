@@ -339,6 +339,7 @@ local SUITES = {
     "test_schema_batch",
     "test_schema_defaults",
     "test_settings_pin",
+    "test_settings_layout",
     "test_slash",
     "test_slash_diagnostics",
     "test_slash_refusal",
