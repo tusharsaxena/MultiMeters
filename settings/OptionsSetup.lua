@@ -425,6 +425,19 @@ if not lib then
     -- ResetAllTooltip, new when the v1.77.0 tag moved (OptionsCompose minor 11): the reset-all
     -- sentence, read only by a page builder. With no library it answers an empty string too.
     Helpers.ResetAllTooltip    = function() return "" end
+    -- The Skin tab (LibKa0s v1.78.0, OptionsAppearance minor 1; skinning-§3), owed by every
+    -- Options stub, adopted or not. On this path RenderTabbedSchema answers no tabs, so the entry
+    -- is inert, and AppearanceRows answers nil, as the live one does when it cannot draw. Labeled
+    -- "Skin" since OptionsAppearance minor 3 (v1.79.0); the key stays "Appearance".
+    Helpers.AppearanceTab  = function()
+        return { key = "Appearance", label = "Skin", render = function() end }
+    end
+    Helpers.AppearanceRows = function() return nil end
+    -- The first-run skin picker (LibKa0s v1.79.0, OptionsSkinPicker minor 1). Without the library
+    -- there is no skin to pick: SkinPicker draws nothing and answers nil (never the live one's
+    -- second value, "queued": there is no queue), and HideSkinPicker is a no-op.
+    Helpers.SkinPicker     = function() return nil end
+    Helpers.HideSkinPicker = function() end
     Helpers.__pages    = function() return {} end
     Helpers.__panels   = function() return {} end
     Helpers.__panelFor = function() return nil end
