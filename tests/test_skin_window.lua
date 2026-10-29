@@ -380,3 +380,24 @@ test("Skin window: the v21 step survives a junk window and leaves an absent grou
     assertEqual(w.header.colorMode, "skin", "an absent group did not take the template's mode")
     assertEqual(w.header.bgColorFromSkin, true, "an absent group did not take the template's companion")
 end)
+
+-- The client hands a FontString created with no template an invalid size until a font is set, and
+-- the Shell scales the title's own size into the skin's font object: a title still fontless when
+-- the Shell paints it reached SetFont with a height of -1 (the owner's in-game error, 2026-10-30).
+test("Skin window: the title has a font before the Shell paints it", function()
+    local inst = T.load{}
+    local NS = inst.NS
+    local seen = {}
+    local shell = NS.Skin.Shell
+    NS.Skin.Shell = function(frame, ...)
+        local title = rawget(frame, "title")
+        if type(title) == "table" then
+            seen[#seen + 1] = title:GetFontObject() ~= nil or title:GetFont() ~= nil
+        end
+        return shell(frame, ...)
+    end
+    NS.Window.New(NS.Database.GetWindows()[1])
+    NS.Skin.Shell = shell
+    assertTrue(#seen > 0, "the Shell never painted the window")
+    for i, ok in ipairs(seen) do assertTrue(ok, ("paint %d reached a fontless title"):format(i)) end
+end)
