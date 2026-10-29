@@ -3,8 +3,8 @@
 Where each responsibility lives, what each file publishes, and what it consumes. `MultiMeters.toc`
 is the source of truth for load order — check this map against it before editing.
 
-Sixty-eight non-vendored source files: 1 locale, 21 `core/`, 1 `defaults/`, 30 `modules/`,
-15 `settings/`.
+Seventy non-vendored source files: 1 locale, 22 `core/`, 1 `defaults/`, 30 `modules/`,
+16 `settings/`.
 
 Thirteen of those arrived on one day, 2026-09-09, and **not one of them is a new module.** They are
 peels. `layout-§1` caps an authored file at 1500 lines; seven source files were over it —
