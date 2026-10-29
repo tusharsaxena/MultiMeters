@@ -237,9 +237,12 @@ test("Skin window: without the library the Skin modes draw the stored colors, th
     cfg.header.color = { r = 0.2, g = 0.9, b = 0.2, a = 1 }
     cfg.header.bgColor = { r = 0.9, g = 0.1, b = 0.1, a = 0.5 }
     cfg.frame.controlColor = { r = 0, g = 0, b = 1, a = 1 }
+    inst.mocks.__media.border["Grid Edge"] = [[Interface\GridEdge]]
+    cfg.frame.borderStyle, cfg.frame.borderSize = "Grid Edge", 2
     local window = NS.Window.New(cfg)
     window:ApplyConfig()
     assertEqual(cfg.frame.backdropColorMode, "skin", "the case is moot off the Skin mode")
+    assertEqual(cfg.frame.borderColorMode, "skin", "the case is moot off the Skin mode")
     for _, field in ipairs({ "winBg", "titleText", "titleBg", "controlRest", "controlHover" }) do
         assertTrue(window.skinLooks[field] == nil, field .. " answered a color with no skin to follow")
     end
@@ -247,9 +250,34 @@ test("Skin window: without the library the Skin modes draw the stored colors, th
     sameColor(fill(f), { 0.1, 0.2, 0.3, 0.4 }, "the fill")
     sameColor({ f.title:GetTextColor() }, { 0.2, 0.9, 0.2 }, "the title")
     sameColor(window.headerBG.__colorTexture or {}, { 0.9, 0.1, 0.1, 0.5 }, "the title bar")
+    -- The edge is the player's: no Shell can draw the skin's (skinEdge needs NS.SKIN_LIVE).
+    local bd = f.__backdrop or {}
+    assertEqual(bd.edgeFile, [[Interface\GridEdge]], "the stored border style is not drawn")
+    assertEqual(bd.edgeSize, 2, "the stored border size is not drawn")
+    -- No inner rule to show: Core's ApplySkin, which builds `frame.innerBorder`, is the library's,
+    -- and the degraded NS.ApplySkin builds nothing. Asserted so a day it does build one, the
+    -- rule shown with the player's edge (applyOwnEdge's showInnerRule) gets a check here.
+    local inner = f.innerBorder
+    assertTrue(inner == nil or (type(inner) == "table" and inner:IsShown()),
+        "an inner rule exists without the library and is hidden under the player's edge")
     if window.controls and window.controls.settings then
         sameColor(tint(window.controls.settings), { 0, 0, 1 }, "a control at rest")
     end
+end)
+
+test("Skin window: a skin that sets no title band draws a clear title bar", function()
+    -- CLEAR_WHEN_UNSET (core/SkinSetup.lua): `title.bg` set to none is a look, not a gap, so the
+    -- band is clear rather than Ka0s Default's pixel.
+    -- red under: resolveLook falling back to the host copy for `titleBg`.
+    local _, NS, window = scene()
+    local real = NS.Skin.Color
+    NS.Skin.Color = function(name, ...)
+        if name == "title.bg" then return nil end
+        return real(name, ...)
+    end
+    window:ApplyConfig()
+    NS.Skin.Color = real
+    sameColor(window.headerBG.__colorTexture or {}, { 0, 0, 0, 0 }, "the title bar")
 end)
 
 -- ── the one-time reset (O2, the owner's ruling R-3) ──────────────────────────────────────────
