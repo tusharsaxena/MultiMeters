@@ -284,12 +284,13 @@ L["How rows are ordered: by value, by name, in the game's order or in group orde
 L["Put the smallest numbers at the top. Clicking the sort column's header again flips it."] =
     "Put the smallest numbers at the top. Clicking the sort column's header again flips it."
 L["Control color mode"] = "Control color mode"
-L["What colors the header controls at rest."] = "What colors the header controls at rest."
+L["What colors the header controls at rest. Skin is the skin's icon color."] =
+    "What colors the header controls at rest. Skin is the skin's icon color."
 L["Control color"] = "Control color"
 L["Color the header controls are drawn in."] = "Color the header controls are drawn in."
 L["Control hover color mode"] = "Control hover color mode"
-L["What colors a header control while the pointer is over it."] =
-    "What colors a header control while the pointer is over it."
+L["What colors a header control while the pointer is over it. Skin is the skin's hover color."] =
+    "What colors a header control while the pointer is over it. Skin is the skin's hover color."
 L["Control hover color"] = "Control hover color"
 L["Color the control under the pointer is drawn in."] =
     "Color the control under the pointer is drawn in."
@@ -316,8 +317,8 @@ L["Title bar"] = "Title bar"
 L["Title text"] = "Title text"
 L["Font for the window's title and the fight name beside it."] =
     "Font for the window's title and the fight name beside it."
-L["What colors the window's title and the fight name beside it. Class color is your own -- a window-wide strip has no other class it could mean."] =
-    "What colors the window's title and the fight name beside it. Class color is your own -- a window-wide strip has no other class it could mean."
+L["What colors the window's title and the fight name beside it. Skin is the skin's title color; Class color is your own -- a window-wide strip has no other class it could mean."] =
+    "What colors the window's title and the fight name beside it. Skin is the skin's title color; Class color is your own -- a window-wide strip has no other class it could mean."
 L["Color of the window's title and the fight name beside it."] =
     "Color of the window's title and the fight name beside it."
 L["Controls"] = "Controls"
@@ -330,10 +331,10 @@ L["Background color mode"] = "Background color mode"
 -- that had none. Two values each, class and custom, because a border and a window
 -- backdrop are the surfaces "per statistic" cannot say anything true about.
 L["Border color mode"] = "Border color mode"
-L["What colors the fill inside the window. Class color is your own -- a window is not about any one row."] =
-    "What colors the fill inside the window. Class color is your own -- a window is not about any one row."
-L["What colors the edge around the window. Class color is your own."] =
-    "What colors the edge around the window. Class color is your own."
+L["What colors the fill inside the window. Skin is the skin's own window fill; Class color is your own -- a window is not about any one row."] =
+    "What colors the fill inside the window. Skin is the skin's own window fill; Class color is your own -- a window is not about any one row."
+L["What draws the edge around the window. Skin is the skin's own edge -- its style, thickness and color -- and the style and thickness above apply under Class or Custom color. Class color is your own."] =
+    "What draws the edge around the window. Skin is the skin's own edge -- its style, thickness and color -- and the style and thickness above apply under Class or Custom color. Class color is your own."
 L["What colors the outline around each bar. Class is the class of the row being drawn."] =
     "What colors the outline around each bar. Class is the class of the row being drawn."
 L["What colors the border around each spell bar. Class is the player you are hovering."] =
@@ -372,6 +373,9 @@ L["Set the font outline for the cell text, both header strips and the tooltip at
 L["Title bar height"] = "Title bar height"
 L["Height of the title bar in pixels."] = "Height of the title bar in pixels."
 L["Title bar background"] = "Title bar background"
+L["Use the skin's background"] = "Use the skin's background"
+L["Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."] =
+    "Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."
 L["Show divider"] = "Show divider"
 L["Draw the hairline between the title bar and the column labels."] =
     "Draw the hairline between the title bar and the column labels."

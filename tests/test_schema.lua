@@ -286,11 +286,12 @@ local PARTITION = {
     -- leads Frame, the broadcasts are Quick style, one Bar tab per styled surface on Bars and
     -- Tooltip, one Controls tab on Header, one Rules tab on Visibility and one Column header
     -- tab on Columns. Each HUD media picker's "Use the skin's ..." companion (skinning-§6) is one
-    -- more row in its tab, and the two meta companions two more in Quick style.
+    -- more row in its tab, and the two meta companions two more in Quick style; the title bar's
+    -- background companion (MM-A1) one more in Title bar.
     windows    = { { "Window", 1 } },
     frame      = { { "Size and position", 8 }, { "Quick style", 6 },
                    { "Background and border", 6 }, { "Rows", 8 } },
-    header     = { { "Title bar", 7 }, { "Title text", 8 }, { "Controls", 16 } },
+    header     = { { "Title bar", 8 }, { "Title text", 8 }, { "Controls", 16 } },
     bars       = { { "Bar", 16 }, { "Text", 12 }, { "Icons", 3 } },
     tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 14 }, { "Text", 7 } },
     visibility = { { "Rules", 17 } },

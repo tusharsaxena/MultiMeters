@@ -28,6 +28,22 @@ local function preSeeded(saved)
     return inst
 end
 
+--- The v21 chrome reset (MM-A1) held off: it moves every chrome color mode to `skin`, so a case
+--- about an EARLIER step's modes reads that step's answer rather than the reset's.
+local function holdChromeReset(inst)
+    inst.NS.Database.__migrations[20] = function() end
+end
+
+--- preSeeded with the v21 chrome reset held off (holdChromeReset).
+local function preSeededBeforeChrome(saved)
+    local inst = T.load{ initDB = false, options = false }
+    holdChromeReset(inst)
+    _G.MultiMetersDB = saved
+    inst.NS:InitDB()
+    inst.NS:RunMigrations()
+    return inst
+end
+
 -- ── migrations ──────────────────────────────────────────────────────────────
 
 test("Database: RunMigrations stamps and holds the current schema version", function()
@@ -426,7 +442,7 @@ test("Database v7: a class-color boolean becomes a color mode, on every surface"
     -- The checkbox could only ever answer two thirds of the question. `true` is
     -- "class" and `false` is "custom", which is exactly what it meant.
     -- red under: migrating only `text`, or leaving the dead key behind.
-    local inst = preSeeded({
+    local inst = preSeededBeforeChrome({
         profiles = {
             Default = {
                 nextWindowId = 2,
@@ -453,7 +469,8 @@ test("Database v7: a class-color boolean becomes a color mode, on every surface"
     -- the new row would not accept. A profile that had `class` reverts to the
     -- picker; the key was dead for the releases in between and re-deriving intent
     -- from a value nothing read would be inventing a preference nobody expressed.
-    assertEqual(w.header.colorMode, "custom")
+    -- The shipped default is `skin` since MM-A1, so that is what fills it back in.
+    assertEqual(w.header.colorMode, inst.NS.WINDOW_TEMPLATE.header.colorMode)
     assertEqual(w.columnHeader.colorMode, "class")
     assertEqual(w.tooltip.colorMode, "class")
 
@@ -625,6 +642,7 @@ test("Database: v12 -> v13 turns the control class-color flags into modes", func
     w.frame.controlClassColor      = true
     w.frame.controlHoverClassColor = false
 
+    holdChromeReset(inst)
     inst.NS:RunMigrations()
 
     assertEqual(w.frame.controlColorMode, "class")
@@ -823,7 +841,7 @@ test("Database: v12 -> v13 overwrites a control color mode that was already ther
     -- anything sitting at that address arrived from a hand edit or a merge and
     -- carries no intent; the boolean is the only value the player ever set.
     -- red under: `if frame.controlColorMode == nil then`.
-    local inst = preSeeded({
+    local inst = preSeededBeforeChrome({
         profiles = { Default = { nextWindowId = 2, windows = { { id = 1, name = "A", frame = {
             controlColorMode      = "custom", controlClassColor      = true,
             controlHoverColorMode = "class",  controlHoverClassColor = false,
@@ -844,7 +862,7 @@ test("Database: v12 -> v13 maps each control flag on its own", function()
     -- separately, so a helper that took one flag and applied it to both surfaces
     -- would pass that case and fail this one.
     -- red under: deriving the hover mode from the base flag.
-    local inst = preSeeded({
+    local inst = preSeededBeforeChrome({
         profiles = { Default = { nextWindowId = 2, windows = { { id = 1, name = "A",
             frame = { controlClassColor = false, controlHoverClassColor = true } } } } },
         global = { schemaVersion = 12 },
@@ -860,7 +878,7 @@ test("Database: v12 -> v13 leaves a window with no frame block at all alone", fu
     -- before the frame group existed, or hand-edited down to nothing, must reach
     -- the shipped defaults through the merge rather than take the login down or
     -- pick up a mode the step invented for it.
-    local inst = preSeeded({
+    local inst = preSeededBeforeChrome({
         profiles = { Default = { nextWindowId = 2,
             windows = { { id = 1, name = "A" } } } },
         global   = { schemaVersion = 12 },
@@ -869,7 +887,8 @@ test("Database: v12 -> v13 leaves a window with no frame block at all alone", fu
 
     assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
     assertTrue(w.header.show, "the shipped default arrived through the merge")
-    assertEqual(w.frame.controlColorMode, "custom", "and so did the mode, not from the step")
+    assertEqual(w.frame.controlColorMode, inst.NS.WINDOW_TEMPLATE.frame.controlColorMode,
+        "and so did the mode, not from the step")
 end)
 
 test("Database: v12 -> v13 walks every saved profile, not just the active one", function()
@@ -877,7 +896,7 @@ test("Database: v12 -> v13 walks every saved profile, not just the active one", 
     -- reason: schemaVersion is account-wide, so the inactive profile's one chance
     -- at v13 is this pass.
     -- red under: iterating `{ db.profile }` instead of db.sv.profiles.
-    local inst = preSeeded({
+    local inst = preSeededBeforeChrome({
         profiles = {
             Default = { windows = { { id = 1, name = "A", frame = { titleBar = false } } } },
             Raid    = { windows = { { id = 7, name = "R",

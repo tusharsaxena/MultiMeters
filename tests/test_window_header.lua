@@ -981,13 +981,14 @@ test("Column header shadow is its OWN setting, not the header's", function()
         "the title took the column strip's shadow")
 end)
 
-test("The header's text answers TWO modes, and the custom one is the picker", function()
-    -- Custom is the shipped mode, so a window that never touches the dropdown is
-    -- drawn from the picker exactly as it was before there was a dropdown.
-    -- red under: a default of "class", which would recolor every existing window
-    -- on upgrade.
+test("The header's text answers its modes, and the custom one is the picker", function()
+    -- Custom reads the picker exactly as it did before there was a dropdown. The
+    -- shipped mode is `skin` since MM-A1 (the skin's `title.text`,
+    -- tests/test_skin_window.lua); a player who sets Custom gets the swatch.
+    -- red under: custom reading anything but the swatch.
     local inst, window, cfg = scene()
     inst.mocks.RAID_CLASS_COLORS.PALADIN = { r = 0.41, g = 0.8, b = 0.94 }
+    cfg.header.colorMode = "custom"
     cfg.header.color    = { r = 0.2, g = 0.4, b = 0.6, a = 1 }
     cfg.data.sortColumn = "HealingDone"
     window:ApplyConfig()
@@ -1026,12 +1027,13 @@ test("The header's text takes the CLASS color, keeping the configured alpha", fu
         "the session line did not follow the title into class color")
 end)
 
-test("The header's text mode offers class and custom, and NOT per-statistic", function()
+test("The header's text mode offers skin, class and custom, and NOT per-statistic", function()
     -- The one half of the old refusal that stands. "Per statistic" could only ever
     -- paint this the SORT column's color -- already on screen in that column's own
     -- header and in its arrow -- and the title bar is one strip over the whole
     -- window rather than a thing belonging to a column. Same argument that took
     -- the mode off the title bar's BACKGROUND.
+    -- `skin` joined in MM-A1 (the skin's title color, DECISIONS D16).
     -- red under: widening this row to the three-mode set every cell surface answers.
     local inst = T.load()
     local row  = inst.NS.FindSchemaRow("window.header.colorMode")
@@ -1040,7 +1042,7 @@ test("The header's text mode offers class and custom, and NOT per-statistic", fu
     local keys = {}
     for _, k in ipairs(row.sorting) do keys[#keys + 1] = k end
     table.sort(keys)
-    assertEqual(table.concat(keys, ","), "class,custom")
+    assertEqual(table.concat(keys, ","), "class,custom,skin")
 end)
 
 test("The header color survives a sort change, having nothing to do with it", function()
@@ -1068,6 +1070,7 @@ test("The window NAME takes the header's color", function()
     local inst, window, cfg = scene()
     inst.mocks.RAID_CLASS_COLORS.PALADIN = { r = 0.41, g = 0.8, b = 0.94 }
 
+    cfg.header.colorMode = "custom"   -- the swatch; the shipped `skin` is test_skin_window.lua's
     cfg.header.color = { r = 0.2, g = 0.4, b = 0.6, a = 1 }
     window:ApplyConfig()
 

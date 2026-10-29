@@ -555,10 +555,16 @@ end
 --- title and the session line). A player whose class cannot be read keeps the
 --- configured color, which is the honest answer rather than a fallback hue.
 ---
+--- `skin`, THE SHIPPED MODE ON BOTH (MM-A1, DECISIONS D4), is the skin's
+--- `icon.tint` at rest and `btn.hover` under the pointer, out of the window's
+--- cached skinLooks (`looks`), so a hover reads no token. Not S.CloseButton for
+--- the close control: its hover is `close.hot` red, beside six gold siblings.
+---
 --- @param frameCfg table
 --- @param hovered boolean
+--- @param looks table|nil  the window's skinLooks
 --- @return number r, number g, number b
-local function controlColor(frameCfg, hovered)
+local function controlColor(frameCfg, hovered, looks)
     local r, g, b
     if hovered then
         r, g, b = color(frameCfg.controlHoverColor, 1, 0.82, 0)
@@ -576,6 +582,9 @@ local function controlColor(frameCfg, hovered)
     else
         mode = frameCfg.controlColorMode
     end
+
+    local skin = mode == "skin" and looks and looks[hovered and "controlHover" or "controlRest"]
+    if skin then return skin[1], skin[2], skin[3] end
 
     if mode == "class" and NS.PlayerClassRGB then
         local cr, cg, cb = NS.PlayerClassRGB()
@@ -600,7 +609,7 @@ function HeaderControls.Style(window)
     -- colors, one at rest and one under the pointer, and neither is the color
     -- the header text is drawn in.
     local frameCfg = (window.config or {}).frame or {}
-    style.r, style.g, style.b = controlColor(frameCfg, false)
+    style.r, style.g, style.b = controlColor(frameCfg, false, window.skinLooks)
     return style
 end
 
@@ -675,7 +684,7 @@ end
 --- work nobody asked for.
 local function applyTint(button, control, window, frameCfg)
     local hovered = (window.hoveredControl == control.key)
-    local r, g, b = controlColor(frameCfg, hovered)
+    local r, g, b = controlColor(frameCfg, hovered, window.skinLooks)
 
     -- FULL BRIGHTNESS IN EITHER STATE. This used to re-dim the "off" half of a
     -- two-state icon to 0.45 on every hover pass, which is the other half of the

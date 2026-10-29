@@ -192,9 +192,14 @@ end
 --- this addon keeps: a class color carries none of its own, so taking the
 --- swatch's is what stops a mode change from silently altering the opacity.
 ---
+--- `skin`, THE SHIPPED MODE (MM-A1), is the skin's `title.text`, whole, out of
+--- the window's cached skinLooks (`looks`): no token is read on a title pass.
+---
 --- @return number r, number g, number b, number a
-local function headerColor(header)
+local function headerColor(header, looks)
     local r, g, b, a = RGBA(header.color, 1, 0.82, 0, 1)
+    local skin = header.colorMode == "skin" and looks and looks.titleText
+    if skin then return skin[1], skin[2], skin[3], skin[4] or 1 end
     if header.colorMode == "class" then
         local cr, cg, cb = PlayerClassRGB()
         -- An unknown class keeps the configured color rather than falling back
@@ -203,6 +208,14 @@ local function headerColor(header)
         if cr then return cr, cg, cb, a end
     end
     return r, g, b, a
+end
+
+--- The title bar's background: the skin's `title.bg` while `header.bgColorFromSkin`
+--- is on (MM-A1, out of the window's cached skinLooks), else the swatch.
+local function titleBarColor(header, looks)
+    local skin = header.bgColorFromSkin == true and looks and looks.titleBg
+    if skin then return skin[1], skin[2], skin[3], skin[4] or 1 end
+    return RGBA(header.bgColor, 0, 0, 0, 0.5)
 end
 
 --- How far the text is offset to draw its drop shadow, or 0, 0 for none.
@@ -236,7 +249,7 @@ end
 function NS.HeaderStyle(window)
     local header = (window.config or {}).header or {}
     local path, size, flags = headerFont(header)
-    local r, g, b = headerColor(header)
+    local r, g, b = headerColor(header, window.skinLooks)
     return { path = path, size = size, flags = flags, r = r, g = g, b = b }
 end
 
@@ -397,7 +410,7 @@ function WindowProto:ApplyTitle()
     -- After ApplySkin, not instead of it: ApplyConfig re-runs the skin and then
     -- calls ApplyHeader, so the library still owns the backdrop and the accents
     -- and this owns the one FontString the settings claim to govern.
-    frame.title:SetTextColor(headerColor(header))
+    frame.title:SetTextColor(headerColor(header, self.skinLooks))
 end
 
 --- The tinted block behind the header and the hairline that closes it off.
@@ -417,8 +430,11 @@ function WindowProto:ApplyHeaderStrip()
     -- A PLAIN COLOR, with no mode of its own. The column strip below has one
     -- because "per statistic" tints each label with its own column's color; this
     -- is one strip over the whole window, so the same mode could only paint it the
-    -- sort column's color -- a fact already on screen twice over.
-    local ar, ag, ab, aa = RGBA(header.bgColor, 0, 0, 0, 0.5)
+    -- sort column's color -- a fact already on screen twice over. What it has is
+    -- the skin's companion (MM-A1, DECISIONS D3): while `bgColorFromSkin` is on it
+    -- draws `title.bg` (clear for a skin that draws no title band), cached in
+    -- skinLooks; off, the swatch, which following the skin never rewrites.
+    local ar, ag, ab, aa = titleBarColor(header, self.skinLooks)
     self.headerBG:ClearAllPoints()
     self.headerBG:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -pad)
     self.headerBG:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, -pad)
@@ -522,7 +538,7 @@ function WindowProto:ApplySessionLine()
 
     self.sessionText:SetFont(path, size, flags)
     self.sessionText:SetShadowOffset(shadowOffset(header.shadow))
-    self.sessionText:SetTextColor(headerColor(header))
+    self.sessionText:SetTextColor(headerColor(header, self.skinLooks))
     self.sessionText:SetShown(shown)
 end
 

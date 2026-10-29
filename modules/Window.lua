@@ -155,15 +155,21 @@ local function borderPath(name, fallback)
 end
 
 -- THE WINDOW WEARS ITS OWNER'S SKIN (skinning-§1): S.Shell through the facade,
--- with no top bar (the header strip is the window's own) and no edge (ApplyBorder
--- draws the player's). Core's ApplySkin first, owner-less, because it builds the
--- `innerBorder` child ApplyBorder shows with the edge. Shell is recorded, so a
--- skin switch replays it and then fires OnLooksChanged, whose listener
--- (modules/WindowManager.lua) re-runs ApplyConfig over the new skin.
-local SHELL_OPTS = { noTopBar = true, noBorder = true }
-local function paintShell(frame)
+-- with no top bar (the header strip is the window's own). The EDGE is the skin's
+-- while `frame.borderColorMode` is `skin` (the shipped mode, MM-A1: the Shell
+-- draws `win.border` in `win.borderStyle` / `win.borderSize` with `win.inner`);
+-- under `class` or `custom` the Shell draws none and ApplyBorder draws the
+-- player's. Core's ApplySkin first, owner-less, because it builds the
+-- `innerBorder` child ApplyBorder shows with the player's edge. Shell records the
+-- LAST options it was handed, so a skin switch replays the current mode and then
+-- fires OnLooksChanged, whose listener (modules/WindowManager.lua) re-runs
+-- ApplyConfig, and with it ApplyBorder, over the new skin.
+local SHELL_SKIN_EDGE = { noTopBar = true }
+local SHELL_OWN_EDGE  = { noTopBar = true, noBorder = true }
+local function paintShell(frame, frameCfg)
     if NS.ApplySkin then NS.ApplySkin(frame) end
-    if NS.Skin and NS.Skin.Shell then NS.Skin.Shell(frame, SHELL_OPTS) end
+    local opts = (frameCfg or {}).borderColorMode == "skin" and SHELL_SKIN_EDGE or SHELL_OWN_EDGE
+    if NS.Skin and NS.Skin.Shell then NS.Skin.Shell(frame, opts) end
 end
 
 -- Taken from the CORE SEAM (core/CoreSetup.lua publishes NS.RGBA), not from a
@@ -645,7 +651,7 @@ function WindowProto:BuildFrame()
     -- extra one is a key it has never heard of.
     self.headerBG = frame:CreateTexture(nil, "BORDER")
 
-    paintShell(frame)
+    paintShell(frame, self.config.frame)
 
     -- ── The header's controls ──
     --
@@ -805,7 +811,7 @@ function WindowProto:ApplyConfig()
     -- re-skinned library lands here without this file knowing what changed.
     -- ApplyBorder then layers the player's edge over the result — in that order,
     -- because the skin is the base look and the setting is the override.
-    paintShell(frame)
+    paintShell(frame, frameCfg)
     self:ApplyBorder(frameCfg)
 
     self:ApplyHeader()
@@ -837,54 +843,53 @@ function WindowProto:ApplyConfig()
     self:ApplyMinimized()
 end
 
---- The window edge: `frame.borderStyle`, `borderSize` and `borderColor`.
+--- The window edge and fill: `frame.borderStyle`, `borderSize`, `borderColor`
+--- and `backdropColor`, each under its mode (`skin` | `class` | `custom`).
 ---
---- LAYERED OVER THE SKIN, never instead of it. The Shell has just written its
---- own backdrop onto the frame — bgFile, edgeFile, edgeSize, insets — and this
---- rewrites ONE part of that table: the edge. The fill texture and the fallback
---- edge are read back off that backdrop rather than restated as literals here
---- (no window here holds a meter value, so the read is not R3's), so a
---- re-skinned library still lands on this window, and the only thing this file
---- claims to know is what the PLAYER chose.
+--- UNDER `skin` THE EDGE IS THE SHELL'S, and this writes no backdrop at all: the
+--- Shell has drawn the skin's edge ring and inner rule on its edge holder and
+--- left the backdrop's own edge clear, so the only thing left to set is the fill.
+---
+--- UNDER `class` / `custom` IT IS LAYERED OVER THE SKIN. The Shell, told to draw
+--- no edge, has written its own backdrop -- bgFile, insets -- and this rewrites
+--- ONE part of that table: the edge. The fill texture and the fallback edge are
+--- read back off that backdrop rather than restated as literals here (no window
+--- here holds a meter value, so the read is not R3's).
 ---
 --- `borderSize == 0` means "no edge", and it drops edgeFile with it: a zero
 --- edgeSize with a texture still present is the combination WoW draws as a hard
---- 1px line, which is the setting doing the opposite of what it says. A
---- borderStyle of "None" means the same thing and is `borderPath`'s answer, not
---- this function's -- the rule belongs with the resolver, so a second caller
---- inherits it instead of restating it.
+--- 1px line. A borderStyle of "None" means the same thing and is `borderPath`'s
+--- answer, not this function's.
 ---
---- THE SKIN'S INNER HIGHLIGHT GOES WITH THE EDGE. LibKa0s's ApplySkin builds a
---- 1px `frame.innerBorder` child inset inside the black edge, and it is a child
---- frame rather than part of the backdrop this function rewrites -- so with the
---- style set to None and the thickness at 0 it was the whole visible border,
---- outliving both controls that claim to govern one. It is shown exactly when
---- there is an edge for it to sit inside, in the skin's `win.inner` (the Shell,
---- drawing no edge of its own here, clears it).
+--- THE SKIN'S INNER HIGHLIGHT GOES WITH THE PLAYER'S EDGE. LibKa0s's ApplySkin
+--- builds a 1px `frame.innerBorder` child inset inside the edge, a child frame
+--- rather than part of the backdrop, so with the style set to None and the
+--- thickness at 0 it was the whole visible border. It is shown exactly when there
+--- is an edge for it to sit inside, in the skin's `win.inner`.
 ---
---- @param frameCfg table  the window's `frame` config group
-function WindowProto:ApplyBorder(frameCfg)
-    local frame = self.frame
-    if not frame.SetBackdrop then return end
+--- Core's inner rule, shown exactly when the player's edge is drawn, in `win.inner`.
+--- Type-tested, not truth-tested: `innerBorder` is a key LibKa0s writes onto a frame
+--- this file does not own, and a mock that answers every key with a function would
+--- otherwise be indexed as a frame.
+local function showInnerRule(frame, edge)
+    local inner = frame.innerBorder
+    if not (type(inner) == "table" and inner.SetShown) then return end
+    inner:SetShown(edge ~= nil)
+    if edge and inner.SetBackdropBorderColor and NS.Skin then
+        local r, g, b, a = NS.Skin.Color("win.inner")
+        if r then inner:SetBackdropBorderColor(r, g, b, a) end
+    end
+end
 
+--- The player's edge (`class` / `custom`), over the backdrop the Shell just wrote. Split out of
+--- ApplyBorder for the CCN gate.
+local function applyOwnEdge(frame, frameCfg)
     local base = frame.GetBackdrop and frame:GetBackdrop() or nil
     base = type(base) == "table" and base or {}
     local size = clamp(frameCfg.borderSize or 2, 0, 32)
     local edge = (size > 0) and borderPath(frameCfg.borderStyle, base.edgeFile) or nil
     local inset = edge and size or 0
-
-    -- Type-tested, not truth-tested: `innerBorder` is a key LibKa0s writes onto a
-    -- frame this file does not own, and a mock that answers every key with a
-    -- function would otherwise be indexed as a frame -- the library's own header
-    -- records that exact breakage.
-    local inner = frame.innerBorder
-    if type(inner) == "table" and inner.SetShown then
-        inner:SetShown(edge ~= nil)
-        if edge and inner.SetBackdropBorderColor and NS.Skin then
-            local r, g, b, a = NS.Skin.Color("win.inner")
-            if r then inner:SetBackdropBorderColor(r, g, b, a) end
-        end
-    end
+    showInnerRule(frame, edge)
 
     frame:SetBackdrop({
         bgFile   = base.bgFile,
@@ -892,28 +897,31 @@ function WindowProto:ApplyBorder(frameCfg)
         edgeSize = edge and size or nil,
         insets   = { left = inset, right = inset, top = inset, bottom = inset },
     })
-
-    -- BOTH SWATCHES ANSWER A MODE NOW (options-ui-§17). Two values each, class and
-    -- custom: a window's fill and its edge belong to the WINDOW rather than to any
-    -- row in it, so `class` is the LOCAL player's -- the same call headerColor
-    -- makes for the strip along the top. "Per statistic" is deliberately absent for
-    -- the reason it is absent from the title bar: over one surface spanning the
-    -- whole window it could only ever mean the sort column's color, which is
-    -- already on screen twice.
-    --
-    -- THE CONFIGURED ALPHA SURVIVES THE MODE, which is what makes the backdrop's
-    -- 0.75 a tint under `class` rather than a slab: RAID_CLASS_COLORS carries no
-    -- alpha, and a mode that reset transparency would be one setting canceling
-    -- another. It is also why neither swatch is ever disabled.
-    local br, bg, bb, ba = surfaceColor(frameCfg.backdropColorMode, frameCfg.backdropColor,
-        nil, 0, 0, 0, 0.75)
-    if frame.SetBackdropColor then frame:SetBackdropColor(br, bg, bb, ba) end
-
     if edge and frame.SetBackdropBorderColor then
         local er, eg, eb, ea = surfaceColor(frameCfg.borderColorMode, frameCfg.borderColor,
             nil, 0, 0, 0, 1)
         frame:SetBackdropBorderColor(er, eg, eb, ea)
     end
+end
+
+--- @param frameCfg table  the window's `frame` config group
+function WindowProto:ApplyBorder(frameCfg)
+    local frame = self.frame
+    if not frame.SetBackdrop then return end
+    local looks = self.skinLooks or {}
+
+    -- BOTH SWATCHES ANSWER A MODE (options-ui-§17). `skin` is the skin's own
+    -- (`win.bg`, cached in skinLooks; the edge is the Shell's), `class` the LOCAL
+    -- player's -- a window's fill and its edge belong to the WINDOW rather than to
+    -- any row in it -- and `custom` the swatch. No "per statistic": over one
+    -- surface spanning the whole window it could only mean the sort column's
+    -- color, already on screen twice. The configured alpha survives `class`,
+    -- which is what makes the shipped 0.75 a tint rather than a slab.
+    local br, bg, bb, ba = surfaceColor(frameCfg.backdropColorMode, frameCfg.backdropColor,
+        nil, 0, 0, 0, 0.75, looks.winBg)
+
+    if frameCfg.borderColorMode ~= "skin" then applyOwnEdge(frame, frameCfg) end
+    if frame.SetBackdropColor then frame:SetBackdropColor(br, bg, bb, ba) end
 end
 
 --- Resolve one of the header surfaces' three color modes.
@@ -932,7 +940,12 @@ end
 --- passes its own column's key instead, and is the one surface where "per
 --- statistic" is literally per column.
 ---
---- THE CONFIGURED ALPHA SURVIVES EVERY MODE. Neither RAID_CLASS_COLORS nor the
+--- `skin` IS THE SKIN'S TOKEN, alpha included, handed in already resolved
+--- (`skin`, one of the window's cached skinLooks colors), so no caller reads a
+--- token here. A caller with no token for the surface passes nil and `skin`
+--- falls back to the configured color.
+---
+--- THE CONFIGURED ALPHA SURVIVES EVERY OTHER MODE. Neither RAID_CLASS_COLORS nor the
 --- stat palette carries one, and a mode that silently reset transparency would be
 --- one setting canceling another — which matters most for the two BACKGROUNDS,
 --- where the alpha is what makes a color a tint rather than a slab.
@@ -941,15 +954,18 @@ end
 --- entry — falls back to the CONFIGURED one, which is the honest answer rather
 --- than an invented hue.
 ---
---- @param mode string|nil    "class" | "stat" | "custom"
+--- @param mode string|nil    "skin" | "class" | "stat" | "custom"
 --- @param stored table|nil   the configured color
 --- @param statKey string|nil which statistic `stat` means here
 --- @param dr number @param dg number @param db number @param da number
+--- @param skin table|nil     { r, g, b, a }, the skin's color for `skin`
 --- @return number r, number g, number b, number a
-function surfaceColor(mode, stored, statKey, dr, dg, db, da)
+function surfaceColor(mode, stored, statKey, dr, dg, db, da, skin)
     local r, g, b, a = RGBA(stored, dr, dg, db, da)
 
-    if mode == "class" then
+    if mode == "skin" and type(skin) == "table" then
+        r, g, b, a = skin[1], skin[2], skin[3], skin[4] or 1
+    elseif mode == "class" then
         local cr, cg, cb = PlayerClassRGB()
         if cr then r, g, b = cr, cg, cb end
     elseif mode == "stat" then

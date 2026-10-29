@@ -4,9 +4,9 @@
 -- Two properties per surface. Under Ka0s Default it draws exactly the pixels it drew before the
 -- facade (DECISIONS X1: the near-miss reds and the dim gray are owner tokens, not snapped to the
 -- nearest library token); under another skin it draws that skin's tokens. The meter window's
--- fill and edge stay the PLAYER's (MM-03 put only the HUD's faces, bar textures and bar borders
--- on the skin; its colors and the window's own edge are not reset, DECISIONS X4), so a skin
--- switch must re-lay them over the Shell's replay, not lose them to it.
+-- fill and edge FOLLOW the skin by default since MM-A1 (tests/test_skin_window.lua); the two cases
+-- here hold the other half: a window whose player picked Custom keeps that fill and edge through
+-- the Shell, and a skin switch re-lays them over the Shell's replay rather than losing them to it.
 --
 -- EACH CASE ON ITS OWN INSTANCE: a skin change is library session state.
 
@@ -17,10 +17,11 @@ local OWNER = "MultiMeters"
 
 --- A fresh instance with its first window managed and configured: managed, so the
 --- OnLooksChanged listener (WindowManager:Reskin) reaches it, as it reaches every live window.
-local function scene()
+local function scene(configure)
     local inst = T.load{}
     local NS = inst.NS
     local cfg = NS.Database.GetWindows()[1]
+    if configure then configure(cfg) end
     NS.WindowManager:Init()
     local window = NS.WindowManager.Get(cfg.id)
     assertTrue(window ~= nil, "the manager built no window for the first config")
@@ -35,6 +36,11 @@ local function sameColor(got, want, msg)
         assertTrue(near(got[i], want[i]), ("%s: channel %d is %s, want %s"):format(msg, i,
             tostring(got[i]), tostring(want[i])))
     end
+end
+
+--- The player's own chrome: the fill and the edge on Custom (the shipped mode is `skin`, MM-A1).
+local function customChrome(cfg)
+    cfg.frame.backdropColorMode, cfg.frame.borderColorMode = "custom", "custom"
 end
 
 -- The frame mock records the backdrop colors and answers no getter for them.
@@ -56,10 +62,11 @@ local function source(path)
     return s
 end
 
-test("Skin chrome: the meter window keeps its Ka0s Default pixels through the Shell", function()
+test("Skin chrome: a Custom window keeps the player's fill and edge through the Shell", function()
     -- red under: the Shell drawing its own flat edge and inner rule over the player's edge
-    -- (noBorder dropped), or ApplyBorder leaving the inner rule the Shell cleared at (0,0,0,0).
-    local _, NS, window = scene()
+    -- (noBorder dropped under Custom), or ApplyBorder leaving the inner rule the Shell cleared at
+    -- (0,0,0,0).
+    local _, NS, window = scene(customChrome)
     local f = window.frame
     assertEqual(type(f.innerBorder), "table", "Core built no inner border: this case asserts nothing")
     assertTrue(f.innerBorder:IsShown(), "the inner rule sits inside the shipped edge")
@@ -71,10 +78,10 @@ test("Skin chrome: the meter window keeps its Ka0s Default pixels through the Sh
     assertEqual(NS.SkinEscape("mm.testWord"), "|cffff2020", "the TEST MODE red keeps its bytes")
 end)
 
-test("Skin chrome: a skin switch repaints the window and re-lays the player's edge over it", function()
+test("Skin chrome: a skin switch repaints a Custom window and re-lays the player's edge over it", function()
     -- red under: no OnLooksChanged listener (the Shell's replay would leave win.bg as the fill and
     -- a cleared inner rule), or a listener that re-ran the Shell without ApplyBorder.
-    local _, NS, window, Skin = scene()
+    local _, NS, window, Skin = scene(customChrome)
     local f = window.frame
     local edge = (f.__backdrop or {}).edgeFile
     Skin:SetChoice(OWNER, "ka0s", "obsidian")

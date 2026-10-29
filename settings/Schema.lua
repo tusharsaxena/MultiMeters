@@ -89,8 +89,8 @@ local CHANNEL_SORT         = SC.CHANNEL_SORT
 local CHANNEL_VALUES       = SC.CHANNEL_VALUES
 local COLHEAD_BG_ROWS      = SC.COLHEAD_BG_ROWS
 local COLHEAD_TEXT_ROWS    = SC.COLHEAD_TEXT_ROWS
-local CONTROLCOLOR_SORT    = SC.CONTROLCOLOR_SORT
-local CONTROLCOLOR_VALUES  = SC.CONTROLCOLOR_VALUES
+local CHROMECOLOR_SORT     = SC.CHROMECOLOR_SORT
+local CHROMECOLOR_VALUES   = SC.CHROMECOLOR_VALUES
 local DEATHTIME_SORT       = SC.DEATHTIME_SORT
 local DEATHTIME_VALUES     = SC.DEATHTIME_VALUES
 local DIVIDERCOLOR_SORT    = SC.DIVIDERCOLOR_SORT
@@ -525,6 +525,13 @@ NS.Schema = {
         startsLine = true,
         label = L["Title bar background"], desc = L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header."],
     },
+    -- Its "Use the skin's ..." companion (MM-A1, DECISIONS D3): `title.bg` while on. The swatch is
+    -- not disabled by it (options-ui-§17: a color row never is).
+    {
+        path = "window.header.bgColorFromSkin", type = "bool", default = true,
+        page = "header", group = L["Title bar"], subgroup = L["Background"],
+        label = L["Use the skin's background"], desc = L["Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."],
+    },
     -- THE HAIRLINE BETWEEN THE TITLE BAR AND THE COLUMN LABELS, and the one piece
     -- of the window's chrome that is a setting. It earns its keep when both
     -- strips are drawn plainly and is a line across the window for nothing once
@@ -791,12 +798,12 @@ NS.Schema = {
         classColorSource = "player",
     },
     {
-        path = "window.frame.controlColorMode", type = "string", default = "custom",
-        values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
+        path = "window.frame.controlColorMode", type = "string", default = "skin",
+        values = CHROMECOLOR_VALUES, sorting = CHROMECOLOR_SORT,
         page = "header", group = L["Controls"], subgroup = L["Color"],
         label = L["Control color mode"],
         classColorSource = "player",
-        desc = L["What colors the header controls at rest."],
+        desc = L["What colors the header controls at rest. Skin is the skin's icon color."],
     },
     {
         path = "window.frame.controlHoverColor", type = "color",
@@ -808,12 +815,12 @@ NS.Schema = {
         classColorSource = "player",
     },
     {
-        path = "window.frame.controlHoverColorMode", type = "string", default = "custom",
-        values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
+        path = "window.frame.controlHoverColorMode", type = "string", default = "skin",
+        values = CHROMECOLOR_VALUES, sorting = CHROMECOLOR_SORT,
         page = "header", group = L["Controls"], subgroup = L["Color"],
         label = L["Control hover color mode"],
         classColorSource = "player",
-        desc = L["What colors a header control while the pointer is over it."],
+        desc = L["What colors a header control while the pointer is over it. Skin is the skin's hover color."],
     },
     -- THE TWO ENDS OF THE REVEAL, and they were a hardcoded 0.25 and 1 until now.
     -- Both defaults are those two numbers, so a window that never touches either

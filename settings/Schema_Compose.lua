@@ -268,6 +268,11 @@ local DIVIDERCOLOR_VALUES = {
 }
 local DIVIDERCOLOR_SORT = { "skin", "class", "custom" }
 
+-- The window chrome's three (MM-A1, DECISIONS D16): the divider's values, where `skin` is the
+-- skin's own color (`win.bg`, `title.text`, `icon.tint`, `btn.hover`) and, for the edge, the
+-- skin's whole edge. The fill, the edge and the title here; the controls in settings/Schema.lua.
+local CHROMECOLOR_VALUES, CHROMECOLOR_SORT = DIVIDERCOLOR_VALUES, DIVIDERCOLOR_SORT
+
 -- ONE set for both slots, and EVERY VALUE IS LITERAL — modules/Row.lua renders
 -- exactly what is asked for and never falls back to another figure. `none` in
 -- particular means nothing at all, which it did not always: both slots set to
@@ -902,12 +907,12 @@ dress(FRAME_BG_ROWS, {
     ["window.frame.backdropColor"] = { desc = L["Color drawn behind the rows."] },
 })
 withMode(FRAME_BG_ROWS, "window.frame.backdropColor", {
-    path = "window.frame.backdropColorMode", type = "string", default = "custom",
-    values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
+    path = "window.frame.backdropColorMode", type = "string", default = "skin",
+    values = CHROMECOLOR_VALUES, sorting = CHROMECOLOR_SORT,
     page = "frame", group = L["Background and border"], subgroup = L["Background"],
     label = L["Background color mode"],
     classColorSource = "player",
-    desc = L["What colors the fill inside the window. Class color is your own -- a window is not about any one row."],
+    desc = L["What colors the fill inside the window. Skin is the skin's own window fill; Class color is your own -- a window is not about any one row."],
 })
 
 local FRAME_BORDER_ROWS = compose("BorderGroup", {
@@ -936,12 +941,12 @@ dress(FRAME_BORDER_ROWS, {
     ["window.frame.borderColor"] = { desc = L["Color of the window border."] },
 })
 withMode(FRAME_BORDER_ROWS, "window.frame.borderColor", {
-    path = "window.frame.borderColorMode", type = "string", default = "custom",
-    values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
+    path = "window.frame.borderColorMode", type = "string", default = "skin",
+    values = CHROMECOLOR_VALUES, sorting = CHROMECOLOR_SORT,
     page = "frame", group = L["Background and border"], subgroup = L["Border"],
     label = L["Border color mode"],
     classColorSource = "player",
-    desc = L["What colors the edge around the window. Class color is your own."],
+    desc = L["What draws the edge around the window. Skin is the skin's own edge -- its style, thickness and color -- and the style and thickness above apply under Class or Custom color. Class color is your own."],
 })
 
 -- ── Header > Title text (options-ui-§16's font block) ───────────────────────
@@ -973,12 +978,12 @@ dress(HEADER_TEXT_ROWS, {
     },
 })
 withMode(HEADER_TEXT_ROWS, "window.header.color", {
-    path = "window.header.colorMode", type = "string", default = "custom",
-    values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
+    path = "window.header.colorMode", type = "string", default = "skin",
+    values = CHROMECOLOR_VALUES, sorting = CHROMECOLOR_SORT,
     page = "header", group = L["Title text"],
     label = L["Font color mode"],
     classColorSource = "player",
-    desc = L["What colors the window's title and the fight name beside it. Class color is your own -- a window-wide strip has no other class it could mean."],
+    desc = L["What colors the window's title and the fight name beside it. Skin is the skin's title color; Class color is your own -- a window-wide strip has no other class it could mean."],
 })
 
 -- ── Bars > Bar: Fill, Background and Border (options-ui-§16) ────────────────
@@ -1410,6 +1415,8 @@ NS.SchemaCompose = {
     COLHEAD_TEXT_ROWS    = COLHEAD_TEXT_ROWS,
     CONTROLCOLOR_SORT    = CONTROLCOLOR_SORT,
     CONTROLCOLOR_VALUES  = CONTROLCOLOR_VALUES,
+    CHROMECOLOR_SORT     = CHROMECOLOR_SORT,
+    CHROMECOLOR_VALUES   = CHROMECOLOR_VALUES,
     DEATHTIME_SORT       = DEATHTIME_SORT,
     DEATHTIME_VALUES     = DEATHTIME_VALUES,
     DIVIDERCOLOR_SORT    = DIVIDERCOLOR_SORT,

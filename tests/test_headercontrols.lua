@@ -280,7 +280,9 @@ test("HeaderControls: a control at rest takes the control color", function()
     -- The art ships white and is tinted by a MULTIPLY, so the shipped default --
     -- the collection's control gray, DPS Race's `Style.REST` -- is what the icons
     -- are drawn in, and they read as chrome rather than as a line of the header
-    -- text. It is a picker, not a switch, so a profile can say otherwise.
+    -- text. It is a picker, not a switch, so a profile can say otherwise: under
+    -- Custom (the shipped mode is `skin` since MM-A1, Ka0s Default's `icon.tint`
+    -- being the same gray; tests/test_skin_window.lua).
     local _, window = scene(function(cfg)
         cfg.header.color = { r = 1, g = 0.82, b = 0, a = 1 }
     end)
@@ -288,6 +290,7 @@ test("HeaderControls: a control at rest takes the control color", function()
     assertEqual(r .. "," .. g .. "," .. b, "0.7,0.7,0.72")
 
     local _, tinted = scene(function(cfg)
+        cfg.frame.controlColorMode = "custom"
         cfg.frame.controlColor = { r = 0.2, g = 0.4, b = 0.6, a = 1 }
     end)
     local tr, tg, tb = tintOf(tinted.controls.settings)
@@ -330,6 +333,7 @@ end)
 
 test("HeaderControls: both colors come from config", function()
     local _, window = scene(function(cfg)
+        cfg.frame.controlColorMode, cfg.frame.controlHoverColorMode = "custom", "custom"
         cfg.frame.controlColor      = { r = 0, g = 0, b = 1, a = 1 }
         cfg.frame.controlHoverColor = { r = 0, g = 1, b = 0, a = 1 }
     end)

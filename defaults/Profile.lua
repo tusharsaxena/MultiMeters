@@ -88,8 +88,12 @@ local WINDOW_TEMPLATE = {
     -- every reset (DECISIONS X3), so a new window follows the skin the way an adopted one does
     -- after the v20 reset (core/Database.lua). While a companion is on the pick beside it is kept
     -- but not read (core/SkinSetup.lua's NS.SkinMediaKey). Sizes, outlines, shadows, thicknesses
-    -- and every color stay the player's (X4, D12). The window's own edge (`frame.borderStyle`) is
-    -- chrome, drawn over the skin's Shell by modules/Window.lua's ApplyBorder, and has none.
+    -- and every HUD color stay the player's (X4, D12).
+    --
+    -- THE WINDOW'S CHROME FOLLOWS THE SKIN TOO (MM-A1, the owner's ruling R-3 over X4 for this
+    -- window): the fill, the edge, the title, the two control colors each ship the `skin` color
+    -- mode, and the title bar background the `header.bgColorFromSkin` companion. The v21 step put
+    -- every stored window on them once.
 
     -- -----------------------------------------------------------------------
     -- frame — the standalone window itself
@@ -118,16 +122,18 @@ local WINDOW_TEMPLATE = {
         alpha          = 1.0,
         strata         = "MEDIUM",     -- LOW | MEDIUM | HIGH | DIALOG
         backdropColor  = { r = 0, g = 0, b = 0, a = 0.75 },
-        -- The two color MODES beside the two swatches (options-ui-§17). Two
-        -- values each, `class` and `custom`: a window's fill and its edge belong
-        -- to the WINDOW, so "per statistic" could only ever mean the sort
-        -- column's color -- the same argument that keeps the mode off the title
-        -- bar. `class` is the local player's, for the same reason.
-        backdropColorMode = "custom",  -- class | custom
+        -- The two color MODES beside the two swatches (options-ui-§17). `skin`
+        -- (shipped, MM-A1) is the skin's own fill, `win.bg`, and for the edge the
+        -- skin's whole edge (style, thickness, color and inner rule, drawn by the
+        -- Shell), so `borderStyle` / `borderSize` are read only under the other
+        -- two. No "per statistic": a window's fill and its edge belong to the
+        -- WINDOW, so it could only mean the sort column's color. `class` is the
+        -- local player's, for the same reason.
+        backdropColorMode = "skin",    -- skin | class | custom
         borderStyle    = "Blizzard Tooltip",  -- LSM "border" key
         borderSize     = 2,
         borderColor    = { r = 0, g = 0, b = 0, a = 1 },
-        borderColorMode = "custom",    -- class | custom
+        borderColorMode = "skin",      -- skin | class | custom
         padding        = 6,            -- inset from the frame edge to the rows
         -- Locked hides the drag handle and lets the mouse through to the rows
         -- for tooltips. Unlocking implies preview mode (core/State.lua), so a
@@ -176,15 +182,16 @@ local WINDOW_TEMPLATE = {
         -- LibKa0s-Core-1.0's close control at rest and Ka0s DPS Race's
         -- `Style.REST` -- rather than the white it shipped as until 2026-10-24,
         -- so this strip and DPS Race's title bar draw their controls alike.
-        -- One color MODE each, and both ship "custom". Two rather than one
+        -- One color MODE each, and both ship "skin" (MM-A1: `icon.tint` at rest,
+        -- `btn.hover` under the pointer, the swatches read under `custom`). Two rather than one
         -- because hover and rest are two independent answers: sharing a mode would make the pointer's color
         -- identical to the resting one for anybody who chose class, which is the
         -- one thing a hover color must never be. The LOCAL player's class, like
         -- every other header surface — the strip is about the window, not about
         -- any row in it.
-        controlColorMode       = "custom",
+        controlColorMode       = "skin",
         controlColor           = { r = 0.7, g = 0.7, b = 0.72, a = 1 },
-        controlHoverColorMode  = "custom",
+        controlHoverColorMode  = "skin",
         controlHoverColor      = { r = 1, g = 0.82, b = 0, a = 1 },
         -- THE TWO ENDS OF THE REVEAL, which were a hardcoded 0.25 and 1 before
         -- they were settings -- so these two numbers are why a window that never
@@ -236,11 +243,11 @@ local WINDOW_TEMPLATE = {
         size            = 12,
         outline         = "NONE",      -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         shadow          = true,
-        -- CUSTOM, so a window that never opens the dropdown is drawn from the
-        -- picker below exactly as it was before there was a dropdown. `class` is
-        -- the only other answer: see the note in settings/Schema.lua for why
-        -- there is no `stat` here and why `class` arrived late.
-        colorMode       = "custom",    -- class | custom
+        -- SKIN since MM-A1 (it shipped CUSTOM): the skin's title color, gold under
+        -- Ka0s Default, the swatch below read under `custom`. See the note in
+        -- settings/Schema.lua for why there is no `stat` here and why `class`
+        -- arrived late.
+        colorMode       = "skin",      -- skin | class | custom (skin: `title.text`, MM-A1)
         color           = { r = 1, g = 0.82, b = 0, a = 1 },  -- Blizzard gold
         align           = "LEFT",      -- LEFT | CENTER | RIGHT
         -- 26, so the bar a player sees -- frame top to divider, 6 padding + 26
@@ -248,6 +255,9 @@ local WINDOW_TEMPLATE = {
         -- shipped 18 (a 22px bar) until 2026-10-24.
         height          = 26,
         bgColor         = { r = 0, g = 0, b = 0, a = 0.5 },
+        -- "Use the skin's background" (MM-A1, DECISIONS D3): `title.bg` while on,
+        -- the swatch above kept but not read.
+        bgColorFromSkin = true,
         -- The hairline between the title bar and the column labels. ON, because
         -- it is what the window has always drawn and a chrome element that
         -- vanishes on upgrade is a bug report.

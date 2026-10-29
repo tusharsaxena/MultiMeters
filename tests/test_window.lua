@@ -906,6 +906,8 @@ test("Border style None draws NO edge, whatever the library's own is", function(
     -- red under: moving the "None" test out of `borderPath` and back behind the
     -- size check, or dropping it.
     local _, window, cfg = scene()
+    -- The PLAYER's edge: the shipped `skin` mode hands the edge to the Shell (MM-A1).
+    cfg.frame.borderColorMode = "custom"
     cfg.frame.borderSize = 8
 
     -- Every spelling of "no border", including the two a hand-edited
@@ -926,6 +928,8 @@ test("A border style that CANNOT be fetched still falls back to the library edge
     -- silently loses its edge over it is worse than one wearing the collection's.
     -- red under: `borderPath` answering nil for anything it cannot fetch.
     local _, window, cfg = scene()
+    -- The PLAYER's edge: the shipped `skin` mode hands the edge to the Shell (MM-A1).
+    cfg.frame.borderColorMode = "custom"
     cfg.frame.borderStyle = "A Border No Media Pack Here Provides"
     cfg.frame.borderSize  = 2
     window:ApplyConfig()
@@ -942,6 +946,8 @@ test("With no border, the SKIN's inner highlight goes too", function()
     -- outliving both controls that claim to govern one.
     -- red under: ApplyBorder leaving frame.innerBorder alone.
     local _, window, cfg = scene()
+    -- The PLAYER's edge: the shipped `skin` mode hands the edge to the Shell (MM-A1).
+    cfg.frame.borderColorMode = "custom"
     cfg.frame.borderStyle = "None"
     cfg.frame.borderSize  = 0
     window:ApplyConfig()
@@ -1071,7 +1077,8 @@ test("The window's fill and its edge each answer a color mode", function()
     assertEqual(edge[1], mr); assertEqual(edge[2], mg); assertEqual(edge[3], mb)
     assertEqual(edge[4], 0.5, "the border swatch's alpha did not survive the mode")
 
-    -- Custom is the shipped mode and reads the swatch, exactly as it always did.
+    -- Custom reads the swatch, exactly as it always did (the shipped mode is `skin`
+    -- since MM-A1, tests/test_skin_window.lua).
     cfg.frame.backdropColorMode = "custom"
     window:ApplyConfig()
     assertEqual(window.frame.__backdropColor[1], 0, "custom stopped reading the swatch")

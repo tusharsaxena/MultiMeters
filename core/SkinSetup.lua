@@ -44,7 +44,9 @@ local addonName, NS = ...
 --                           written as a literal keeps its bytes on Ka0s Default (|cff9d9d9d).
 --   NS.SkinWindowLooks(t)   the colors and escapes a meter window draws on its refresh path (the
 --                           row wash, stripe, self edge and classless name, the session line's
---                           dim and TEST MODE escapes), resolved once into `t` on RefreshUpvalues.
+--                           dim and TEST MODE escapes) and its chrome's `skin` modes read (the
+--                           fill, the title, the title bar, the two control colors), resolved
+--                           once into `t` on RefreshUpvalues.
 --   NS.SkinMediaKey(g,k,t)  the LSM key a HUD surface draws: the skin's token `t` while the group's
 --                           `<k>FromSkin` companion is on, else the stored pick (skinning-§6).
 --   NS.SkinPaintAce(w)      an AceGUI widget this addon acquired itself, painted for this owner:
@@ -125,6 +127,9 @@ NS.SKIN_FALLBACK = {
     ["win.border"] = { 0, 0, 0, 1 },
     ["win.inner"]  = { 0.24, 0.24, 0.27, 0.85 },
     ["title.text"] = { 1, 0.82, 0, 1 },
+    ["title.bg"]   = { 0.04, 0.04, 0.05, 0.9 },
+    ["icon.tint"]  = { 0.7, 0.7, 0.72, 1 },
+    ["btn.hover"]  = { 1, 0.82, 0, 1 },
     ["divider"]    = { 0.24, 0.24, 0.27, 0.85 },
     ["text.highlight"] = { 1, 1, 1, 1 },
     ["text.heading"]   = { 1, 0.82, 0, 1 },
@@ -162,7 +167,18 @@ local WINDOW_LOOKS = {
     rowStripe = "mm.rowStripe",    -- the alternating stripe
     selfEdge  = "text.accent",     -- the "this row is you" edge (its alpha is the setting's)
     nameText  = "text.highlight",  -- a name with no class
+    -- The chrome's `skin` modes (MM-A1, the owner's ruling R-3; modules/Window.lua's ApplyBorder,
+    -- Window_Header.lua's title and title bar, HeaderControls.lua's tint).
+    winBg        = "win.bg",       -- frame.backdropColorMode
+    titleText    = "title.text",   -- header.colorMode, the title and the session line
+    titleBg      = "title.bg",     -- header.bgColorFromSkin
+    controlRest  = "icon.tint",    -- frame.controlColorMode
+    controlHover = "btn.hover",    -- frame.controlHoverColorMode
 }
+
+-- A token a skin may set to none (`false`) where none is a look, not a gap: the title bar draws no
+-- band, so its color is clear rather than Ka0s Default's pixel.
+local CLEAR_WHEN_UNSET = { titleBg = true }
 
 --- The colors and escapes a meter window draws on its refresh path, resolved ONCE into `into` (a
 --- table it keeps and hands back, so a repaint allocates nothing). WindowProto:RefreshUpvalues
@@ -174,7 +190,9 @@ function NS.SkinWindowLooks(into)
     for field, name in pairs(WINDOW_LOOKS) do
         local c = into[field] or {}
         local r, g, b, a = NS.Skin.Color(name)
-        if r == nil then
+        if r == nil and CLEAR_WHEN_UNSET[field] then
+            r, g, b, a = 0, 0, 0, 0
+        elseif r == nil then
             local owned = NS.SKIN_TOKENS[name]
             local d = owned and owned.default or NS.SKIN_FALLBACK[name]
             r, g, b, a = d[1], d[2], d[3], d[4]
@@ -193,7 +211,8 @@ end
 --- (skinning-§6). Through S.Resolve, which is override-aware: the Skin tab's own font or texture
 --- wins over the skin's. The stored pick is never rewritten, so a companion turned off brings it
 --- back. Degraded, the facade answers no HUD token and the stored pick stands: the pre-skin look.
---- Only texture, border and font follow (DECISIONS X4); every HUD color stays the player's. Read
+--- Only texture, border and font follow (DECISIONS X4); every HUD color stays the player's (the
+--- window's chrome is not HUD: its `skin` modes read NS.SkinWindowLooks, MM-A1). Read
 --- on ApplyConfig and on a tooltip's build, never on the refresh path (R2). NOT S.BarTexture: it
 --- reads a StatusBar's color back on every repaint, and a cell holds a secret (DECISIONS D6).
 function NS.SkinMediaKey(group, key, token)

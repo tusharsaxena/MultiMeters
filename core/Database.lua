@@ -55,11 +55,12 @@ NS.Database = Database
 -- v18 grows the title bar to Ka0s DPS Race's 30px.
 -- v19 grows the shipped window to 228px, ten rows under that bar.
 -- v20 puts every window's HUD faces, bar textures and bar borders on the skin, once.
+-- v21 puts every window's chrome (fill, edge, title bar, title, controls) on the skin, once.
 --
 -- The defaults declare `global.schemaVersion = 0`, which means UNSTAMPED: a fresh
 -- install or an account from before the runner stamped anything. It is never the
 -- current version (savedvariables-§1); see defaults/Profile.lua for why.
-local CURRENT_DB_VERSION = 20
+local CURRENT_DB_VERSION = 21
 
 --- The runner's target, published under the name savedvariables-§1 gives it.
 --- Raising it means registering the step that reaches it; the defaults' 0 never moves.
@@ -1108,6 +1109,39 @@ migrations[19] = function(db)
         if type(profile.windows) == "table" then
             for _, w in pairs(profile.windows) do
                 if type(w) == "table" then v20FollowSkin(w, resetToSkin) end
+            end
+        end
+    end
+end
+
+--- The window chrome's five `skin` color modes (MM-A1, DECISIONS D1, D4, D16), as dotted paths
+--- into a window: the fill, the edge, the title, the controls at rest and under the pointer. The
+--- v21 step's list, and tests/test_skin_window.lua's.
+Database.CHROME_SKIN_MODES = {
+    "frame.backdropColorMode", "frame.borderColorMode", "header.colorMode",
+    "frame.controlColorMode", "frame.controlHoverColorMode",
+}
+
+--- v20 -> v21: THE WINDOW'S CHROME ON THE SKIN, ONCE (the owner's ruling R-3, which overrules
+--- DECISIONS X4 for the meter window; O2's one-time reset carried over to it).
+---
+--- Every window's five chrome modes go to `skin`, whatever they were (`custom` or `class`), and the
+--- title bar's `header.bgColorFromSkin` companion on (D3). Set directly: a mode is a string the
+--- library's ResetToSkin knows nothing of, and the companion is a plain bool. The stored colors,
+--- the edge style and its thickness are kept, so a mode set back to Custom draws them again. A
+--- group absent from a stored window is left to EnsureWindowShape, whose template ships the same.
+--- The account-wide stamp is what makes it once: a pick made after it is kept.
+migrations[20] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" then
+                    for _, path in ipairs(Database.CHROME_SKIN_MODES) do
+                        local group, leaf = path:match("^([^.]+)%.(.+)$")
+                        if type(w[group]) == "table" then w[group][leaf] = "skin" end
+                    end
+                    if type(w.header) == "table" then w.header.bgColorFromSkin = true end
+                end
             end
         end
     end

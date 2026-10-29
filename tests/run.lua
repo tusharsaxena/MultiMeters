@@ -366,6 +366,9 @@ local SUITES = {
     -- The HUD following the skin: the companions, the cell / header / tooltip media through
     -- them, a skin switch, the meta pair, and the one-time v20 reset.
     "test_skin_hud",
+    -- The meter window's chrome on the skin: the five `skin` modes and the title bar companion,
+    -- following live under two skins, the player's own picks, and the one-time v21 reset.
+    "test_skin_window",
     -- The first-run skin picker: its spec, when it shows (login, profile events, combat, the
     -- stand-down) and that only the player's close marks it seen.
     "test_skin_picker",
