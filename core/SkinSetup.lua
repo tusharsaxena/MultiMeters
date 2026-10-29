@@ -42,6 +42,9 @@ local addonName, NS = ...
 --                           so a literal that became a token keeps its arity on Ka0s Default.
 --   NS.SkinEscape(name)     a color token as a "|cffrrggbb" escape, rounded to the byte, so markup
 --                           written as a literal keeps its bytes on Ka0s Default (|cff9d9d9d).
+--   NS.SkinWindowLooks(t)   the colors and escapes a meter window draws on its refresh path (the
+--                           row wash, stripe, self edge and classless name, the session line's
+--                           dim and TEST MODE escapes), resolved once into `t` on RefreshUpvalues.
 --   NS.SkinMediaKey(g,k,t)  the LSM key a HUD surface draws: the skin's token `t` while the group's
 --                           `<k>FromSkin` companion is on, else the stored pick (skinning-§6).
 --   NS.SkinPaintAce(w)      an AceGUI widget this addon acquired itself, painted for this owner:
@@ -150,6 +153,38 @@ function NS.SkinEscape(name)
     if r == nil then return nil end
     local function byte(v) return math.floor(v * 255 + 0.5) end
     return ("|cff%02x%02x%02x"):format(byte(r), byte(g), byte(b))
+end
+
+-- The colors a meter window reads on its refresh path: field, token. A token the skin answers
+-- nothing for falls back to its Ka0s Default pixel (the owner token's default, or the host copy).
+local WINDOW_LOOKS = {
+    rowHover  = "mm.rowHover",     -- the row's mouseover wash (modules/Row.lua)
+    rowStripe = "mm.rowStripe",    -- the alternating stripe
+    selfEdge  = "text.accent",     -- the "this row is you" edge (its alpha is the setting's)
+    nameText  = "text.highlight",  -- a name with no class
+}
+
+--- The colors and escapes a meter window draws on its refresh path, resolved ONCE into `into` (a
+--- table it keeps and hands back, so a repaint allocates nothing). WindowProto:RefreshUpvalues
+--- calls it, which ApplyConfig runs and WindowManager:Reskin re-runs on every OnLooksChanged, so
+--- no row and no refresh pass reads a token (R2). Each color is { r, g, b, a }; `dim` and
+--- `testWord` are the `mm.dim` and `mm.testWord` escapes.
+function NS.SkinWindowLooks(into)
+    into = into or {}
+    for field, name in pairs(WINDOW_LOOKS) do
+        local c = into[field] or {}
+        local r, g, b, a = NS.Skin.Color(name)
+        if r == nil then
+            local owned = NS.SKIN_TOKENS[name]
+            local d = owned and owned.default or NS.SKIN_FALLBACK[name]
+            r, g, b, a = d[1], d[2], d[3], d[4]
+        end
+        c[1], c[2], c[3], c[4] = r, g, b, a or 1
+        into[field] = c
+    end
+    into.dim = NS.SkinEscape("mm.dim") or NS.GRAY
+    into.testWord = NS.SkinEscape("mm.testWord") or ""
+    return into
 end
 
 --- The LSM key a HUD surface draws for media key `key` of config group `group` (a window's `bars`,

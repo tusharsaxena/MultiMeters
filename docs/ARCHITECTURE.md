@@ -308,7 +308,7 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   and its six owner tokens (`NS.SKIN_TOKENS`: `mm.rowHover`, `mm.rowStripe`, `mm.tipHint`, `mm.dim`,
   `mm.testWord`, `mm.warn`), each holding the exact pixel Ka0s Default drew before and following the
   nearest library role token under every other skin (X1, X2, X12). It publishes `NS.Skin` (the owner's
-  facade) and the call-site helpers `NS.SkinColor`, `NS.SkinEscape`, `NS.SkinMediaKey`,
+  facade) and the call-site helpers `NS.SkinColor`, `NS.SkinEscape`, `NS.SkinWindowLooks`, `NS.SkinMediaKey`,
   `NS.SkinPaintAce` and `NS.SkinPaintAceTree`. Its degraded arm answers every facade name, its colors
   from `NS.SKIN_FALLBACK`, a host copy of the Ka0s Default values `tests/test_skinsetup.lua` holds to
   the library's.
@@ -328,7 +328,11 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   `win.inner`. The window's fill, edge, title bar background, title and label colors and header
   control colors stay the player's settings: no `skin` color mode was added (X4). The notice, the
   empty state, the session line's dim notes (`mm.dim`) and the TEST MODE word (`mm.testWord`) read
-  tokens, and both mode strips are handed the owner.
+  tokens, and both mode strips are handed the owner. The rows' hover wash (`mm.rowHover`), their
+  alternating stripe (`mm.rowStripe`), the self edge (`text.accent`) and a classless name
+  (`text.highlight`) follow the skin too, each Ka0s Default's old pixel. `RefreshUpvalues` resolves
+  them, and the session line's two escapes, once into the window's `skinLooks`
+  (`NS.SkinWindowLooks`), so no row and no refresh pass reads a token (R2).
 - **The HUD** (skinning-§6). Only the face, the bar texture and the bar border style follow the skin
   (X4). Each HUD media picker has the composer's "Use the skin's ..." companion beside it
   (`<key>FromSkin`: `header`, `columnHeader`, `text`, `tooltip` `.fontFromSkin` follow `hud.font`;
@@ -362,9 +366,7 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
 - **The EllesmereUI provider** is the library's (`SkinEUI.lua`), chosen by `skin.source = "eui"`; when
   its gate fails the addon wears its Ka0s skin and the Skin tab names the condition.
 - **What stays.** Chat output (X7), inline help markup (X9), StaticPopups, the class and spell art,
-  the statistic palette (D14) and the diagnostics report's escapes (D15). The row hover wash, the
-  alternating stripe and the self-highlight edge still draw their literal colors: the owner tokens
-  `mm.rowHover` and `mm.rowStripe` are registered but not yet read by `modules/Row.lua`.
+  the statistic palette (D14) and the diagnostics report's escapes (D15).
 
 In-client checks: [smoke-tests.md](smoke-tests.md) SKIN-1 to SKIN-24, INSTALL-15 and DEGRADED-11.
 

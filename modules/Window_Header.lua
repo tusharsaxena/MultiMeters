@@ -378,8 +378,9 @@ function WindowProto:ApplyTitle()
     local title = cfg.name or L["Multi Meters"]
     if NS.State and NS.State.testMode and not stripShown(self) and not simRunning() then
         -- The word's red is this addon's owner token (core/SkinSetup.lua), today's
-        -- pixel under Ka0s Default and the skin's test-mode red under every other.
-        title = title .. "   " .. (NS.SkinEscape and NS.SkinEscape("mm.testWord") or "")
+        -- pixel under Ka0s Default and the skin's test-mode red under every other,
+        -- cached on ApplyConfig (RefreshUpvalues) rather than read per title pass.
+        title = title .. "   " .. ((self.skinLooks or {}).testWord or "")
             .. L["TEST MODE"] .. "|r"
     end
     frame.title:SetText(title)
@@ -1219,8 +1220,10 @@ function WindowProto:RestrictedNotice(preview)
     local aggregate = self.aggregate
     if not (aggregate and aggregate.identityMode) then return nil end
     -- The note's gray is the owner token `mm.dim` (core/SkinSetup.lua): NS.GRAY's
-    -- bytes under Ka0s Default, the skin's muted text under every other.
-    local dim = NS.SkinEscape and NS.SkinEscape("mm.dim") or NS.GRAY
+    -- bytes under Ka0s Default, the skin's muted text under every other. This runs
+    -- on every throttled refresh of a pull, so it reads the escape RefreshUpvalues
+    -- cached, never the token (R2).
+    local dim = (self.skinLooks or {}).dim or NS.GRAY
     if not aggregate.ambiguous then return dim .. L["restricted"] .. "|r" end
 
     -- THE COUNT, WHERE THERE IS ONE. Both figures are OUR OWN plain integers --

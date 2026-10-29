@@ -1701,7 +1701,10 @@ background and the header controls' colors, sizes, outlines and thicknesses (DEC
   pick each skin in turn and Ka0s Default last → with **no reload** each window repaints: its faces
   take the skin's own family (Azeroth's Vollkorn, for one; a skin with no face of its own draws
   Friz Quadrata), its bars the skin's texture, its inner rule and divider the skin's line, the test strip the
-  skin's; the bar colors, the window's fill and edge and the title bar colors stay as set. Then
+  skin's; the rows' hover wash, the alternating stripe (Rows → Alternating background), the gold "this row is
+  you" edge and the white name of a classless row (a training dummy) take the skin's list hover,
+  stripe, accent and highlight text; the bar colors, the window's fill and edge and the title bar
+  colors stay as set. Then
   minimize one window → the TEST MODE word in the skin's red. Turn test mode off on an empty segment →
   the empty state's two lines in the skin's heading and text colors. Fail: a surface that keeps the
   old skin until `/reload`, a row or cell left on the old texture or face (scroll a long grid to

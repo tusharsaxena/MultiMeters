@@ -15,12 +15,15 @@ local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.asse
 
 local OWNER = "MultiMeters"
 
---- A fresh instance with its first window built and configured.
+--- A fresh instance with its first window managed and configured: managed, so the
+--- OnLooksChanged listener (WindowManager:Reskin) reaches it, as it reaches every live window.
 local function scene()
     local inst = T.load{}
     local NS = inst.NS
     local cfg = NS.Database.GetWindows()[1]
-    local window = NS.WindowManager.Get(cfg.id) or NS.Window.New(cfg)
+    NS.WindowManager:Init()
+    local window = NS.WindowManager.Get(cfg.id)
+    assertTrue(window ~= nil, "the manager built no window for the first config")
     window:ApplyConfig()
     return inst, NS, window, inst.mocks.LibStub("LibKa0s-Skin-1.0")
 end
@@ -131,4 +134,84 @@ test("Skin chrome: the export modal paints through the facade, its refusal in mm
             assertFalse(line:find("Set%a*Color%(%s*[%d%.]") ~= nil, "a typed color: " .. line)
         end
     end
+end)
+
+
+-- ---------------------------------------------------------------------------
+-- The rows: hover wash, stripe, self edge and the classless name (MM-G1, MM-G2)
+-- ---------------------------------------------------------------------------
+
+--- A row of the window's own pool, configured to draw every row look.
+local function rowScene()
+    local inst, NS, window, Skin = scene()
+    local rows = window.config.rows
+    rows.highlightSelf, rows.mouseoverHighlight, rows.alternatingBackground = true, true, true
+    window:ApplyConfig()
+    return inst, NS, window, Skin, window:Acquire()
+end
+
+local function classless()
+    return { guid = "Creature-0-1", name = "Training Dummy", role = "NONE", isPlayer = false,
+             cells = { DamageDone = { total = 1, maxAmount = 1 } } }
+end
+
+--- The four row looks as the row drew them: wash, stripe, edge (alpha the setting's), name.
+local function rowLooks(row)
+    row:Update(classless(), 2)
+    return row.mouseHighlight.__colorTexture or {}, row.bg.__colorTexture or {},
+        row.selfHighlight.__colorTexture or {}, { row.nameCell.left:GetTextColor() }
+end
+
+test("Skin chrome: the rows keep their Ka0s Default pixels through the owner tokens", function()
+    -- red under: the row looks not painted at all (a nil color), or a token whose default moved.
+    local _, _, _, _, row = rowScene()
+    local wash, stripe, edge, name = rowLooks(row)
+    sameColor(wash, { 1, 1, 1, 0.10 }, "the hover wash")
+    sameColor(stripe, { 1, 1, 1, 0.05 }, "the stripe")
+    sameColor(edge, { 1, 0.82, 0, 1 }, "the self edge")
+    sameColor(name, { 1, 1, 1 }, "a classless name")
+end)
+
+test("Skin chrome: a skin switch repaints the rows from the skin's tokens", function()
+    -- red under: the literals typed back into modules/Row.lua, or the looks cached anywhere
+    -- ApplyConfig (so WindowManager:Reskin) does not re-read them.
+    local _, NS, _, Skin, row = rowScene()
+    Skin:SetChoice(OWNER, "ka0s", "obsidian")
+    local hover = tokenOr(NS, "mm.rowHover")
+    assertFalse(near(hover[1], 1) and near(hover[2], 1) and near(hover[3], 1),
+        "obsidian's hover is Ka0s Default's white: the case is moot")
+    local wash, stripe, edge, name = rowLooks(row)
+    sameColor(wash, hover, "the hover wash is mm.rowHover")
+    sameColor(stripe, tokenOr(NS, "mm.rowStripe"), "the stripe is mm.rowStripe")
+    local accent = tokenOr(NS, "text.accent")
+    sameColor(edge, { accent[1], accent[2], accent[3], 1 }, "the self edge is text.accent")
+    local hi = tokenOr(NS, "text.highlight")
+    sameColor(name, { hi[1], hi[2], hi[3] }, "a classless name is text.highlight")
+
+    local src = source("modules/Row.lua")
+    for line in src:gmatch("[^\n]+") do
+        if not line:match("^%s*%-%-") then
+            assertFalse(line:find("Set%a*Color%a*%(%s*[%d%.]") ~= nil, "a typed color: " .. line)
+        end
+    end
+end)
+
+test("Skin chrome: the session line's escapes are cached on ApplyConfig, not read per refresh", function()
+    -- red under: NS.SkinEscape called from RestrictedNotice or ApplyTitle (a token read on every
+    -- throttled refresh of a pull, R2).
+    local _, NS, window = scene()
+    local calls, real = 0, NS.SkinEscape
+    NS.SkinEscape = function(...) calls = calls + 1; return real(...) end
+    window.aggregate = { identityMode = true }
+    window:RestrictedNotice(false)
+    NS.State = NS.State or {}
+    local was = NS.State.testMode
+    NS.State.testMode = true
+    window:ApplyTitle()
+    NS.State.testMode = was
+    window.aggregate = nil
+    NS.SkinEscape = real
+    assertEqual(calls, 0, "a refresh-path token read")
+    assertEqual(window.skinLooks.dim, "|cff9d9d9d", "the cached dim keeps NS.GRAY's bytes")
+    assertEqual(window.skinLooks.testWord, "|cffff2020", "the cached TEST MODE red keeps its bytes")
 end)

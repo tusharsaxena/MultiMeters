@@ -468,6 +468,8 @@ function WindowProto:RefreshUpvalues()
     self.layout      = self:BuildLayout()
     -- A new layout may move a row, so every bound row re-anchors on its next draw.
     self.layoutVersion = (self.layoutVersion or 0) + 1
+    -- The row and session-line colors, from the skin once here, never per row (core/SkinSetup.lua).
+    if NS.SkinWindowLooks then self.skinLooks = NS.SkinWindowLooks(self.skinLooks) end
 end
 
 -- ---------------------------------------------------------------------------

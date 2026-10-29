@@ -80,6 +80,20 @@ NS.Row = Row
 -- upvalue so that load order cannot freeze a nil, and so that a partial install
 -- degrades to "no text" / "no tooltip" instead of erroring on every refresh.
 
+--- One of the window's cached skin colors (WindowProto:RefreshUpvalues fills `skinLooks` from
+--- NS.SkinWindowLooks on every ApplyConfig, so a row never reads a token, R2), or its Ka0s Default
+--- pixel when the window has none yet.
+local LOOK_DEFAULT = {
+    rowHover  = { 1, 1, 1, 0.10 },
+    rowStripe = { 1, 1, 1, 0.05 },
+    selfEdge  = { 1, 0.82, 0, 1 },
+    nameText  = { 1, 1, 1, 1 },
+}
+local function look(window, field)
+    local looks = window and window.skinLooks
+    return (looks and looks[field]) or LOOK_DEFAULT[field]
+end
+
 --- The number formatter (modules/Format.lua).
 ---
 --- Deliberately shape-agnostic. `NS.Format` is a CALLABLE TABLE: indexing it
@@ -706,8 +720,10 @@ function Cell:ApplyNameColor(entry)
     if r then
         self.left:SetTextColor(r, g, b, a)
     else
-        -- An unknown class reads as "no class information", not as a tenth color.
-        self.left:SetTextColor(1, 1, 1, a)
+        -- An unknown class reads as "no class information", not as a tenth color:
+        -- the skin's `text.highlight`, white under Ka0s Default.
+        local c = look(self.window, "nameText")
+        self.left:SetTextColor(c[1], c[2], c[3], a)
     end
 end
 
@@ -1101,7 +1117,6 @@ function Row.New(window)
 
     row.mouseHighlight = overlay:CreateTexture(nil, "OVERLAY")
     row.mouseHighlight:SetAllPoints(frame)
-    row.mouseHighlight:SetColorTexture(1, 1, 1, 0.10)
     row.mouseHighlight:Hide()
 
     row.nameCell = newCell(row, "name")
@@ -1134,7 +1149,11 @@ function RowProto:ApplyLayout(layout)
     local rows = self.window.config.rows or {}
     -- Full opacity: it is three pixels wide, and a three-pixel marker at 12%
     -- alpha is a marker nobody sees.
-    self.selfHighlight:SetColorTexture(1, 0.82, 0, rows.highlightSelf and 1 or 0)
+    -- Both colors are the window's cached skin looks (`text.accent`, `mm.rowHover`), re-read by
+    -- the ApplyConfig every OnLooksChanged runs, so a skin switch repaints them here.
+    local edge, hover = look(self.window, "selfEdge"), look(self.window, "rowHover")
+    self.selfHighlight:SetColorTexture(edge[1], edge[2], edge[3], rows.highlightSelf and 1 or 0)
+    self.mouseHighlight:SetColorTexture(hover[1], hover[2], hover[3], hover[4])
     self.mouseHighlight:SetShown(false)
 end
 
@@ -1164,7 +1183,8 @@ function RowProto:Update(entry, index)
     -- What is left here is the alternating stripe, which is a ROW-level fact.
     local rows = self.window.config.rows or {}
     if rows.alternatingBackground and index % 2 == 0 then
-        self.bg:SetColorTexture(1, 1, 1, 0.05)
+        local stripe = look(self.window, "rowStripe")
+        self.bg:SetColorTexture(stripe[1], stripe[2], stripe[3], stripe[4])
         self.bg:Show()
     else
         self.bg:Hide()
