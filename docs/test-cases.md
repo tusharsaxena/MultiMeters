@@ -1329,9 +1329,9 @@ Total.
 - Header ships GameFontNormal spelled out: 12px, no outline, a 1/-1 shadow
 - Header shadow reaches every line of the strip
 - Column header shadow is its OWN setting, not the header's
-- The header's text answers TWO modes, and the custom one is the picker
+- The header's text answers its modes, and the custom one is the picker
 - The header's text takes the CLASS color, keeping the configured alpha
-- The header's text mode offers class and custom, and NOT per-statistic
+- The header's text mode offers skin, class and custom, and NOT per-statistic
 - The header color survives a sort change, having nothing to do with it
 - The window NAME takes the header's color
 - Column header class color is the local player's too
@@ -2499,13 +2499,16 @@ Total.
 - Skin seam: each host-copy skin token is the live library's Ka0s Default value
 - Skin seam: degraded, the facade answers today's colors and the seam never raises
 
-### test_skin_chrome.lua (5)
+### test_skin_chrome.lua (8)
 
-- Skin chrome: the meter window keeps its Ka0s Default pixels through the Shell
-- Skin chrome: a skin switch repaints the window and re-lays the player's edge over it
+- Skin chrome: a Custom window keeps the player's fill and edge through the Shell
+- Skin chrome: a skin switch repaints a Custom window and re-lays the player's edge over it
 - Skin chrome: the TEST MODE word and the restricted notes follow the skin
 - Skin chrome: the empty state and the notice take the skin's text tokens
 - Skin chrome: the export modal paints through the facade, its refusal in mm.warn
+- Skin chrome: the rows keep their Ka0s Default pixels through the owner tokens
+- Skin chrome: a skin switch repaints the rows from the skin's tokens
+- Skin chrome: the session line's escapes are cached on ApplyConfig, not read per refresh
 
 ### test_skin_hud.lua (8)
 
@@ -2517,6 +2520,20 @@ Total.
 - Skin HUD: the v20 step puts every window of every profile on the skin, keeping the picks
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
+
+### test_skin_window.lua (11)
+
+- Skin window: the five chrome modes and the title bar companion ship on the skin
+- Skin window: under Ka0s Default the window wears Ka0s Default's own chrome
+- Skin window: the chrome follows each skin live, and ApplyBorder re-runs after the repaint
+- Skin window: hovering a control reads no token
+- Skin window: switched back to custom, every surface draws the player's color again
+- Skin window: class mode still takes the local player's class on every chrome surface
+- Skin window: without the library the Skin modes draw the stored colors, the pre-skin look
+- Skin window: the v21 step puts every window of every profile's chrome on the skin
+- Skin window: the v21 reset runs once, so a pick made after it is kept
+- Skin window: a v19 account takes both resets in one walk
+- Skin window: the v21 step survives a junk window and leaves an absent group to the template
 
 ### test_skin_picker.lua (12)
 
@@ -2788,8 +2805,9 @@ Total.
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 51 |
 | test_skinsetup.lua | 20 |
-| test_skin_chrome.lua | 5 |
+| test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 8 |
+| test_skin_window.lua | 11 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
@@ -2802,4 +2820,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2400** |
+| **Total** | **2414** |

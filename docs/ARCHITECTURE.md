@@ -76,7 +76,7 @@ touching the data path.
 
 ## Settings schema
 
-`NS.Schema` in `settings/Schema.lua` is the single source of truth: **186 rows across 8 page keys**
+`NS.Schema` in `settings/Schema.lua` is the single source of truth: **187 rows across 8 page keys**
 (windows 1, frame 28, header 37, bars 31, tooltip 34, visibility 17, columns 9, general 29; the seven
 skin rows are appended by `settings/Schema_Skin.lua`), each one
 wiring automatically into its panel widget — one tab per distinct `group`, via
@@ -101,12 +101,12 @@ CLI both point at them: same validation, debug line, `CONFIG_CHANGED` and panel 
 **The window-relative path model** is the one thing here that is not standard-issue. A window row's
 path is relative (`window.frame.width`) and the seam resolves it against `NS.State.activeWindowId`,
 which the settings panel's window picker moves, or against a window id the caller passes. The other
-twenty-nine rows keep absolute paths against `db.profile`, so moving one integer retargets **157**
+twenty-nine rows keep absolute paths against `db.profile`, so moving one integer retargets **158**
 rows ([schema.md](schema.md#the-window-relative-path-model) lists both sets).
 
 Profiles carries **zero** rows: AceDBOptions' own tree, the one place `AceConfigDialog` is permitted,
 and vetoed from reset-all ([profiles.md](profiles.md)). Columns carries nine
-`window.columnHeader.*` rows beside its block editor, whose array is a hidden 187th row, [`window.columns`](schema.md#the-columns-row).
+`window.columnHeader.*` rows beside its block editor, whose array is a hidden 188th row, [`window.columns`](schema.md#the-columns-row).
 
 **The window registry has one writer** (`architecture-§5`), since no row can name a window's
 existence. Its storage keys are `db.profile.windows` (entries carry their `id` and unique `name`) and
@@ -321,21 +321,31 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   (`core/Database.lua`'s rebuild), applying the stored Scope and overrides with the stored skin, and
   from each Skin tab row with only its own half. `Skin:SetChoice` repaints every frame recorded for
   this owner and then fires `NS.Skin.OnLooksChanged`, whose one listener, `WindowManager:Reskin`,
-  re-runs `ApplyConfig` on every live window, so the player's own edge, fill, header and notice are
-  laid over the new skin and the HUD media resolve again.
-- **The meter window** paints through `S.Shell` with no top bar and no edge (`modules/Window.lua`);
-  `ApplyBorder` keeps drawing the player's edge and fill over it and tints the inner rule from
-  `win.inner`. The window's fill, edge, title bar background, title and label colors and header
-  control colors stay the player's settings: no `skin` color mode was added (X4). That ruling reads
-  X4 (the player's HUD colors are not reset) over the inventory's D1 (the fill and edge onto
-  `win.*`), D3 (`header.bgColorFromSkin`), D4 (the controls' `btn.hover` / `icon.tint`) and D16's
-  `skin` color modes; D16's relabel stands (the divider's mode reads Skin). It is put to the owner
-  at [SKIN-4](smoke-tests.md); the other way is a follow-up item. The notice, the
+  re-runs `ApplyConfig` on every live window, so the chrome's `skin` colors are resolved again (into
+  the window's `skinLooks`), `ApplyBorder` re-runs after the Shell's repaint, the player's own edge,
+  fill and header are laid over the new skin where a mode says Custom or Class, and the HUD media
+  resolve again.
+- **The meter window** paints through `S.Shell` with no top bar (`modules/Window.lua`), and its chrome
+  follows the skin (item MM-A1, the owner's ruling R-3, which overrules X4 for this window: the
+  inventory's D1, D3, D4 and D16). Five color modes carry `skin` beside `class` and `custom` and ship on
+  it: the fill (`frame.backdropColorMode`, `win.bg`); the edge (`frame.borderColorMode`, the skin's
+  whole edge, which the Shell draws on its edge holder in `win.borderStyle`, `win.borderSize`,
+  `win.border` and `win.inner`); the title and session line (`header.colorMode`, `title.text`); and
+  the header controls at rest and under the pointer (`frame.controlColorMode`, `icon.tint`;
+  `frame.controlHoverColorMode`, `btn.hover`, not `S.CloseButton`, whose `close.hot` red would sit
+  beside six gold siblings). The title bar background has a companion instead,
+  `header.bgColorFromSkin` (`title.bg`, clear for a skin with no title band). The v21 step put every
+  stored window on all six once. Under `class` or `custom` the Shell draws no edge and `ApplyBorder`
+  lays the player's LSM edge and fill over it, tinting Core's inner rule from `win.inner`; the stored
+  colors are never rewritten, so a mode set back to Custom draws them again. Under Ka0s Default the
+  window now wears Ka0s Default's `win.*` fill and edge and its `title.bg` band, which the owner
+  accepted. Without the library (`NS.SKIN_LIVE` false) a `skin` mode falls back to its swatch and the
+  edge to the player's, the pre-skin look. The column labels' colors and every HUD color stay the player's (X4). The notice, the
   empty state, the session line's dim notes (`mm.dim`) and the TEST MODE word (`mm.testWord`) read
   tokens, and both mode strips are handed the owner. The rows' hover wash (`mm.rowHover`), their
   alternating stripe (`mm.rowStripe`), the self edge (`text.accent`) and a classless name
   (`text.highlight`) follow the skin too, each Ka0s Default's old pixel. `RefreshUpvalues` resolves
-  them, and the session line's two escapes, once into the window's `skinLooks`
+  them, the chrome's five `skin` colors and the session line's two escapes, once into the window's `skinLooks`
   (`NS.SkinWindowLooks`), so no row and no refresh pass reads a token (R2).
 - **The HUD** (skinning-§6). Only the face, the bar texture and the bar border style follow the skin
   (X4). Each HUD media picker has the composer's "Use the skin's ..." companion beside it
@@ -499,7 +509,7 @@ Rows are shaped `| Rule | What differs | Why | Decided | Re-check trigger |`.
 
 | Rule | What differs | Why | Decided | Re-check trigger |
 |---|---|---|---|---|
-| `options-ui-§17` — every color picker carries a "use class color" companion | `window.header.bgColor` — the title bar's own background — ships with **no** companion. Every other non-palette swatch in the addon has one. | Neither answer a companion could give is true of this surface. The title bar is **one strip spanning the whole window**, so "per statistic" could only ever mean the sort column's color — a fact already on screen twice, in that column's own header and in its arrow — and that is the same argument that took the mode off the title bar's *text* background and off the divider's `stat` option. The strip beside it, the column-header background, **does** keep a mode, and the difference is the point: that one labels the columns, so per-statistic tints each label with its own column's color and means something (`settings/Schema_Compose.lua`, the note above `window.columnHeader.bgColorMode`). A companion added here would be a control wired to a color nobody chose. | 2026-09-02 | The title bar grows a surface that belongs to one column or to one player — a per-row header, a sort-column tint on the strip itself — at which point "which class" and "which statistic" both have an answer and the row retires. |
+| `options-ui-§17` — every color picker carries a "use class color" companion | `window.header.bgColor` — the title bar's own background — ships with **no** color mode. Every other non-palette swatch in the addon has one. (Its one companion, since the 2026-10-29 skinning rollout, is "Use the skin's background", `header.bgColorFromSkin`, which says nothing about class or statistic.) | Neither answer a companion could give is true of this surface. The title bar is **one strip spanning the whole window**, so "per statistic" could only ever mean the sort column's color — a fact already on screen twice, in that column's own header and in its arrow — and that is the same argument that took the mode off the title bar's *text* background and off the divider's `stat` option. The strip beside it, the column-header background, **does** keep a mode, and the difference is the point: that one labels the columns, so per-statistic tints each label with its own column's color and means something (`settings/Schema_Compose.lua`, the note above `window.columnHeader.bgColorMode`). A companion added here would be a control wired to a color nobody chose. | 2026-09-02 | The title bar grows a surface that belongs to one column or to one player — a per-row header, a sort-column tint on the strip itself — at which point "which class" and "which statistic" both have an answer and the row retires. |
 | `options-ui-§17` — "one resolver": the class-color lookup is the library's | `NS.ClassRGB(classFilename)` (`core/Namespace.lua`) stays as a **second** reader of `RAID_CLASS_COLORS`, beside the library's `NS.ClassColor(unit)`. | The two answer different questions. `LibKa0s-Core-1.0`'s `ClassColor` takes a **unit token**; a meter row is a GUID and a `classFilename` out of `C_DamageMeter`, and most rows have no token at all — a player who left the group, an NPC in a damage-taken column, a follower-dungeon companion. Retiring `ClassRGB` in favor of the unit-keyed lookup would silently uncolor every one of them. The **surface** question — the window's chrome, its header, its backdrop and its border — does go through the library, via `NS.PlayerClassRGB`, which is the case the standard's clause is about; what stays private is the roster reader. Neither has a fallback the other lacks: the degraded reader in `core/CoreSetup.lua` calls `ClassRGB` too, so there is still exactly one table lookup in the addon. | 2026-09-02 | `LibKa0s-Core-1.0` grows a class-**filename** overload of `ClassColor` (or a sibling reader), at which point `ClassRGB` becomes the private copy the clause forbids and is deleted. |
 | library-stack-§8 — "where the addon needs a mark it MUST use the catalog's" | `settings/ColumnBlocks.lua:72-73`'s column-block enable/disable glyph stays on Blizzard's `ReadyCheck-Ready` / `ReadyCheck-NotReady` pair, although `LibKa0s-Media-1.0` **does** carry `circle-check` and `ban`. This is the one site in the addon where the catalog has the mark and the addon declines it. | **Three reasons, and only the third is the one that binds.** (1) *Color.* The catalog's art ships white with its shape in the alpha channel, because the collection tints by multiplying — so `circle-check` and `ban` would both draw white, and enabled-vs-disabled would be carried by shape alone where the pair on screen today carries it in green and red as well. Reconstructing that means a vertex color per state, which is a second vocabulary for one signal rather than one fewer. (2) *Degradation.* `NS.Icon` answers **nil** on a load without the payload (`core/MediaSetup.lua`), and this glyph has no ladder beneath it the way `modules/HeaderControls.lua`'s art does — the block would lose its tick outright, where a Blizzard path is part of the client and cannot go missing. (3) *Parity, which is why the line exists at all.* These are the same two textures ConsumableMaster's priority list wears (`settings/StatPriority.lua`'s `INCLUDED_TEX`/`EXCLUDED_TEX`, with `modules/KCMItemRow.lua`'s `OWNED_TEX`/`NOT_OWNED_TEX` and `settings/Category.lua`'s `OWNED_ICON`/`NOT_OWNED_ICON` beside them — named rather than numbered, because no gate in this repository can follow a line number into another one and one of those three had already slipped a lane's worth of edits by the next morning), so a player running both reads one glyph vocabulary rather than two. Moving one addon alone does not reduce the deviation; it converts a shared vocabulary into a split one, which is strictly worse than the state being ratified here. The 2026-09-07 remediation plan reaches the same conclusion in as many words — the two sites "move in both repositories together or in neither", and filing the row in both is the other half of the same choice. This repository can only file its half. **Re-challenged 2026-09-08 and unchanged.** The item's acceptance asks for two things at once — both named sites on `NS.Icon`, *and* MultiMeters' parity comment still true — and from inside this repository alone the two are not simultaneously satisfiable while ConsumableMaster's three sites stand: the move that meets the first clause is what makes the second false. The finding the item traces to says so in its own words, offering "in MultiMeters and ConsumableMaster together, **or** file the register row in both" (`MM-A-07` in `docs/audits/2026-09-07/`), and this is that second branch taken deliberately rather than a site left unvisited. LootHistory's half of the same item shipped meanwhile and settles reasons (1) and (2) on the record rather than in argument — its `NS.IconMarkup` carries the state color in the escape's own vertex fields and keeps the Blizzard path underneath as the fallback rung — which is why the row has always said only the third reason binds. | 2026-09-08 | ConsumableMaster's three sites adopt the catalog, or its priority list is retired — at which point the parity argument has no second half and this pair moves in the same cycle it does. Reasons (1) and (2) are answered upstream instead and each retires this row on its own: a `LibKa0s-Media-1.0` that publishes a tinted state pair, or an `NS.Icon` contract that carries a Blizzard fallback. |
 | library-stack-§8 — "where the addon needs a mark it MUST use the catalog's" | `modules/Tooltip.lua:107` hard-codes `Ability_Hunter_FocusedAim` for the TARGET line's icon instead of the catalog's `target`. | A white alpha glyph in a column of colored spell icons reads as foreign ([texture-paths.md](texture-paths.md#the-census)). Ratified as MM-A-25's option (b); the owner's option (a), `NS.Icon("target")` with this path as the nil fallback, stays open. | 2026-09-23 | The catalog ships a colored or iconic variant of `target`, or the tooltip stops drawing spell icons. |
