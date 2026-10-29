@@ -239,10 +239,10 @@ local BARBG_VALUES = {
 }
 local BARBG_SORT = { "class", "stat", "custom", "none" }
 
--- TWO modes, not the three every text surface offers. "Per-statistic" cannot say anything true
--- about a header BUTTON: a close box does not belong to a statistic, so the option could only
--- ever paint it the sort column's color -- which is a fact already on screen in that column's
--- own header and in its arrow.
+-- TWO modes, class and custom, for the bar borders' colors (`window.bars.borderColorMode`, the
+-- tooltip bars' `barBorderColorMode`). They were the header controls' and the window chrome's
+-- too, until those took CHROMECOLOR's three (skin, class, custom; MM-A1). "Per-statistic" was
+-- left off because an outline, like a header button, has no statistic of its own to mean.
 local CONTROLCOLOR_VALUES = {
     class  = L["Class color"],
     custom = L["Custom color"],
@@ -596,7 +596,8 @@ end
 -- token (core/SkinSetup.lua's NS.SkinMediaKey). Default ON (DECISIONS X3), as the template
 -- declares; the v20 step (core/Database.lua) put every stored window on it once (O2). Only the
 -- face, the bar texture and the bar border style follow (X4): no color, size or thickness row is
--- governed. The window's own edge is chrome and has none (FRAME_BORDER_ROWS).
+-- governed. The window's own edge has none (FRAME_BORDER_ROWS): it follows the skin through
+-- `frame.borderColorMode = "skin"` instead, the Shell drawing the skin's whole edge (MM-A1).
 local FROM_SKIN_ROWS = {
     font    = { leaf = "fontFromSkin", label = L["Use the skin's font"],
         tip = L["Draw this text in the skin's font. The font picker is kept but not read while this is on."] },
@@ -904,7 +905,7 @@ local FRAME_BG_ROWS = compose("ColorPair", {
     classColor = { source = "player" },
 })
 dress(FRAME_BG_ROWS, {
-    ["window.frame.backdropColor"] = { desc = L["Color drawn behind the rows."] },
+    ["window.frame.backdropColor"] = { desc = L["Color drawn behind the rows. Not read while the mode beside it is Skin."] },
 })
 withMode(FRAME_BG_ROWS, "window.frame.backdropColor", {
     path = "window.frame.backdropColorMode", type = "string", default = "skin",
@@ -932,13 +933,13 @@ local FRAME_BORDER_ROWS = compose("BorderGroup", {
 dress(FRAME_BORDER_ROWS, {
     ["window.frame.borderStyle"] = {
         values = lsmValues("border"),
-        desc = L["LibSharedMedia border texture drawn around the window."],
+        desc = L["LibSharedMedia border texture drawn around the window. Read only under Class or Custom color."],
     },
     ["window.frame.borderSize"] = {
         min = 0, max = 32, step = 1, fmt = "%d px",
-        desc = L["Border edge size in pixels."],
+        desc = L["Border edge size in pixels. Read only under Class or Custom color."],
     },
-    ["window.frame.borderColor"] = { desc = L["Color of the window border."] },
+    ["window.frame.borderColor"] = { desc = L["Color of the window border. Not read while the mode beside it is Skin."] },
 })
 withMode(FRAME_BORDER_ROWS, "window.frame.borderColor", {
     path = "window.frame.borderColorMode", type = "string", default = "skin",
@@ -968,7 +969,7 @@ dress(HEADER_TEXT_ROWS, {
         desc = L["Font for the window's title and the fight name beside it."],
     },
     ["window.header.size"] = { fmt = "%d px", desc = L["Text size in pixels."] },
-    ["window.header.color"] = { desc = L["Color of the window's title and the fight name beside it."] },
+    ["window.header.color"] = { desc = L["Color of the window's title and the fight name beside it. Not read while the mode beside it is Skin."] },
     ["window.header.outline"] = {
         values = OUTLINE_VALUES, sorting = OUTLINE_SORT,
         desc = L["Outline and monochrome flags applied to the text."],

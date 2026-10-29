@@ -172,12 +172,12 @@ end
 
 --- The header's text color, defaulting to the gold WoW uses for its own headers.
 ---
---- TWO MODES, NOT THREE, AND NO STATISTIC. "Per statistic" could only ever paint
+--- SKIN, CLASS OR CUSTOM, AND NO STATISTIC. "Per statistic" could only ever paint
 --- this the SORT column's color -- a fact already on screen twice, in that
 --- column's own header and in its arrow -- and the title bar is one strip over
 --- the whole window rather than a thing that belongs to a column. That refusal
---- stands and is why the mode list here is the CONTROLS' pair (class/custom)
---- rather than the three every cell surface answers.
+--- stands and is why the mode list here is the window chrome's three (skin /
+--- class / custom, MM-A1) rather than the three every cell surface answers.
 ---
 --- CLASS DID NOT SURVIVE THE SAME ARGUMENT, and the note here used to say it had:
 --- that "class could only be the local player's, which the title bar is not about

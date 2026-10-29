@@ -523,7 +523,7 @@ NS.Schema = {
         default = { r = 0, g = 0, b = 0, a = 0.5 },
         page = "header", group = L["Title bar"], subgroup = L["Background"],
         startsLine = true,
-        label = L["Title bar background"], desc = L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header."],
+        label = L["Title bar background"], desc = L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header. Not read while Use the skin's background is on."],
     },
     -- Its "Use the skin's ..." companion (MM-A1, DECISIONS D3): `title.bg` while on. The swatch is
     -- not disabled by it (options-ui-§17: a color row never is).
@@ -794,7 +794,7 @@ NS.Schema = {
         default = { r = 0.7, g = 0.7, b = 0.72, a = 1 },
         page = "header", group = L["Controls"], subgroup = L["Color"],
         startsLine = true,
-        label = L["Control color"], desc = L["Color the header controls are drawn in."],
+        label = L["Control color"], desc = L["Color the header controls are drawn in. Not read while the mode beside it is Skin."],
         classColorSource = "player",
     },
     {
@@ -811,7 +811,7 @@ NS.Schema = {
         page = "header", group = L["Controls"], subgroup = L["Color"],
         startsLine = true,
         label = L["Control hover color"],
-        desc = L["Color the control under the pointer is drawn in."],
+        desc = L["Color the control under the pointer is drawn in. Not read while the mode beside it is Skin."],
         classColorSource = "player",
     },
     {

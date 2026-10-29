@@ -226,14 +226,18 @@ L["Medium"] = "Medium"
 L["High"] = "High"
 L["Dialog"] = "Dialog"
 L["Background color"] = "Background color"
-L["Color drawn behind the rows."] = "Color drawn behind the rows."
+L["Color drawn behind the rows. Not read while the mode beside it is Skin."] =
+    "Color drawn behind the rows. Not read while the mode beside it is Skin."
 L["Border style"] = "Border style"
-L["LibSharedMedia border texture drawn around the window."] =
-    "LibSharedMedia border texture drawn around the window."
+L["LibSharedMedia border texture drawn around the window. Read only under Class or Custom color."] =
+    "LibSharedMedia border texture drawn around the window. Read only under Class or Custom color."
 L["Border thickness"] = "Border thickness"
 L["Border edge size in pixels."] = "Border edge size in pixels."
+L["Border edge size in pixels. Read only under Class or Custom color."] =
+    "Border edge size in pixels. Read only under Class or Custom color."
 L["Border color"] = "Border color"
-L["Color of the window border."] = "Color of the window border."
+L["Color of the window border. Not read while the mode beside it is Skin."] =
+    "Color of the window border. Not read while the mode beside it is Skin."
 L["Background and border"] = "Background and border"
 L["Padding"] = "Padding"
 L["Gap in pixels between the window edge and the rows inside it."] =
@@ -287,13 +291,14 @@ L["Control color mode"] = "Control color mode"
 L["What colors the header controls at rest. Skin is the skin's icon color."] =
     "What colors the header controls at rest. Skin is the skin's icon color."
 L["Control color"] = "Control color"
-L["Color the header controls are drawn in."] = "Color the header controls are drawn in."
+L["Color the header controls are drawn in. Not read while the mode beside it is Skin."] =
+    "Color the header controls are drawn in. Not read while the mode beside it is Skin."
 L["Control hover color mode"] = "Control hover color mode"
 L["What colors a header control while the pointer is over it. Skin is the skin's hover color."] =
     "What colors a header control while the pointer is over it. Skin is the skin's hover color."
 L["Control hover color"] = "Control hover color"
-L["Color the control under the pointer is drawn in."] =
-    "Color the control under the pointer is drawn in."
+L["Color the control under the pointer is drawn in. Not read while the mode beside it is Skin."] =
+    "Color the control under the pointer is drawn in. Not read while the mode beside it is Skin."
 L["Control opacity"] = "Control opacity"
 L["How faint a control NOT under the pointer is drawn, while Reveal controls on hover is on. With the reveal off there is nothing faded and this is not read."] =
     "How faint a control NOT under the pointer is drawn, while Reveal controls on hover is on. With the reveal off there is nothing faded and this is not read."
@@ -319,8 +324,8 @@ L["Font for the window's title and the fight name beside it."] =
     "Font for the window's title and the fight name beside it."
 L["What colors the window's title and the fight name beside it. Skin is the skin's title color; Class color is your own -- a window-wide strip has no other class it could mean."] =
     "What colors the window's title and the fight name beside it. Skin is the skin's title color; Class color is your own -- a window-wide strip has no other class it could mean."
-L["Color of the window's title and the fight name beside it."] =
-    "Color of the window's title and the fight name beside it."
+L["Color of the window's title and the fight name beside it. Not read while the mode beside it is Skin."] =
+    "Color of the window's title and the fight name beside it. Not read while the mode beside it is Skin."
 L["Controls"] = "Controls"
 L["Shown"] = "Shown"
 L["Size"] = "Size"
@@ -328,8 +333,9 @@ L["Size"] = "Size"
 L["Font color mode"] = "Font color mode"
 L["Background color mode"] = "Background color mode"
 -- The three color modes options-ui-§17 asked this addon to add beside swatches
--- that had none. Two values each, class and custom, because a border and a window
--- backdrop are the surfaces "per statistic" cannot say anything true about.
+-- that had none. No "per statistic", because a border and a window backdrop are the
+-- surfaces it cannot say anything true about; the window's two take Skin, Class color
+-- and Custom color (MM-A1), the bar borders' Class color and Custom color.
 L["Border color mode"] = "Border color mode"
 L["What colors the fill inside the window. Skin is the skin's own window fill; Class color is your own -- a window is not about any one row."] =
     "What colors the fill inside the window. Skin is the skin's own window fill; Class color is your own -- a window is not about any one row."
@@ -388,8 +394,8 @@ L["Color of the hairline under the title bar, used when the mode above is Custom
     "Color of the hairline under the title bar, used when the mode above is Custom color."
 L["How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."] =
     "How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."
-L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header."] =
-    "Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header."
+L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header. Not read while Use the skin's background is on."] =
+    "Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header. Not read while Use the skin's background is on."
 L["Text alignment"] = "Text alignment"
 L["Where the window's title and the fight name beside it sit horizontally."] = "Where the window's title and the fight name beside it sit horizontally."
 
