@@ -129,10 +129,10 @@ NS.WindowFontPath = fontPath
 --- whole shape of this function. `nil` and `""` and LSM's own `"None"` are a
 --- CHOICE — the player asked for no edge — and the answer is nil. A name that is
 --- present but cannot be fetched is a FAILURE, most often a media pack that is no
---- longer installed, and that falls back to the LIBRARY's own edge rather than to
---- a literal: NS.SKIN's edgeFile is the Ka0s window edge (standalone-windows),
---- and restating it here would be the copy that goes stale one hex digit at a
---- time.
+--- longer installed, and that falls back to the SKIN's own edge rather than to
+--- a literal: `fallback` is the edge file the skin's Shell just wrote onto the
+--- backdrop (ApplyBorder), and restating it here would be the copy that goes
+--- stale one hex digit at a time.
 ---
 --- Conflating the two is what handed a player who picked "None" the Ka0s edge
 --- they had just turned off. Same rule, same order, as modules/Tooltip.lua's
@@ -147,11 +147,34 @@ local PlayerClassRGB = NS.PlayerClassRGB or function() return nil end
 -- Defined once, below, beside the other color readers.
 local surfaceColor
 
-local function borderPath(name)
+local function borderPath(name, fallback)
     if type(name) ~= "string" or name == "" or name == "None" then return nil end
     local media = lsm()
     local path = media and media:Fetch("border", name, true)
-    return path or (NS.SKIN and NS.SKIN.edgeFile)
+    return path or fallback
+end
+
+-- THE WINDOW WEARS ITS OWNER'S SKIN (skinning-§1): S.Shell through the facade,
+-- with no top bar (the header strip is the window's own). The EDGE is the skin's
+-- while `frame.borderColorMode` is `skin` (the shipped mode, MM-A1: the Shell
+-- draws `win.border` in `win.borderStyle` / `win.borderSize` with `win.inner`);
+-- under `class` or `custom` the Shell draws none and ApplyBorder draws the
+-- player's. Core's ApplySkin first, owner-less, because it builds the
+-- `innerBorder` child ApplyBorder shows with the player's edge. Shell records the
+-- LAST options it was handed, so a skin switch replays the current mode and then
+-- fires OnLooksChanged, whose listener (modules/WindowManager.lua) re-runs
+-- ApplyConfig, and with it ApplyBorder, over the new skin.
+-- Without the library (NS.SKIN_LIVE false) there is no Shell to draw an edge,
+-- so `skin` falls back to the player's, the pre-skin look (DEGRADED-11).
+local SHELL_SKIN_EDGE = { noTopBar = true }
+local SHELL_OWN_EDGE  = { noTopBar = true, noBorder = true }
+local function skinEdge(frameCfg)
+    return (frameCfg or {}).borderColorMode == "skin" and NS.SKIN_LIVE == true
+end
+local function paintShell(frame, frameCfg)
+    if NS.ApplySkin then NS.ApplySkin(frame) end
+    local opts = skinEdge(frameCfg) and SHELL_SKIN_EDGE or SHELL_OWN_EDGE
+    if NS.Skin and NS.Skin.Shell then NS.Skin.Shell(frame, opts) end
 end
 
 -- Taken from the CORE SEAM (core/CoreSetup.lua publishes NS.RGBA), not from a
@@ -456,6 +479,8 @@ function WindowProto:RefreshUpvalues()
     self.layout      = self:BuildLayout()
     -- A new layout may move a row, so every bound row re-anchors on its next draw.
     self.layoutVersion = (self.layoutVersion or 0) + 1
+    -- The row and session-line colors, from the skin once here, never per row (core/SkinSetup.lua).
+    if NS.SkinWindowLooks then self.skinLooks = NS.SkinWindowLooks(self.skinLooks) end
 end
 
 -- ---------------------------------------------------------------------------
@@ -546,6 +571,9 @@ function WindowProto:BuildStrips(frame)
     self.testStrip = W and W.TestStrip and W.TestStrip(frame, {
         text = L["TEST MODE: placeholder numbers, not your fight. Combat ends it."],
         icon = NS.Icon and NS.Icon("info"),
+        -- The skin owner (LibKa0s-Widgets-1.0 16, skinning-§1): the strip's legibility follows
+        -- this addon's skin through its strip.* tokens; amber stays the meaning color.
+        owner = NS.name,
     }) or nil
 end
 
@@ -608,9 +636,9 @@ function WindowProto:BuildFrame()
     -- Closing is therefore an explicit act: the X in the header, or `/mm toggle`.
     -- The frames are still NAMED, because a name is what `/framestack` and any
     -- other addon needs to talk about them.
-    -- The title and divider members are assigned BEFORE ApplySkin so the library
-    -- can tint them. Their colors are deliberately never set here: Core.SKIN's
-    -- values are the contract, and a matching literal in this file is the copy
+    -- The title and divider members are assigned BEFORE the skin so the Shell
+    -- can tint them. Their colors are deliberately never set here: the skin's
+    -- tokens are the contract, and a matching literal in this file is the copy
     -- that goes stale one hex digit at a time (standalone-windows).
     frame.title = frame:CreateFontString(nil, "OVERLAY")
     frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -5)
@@ -624,11 +652,11 @@ function WindowProto:BuildFrame()
     -- it. Built here rather than on first use so moving the setting re-colors a
     -- texture that already exists instead of creating one mid-frame.
     --
-    -- Not a member of `frame`: NS.ApplySkin walks a fixed set of frame keys and
-    -- an extra one is a key it has never heard of.
+    -- Not a member of `frame`: the skin walks a fixed set of frame keys and an
+    -- extra one is a key it has never heard of.
     self.headerBG = frame:CreateTexture(nil, "BORDER")
 
-    if NS.ApplySkin then NS.ApplySkin(frame) end
+    paintShell(frame, self.config.frame)
 
     -- ── The header's controls ──
     --
@@ -697,6 +725,7 @@ function WindowProto:BuildFrame()
         kind = "sim",
         text = L["SIMULATION: a scripted fight, not your data. /mm sim stop ends it."],
         icon = NS.Icon and NS.Icon("info"),
+        owner = NS.name,
     }) or nil
 
     -- ALWAYS BUILT, never gated on a setting. There used to be a `resizeGrip`
@@ -782,12 +811,12 @@ function WindowProto:ApplyConfig()
     frame:SetAlpha((frameCfg.alpha or 1.0) * masterSetting("alpha"))
     frame:SetFrameStrata(frameCfg.strata or Const.LAYERS.STRATA.HUD)
 
-    -- The skin is re-applied rather than patched: ApplySkin owns the backdrop,
+    -- The skin is re-applied rather than patched: the Shell owns the backdrop,
     -- the inner border and the two accent tints, and re-running it is how a
     -- re-skinned library lands here without this file knowing what changed.
     -- ApplyBorder then layers the player's edge over the result — in that order,
     -- because the skin is the base look and the setting is the override.
-    if NS.ApplySkin then NS.ApplySkin(frame) end
+    paintShell(frame, frameCfg)
     self:ApplyBorder(frameCfg)
 
     self:ApplyHeader()
@@ -803,7 +832,11 @@ function WindowProto:ApplyConfig()
     self.notice:ClearAllPoints()
     self.notice:SetPoint("TOPLEFT", self.body, "TOPLEFT", 4, -8)
     self.notice:SetPoint("TOPRIGHT", self.body, "TOPRIGHT", -4, -8)
-    self.notice:SetFont(fontPath((cfg.header or {}).font), (cfg.text or {}).size or 11, "")
+    self.notice:SetFont(fontPath(NS.SkinMediaKey(cfg.header or {}, "font", "hud.font")),
+        (cfg.text or {}).size or 11, "")
+    -- The notice's text in the skin's highlight (white under Ka0s Default, the
+    -- stock FontString color it always drew); re-run on every skin switch.
+    if NS.SkinColor then self.notice:SetTextColor(NS.SkinColor("text.highlight")) end
 
     self:PlaceTestStrip()
 
@@ -815,76 +848,85 @@ function WindowProto:ApplyConfig()
     self:ApplyMinimized()
 end
 
---- The window edge: `frame.borderStyle`, `borderSize` and `borderColor`.
+--- The window edge and fill: `frame.borderStyle`, `borderSize`, `borderColor`
+--- and `backdropColor`, each under its mode (`skin` | `class` | `custom`).
 ---
---- LAYERED OVER NS.ApplySkin, never instead of it. The library has just written
---- its own backdrop onto the frame — bgFile, edgeFile, edgeSize, insets — and
---- this rewrites ONE part of that table: the edge. The base fields are read back
---- off NS.SKIN rather than restated as literals here, which is the whole reason
---- the seam exports SKIN alongside ApplySkin (core/CoreSetup.lua). A re-skinned
---- library therefore still lands on this window, and the only thing this file
---- claims to know is what the PLAYER chose.
+--- UNDER `skin` THE EDGE IS THE SHELL'S, and this writes no backdrop at all: the
+--- Shell has drawn the skin's edge ring and inner rule on its edge holder and
+--- left the backdrop's own edge clear, so the only thing left to set is the fill.
+---
+--- UNDER `class` / `custom` IT IS LAYERED OVER THE SKIN. The Shell, told to draw
+--- no edge, has written its own backdrop -- bgFile, insets -- and this rewrites
+--- ONE part of that table: the edge. The fill texture and the fallback edge are
+--- read back off that backdrop rather than restated as literals here (no window
+--- here holds a meter value, so the read is not R3's).
 ---
 --- `borderSize == 0` means "no edge", and it drops edgeFile with it: a zero
 --- edgeSize with a texture still present is the combination WoW draws as a hard
---- 1px line, which is the setting doing the opposite of what it says. A
---- borderStyle of "None" means the same thing and is `borderPath`'s answer, not
---- this function's -- the rule belongs with the resolver, so a second caller
---- inherits it instead of restating it.
+--- 1px line. A borderStyle of "None" means the same thing and is `borderPath`'s
+--- answer, not this function's.
 ---
---- THE SKIN'S INNER HIGHLIGHT GOES WITH THE EDGE. LibKa0s's ApplySkin builds a
---- 1px `frame.innerBorder` child inset inside the black edge, and it is a child
---- frame rather than part of the backdrop this function rewrites -- so with the
---- style set to None and the thickness at 0 it was the whole visible border,
---- outliving both controls that claim to govern one. It is shown exactly when
---- there is an edge for it to sit inside.
+--- THE SKIN'S INNER HIGHLIGHT GOES WITH THE PLAYER'S EDGE. LibKa0s's ApplySkin
+--- builds a 1px `frame.innerBorder` child inset inside the edge, a child frame
+--- rather than part of the backdrop, so with the style set to None and the
+--- thickness at 0 it was the whole visible border. It is shown exactly when there
+--- is an edge for it to sit inside, in the skin's `win.inner`.
 ---
---- @param frameCfg table  the window's `frame` config group
-function WindowProto:ApplyBorder(frameCfg)
-    local frame = self.frame
-    if not frame.SetBackdrop then return end
-
-    local skin = NS.SKIN or {}
-    local size = clamp(frameCfg.borderSize or 2, 0, 32)
-    local edge = (size > 0) and borderPath(frameCfg.borderStyle) or nil
-    local inset = edge and size or 0
-
-    -- Type-tested, not truth-tested: `innerBorder` is a key LibKa0s writes onto a
-    -- frame this file does not own, and a mock that answers every key with a
-    -- function would otherwise be indexed as a frame -- the library's own header
-    -- records that exact breakage.
-    if type(frame.innerBorder) == "table" and frame.innerBorder.SetShown then
-        frame.innerBorder:SetShown(edge ~= nil)
+--- Core's inner rule, shown exactly when the player's edge is drawn, in `win.inner`.
+--- Type-tested, not truth-tested: `innerBorder` is a key LibKa0s writes onto a frame
+--- this file does not own, and a mock that answers every key with a function would
+--- otherwise be indexed as a frame.
+local function showInnerRule(frame, edge)
+    local inner = frame.innerBorder
+    if not (type(inner) == "table" and inner.SetShown) then return end
+    inner:SetShown(edge ~= nil)
+    if edge and inner.SetBackdropBorderColor and NS.Skin then
+        local r, g, b, a = NS.Skin.Color("win.inner")
+        if r then inner:SetBackdropBorderColor(r, g, b, a) end
     end
+end
+
+--- The player's edge (`class` / `custom`), over the backdrop the Shell just wrote. Split out of
+--- ApplyBorder for the CCN gate.
+local function applyOwnEdge(frame, frameCfg)
+    local base = frame.GetBackdrop and frame:GetBackdrop() or nil
+    base = type(base) == "table" and base or {}
+    local size = clamp(frameCfg.borderSize or 2, 0, 32)
+    local edge = (size > 0) and borderPath(frameCfg.borderStyle, base.edgeFile) or nil
+    local inset = edge and size or 0
+    showInnerRule(frame, edge)
 
     frame:SetBackdrop({
-        bgFile   = skin.bgFile,
+        bgFile   = base.bgFile,
         edgeFile = edge,
         edgeSize = edge and size or nil,
         insets   = { left = inset, right = inset, top = inset, bottom = inset },
     })
-
-    -- BOTH SWATCHES ANSWER A MODE NOW (options-ui-§17). Two values each, class and
-    -- custom: a window's fill and its edge belong to the WINDOW rather than to any
-    -- row in it, so `class` is the LOCAL player's -- the same call headerColor
-    -- makes for the strip along the top. "Per statistic" is deliberately absent for
-    -- the reason it is absent from the title bar: over one surface spanning the
-    -- whole window it could only ever mean the sort column's color, which is
-    -- already on screen twice.
-    --
-    -- THE CONFIGURED ALPHA SURVIVES THE MODE, which is what makes the backdrop's
-    -- 0.75 a tint under `class` rather than a slab: RAID_CLASS_COLORS carries no
-    -- alpha, and a mode that reset transparency would be one setting canceling
-    -- another. It is also why neither swatch is ever disabled.
-    local br, bg, bb, ba = surfaceColor(frameCfg.backdropColorMode, frameCfg.backdropColor,
-        nil, 0, 0, 0, 0.75)
-    if frame.SetBackdropColor then frame:SetBackdropColor(br, bg, bb, ba) end
-
     if edge and frame.SetBackdropBorderColor then
         local er, eg, eb, ea = surfaceColor(frameCfg.borderColorMode, frameCfg.borderColor,
             nil, 0, 0, 0, 1)
         frame:SetBackdropBorderColor(er, eg, eb, ea)
     end
+end
+
+--- @param frameCfg table  the window's `frame` config group
+function WindowProto:ApplyBorder(frameCfg)
+    local frame = self.frame
+    if not frame.SetBackdrop then return end
+    local looks = self.skinLooks or {}
+
+    -- BOTH SWATCHES ANSWER A MODE (options-ui-§17). `skin` is the skin's own
+    -- (`win.bg`, cached in skinLooks; the edge is the Shell's), `class` the LOCAL
+    -- player's -- a window's fill and its edge belong to the WINDOW rather than to
+    -- any row in it -- and `custom` the swatch. No "per statistic": over one
+    -- surface spanning the whole window it could only mean the sort column's
+    -- color, already on screen twice. The configured alpha survives `class`,
+    -- which is what makes the shipped 0.75 a tint rather than a slab.
+    local br, bg, bb, ba = surfaceColor(frameCfg.backdropColorMode, frameCfg.backdropColor,
+        nil, 0, 0, 0, 0.75, looks.winBg)
+
+    if not skinEdge(frameCfg) then applyOwnEdge(frame, frameCfg) end
+    if frame.SetBackdropColor then frame:SetBackdropColor(br, bg, bb, ba) end
 end
 
 --- Resolve one of the header surfaces' three color modes.
@@ -903,7 +945,12 @@ end
 --- passes its own column's key instead, and is the one surface where "per
 --- statistic" is literally per column.
 ---
---- THE CONFIGURED ALPHA SURVIVES EVERY MODE. Neither RAID_CLASS_COLORS nor the
+--- `skin` IS THE SKIN'S TOKEN, alpha included, handed in already resolved
+--- (`skin`, one of the window's cached skinLooks colors), so no caller reads a
+--- token here. A caller with no token for the surface passes nil and `skin`
+--- falls back to the configured color.
+---
+--- THE CONFIGURED ALPHA SURVIVES EVERY OTHER MODE. Neither RAID_CLASS_COLORS nor the
 --- stat palette carries one, and a mode that silently reset transparency would be
 --- one setting canceling another — which matters most for the two BACKGROUNDS,
 --- where the alpha is what makes a color a tint rather than a slab.
@@ -912,15 +959,18 @@ end
 --- entry — falls back to the CONFIGURED one, which is the honest answer rather
 --- than an invented hue.
 ---
---- @param mode string|nil    "class" | "stat" | "custom"
+--- @param mode string|nil    "skin" | "class" | "stat" | "custom"
 --- @param stored table|nil   the configured color
 --- @param statKey string|nil which statistic `stat` means here
 --- @param dr number @param dg number @param db number @param da number
+--- @param skin table|nil     { r, g, b, a }, the skin's color for `skin`
 --- @return number r, number g, number b, number a
-function surfaceColor(mode, stored, statKey, dr, dg, db, da)
+function surfaceColor(mode, stored, statKey, dr, dg, db, da, skin)
     local r, g, b, a = RGBA(stored, dr, dg, db, da)
 
-    if mode == "class" then
+    if mode == "skin" and type(skin) == "table" then
+        r, g, b, a = skin[1], skin[2], skin[3], skin[4] or 1
+    elseif mode == "class" then
         local cr, cg, cb = PlayerClassRGB()
         if cr then r, g, b = cr, cg, cb end
     elseif mode == "stat" then
@@ -1344,9 +1394,11 @@ end
 --- session yet — which is the normal state between pulls. A preview and a
 --- breakdown say nothing. Built on first use, inside the body (so a collapsed
 --- window hides it with the body), and kept apart from `notice`, which still
---- says why the meter is unavailable. Its two lines take the game's own
---- GameFontNormalLarge and GameFontHighlightSmall, Drop Watcher's empty-state
---- sizes, not the window's font.
+--- says why the meter is unavailable. Its two lines keep the game's
+--- GameFontNormalLarge and GameFontHighlightSmall sizes, Drop Watcher's
+--- empty-state sizes, not the window's font, and take the skin's faces and
+--- colors through the facade (the heading, then `text.highlight`), recorded so a
+--- skin switch repaints them.
 local function showWaiting(win, preview, isDrill)
     if preview or isDrill then return end
     local e = win.empty
@@ -1356,12 +1408,14 @@ local function showWaiting(win, preview, isDrill)
         e:SetPoint("CENTER", win.body, "CENTER", 0, 0)
         e.title = e:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         e.title:SetPoint("BOTTOM", e, "CENTER", 0, 2)
-        e.title:SetTextColor(1, 0.82, 0)
         e.text = e:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         e.text:SetPoint("TOPLEFT", win.body, "LEFT", 4, -4)
         e.text:SetPoint("TOPRIGHT", win.body, "RIGHT", -4, -4)
         e.text:SetJustifyH("CENTER")
-        e.text:SetTextColor(1, 1, 1)
+        if NS.Skin then
+            NS.Skin.Text(e.title, "heading")
+            NS.Skin.Text(e.text, "text.highlight")
+        end
         win.empty = e
     end
     e.title:SetText(L["No combat data yet"])

@@ -89,8 +89,8 @@ local CHANNEL_SORT         = SC.CHANNEL_SORT
 local CHANNEL_VALUES       = SC.CHANNEL_VALUES
 local COLHEAD_BG_ROWS      = SC.COLHEAD_BG_ROWS
 local COLHEAD_TEXT_ROWS    = SC.COLHEAD_TEXT_ROWS
-local CONTROLCOLOR_SORT    = SC.CONTROLCOLOR_SORT
-local CONTROLCOLOR_VALUES  = SC.CONTROLCOLOR_VALUES
+local CHROMECOLOR_SORT     = SC.CHROMECOLOR_SORT
+local CHROMECOLOR_VALUES   = SC.CHROMECOLOR_VALUES
 local DEATHTIME_SORT       = SC.DEATHTIME_SORT
 local DEATHTIME_VALUES     = SC.DEATHTIME_VALUES
 local DIVIDERCOLOR_SORT    = SC.DIVIDERCOLOR_SORT
@@ -122,6 +122,8 @@ local block                = SC.block
 local broadcastBarTexture  = SC.broadcastBarTexture
 local broadcastColorMode   = SC.broadcastColorMode
 local broadcastFont        = SC.broadcastFont
+local broadcastFontFromSkin    = SC.broadcastFontFromSkin
+local broadcastTextureFromSkin = SC.broadcastTextureFromSkin
 local broadcastOutline     = SC.broadcastOutline
 local controlLabel         = SC.controlLabel
 local expandBlocks         = SC.expandBlocks
@@ -355,6 +357,22 @@ NS.Schema = {
         desc = L["Set the font outline for the cell text, both header strips and the tooltip at once. Each of them is still its own setting."],
         onChange = broadcastOutline,
     },
+    -- The meta pair over the "Use the skin's ..." companions (DECISIONS D11), same bargain as the
+    -- four above: each sets every surface's own companion and is read by nothing.
+    {
+        path = "window.barTextureFromSkin", type = "bool", default = true,
+        page = "frame", group = L["Quick style"], subgroup = L["All surfaces"],
+        label = L["Use the skin's texture (all surfaces)"],
+        desc = L["Turn Use the skin's texture on or off for the grid and the tooltip at once. Each of them is still its own setting."],
+        onChange = broadcastTextureFromSkin,
+    },
+    {
+        path = "window.fontFromSkin", type = "bool", default = true,
+        page = "frame", group = L["Quick style"], subgroup = L["All surfaces"],
+        label = L["Use the skin's font (all surfaces)"],
+        desc = L["Turn Use the skin's font on or off for the cell text, both header strips and the tooltip at once. Each of them is still its own setting."],
+        onChange = broadcastFontFromSkin,
+    },
     -- ── Background and border ────────────────────────────────────────
     -- Both the fill inside the window and the edge around it, together: they used
     -- to be split across "Size and position" and "Border style" for no reason
@@ -505,7 +523,14 @@ NS.Schema = {
         default = { r = 0, g = 0, b = 0, a = 0.5 },
         page = "header", group = L["Title bar"], subgroup = L["Background"],
         startsLine = true,
-        label = L["Title bar background"], desc = L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header."],
+        label = L["Title bar background"], desc = L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header. Not read while Use the skin's background is on."],
+    },
+    -- Its "Use the skin's ..." companion (MM-A1, DECISIONS D3): `title.bg` while on. The swatch is
+    -- not disabled by it (options-ui-§17: a color row never is).
+    {
+        path = "window.header.bgColorFromSkin", type = "bool", default = true,
+        page = "header", group = L["Title bar"], subgroup = L["Background"],
+        label = L["Use the skin's background"], desc = L["Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."],
     },
     -- THE HAIRLINE BETWEEN THE TITLE BAR AND THE COLUMN LABELS, and the one piece
     -- of the window's chrome that is a setting. It earns its keep when both
@@ -769,16 +794,16 @@ NS.Schema = {
         default = { r = 0.7, g = 0.7, b = 0.72, a = 1 },
         page = "header", group = L["Controls"], subgroup = L["Color"],
         startsLine = true,
-        label = L["Control color"], desc = L["Color the header controls are drawn in."],
+        label = L["Control color"], desc = L["Color the header controls are drawn in. Not read while the mode beside it is Skin."],
         classColorSource = "player",
     },
     {
-        path = "window.frame.controlColorMode", type = "string", default = "custom",
-        values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
+        path = "window.frame.controlColorMode", type = "string", default = "skin",
+        values = CHROMECOLOR_VALUES, sorting = CHROMECOLOR_SORT,
         page = "header", group = L["Controls"], subgroup = L["Color"],
         label = L["Control color mode"],
         classColorSource = "player",
-        desc = L["What colors the header controls at rest."],
+        desc = L["What colors the header controls at rest. Skin is the skin's icon color."],
     },
     {
         path = "window.frame.controlHoverColor", type = "color",
@@ -786,16 +811,16 @@ NS.Schema = {
         page = "header", group = L["Controls"], subgroup = L["Color"],
         startsLine = true,
         label = L["Control hover color"],
-        desc = L["Color the control under the pointer is drawn in."],
+        desc = L["Color the control under the pointer is drawn in. Not read while the mode beside it is Skin."],
         classColorSource = "player",
     },
     {
-        path = "window.frame.controlHoverColorMode", type = "string", default = "custom",
-        values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
+        path = "window.frame.controlHoverColorMode", type = "string", default = "skin",
+        values = CHROMECOLOR_VALUES, sorting = CHROMECOLOR_SORT,
         page = "header", group = L["Controls"], subgroup = L["Color"],
         label = L["Control hover color mode"],
         classColorSource = "player",
-        desc = L["What colors a header control while the pointer is over it."],
+        desc = L["What colors a header control while the pointer is over it. Skin is the skin's hover color."],
     },
     -- THE TWO ENDS OF THE REVEAL, and they were a hardcoded 0.25 and 1 until now.
     -- Both defaults are those two numbers, so a window that never touches either

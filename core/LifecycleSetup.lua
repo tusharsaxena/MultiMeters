@@ -136,6 +136,10 @@ local function standDown()
     -- 0. A running simulation stops first (MultiMeters#60, H6), while every
     -- module it resyncs is still up.
     if NS.Sim then NS.Sim:Stop("standDown") end
+    -- The first-run skin picker is a frame this addon shows; it goes down unmarked, so it comes
+    -- back on the next login the addon stands up for (core/SkinSetup.lua), and a held combat start
+    -- is dropped with it.
+    if NS.HideSkinPicker then NS.HideSkinPicker() end
     standDownEvents()
     standDownModules()
 

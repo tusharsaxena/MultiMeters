@@ -75,6 +75,25 @@ local WINDOW_TEMPLATE = {
     -- bright bar, not a default look, and broadcasting one to every surface at
     -- once was the meta row's most visible effect on a fresh profile.
     fontOutline = "NONE",
+    -- The meta pair over the "Use the skin's ..." companions below, same bargain: each sets the
+    -- companion of every surface that has one, stores what it last broadcast, and is read by
+    -- nothing (settings/Schema_Compose.lua's broadcastFromSkin, DECISIONS D11).
+    barTextureFromSkin = true,
+    fontFromSkin       = true,
+
+    -- FOLLOWING THE SKIN (skinning-§6). Every HUD media pick below has a "Use the skin's ..."
+    -- companion beside it, `<key>FromSkin` (LibKa0s OptionsCompose's `fromSkin`): the four faces
+    -- (`header`, `columnHeader`, `text`, `tooltip`) follow `hud.font`, the two bar textures
+    -- `bar.texture`, and the two bar border styles `bar.borderStyle`. ON for every new window and
+    -- every reset (DECISIONS X3), so a new window follows the skin the way an adopted one does
+    -- after the v20 reset (core/Database.lua). While a companion is on the pick beside it is kept
+    -- but not read (core/SkinSetup.lua's NS.SkinMediaKey). Sizes, outlines, shadows, thicknesses
+    -- and every HUD color stay the player's (X4, D12).
+    --
+    -- THE WINDOW'S CHROME FOLLOWS THE SKIN TOO (MM-A1, the owner's ruling R-3 over X4 for this
+    -- window): the fill, the edge, the title, the two control colors each ship the `skin` color
+    -- mode, and the title bar background the `header.bgColorFromSkin` companion. The v21 step put
+    -- every stored window on them once.
 
     -- -----------------------------------------------------------------------
     -- frame — the standalone window itself
@@ -103,16 +122,18 @@ local WINDOW_TEMPLATE = {
         alpha          = 1.0,
         strata         = "MEDIUM",     -- LOW | MEDIUM | HIGH | DIALOG
         backdropColor  = { r = 0, g = 0, b = 0, a = 0.75 },
-        -- The two color MODES beside the two swatches (options-ui-§17). Two
-        -- values each, `class` and `custom`: a window's fill and its edge belong
-        -- to the WINDOW, so "per statistic" could only ever mean the sort
-        -- column's color -- the same argument that keeps the mode off the title
-        -- bar. `class` is the local player's, for the same reason.
-        backdropColorMode = "custom",  -- class | custom
+        -- The two color MODES beside the two swatches (options-ui-§17). `skin`
+        -- (shipped, MM-A1) is the skin's own fill, `win.bg`, and for the edge the
+        -- skin's whole edge (style, thickness, color and inner rule, drawn by the
+        -- Shell), so `borderStyle` / `borderSize` are read only under the other
+        -- two. No "per statistic": a window's fill and its edge belong to the
+        -- WINDOW, so it could only mean the sort column's color. `class` is the
+        -- local player's, for the same reason.
+        backdropColorMode = "skin",    -- skin | class | custom
         borderStyle    = "Blizzard Tooltip",  -- LSM "border" key
         borderSize     = 2,
         borderColor    = { r = 0, g = 0, b = 0, a = 1 },
-        borderColorMode = "custom",    -- class | custom
+        borderColorMode = "skin",      -- skin | class | custom
         padding        = 6,            -- inset from the frame edge to the rows
         -- Locked hides the drag handle and lets the mouse through to the rows
         -- for tooltips. Unlocking implies preview mode (core/State.lua), so a
@@ -161,15 +182,16 @@ local WINDOW_TEMPLATE = {
         -- LibKa0s-Core-1.0's close control at rest and Ka0s DPS Race's
         -- `Style.REST` -- rather than the white it shipped as until 2026-10-24,
         -- so this strip and DPS Race's title bar draw their controls alike.
-        -- One color MODE each, and both ship "custom". Two rather than one
+        -- One color MODE each, and both ship "skin" (MM-A1: `icon.tint` at rest,
+        -- `btn.hover` under the pointer, the swatches read under `custom`). Two rather than one
         -- because hover and rest are two independent answers: sharing a mode would make the pointer's color
         -- identical to the resting one for anybody who chose class, which is the
         -- one thing a hover color must never be. The LOCAL player's class, like
         -- every other header surface — the strip is about the window, not about
         -- any row in it.
-        controlColorMode       = "custom",
+        controlColorMode       = "skin",
         controlColor           = { r = 0.7, g = 0.7, b = 0.72, a = 1 },
-        controlHoverColorMode  = "custom",
+        controlHoverColorMode  = "skin",
         controlHoverColor      = { r = 1, g = 0.82, b = 0, a = 1 },
         -- THE TWO ENDS OF THE REVEAL, which were a hardcoded 0.25 and 1 before
         -- they were settings -- so these two numbers are why a window that never
@@ -210,6 +232,7 @@ local WINDOW_TEMPLATE = {
     header = {
         show            = true,
         font            = "Friz Quadrata TT",
+        fontFromSkin    = true,   -- the skin's `hud.font` (FOLLOWING THE SKIN, above)
         -- GameFontNormal, SPELLED OUT: Friz Quadrata at 12px, no outline, a 1/-1
         -- drop shadow. That is what Ka0s DPS Race's title bar draws in
         -- (`Style.FONT.TITLE`), and the two headers sit side by side. The size
@@ -220,11 +243,11 @@ local WINDOW_TEMPLATE = {
         size            = 12,
         outline         = "NONE",      -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         shadow          = true,
-        -- CUSTOM, so a window that never opens the dropdown is drawn from the
-        -- picker below exactly as it was before there was a dropdown. `class` is
-        -- the only other answer: see the note in settings/Schema.lua for why
-        -- there is no `stat` here and why `class` arrived late.
-        colorMode       = "custom",    -- class | custom
+        -- SKIN since MM-A1 (it shipped CUSTOM): the skin's title color, gold under
+        -- Ka0s Default, the swatch below read under `custom`. See the note in
+        -- settings/Schema.lua for why there is no `stat` here and why `class`
+        -- arrived late.
+        colorMode       = "skin",      -- skin | class | custom (skin: `title.text`, MM-A1)
         color           = { r = 1, g = 0.82, b = 0, a = 1 },  -- Blizzard gold
         align           = "LEFT",      -- LEFT | CENTER | RIGHT
         -- 26, so the bar a player sees -- frame top to divider, 6 padding + 26
@@ -232,6 +255,9 @@ local WINDOW_TEMPLATE = {
         -- shipped 18 (a 22px bar) until 2026-10-24.
         height          = 26,
         bgColor         = { r = 0, g = 0, b = 0, a = 0.5 },
+        -- "Use the skin's background" (MM-A1, DECISIONS D3): `title.bg` while on,
+        -- the swatch above kept but not read.
+        bgColorFromSkin = true,
         -- The hairline between the title bar and the column labels. ON, because
         -- it is what the window has always drawn and a chrome element that
         -- vanishes on upgrade is a bug report.
@@ -267,6 +293,7 @@ local WINDOW_TEMPLATE = {
     -- the settings are now reachable and independent.
     columnHeader = {
         font     = "Friz Quadrata TT",
+        fontFromSkin = true,   -- the skin's `hud.font`
         size     = 11,
         outline  = "OUTLINE",   -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         -- Both off for the reason the header's are: a new setting must not
@@ -323,6 +350,7 @@ local WINDOW_TEMPLATE = {
     -- -----------------------------------------------------------------------
     bars = {
         texture       = "Blizzard Raid Bar",   -- LSM "statusbar" key
+        textureFromSkin = true,                -- the skin's `bar.texture`
         -- class  — the source's classFilename color (NeverSecret, so always
         --          available, even mid-pull)
         -- stat   — one color per column, so a glance tells you which stat
@@ -348,6 +376,7 @@ local WINDOW_TEMPLATE = {
         -- library skin's edge color, which no setting could reach -- so "Bar
         -- border" was a switch with no dial and no swatch beside it.
         borderStyle     = "None",              -- LSM "border" key; None = flat
+        borderStyleFromSkin = true,            -- the skin's `bar.borderStyle`
         borderThickness = 1,
         borderColor     = { r = 0, g = 0, b = 0, a = 1 },
         -- The mode beside that swatch (options-ui-§17). `class` is the class of
@@ -414,6 +443,7 @@ local WINDOW_TEMPLATE = {
         -- abbreviating: "1.41M" is four glyphs whatever the value, where
         -- "1410000" was seven and "53571.392857143" was fifteen.
         font         = "Friz Quadrata TT",
+        fontFromSkin = true,   -- the skin's `hud.font`
         size         = 11,
         outline      = "NONE",
         shadow       = true,
@@ -483,6 +513,7 @@ local WINDOW_TEMPLATE = {
         -- tooltip is a different surface at a different size, and a texture that
         -- reads well across a 90px cell often does not across a 14px line.
         barTexture         = "Blizzard Raid Bar",  -- LSM "statusbar" key
+        barTextureFromSkin = true,                 -- the skin's `bar.texture`
         barSpacing         = 1,                    -- px between tooltip lines
         -- The fill and the backdrop each carry a color, a MODE and an opacity.
         -- The fill was the hovered player's class with no setting reaching it; the
@@ -496,6 +527,7 @@ local WINDOW_TEMPLATE = {
         barBgColorMode     = "custom",
         barBgAlpha         = 0.1,
         barBorderStyle     = "None",               -- LSM "border" key
+        barBorderStyleFromSkin = true,             -- the skin's `bar.borderStyle`
         barBorderSize      = 1,
         barBorderColor     = { r = 0, g = 0, b = 0, a = 1 },
         -- The mode beside that swatch (options-ui-§17). `class` is the HOVERED
@@ -506,6 +538,7 @@ local WINDOW_TEMPLATE = {
         -- FontStrings, which are SHARED with every other addon — so every line
         -- touched is restored when the tooltip hides. See modules/Tooltip.lua.
         font               = "Friz Quadrata TT",
+        fontFromSkin       = true,                 -- the skin's `hud.font`
         fontSize           = 12,
         fontOutline        = "NONE",   -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         -- Off, so the tooltip keeps the face it has always had.
@@ -836,6 +869,25 @@ NS.defaults = {
             channel   = "SELF",        -- a Constants.EXPORT_CHANNELS key
             whisperTo = "",            -- meaningful only while channel is WHISPER
             lines     = 5,             -- ranked lines per chat export, 1..MAX_ROWS
+        },
+
+        -- THE SKIN THIS ADDON WEARS (skinning-§2: per addon, per profile), applied through
+        -- core/SkinSetup.lua and written only through NS.SetByPath. `source` is where the look comes
+        -- from ("ka0s", the Ka0s skins, or "eui", EllesmereUI's) and `skin` which Ka0s skin;
+        -- "ka0s"/"ka0s" is Ka0s Default. The Scope's two exceptions: leave the settings panel the
+        -- client's (on for a new profile, the owner's 2026-10-27 call LootHistory set), leave every
+        -- font the client's. The two overrides: an LSM key each, "" for the skin's own. `pickerSeen`:
+        -- the first-run skin picker was closed on this profile, false on every profile old and new
+        -- (owner ruling O3). New keys with defaults, so AceDB merges them into every stored profile
+        -- and no migration is owed for them.
+        skin         = {
+            source      = "ka0s",
+            skin        = "ka0s",
+            ignorePanel = true,
+            ignoreFonts = false,
+            font        = "",
+            texture     = "",
+            pickerSeen  = false,
         },
     },
     global = {

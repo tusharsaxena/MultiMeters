@@ -157,7 +157,7 @@ end
 --- @return string path, number size, string|nil flags
 local function headerFont(header)
     local flags = (header.outline ~= "NONE") and header.outline or nil
-    return fontPath(header.font), header.size or 12, flags
+    return fontPath(NS.SkinMediaKey(header, "font", "hud.font")), header.size or 12, flags
 end
 
 --- Which statistic the WINDOW is about, for the two header surfaces that answer
@@ -172,12 +172,12 @@ end
 
 --- The header's text color, defaulting to the gold WoW uses for its own headers.
 ---
---- TWO MODES, NOT THREE, AND NO STATISTIC. "Per statistic" could only ever paint
+--- SKIN, CLASS OR CUSTOM, AND NO STATISTIC. "Per statistic" could only ever paint
 --- this the SORT column's color -- a fact already on screen twice, in that
 --- column's own header and in its arrow -- and the title bar is one strip over
 --- the whole window rather than a thing that belongs to a column. That refusal
---- stands and is why the mode list here is the CONTROLS' pair (class/custom)
---- rather than the three every cell surface answers.
+--- stands and is why the mode list here is the window chrome's three (skin /
+--- class / custom, MM-A1) rather than the three every cell surface answers.
 ---
 --- CLASS DID NOT SURVIVE THE SAME ARGUMENT, and the note here used to say it had:
 --- that "class could only be the local player's, which the title bar is not about
@@ -192,9 +192,14 @@ end
 --- this addon keeps: a class color carries none of its own, so taking the
 --- swatch's is what stops a mode change from silently altering the opacity.
 ---
+--- `skin`, THE SHIPPED MODE (MM-A1), is the skin's `title.text`, whole, out of
+--- the window's cached skinLooks (`looks`): no token is read on a title pass.
+---
 --- @return number r, number g, number b, number a
-local function headerColor(header)
+local function headerColor(header, looks)
     local r, g, b, a = RGBA(header.color, 1, 0.82, 0, 1)
+    local skin = header.colorMode == "skin" and looks and looks.titleText
+    if skin then return skin[1], skin[2], skin[3], skin[4] or 1 end
     if header.colorMode == "class" then
         local cr, cg, cb = PlayerClassRGB()
         -- An unknown class keeps the configured color rather than falling back
@@ -203,6 +208,14 @@ local function headerColor(header)
         if cr then return cr, cg, cb, a end
     end
     return r, g, b, a
+end
+
+--- The title bar's background: the skin's `title.bg` while `header.bgColorFromSkin`
+--- is on (MM-A1, out of the window's cached skinLooks), else the swatch.
+local function titleBarColor(header, looks)
+    local skin = header.bgColorFromSkin == true and looks and looks.titleBg
+    if skin then return skin[1], skin[2], skin[3], skin[4] or 1 end
+    return RGBA(header.bgColor, 0, 0, 0, 0.5)
 end
 
 --- How far the text is offset to draw its drop shadow, or 0, 0 for none.
@@ -236,7 +249,7 @@ end
 function NS.HeaderStyle(window)
     local header = (window.config or {}).header or {}
     local path, size, flags = headerFont(header)
-    local r, g, b = headerColor(header)
+    local r, g, b = headerColor(header, window.skinLooks)
     return { path = path, size = size, flags = flags, r = r, g = g, b = b }
 end
 
@@ -248,7 +261,7 @@ end
 --- could make the strip differ from the numbers beneath it.
 local function columnHeaderFont(colHeader)
     local flags = (colHeader.outline ~= "NONE") and colHeader.outline or nil
-    return fontPath(colHeader.font), colHeader.size or 11, flags
+    return fontPath(NS.SkinMediaKey(colHeader, "font", "hud.font")), colHeader.size or 11, flags
 end
 
 --- Where something `h` pixels tall sits so it is CENTERED in the title bar.
@@ -377,7 +390,11 @@ function WindowProto:ApplyTitle()
     -- the sim strip alone, and the step panel marks the run (OWNER_SCOPE A).
     local title = cfg.name or L["Multi Meters"]
     if NS.State and NS.State.testMode and not stripShown(self) and not simRunning() then
-        title = title .. "   |cffff2020" .. L["TEST MODE"] .. "|r"
+        -- The word's red is this addon's owner token (core/SkinSetup.lua), today's
+        -- pixel under Ka0s Default and the skin's test-mode red under every other,
+        -- cached on ApplyConfig (RefreshUpvalues) rather than read per title pass.
+        title = title .. "   " .. ((self.skinLooks or {}).testWord or "")
+            .. L["TEST MODE"] .. "|r"
     end
     frame.title:SetText(title)
     frame.title:SetShown((cfg.header or {}).show ~= false)
@@ -393,7 +410,7 @@ function WindowProto:ApplyTitle()
     -- After ApplySkin, not instead of it: ApplyConfig re-runs the skin and then
     -- calls ApplyHeader, so the library still owns the backdrop and the accents
     -- and this owns the one FontString the settings claim to govern.
-    frame.title:SetTextColor(headerColor(header))
+    frame.title:SetTextColor(headerColor(header, self.skinLooks))
 end
 
 --- The tinted block behind the header and the hairline that closes it off.
@@ -413,8 +430,11 @@ function WindowProto:ApplyHeaderStrip()
     -- A PLAIN COLOR, with no mode of its own. The column strip below has one
     -- because "per statistic" tints each label with its own column's color; this
     -- is one strip over the whole window, so the same mode could only paint it the
-    -- sort column's color -- a fact already on screen twice over.
-    local ar, ag, ab, aa = RGBA(header.bgColor, 0, 0, 0, 0.5)
+    -- sort column's color -- a fact already on screen twice over. What it has is
+    -- the skin's companion (MM-A1, DECISIONS D3): while `bgColorFromSkin` is on it
+    -- draws `title.bg` (clear for a skin that draws no title band), cached in
+    -- skinLooks; off, the swatch, which following the skin never rewrites.
+    local ar, ag, ab, aa = titleBarColor(header, self.skinLooks)
     self.headerBG:ClearAllPoints()
     self.headerBG:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -pad)
     self.headerBG:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, -pad)
@@ -518,7 +538,7 @@ function WindowProto:ApplySessionLine()
 
     self.sessionText:SetFont(path, size, flags)
     self.sessionText:SetShadowOffset(shadowOffset(header.shadow))
-    self.sessionText:SetTextColor(headerColor(header))
+    self.sessionText:SetTextColor(headerColor(header, self.skinLooks))
     self.sessionText:SetShown(shown)
 end
 
@@ -662,7 +682,8 @@ local function dressHeaderButton(button, key, label, width, d)
     local tr, tg, tb, ta = d.hr, d.hg, d.hb, d.ha
     if d.colorMode == "stat" then
         if key == "name" then
-            tr, tg, tb = 1, 1, 1
+            -- The skin's highlight: white under Ka0s Default.
+            tr, tg, tb = NS.SkinColor("text.highlight")
         else
             tr, tg, tb, ta = surfaceColor("stat", d.color, key, d.hr, d.hg, d.hb, d.ha)
         end
@@ -1214,7 +1235,12 @@ function WindowProto:RestrictedNotice(preview)
     if preview then return nil end
     local aggregate = self.aggregate
     if not (aggregate and aggregate.identityMode) then return nil end
-    if not aggregate.ambiguous then return NS.GRAY .. L["restricted"] .. "|r" end
+    -- The note's gray is the owner token `mm.dim` (core/SkinSetup.lua): NS.GRAY's
+    -- bytes under Ka0s Default, the skin's muted text under every other. This runs
+    -- on every throttled refresh of a pull, so it reads the escape RefreshUpvalues
+    -- cached, never the token (R2).
+    local dim = (self.skinLooks or {}).dim or NS.GRAY
+    if not aggregate.ambiguous then return dim .. L["restricted"] .. "|r" end
 
     -- THE COUNT, WHERE THERE IS ONE. Both figures are OUR OWN plain integers --
     -- a tally of rows the aggregator kept, never a meter value -- so formatting
@@ -1237,9 +1263,9 @@ function WindowProto:RestrictedNotice(preview)
         local fmt = (ambiguous * QUARTER >= total)
             and L["restricted \226\128\148 %d of %d blank: duplicate specs"]
             or  L["restricted \226\128\148 %d of %d share a class and spec"]
-        return NS.GRAY .. string.format(fmt, ambiguous, total) .. "|r"
+        return dim .. string.format(fmt, ambiguous, total) .. "|r"
     end
-    return NS.GRAY .. L["restricted \226\128\148 some rows cannot be told apart"] .. "|r"
+    return dim .. L["restricted \226\128\148 some rows cannot be told apart"] .. "|r"
 end
 
 --- The header's right-hand line: which session, how long it has run, and the
@@ -1329,7 +1355,8 @@ function WindowProto:ShowNotice(reason)
         L["Multi Meters reads every number from the game's built-in damage meter. Enable it to see data here."],
     }
     if reason ~= nil and NS.IsConcatSafe and NS.IsConcatSafe(reason) then
-        lines[#lines + 1] = NS.GRAY .. L["Reason: %s"]:format(tostring(reason)) .. "|r"
+        local dim = NS.SkinEscape and NS.SkinEscape("mm.dim") or NS.GRAY
+        lines[#lines + 1] = dim .. L["Reason: %s"]:format(tostring(reason)) .. "|r"
     end
     self.notice:SetText(table.concat(lines, "\n\n"))
     self.notice:Show()

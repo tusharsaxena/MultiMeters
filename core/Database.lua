@@ -54,11 +54,13 @@ NS.Database = Database
 -- v17 matches the header to Ka0s DPS Race.
 -- v18 grows the title bar to Ka0s DPS Race's 30px.
 -- v19 grows the shipped window to 228px, ten rows under that bar.
+-- v20 puts every window's HUD faces, bar textures and bar borders on the skin, once.
+-- v21 puts every window's chrome (fill, edge, title bar, title, controls) on the skin, once.
 --
 -- The defaults declare `global.schemaVersion = 0`, which means UNSTAMPED: a fresh
 -- install or an account from before the runner stamped anything. It is never the
 -- current version (savedvariables-§1); see defaults/Profile.lua for why.
-local CURRENT_DB_VERSION = 19
+local CURRENT_DB_VERSION = 21
 
 --- The runner's target, published under the name savedvariables-§1 gives it.
 --- Raising it means registering the step that reaches it; the defaults' 0 never moves.
@@ -1061,6 +1063,90 @@ migrations[18] = function(db)
     end
 end
 
+--- The eight "Use the skin's ..." companions of a window (skinning-§6), as dotted paths into it:
+--- the four faces, the two bar textures and the two bar border styles, each beside the pick it
+--- governs (defaults/Profile.lua, settings/Schema_Compose.lua's FROM_SKIN_ROWS). The v20 step's
+--- list, and tests/test_skin_hud.lua's.
+Database.FROM_SKIN_KEYS = {
+    "header.fontFromSkin", "columnHeader.fontFromSkin", "text.fontFromSkin", "tooltip.fontFromSkin",
+    "bars.textureFromSkin", "tooltip.barTextureFromSkin",
+    "bars.borderStyleFromSkin", "tooltip.barBorderStyleFromSkin",
+}
+
+--- One window's companions put back on the skin. Backfilled to false first where a stored group
+--- lacks one (every window stored before v20 does), because LibKa0s-Skin-1.0's ResetToSkin,
+--- handed an absent key, cannot tell it is a bool and writes its "@skin" sentinel into it; a group
+--- that is absent altogether is left to EnsureWindowShape, whose template says true already.
+--- Without the library the companions are set directly: they mean nothing until it loads, and
+--- then they must already say "follow".
+local function v20FollowSkin(w, resetToSkin)
+    local keys = {}
+    for _, path in ipairs(Database.FROM_SKIN_KEYS) do
+        local group, leaf = path:match("^([^.]+)%.(.+)$")
+        local g = w[group]
+        if type(g) == "table" then
+            if type(g[leaf]) ~= "boolean" then g[leaf] = false end
+            if resetToSkin then keys[#keys + 1] = path else g[leaf] = true end
+        end
+    end
+    if resetToSkin and #keys > 0 then resetToSkin(w, keys) end
+end
+
+--- v19 -> v20: THE HUD BACK ON THE SKIN, ONCE (skinning-§6, the owner's ruling O2).
+---
+--- Every window's four faces, two bar textures and two bar border styles follow the skin again,
+--- for every player: each window's companions are set on through Skin.ResetToSkin, ONE CALL PER
+--- WINDOW, because its dotted walk cannot reach into the numeric `windows` array. The stored picks
+--- are kept (a companion turned off brings them back) and no color, size, outline or thickness is
+--- touched (DECISIONS X4, D12). The account-wide stamp is what makes it once: a player who unticks
+--- a companion afterwards keeps that pick, because this step never runs again.
+---
+--- Every window of every profile, for the reason allProfiles gives. Idempotent: true stays true.
+migrations[19] = function(db)
+    local Skin = LibStub and LibStub("LibKa0s-Skin-1.0", true)
+    local resetToSkin = Skin and type(Skin.ResetToSkin) == "function" and Skin.ResetToSkin or nil
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" then v20FollowSkin(w, resetToSkin) end
+            end
+        end
+    end
+end
+
+--- The window chrome's five `skin` color modes (MM-A1, DECISIONS D1, D4, D16), as dotted paths
+--- into a window: the fill, the edge, the title, the controls at rest and under the pointer. The
+--- v21 step's list, and tests/test_skin_window.lua's.
+Database.CHROME_SKIN_MODES = {
+    "frame.backdropColorMode", "frame.borderColorMode", "header.colorMode",
+    "frame.controlColorMode", "frame.controlHoverColorMode",
+}
+
+--- v20 -> v21: THE WINDOW'S CHROME ON THE SKIN, ONCE (the owner's ruling R-3, which overrules
+--- DECISIONS X4 for the meter window; O2's one-time reset carried over to it).
+---
+--- Every window's five chrome modes go to `skin`, whatever they were (`custom` or `class`), and the
+--- title bar's `header.bgColorFromSkin` companion on (D3). Set directly: a mode is a string the
+--- library's ResetToSkin knows nothing of, and the companion is a plain bool. The stored colors,
+--- the edge style and its thickness are kept, so a mode set back to Custom draws them again. A
+--- group absent from a stored window is left to EnsureWindowShape, whose template ships the same.
+--- The account-wide stamp is what makes it once: a pick made after it is kept.
+migrations[20] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" then
+                    for _, path in ipairs(Database.CHROME_SKIN_MODES) do
+                        local group, leaf = path:match("^([^.]+)%.(.+)$")
+                        if type(w[group]) == "table" then w[group][leaf] = "skin" end
+                    end
+                    if type(w.header) == "table" then w.header.bgColorFromSkin = true end
+                end
+            end
+        end
+    end
+end
+
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every
 --- profile swap, and is a no-op once at the current version.
 function NS:RunMigrations()
@@ -1162,10 +1248,21 @@ local function resyncEnabledHold()
 end
 
 local function rebuild(key)
+    -- FIRST, the first-run skin picker down, quietly (core/SkinSetup.lua): a showing belongs to the
+    -- profile it opened on, and taking it down puts back a pending preview, so it lands before
+    -- NS.ApplySkinChoice below and the new profile's own skin is the last one written.
+    if NS.HideSkinPicker then NS.HideSkinPicker() end
+
     -- The newly-active profile may be a copy authored at an older schema
     -- version, or a reset back to an empty registry. Both need the full
     -- migrate-then-normalize pass before anything reads a window.
     NS:RunMigrations()
+
+    -- The new profile's skin (core/SkinSetup.lua), before anything rebuilds: a switch, a copy and
+    -- a reset each hand over a profile with its own `skin.*` pair, Scope and overrides.
+    -- Skin:SetChoice repaints every frame recorded for this owner and fires OnLooksChanged
+    -- whether or not a window was ever built, so the skin cannot depend on PROFILE_CHANGED.
+    if NS.ApplySkinChoice then NS.ApplySkinChoice() end
 
     -- Per-session state that was derived from the OLD profile is now wrong.
     if NS.State then
@@ -1176,6 +1273,11 @@ local function rebuild(key)
     resyncEnabledHold()
 
     fireProfileChanged(key)
+
+    -- The first-run skin picker (core/SkinSetup.lua): a new or reset profile starts from the
+    -- defaults, `pickerSeen` false, so it shows, a fresh showing over the new profile's skin; one
+    -- that has seen it stays down. After the latch, so a profile with the addon off shows nothing.
+    if NS.MaybeShowSkinPicker then NS.MaybeShowSkinPicker() end
 end
 
 --- AceDB calls each of these as `obj:method(event, db, key)`.

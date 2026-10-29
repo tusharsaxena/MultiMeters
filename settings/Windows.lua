@@ -79,6 +79,10 @@ H.ActionDropdown = function(parent, relativeWidth, spec)
     if not (AceGUI and parent) then return nil end
 
     local dd = AceGUI:Create("Dropdown")
+    -- Painted for this addon's skin (core/SkinSetup.lua): NS.AceGUI is normally the Options
+    -- instance's owner proxy, which already paints on Create; this repaints in place for the same
+    -- owner, so the page does not depend on which handle it was given.
+    NS.SkinPaintAce(dd)
     dd:SetLabel(spec.label or "")
     if relativeWidth then dd:SetRelativeWidth(relativeWidth) else dd:SetFullWidth(true) end
     dd:SetList(spec.list or {}, spec.order)
@@ -379,6 +383,7 @@ local function renderNameBox(_, parent, relativeWidth)
     local w = activeWindow()
 
     local box = AceGUI:Create("EditBox")
+    NS.SkinPaintAce(box)   -- for this addon's skin, as H.ActionDropdown's
     box:SetLabel(L["Window name"])
     box:SetRelativeWidth(relativeWidth or 1)
     box:SetText(w and w.name or "")

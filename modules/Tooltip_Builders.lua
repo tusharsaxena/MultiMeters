@@ -24,6 +24,14 @@
 -- modules\Tooltip_Lines.lua. LOAD-BEARING: every name in the block below is
 -- resolved at FILE SCOPE off `NS.TooltipInternals`, and the second half of that
 -- table is not filled until modules\Tooltip_Lines.lua has run.
+--
+-- THE LINE COLORS ARE THE SKIN'S (core/SkinSetup.lua, skinning-§7): the frame stays
+-- Blizzard's, the lines this file writes take the owner's tokens through
+-- NS.SkinColor, read at build time -- section headings and the right half of a
+-- double-line header `gtip.title`, the icon and name lines `gtip.value`, the hint
+-- and overflow lines the owner token `mm.tipHint`. Under Ka0s Default each is the
+-- literal it replaced (1, 0.82, 0 / white / 0.6 gray). Class and statistic colors
+-- stay theirs (game meaning, and the player's categorical key).
 
 local _, NS = ...
 
@@ -244,7 +252,7 @@ local function addEventLine(event, deathTime, maxHealth, numberStyle, style)
     -- The tooltip's own line carries ONLY the icon. Everything else is on the
     -- carrier, in fixed slots, so the columns line up down the whole tooltip
     -- instead of ragging against names of a dozen different lengths.
-    GameTooltip:AddLine(icon, 1, 1, 1)
+    GameTooltip:AddLine(icon, NS.SkinColor("gtip.value"))
 
     local index = GameTooltip:NumLines()
     drawLine(index,
@@ -426,21 +434,21 @@ local function addDeathBreakdown(row, style, numberStyle)
     local nr, ng, nb = nameColor(row)
     GameTooltip:AddDoubleLine(displayName(row),
         row.deathClock or L["Death recap"] or "Death recap",
-        nr, ng, nb, 1, 0.82, 0)
+        nr, ng, nb, NS.SkinColor("gtip.title"))
 
     -- THE SAME GAP AND CAPTION EVERY OTHER SECTION IN THIS FILE GETS. Without
     -- them the header sat flush against the first bar, which nothing else here
     -- does, and the tooltip read as though a different addon had drawn it. The
     -- gap is also what keeps a carrier off line 1 with room to spare.
     addSectionGap(style)
-    GameTooltip:AddLine(L["Death recap"] or "Death recap", 1, 0.82, 0)
+    GameTooltip:AddLine(L["Death recap"] or "Death recap", NS.SkinColor("gtip.title"))
 
     if not drawDeathEvents(recap, numberStyle, style) then
         -- A DEATH THE CLIENT NO LONGER HOLDS SAYS SO. An empty tooltip under the
         -- cursor reads as a broken addon; a sentence reads as a fact about the
         -- client, which is what it is.
         GameTooltip:AddLine(L["No recap stored for this death"] or
-            "No recap stored for this death", 1, 0.82, 0)
+            "No recap stored for this death", NS.SkinColor("gtip.title"))
         return
     end
 
@@ -515,7 +523,7 @@ local function addDeathList(row, style, timeStyle, config)
     if not (P and P.GetRecap) then return 0 end
 
     addSectionGap(style)
-    GameTooltip:AddLine(L["Deaths"], 1, 0.82, 0)
+    GameTooltip:AddLine(L["Deaths"], NS.SkinColor("gtip.title"))
 
     local total = #deaths
     local drawn = 0
@@ -542,7 +550,7 @@ local function addDeathList(row, style, timeStyle, config)
         --
         GameTooltip:AddLine(string.format("|T%d:%d:%d:0:0|t %s", DEATH_ICON,
             TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE,
-            deathLineLabel(total - i + 1, caster, spell, config)), 1, 1, 1)
+            deathLineLabel(total - i + 1, caster, spell, config)), NS.SkinColor("gtip.value"))
         -- The time goes in the AMOUNT slot rather than the line, so the times
         -- line up in a column instead of ragging against names of two lengths.
         --
@@ -574,7 +582,7 @@ local function addSpellBreakdown(source, _statKey, cap, numberStyle, style)
     sortSpellsIfLegal(spells)
 
     addSectionGap(style)
-    GameTooltip:AddLine(L["Spell breakdown"], 1, 0.82, 0)
+    GameTooltip:AddLine(L["Spell breakdown"], NS.SkinColor("gtip.title"))
 
     -- The bars scale to the BIGGEST SPELL in this breakdown, not to the source's
     -- own maxAmount: a breakdown is read against itself — "which of my spells did
@@ -604,7 +612,7 @@ local function addSpellBreakdown(source, _statKey, cap, numberStyle, style)
     -- left out. A nil count means "we could not see the array", and then there
     -- is nothing truthful to say.
     if spellTotal and spellTotal > shown then
-        GameTooltip:AddLine(string.format(L["and %d more"], spellTotal - shown), 0.6, 0.6, 0.6)
+        GameTooltip:AddLine(string.format(L["and %d more"], spellTotal - shown), NS.SkinColor("mm.tipHint"))
     end
 
     return shown
@@ -655,7 +663,7 @@ local function addTargetBreakdown(row, statKey, config, style, numberStyle, wind
     local max = list[1] and list[1].total
 
     addSectionGap(style)
-    GameTooltip:AddLine(L["Targets"], 1, 0.82, 0)
+    GameTooltip:AddLine(L["Targets"], NS.SkinColor("gtip.title"))
 
     for i = 1, #list do
         local entry = list[i]
@@ -665,7 +673,7 @@ local function addTargetBreakdown(row, statKey, config, style, numberStyle, wind
         -- label slot, which is the only way to start it where a spell NAME starts
         -- rather than where a spell ICON starts. See `lineWidget`.
         GameTooltip:AddLine(string.format("|T%s:%d:%d:0:0|t",
-            TARGET_ICON, TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE), 1, 1, 1)
+            TARGET_ICON, TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE), NS.SkinColor("gtip.value"))
         drawLine(GameTooltip:NumLines(),
             formatNumber(entry.total, numberStyle),
             formatShare(entry.total, total),
@@ -684,7 +692,7 @@ local function addDeathRecapHint(row, statKey)
     if statKey ~= "Deaths" then return end
     if not row or row.deathRecapID == nil then return end
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine(L["Click for details"], 0.6, 0.6, 0.6)
+    GameTooltip:AddLine(L["Click for details"], NS.SkinColor("mm.tipHint"))
 end
 
 -- ---------------------------------------------------------------------------
@@ -754,7 +762,7 @@ function Tooltip:CellTooltip(row, statKey, anchorFrame, window)
     local stat = Const.STAT_BY_KEY[statKey]
     local nr, ng, nb = nameColor(row)
     GameTooltip:AddDoubleLine(displayName(row), stat and L[stat.label] or statKey,
-        nr, ng, nb, 1, 0.82, 0)
+        nr, ng, nb, NS.SkinColor("gtip.title"))
 
     -- The bars wear the hovered player's class color, so a tooltip reads as
     -- belonging to the row it came off. See `rowClassColor`.
@@ -767,7 +775,7 @@ function Tooltip:CellTooltip(row, statKey, anchorFrame, window)
     local shown = addStatBreakdown(row, statKey, config, style, window)
 
     if shown == 0 then
-        GameTooltip:AddLine(L["No data yet"], 0.6, 0.6, 0.6)
+        GameTooltip:AddLine(L["No data yet"], NS.SkinColor("mm.tipHint"))
     end
 
     addTargetBreakdown(row, statKey, config, style, numberStyleOf(window), window)
@@ -932,12 +940,12 @@ function Tooltip:NameTooltip(row, anchorFrame, window)
     end
 
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine(L["All statistics"], 1, 0.82, 0)
+    GameTooltip:AddLine(L["All statistics"], NS.SkinColor("gtip.title"))
 
     local rendered = addAllStatLines(row, window, numberStyleOf(window))
 
     if rendered == 0 then
-        GameTooltip:AddLine(L["No data yet"], 0.6, 0.6, 0.6)
+        GameTooltip:AddLine(L["No data yet"], NS.SkinColor("mm.tipHint"))
     end
 
     GameTooltip:Show()
@@ -1028,7 +1036,7 @@ function Tooltip:SpellTooltip(row, anchorFrame, window)
 
     -- No id, or a client that refused it. A one-line name beats an empty frame:
     -- the row is still telling the player which spell it is.
-    GameTooltip:AddLine(displayName(row), 1, 1, 1)
+    GameTooltip:AddLine(displayName(row), NS.SkinColor("gtip.value"))
     GameTooltip:Show()
     -- AFTER Show: the show path re-anchors the tooltip to its owner, so a
     -- point set before the lines were added is silently thrown away.

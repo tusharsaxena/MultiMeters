@@ -277,19 +277,25 @@ local PARTITION = {
     -- composed; the other three follow the set. §15 forbids reordering, renaming
     -- or splitting the canonical set; it does not forbid an addon's own rows after
     -- it, and the case below pins that the seven come FIRST and contiguous.
-    general    = { { "Master controls", 8 }, { "Behavior", 2 }, { "Statistic colors", 8 } },
+    -- Appearance is the seven skip-render skin rows (settings/Schema_Skin.lua): the group whose
+    -- place the library's Skin tab takes, keyed "Appearance" because that is the key
+    -- O.AppearanceTab answers.
+    general    = { { "Master controls", 8 }, { "Behavior", 2 }, { "Statistic colors", 8 },
+                   { "Appearance", 7 } },
     -- The Windows rail's strips after item 020 (the settings-layout pass): Size and position
     -- leads Frame, the broadcasts are Quick style, one Bar tab per styled surface on Bars and
     -- Tooltip, one Controls tab on Header, one Rules tab on Visibility and one Column header
-    -- tab on Columns.
+    -- tab on Columns. Each HUD media picker's "Use the skin's ..." companion (skinning-§6) is one
+    -- more row in its tab, and the two meta companions two more in Quick style; the title bar's
+    -- background companion (MM-A1) one more in Title bar.
     windows    = { { "Window", 1 } },
-    frame      = { { "Size and position", 8 }, { "Quick style", 4 },
+    frame      = { { "Size and position", 8 }, { "Quick style", 6 },
                    { "Background and border", 6 }, { "Rows", 8 } },
-    header     = { { "Title bar", 7 }, { "Title text", 7 }, { "Controls", 16 } },
-    bars       = { { "Bar", 14 }, { "Text", 11 }, { "Icons", 3 } },
-    tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 12 }, { "Text", 6 } },
+    header     = { { "Title bar", 8 }, { "Title text", 8 }, { "Controls", 16 } },
+    bars       = { { "Bar", 16 }, { "Text", 12 }, { "Icons", 3 } },
+    tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 14 }, { "Text", 7 } },
     visibility = { { "Rules", 17 } },
-    columns    = { { "Column header", 8 } },
+    columns    = { { "Column header", 9 } },
 }
 
 test("Schema: every page's tabs are the designed ones, in order, at the designed size",
@@ -618,7 +624,12 @@ test("Schema: NO color row is ever disabled, and every one says why in words", f
 
     local swatches = 0
     for _, row in ipairs(NS.Schema) do
-        assertTrue(row.disabledIf == nil, row.path .. " carries disabledIf")
+        -- The one disabledIf the schema carries is the composer's on a HUD media PICKER, governed
+        -- by its own "Use the skin's ..." companion (skinning-§6): never a swatch.
+        if row.disabledIf ~= nil then
+            assertTrue(row.type ~= "color" and row.disabledIf == row.path .. "FromSkin",
+                row.path .. " carries disabledIf")
+        end
         if row.type == "color" then
             if row.path:sub(1, 11) == "statColors." then
                 assertTrue((row.desc or ""):find(note, 1, true) == nil,
@@ -845,7 +856,10 @@ test("Schema: every tab name and row label is a localized string, not a bare lit
     end
 
     for _, row in ipairs(NS.Schema) do
-        if row.group and rawget(NS.L, row.group) == nil then
+        -- NS.SKIN_TAB is exempt: it is the library's tab KEY, "Appearance", which the tab
+        -- answers by that exact string and labels "Skin" itself; translating it would break
+        -- the match rather than relabel anything.
+        if row.group and row.group ~= NS.SKIN_TAB and rawget(NS.L, row.group) == nil then
             missing[#missing + 1] = "group: " .. row.group
         end
         if row.label and rawget(NS.L, words(row.label)) == nil then
@@ -931,7 +945,8 @@ function()
         assertTrue(row.path:find("^window%.columnHeader%."),
             row.path .. " is on the Columns page but is not a column-header setting")
     end
-    assertEqual(onColumns, 8, "all eight moved, not some of them")
+    -- Nine: the eight that moved, and the face's "Use the skin's font" companion (skinning-§6).
+    assertEqual(onColumns, 9, "all nine are column-header rows")
 
     for _, row in ipairs(NS.SchemaForPage("header")) do
         assertFalse(row.path:find("^window%.columnHeader%.") and true or false,

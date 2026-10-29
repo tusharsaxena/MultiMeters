@@ -160,6 +160,21 @@ local function broadcastFont(value) broadcast(FONT_PATHS, value) end
 --- @param value string  NONE | OUTLINE | THICKOUTLINE | MONOCHROME
 local function broadcastOutline(value) broadcast(OUTLINE_PATHS, value) end
 
+-- The meta pair over the "Use the skin's ..." companions (DECISIONS D11): every surface's own
+-- companion, each written through the seam like the picks above. The border companions have no
+-- meta, as the border styles never had one.
+local TEXTURE_FROM_SKIN_PATHS = { "window.bars.textureFromSkin", "window.tooltip.barTextureFromSkin" }
+local FONT_FROM_SKIN_PATHS = {
+    "window.text.fontFromSkin", "window.header.fontFromSkin",
+    "window.columnHeader.fontFromSkin", "window.tooltip.fontFromSkin",
+}
+
+--- @param value boolean
+local function broadcastTextureFromSkin(value) broadcast(TEXTURE_FROM_SKIN_PATHS, value) end
+
+--- @param value boolean
+local function broadcastFontFromSkin(value) broadcast(FONT_FROM_SKIN_PATHS, value) end
+
 -- ---------------------------------------------------------------------------
 -- Dropdown vocabularies
 -- ---------------------------------------------------------------------------
@@ -224,10 +239,10 @@ local BARBG_VALUES = {
 }
 local BARBG_SORT = { "class", "stat", "custom", "none" }
 
--- TWO modes, not the three every text surface offers. "Per-statistic" cannot say anything true
--- about a header BUTTON: a close box does not belong to a statistic, so the option could only
--- ever paint it the sort column's color -- which is a fact already on screen in that column's
--- own header and in its arrow.
+-- TWO modes, class and custom, for the bar borders' colors (`window.bars.borderColorMode`, the
+-- tooltip bars' `barBorderColorMode`). They were the header controls' and the window chrome's
+-- too, until those took CHROMECOLOR's three (skin, class, custom; MM-A1). "Per-statistic" was
+-- left off because an outline, like a header button, has no statistic of its own to mean.
 local CONTROLCOLOR_VALUES = {
     class  = L["Class color"],
     custom = L["Custom color"],
@@ -245,11 +260,18 @@ local CONTROLCOLOR_SORT = { "class", "custom" }
 -- divider is one line across the whole window, so "per statistic" could only ever
 -- paint it the sort column's color -- a fact already on screen twice over.
 local DIVIDERCOLOR_VALUES = {
-    skin   = L["Ka0s skin"],
+    -- "Skin", the word the Skin tab uses: under EllesmereUI or any of the nine skins it
+    -- is the skin the window wears, not only a Ka0s one (DECISIONS D16).
+    skin   = L["Skin"],
     class  = L["Class color"],
     custom = L["Custom color"],
 }
 local DIVIDERCOLOR_SORT = { "skin", "class", "custom" }
+
+-- The window chrome's three (MM-A1, DECISIONS D16): the divider's values, where `skin` is the
+-- skin's own color (`win.bg`, `title.text`, `icon.tint`, `btn.hover`) and, for the edge, the
+-- skin's whole edge. The fill, the edge and the title here; the controls in settings/Schema.lua.
+local CHROMECOLOR_VALUES, CHROMECOLOR_SORT = DIVIDERCOLOR_VALUES, DIVIDERCOLOR_SORT
 
 -- ONE set for both slots, and EVERY VALUE IS LITERAL — modules/Row.lua renders
 -- exactly what is asked for and never falls back to another figure. `none` in
@@ -568,6 +590,32 @@ local function withMode(rows, after, modeRow)
     return rows
 end
 
+-- FOLLOWING THE SKIN (skinning-§6). Every HUD media picker takes the composer's `fromSkin`
+-- companion, `<picker path>FromSkin`, on a line of its own after the block's canonical rows: while
+-- it is on, the picker is disabled and shows the skin's value, and the surface draws the skin's
+-- token (core/SkinSetup.lua's NS.SkinMediaKey). Default ON (DECISIONS X3), as the template
+-- declares; the v20 step (core/Database.lua) put every stored window on it once (O2). Only the
+-- face, the bar texture and the bar border style follow (X4): no color, size or thickness row is
+-- governed. The window's own edge has none (FRAME_BORDER_ROWS): it follows the skin through
+-- `frame.borderColorMode = "skin"` instead, the Shell drawing the skin's whole edge (MM-A1).
+local FROM_SKIN_ROWS = {
+    font    = { leaf = "fontFromSkin", label = L["Use the skin's font"],
+        tip = L["Draw this text in the skin's font. The font picker is kept but not read while this is on."] },
+    texture = { leaf = "barTextureFromSkin", label = L["Use the skin's texture"],
+        tip = L["Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."] },
+    border  = { leaf = "borderStyleFromSkin", label = L["Use the skin's border"],
+        tip = L["Draw this border in the skin's border style. The style picker is kept but not read while this is on; the thickness and the color stay yours."] },
+}
+
+--- `spec` with the `fromSkin` companion of `kind` asked for, labeled, worded and defaulted on.
+local function followsSkin(kind, spec)
+    local f = FROM_SKIN_ROWS[kind]
+    spec.fromSkin = true
+    spec.labels, spec.defaults, spec.tooltips = spec.labels or {}, spec.defaults or {}, spec.tooltips or {}
+    spec.labels[f.leaf], spec.defaults[f.leaf], spec.tooltips[f.leaf] = f.label, true, f.tip
+    return spec
+end
+
 --- Mark a composed block for expansion where it sits. See expandBlocks below.
 ---
 --- A Lua table literal cannot splice an array into itself, and these blocks sit in
@@ -857,15 +905,15 @@ local FRAME_BG_ROWS = compose("ColorPair", {
     classColor = { source = "player" },
 })
 dress(FRAME_BG_ROWS, {
-    ["window.frame.backdropColor"] = { desc = L["Color drawn behind the rows."] },
+    ["window.frame.backdropColor"] = { desc = L["Color drawn behind the rows. Not read while the mode beside it is Skin."] },
 })
 withMode(FRAME_BG_ROWS, "window.frame.backdropColor", {
-    path = "window.frame.backdropColorMode", type = "string", default = "custom",
-    values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
+    path = "window.frame.backdropColorMode", type = "string", default = "skin",
+    values = CHROMECOLOR_VALUES, sorting = CHROMECOLOR_SORT,
     page = "frame", group = L["Background and border"], subgroup = L["Background"],
     label = L["Background color mode"],
     classColorSource = "player",
-    desc = L["What colors the fill inside the window. Class color is your own -- a window is not about any one row."],
+    desc = L["What colors the fill inside the window. Skin is the skin's own window fill; Class color is your own -- a window is not about any one row."],
 })
 
 local FRAME_BORDER_ROWS = compose("BorderGroup", {
@@ -885,25 +933,25 @@ local FRAME_BORDER_ROWS = compose("BorderGroup", {
 dress(FRAME_BORDER_ROWS, {
     ["window.frame.borderStyle"] = {
         values = lsmValues("border"),
-        desc = L["LibSharedMedia border texture drawn around the window."],
+        desc = L["LibSharedMedia border texture drawn around the window. Read only under Class or Custom color."],
     },
     ["window.frame.borderSize"] = {
         min = 0, max = 32, step = 1, fmt = "%d px",
-        desc = L["Border edge size in pixels."],
+        desc = L["Border edge size in pixels. Read only under Class or Custom color."],
     },
-    ["window.frame.borderColor"] = { desc = L["Color of the window border."] },
+    ["window.frame.borderColor"] = { desc = L["Color of the window border. Not read while the mode beside it is Skin."] },
 })
 withMode(FRAME_BORDER_ROWS, "window.frame.borderColor", {
-    path = "window.frame.borderColorMode", type = "string", default = "custom",
-    values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
+    path = "window.frame.borderColorMode", type = "string", default = "skin",
+    values = CHROMECOLOR_VALUES, sorting = CHROMECOLOR_SORT,
     page = "frame", group = L["Background and border"], subgroup = L["Border"],
     label = L["Border color mode"],
     classColorSource = "player",
-    desc = L["What colors the edge around the window. Class color is your own."],
+    desc = L["What draws the edge around the window. Skin is the skin's own edge -- its style, thickness and color -- and the style and thickness above apply under Class or Custom color. Class color is your own."],
 })
 
 -- ── Header > Title text (options-ui-§16's font block) ───────────────────────
-local HEADER_TEXT_ROWS = compose("FontGroup", {
+local HEADER_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     prefix = "window.header.",
     page = "header", group = L["Title text"],
     keys = { fontSize = "size", fontColor = "color", fontFlags = "outline", fontShadow = "shadow" },
@@ -914,14 +962,14 @@ local HEADER_TEXT_ROWS = compose("FontGroup", {
         fontFlags = "NONE", fontShadow = true,
     },
     classColor = { source = "player" },
-})
+}))
 dress(HEADER_TEXT_ROWS, {
     ["window.header.font"] = {
         values = lsmValues("font"),
         desc = L["Font for the window's title and the fight name beside it."],
     },
     ["window.header.size"] = { fmt = "%d px", desc = L["Text size in pixels."] },
-    ["window.header.color"] = { desc = L["Color of the window's title and the fight name beside it."] },
+    ["window.header.color"] = { desc = L["Color of the window's title and the fight name beside it. Not read while the mode beside it is Skin."] },
     ["window.header.outline"] = {
         values = OUTLINE_VALUES, sorting = OUTLINE_SORT,
         desc = L["Outline and monochrome flags applied to the text."],
@@ -931,12 +979,12 @@ dress(HEADER_TEXT_ROWS, {
     },
 })
 withMode(HEADER_TEXT_ROWS, "window.header.color", {
-    path = "window.header.colorMode", type = "string", default = "custom",
-    values = CONTROLCOLOR_VALUES, sorting = CONTROLCOLOR_SORT,
+    path = "window.header.colorMode", type = "string", default = "skin",
+    values = CHROMECOLOR_VALUES, sorting = CHROMECOLOR_SORT,
     page = "header", group = L["Title text"],
     label = L["Font color mode"],
     classColorSource = "player",
-    desc = L["What colors the window's title and the fight name beside it. Class color is your own -- a window-wide strip has no other class it could mean."],
+    desc = L["What colors the window's title and the fight name beside it. Skin is the skin's title color; Class color is your own -- a window-wide strip has no other class it could mean."],
 })
 
 -- ── Bars > Bar: Fill, Background and Border (options-ui-§16) ────────────────
@@ -944,7 +992,7 @@ withMode(HEADER_TEXT_ROWS, "window.header.color", {
 -- ONE TAB, "Bar", with a subsection per composed block (item 020, MUL-L10): one
 -- tab per styled surface, which is options-ui-§16's own shape. Only `group` and
 -- `subgroup` changed; the composed order is untouched.
-local BARS_BAR_ROWS = compose("BarGroup", {
+local BARS_BAR_ROWS = compose("BarGroup", followsSkin("texture", {
     prefix = "window.bars.",
     page = "bars", group = L["Bar"], subgroup = L["Fill"],
     keys = { barTexture = "texture", barAlpha = "alpha", barColor = "customColor" },
@@ -974,7 +1022,7 @@ local BARS_BAR_ROWS = compose("BarGroup", {
         label = L["Animate bar fills"],
         desc = L["Slide each bar to its new length between refreshes instead of jumping. The game draws the motion itself, so it works in combat and costs no extra updates."],
     } },
-})
+}))
 dress(BARS_BAR_ROWS, {
     ["window.bars.texture"] = {
         values = lsmValues("statusbar"),
@@ -1028,7 +1076,7 @@ withMode(BARS_BG_ROWS, "window.bars.bgColor", {
     desc = L["What colors the tint behind each bar. Class is the default and keeps working mid-fight, because a class is never hidden the way a number is."],
 })
 
-local BARS_BORDER_ROWS = compose("BorderGroup", {
+local BARS_BORDER_ROWS = compose("BorderGroup", followsSkin("border", {
     prefix = "window.bars.",
     page = "bars", group = L["Bar"], subgroup = L["Border"],
     -- The group's own "Show border" toggle, which options-ui-§16 allows to lead the
@@ -1045,7 +1093,7 @@ local BARS_BORDER_ROWS = compose("BorderGroup", {
         borderColor = { r = 0, g = 0, b = 0, a = 1 },
     },
     classColor = { source = "unit" },
-})
+}))
 dress(BARS_BORDER_ROWS, {
     ["window.bars.border"] = { desc = L["Draw an outline around each bar."] },
     ["window.bars.borderStyle"] = {
@@ -1075,7 +1123,7 @@ withMode(BARS_BORDER_ROWS, "window.bars.borderColor", {
 })
 
 -- ── Bars > Text > Style (options-ui-§16's font block) ───────────────────────
-local BARS_TEXT_ROWS = compose("FontGroup", {
+local BARS_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     prefix = "window.text.",
     page = "bars", group = L["Text"], subgroup = L["Style"],
     keys = { fontSize = "size", fontColor = "color", fontFlags = "outline", fontShadow = "shadow" },
@@ -1092,7 +1140,7 @@ local BARS_TEXT_ROWS = compose("FontGroup", {
         label = L["Text opacity"], desc = L["Opacity of the numbers and names."],
         validate = isNumberIn(0, 1),
     } },
-})
+}))
 dress(BARS_TEXT_ROWS, {
     ["window.text.font"] = {
         values = lsmValues("font"),
@@ -1121,7 +1169,7 @@ withMode(BARS_TEXT_ROWS, "window.text.color", {
 --
 -- The Bar tab has the same shape as Bars > Bar (item 020, MUL-L12), and the rows
 -- read alike: the subsection heading carries the "Bar" the labels used to repeat.
-local TIP_BAR_ROWS = compose("BarGroup", {
+local TIP_BAR_ROWS = compose("BarGroup", followsSkin("texture", {
     prefix = "window.tooltip.",
     page = "tooltip", group = L["Bar"], subgroup = L["Fill"],
     omit = { useClassColorBar = true },
@@ -1141,7 +1189,7 @@ local TIP_BAR_ROWS = compose("BarGroup", {
         label = L["Line spacing"], desc = L["Gap in pixels between one tooltip line and the next."],
         validate = isNumberIn(0, 12),
     } },
-})
+}))
 dress(TIP_BAR_ROWS, {
     ["window.tooltip.barTexture"] = {
         values = lsmValues("statusbar"),
@@ -1193,7 +1241,7 @@ withMode(TIP_BARBG_ROWS, "window.tooltip.barBgColor", {
     desc = L["What colors the unfilled part of each tooltip bar."],
 })
 
-local TIP_BARBORDER_ROWS = compose("BorderGroup", {
+local TIP_BARBORDER_ROWS = compose("BorderGroup", followsSkin("border", {
     prefix = "window.tooltip.",
     page = "tooltip", group = L["Bar"], subgroup = L["Border"],
     keys = { borderStyle = "barBorderStyle", borderSize = "barBorderSize", borderColor = "barBorderColor" },
@@ -1207,7 +1255,7 @@ local TIP_BARBORDER_ROWS = compose("BorderGroup", {
         borderColor = { r = 0, g = 0, b = 0, a = 1 },
     },
     classColor = { source = "unit" },
-})
+}))
 dress(TIP_BARBORDER_ROWS, {
     ["window.tooltip.barBorderStyle"] = {
         values = lsmValues("border"),
@@ -1231,7 +1279,7 @@ withMode(TIP_BARBORDER_ROWS, "window.tooltip.barBorderColor", {
     desc = L["What colors the border around each spell bar. Class is the player you are hovering."],
 })
 
-local TIP_TEXT_ROWS = compose("FontGroup", {
+local TIP_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     prefix = "window.tooltip.",
     page = "tooltip", group = L["Text"],
     keys = { fontColor = "textColor", fontFlags = "fontOutline" },
@@ -1242,7 +1290,7 @@ local TIP_TEXT_ROWS = compose("FontGroup", {
         fontFlags = "NONE", fontShadow = false,
     },
     classColor = { source = "unit" },
-})
+}))
 dress(TIP_TEXT_ROWS, {
     ["window.tooltip.font"] = {
         values = lsmValues("font"),
@@ -1274,7 +1322,7 @@ withMode(TIP_TEXT_ROWS, "window.tooltip.textColor", {
 })
 
 -- ── Columns > Column header: Text and Background ────────────────────────────
-local COLHEAD_TEXT_ROWS = compose("FontGroup", {
+local COLHEAD_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     prefix = "window.columnHeader.",
     page = "columns", group = L["Column header"], subgroup = L["Text"],
     keys = { fontSize = "size", fontColor = "color", fontFlags = "outline", fontShadow = "shadow" },
@@ -1287,7 +1335,7 @@ local COLHEAD_TEXT_ROWS = compose("FontGroup", {
     -- One strip across the whole window, so `class` can only be the local player's,
     -- exactly as it is for the title bar above it.
     classColor = { source = "player" },
-})
+}))
 dress(COLHEAD_TEXT_ROWS, {
     ["window.columnHeader.font"] = {
         values = lsmValues("font"),
@@ -1368,6 +1416,8 @@ NS.SchemaCompose = {
     COLHEAD_TEXT_ROWS    = COLHEAD_TEXT_ROWS,
     CONTROLCOLOR_SORT    = CONTROLCOLOR_SORT,
     CONTROLCOLOR_VALUES  = CONTROLCOLOR_VALUES,
+    CHROMECOLOR_SORT     = CHROMECOLOR_SORT,
+    CHROMECOLOR_VALUES   = CHROMECOLOR_VALUES,
     DEATHTIME_SORT       = DEATHTIME_SORT,
     DEATHTIME_VALUES     = DEATHTIME_VALUES,
     DIVIDERCOLOR_SORT    = DIVIDERCOLOR_SORT,
@@ -1399,6 +1449,8 @@ NS.SchemaCompose = {
     broadcastBarTexture  = broadcastBarTexture,
     broadcastColorMode   = broadcastColorMode,
     broadcastFont        = broadcastFont,
+    broadcastFontFromSkin = broadcastFontFromSkin,
+    broadcastTextureFromSkin = broadcastTextureFromSkin,
     broadcastOutline     = broadcastOutline,
     controlLabel         = controlLabel,
     expandBlocks         = expandBlocks,

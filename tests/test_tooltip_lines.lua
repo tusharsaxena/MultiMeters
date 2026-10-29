@@ -385,6 +385,7 @@ test("The bar border is drawn on the BAR, where it can be seen", function()
     -- red under: putting the backdrop back on the carrier.
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.barBorderStyle = "Ka0s Edge"
+        c.tooltip.barBorderStyleFromSkin = false   -- the player's own pick, off the skin
         c.tooltip.barBorderSize  = 4
     end }
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
@@ -406,6 +407,7 @@ test("The bar border answers a color mode, and its class is the HOVERED player's
     -- swatch and ignoring the mode entirely.
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.barBorderStyle     = "Ka0s Edge"
+        c.tooltip.barBorderStyleFromSkin = false   -- the player's own pick, off the skin
         c.tooltip.barBorderSize      = 4
         c.tooltip.barBorderColor     = { r = 1, g = 0, b = 0, a = 0.6 }
         c.tooltip.barBorderColorMode = "class"
@@ -427,6 +429,7 @@ test("The bar border's shipped mode is Custom, so it still reads the swatch", fu
     -- tooltip's spell-bar outline on upgrade.
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.barBorderStyle = "Ka0s Edge"
+        c.tooltip.barBorderStyleFromSkin = false   -- the player's own pick, off the skin
         c.tooltip.barBorderSize  = 4
         c.tooltip.barBorderColor = { r = 1, g = 0, b = 0, a = 1 }
     end }
@@ -691,6 +694,7 @@ test("The tooltip's own bar texture is used, not the grid's", function()
     local inst, cfg, anchor = bench{ configure = function(c)
         c.bars.texture       = "GridTexture"
         c.tooltip.barTexture = "TipTexture"
+        c.tooltip.barTextureFromSkin = false   -- the player's own pick, off the skin
     end }
     local media = inst.mocks.__libs["LibSharedMedia-3.0"]
     media:Register("statusbar", "GridTexture", [[Interface\Grid]])
@@ -809,6 +813,7 @@ test("Border size zero drops the border FILE with it", function()
     -- red under: keeping edgeFile when borderSize is 0.
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.barBorderStyle = "Blizzard Tooltip"
+        c.tooltip.barBorderStyleFromSkin = false   -- the player's own pick, off the skin
         c.tooltip.barBorderSize  = 0
     end }
     inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)

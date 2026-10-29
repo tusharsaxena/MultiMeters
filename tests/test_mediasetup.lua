@@ -93,7 +93,9 @@ test("MediaSetup: every icon this addon draws is declared and ships", function()
     -- a test that took the default state would miss the other), the library-drawn names for the
     -- surfaces this addon wires (close: Core.MakeCloseButton through NS.MakeCloseButton, the
     -- debug console, PerfPanel and W.CopyWindow; copy and clear: the debug console's title bar),
-    -- and the host-passed info mark (W.TestStrip art; OptionsIdList's help mark).
+    -- and the host-passed info mark (W.TestStrip art; OptionsIdList's help mark). The first-run
+    -- skin picker (LibKa0s v1.79.0, OptionsSkinPicker) draws `eye` (its preview) and `settings`
+    -- (its gear, already declared for the header control).
     for _, name in ipairs({
         "close", "minimise", "expand", "lock", "unlock",          -- modules/HeaderControls.lua
         "settings", "segment", "reset", "export",                 -- HeaderControls, Schema labels
@@ -101,6 +103,7 @@ test("MediaSetup: every icon this addon draws is declared and ships", function()
         "chevron-down", "spreadsheet", "chat",                    -- modules/Export_Modal.lua
         "copy", "clear",                                          -- library-drawn, DebugLog
         "info",                                                   -- host-passed, TestStrip/IdList
+        "eye",                                                    -- library-drawn, the skin picker's preview
     }) do
         assertTrue(declared[name] == true,
             "this addon draws '" .. name .. "', which the CLAUDE.md `LibKa0s icons:` line omits")

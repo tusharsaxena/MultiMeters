@@ -226,14 +226,18 @@ L["Medium"] = "Medium"
 L["High"] = "High"
 L["Dialog"] = "Dialog"
 L["Background color"] = "Background color"
-L["Color drawn behind the rows."] = "Color drawn behind the rows."
+L["Color drawn behind the rows. Not read while the mode beside it is Skin."] =
+    "Color drawn behind the rows. Not read while the mode beside it is Skin."
 L["Border style"] = "Border style"
-L["LibSharedMedia border texture drawn around the window."] =
-    "LibSharedMedia border texture drawn around the window."
+L["LibSharedMedia border texture drawn around the window. Read only under Class or Custom color."] =
+    "LibSharedMedia border texture drawn around the window. Read only under Class or Custom color."
 L["Border thickness"] = "Border thickness"
 L["Border edge size in pixels."] = "Border edge size in pixels."
+L["Border edge size in pixels. Read only under Class or Custom color."] =
+    "Border edge size in pixels. Read only under Class or Custom color."
 L["Border color"] = "Border color"
-L["Color of the window border."] = "Color of the window border."
+L["Color of the window border. Not read while the mode beside it is Skin."] =
+    "Color of the window border. Not read while the mode beside it is Skin."
 L["Background and border"] = "Background and border"
 L["Padding"] = "Padding"
 L["Gap in pixels between the window edge and the rows inside it."] =
@@ -284,15 +288,17 @@ L["How rows are ordered: by value, by name, in the game's order or in group orde
 L["Put the smallest numbers at the top. Clicking the sort column's header again flips it."] =
     "Put the smallest numbers at the top. Clicking the sort column's header again flips it."
 L["Control color mode"] = "Control color mode"
-L["What colors the header controls at rest."] = "What colors the header controls at rest."
+L["What colors the header controls at rest. Skin is the skin's icon color."] =
+    "What colors the header controls at rest. Skin is the skin's icon color."
 L["Control color"] = "Control color"
-L["Color the header controls are drawn in."] = "Color the header controls are drawn in."
+L["Color the header controls are drawn in. Not read while the mode beside it is Skin."] =
+    "Color the header controls are drawn in. Not read while the mode beside it is Skin."
 L["Control hover color mode"] = "Control hover color mode"
-L["What colors a header control while the pointer is over it."] =
-    "What colors a header control while the pointer is over it."
+L["What colors a header control while the pointer is over it. Skin is the skin's hover color."] =
+    "What colors a header control while the pointer is over it. Skin is the skin's hover color."
 L["Control hover color"] = "Control hover color"
-L["Color the control under the pointer is drawn in."] =
-    "Color the control under the pointer is drawn in."
+L["Color the control under the pointer is drawn in. Not read while the mode beside it is Skin."] =
+    "Color the control under the pointer is drawn in. Not read while the mode beside it is Skin."
 L["Control opacity"] = "Control opacity"
 L["How faint a control NOT under the pointer is drawn, while Reveal controls on hover is on. With the reveal off there is nothing faded and this is not read."] =
     "How faint a control NOT under the pointer is drawn, while Reveal controls on hover is on. With the reveal off there is nothing faded and this is not read."
@@ -316,10 +322,10 @@ L["Title bar"] = "Title bar"
 L["Title text"] = "Title text"
 L["Font for the window's title and the fight name beside it."] =
     "Font for the window's title and the fight name beside it."
-L["What colors the window's title and the fight name beside it. Class color is your own -- a window-wide strip has no other class it could mean."] =
-    "What colors the window's title and the fight name beside it. Class color is your own -- a window-wide strip has no other class it could mean."
-L["Color of the window's title and the fight name beside it."] =
-    "Color of the window's title and the fight name beside it."
+L["What colors the window's title and the fight name beside it. Skin is the skin's title color; Class color is your own -- a window-wide strip has no other class it could mean."] =
+    "What colors the window's title and the fight name beside it. Skin is the skin's title color; Class color is your own -- a window-wide strip has no other class it could mean."
+L["Color of the window's title and the fight name beside it. Not read while the mode beside it is Skin."] =
+    "Color of the window's title and the fight name beside it. Not read while the mode beside it is Skin."
 L["Controls"] = "Controls"
 L["Shown"] = "Shown"
 L["Size"] = "Size"
@@ -327,13 +333,14 @@ L["Size"] = "Size"
 L["Font color mode"] = "Font color mode"
 L["Background color mode"] = "Background color mode"
 -- The three color modes options-ui-§17 asked this addon to add beside swatches
--- that had none. Two values each, class and custom, because a border and a window
--- backdrop are the surfaces "per statistic" cannot say anything true about.
+-- that had none. No "per statistic", because a border and a window backdrop are the
+-- surfaces it cannot say anything true about; the window's two take Skin, Class color
+-- and Custom color (MM-A1), the bar borders' Class color and Custom color.
 L["Border color mode"] = "Border color mode"
-L["What colors the fill inside the window. Class color is your own -- a window is not about any one row."] =
-    "What colors the fill inside the window. Class color is your own -- a window is not about any one row."
-L["What colors the edge around the window. Class color is your own."] =
-    "What colors the edge around the window. Class color is your own."
+L["What colors the fill inside the window. Skin is the skin's own window fill; Class color is your own -- a window is not about any one row."] =
+    "What colors the fill inside the window. Skin is the skin's own window fill; Class color is your own -- a window is not about any one row."
+L["What draws the edge around the window. Skin is the skin's own edge -- its style, thickness and color -- and the style and thickness above apply under Class or Custom color. Class color is your own."] =
+    "What draws the edge around the window. Skin is the skin's own edge -- its style, thickness and color -- and the style and thickness above apply under Class or Custom color. Class color is your own."
 L["What colors the outline around each bar. Class is the class of the row being drawn."] =
     "What colors the outline around each bar. Class is the class of the row being drawn."
 L["What colors the border around each spell bar. Class is the player you are hovering."] =
@@ -372,12 +379,14 @@ L["Set the font outline for the cell text, both header strips and the tooltip at
 L["Title bar height"] = "Title bar height"
 L["Height of the title bar in pixels."] = "Height of the title bar in pixels."
 L["Title bar background"] = "Title bar background"
+L["Use the skin's background"] = "Use the skin's background"
+L["Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."] =
+    "Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."
 L["Show divider"] = "Show divider"
 L["Draw the hairline between the title bar and the column labels."] =
     "Draw the hairline between the title bar and the column labels."
 L["Divider thickness"] = "Divider thickness"
 L["Divider color mode"] = "Divider color mode"
-L["Ka0s skin"] = "Ka0s skin"
 L["What colors the hairline. Ka0s skin leaves it to the shared collection skin, so a re-skin reaches this window along with the debug console and the perf panel; Class color is your own class."] =
     "What colors the hairline. Ka0s skin leaves it to the shared collection skin, so a re-skin reaches this window along with the debug console and the perf panel; Class color is your own class."
 L["Divider color"] = "Divider color"
@@ -385,8 +394,8 @@ L["Color of the hairline under the title bar, used when the mode above is Custom
     "Color of the hairline under the title bar, used when the mode above is Custom color."
 L["How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."] =
     "How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."
-L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header."] =
-    "Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header."
+L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header. Not read while Use the skin's background is on."] =
+    "Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header. Not read while Use the skin's background is on."
 L["Text alignment"] = "Text alignment"
 L["Where the window's title and the fight name beside it sit horizontally."] = "Where the window's title and the fight name beside it sit horizontally."
 
@@ -754,6 +763,53 @@ L["Clear every recorded combat session?"] = "Clear every recorded combat session
 -- ---------------------------------------------------------------------------
 -- General page
 -- ---------------------------------------------------------------------------
+
+-- The Skin tab (skinning-§3): the seven skin rows' labels and tooltips (settings/Schema_Skin.lua,
+-- every one drawn by the library's own tab, so these reach `/mm list` and the CLI), the source
+-- row's one value of this addon's own, and the reload line core/SkinSetup.lua prints when a
+-- profile event leaves an EllesmereUI that painted this session. "Font" is declared with the
+-- shared vocabulary below.
+L["Skin source"] = "Skin source"
+L["Where this addon's look comes from: the Ka0s skin chosen below, or EllesmereUI."] =
+    "Where this addon's look comes from: the Ka0s skin chosen below, or EllesmereUI."
+L["Ka0s skins"] = "Ka0s skins"
+L["Skin"] = "Skin"
+L["The Ka0s skin this addon wears. Changes every window and panel right away."] =
+    "The Ka0s skin this addon wears. Changes every window and panel right away."
+L["Ignore settings panel"] = "Ignore settings panel"
+L["Keep this addon's settings panel in the game's own look. Its windows still wear the skin."] =
+    "Keep this addon's settings panel in the game's own look. Its windows still wear the skin."
+L["Ignore fonts"] = "Ignore fonts"
+L["Keep every font in this addon as the game draws it. The skin still colors the text."] =
+    "Keep every font in this addon as the game draws it. The skin still colors the text."
+L["The font this addon's text uses, over the skin's own. Empty keeps the skin's."] =
+    "The font this addon's text uses, over the skin's own. Empty keeps the skin's."
+L["Texture"] = "Texture"
+L["The texture this addon's bars use, over the skin's own. Empty keeps the skin's."] =
+    "The texture this addon's bars use, over the skin's own. Empty keeps the skin's."
+L["Skin picker seen"] = "Skin picker seen"
+L["Whether the first-run skin picker was closed on this profile."] =
+    "Whether the first-run skin picker was closed on this profile."
+L["Reload your interface (/reload) to finish changing the skin."] =
+    "Reload your interface (/reload) to finish changing the skin."
+
+-- Following the skin on the HUD (skinning-§6): the composed "Use the skin's ..." companions
+-- (settings/Schema_Compose.lua's FROM_SKIN_ROWS) and their meta pair on Frame > Quick style.
+L["Use the skin's font"] = "Use the skin's font"
+L["Use the skin's texture"] = "Use the skin's texture"
+L["Use the skin's border"] = "Use the skin's border"
+L["Draw this text in the skin's font. The font picker is kept but not read while this is on."] =
+    "Draw this text in the skin's font. The font picker is kept but not read while this is on."
+L["Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."] =
+    "Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."
+L["Draw this border in the skin's border style. The style picker is kept but not read while this is on; the thickness and the color stay yours."] =
+    "Draw this border in the skin's border style. The style picker is kept but not read while this is on; the thickness and the color stay yours."
+L["Use the skin's texture (all surfaces)"] = "Use the skin's texture (all surfaces)"
+L["Turn Use the skin's texture on or off for the grid and the tooltip at once. Each of them is still its own setting."] =
+    "Turn Use the skin's texture on or off for the grid and the tooltip at once. Each of them is still its own setting."
+L["Use the skin's font (all surfaces)"] = "Use the skin's font (all surfaces)"
+L["Turn Use the skin's font on or off for the cell text, both header strips and the tooltip at once. Each of them is still its own setting."] =
+    "Turn Use the skin's font on or off for the cell text, both header strips and the tooltip at once. Each of them is still its own setting."
 
 -- The Master controls tab (options-ui-§15). The canonical set is composed by
 -- LibKa0s-Options-1.0 and the composer's own strings are English literals; these

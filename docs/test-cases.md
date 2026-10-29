@@ -1329,9 +1329,9 @@ Total.
 - Header ships GameFontNormal spelled out: 12px, no outline, a 1/-1 shadow
 - Header shadow reaches every line of the strip
 - Column header shadow is its OWN setting, not the header's
-- The header's text answers TWO modes, and the custom one is the picker
+- The header's text answers its modes, and the custom one is the picker
 - The header's text takes the CLASS color, keeping the configured alpha
-- The header's text mode offers class and custom, and NOT per-statistic
+- The header's text mode offers skin, class and custom, and NOT per-statistic
 - The header color survives a sort change, having nothing to do with it
 - The window NAME takes the header's color
 - Column header class color is the local player's too
@@ -2476,6 +2476,97 @@ Total.
 - Keybindings: the tab refuses to bind a key in combat
 - Keybindings: the General page's Defaults tooltip ends with the library's keys-unchanged sentence
 
+### test_skinsetup.lua (20)
+
+- Skin seam: the owner is the folder name, and NS.Skin is its facade
+- Skin seam: the read answers Ka0s Default before the profile store exists
+- Skin seam: every owner token is registered, namespaced mm., and keeps its pixel on Ka0s Default
+- Skin seam: another skin draws each owner token from its follow token
+- Skin seam: the skin keys default to Ka0s Default, the panel ignored and the picker unseen
+- Skin seam: the seven skin keys are skip-render rows in the Skin tab's group
+- Skin seam: the skin row's values are every registered skin, in the library's order
+- Skin seam: /mm set refuses a skin that is not registered and applies one that is
+- Skin seam: /mm set reaches an exception, and only its own half
+- Skin seam: the write seam stores media's halves, "" for the skin's own
+- Skin seam: one tab pick is one effective SetChoice, one repaint, in the profile
+- Skin seam: the tab's Ignore fonts reaches the library and the profile, one repaint
+- Skin seam: another addon's copy to every Ka0s addon repaints this one once
+- Skin seam: a profile switch applies the new profile's skin before the rebuild
+- Skin seam: OnInitialize applies the stored skin right after the store exists
+- Skin seam: every library widget factory this addon calls is handed the owner
+- Skin seam: the degraded facade answers every name the live facade carries
+- Skin seam: the seam publishes the same NS members on both paths
+- Skin seam: each host-copy skin token is the live library's Ka0s Default value
+- Skin seam: degraded, the facade answers today's colors and the seam never raises
+
+### test_skin_chrome.lua (8)
+
+- Skin chrome: a Custom window keeps the player's fill and edge through the Shell
+- Skin chrome: a skin switch repaints a Custom window and re-lays the player's edge over it
+- Skin chrome: the TEST MODE word and the restricted notes follow the skin
+- Skin chrome: the empty state and the notice take the skin's text tokens
+- Skin chrome: the export modal paints through the facade, its refusal in mm.warn
+- Skin chrome: the rows keep their Ka0s Default pixels through the owner tokens
+- Skin chrome: a skin switch repaints the rows from the skin's tokens
+- Skin chrome: the session line's escapes are cached on ApplyConfig, not read per refresh
+
+### test_skin_hud.lua (8)
+
+- Skin HUD: the eight companions ship on, as rows defaulted on, each governing its picker
+- Skin HUD: a cell draws the skin's texture, face and border while on, the player's picks off
+- Skin HUD: the title, the column labels and the tooltip resolve through the skin too
+- Skin HUD: a skin switch repaints the bars, and every color stays the player's
+- Skin HUD: the meta pair turns every surface's companion at once
+- Skin HUD: the v20 step puts every window of every profile on the skin, keeping the picks
+- Skin HUD: the v20 reset runs once, so a pick made after it is kept
+- Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
+
+### test_skin_window.lua (12)
+
+- Skin window: the five chrome modes and the title bar companion ship on the skin
+- Skin window: under Ka0s Default the window wears Ka0s Default's own chrome
+- Skin window: the chrome follows each skin live, and ApplyBorder re-runs after the repaint
+- Skin window: hovering a control reads no token
+- Skin window: switched back to custom, every surface draws the player's color again
+- Skin window: class mode still takes the local player's class on every chrome surface
+- Skin window: without the library the Skin modes draw the stored colors, the pre-skin look
+- Skin window: a skin that sets no title band draws a clear title bar
+- Skin window: the v21 step puts every window of every profile's chrome on the skin
+- Skin window: the v21 reset runs once, so a pick made after it is kept
+- Skin window: a v19 account takes both resets in one walk
+- Skin window: the v21 step survives a junk window and leaves an absent group to the template
+
+### test_skin_picker.lua (12)
+
+- Skin picker: the spec names this owner, its seams, the General page's Skin tab and the eye
+- Skin picker: an unseen profile shows it; a seen one does not
+- Skin picker: a login or reload books it two seconds in; a zone-in books nothing
+- Skin picker: in combat a start waits for PLAYER_REGEN_ENABLED, once
+- Skin picker: a held start is dropped by HideSkinPicker
+- Skin picker: never while the addon is switched off
+- Skin picker: a new profile and a reset profile show it again
+- Skin picker: a profile event takes a shown picker down before the new skin is applied
+- Skin picker: the player's close marks it seen; this addon's own hide does not
+- Skin picker: a profile that has seen it takes a shown picker down, unmarked
+- Skin picker: the stand-down takes a shown picker down, unmarked
+- Skin picker: the eye puts the meter windows in test mode
+
+### test_skin_settings.lua (5)
+
+- Skin settings: the Profiles page paints the tree AceConfigDialog drew, after each Open
+- Skin settings: the Windows page paints its own dropdowns and the window-name box
+- Skin settings: the column blocks paint their slots and boundary rule
+- Skin settings: under another skin the column-block labels take its accent and disabled text
+- Skin settings: degraded, PaintAce and PaintAceTree paint nothing and raise nothing
+
+### test_skin_tools.lua (5)
+
+- Skin tools: the debug console is painted for this owner
+- Skin tools: the perf panel is painted for this owner
+- Skin tools: the sim step panel is painted for this owner
+- Skin tools: under Ka0s Default the tooltip lines keep their pixels
+- Skin tools: under another skin the tooltip lines take its gtip tokens
+
 ### test_columnblocks.lua (35)
 
 - Blocks: one block per item, each carrying its index and its label
@@ -2714,6 +2805,13 @@ Total.
 | test_disabled.lua | 27 |
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 51 |
+| test_skinsetup.lua | 20 |
+| test_skin_chrome.lua | 8 |
+| test_skin_hud.lua | 8 |
+| test_skin_window.lua | 12 |
+| test_skin_picker.lua | 12 |
+| test_skin_settings.lua | 5 |
+| test_skin_tools.lua | 5 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
@@ -2723,4 +2821,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2345** |
+| **Total** | **2415** |

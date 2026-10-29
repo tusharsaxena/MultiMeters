@@ -81,6 +81,13 @@ reason, because the pins it snapshotted belong to the profile that is gone. `fir
 emitter: every path that makes the active profile a different thing routes through it, so the bus
 catalog names one site and stays true.
 
+**The skin follows the profile** (the 2026-10-29 skinning rollout). The rebuild first takes a shown
+first-run skin picker down without marking it seen (`NS.HideSkinPicker`, so its pending preview is
+put back before the new profile's skin lands), then applies the new profile's skin, Scope and
+overrides through `NS.ApplySkinChoice`, which repaints every frame recorded for this owner and fires
+`OnLooksChanged`, and after the latch shows the picker again if the new profile has not closed it
+(`skin.pickerSeen`: false on a new or reset profile; a copy carries its source's).
+
 ### The `PROFILE_CHANGED` fan-out
 
 The payload is `{ newProfileKey }`. Every receiver rebuilds off the message rather than off a direct
@@ -125,8 +132,9 @@ stub's own reset loop uses the same named predicate, so a profiles row is safe o
 ## What is per-profile and what is account-wide
 
 **In the profile:** the window registry (`windows`, an array, and the `nextWindowId` counter), the
-master `enabled` switch, the `master` controls, the addon-wide `data` settings and the remembered
-`export` choices. A window's whole look lives inside its own entry, so a profile copy is a deep table
+master `enabled` switch, the `master` controls, the addon-wide `data` settings, the remembered
+`export` choices and the `skin` (which skin, its Scope, its font and texture overrides and whether
+the first-run picker was closed). A window's whole look lives inside its own entry, so a profile copy is a deep table
 copy. The shape is in [schema.md → `db.profile`](schema.md#dbprofile--the-profile-tree).
 
 **In `db.global`, shared by every profile:**

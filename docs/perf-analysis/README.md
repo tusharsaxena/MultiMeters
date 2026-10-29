@@ -140,15 +140,15 @@ addon now passes it:
 
 | Bucket | Declared within | Call sites | Parent passed |
 |---|---|---|---|
-| `meterEvent` | — | `core/MultiMeters.lua:487`, `:497`, `:505` | — |
-| `spellEvent` | — | `core/MultiMeters.lua:450` | — |
-| `systemEvent` | — | `core/MultiMeters.lua:441` | — |
-| `refresh` | — | `modules/Window.lua:1140`, `:1150`, `:1173`, `:1180` | — |
+| `meterEvent` | — | `core/MultiMeters.lua:571`, `:581`, `:589` | — |
+| `spellEvent` | — | `core/MultiMeters.lua:534` | — |
+| `systemEvent` | — | `core/MultiMeters.lua:525` | — |
+| `refresh` | — | `modules/Window.lua:1278`, `:1288`, `:1311`, `:1318` | — |
 | `providerRead` | — (more than one real parent) | `modules/Provider.lua:375` | Its caller's: `"aggregate"` from `modules/Aggregator.lua:1012` and `modules/Aggregator_Identity.lua:215`, `"targets"` from `modules/Targets.lua:347`, none from `core/Diagnostics.lua` or `core/Diagnostics_DeathRecap.lua` |
-| `aggregate` | `refresh` | `modules/Aggregator.lua:1264`, `modules/DrillDown.lua:719`, `:731` | Its caller's at `modules/Aggregator.lua:1264`; `"refresh"` at both `DrillDown` sites |
-| `render` | `refresh` | `modules/Window.lua:1324` | `"refresh"` |
-| `renderRow` | `render` | `modules/Row.lua:1167` | `"render"` |
-| `tooltip` | — | `modules/Tooltip_Builders.lua:788`, `:930`, `:948`, `:1010`, `:1024`, `:1038` | — |
+| `aggregate` | `refresh` | `modules/Aggregator.lua:1264`, `modules/DrillDown.lua:710`, `:722` | Its caller's at `modules/Aggregator.lua:1264`; `"refresh"` at both `DrillDown` sites |
+| `render` | `refresh` | `modules/Window.lua:1488` | `"refresh"` |
+| `renderRow` | `render` | `modules/Row.lua:1214` | `"render"` |
+| `tooltip` | — | `modules/Tooltip_Builders.lua:796`, `:938`, `:956`, `:1018`, `:1032`, `:1046` | — |
 | `targets` | `tooltip` | `modules/Targets.lua:443` | `"tooltip"` |
 
 So `observedWithin` is populated for every nested bucket, and a capture from a current build reports

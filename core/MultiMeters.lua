@@ -72,6 +72,11 @@ function NS:OnInitialize()
     -- it is first.
     self:InitDB()
 
+    -- The skin the active profile names (core/SkinSetup.lua), right after the store exists: the
+    -- owner registered at file load, before AceDB, and has worn Ka0s Default since. Before any
+    -- window or settings page is built, so the first paint is already the profile's skin.
+    if NS.ApplySkinChoice then NS.ApplySkinChoice() end
+
     -- THE `disabled` HOLD, re-taken from the stored path the moment there is a
     -- store to read it from (slash-commands-§7). Surviving a /reload is the
     -- entire point of that setting, and this is where it does: before OnEnable,
@@ -342,6 +347,12 @@ function NS:OnEnteringWorld(event, isLogin, isReload)
     traceEvent(event or "PLAYER_ENTERING_WORLD", " login=%s reload=%s",
         isLogin and true or false, isReload and true or false)
     self:SendMessage(MSG.ENTERING_WORLD, { isLogin = isLogin, isReload = isReload })
+    -- The first-run skin picker (core/SkinSetup.lua), once per UI session: a login or a reload,
+    -- never a zone-in. Two seconds in, off the login spike, on the AceTimer the stand-down cancels;
+    -- it shows only on a profile that has not closed it, and holds through combat.
+    if (isLogin or isReload) and self.ScheduleTimer then
+        self:ScheduleTimer(function() if NS.MaybeShowSkinPicker then NS.MaybeShowSkinPicker() end end, 2)
+    end
 end
 
 function NS:OnRosterUpdate(event)
@@ -408,6 +419,9 @@ function NS:OnCombatChanged(event)
     if event == "PLAYER_REGEN_DISABLED" then
         local M = NS.WindowManager
         if M and M.EndTestModeForCombat then M:EndTestModeForCombat() end
+    elseif event == "PLAYER_REGEN_ENABLED" and NS.ResumeSkinPicker then
+        -- A first-run skin picker start combat held (core/SkinSetup.lua) shows now, once.
+        NS.ResumeSkinPicker()
     end
     self:SendMessage(MSG.COMBAT_CHANGED)
 end

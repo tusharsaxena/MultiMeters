@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2345%2F2345_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2415%2F2415_passing-green)
 
 Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
@@ -46,6 +46,8 @@ Setting a window up takes four steps. Most of it happens on the Windows page, wh
 Want a second window? Click **New window** beside the window picker at the top of the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you four switches: Enabled, Locked, Test mode and Show window. A key can show and hide the windows too: *Toggle meter windows*, under Options → Keybindings → Ka0s Multi Meters, or on General → Keybindings in this addon's settings. Both places set the same key. No key is set for you.
 
 Want to see the meter work without a group? `/mm sim` runs a scripted fight through it. It only starts when you're solo and outside an instance, and it offers four scenarios: a dungeon pull and boss, a 20-player raid boss, a wipe and reset, and a zone change between fights. Every window shows a SIMULATION strip while it plays, and you can pause it and step through it one row at a time. The group, the fights and the numbers are made up. Nothing is saved, nothing is sent to chat, and your real segments come back when it stops.
+
+Want a different look? Multi Meters wears one of the Ka0s skins, Ka0s Default to start with, and a small picker asks you to choose one the first time you log in on a profile. You can change it any time on General → Skin, with no reload: the windows, the tooltips, the export window and the debug tools all follow. The window fonts and bar textures follow the skin too, while each **Use the skin's font**, **Use the skin's texture** or **Use the skin's border** box beside them is ticked. Untick one and your own pick comes back. Your colors, sizes and outlines are never touched. With EllesmereUI installed, the addon can wear its look instead.
 
 Everything else is on the addon's page under Settings → AddOns, and `/mm` (or `/multimeters`) on its own opens it. `/mm help` prints the full command list.
 
@@ -105,8 +107,25 @@ Please raise them on GitHub:
 ## Credits
 
 The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL
-Open Font License 1.1. The header controls, the column sort arrows, the Export window, the debug
-console and the simulator's step panel draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only
-the icons this addon draws ship. The font and the icons sit inside the bundled LibKa0s payload, each
-with its license text beside it.
+Open Font License 1.1.
+
+Ka0s Default, the skin every profile starts on, draws [Oxanium](https://github.com/sevmeyer/oxanium)
+by The Oxanium Project Authors, also SIL Open Font License 1.1.
+
+The other skins draw on seven more SIL Open Font License 1.1 faces, one family per skin:
+[Inter](https://github.com/rsms/inter) by The Inter Project Authors,
+[Nunito](https://github.com/googlefonts/nunito) by The Nunito Project Authors,
+[Vollkorn](https://github.com/FAlthausen/Vollkorn-Typeface) by The Vollkorn Project Authors,
+[Bitter](https://github.com/solmatas/BitterPro) by The Bitter Project Authors,
+[Philosopher](https://github.com/alexeiva/philosopher) by The Philosopher Project Authors,
+[Fira Sans](https://github.com/mozilla/Fira) by The Mozilla Foundation and Telefonica S.A., and
+[Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) by the Braille Institute of
+America. Inter, Nunito, Vollkorn, Bitter and Oxanium are static weights cut from upstream's
+variable fonts.
+
+The header controls, the column sort arrows, the Export window, the debug console, the simulator's
+step panel and the first-run skin picker draw icons from
+[Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only the icons this addon
+draws ship. The fonts and the icons sit inside the bundled LibKa0s payload, each with its license
+text beside it.
 

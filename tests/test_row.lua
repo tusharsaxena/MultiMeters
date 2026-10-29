@@ -692,6 +692,7 @@ test("Border style art moves to a backdrop and takes the flat outline down", fun
     local cfg = window.config
     cfg.bars.border          = true
     cfg.bars.borderStyle     = "Ka0s Edge"
+    cfg.bars.borderStyleFromSkin = false   -- the player's own pick, off the skin
     cfg.bars.borderThickness = 4
     row:ApplyLayout(window.layout)
 
@@ -855,6 +856,7 @@ test("A thickness under one pixel is clamped to one, on both paths", function()
 
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
     window.config.bars.borderStyle     = "Ka0s Edge"
+    window.config.bars.borderStyleFromSkin = false   -- the player's own pick, off the skin
     window.config.bars.borderThickness = 0
     row:ApplyLayout(window.layout)
     assertEqual(cell.frame.__backdrop.edgeSize, 1, "the art path skipped the clamp")
@@ -873,6 +875,7 @@ test("The art path takes the edge FILE and the swatch's color", function()
     end)
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
     window.config.bars.borderStyle = "Ka0s Edge"
+    window.config.bars.borderStyleFromSkin = false   -- the player's own pick, off the skin
     row:ApplyLayout(window.layout)
 
     local frame = row.cells.DamageDone.frame
@@ -897,6 +900,7 @@ test("The art path answers the color mode too, and it is the ROW'S class", funct
     inst.mocks.RAID_CLASS_COLORS.PRIEST = { r = 0.11, g = 0.22, b = 0.33 }
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
     window.config.bars.borderStyle = "Ka0s Edge"
+    window.config.bars.borderStyleFromSkin = false   -- the player's own pick, off the skin
 
     -- The entry first: ApplyBorder runs on a LAYOUT, and the class it paints is
     -- the one the cell is currently drawing.
@@ -929,6 +933,7 @@ test("Switching from the flat outline to art takes ALL FOUR sides down", functio
 
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
     window.config.bars.borderStyle = "Ka0s Edge"
+    window.config.bars.borderStyleFromSkin = false   -- the player's own pick, off the skin
     row:ApplyLayout(window.layout)
 
     assertTrue(cell.frame.__backdrop ~= nil, "the art never arrived")

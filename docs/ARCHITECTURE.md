@@ -11,7 +11,7 @@ that outgrows a screen belongs in its topic doc with a summary and a link left b
 ## Overview
 
 
-Sixty-eight non-vendored source files: 1 locale, 21 `core/`, 1 `defaults/`, 30 `modules/`, 15 `settings/`.
+Seventy non-vendored source files: 1 locale, 22 `core/`, 1 `defaults/`, 30 `modules/`, 16 `settings/`.
 
 The addon is built on the **private namespace** WoW hands each file. `core/MultiMeters.lua` calls
 `AceAddon-3.0:NewAddon(NS, addonName, …)`, which promotes that table in place — so **`NS` *is* the
@@ -52,7 +52,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `core/` boundary | `EnvSetup.lua` | The `LibKa0s-Env-1.0` seam: `NS.Meta` / `NS.Version`, the TOC-manifest reader `Compat.lua` used to own. |
 | `core/` values | `Constants.lua`, `Namespace.lua`, `State.lua` | The stat catalog, the bus catalog, identity, session-only flags and the shared cache. |
 | `core/` the rule | `Secrets.lua` | **The only file that inspects a meter value.** Its guards `IsSecret` / `CanAccess` / `IsSafeKey` are `LibKa0s-Compat-1.0`'s, with a guard arm that re-implements each body when the library is absent. |
-| `core/` seams | `MediaSetup`, `CoreSetup`, `LifecycleSetup`, `PerfSetup`, `DebugLogSetup`, `PoolSetup`, `LauncherSetup` | LibKa0s wiring, the art and font seam, and the window row pool. `LifecycleSetup` is the ONE latch and the ONE teardown — `disabled` and `perf` are two holds on it — and it loads **before** `PerfSetup`, which raises without a `lifecycle`. The `LSM30_Border` fixup that used to make a seventh file here is `lib.__PatchLSM30Border()` now, called from `settings/OptionsSetup.lua`: AceGUI's widget registry is process-global, so a re-registration belongs to the library the whole collection shares. `LauncherSetup` hands `LibKa0s-Launcher-1.0` the descriptor for the one LDB object. The library owns the clicks and draws the status tooltip and, since Launcher minor 4 (`launcher-§2`, v2.67.0), the options menu: left-click opens the settings panel, right-click opens the menu (Enabled · Locked · Test mode · Show window). The descriptor only answers: `version`, and four accessor-and-toggle pairs whose toggles are the `enable`/`disable`, `lock`, `test` and `toggle` verbs' own `NS.COMMANDS` handlers. No host tooltip lines. `LauncherSetup` also owns the Show window key binding (`launcher-§6`): the plain, hidden `MultiMetersToggleWindows` button the root `Bindings.xml` clicks, whose OnClick is the descriptor's `toggleWindow` function and refuses exactly as `/mm toggle` does. Every `<Binding>` is in the category `BINDING_HEADER_MULTIMETERS` (the brand, so the client's Keybindings page gives the addon a section of its own) with no `header`. `LauncherSetup` declares `NS.BINDINGS`, the one bindings table in `Bindings.xml` order, which the General page's Keybindings tab (`options-ui-§20`, `O.KeybindingsTab`) draws. It is built before the library-absent fork, so a degraded install still answers the key. |
+| `core/` seams | `MediaSetup`, `CoreSetup`, `SkinSetup`, `LifecycleSetup`, `PerfSetup`, `DebugLogSetup`, `PoolSetup`, `LauncherSetup` | LibKa0s wiring, the art and font seam, the skin seam ([Skins](#skins)), and the window row pool. `LifecycleSetup` is the ONE latch and the ONE teardown — `disabled` and `perf` are two holds on it — and it loads **before** `PerfSetup`, which raises without a `lifecycle`. The `LSM30_Border` fixup that used to make a seventh file here is `lib.__PatchLSM30Border()` now, called from `settings/OptionsSetup.lua`: AceGUI's widget registry is process-global, so a re-registration belongs to the library the whole collection shares. `LauncherSetup` hands `LibKa0s-Launcher-1.0` the descriptor for the one LDB object. The library owns the clicks and draws the status tooltip and, since Launcher minor 4 (`launcher-§2`, v2.67.0), the options menu: left-click opens the settings panel, right-click opens the menu (Enabled · Locked · Test mode · Show window). The descriptor only answers: `version`, and four accessor-and-toggle pairs whose toggles are the `enable`/`disable`, `lock`, `test` and `toggle` verbs' own `NS.COMMANDS` handlers. No host tooltip lines. `LauncherSetup` also owns the Show window key binding (`launcher-§6`): the plain, hidden `MultiMetersToggleWindows` button the root `Bindings.xml` clicks, whose OnClick is the descriptor's `toggleWindow` function and refuses exactly as `/mm toggle` does. Every `<Binding>` is in the category `BINDING_HEADER_MULTIMETERS` (the brand, so the client's Keybindings page gives the addon a section of its own) with no `header`. `LauncherSetup` declares `NS.BINDINGS`, the one bindings table in `Bindings.xml` order, which the General page's Keybindings tab (`options-ui-§20`, `O.KeybindingsTab`) draws. It is built before the library-absent fork, so a degraded install still answers the key. |
 | `core/` runtime | `MultiMeters.lua`, `Database.lua` | The single game-event listener and the show ladder; AceDB and migrations. |
 | `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_Runtime`, `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm diagnostics`, its addon-state sections (`_Runtime`), and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
@@ -60,7 +60,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `modules/` display | `WindowManager`, `Window` (+ `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Border`, `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window (with its test-mode strip, `LibKa0s-Widgets-1.0`'s `TestStrip` under the title, placed by `Window_Header`'s narrow `ApplyTestStrip` on the toggle; the red TEST MODE title word is written only while the strip is not shown — a minimized window, or a load without the Widgets library — and never while a simulation runs; and its simulation strip, the same `TestStrip` in its `kind = "sim"` flavor, in the same slot and on the same narrow path on `SIM_CHANGED`, shown while a `/mm sim` session runs, with no title word at all), one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
 | `modules/` simulator | `Sim`, `SimWorld`, `SimDrivers`, `SimScenario` | `/mm sim`'s session host (`modules/Sim.lua`: `NS.Sim` on LibKa0s-Sim-1.0, the refusals, the real-event classifier, the session-only stores and the stop's resync) and its invented world (MultiMeters#60): the real player plus seeded mates, zones, segments, deaths and recaps, and the providers `core/SimSetup.lua`'s seam answers from while a session runs. Plain invented numbers; it never reads a client meter value. The drivers edit that world and fire the client's events through `NS.Sim:Fire`, in the client's order; a fight's ticks are booked on the session's timer. The four #60 scenarios (`dungeon`, `raid`, `wipe`, `zone`) are timelines of labeled, tipped steps that `NS.SimHost.Play` plays through the drivers; `tests/test_sim_e2e.lua` runs each one stepped and auto-run through the real engine. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
-| `settings/` | `Schema_Compose` → `Schema` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 3 pages and 6 Windows-page entries | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, and the path and write seams. `ColumnBlocks` is the Columns entry's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
+| `settings/` | `Schema_Compose` → `Schema` → `Schema_Skin` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 3 pages and 6 Windows-page entries | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, the seven skin rows appended to it, and the path and write seams. `ColumnBlocks` is the Columns entry's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
 
 Thirteen of those files were created on 2026-09-09 and **none of them is a new module.** They are
 `layout-§1` peels of the seven source files that stood over the 1500-line cap, each cut along a seam
@@ -76,8 +76,9 @@ touching the data path.
 
 ## Settings schema
 
-`NS.Schema` in `settings/Schema.lua` is the single source of truth: **169 rows across 8 page keys**
-(windows 1, frame 26, header 36, bars 29, tooltip 30, visibility 17, columns 8, general 22), each one
+`NS.Schema` in `settings/Schema.lua` is the single source of truth: **187 rows across 8 page keys**
+(windows 1, frame 28, header 37, bars 31, tooltip 34, visibility 17, columns 9, general 29; the seven
+skin rows are appended by `settings/Schema_Skin.lua`), each one
 wiring automatically into its panel widget — one tab per distinct `group`, via
 `LibKa0s-Options-1.0`'s `RenderTabbedSchema` — its `/mm get|set|list|reset` coverage, and the
 per-page and global defaults reset. A ninth registered page, Profiles, hosts no schema rows at all.
@@ -100,12 +101,12 @@ CLI both point at them: same validation, debug line, `CONFIG_CHANGED` and panel 
 **The window-relative path model** is the one thing here that is not standard-issue. A window row's
 path is relative (`window.frame.width`) and the seam resolves it against `NS.State.activeWindowId`,
 which the settings panel's window picker moves, or against a window id the caller passes. The other
-twenty-two rows keep absolute paths against `db.profile`, so moving one integer retargets **147**
+twenty-nine rows keep absolute paths against `db.profile`, so moving one integer retargets **158**
 rows ([schema.md](schema.md#the-window-relative-path-model) lists both sets).
 
 Profiles carries **zero** rows: AceDBOptions' own tree, the one place `AceConfigDialog` is permitted,
-and vetoed from reset-all ([profiles.md](profiles.md)). Columns carries eight
-`window.columnHeader.*` rows beside its block editor, whose array is a hidden 170th row, [`window.columns`](schema.md#the-columns-row).
+and vetoed from reset-all ([profiles.md](profiles.md)). Columns carries nine
+`window.columnHeader.*` rows beside its block editor, whose array is a hidden 188th row, [`window.columns`](schema.md#the-columns-row).
 
 **The window registry has one writer** (`architecture-§5`), since no row can name a window's
 existence. Its storage keys are `db.profile.windows` (entries carry their `id` and unique `name`) and
@@ -296,6 +297,100 @@ on open, beside the library's DIALOG tool windows; the library's copy window, me
 tiers above. Tooltip spell lines share GameTooltip's level, re-stated per draw. In-client checks:
 [smoke-tests.md](smoke-tests.md) WIN-53, WIN-54, GRID-34 and PANEL-49.
 
+## Skins
+
+Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 2026-10-29 skinning rollout
+(Ka0sAddonsCommonTasks `docs/2026-10-29-SKINNING_ROLLOUT/`, items MM-01 to MM-04; the calls are its
+`DECISIONS.md`, cross-cutting X1 to X13 and the MultiMeters section's D1 to D16).
+
+- **The seam.** `core/SkinSetup.lua` registers the owner `"MultiMeters"` (the folder name) at file load
+  with its read and write seams (`NS.SkinChoice`, `NS.WriteSkinChoice`, both through the schema seam)
+  and its six owner tokens (`NS.SKIN_TOKENS`: `mm.rowHover`, `mm.rowStripe`, `mm.tipHint`, `mm.dim`,
+  `mm.testWord`, `mm.warn`), each holding the exact pixel Ka0s Default drew before and following the
+  nearest library role token under every other skin (X1, X2, X12). It publishes `NS.Skin` (the owner's
+  facade) and the call-site helpers `NS.SkinColor`, `NS.SkinEscape`, `NS.SkinWindowLooks`, `NS.SkinMediaKey`,
+  `NS.SkinPaintAce` and `NS.SkinPaintAceTree`. Its degraded arm answers every facade name, its colors
+  from `NS.SKIN_FALLBACK`, a host copy of the Ka0s Default values `tests/test_skinsetup.lua` holds to
+  the library's.
+- **The choice** is seven addon-wide profile keys under `skin` (`source`, `skin`, the Scope's
+  `ignorePanel` and `ignoreFonts`, the overrides `font` and `texture`, and `pickerSeen`), skip-render
+  rows in `settings/Schema_Skin.lua` written only through `NS.SetByPath` ([schema.md](schema.md)). The
+  library's Skin tab (key `Appearance`, `O.AppearanceTab`) draws the first six on the General page,
+  after Statistic colors and before Keybindings ([settings-panel.md](settings-panel.md)).
+- **Repaint flow.** `NS.ApplySkinChoice` runs right after `NS:InitDB` and on every profile event
+  (`core/Database.lua`'s rebuild), applying the stored Scope and overrides with the stored skin, and
+  from each Skin tab row with only its own half. `Skin:SetChoice` repaints every frame recorded for
+  this owner and then fires `NS.Skin.OnLooksChanged`, whose one listener, `WindowManager:Reskin`,
+  re-runs `ApplyConfig` on every live window, so the chrome's `skin` colors are resolved again (into
+  the window's `skinLooks`), `ApplyBorder` re-runs after the Shell's repaint, the player's own edge,
+  fill and header are laid over the new skin where a mode says Custom or Class, and the HUD media
+  resolve again.
+- **The meter window** paints through `S.Shell` with no top bar (`modules/Window.lua`), and its chrome
+  follows the skin (item MM-A1, the owner's ruling R-3, which overrules X4 for this window: the
+  inventory's D1, D3, D4 and D16). Five color modes carry `skin` beside `class` and `custom` and ship on
+  it: the fill (`frame.backdropColorMode`, `win.bg`); the edge (`frame.borderColorMode`, the skin's
+  whole edge, which the Shell draws on its edge holder in `win.borderStyle`, `win.borderSize`,
+  `win.border` and `win.inner`); the title and session line (`header.colorMode`, `title.text`); and
+  the header controls at rest and under the pointer (`frame.controlColorMode`, `icon.tint`;
+  `frame.controlHoverColorMode`, `btn.hover`, not `S.CloseButton`, whose `close.hot` red would sit
+  beside six gold siblings). The title bar background has a companion instead,
+  `header.bgColorFromSkin` (`title.bg`, clear for a skin with no title band). The v21 step put every
+  stored window on all six once. Under `class` or `custom` the Shell draws no edge and `ApplyBorder`
+  lays the player's LSM edge and fill over it, tinting Core's inner rule from `win.inner`; the stored
+  colors are never rewritten, so a mode set back to Custom draws them again. Under Ka0s Default the
+  window now wears Ka0s Default's `win.*` fill and edge and its `title.bg` band, which the owner
+  accepted. Without the library (`NS.SKIN_LIVE` false) a `skin` mode falls back to its swatch and the
+  edge to the player's, the pre-skin look. **One deviation from the skin's own window look:** the
+  Shell is called with `noTopBar` (the title bar is this window's own strip, `headerBG`), so under a
+  skin whose title bar is a gradient (`title.bgTop` / `title.bgBottom`) the meter window's band draws
+  `title.bg` flat rather than the gradient. Re-check if a skin's flat `title.bg` stops reading as its
+  title bar, or if the band moves onto the Shell's top bar. The column labels' colors and every HUD color stay the player's (X4). The notice, the
+  empty state, the session line's dim notes (`mm.dim`) and the TEST MODE word (`mm.testWord`) read
+  tokens, and both mode strips are handed the owner. The rows' hover wash (`mm.rowHover`), their
+  alternating stripe (`mm.rowStripe`), the self edge (`text.accent`) and a classless name
+  (`text.highlight`) follow the skin too, each Ka0s Default's old pixel. `RefreshUpvalues` resolves
+  them, the chrome's five `skin` colors and the session line's two escapes, once into the window's `skinLooks`
+  (`NS.SkinWindowLooks`), so no row and no refresh pass reads a token (R2).
+- **The HUD** (skinning-§6). Only the face, the bar texture and the bar border style follow the skin
+  (X4). Each HUD media picker has the composer's "Use the skin's ..." companion beside it
+  (`<key>FromSkin`: `header`, `columnHeader`, `text`, `tooltip` `.fontFromSkin` follow `hud.font`;
+  `bars.textureFromSkin` and `tooltip.barTextureFromSkin` follow `bar.texture`;
+  `bars.borderStyleFromSkin` and `tooltip.barBorderStyleFromSkin` follow `bar.borderStyle`), default
+  on for every new window (X3), and the Quick style tab carries a meta pair that broadcasts them
+  (D11). `NS.SkinMediaKey` resolves through `S.Resolve` on `ApplyConfig` and on a tooltip's build,
+  never on the refresh path, and never through `S.BarTexture`, which reads a StatusBar back (D6;
+  a cell holds a secret value). The stored pick is never rewritten. The schema's v20 step put every
+  stored window's companions on once through `Skin.ResetToSkin` (owner ruling O2), so under Ka0s
+  Default the HUD draws Ka0s Oxanium SemiBold and the Ka0s Default bar where it drew Friz Quadrata
+  and Blizzard Raid Bar (X5).
+- **The tooltips.** GameTooltip's frame stays Blizzard's (skinning-§7); the lines this addon writes
+  take `gtip.title`, `gtip.value` and `mm.tipHint` (X8), and the tooltip's bars, borders and face
+  follow the HUD companions above. `modules/Tooltip.lua` still sets the face on the GameTooltip lines
+  it writes and restores Blizzard's object on teardown (D10). Class and statistic colors stay theirs.
+- **The export modal** wears `S.Shell`, `S.TitleBar`, `S.Button`, `S.Inset`, `S.Text` and `S.Font`;
+  its copy window and dropdowns take the owner. Under Ka0s Default it gains a title band and its
+  buttons' fill, edge, icon and disabled gray move slightly (D8), and its strings, like the empty
+  state's two lines (`S.Text`), draw Ka0s Default's Oxanium faces where they drew Friz Quadrata:
+  v1.79.0's Ka0s Default reaching every surface the skin paints, kept unless **Ignore fonts** is
+  ticked ([SKIN-2](smoke-tests.md)).
+- **The settings pages** follow the owner through the library unless **Ignore settings panel** is on
+  (the shipped default). The AceGUI widgets this addon acquires itself (the Windows page's action
+  dropdown and window-name box, the Columns blocks' slots and rule, the Profiles page's
+  AceConfigDialog tree) are painted through `NS.SkinPaintAce` / `NS.SkinPaintAceTree`.
+- **The first-run picker** (owner ruling O3). `NS.MaybeShowSkinPicker` shows the library's
+  `O.SkinPicker` two seconds after a login or reload, and after every profile event, while the
+  profile's `skin.pickerSeen` is false and the addon stands up; a start in combat is held for the
+  `PLAYER_REGEN_ENABLED` edge `core/MultiMeters.lua` already receives. A pick previews; Apply, the
+  gear and Apply to all save through `NS.WriteSkinChoice`; the player's close sets `pickerSeen`, and
+  `NS.HideSkinPicker` (the stand-down, a profile event) takes it down without setting it. Its eye
+  puts the windows in test mode (X6).
+- **The EllesmereUI provider** is the library's (`SkinEUI.lua`), chosen by `skin.source = "eui"`; when
+  its gate fails the addon wears its Ka0s skin and the Skin tab names the condition.
+- **What stays.** Chat output (X7), inline help markup (X9), StaticPopups, the class and spell art,
+  the statistic palette (D14) and the diagnostics report's escapes (D15).
+
+In-client checks: [smoke-tests.md](smoke-tests.md) SKIN-1 to SKIN-24, INSTALL-15 and DEGRADED-11.
+
 ## Known limitations
 
 Every one of them, with its measurement and its issue number, is in
@@ -418,7 +513,7 @@ Rows are shaped `| Rule | What differs | Why | Decided | Re-check trigger |`.
 
 | Rule | What differs | Why | Decided | Re-check trigger |
 |---|---|---|---|---|
-| `options-ui-§17` — every color picker carries a "use class color" companion | `window.header.bgColor` — the title bar's own background — ships with **no** companion. Every other non-palette swatch in the addon has one. | Neither answer a companion could give is true of this surface. The title bar is **one strip spanning the whole window**, so "per statistic" could only ever mean the sort column's color — a fact already on screen twice, in that column's own header and in its arrow — and that is the same argument that took the mode off the title bar's *text* background and off the divider's `stat` option. The strip beside it, the column-header background, **does** keep a mode, and the difference is the point: that one labels the columns, so per-statistic tints each label with its own column's color and means something (`settings/Schema_Compose.lua`, the note above `window.columnHeader.bgColorMode`). A companion added here would be a control wired to a color nobody chose. | 2026-09-02 | The title bar grows a surface that belongs to one column or to one player — a per-row header, a sort-column tint on the strip itself — at which point "which class" and "which statistic" both have an answer and the row retires. |
+| `options-ui-§17` — every color picker carries a "use class color" companion | `window.header.bgColor` — the title bar's own background — ships with **no** color mode. Every other non-palette swatch in the addon has one. (Its one companion, since the 2026-10-29 skinning rollout, is "Use the skin's background", `header.bgColorFromSkin`, which says nothing about class or statistic.) | Neither answer a companion could give is true of this surface. The title bar is **one strip spanning the whole window**, so "per statistic" could only ever mean the sort column's color — a fact already on screen twice, in that column's own header and in its arrow — and that is the same argument that took the mode off the title bar's *text* background and off the divider's `stat` option. The strip beside it, the column-header background, **does** keep a mode, and the difference is the point: that one labels the columns, so per-statistic tints each label with its own column's color and means something (`settings/Schema_Compose.lua`, the note above `window.columnHeader.bgColorMode`). A companion added here would be a control wired to a color nobody chose. | 2026-09-02 | The title bar grows a surface that belongs to one column or to one player — a per-row header, a sort-column tint on the strip itself — at which point "which class" and "which statistic" both have an answer and the row retires. |
 | `options-ui-§17` — "one resolver": the class-color lookup is the library's | `NS.ClassRGB(classFilename)` (`core/Namespace.lua`) stays as a **second** reader of `RAID_CLASS_COLORS`, beside the library's `NS.ClassColor(unit)`. | The two answer different questions. `LibKa0s-Core-1.0`'s `ClassColor` takes a **unit token**; a meter row is a GUID and a `classFilename` out of `C_DamageMeter`, and most rows have no token at all — a player who left the group, an NPC in a damage-taken column, a follower-dungeon companion. Retiring `ClassRGB` in favor of the unit-keyed lookup would silently uncolor every one of them. The **surface** question — the window's chrome, its header, its backdrop and its border — does go through the library, via `NS.PlayerClassRGB`, which is the case the standard's clause is about; what stays private is the roster reader. Neither has a fallback the other lacks: the degraded reader in `core/CoreSetup.lua` calls `ClassRGB` too, so there is still exactly one table lookup in the addon. | 2026-09-02 | `LibKa0s-Core-1.0` grows a class-**filename** overload of `ClassColor` (or a sibling reader), at which point `ClassRGB` becomes the private copy the clause forbids and is deleted. |
 | library-stack-§8 — "where the addon needs a mark it MUST use the catalog's" | `settings/ColumnBlocks.lua:72-73`'s column-block enable/disable glyph stays on Blizzard's `ReadyCheck-Ready` / `ReadyCheck-NotReady` pair, although `LibKa0s-Media-1.0` **does** carry `circle-check` and `ban`. This is the one site in the addon where the catalog has the mark and the addon declines it. | **Three reasons, and only the third is the one that binds.** (1) *Color.* The catalog's art ships white with its shape in the alpha channel, because the collection tints by multiplying — so `circle-check` and `ban` would both draw white, and enabled-vs-disabled would be carried by shape alone where the pair on screen today carries it in green and red as well. Reconstructing that means a vertex color per state, which is a second vocabulary for one signal rather than one fewer. (2) *Degradation.* `NS.Icon` answers **nil** on a load without the payload (`core/MediaSetup.lua`), and this glyph has no ladder beneath it the way `modules/HeaderControls.lua`'s art does — the block would lose its tick outright, where a Blizzard path is part of the client and cannot go missing. (3) *Parity, which is why the line exists at all.* These are the same two textures ConsumableMaster's priority list wears (`settings/StatPriority.lua`'s `INCLUDED_TEX`/`EXCLUDED_TEX`, with `modules/KCMItemRow.lua`'s `OWNED_TEX`/`NOT_OWNED_TEX` and `settings/Category.lua`'s `OWNED_ICON`/`NOT_OWNED_ICON` beside them — named rather than numbered, because no gate in this repository can follow a line number into another one and one of those three had already slipped a lane's worth of edits by the next morning), so a player running both reads one glyph vocabulary rather than two. Moving one addon alone does not reduce the deviation; it converts a shared vocabulary into a split one, which is strictly worse than the state being ratified here. The 2026-09-07 remediation plan reaches the same conclusion in as many words — the two sites "move in both repositories together or in neither", and filing the row in both is the other half of the same choice. This repository can only file its half. **Re-challenged 2026-09-08 and unchanged.** The item's acceptance asks for two things at once — both named sites on `NS.Icon`, *and* MultiMeters' parity comment still true — and from inside this repository alone the two are not simultaneously satisfiable while ConsumableMaster's three sites stand: the move that meets the first clause is what makes the second false. The finding the item traces to says so in its own words, offering "in MultiMeters and ConsumableMaster together, **or** file the register row in both" (`MM-A-07` in `docs/audits/2026-09-07/`), and this is that second branch taken deliberately rather than a site left unvisited. LootHistory's half of the same item shipped meanwhile and settles reasons (1) and (2) on the record rather than in argument — its `NS.IconMarkup` carries the state color in the escape's own vertex fields and keeps the Blizzard path underneath as the fallback rung — which is why the row has always said only the third reason binds. | 2026-09-08 | ConsumableMaster's three sites adopt the catalog, or its priority list is retired — at which point the parity argument has no second half and this pair moves in the same cycle it does. Reasons (1) and (2) are answered upstream instead and each retires this row on its own: a `LibKa0s-Media-1.0` that publishes a tinted state pair, or an `NS.Icon` contract that carries a Blizzard fallback. |
 | library-stack-§8 — "where the addon needs a mark it MUST use the catalog's" | `modules/Tooltip.lua:107` hard-codes `Ability_Hunter_FocusedAim` for the TARGET line's icon instead of the catalog's `target`. | A white alpha glyph in a column of colored spell icons reads as foreign ([texture-paths.md](texture-paths.md#the-census)). Ratified as MM-A-25's option (b); the owner's option (a), `NS.Icon("target")` with this path as the nil fallback, stays open. | 2026-09-23 | The catalog ships a colored or iconic variant of `target`, or the tooltip stops drawing spell icons. |
@@ -535,7 +630,9 @@ the TOC: the client reads it from the addon folder by name. The binding constrai
    consumer. It carries no other constraint: it publishes `NS.Pool` and captures nothing.
 6. `core/CoreSetup.lua` before `core/MultiMeters.lua`, whose AceConsole reclaim reads
    `NS.Util.print`; and **first of the six seams that share the cause clause**, because it defines
-   `NS.LIBKA0S_MISSING`.
+   `NS.LIBKA0S_MISSING`. `core/SkinSetup.lua` follows it and sits **above every file that builds a
+   frame** and above `settings/Schema_Skin.lua`: it registers the owner and publishes `NS.Skin` and
+   the skin rows' value tables at file load.
 7. `core/LauncherSetup.lua` **after `core/Constants.lua`**, whose `LOGO_128` its descriptor reads at
    *file scope*: `LibKa0s-Launcher-1.0` raises on a launcher with no icon, and one wearing nothing
    draws nothing and raises nothing (`launcher-§4`, anti-pattern #82). Everything else it names —
@@ -558,6 +655,8 @@ the TOC: the client reads it from the addon folder by name. The binding constrai
     scope*, the path seam builds its `path → row` index by walking `NS.Schema` at *file scope*, and
     `Slash.lua` and `OptionsSetup.lua` both point their seams at the `NS.SetByPath` / `NS.GetSetting`
     that `settings/Schema_Paths.lua` — not `Schema.lua` — publishes. That pins the path file from
-    **both** sides, which is why splitting the schema took three files rather than two. Then
+    **both** sides, which is why splitting the schema took three files rather than two.
+    `settings/Schema_Skin.lua` sits between `Schema.lua` and `Schema_Paths.lua`: it appends the seven
+    skin rows to the finished array, which the path file then indexes. Then
     `settings/OptionsSetup.lua` before every page file, which call `NS.Helpers` members inside
     schema-row literals at file load.

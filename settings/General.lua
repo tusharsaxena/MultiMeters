@@ -255,11 +255,26 @@ local function Build(mainCategory)
         -- from NS.BINDINGS (core/LauncherSetup.lua), with no `before`, so it lands after every
         -- schema tab. It edits the client's key store, never the profile, which is why Defaults and
         -- Reset all settings leave it alone.
+        --
+        -- THE SKIN TAB (skinning-§3) is the library's own entry, O.AppearanceTab: the skin source,
+        -- the nine skins, the Scope, the font and texture overrides and "Copy to every Ka0s
+        -- addon...", drawn from LibKa0s-Skin-1.0 for the owner core/SkinSetup.lua registered. Its
+        -- key is NS.SKIN_TAB, the group of the seven skipRender skin rows (settings/Schema_Skin.lua),
+        -- so it takes that group's place in the strip: after Statistic colors and before
+        -- Keybindings. `get` and `set` are the seam's read and write, so a pick lands through
+        -- NS.SetByPath like every other setting; the tab calls Skin:SetChoice first, so the live
+        -- repaint is the library's and the rows' onChange finds nothing left to apply.
         H.RenderTabbedSchema(c, PAGE, {
             [L["Master controls"]]   = afterMaster,
             [L["Statistic colors"]]  = afterStatColors,
         }, nil, {
-            tabs = { H.KeybindingsTab({ bindings = NS.BINDINGS }) },
+            tabs = {
+                H.AppearanceTab({
+                    key = NS.SKIN_TAB, owner = NS.Skin and NS.Skin.owner,
+                    get = NS.SkinChoice, set = NS.WriteSkinChoice,
+                }),
+                H.KeybindingsTab({ bindings = NS.BINDINGS }),
+            },
         })
     end)
 

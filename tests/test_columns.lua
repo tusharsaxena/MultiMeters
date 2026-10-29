@@ -361,7 +361,8 @@ function()
             subs[#subs + 1] = row.subgroup
         end
     end
-    assertEqual(#want, 8, "the page declares the eight column-header rows")
+    -- Nine: the face's "Use the skin's font" companion joined the eight (skinning-§6).
+    assertEqual(#want, 9, "the page declares the nine column-header rows")
     assertEqual(table.concat(got, ","), table.concat(want, ","))
     assertEqual(table.concat(subs, "|"), L["Text"] .. "|" .. L["Background"])
     assertTrue(calls[1].opts and calls[1].opts.noHeadings == true, "the tab drew its group heading")

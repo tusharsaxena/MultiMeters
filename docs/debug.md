@@ -78,7 +78,7 @@ the flood.
 
 `NS.Debug(channel, format, ...)` is the sink; the channel is the bracketed tag at the head of the
 line. This section is the map of what writes each tag and when, so a log read back after a repro can
-be matched to the code that wrote it (`debug-logging-§8`). Twenty-two tags come from this addon's own
+be matched to the code that wrote it (`debug-logging-§8`). Twenty-three tags come from this addon's own
 call sites; `Perf` is written straight to the buffer by the perf harness with `DebugLog:Add`.
 
 **The library's tags.** `Cmd`, `Lifecycle`, `Cfg`, `Launcher` and part of `Set` are written by
@@ -144,6 +144,7 @@ the route for a host that keeps its own.
 | `Cfg` | `LibKa0s-Options-1.0` (the library's) | the settings panel opened, or its open or register held in combat and the parked register's `register flushed (combat ended)`; each write, Defaults, tab, rail or page show the combat lock refused, as `<what> refused (in combat)`, once per text per combat | — |
 | `Launcher` | `LibKa0s-Launcher-1.0` (the library's) | the minimap and compartment button's own trace; its state lines (`registered`, a broker library absent) are held by the at-enable queue and written when logging is turned on | — |
 | `Sim` | `modules/Sim.lua`, `core/SimSetup.lua` (through the seam's `debug`), LibKa0s-Sim-1.0 (through the descriptor's `debug`) | `/mm sim`: a start refused (`start refused: <guard>`), the world built, a real event consumed or delivered during a session, the stop with its counts (`simulation stopped (<reason>): N events, N sends`), and the library's own session lines (a step, gate or listener that failed) | — |
+| `Skin` | `core/SkinSetup.lua` (the owner's `log`, which LibKa0s-Skin-1.0 calls) | the one line the EllesmereUI provider writes when it refuses this addon's facade, or an owner token the library refuses | — |
 | `Perf` | the perf harness | a capture's steps | — |
 
 **Deliberately not logged.** The player-state block (mount, vehicle, form, gliding, pet battle,
