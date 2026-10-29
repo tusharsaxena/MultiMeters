@@ -270,13 +270,18 @@ test("Defaults: the profile itself is nearly empty — almost everything is per-
     -- per-window `frame.scale` / `frame.alpha` on the Frame page rather than a
     -- promotion of it. Lock frame stores nothing here: it is a view over every
     -- window's own `frame.locked` (a documented deviation; core/Database.lua v14).
+    --
+    -- `skin` is the fifth, and it is per ADDON by the standard's own rule
+    -- (skinning-§2): which skin this addon wears, its Scope, its two overrides and
+    -- the first-run picker's memory. A per-window skin would let two meters wear
+    -- two skins, which the library's one owner per addon cannot draw.
     -- red under: promoting one of the three per-window rows here instead of adding
     -- the addon-wide setting beside it.
     local keys = {}
     for key in pairs(NS.defaults.profile) do keys[#keys + 1] = key end
     table.sort(keys)
     assertEqual(table.concat(keys, ","),
-        "data,enabled,export,master,nextWindowId,statColors,windows")
+        "data,enabled,export,master,nextWindowId,skin,statColors,windows")
 
     -- The per-window three are still on the window, untouched by the move.
     assertEqual(NS.WINDOW_TEMPLATE.frame.locked, false)

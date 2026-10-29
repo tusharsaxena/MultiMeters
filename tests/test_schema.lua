@@ -277,7 +277,11 @@ local PARTITION = {
     -- composed; the other three follow the set. §15 forbids reordering, renaming
     -- or splitting the canonical set; it does not forbid an addon's own rows after
     -- it, and the case below pins that the seven come FIRST and contiguous.
-    general    = { { "Master controls", 8 }, { "Behavior", 2 }, { "Statistic colors", 8 } },
+    -- Appearance is the seven skip-render skin rows (settings/Schema_Skin.lua): the group whose
+    -- place the library's Skin tab takes, keyed "Appearance" because that is the key
+    -- O.AppearanceTab answers.
+    general    = { { "Master controls", 8 }, { "Behavior", 2 }, { "Statistic colors", 8 },
+                   { "Appearance", 7 } },
     -- The Windows rail's strips after item 020 (the settings-layout pass): Size and position
     -- leads Frame, the broadcasts are Quick style, one Bar tab per styled surface on Bars and
     -- Tooltip, one Controls tab on Header, one Rules tab on Visibility and one Column header
@@ -845,7 +849,10 @@ test("Schema: every tab name and row label is a localized string, not a bare lit
     end
 
     for _, row in ipairs(NS.Schema) do
-        if row.group and rawget(NS.L, row.group) == nil then
+        -- NS.SKIN_TAB is exempt: it is the library's tab KEY, "Appearance", which the tab
+        -- answers by that exact string and labels "Skin" itself; translating it would break
+        -- the match rather than relabel anything.
+        if row.group and row.group ~= NS.SKIN_TAB and rawget(NS.L, row.group) == nil then
             missing[#missing + 1] = "group: " .. row.group
         end
         if row.label and rawget(NS.L, words(row.label)) == nil then

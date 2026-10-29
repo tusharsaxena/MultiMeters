@@ -55,6 +55,9 @@ end
 -- The media rows' value keys are the LibSharedMedia keys the harness holds, which the vendored
 -- LibKa0s registers: they move at a re-vendor (v1.80.0 added the skin faces, the eight generated
 -- bars and the Ka0s Glass border), never with a setting.
+-- The seven skin.* rows (settings/Schema_Skin.lua, the 2026-10-29 skinning rollout's MM-01) are
+-- new settings, added after the pin was taken; the skin row's value keys are the skins the vendored
+-- LibKa0s-Skin-1.0 registers, so they move at a re-vendor too.
 -- path|type|default|min|max|step|value keys|sessionOnly|hidden|invert
 local PIN = {
     "data.mergePets|bool|false|nil|nil|nil|-|false|false|false",
@@ -77,6 +80,13 @@ local PIN = {
     "statColors.Dispels|color|{a=1,b=0.8,g=0.45,r=0.55}|nil|nil|nil|-|false|false|false",
     "statColors.HealingDone|color|{a=1,b=0.35,g=0.7,r=0.25}|nil|nil|nil|-|false|false|false",
     "statColors.Interrupts|color|{a=1,b=0.2,g=0.65,r=0.85}|nil|nil|nil|-|false|false|false",
+    "skin.font|string||nil|nil|nil|-|false|false|false",
+    "skin.ignoreFonts|bool|false|nil|nil|nil|-|false|false|false",
+    "skin.ignorePanel|bool|true|nil|nil|nil|-|false|false|false",
+    "skin.pickerSeen|bool|false|nil|nil|nil|-|false|false|false",
+    "skin.skin|string|ka0s|nil|nil|nil|azeroth,contrast,ember,forever,glass,ka0s,midnight,obsidian,wow|false|false|false",
+    "skin.source|string|ka0s|nil|nil|nil|eui,ka0s|false|false|false",
+    "skin.texture|string||nil|nil|nil|-|false|false|false",
     "state.debugConsole|bool|false|nil|nil|nil|-|true|false|false",
     "state.testMode|bool|false|nil|nil|nil|-|true|false|false",
     "window.barTexture|string|Blizzard Raid Bar|nil|nil|nil|Ka0s Classic,Ka0s Default,Ka0s Forge,Ka0s Glass Bar,Ka0s Gradient,Ka0s Matte,Ka0s Overline 1,Ka0s Overline 2,Ka0s Overline 4,Ka0s Parchment,Ka0s Satin,Ka0s Solid,Ka0s Underline 1,Ka0s Underline 2,Ka0s Underline 4|false|false|false",

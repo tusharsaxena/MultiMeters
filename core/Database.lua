@@ -1167,6 +1167,12 @@ local function rebuild(key)
     -- migrate-then-normalize pass before anything reads a window.
     NS:RunMigrations()
 
+    -- The new profile's skin (core/SkinSetup.lua), before anything rebuilds: a switch, a copy and
+    -- a reset each hand over a profile with its own `skin.*` pair, Scope and overrides.
+    -- Skin:SetChoice repaints every frame recorded for this owner and fires OnLooksChanged
+    -- whether or not a window was ever built, so the skin cannot depend on PROFILE_CHANGED.
+    if NS.ApplySkinChoice then NS.ApplySkinChoice() end
+
     -- Per-session state that was derived from the OLD profile is now wrong.
     if NS.State then
         NS.State.SetActiveWindow(nil)

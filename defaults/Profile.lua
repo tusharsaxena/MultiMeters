@@ -837,6 +837,25 @@ NS.defaults = {
             whisperTo = "",            -- meaningful only while channel is WHISPER
             lines     = 5,             -- ranked lines per chat export, 1..MAX_ROWS
         },
+
+        -- THE SKIN THIS ADDON WEARS (skinning-§2: per addon, per profile), applied through
+        -- core/SkinSetup.lua and written only through NS.SetByPath. `source` is where the look comes
+        -- from ("ka0s", the Ka0s skins, or "eui", EllesmereUI's) and `skin` which Ka0s skin;
+        -- "ka0s"/"ka0s" is Ka0s Default. The Scope's two exceptions: leave the settings panel the
+        -- client's (on for a new profile, the owner's 2026-10-27 call LootHistory set), leave every
+        -- font the client's. The two overrides: an LSM key each, "" for the skin's own. `pickerSeen`:
+        -- the first-run skin picker was closed on this profile, false on every profile old and new
+        -- (owner ruling O3). New keys with defaults, so AceDB merges them into every stored profile
+        -- and no migration is owed for them.
+        skin         = {
+            source      = "ka0s",
+            skin        = "ka0s",
+            ignorePanel = true,
+            ignoreFonts = false,
+            font        = "",
+            texture     = "",
+            pickerSeen  = false,
+        },
     },
     global = {
         schemaVersion = 0,   -- unstamped; never the current version (see above)

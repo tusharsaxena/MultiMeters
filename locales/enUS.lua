@@ -755,6 +755,35 @@ L["Clear every recorded combat session?"] = "Clear every recorded combat session
 -- General page
 -- ---------------------------------------------------------------------------
 
+-- The Skin tab (skinning-§3): the seven skin rows' labels and tooltips (settings/Schema_Skin.lua,
+-- every one drawn by the library's own tab, so these reach `/mm list` and the CLI), the source
+-- row's one value of this addon's own, and the reload line core/SkinSetup.lua prints when a
+-- profile event leaves an EllesmereUI that painted this session. "Font" is declared with the
+-- shared vocabulary below.
+L["Skin source"] = "Skin source"
+L["Where this addon's look comes from: the Ka0s skin chosen below, or EllesmereUI."] =
+    "Where this addon's look comes from: the Ka0s skin chosen below, or EllesmereUI."
+L["Ka0s skins"] = "Ka0s skins"
+L["Skin"] = "Skin"
+L["The Ka0s skin this addon wears. Changes every window and panel right away."] =
+    "The Ka0s skin this addon wears. Changes every window and panel right away."
+L["Ignore settings panel"] = "Ignore settings panel"
+L["Keep this addon's settings panel in the game's own look. Its windows still wear the skin."] =
+    "Keep this addon's settings panel in the game's own look. Its windows still wear the skin."
+L["Ignore fonts"] = "Ignore fonts"
+L["Keep every font in this addon as the game draws it. The skin still colors the text."] =
+    "Keep every font in this addon as the game draws it. The skin still colors the text."
+L["The font this addon's text uses, over the skin's own. Empty keeps the skin's."] =
+    "The font this addon's text uses, over the skin's own. Empty keeps the skin's."
+L["Texture"] = "Texture"
+L["The texture this addon's bars use, over the skin's own. Empty keeps the skin's."] =
+    "The texture this addon's bars use, over the skin's own. Empty keeps the skin's."
+L["Skin picker seen"] = "Skin picker seen"
+L["Whether the first-run skin picker was closed on this profile."] =
+    "Whether the first-run skin picker was closed on this profile."
+L["Reload your interface (/reload) to finish changing the skin."] =
+    "Reload your interface (/reload) to finish changing the skin."
+
 -- The Master controls tab (options-ui-§15). The canonical set is composed by
 -- LibKa0s-Options-1.0 and the composer's own strings are English literals; these
 -- are what this addon hands it through `labels`, plus the sentences it dresses

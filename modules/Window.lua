@@ -546,6 +546,9 @@ function WindowProto:BuildStrips(frame)
     self.testStrip = W and W.TestStrip and W.TestStrip(frame, {
         text = L["TEST MODE: placeholder numbers, not your fight. Combat ends it."],
         icon = NS.Icon and NS.Icon("info"),
+        -- The skin owner (LibKa0s-Widgets-1.0 16, skinning-§1): the strip's legibility follows
+        -- this addon's skin through its strip.* tokens; amber stays the meaning color.
+        owner = NS.name,
     }) or nil
 end
 
@@ -697,6 +700,7 @@ function WindowProto:BuildFrame()
         kind = "sim",
         text = L["SIMULATION: a scripted fight, not your data. /mm sim stop ends it."],
         icon = NS.Icon and NS.Icon("info"),
+        owner = NS.name,
     }) or nil
 
     -- ALWAYS BUILT, never gated on a setting. There used to be a `resizeGrip`

@@ -712,7 +712,9 @@ end
 --- @param top number     px below the modal's top edge
 --- @return table         the dropdown frame
 local function makeSelector(parent, top)
-    local dd = W.Dropdown(parent, MODAL_WIDTH - 32, { chevron = NS.Icon("chevron-down") })
+    -- `owner` (LibKa0s-Widgets-1.0 16): the dropdown and the shared menu it drops wear this addon's
+    -- skin (skinning-§1).
+    local dd = W.Dropdown(parent, MODAL_WIDTH - 32, { chevron = NS.Icon("chevron-down"), owner = NS.name })
     dd:SetHeight(GEOM.rowHeight)
     dd:SetPoint("TOPLEFT", 16, -top)
     dd:SetPoint("TOPRIGHT", -16, -top)

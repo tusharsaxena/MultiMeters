@@ -252,6 +252,9 @@ local function newReorderList(spec, boundary)
         -- (options-ui-§8).
         handleTooltip = NS.L and NS.L["Drag to reorder"] or nil,
         onMove     = spec.onMove,
+        -- The skin owner (LibKa0s-Widgets-1.0 16, skinning-§1): the drop line and the ghost follow
+        -- this addon's skin.
+        owner      = NS.name,
         debug      = (NS.State and NS.State.debug and NS.Debug)
             and function(fmt, ...) NS.Debug("Blocks", fmt, ...) end or nil,
     })

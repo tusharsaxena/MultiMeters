@@ -843,7 +843,11 @@ test("Options: AceGUI is resolved once and published for the page builders", fun
     local inst = T.load()
     assertTrue(inst.NS.AceGUI ~= nil,
         "library-stack-§4: resolve once and hand it over, rather than per page")
-    assertEqual(inst.NS.AceGUI, inst.mocks.__libs["AceGUI-3.0"])
+    -- Since LibKa0s v1.80.0 the handle is the skin library's proxy over AceGUI for this owner
+    -- (SkinAce.lua __AttachSkinAce), so every widget a page acquires is painted for this addon's
+    -- skin; it answers the real AceGUI underneath.
+    local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0")
+    assertEqual(Skin.__aceProxy[inst.NS.AceGUI], inst.mocks.__libs["AceGUI-3.0"])
 end)
 
 test("Options: the descriptor tells the library the FOLDER name (LibKa0s#42)", function()
@@ -1317,7 +1321,8 @@ test("Keybindings: the General page's strip ends in a Keybindings tab, after eve
         if kid.__ka0sTabTipLabel then labels[#labels + 1] = kid.__ka0sTabTipLabel end
     end
     assertEqual(table.concat(labels, " | "),
-        table.concat({ L["Master controls"], L["Behavior"], L["Statistic colors"], "Keybindings" }, " | "))
+        table.concat({ L["Master controls"], L["Behavior"], L["Statistic colors"], "Skin",
+            "Keybindings" }, " | "))
 end)
 
 test("Keybindings: the tab's rows are NS.BINDINGS in order, labeled with the BINDING_NAME_ globals", function()

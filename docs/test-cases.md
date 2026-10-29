@@ -2476,6 +2476,29 @@ Total.
 - Keybindings: the tab refuses to bind a key in combat
 - Keybindings: the General page's Defaults tooltip ends with the library's keys-unchanged sentence
 
+### test_skinsetup.lua (20)
+
+- Skin seam: the owner is the folder name, and NS.Skin is its facade
+- Skin seam: the read answers Ka0s Default before the profile store exists
+- Skin seam: every owner token is registered, namespaced mm., and keeps its pixel on Ka0s Default
+- Skin seam: another skin draws each owner token from its follow token
+- Skin seam: the skin keys default to Ka0s Default, the panel ignored and the picker unseen
+- Skin seam: the seven skin keys are skip-render rows in the Skin tab's group
+- Skin seam: the skin row's values are every registered skin, in the library's order
+- Skin seam: /mm set refuses a skin that is not registered and applies one that is
+- Skin seam: /mm set reaches an exception, and only its own half
+- Skin seam: the write seam stores media's halves, "" for the skin's own
+- Skin seam: one tab pick is one effective SetChoice, one repaint, in the profile
+- Skin seam: the tab's Ignore fonts reaches the library and the profile, one repaint
+- Skin seam: another addon's copy to every Ka0s addon repaints this one once
+- Skin seam: a profile switch applies the new profile's skin before the rebuild
+- Skin seam: OnInitialize applies the stored skin right after the store exists
+- Skin seam: every library widget factory this addon calls is handed the owner
+- Skin seam: the degraded facade answers every name the live facade carries
+- Skin seam: the seam publishes the same NS members on both paths
+- Skin seam: each host-copy skin token is the live library's Ka0s Default value
+- Skin seam: degraded, the facade answers today's colors and the seam never raises
+
 ### test_columnblocks.lua (35)
 
 - Blocks: one block per item, each carrying its index and its label
@@ -2714,6 +2737,7 @@ Total.
 | test_disabled.lua | 27 |
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 51 |
+| test_skinsetup.lua | 20 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
@@ -2723,4 +2747,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2345** |
+| **Total** | **2365** |

@@ -114,10 +114,23 @@ local function isPanelChrome(frame)
     return false
 end
 
+---
+--- AND THE SKIN LIBRARY'S EllesmereUI RETRY FRAME IS EXCLUDED. Since LibKa0s v1.78.0 the first
+--- RegisterOwner (core/SkinSetup.lua) makes LibKa0s-Skin-1.0's event frame for ADDON_LOADED and
+--- PLAYER_LOGIN: a bare CreateFrame("Frame") with no size and nothing drawn, shown only in the
+--- sense every new frame is. It is the library's, not this addon's, so a stand-down owes it
+--- nothing, and it draws no pixel to leave on screen.
+local function isLibraryFrame(inst, frame)
+    local skin = inst.mocks.LibStub("LibKa0s-Skin-1.0", true)
+    return skin ~= nil and rawequal(skin.__euiEventFrame, frame)
+end
+
 local function shownFrames(inst)
     local out = {}
     for _, f in ipairs(inst.mocks.__frames) do
-        if f.IsVisible and f:IsVisible() and not isPanelChrome(f) then out[#out + 1] = f end
+        if f.IsVisible and f:IsVisible() and not isPanelChrome(f) and not isLibraryFrame(inst, f) then
+            out[#out + 1] = f
+        end
     end
     return out
 end

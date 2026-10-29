@@ -193,6 +193,9 @@ local function loadInstance(opts)
     -- lifecycle steps are visible in the runner rather than implied by one call.
     if opts.initDB ~= false then
         if NS.InitDB then NS:InitDB() end
+        -- The profile's skin, right after the store exists, as OnInitialize applies it
+        -- (core/SkinSetup.lua): the owner registered at file load and wore Ka0s Default until now.
+        if NS.ApplySkinChoice then NS.ApplySkinChoice() end
         if NS.RunMigrations then NS:RunMigrations() end
         -- AFTER the store exists, as OnInitialize does it: LibDBIcon keeps the button's position
         -- in the table it is registered against, and a registration ahead of AceDB would hand it
@@ -354,6 +357,9 @@ local SUITES = {
     -- refusals, the at-enable queue and the Clear re-arm.
     "test_library_lines",
     "test_options_panel",
+    -- The LibKa0s-Skin-1.0 seam (core/SkinSetup.lua): the owner, the skin rows, the Skin tab,
+    -- the profile events and the degraded facade.
+    "test_skinsetup",
     "test_columnblocks",
     "test_columns",
     "test_windows_rail",

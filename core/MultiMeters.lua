@@ -72,6 +72,11 @@ function NS:OnInitialize()
     -- it is first.
     self:InitDB()
 
+    -- The skin the active profile names (core/SkinSetup.lua), right after the store exists: the
+    -- owner registered at file load, before AceDB, and has worn Ka0s Default since. Before any
+    -- window or settings page is built, so the first paint is already the profile's skin.
+    if NS.ApplySkinChoice then NS.ApplySkinChoice() end
+
     -- THE `disabled` HOLD, re-taken from the stored path the moment there is a
     -- store to read it from (slash-commands-§7). Surviving a /reload is the
     -- entire point of that setting, and this is where it does: before OnEnable,
