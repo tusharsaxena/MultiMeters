@@ -1214,6 +1214,11 @@ local function resyncEnabledHold()
 end
 
 local function rebuild(key)
+    -- FIRST, the first-run skin picker down, quietly (core/SkinSetup.lua): a showing belongs to the
+    -- profile it opened on, and taking it down puts back a pending preview, so it lands before
+    -- NS.ApplySkinChoice below and the new profile's own skin is the last one written.
+    if NS.HideSkinPicker then NS.HideSkinPicker() end
+
     -- The newly-active profile may be a copy authored at an older schema
     -- version, or a reset back to an empty registry. Both need the full
     -- migrate-then-normalize pass before anything reads a window.
@@ -1234,6 +1239,11 @@ local function rebuild(key)
     resyncEnabledHold()
 
     fireProfileChanged(key)
+
+    -- The first-run skin picker (core/SkinSetup.lua): a new or reset profile starts from the
+    -- defaults, `pickerSeen` false, so it shows, a fresh showing over the new profile's skin; one
+    -- that has seen it stays down. After the latch, so a profile with the addon off shows nothing.
+    if NS.MaybeShowSkinPicker then NS.MaybeShowSkinPicker() end
 end
 
 --- AceDB calls each of these as `obj:method(event, db, key)`.

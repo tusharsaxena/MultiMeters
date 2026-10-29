@@ -44,6 +44,20 @@ local addonName, NS = ...
 --                           written as a literal keeps its bytes on Ka0s Default (|cff9d9d9d).
 --   NS.SkinMediaKey(g,k,t)  the LSM key a HUD surface draws: the skin's token `t` while the group's
 --                           `<k>FromSkin` companion is on, else the stored pick (skinning-§6).
+--   NS.SkinPaintAce(w)      an AceGUI widget this addon acquired itself, painted for this owner:
+--   NS.SkinPaintAceTree(c)  `Skin:PaintAce` / `Skin:PaintAceTree` with the owner bound (the facade
+--                           carries neither). Nothing while the owner ignores its settings panel;
+--                           release restores stock.
+--   NS.MaybeShowSkinPicker() the first-run skin picker (LibKa0s OptionsSkinPicker 1): O.SkinPicker
+--                           while the profile's `skin.pickerSeen` is false and the addon stands up
+--                           (owner ruling O3); held to the PLAYER_REGEN_ENABLED edge in combat.
+--                           Answers the frame, or nil, "queued" behind another Ka0s addon's picker.
+--   NS.HideSkinPicker()     takes a shown picker down (its pending preview put back) or out of the
+--                           queue WITHOUT marking it seen: the stand-down, a profile that has seen
+--                           it, and first on every profile event; drops a held combat start.
+--   NS.ResumeSkinPicker()   the PLAYER_REGEN_ENABLED edge (core/MultiMeters.lua OnCombatChanged):
+--                           shows a start combat held, once.
+--   NS.SkinPickerSpec()     the spec MaybeShowSkinPicker hands O.SkinPicker.
 --
 -- ── WHERE IT LOADS ───────────────────────────────────────────────────────────────────────────
 --
@@ -218,6 +232,97 @@ local function storedIgnore()
     return panel == true, fonts == true
 end
 
+-- ── the first-run skin picker (O3, DECISIONS X6) ─────────────────────────────────────────────
+--
+-- WHEN. Once per UI session, two seconds after a login or a reload (NS:OnEnteringWorld, on the
+-- AceTimer the stand-down cancels), after OnInitialize applied the stored skin; and again after
+-- every profile event (core/Database.lua's rebuild), because a new, copied or reset profile carries
+-- its own `pickerSeen`. Never while the addon stands down, and never in combat: a start in combat
+-- is held for the PLAYER_REGEN_ENABLED edge core/MultiMeters.lua already owns (no other file
+-- registers a game event, architecture-§4), one held start at most.
+--
+-- SEEN. The library calls `onClose` once per showing, by any route the player takes (Apply, its
+-- close control, the gear, Escape), and once for a picker still queued behind another Ka0s addon's
+-- when that addon's "Apply to all Ka0s addons" dismisses it unshown; that is the one write of
+-- `pickerSeen`, through NS.SetByPath. A close this addon makes itself (NS.HideSkinPicker: the
+-- stand-down, a profile event) is not the player's and writes nothing.
+--
+-- PREVIEW. A pick only previews; `set` (NS.WriteSkinChoice) runs only on Apply, the gear or Apply
+-- to all, and the close control puts back the stored choice (the library's revert reads `get`).
+-- The eye puts the meter windows in test mode, which is session state and writes nothing; the
+-- library raises its DIALOG window over them once onPreview returns.
+
+local PICKER_PATH = "skin.pickerSeen"
+local pickerHeld = false   -- a start combat held for the PLAYER_REGEN_ENABLED edge
+local quietClose = false   -- true while NS.HideSkinPicker takes the picker down
+
+--- The eye: the meter windows in test mode, so the player sees the skin on this addon's frames.
+--- A start the window manager refuses (in combat, a simulation running) prints its own line.
+local function previewSkin()
+    local M = NS.WindowManager
+    if not (M and M.SetTestMode) then return end
+    if not M:IsTest() then M:SetTestMode(true) end
+end
+
+--- The player's close: the picker seen, and nothing else. The library's put-back already wears the
+--- stored choice, so the skin is not this callback's to move.
+local function pickerClosed()
+    if quietClose then return end
+    if not (NS.db and NS.SetByPath) then return end
+    NS.SetByPath(PICKER_PATH, true)
+end
+
+function NS.SkinPickerSpec()
+    return {
+        owner = addonName, get = NS.SkinChoice, set = NS.WriteSkinChoice,
+        -- The gear: O.OpenOptionsPanel("general"), then O.SelectTab("general", NS.SKIN_TAB), the
+        -- Skin tab's key on the General page's strip (settings/General.lua).
+        page = "general", tab = NS.SKIN_TAB,
+        onPreview = previewSkin, onClose = pickerClosed,
+    }
+end
+
+--- True while this profile has not closed the picker and the addon stands up.
+local function pickerDue()
+    if not (NS.db and NS.GetSetting) then return false end
+    if NS.IsStoodDown and NS.IsStoodDown() then return false end
+    return NS.GetSetting(PICKER_PATH) == false
+end
+
+function NS.HideSkinPicker()
+    pickerHeld = false
+    local O = NS.Helpers
+    if not (O and type(O.HideSkinPicker) == "function") then return end
+    quietClose = true
+    local ok, err = pcall(O.HideSkinPicker)
+    quietClose = false
+    if not ok then error(err, 0) end
+end
+
+--- Show the picker when this profile has not seen it: answers O.SkinPicker's frame, or nil, "queued"
+--- while another Ka0s addon's picker is up (it shows when that one closes), or nil.
+function NS.MaybeShowSkinPicker()
+    local O = NS.Helpers
+    if not (O and type(O.SkinPicker) == "function") then return nil end
+    if not pickerDue() then
+        NS.HideSkinPicker()
+        return nil
+    end
+    if InCombatLockdown and InCombatLockdown() then
+        pickerHeld = true
+        return nil
+    end
+    pickerHeld = false
+    return O.SkinPicker(NS.SkinPickerSpec())
+end
+
+--- The combat edge: a start combat held shows now, once.
+function NS.ResumeSkinPicker()
+    if not pickerHeld then return nil end
+    pickerHeld = false
+    return NS.MaybeShowSkinPicker()
+end
+
 -- ── the degraded arm ─────────────────────────────────────────────────────────────────────────
 
 if not Skin then
@@ -271,6 +376,9 @@ if not Skin then
     function NS.ApplySkinChoice() return false, false end
     function NS.ApplySkinIgnore() return false, false end
     function NS.ApplySkinOverride() return false end
+    -- Nothing to paint an AceGUI widget with: stock AceGUI, as the client draws it.
+    function NS.SkinPaintAce() return false end
+    function NS.SkinPaintAceTree() return 0 end
     return
 end
 
@@ -291,6 +399,21 @@ Skin:RegisterOwner(addonName, {
 -- leaving an EllesmereUI that painted this session). The Skin tab raises the library's popup for
 -- its own picks.
 local RELOAD_LINE = L["Reload your interface (/reload) to finish changing the skin."]
+
+-- The AceGUI widgets (SkinAce.lua). NS.AceGUI is normally the Options instance's owner proxy, which
+-- paints on Create already; PaintAce for the same owner repaints in place, so a host call after it
+-- is harmless, and it is what paints a widget acquired any other way (AceConfigDialog's, on the
+-- Profiles page). Each guards on the member, so a copy whose SkinAce secondary did not attach
+-- paints nothing.
+function NS.SkinPaintAce(widget)
+    if type(Skin.PaintAce) ~= "function" then return false end
+    return Skin:PaintAce(addonName, widget)
+end
+
+function NS.SkinPaintAceTree(container)
+    if type(Skin.PaintAceTree) ~= "function" then return 0 end
+    return Skin:PaintAceTree(addonName, container)
+end
 
 function NS.ApplySkinIgnore(panel, fonts)
     if type(Skin.SetIgnore) ~= "function" then return false, false end

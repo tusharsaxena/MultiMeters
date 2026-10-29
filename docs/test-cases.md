@@ -2518,6 +2518,21 @@ Total.
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
 
+### test_skin_picker.lua (12)
+
+- Skin picker: the spec names this owner, its seams, the General page's Skin tab and the eye
+- Skin picker: an unseen profile shows it; a seen one does not
+- Skin picker: a login or reload books it two seconds in; a zone-in books nothing
+- Skin picker: in combat a start waits for PLAYER_REGEN_ENABLED, once
+- Skin picker: a held start is dropped by HideSkinPicker
+- Skin picker: never while the addon is switched off
+- Skin picker: a new profile and a reset profile show it again
+- Skin picker: a profile event takes a shown picker down before the new skin is applied
+- Skin picker: the player's close marks it seen; this addon's own hide does not
+- Skin picker: a profile that has seen it takes a shown picker down, unmarked
+- Skin picker: the stand-down takes a shown picker down, unmarked
+- Skin picker: the eye puts the meter windows in test mode
+
 ### test_columnblocks.lua (35)
 
 - Blocks: one block per item, each carrying its index and its label
@@ -2759,6 +2774,7 @@ Total.
 | test_skinsetup.lua | 20 |
 | test_skin_chrome.lua | 5 |
 | test_skin_hud.lua | 8 |
+| test_skin_picker.lua | 12 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
@@ -2768,4 +2784,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2378** |
+| **Total** | **2390** |
