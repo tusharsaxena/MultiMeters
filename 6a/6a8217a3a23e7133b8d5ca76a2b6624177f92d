@@ -1,0 +1,12 @@
+Independent review of the MultiMeters skin adoption (MM-RV..MM-05, reviewed at 8bb21e6). Verdict: changes requested; gate green at 8bb21e6 (2400 passed, 0 failed, 1 skipped; luacheck 0/0 over 170 files); payload matches v1.80.0 (315c79e).
+
+Findings and outcome:
+1. major modules/Row.lua: row hover wash, stripe, self edge and classless name typed colors despite mm.rowHover/mm.rowStripe tokens. FIXED f43617c: NS.SkinWindowLooks resolves the four colors once into window.skinLooks on RefreshUpvalues (so on every ApplyConfig/Reskin); Row.lua reads the cache, never a token per row. Tests pin Ka0s Default pixels and Obsidian tokens; chrome tests now use a managed window so the switch reaches them through Reskin.
+2. major modules/Window.lua: D1/D3/D4/D16 not implemented, no recorded ruling. FIXED (ruling route) 6a6a821: ARCHITECTURE records X4 read over D1/D3/D4 and D16's color modes, SKIN-4 puts it to the owner as a question; the D16 relabel done (divider mode reads Skin, WIN-18 rewritten and pending). The lead should record the ruling in DECISIONS.md.
+3. major docs/smoke-tests.md: Ka0s Default face change (Oxanium) on export modal and empty state uncovered, SKIN-2 would fail. FIXED (record route) 6a6a821: SKIN-2 rewritten to expect the colors as before and the new faces; ARCHITECTURE records it. The lead should record it in DECISIONS.md.
+4. minor Window_Header.lua: mm.dim/mm.testWord read per refresh. FIXED f43617c: cached in skinLooks, test asserts no SkinEscape call on the refresh path.
+5. minor settings/ColumnBlocks.lua: label face stays GameFontNormal. DECLINED: S.Text is not scoped by Ignore settings panel (only Options chrome and PaintAce are), so it would move the labels to Oxanium under Ka0s Default even with Ignore settings panel on (the shipped default), changing Ka0s Default unasked and breaking the Scope's meaning; the color already follows the skin.
+6. minor tests/test_skinsetup.lua: 5cc6b12 red (eol + doc file count), fixed by 377d14a. NO CHANGE: history not rewritten.
+7. minor CLAUDE.md: 6b64c7f carries the interrupted session's trailer. NO CHANGE: recorded as a known difference, not amended.
+
+Gate at HEAD: 2403 passed, 0 failed, 1 skipped; luacheck 0 warnings / 0 errors in 170 files; Row.lua 1283, Window.lua 1473 lines.
