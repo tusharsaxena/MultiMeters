@@ -543,6 +543,24 @@ function M:RefreshAll()
     end
 end
 
+--- Re-apply every window over a new skin: the listener below. Skin:SetChoice (and
+--- an override change) repaints every frame recorded for this owner and THEN fires
+--- OnLooksChanged; the window's Shell replay rewrites its backdrop, title font and
+--- divider, so each live window re-runs ApplyConfig to lay the player's edge, fill,
+--- header and notice over the new skin, and is marked dirty so the next pass redraws
+--- its header text in the new token escapes. Visibility is not touched: a skin is
+--- not a reason for a window to appear or go.
+function M:Reskin()
+    for _, inst in ipairs(M.All()) do
+        inst:ApplyConfig()
+        inst:MarkDirty()
+    end
+end
+
+if NS.Skin and NS.Skin.OnLooksChanged then
+    NS.Skin.OnLooksChanged(function() M:Reskin() end)
+end
+
 --- Mark every window dirty without re-applying anything. What a data-shaped
 --- change (a meter reset, a roster change reaching the manager rather than the
 --- windows) costs: one flag each, and the throttle decides the rest.

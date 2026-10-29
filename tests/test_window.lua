@@ -576,7 +576,14 @@ test("An empty session says so rather than leaving a blank grid", function()
     -- red under: the window's font at its text size (+4 on the title), larger than Drop Watcher's
     assertEqual(e.title.__template, "GameFontNormalLarge", "the title Drop Watcher's empty-state size")
     assertEqual(e.text.__template, "GameFontHighlightSmall", "the line Drop Watcher's size")
-    assertTrue(e.title.__font == nil and e.text.__font == nil, "no window font laid over the templates")
+    -- The skin owns the two faces (MM-02, S.Text): the heading's and the body's, never the window's.
+    local windowFace = inst.NS.WindowFontPath((inst.NS.GetSetting("window.header.font")))
+    for _, fs in ipairs({ e.title, e.text }) do
+        assertTrue(fs.__font == nil or fs.__font.path ~= windowFace, "no window font laid over the templates")
+    end
+    local tr, tg, tb = inst.NS.Skin.Color("text.highlight")
+    local lr, lg, lb = e.text:GetTextColor()
+    assertTrue(lr == tr and lg == tg and lb == tb, "the line in the skin's highlight")
 
     window:Render({}, true)
     assertFalse(e:IsShown(), "the next pass takes it down before it decides")

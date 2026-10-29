@@ -2499,6 +2499,14 @@ Total.
 - Skin seam: each host-copy skin token is the live library's Ka0s Default value
 - Skin seam: degraded, the facade answers today's colors and the seam never raises
 
+### test_skin_chrome.lua (5)
+
+- Skin chrome: the meter window keeps its Ka0s Default pixels through the Shell
+- Skin chrome: a skin switch repaints the window and re-lays the player's edge over it
+- Skin chrome: the TEST MODE word and the restricted notes follow the skin
+- Skin chrome: the empty state and the notice take the skin's text tokens
+- Skin chrome: the export modal paints through the facade, its refusal in mm.warn
+
 ### test_columnblocks.lua (35)
 
 - Blocks: one block per item, each carrying its index and its label
@@ -2738,6 +2746,7 @@ Total.
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 51 |
 | test_skinsetup.lua | 20 |
+| test_skin_chrome.lua | 5 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
@@ -2747,4 +2756,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2365** |
+| **Total** | **2370** |

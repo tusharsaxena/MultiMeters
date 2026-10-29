@@ -13,8 +13,10 @@ because it was the biggest, not because anyone could reproduce it. So the number
 the command that produced it and the scope that command runs over, and this table is what an audit
 reads instead of measuring again.
 
-**Thirteen lines carrying thirteen paths, eleven distinct file/path pairs, measured 2026-10-02** (fifteen
-and thirteen on 2026-09-16, before the resize grip moved onto `Core.MakeResizable`) over
+**Nine lines carrying nine paths, nine distinct file/path pairs, measured 2026-10-29** (thirteen and
+eleven on 2026-10-02, before the export modal's buttons and whisper row moved onto the skin's
+`S.Button` and `S.Inset`; fifteen and thirteen on 2026-09-16, before the resize grip moved onto
+`Core.MakeResizable`) over
 the tracked `*.lua` this repository authors — `libs/` excluded because vendored code is audited where
 it is written, `tests/` excluded because a path in a fixture is an assertion about a string rather
 than chrome any player sees:
@@ -35,25 +37,24 @@ cannot answer for, so the narrative and the tally were measured with different h
 same defect the cluster was filed for, one layer down: the scope was written out and the *pattern*
 was not.
 
-Dropping the quote widens the match to **17** lines (19 on 2026-09-16), and the four it adds are prose, not paths:
+Dropping the quote widens the match to **13** lines (17 on 2026-10-02, 19 on 2026-09-16), and the four it adds are prose, not paths:
 `core/Compat.lua:593` and `modules/Window_Header.lua:78` both quote `UI-SortArrow-Up` while explaining that
 it does not exist, `core/MediaSetup.lua:27` names the `Interface\AddOns\` prefix in the argument for
 taking the folder name from the vararg, and `core/Namespace.lua:137` does the same. A comment naming
 a texture is not a texture, so they are named here rather than given rows — and naming them is what
-makes the subtraction from 17 checkable by a reader who runs the looser form.
+makes the subtraction from 13 checkable by a reader who runs the looser form.
 
 ## The census
 
 | File | Path | Disposition |
 |---|---|---|
 | `core/Constants.lua` | `Interface\AddOns\MultiMeters\media\logos\multimeters.logo.tga` | The addon's **own shipped art**, which no icon catalog is meant to replace (`layout-§3`). The reasoning above the line is about the extension, not the hard-coding: `.tga` is the only form the client loads, and the `.png` master beside it is packaging. |
-| `modules/Export_Modal.lua` | `Interface\Buttons\WHITE8x8` | The flat 1px fill `standalone-windows` **mandates** for the shared window edge — a client primitive, not a mark, so outside what the catalog answers for. `LibKa0s/Core.lua:91,94` reaches for the same file for the same reason. Two sites, one path. |
 | `core/Constants.lua` | `Interface\AddOns\MultiMeters\media\logos\multimeters.logo.128.tga` | The addon's **own shipped art** again, in its icon form. `layout-§4` requires this exact file and `launcher-§4` requires it in three places at once -- the TOC's `## IconTexture`, the minimap button and a broker display -- so one path is read by `core/LauncherSetup.lua` and restated in `MultiMeters.toc`. A catalog mark here is the thing `launcher-§4` forbids outright: a borrowed icon makes the addon look like something else in the one list where the player is choosing what to turn off (**anti-pattern #82**). Replaced `modules/Minimap.lua`'s borrowed `achievement_challengemode_gold` when the launcher was adopted. |
 | `modules/Row.lua` | `Interface\TargetingFrame\UI-Classes-Circles` | The client's **class atlas**, cropped by coordinate. The catalog carries no class art and `library-stack-§8` sends a missing mark upstream rather than into an addon — but twelve class circles are Blizzard's own data, not a Ka0s glyph, and they change when the game's classes do. |
 | `modules/Row.lua` | `Interface\TargetingFrame\UI-StatusBar` | Last-resort bar fill after an LSM fetch answers nothing. The catalog **does** ship bar textures (`library-stack-§8`), and they reach LSM through `core/MediaSetup.lua`'s `RegisterLSM` — so the only load that reaches this line is one where the payload is absent, and on that load the catalog's textures never reached LSM either. A fallback that needs the thing that is missing is not a fallback. |
 | `modules/Tooltip.lua` | `Interface\ICONS\INV_Misc_QuestionMark` | The client's canonical unknown-item mark, standing in for a spellID it cannot resolve. `library-stack-§8` has no equivalent and could not sensibly grow one: the whole point of this texture is that every WoW player already reads it as "missing", which is a meaning the client owns and a Ka0s glyph cannot borrow. |
 | `modules/Tooltip.lua` | `Interface\ICONS\Ability_Hunter_FocusedAim` | **Register row** in the hub's [Documented deviations](ARCHITECTURE.md#documented-deviations) — `library-stack-§8`, ratified 2026-09-23. The icon every TARGET line wears, and a site where the catalog **does** have a candidate — `target`. This slot sits in a column of colored Blizzard spell icons, and `library-stack-§8` requires catalog art to be white with its shape in the alpha channel, so the one line drawing a Ka0s glyph would be the one line that looked foreign. |
-| `modules/Tooltip.lua` | `Interface\Buttons\WHITE8X8` | The fill `standalone-windows` mandates, here as the bar fallback for a window with no texture configured — a `StatusBar` with no texture draws nothing, so a tint alone is not a fallback. The casing differs from the `modules/Export_Modal.lua` row and from nothing else; `LibKa0s` spells it both ways too (`Core.lua:91` / `Widgets.lua:44`), WoW paths are case-insensitive, and it is recorded here so nobody spends a commit "fixing" it. |
+| `modules/Tooltip.lua` | `Interface\Buttons\WHITE8X8` | The fill `standalone-windows` mandates, here as the bar fallback for a window with no texture configured — a `StatusBar` with no texture draws nothing, so a tint alone is not a fallback. The casing is the client's either way; `LibKa0s` spells it both ways too (`Core.lua:91` / `Widgets.lua:44`), WoW paths are case-insensitive, and it is recorded here so nobody spends a commit "fixing" it. |
 | `settings/ColumnBlocks.lua` | `Interface\RaidFrame\ReadyCheck-Ready` | **Register row** in the hub's [Documented deviations](ARCHITECTURE.md#documented-deviations) — `library-stack-§8`, ratified 2026-09-08 on parity with ConsumableMaster's priority list. |
 | `settings/ColumnBlocks.lua` | `Interface\RaidFrame\ReadyCheck-NotReady` | **Register row** — the other half of the same pair and the same row. |
 

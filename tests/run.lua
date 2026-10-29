@@ -360,6 +360,9 @@ local SUITES = {
     -- The LibKa0s-Skin-1.0 seam (core/SkinSetup.lua): the owner, the skin rows, the Skin tab,
     -- the profile events and the degraded facade.
     "test_skinsetup",
+    -- The chrome painted through that facade: the meter window's Shell, its header escapes, the
+    -- empty state and the export modal, under Ka0s Default and across a skin switch.
+    "test_skin_chrome",
     "test_columnblocks",
     "test_columns",
     "test_windows_rail",

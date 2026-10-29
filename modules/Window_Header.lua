@@ -377,7 +377,10 @@ function WindowProto:ApplyTitle()
     -- the sim strip alone, and the step panel marks the run (OWNER_SCOPE A).
     local title = cfg.name or L["Multi Meters"]
     if NS.State and NS.State.testMode and not stripShown(self) and not simRunning() then
-        title = title .. "   |cffff2020" .. L["TEST MODE"] .. "|r"
+        -- The word's red is this addon's owner token (core/SkinSetup.lua), today's
+        -- pixel under Ka0s Default and the skin's test-mode red under every other.
+        title = title .. "   " .. (NS.SkinEscape and NS.SkinEscape("mm.testWord") or "")
+            .. L["TEST MODE"] .. "|r"
     end
     frame.title:SetText(title)
     frame.title:SetShown((cfg.header or {}).show ~= false)
@@ -662,7 +665,8 @@ local function dressHeaderButton(button, key, label, width, d)
     local tr, tg, tb, ta = d.hr, d.hg, d.hb, d.ha
     if d.colorMode == "stat" then
         if key == "name" then
-            tr, tg, tb = 1, 1, 1
+            -- The skin's highlight: white under Ka0s Default.
+            tr, tg, tb = NS.SkinColor("text.highlight")
         else
             tr, tg, tb, ta = surfaceColor("stat", d.color, key, d.hr, d.hg, d.hb, d.ha)
         end
@@ -1214,7 +1218,10 @@ function WindowProto:RestrictedNotice(preview)
     if preview then return nil end
     local aggregate = self.aggregate
     if not (aggregate and aggregate.identityMode) then return nil end
-    if not aggregate.ambiguous then return NS.GRAY .. L["restricted"] .. "|r" end
+    -- The note's gray is the owner token `mm.dim` (core/SkinSetup.lua): NS.GRAY's
+    -- bytes under Ka0s Default, the skin's muted text under every other.
+    local dim = NS.SkinEscape and NS.SkinEscape("mm.dim") or NS.GRAY
+    if not aggregate.ambiguous then return dim .. L["restricted"] .. "|r" end
 
     -- THE COUNT, WHERE THERE IS ONE. Both figures are OUR OWN plain integers --
     -- a tally of rows the aggregator kept, never a meter value -- so formatting
@@ -1237,9 +1244,9 @@ function WindowProto:RestrictedNotice(preview)
         local fmt = (ambiguous * QUARTER >= total)
             and L["restricted \226\128\148 %d of %d blank: duplicate specs"]
             or  L["restricted \226\128\148 %d of %d share a class and spec"]
-        return NS.GRAY .. string.format(fmt, ambiguous, total) .. "|r"
+        return dim .. string.format(fmt, ambiguous, total) .. "|r"
     end
-    return NS.GRAY .. L["restricted \226\128\148 some rows cannot be told apart"] .. "|r"
+    return dim .. L["restricted \226\128\148 some rows cannot be told apart"] .. "|r"
 end
 
 --- The header's right-hand line: which session, how long it has run, and the
@@ -1329,7 +1336,8 @@ function WindowProto:ShowNotice(reason)
         L["Multi Meters reads every number from the game's built-in damage meter. Enable it to see data here."],
     }
     if reason ~= nil and NS.IsConcatSafe and NS.IsConcatSafe(reason) then
-        lines[#lines + 1] = NS.GRAY .. L["Reason: %s"]:format(tostring(reason)) .. "|r"
+        local dim = NS.SkinEscape and NS.SkinEscape("mm.dim") or NS.GRAY
+        lines[#lines + 1] = dim .. L["Reason: %s"]:format(tostring(reason)) .. "|r"
     end
     self.notice:SetText(table.concat(lines, "\n\n"))
     self.notice:Show()

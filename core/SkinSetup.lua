@@ -88,6 +88,12 @@ NS.SKIN_TOKENS = {
     -- The dim text inside the meter window (the session line's "restricted" notes, the notice's
     -- reason line), NS.GRAY |cff9d9d9d today.
     ["mm.dim"]       = { default = { DIM, DIM, DIM, 1 }, follow = "text.muted" },
+    -- The red TEST MODE word in a window title (modules/Window_Header.lua), |cffff2020 today:
+    -- `sem.modeTest` is 1, 0.15, 0.15, four levels off, so it keeps its own pixel (X1).
+    ["mm.testWord"]  = { default = { 1, 0x20 / 255, 0x20 / 255, 1 }, follow = "sem.modeTest" },
+    -- The export modal's refusal line (modules/Export_Modal.lua): 0.9, 0.25, 0.25 where `sem.off`
+    -- is 0.9, 0.3, 0.3.
+    ["mm.warn"]      = { default = { 0.9, 0.25, 0.25, 1 }, follow = "sem.off" },
 }
 
 -- The Ka0s Default library tokens the DEGRADED facade answers, copied from the library and limited
@@ -101,6 +107,9 @@ NS.SKIN_FALLBACK = {
     ["win.inner"]  = { 0.24, 0.24, 0.27, 0.85 },
     ["title.text"] = { 1, 0.82, 0, 1 },
     ["divider"]    = { 0.24, 0.24, 0.27, 0.85 },
+    ["text.highlight"] = { 1, 1, 1, 1 },
+    ["text.heading"]   = { 1, 0.82, 0, 1 },
+    ["text.accent"]    = { 1, 0.82, 0, 1 },
 }
 
 --- A color token's components AS A CALL SITE WRITES THEM: r, g, b for an opaque color and r, g, b,

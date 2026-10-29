@@ -172,34 +172,21 @@ local function hasUI()
     return type(CreateFrame) == "function"
 end
 
---- Read a color out of the shared skin, with a fallback per channel.
----
---- NS.SKIN degrades to an EMPTY TABLE rather than nil, so the index is always
---- safe; the fallbacks are for the degraded branch, where every field is absent
---- and a button still has to be visible.
----
---- @param key string
---- @param dr number
---- @param dg number
---- @param db number
---- @param da number
---- @return number, number, number, number
-local function skinColor(key, dr, dg, db, da)
-    local skin = NS.SKIN
-    local c = type(skin) == "table" and skin[key] or nil
-    if NS.RGBA then return NS.RGBA(c, dr, dg, db, da) end
-    if type(c) ~= "table" then return dr, dg, db, da end
-    return c[1] or dr, c[2] or dg, c[3] or db, c[4] or da
-end
+-- Every look on the two frames is the skin's, painted through this addon's facade
+-- (core/SkinSetup.lua, skinning-§1): S.Shell on the modal, S.TitleBar on its bar,
+-- S.Button on the two actions, S.Inset on the whisper row, S.Text on its caption
+-- and on the refusal line. Each primitive is recorded, so a skin switch repaints
+-- them with no listener of this file's; the copy window is the library's and
+-- follows the owner its `addonName` names. No color is typed here (#107).
 
 --- The dragging title bar both frames wear. Identical construction in both, so
 --- it is one function: a strip across the top that moves the frame, a centered
 --- caption, and the shared close button on the right.
 ---
---- The caption is stored as `frame.title` because that is the key NS.ApplySkin
---- looks for when it applies the skin's accent color — which is why the whole
---- bar is built BEFORE the skin goes on. Setting the title color here instead
---- would be this file deciding what the addon looks like.
+--- The caption is stored as `frame.title` because that is the key the Shell
+--- tints, and the bar as `frame.titleBar`, which EnsureFrame hands to S.TitleBar
+--- once the window is skinned. Setting the title color here instead would be
+--- this file deciding what the addon looks like.
 ---
 --- @param frame table   the frame being titled
 --- @param text string   the caption
@@ -228,14 +215,15 @@ local function makeTitleBar(frame, text)
         frame.closeButton = close
     end
 
+    frame.titleBar = bar
     return bar
 end
 
---- A flat button in the addon's own colors.
----
---- The colors come out of NS.SKIN rather than being restated as literals here.
---- A hand-copied palette is a palette that drifts the first time the skin
---- changes, and it drifts silently — the button just stops matching.
+--- A flat button in the skin's colors: S.Button paints the box, the label at
+--- rest, under the pointer and disabled (it follows OnEnable / OnDisable), and
+--- the icon's tint. A hand-copied palette is a palette that drifts the first
+--- time the skin changes, and it drifts silently — the button just stops
+--- matching.
 ---
 --- @param parent table
 --- @param text string
@@ -245,22 +233,6 @@ end
 local function makeButton(parent, text, onClick, icon)
     local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
     button:SetHeight(ROW_H)
-
-    -- The flat 1px fill standalone-windows names for a Ka0s edge, hard-coded
-    -- rather than fetched: it is a client primitive, not a mark, so it is not
-    -- something LibKa0s-Media's catalog answers for (library-stack-§8). The
-    -- whisper row below wears the same backdrop, and docs/texture-paths.md's
-    -- "Hard-coded texture paths" census carries both sites as one row.
-    if button.SetBackdrop then
-        button:SetBackdrop({
-            bgFile   = "Interface\\Buttons\\WHITE8x8",
-            edgeFile = "Interface\\Buttons\\WHITE8x8",
-            edgeSize = 1,
-            insets   = { left = 1, right = 1, top = 1, bottom = 1 },
-        })
-        button:SetBackdropColor(skinColor("bg", 0.1, 0.1, 0.12, 0.9))
-        button:SetBackdropBorderColor(skinColor("innerBorder", 0.24, 0.24, 0.27, 0.9))
-    end
 
     -- THE ICON IS BESIDE THE LABEL, NEVER INSTEAD OF IT. These two buttons are the
     -- only irreversible-ish things in the modal -- one opens a copy window, the
@@ -274,7 +246,6 @@ local function makeButton(parent, text, onClick, icon)
         art:SetPoint("LEFT", button, "LEFT", 10, 0)
         art:SetSize(14, 14)
         art:SetTexture(path)
-        art:SetVertexColor(1, 1, 1)
         button.icon = art
     end
 
@@ -283,15 +254,10 @@ local function makeButton(parent, text, onClick, icon)
     label:SetText(text)
     button.text = label
 
-    button:SetScript("OnEnter", function()
-        if button:IsEnabled() then label:SetTextColor(skinColor("title", 1, 0.82, 0)) end
-    end)
-    button:SetScript("OnLeave", function()
-        label:SetTextColor(button:IsEnabled() and 1 or 0.4,
-                           button:IsEnabled() and 1 or 0.4,
-                           button:IsEnabled() and 1 or 0.4)
-    end)
     button:SetScript("OnClick", onClick)
+    -- After the host's own scripts: the primitive hooks OnEnter / OnLeave /
+    -- OnEnable / OnDisable for the label's color.
+    if NS.Skin then NS.Skin.Button(button) end
 
     return button
 end
@@ -300,19 +266,14 @@ end
 ---
 --- Both halves matter. The Disable is what makes the click do nothing; the color
 --- is what tells the player why nothing happened before they click it a second
---- time.
+--- time. The color is the skin's (`text.disabled`), which S.Button lays on the
+--- label from the OnEnable / OnDisable each call fires.
 ---
 --- @param button table|nil
 --- @param enabled boolean
 local function setEnabled(button, enabled)
     if not button then return end
-    if enabled then
-        button:Enable()
-        if button.text then button.text:SetTextColor(1, 1, 1) end
-    else
-        button:Disable()
-        if button.text then button.text:SetTextColor(0.4, 0.4, 0.4) end
-    end
+    if enabled then button:Enable() else button:Disable() end
 end
 
 --- Put a frame over the meter window it was opened from.
@@ -372,7 +333,8 @@ local function ensureCopyWindow()
         font      = Const.FONT_MONO,
         fontSize  = 10,
         editWidth = EDIT_FALLBACK_WIDTH,
-        applySkin = NS.ApplySkin,
+        -- No `applySkin`: it would run INSTEAD of the owner's skin. `addonName` is the
+        -- registered owner (LibKa0s-Widgets-1.0 16), so the window wears its facade.
         -- Consulted on every show, so the popup lands over the window that
         -- spawned it wherever the user has since dragged it. The window's ANCHOR,
         -- never its visible frame: the visible frame has held secret meter values
@@ -764,22 +726,13 @@ local function EnsureFrame()
     -- NOT InputBoxTemplate, and that is the fix rather than a preference. The
     -- template carries its own rounded, gold-edged art and its own text insets;
     -- beside three flat selectors it read as a control borrowed from another
-    -- addon, and its insets are what clipped the name. This is the same backdrop
-    -- the selectors above it wear, so the four rows are one column.
+    -- addon, and its insets are what clipped the name. S.Inset paints it from the
+    -- skin's input.* tokens, the same box the owner's selectors above it wear
+    -- (S.Dropdown), so the four rows are one column.
     local whisperRow = CreateFrame("Frame", nil, modal, "BackdropTemplate")
     whisperRow:SetHeight(GEOM.rowHeight)
     whisperRow:SetPoint("TOPLEFT", 16, -GEOM.whisperTop)
     whisperRow:SetPoint("TOPRIGHT", -16, -GEOM.whisperTop)
-    if whisperRow.SetBackdrop then
-        whisperRow:SetBackdrop({
-            bgFile   = "Interface\\Buttons\\WHITE8x8",
-            edgeFile = "Interface\\Buttons\\WHITE8x8",
-            edgeSize = 1,
-            insets   = { left = 1, right = 1, top = 1, bottom = 1 },
-        })
-        whisperRow:SetBackdropColor(skinColor("bg", 0.1, 0.1, 0.12, 0.9))
-        whisperRow:SetBackdropBorderColor(skinColor("innerBorder", 0.24, 0.24, 0.27, 0.9))
-    end
 
     -- The caption INSIDE the row, as a prefix, so this reads "Whisper to: …" in
     -- the same shape as "Metric: …" above it. It was a separate FontString above
@@ -787,7 +740,6 @@ local function EnsureFrame()
     local whisperCaption = whisperRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     whisperCaption:SetPoint("LEFT", 8, 0)
     whisperCaption:SetText(L["Whisper to:"] .. " ")
-    whisperCaption:SetTextColor(skinColor("title", 1, 0.82, 0))
 
     local whisperBox = CreateFrame("EditBox", nil, whisperRow)
     whisperBox:SetPoint("LEFT", whisperCaption, "RIGHT", 2, 0)
@@ -812,9 +764,8 @@ local function EnsureFrame()
     warning:SetPoint("TOPRIGHT", -16, -GEOM.warningTop)
     warning:SetJustifyH("CENTER")
     warning:SetWordWrap(true)
-    -- The one hand-set color in this file, and it is a state rather than a style:
-    -- the sentence is a refusal, and the skin has no "this is refused" accent.
-    warning:SetTextColor(0.9, 0.25, 0.25)
+    -- A state rather than a style: the sentence is a refusal, in this addon's
+    -- owner token `mm.warn` (core/SkinSetup.lua), painted with the rest below.
 
     -- A spreadsheet for the CSV and a speech bubble for chat: the two icons say
     -- WHERE the export lands, which is the only difference between these buttons.
@@ -835,7 +786,17 @@ local function EnsureFrame()
     modal.csvButton  = csvButton
     modal.chatButton = chatButton
 
-    NS.ApplySkin(modal)
+    -- The skin, once every piece exists: the window (no top band; its own 26px
+    -- bar takes S.TitleBar), the bar, the row, its caption, its box's face and
+    -- the refusal line.
+    if NS.Skin then
+        NS.Skin.Shell(modal, { noTopBar = true })
+        NS.Skin.TitleBar(modal.titleBar, { text = modal.title })
+        NS.Skin.Inset(whisperRow)
+        NS.Skin.Text(whisperCaption, "accent")
+        NS.Skin.Font(whisperBox)
+        NS.Skin.Text(warning, "mm.warn")
+    end
     modal:Hide()
 
     -- The modal is in UISpecialFrames (below), so Escape hides it directly —
