@@ -2521,7 +2521,7 @@ Total.
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
 
-### test_skin_window.lua (11)
+### test_skin_window.lua (12)
 
 - Skin window: the five chrome modes and the title bar companion ship on the skin
 - Skin window: under Ka0s Default the window wears Ka0s Default's own chrome
@@ -2530,6 +2530,7 @@ Total.
 - Skin window: switched back to custom, every surface draws the player's color again
 - Skin window: class mode still takes the local player's class on every chrome surface
 - Skin window: without the library the Skin modes draw the stored colors, the pre-skin look
+- Skin window: a skin that sets no title band draws a clear title bar
 - Skin window: the v21 step puts every window of every profile's chrome on the skin
 - Skin window: the v21 reset runs once, so a pick made after it is kept
 - Skin window: a v19 account takes both resets in one walk
@@ -2807,7 +2808,7 @@ Total.
 | test_skinsetup.lua | 20 |
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 8 |
-| test_skin_window.lua | 11 |
+| test_skin_window.lua | 12 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
@@ -2820,4 +2821,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2414** |
+| **Total** | **2415** |

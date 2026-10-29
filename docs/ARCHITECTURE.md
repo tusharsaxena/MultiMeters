@@ -340,7 +340,11 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   colors are never rewritten, so a mode set back to Custom draws them again. Under Ka0s Default the
   window now wears Ka0s Default's `win.*` fill and edge and its `title.bg` band, which the owner
   accepted. Without the library (`NS.SKIN_LIVE` false) a `skin` mode falls back to its swatch and the
-  edge to the player's, the pre-skin look. The column labels' colors and every HUD color stay the player's (X4). The notice, the
+  edge to the player's, the pre-skin look. **One deviation from the skin's own window look:** the
+  Shell is called with `noTopBar` (the title bar is this window's own strip, `headerBG`), so under a
+  skin whose title bar is a gradient (`title.bgTop` / `title.bgBottom`) the meter window's band draws
+  `title.bg` flat rather than the gradient. Re-check if a skin's flat `title.bg` stops reading as its
+  title bar, or if the band moves onto the Shell's top bar. The column labels' colors and every HUD color stay the player's (X4). The notice, the
   empty state, the session line's dim notes (`mm.dim`) and the TEST MODE word (`mm.testWord`) read
   tokens, and both mode strips are handed the owner. The rows' hover wash (`mm.rowHover`), their
   alternating stripe (`mm.rowStripe`), the self edge (`text.accent`) and a classless name
