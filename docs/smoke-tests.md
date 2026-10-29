@@ -754,10 +754,10 @@ right. Open the panel with `/mm config`.
   window shows *No combat data yet* Result: pass (owner-marked 2026-10-10)
 - **WIN-18. The divider.** Header → Title bar → **Show divider** ships on. Turn it off → the hairline
   under the title strip goes and nothing else moves (title, session line and controls stay). **Divider
-  thickness** grows it downward. **Divider color mode** ships as Ka0s skin (the line as the shared
+  thickness** grows it downward. **Divider color mode** ships as Skin (the line as the shared
   skin painted it); switch to Class color → your class; to Custom color → the swatch. With a low
   swatch opacity, switching between Custom and Class leaves the opacity alone. There is no
-  per-statistic mode. Result: pass (owner-marked 2026-10-10)
+  per-statistic mode. Result:
 - **WIN-19. The header background stops at the title bar.** Header → Title bar → Header background to
   something loud and Columns → Header background → Background color to something else → two distinct
   bands, the second starting where the first ends. Result: pass (owner-marked 2026-10-10)
@@ -1681,15 +1681,23 @@ background and the header controls' colors, sizes, outlines and thicknesses (DEC
   and labels, the gray controls, no cell borders. Fail: a color, size, outline, edge or spacing that
   changed, a string still in Friz Quadrata while its companion is ticked, or text clipped or
   overlapping because the face is wider. Result:
-- **SKIN-2. Ka0s Default elsewhere looks as before (MM-02, MM-04).** Still on Ka0s Default, open the
-  export modal and its copy window, the debug console, the perf panel, the sim step panel and the
-  settings pages, and hover a cell, a name and a Deaths cell → each looks as before the rollout:
-  tooltip headings gold, values white, the *and N more* / *Click for details* / *No data yet* hints
-  60% gray; the restricted notes on the session line the same gray; the TEST MODE word (a minimized
-  window in test mode) the same red; the column blocks' labels gold when shown and gray when not. The
-  export modal moves a little, as DECISIONS D8 accepts: a darker band under its title, its buttons'
-  fill a touch lighter, their icons a touch dimmer and a disabled button's label a touch lighter.
-  Fail: any other change. Result:
+- **SKIN-2. Ka0s Default elsewhere: its colors as before, its own faces (MM-02, MM-04).** Still on
+  Ka0s Default, open the export modal and its copy window, the debug console, the perf panel, the sim
+  step panel and the settings pages, turn test mode off on an empty segment, and hover a cell, a name
+  and a Deaths cell → every color is as before the rollout: tooltip headings gold, values white, the
+  *and N more* / *Click for details* / *No data yet* hints 60% gray; the restricted notes on the
+  session line the same gray; the TEST MODE word (a minimized window in test mode) the same red; the
+  rows' white hover wash and stripe and the gold self edge; the column blocks' labels gold when shown
+  and gray when not. The export modal moves a little, as DECISIONS D8 accepts: a darker band under
+  its title, its buttons' fill a touch lighter, their icons a touch dimmer and a disabled button's
+  label a touch lighter. **The faces change, and that is expected:** the export modal's title,
+  caption, buttons, whisper caption, whisper box and refusal line, and the empty state's *No combat
+  data yet* and its line under it, draw Ka0s Default's own **Ka0s Oxanium** (Bold for the titles,
+  SemiBold for the rest) where they drew Friz Quadrata, as the library tool windows do. That is
+  v1.79.0's Ka0s Default reaching every surface the skin paints, not a regression; with **Ignore
+  fonts** ticked they keep Friz Quadrata. The column blocks' labels keep Friz Quadrata (the tooltip
+  lines' face is the HUD's, SKIN-1). Fail: a color that changed, a modal change beyond D8's, or one of the surfaces above
+  still in Friz Quadrata with Ignore fonts unticked. Result:
 - **SKIN-3. The Skin tab (MM-01).** Settings → General → the strip reads Master controls, Behavior,
   Statistic colors, **Skin**, Keybindings. **Skin** shows Skin source, the nine skins with their
   swatches under a **Look** heading, **Font and texture** (Font and Texture, both *Skin's own* on a
@@ -1708,7 +1716,12 @@ background and the header controls' colors, sizes, outlines and thicknesses (DEC
   minimize one window → the TEST MODE word in the skin's red. Turn test mode off on an empty segment →
   the empty state's two lines in the skin's heading and text colors. Fail: a surface that keeps the
   old skin until `/reload`, a row or cell left on the old texture or face (scroll a long grid to
-  reach pooled rows), or a player color that moved. Result:
+  reach pooled rows), or a player color that moved. **Owner question:** the window's chrome (its
+  black fill, its Blizzard Tooltip edge, the gold title and labels, the header strip and the header
+  controls) stays the player's under every skin, so only the faces, bars, rows, inner rule and
+  divider move. That reads DECISIONS X4 over the inventory's D1, D3, D4 and D16 color modes; if the
+  window should take each skin's own fill, edge and title colors, say so and it becomes a follow-up
+  item. Result:
 - **SKIN-5. The HUD companions (MM-03).** Under **Obsidian**, untick Bars → Text → **Use the skin's
   font** → the cell text goes back to the window's own Font pick at once, while the title, the column
   labels and the tooltip keep the skin's face; tick it → the skin's again. Do the same with Bars → Bar
@@ -1803,7 +1816,7 @@ background and the header controls' colors, sizes, outlines and thicknesses (DEC
 
 Owed from the 2026-10-29 skinning rollout (Ka0sAddonsCommonTasks `docs/2026-10-29-SKINNING_ROLLOUT/`,
 MM-RV to MM-05): **SKIN-1 to SKIN-24** (new), **INSTALL-15** and **DEGRADED-11** (new), and
-**INSTALL-3**, **INSTALL-12** to **INSTALL-14** (the stamp is 20), **WIN-49** (the title follows the
+**INSTALL-3**, **INSTALL-12** to **INSTALL-14** (the stamp is 20), **WIN-18** (the divider's mode now reads Skin), **WIN-49** (the title follows the
 skin's face), **PANEL-22**, **PANEL-23**, **PANEL-53** to **PANEL-57**, **TIP-25**, **TIP-27**,
 **TIP-28** and **COMBAT-30** (amended for the "Use the skin's ..." companions), each until its
 `Result:` line records the owner's pass.

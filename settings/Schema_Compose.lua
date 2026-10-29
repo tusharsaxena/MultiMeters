@@ -260,7 +260,9 @@ local CONTROLCOLOR_SORT = { "class", "custom" }
 -- divider is one line across the whole window, so "per statistic" could only ever
 -- paint it the sort column's color -- a fact already on screen twice over.
 local DIVIDERCOLOR_VALUES = {
-    skin   = L["Ka0s skin"],
+    -- "Skin", the word the Skin tab uses: under EllesmereUI or any of the nine skins it
+    -- is the skin the window wears, not only a Ka0s one (DECISIONS D16).
+    skin   = L["Skin"],
     class  = L["Class color"],
     custom = L["Custom color"],
 }

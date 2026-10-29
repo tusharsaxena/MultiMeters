@@ -377,7 +377,6 @@ L["Draw the hairline between the title bar and the column labels."] =
     "Draw the hairline between the title bar and the column labels."
 L["Divider thickness"] = "Divider thickness"
 L["Divider color mode"] = "Divider color mode"
-L["Ka0s skin"] = "Ka0s skin"
 L["What colors the hairline. Ka0s skin leaves it to the shared collection skin, so a re-skin reaches this window along with the debug console and the perf panel; Class color is your own class."] =
     "What colors the hairline. Ka0s skin leaves it to the shared collection skin, so a re-skin reaches this window along with the debug console and the perf panel; Class color is your own class."
 L["Divider color"] = "Divider color"

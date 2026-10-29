@@ -326,7 +326,11 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
 - **The meter window** paints through `S.Shell` with no top bar and no edge (`modules/Window.lua`);
   `ApplyBorder` keeps drawing the player's edge and fill over it and tints the inner rule from
   `win.inner`. The window's fill, edge, title bar background, title and label colors and header
-  control colors stay the player's settings: no `skin` color mode was added (X4). The notice, the
+  control colors stay the player's settings: no `skin` color mode was added (X4). That ruling reads
+  X4 (the player's HUD colors are not reset) over the inventory's D1 (the fill and edge onto
+  `win.*`), D3 (`header.bgColorFromSkin`), D4 (the controls' `btn.hover` / `icon.tint`) and D16's
+  `skin` color modes; D16's relabel stands (the divider's mode reads Skin). It is put to the owner
+  at [SKIN-4](smoke-tests.md); the other way is a follow-up item. The notice, the
   empty state, the session line's dim notes (`mm.dim`) and the TEST MODE word (`mm.testWord`) read
   tokens, and both mode strips are handed the owner. The rows' hover wash (`mm.rowHover`), their
   alternating stripe (`mm.rowStripe`), the self edge (`text.accent`) and a classless name
@@ -351,7 +355,10 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   it writes and restores Blizzard's object on teardown (D10). Class and statistic colors stay theirs.
 - **The export modal** wears `S.Shell`, `S.TitleBar`, `S.Button`, `S.Inset`, `S.Text` and `S.Font`;
   its copy window and dropdowns take the owner. Under Ka0s Default it gains a title band and its
-  buttons' fill, edge, icon and disabled gray move slightly (D8).
+  buttons' fill, edge, icon and disabled gray move slightly (D8), and its strings, like the empty
+  state's two lines (`S.Text`), draw Ka0s Default's Oxanium faces where they drew Friz Quadrata:
+  v1.79.0's Ka0s Default reaching every surface the skin paints, kept unless **Ignore fonts** is
+  ticked ([SKIN-2](smoke-tests.md)).
 - **The settings pages** follow the owner through the library unless **Ignore settings panel** is on
   (the shipped default). The AceGUI widgets this addon acquires itself (the Windows page's action
   dropdown and window-name box, the Columns blocks' slots and rule, the Profiles page's
