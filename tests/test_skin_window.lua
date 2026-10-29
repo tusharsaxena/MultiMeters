@@ -225,6 +225,33 @@ test("Skin window: class mode still takes the local player's class on every chro
     sameColor(tint(window.controls.settings), { cr, cg, cb }, "a control at rest")
 end)
 
+test("Skin window: without the library the Skin modes draw the stored colors, the pre-skin look", function()
+    -- DEGRADED-11: with no LibKa0s there is no skin to follow, so a `skin` mode falls back to the
+    -- swatch beside it, as the HUD companions fall back to the stored pick (NS.SkinMediaKey).
+    -- red under: NS.SkinWindowLooks answering the host copy for the chrome, or the edge left to a
+    -- Shell that cannot draw one.
+    local inst = T.load{ libFiles = {} }
+    local NS = inst.NS
+    local cfg = NS.Database.GetWindows()[1]
+    cfg.frame.backdropColor = { r = 0.1, g = 0.2, b = 0.3, a = 0.4 }
+    cfg.header.color = { r = 0.2, g = 0.9, b = 0.2, a = 1 }
+    cfg.header.bgColor = { r = 0.9, g = 0.1, b = 0.1, a = 0.5 }
+    cfg.frame.controlColor = { r = 0, g = 0, b = 1, a = 1 }
+    local window = NS.Window.New(cfg)
+    window:ApplyConfig()
+    assertEqual(cfg.frame.backdropColorMode, "skin", "the case is moot off the Skin mode")
+    for _, field in ipairs({ "winBg", "titleText", "titleBg", "controlRest", "controlHover" }) do
+        assertTrue(window.skinLooks[field] == nil, field .. " answered a color with no skin to follow")
+    end
+    local f = window.frame
+    sameColor(fill(f), { 0.1, 0.2, 0.3, 0.4 }, "the fill")
+    sameColor({ f.title:GetTextColor() }, { 0.2, 0.9, 0.2 }, "the title")
+    sameColor(window.headerBG.__colorTexture or {}, { 0.9, 0.1, 0.1, 0.5 }, "the title bar")
+    if window.controls and window.controls.settings then
+        sameColor(tint(window.controls.settings), { 0, 0, 1 }, "a control at rest")
+    end
+end)
+
 -- ── the one-time reset (O2, the owner's ruling R-3) ──────────────────────────────────────────
 
 --- A v20-shaped window: the chrome on the player's own modes, no title bar companion.

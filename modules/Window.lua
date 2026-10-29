@@ -164,11 +164,16 @@ end
 -- LAST options it was handed, so a skin switch replays the current mode and then
 -- fires OnLooksChanged, whose listener (modules/WindowManager.lua) re-runs
 -- ApplyConfig, and with it ApplyBorder, over the new skin.
+-- Without the library (NS.SKIN_LIVE false) there is no Shell to draw an edge,
+-- so `skin` falls back to the player's, the pre-skin look (DEGRADED-11).
 local SHELL_SKIN_EDGE = { noTopBar = true }
 local SHELL_OWN_EDGE  = { noTopBar = true, noBorder = true }
+local function skinEdge(frameCfg)
+    return (frameCfg or {}).borderColorMode == "skin" and NS.SKIN_LIVE == true
+end
 local function paintShell(frame, frameCfg)
     if NS.ApplySkin then NS.ApplySkin(frame) end
-    local opts = (frameCfg or {}).borderColorMode == "skin" and SHELL_SKIN_EDGE or SHELL_OWN_EDGE
+    local opts = skinEdge(frameCfg) and SHELL_SKIN_EDGE or SHELL_OWN_EDGE
     if NS.Skin and NS.Skin.Shell then NS.Skin.Shell(frame, opts) end
 end
 
@@ -920,7 +925,7 @@ function WindowProto:ApplyBorder(frameCfg)
     local br, bg, bb, ba = surfaceColor(frameCfg.backdropColorMode, frameCfg.backdropColor,
         nil, 0, 0, 0, 0.75, looks.winBg)
 
-    if frameCfg.borderColorMode ~= "skin" then applyOwnEdge(frame, frameCfg) end
+    if not skinEdge(frameCfg) then applyOwnEdge(frame, frameCfg) end
     if frame.SetBackdropColor then frame:SetBackdropColor(br, bg, bb, ba) end
 end
 

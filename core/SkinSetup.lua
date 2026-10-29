@@ -47,6 +47,8 @@ local addonName, NS = ...
 --                           dim and TEST MODE escapes) and its chrome's `skin` modes read (the
 --                           fill, the title, the title bar, the two control colors), resolved
 --                           once into `t` on RefreshUpvalues.
+--   NS.SKIN_LIVE            true on the live seam, false on the degraded arm: a chrome `skin` mode
+--                           (and the window edge the Shell draws) follows only a live skin.
 --   NS.SkinMediaKey(g,k,t)  the LSM key a HUD surface draws: the skin's token `t` while the group's
 --                           `<k>FromSkin` companion is on, else the stored pick (skinning-§6).
 --   NS.SkinPaintAce(w)      an AceGUI widget this addon acquired itself, painted for this owner:
@@ -180,25 +182,46 @@ local WINDOW_LOOKS = {
 -- band, so its color is clear rather than Ka0s Default's pixel.
 local CLEAR_WHEN_UNSET = { titleBg = true }
 
+-- The chrome's fields, which only a LIVE skin answers: without the library there is no skin to
+-- follow, so each is left nil and its `skin` mode falls back to the swatch beside it, the pre-skin
+-- look (DEGRADED-11), as NS.SkinMediaKey falls back to the stored pick.
+local CHROME_LOOKS = { winBg = true, titleText = true, titleBg = true, controlRest = true, controlHover = true }
+
+--- True while the live seam owns this addon's skin (set at the foot of this file); false on the
+--- degraded arm. The chrome's `skin` modes, and the window edge the Shell draws, need it.
+NS.SKIN_LIVE = false
+
+--- One look's color into `c` (kept, so a repaint allocates nothing): the skin's token, else clear
+--- for a token whose none is a look (CLEAR_WHEN_UNSET), else its Ka0s Default pixel (the owner
+--- token's default, or the host copy).
+local function resolveLook(c, field, name)
+    c = c or {}
+    local r, g, b, a = NS.Skin.Color(name)
+    if r == nil and CLEAR_WHEN_UNSET[field] then
+        r, g, b, a = 0, 0, 0, 0
+    elseif r == nil then
+        local owned = NS.SKIN_TOKENS[name]
+        local d = owned and owned.default or NS.SKIN_FALLBACK[name]
+        r, g, b, a = d[1], d[2], d[3], d[4]
+    end
+    c[1], c[2], c[3], c[4] = r, g, b, a or 1
+    return c
+end
+
 --- The colors and escapes a meter window draws on its refresh path, resolved ONCE into `into` (a
 --- table it keeps and hands back, so a repaint allocates nothing). WindowProto:RefreshUpvalues
 --- calls it, which ApplyConfig runs and WindowManager:Reskin re-runs on every OnLooksChanged, so
 --- no row and no refresh pass reads a token (R2). Each color is { r, g, b, a }; `dim` and
---- `testWord` are the `mm.dim` and `mm.testWord` escapes.
+--- `testWord` are the `mm.dim` and `mm.testWord` escapes. The chrome's fields are nil without a
+--- live skin (CHROME_LOOKS).
 function NS.SkinWindowLooks(into)
     into = into or {}
     for field, name in pairs(WINDOW_LOOKS) do
-        local c = into[field] or {}
-        local r, g, b, a = NS.Skin.Color(name)
-        if r == nil and CLEAR_WHEN_UNSET[field] then
-            r, g, b, a = 0, 0, 0, 0
-        elseif r == nil then
-            local owned = NS.SKIN_TOKENS[name]
-            local d = owned and owned.default or NS.SKIN_FALLBACK[name]
-            r, g, b, a = d[1], d[2], d[3], d[4]
+        if CHROME_LOOKS[field] and not NS.SKIN_LIVE then
+            into[field] = nil
+        else
+            into[field] = resolveLook(into[field], field, name)
         end
-        c[1], c[2], c[3], c[4] = r, g, b, a or 1
-        into[field] = c
     end
     into.dim = NS.SkinEscape("mm.dim") or NS.GRAY
     into.testWord = NS.SkinEscape("mm.testWord") or ""
@@ -442,6 +465,7 @@ end
 -- ── the live seam ────────────────────────────────────────────────────────────────────────────
 
 NS.Skin = Skin:For(addonName)
+NS.SKIN_LIVE = true
 Skin:RegisterOwner(addonName, {
     label  = "Ka0s Multi Meters",
     get    = NS.SkinChoice,
