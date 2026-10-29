@@ -122,6 +122,8 @@ local block                = SC.block
 local broadcastBarTexture  = SC.broadcastBarTexture
 local broadcastColorMode   = SC.broadcastColorMode
 local broadcastFont        = SC.broadcastFont
+local broadcastFontFromSkin    = SC.broadcastFontFromSkin
+local broadcastTextureFromSkin = SC.broadcastTextureFromSkin
 local broadcastOutline     = SC.broadcastOutline
 local controlLabel         = SC.controlLabel
 local expandBlocks         = SC.expandBlocks
@@ -354,6 +356,22 @@ NS.Schema = {
         label = L["Font outline (all surfaces)"],
         desc = L["Set the font outline for the cell text, both header strips and the tooltip at once. Each of them is still its own setting."],
         onChange = broadcastOutline,
+    },
+    -- The meta pair over the "Use the skin's ..." companions (DECISIONS D11), same bargain as the
+    -- four above: each sets every surface's own companion and is read by nothing.
+    {
+        path = "window.barTextureFromSkin", type = "bool", default = true,
+        page = "frame", group = L["Quick style"], subgroup = L["All surfaces"],
+        label = L["Use the skin's texture (all surfaces)"],
+        desc = L["Turn Use the skin's texture on or off for the grid and the tooltip at once. Each of them is still its own setting."],
+        onChange = broadcastTextureFromSkin,
+    },
+    {
+        path = "window.fontFromSkin", type = "bool", default = true,
+        page = "frame", group = L["Quick style"], subgroup = L["All surfaces"],
+        label = L["Use the skin's font (all surfaces)"],
+        desc = L["Turn Use the skin's font on or off for the cell text, both header strips and the tooltip at once. Each of them is still its own setting."],
+        onChange = broadcastFontFromSkin,
     },
     -- ── Background and border ────────────────────────────────────────
     -- Both the fill inside the window and the edge around it, together: they used

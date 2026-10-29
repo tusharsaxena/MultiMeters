@@ -819,7 +819,8 @@ function WindowProto:ApplyConfig()
     self.notice:ClearAllPoints()
     self.notice:SetPoint("TOPLEFT", self.body, "TOPLEFT", 4, -8)
     self.notice:SetPoint("TOPRIGHT", self.body, "TOPRIGHT", -4, -8)
-    self.notice:SetFont(fontPath((cfg.header or {}).font), (cfg.text or {}).size or 11, "")
+    self.notice:SetFont(fontPath(NS.SkinMediaKey(cfg.header or {}, "font", "hud.font")),
+        (cfg.text or {}).size or 11, "")
     -- The notice's text in the skin's highlight (white under Ka0s Default, the
     -- stock FontString color it always drew); re-run on every skin switch.
     if NS.SkinColor then self.notice:SetTextColor(NS.SkinColor("text.highlight")) end

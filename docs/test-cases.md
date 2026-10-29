@@ -2507,6 +2507,17 @@ Total.
 - Skin chrome: the empty state and the notice take the skin's text tokens
 - Skin chrome: the export modal paints through the facade, its refusal in mm.warn
 
+### test_skin_hud.lua (8)
+
+- Skin HUD: the eight companions ship on, as rows defaulted on, each governing its picker
+- Skin HUD: a cell draws the skin's texture, face and border while on, the player's picks off
+- Skin HUD: the title, the column labels and the tooltip resolve through the skin too
+- Skin HUD: a skin switch repaints the bars, and every color stays the player's
+- Skin HUD: the meta pair turns every surface's companion at once
+- Skin HUD: the v20 step puts every window of every profile on the skin, keeping the picks
+- Skin HUD: the v20 reset runs once, so a pick made after it is kept
+- Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
+
 ### test_columnblocks.lua (35)
 
 - Blocks: one block per item, each carrying its index and its label
@@ -2747,6 +2758,7 @@ Total.
 | test_options_panel.lua | 51 |
 | test_skinsetup.lua | 20 |
 | test_skin_chrome.lua | 5 |
+| test_skin_hud.lua | 8 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
@@ -2756,4 +2768,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2370** |
+| **Total** | **2378** |

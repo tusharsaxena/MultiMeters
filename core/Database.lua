@@ -54,11 +54,12 @@ NS.Database = Database
 -- v17 matches the header to Ka0s DPS Race.
 -- v18 grows the title bar to Ka0s DPS Race's 30px.
 -- v19 grows the shipped window to 228px, ten rows under that bar.
+-- v20 puts every window's HUD faces, bar textures and bar borders on the skin, once.
 --
 -- The defaults declare `global.schemaVersion = 0`, which means UNSTAMPED: a fresh
 -- install or an account from before the runner stamped anything. It is never the
 -- current version (savedvariables-§1); see defaults/Profile.lua for why.
-local CURRENT_DB_VERSION = 19
+local CURRENT_DB_VERSION = 20
 
 --- The runner's target, published under the name savedvariables-§1 gives it.
 --- Raising it means registering the step that reaches it; the defaults' 0 never moves.
@@ -1056,6 +1057,57 @@ migrations[18] = function(db)
                 if type(w) == "table" and type(w.frame) == "table" and w.frame.height == 220 then
                     w.frame.height = 228
                 end
+            end
+        end
+    end
+end
+
+--- The eight "Use the skin's ..." companions of a window (skinning-§6), as dotted paths into it:
+--- the four faces, the two bar textures and the two bar border styles, each beside the pick it
+--- governs (defaults/Profile.lua, settings/Schema_Compose.lua's FROM_SKIN_ROWS). The v20 step's
+--- list, and tests/test_skin_hud.lua's.
+Database.FROM_SKIN_KEYS = {
+    "header.fontFromSkin", "columnHeader.fontFromSkin", "text.fontFromSkin", "tooltip.fontFromSkin",
+    "bars.textureFromSkin", "tooltip.barTextureFromSkin",
+    "bars.borderStyleFromSkin", "tooltip.barBorderStyleFromSkin",
+}
+
+--- One window's companions put back on the skin. Backfilled to false first where a stored group
+--- lacks one (every window stored before v20 does), because LibKa0s-Skin-1.0's ResetToSkin,
+--- handed an absent key, cannot tell it is a bool and writes its "@skin" sentinel into it; a group
+--- that is absent altogether is left to EnsureWindowShape, whose template says true already.
+--- Without the library the companions are set directly: they mean nothing until it loads, and
+--- then they must already say "follow".
+local function v20FollowSkin(w, resetToSkin)
+    local keys = {}
+    for _, path in ipairs(Database.FROM_SKIN_KEYS) do
+        local group, leaf = path:match("^([^.]+)%.(.+)$")
+        local g = w[group]
+        if type(g) == "table" then
+            if type(g[leaf]) ~= "boolean" then g[leaf] = false end
+            if resetToSkin then keys[#keys + 1] = path else g[leaf] = true end
+        end
+    end
+    if resetToSkin and #keys > 0 then resetToSkin(w, keys) end
+end
+
+--- v19 -> v20: THE HUD BACK ON THE SKIN, ONCE (skinning-§6, the owner's ruling O2).
+---
+--- Every window's four faces, two bar textures and two bar border styles follow the skin again,
+--- for every player: each window's companions are set on through Skin.ResetToSkin, ONE CALL PER
+--- WINDOW, because its dotted walk cannot reach into the numeric `windows` array. The stored picks
+--- are kept (a companion turned off brings them back) and no color, size, outline or thickness is
+--- touched (DECISIONS X4, D12). The account-wide stamp is what makes it once: a player who unticks
+--- a companion afterwards keeps that pick, because this step never runs again.
+---
+--- Every window of every profile, for the reason allProfiles gives. Idempotent: true stays true.
+migrations[19] = function(db)
+    local Skin = LibStub and LibStub("LibKa0s-Skin-1.0", true)
+    local resetToSkin = Skin and type(Skin.ResetToSkin) == "function" and Skin.ResetToSkin or nil
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" then v20FollowSkin(w, resetToSkin) end
             end
         end
     end

@@ -784,6 +784,24 @@ L["Whether the first-run skin picker was closed on this profile."] =
 L["Reload your interface (/reload) to finish changing the skin."] =
     "Reload your interface (/reload) to finish changing the skin."
 
+-- Following the skin on the HUD (skinning-§6): the composed "Use the skin's ..." companions
+-- (settings/Schema_Compose.lua's FROM_SKIN_ROWS) and their meta pair on Frame > Quick style.
+L["Use the skin's font"] = "Use the skin's font"
+L["Use the skin's texture"] = "Use the skin's texture"
+L["Use the skin's border"] = "Use the skin's border"
+L["Draw this text in the skin's font. The font picker is kept but not read while this is on."] =
+    "Draw this text in the skin's font. The font picker is kept but not read while this is on."
+L["Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."] =
+    "Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."
+L["Draw this border in the skin's border style. The style picker is kept but not read while this is on; the thickness and the color stay yours."] =
+    "Draw this border in the skin's border style. The style picker is kept but not read while this is on; the thickness and the color stay yours."
+L["Use the skin's texture (all surfaces)"] = "Use the skin's texture (all surfaces)"
+L["Turn Use the skin's texture on or off for the grid and the tooltip at once. Each of them is still its own setting."] =
+    "Turn Use the skin's texture on or off for the grid and the tooltip at once. Each of them is still its own setting."
+L["Use the skin's font (all surfaces)"] = "Use the skin's font (all surfaces)"
+L["Turn Use the skin's font on or off for the cell text, both header strips and the tooltip at once. Each of them is still its own setting."] =
+    "Turn Use the skin's font on or off for the cell text, both header strips and the tooltip at once. Each of them is still its own setting."
+
 -- The Master controls tab (options-ui-§15). The canonical set is composed by
 -- LibKa0s-Options-1.0 and the composer's own strings are English literals; these
 -- are what this addon hands it through `labels`, plus the sentences it dresses

@@ -4,7 +4,8 @@
 -- Two properties per surface. Under Ka0s Default it draws exactly the pixels it drew before the
 -- facade (DECISIONS X1: the near-miss reds and the dim gray are owner tokens, not snapped to the
 -- nearest library token); under another skin it draws that skin's tokens. The meter window's
--- fill and edge stay the PLAYER's until the HUD style rows learn a `skin` mode (MM-03), so a skin
+-- fill and edge stay the PLAYER's (MM-03 put only the HUD's faces, bar textures and bar borders
+-- on the skin; its colors and the window's own edge are not reset, DECISIONS X4), so a skin
 -- switch must re-lay them over the Shell's replay, not lose them to it.
 --
 -- EACH CASE ON ITS OWN INSTANCE: a skin change is library session state.

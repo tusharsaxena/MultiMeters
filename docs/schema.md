@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 19,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
+    schemaVersion = 20,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data (+ count, stored)
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -60,8 +60,8 @@ safe because every step is idempotent against a fresh default profile. A step ne
 the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
-**Eighteen steps are wired today**, `migrations[1]` through `migrations[18]`, walking an account from
-the shipped v1 shape to v19. Each is one line of the header block at the top of
+**Nineteen steps are wired today**, `migrations[1]` through `migrations[19]`, walking an account from
+the shipped v1 shape to v20. Each is one line of the header block at the top of
 `core/Database.lua`, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -84,12 +84,13 @@ the shipped v1 shape to v19. Each is one line of the header block at the top of
 | v16 → v17 | every window of every profile still holding the header's old shipped values moves onto the Ka0s DPS Race match: `header.outline = "OUTLINE"` with `shadow = false` (as a pair) → `"NONE"` / `true`; a `"custom"`-mode white `frame.controlColor` → 0.7/0.7/0.72; `frame.hoverReveal = true` → `false`; `frame.controlSize = 16` → 18. Any other value is left alone. See [`header`](#header--the-strip-above-the-rows) |
 | v17 → v18 | every window of every profile still on the old shipped `header.height = 18` (a 22px bar to the divider) moves to 26, Ka0s DPS Race's 30px title bar. Any other height is left alone. A step of its own because v17 had already run on accounts that tried the first header-match build. See [`header`](#header--the-strip-above-the-rows) |
 | v18 → v19 | every window of every profile still on the old shipped `frame.height = 220` (nine rows under the 30px bar) moves to 228, which fits ten again. Any other height is left alone. See [`frame`](#frame--the-standalone-window) |
+| v19 → v20 | the one-time HUD reset onto the skin (skinning-§6, the owner's ruling O2): every window of every profile has its eight "Use the skin's ..." companions (`header`, `columnHeader`, `text`, `tooltip` `.fontFromSkin`; `bars.textureFromSkin`, `tooltip.barTextureFromSkin`; `bars.borderStyleFromSkin`, `tooltip.barBorderStyleFromSkin`) set on through LibKa0s-Skin-1.0's `ResetToSkin`, one call per window, backfilled to `false` first. The picks themselves are kept, and no color, size, outline or thickness is touched. It runs once: a companion turned off afterwards stays off |
 
-Adding a v20 is two edits and no bootstrap change:
+Adding a v21 is two edits and no bootstrap change:
 
 ```lua
-migrations[19] = function(db) ... end       -- the runner stamps the version
-local CURRENT_DB_VERSION = 20
+migrations[20] = function(db) ... end       -- the runner stamps the version
+local CURRENT_DB_VERSION = 21
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.

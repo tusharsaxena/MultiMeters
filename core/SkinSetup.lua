@@ -42,6 +42,8 @@ local addonName, NS = ...
 --                           so a literal that became a token keeps its arity on Ka0s Default.
 --   NS.SkinEscape(name)     a color token as a "|cffrrggbb" escape, rounded to the byte, so markup
 --                           written as a literal keeps its bytes on Ka0s Default (|cff9d9d9d).
+--   NS.SkinMediaKey(g,k,t)  the LSM key a HUD surface draws: the skin's token `t` while the group's
+--                           `<k>FromSkin` companion is on, else the stored pick (skinning-§6).
 --
 -- ── WHERE IT LOADS ───────────────────────────────────────────────────────────────────────────
 --
@@ -131,6 +133,25 @@ function NS.SkinEscape(name)
     if r == nil then return nil end
     local function byte(v) return math.floor(v * 255 + 0.5) end
     return ("|cff%02x%02x%02x"):format(byte(r), byte(g), byte(b))
+end
+
+--- The LSM key a HUD surface draws for media key `key` of config group `group` (a window's `bars`,
+--- `text`, `header`, `columnHeader`, or the tooltip's resolved config): the skin's `token` while the
+--- group's `<key>FromSkin` companion is on and the skin answers one, else the stored pick
+--- (skinning-§6). Through S.Resolve, which is override-aware: the Skin tab's own font or texture
+--- wins over the skin's. The stored pick is never rewritten, so a companion turned off brings it
+--- back. Degraded, the facade answers no HUD token and the stored pick stands: the pre-skin look.
+--- Only texture, border and font follow (DECISIONS X4); every HUD color stays the player's. Read
+--- on ApplyConfig and on a tooltip's build, never on the refresh path (R2). NOT S.BarTexture: it
+--- reads a StatusBar's color back on every repaint, and a cell holds a secret (DECISIONS D6).
+function NS.SkinMediaKey(group, key, token)
+    if type(group) ~= "table" then return nil end
+    local stored, S = group[key], NS.Skin
+    if S and type(S.Resolve) == "function" then
+        local v = S.Resolve(token, stored, group[key .. "FromSkin"] == true)
+        if v ~= nil then return v end
+    end
+    return stored
 end
 
 -- The source row's values, and the skin row's: every registered skin, Ka0s Default first. Without

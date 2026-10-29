@@ -363,6 +363,9 @@ local SUITES = {
     -- The chrome painted through that facade: the meter window's Shell, its header escapes, the
     -- empty state and the export modal, under Ka0s Default and across a skin switch.
     "test_skin_chrome",
+    -- The HUD following the skin: the companions, the cell / header / tooltip media through
+    -- them, a skin switch, the meta pair, and the one-time v20 reset.
+    "test_skin_hud",
     "test_columnblocks",
     "test_columns",
     "test_windows_rail",

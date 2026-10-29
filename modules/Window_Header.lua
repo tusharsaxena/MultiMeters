@@ -157,7 +157,7 @@ end
 --- @return string path, number size, string|nil flags
 local function headerFont(header)
     local flags = (header.outline ~= "NONE") and header.outline or nil
-    return fontPath(header.font), header.size or 12, flags
+    return fontPath(NS.SkinMediaKey(header, "font", "hud.font")), header.size or 12, flags
 end
 
 --- Which statistic the WINDOW is about, for the two header surfaces that answer
@@ -248,7 +248,7 @@ end
 --- could make the strip differ from the numbers beneath it.
 local function columnHeaderFont(colHeader)
     local flags = (colHeader.outline ~= "NONE") and colHeader.outline or nil
-    return fontPath(colHeader.font), colHeader.size or 11, flags
+    return fontPath(NS.SkinMediaKey(colHeader, "font", "hud.font")), colHeader.size or 11, flags
 end
 
 --- Where something `h` pixels tall sits so it is CENTERED in the title bar.

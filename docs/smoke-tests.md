@@ -65,7 +65,7 @@ secret-value rules the checks refer to.
   no `schema error:` line and no "schema path does not resolve" line at any point (either means a
   schema row's path or default disagrees with `defaults/Profile.lua`). Result: pass (owner-marked 2026-10-10)
 - **INSTALL-3. SavedVariables shape.** After INSTALL-1, `/reload`, then read `MultiMeters.lua` on disk
-  → `profileKeys`, `profiles.Default`, `global.schemaVersion = 19`, a one-entry `profile.windows`
+  → `profileKeys`, `profiles.Default`, `global.schemaVersion = 20`, a one-entry `profile.windows`
   whose window has `id = 1`, and `profile.nextWindowId = 2`. Result: pass (owner-marked 2026-10-24)
 - **INSTALL-4. `/reload` keeps the layout.** Move the window, resize it, change its bar color and its
   column set, `/reload` → position, size, color and columns survive; the window is in the same

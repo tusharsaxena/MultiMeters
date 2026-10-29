@@ -269,6 +269,17 @@ local function tooltipConfig(window)
         return hardDefault
     end
 
+    -- A media pick the skin can answer for (skinning-§6): the skin's `token` while the pick's
+    -- `<key>FromSkin` companion is on, else the stored pick (core/SkinSetup.lua's
+    -- NS.SkinMediaKey). Resolved here, once per build, so every line, bar and death-recap row the
+    -- builders draw reads the same answer. The colors are never resolved (DECISIONS X4).
+    local function media(key, token, hardDefault)
+        local pick = field(key, hardDefault)
+        if not NS.SkinMediaKey then return pick end
+        local companion = key .. "FromSkin"
+        return NS.SkinMediaKey({ [key] = pick, [companion] = field(companion, false) }, key, token)
+    end
+
     return {
         anchor             = field("anchor", "CURSOR"),
         scale              = field("scale", 1.0),
@@ -279,7 +290,7 @@ local function tooltipConfig(window)
         showAllStatsOnName = field("showAllStatsOnName", true),
         hideInCombat       = field("hideInCombat", false),
         textColor          = field("textColor", nil),
-        barTexture         = field("barTexture", "Blizzard Raid Bar"),
+        barTexture         = media("barTexture", "bar.texture", "Blizzard Raid Bar"),
         barColor           = field("barColor", nil),
         barColorMode       = field("barColorMode", "class"),
         barAlpha           = field("barAlpha", 0.85),
@@ -287,11 +298,11 @@ local function tooltipConfig(window)
         barBgColorMode     = field("barBgColorMode", "custom"),
         barBgAlpha         = field("barBgAlpha", 0.1),
         barSpacing         = field("barSpacing", 1),
-        barBorderStyle     = field("barBorderStyle", "None"),
+        barBorderStyle     = media("barBorderStyle", "bar.borderStyle", "None"),
         barBorderSize      = field("barBorderSize", 1),
         barBorderColor     = field("barBorderColor", nil),
         barBorderColorMode = field("barBorderColorMode", "custom"),
-        font               = field("font", "Friz Quadrata TT"),
+        font               = media("font", "hud.font", "Friz Quadrata TT"),
         fontSize           = field("fontSize", 12),
         fontOutline        = field("fontOutline", "NONE"),
         fontShadow         = field("fontShadow", false),

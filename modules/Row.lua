@@ -605,7 +605,8 @@ end
 --- @param bars table|nil   the window's `bars` config group
 function Cell:ApplyBarSkin(bars)
     local bar = self.frame
-    bar:SetStatusBarTexture(barTexture(bars and bars.texture))
+    -- The skin's `bar.texture` while `bars.textureFromSkin` is on (core/SkinSetup.lua).
+    bar:SetStatusBarTexture(barTexture(NS.SkinMediaKey(bars, "texture", "bar.texture")))
     bar:SetOrientation("HORIZONTAL")
 
     -- ON THE FILL TEXTURE, NEVER ON THE STATUSBAR. `bars.alpha` used to be
@@ -758,7 +759,9 @@ function Cell:ApplyEntryTextColor(entry)
 end
 
 function Cell:ApplyTextStyle(text)
-    local path = fontPath(text.font)
+    -- The face only follows the skin (`hud.font` while `text.fontFromSkin` is on); the size,
+    -- outline, shadow and color stay the player's (DECISIONS X4, D12).
+    local path = fontPath(NS.SkinMediaKey(text, "font", "hud.font"))
     local flags = (text.outline ~= "NONE") and text.outline or nil
     local size = text.size or 11
     local tr, tg, tb = RGBA(text.color, 1, 1, 1, 1)

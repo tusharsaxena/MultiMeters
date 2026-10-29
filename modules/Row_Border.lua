@@ -191,7 +191,9 @@ end
 --- and why docs/smoke-tests.md asks for it to be checked mid-pull.
 function Cell:ApplyBorder(bars)
     local wanted = (bars and bars.border) and true or false
-    local edge = wanted and borderEdge(bars and bars.borderStyle) or nil
+    -- The skin's `bar.borderStyle` while `bars.borderStyleFromSkin` is on (core/SkinSetup.lua);
+    -- the thickness and the color stay the player's (DECISIONS X4).
+    local edge = wanted and borderEdge(NS.SkinMediaKey(bars, "borderStyle", "bar.borderStyle")) or nil
     local edges = self.border
 
     -- The art path and the flat path are mutually exclusive, and BOTH have to be

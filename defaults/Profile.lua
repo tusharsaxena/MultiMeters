@@ -75,6 +75,21 @@ local WINDOW_TEMPLATE = {
     -- bright bar, not a default look, and broadcasting one to every surface at
     -- once was the meta row's most visible effect on a fresh profile.
     fontOutline = "NONE",
+    -- The meta pair over the "Use the skin's ..." companions below, same bargain: each sets the
+    -- companion of every surface that has one, stores what it last broadcast, and is read by
+    -- nothing (settings/Schema_Compose.lua's broadcastFromSkin, DECISIONS D11).
+    barTextureFromSkin = true,
+    fontFromSkin       = true,
+
+    -- FOLLOWING THE SKIN (skinning-§6). Every HUD media pick below has a "Use the skin's ..."
+    -- companion beside it, `<key>FromSkin` (LibKa0s OptionsCompose's `fromSkin`): the four faces
+    -- (`header`, `columnHeader`, `text`, `tooltip`) follow `hud.font`, the two bar textures
+    -- `bar.texture`, and the two bar border styles `bar.borderStyle`. ON for every new window and
+    -- every reset (DECISIONS X3), so a new window follows the skin the way an adopted one does
+    -- after the v20 reset (core/Database.lua). While a companion is on the pick beside it is kept
+    -- but not read (core/SkinSetup.lua's NS.SkinMediaKey). Sizes, outlines, shadows, thicknesses
+    -- and every color stay the player's (X4, D12). The window's own edge (`frame.borderStyle`) is
+    -- chrome, drawn over the skin's Shell by modules/Window.lua's ApplyBorder, and has none.
 
     -- -----------------------------------------------------------------------
     -- frame — the standalone window itself
@@ -210,6 +225,7 @@ local WINDOW_TEMPLATE = {
     header = {
         show            = true,
         font            = "Friz Quadrata TT",
+        fontFromSkin    = true,   -- the skin's `hud.font` (FOLLOWING THE SKIN, above)
         -- GameFontNormal, SPELLED OUT: Friz Quadrata at 12px, no outline, a 1/-1
         -- drop shadow. That is what Ka0s DPS Race's title bar draws in
         -- (`Style.FONT.TITLE`), and the two headers sit side by side. The size
@@ -267,6 +283,7 @@ local WINDOW_TEMPLATE = {
     -- the settings are now reachable and independent.
     columnHeader = {
         font     = "Friz Quadrata TT",
+        fontFromSkin = true,   -- the skin's `hud.font`
         size     = 11,
         outline  = "OUTLINE",   -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         -- Both off for the reason the header's are: a new setting must not
@@ -323,6 +340,7 @@ local WINDOW_TEMPLATE = {
     -- -----------------------------------------------------------------------
     bars = {
         texture       = "Blizzard Raid Bar",   -- LSM "statusbar" key
+        textureFromSkin = true,                -- the skin's `bar.texture`
         -- class  — the source's classFilename color (NeverSecret, so always
         --          available, even mid-pull)
         -- stat   — one color per column, so a glance tells you which stat
@@ -348,6 +366,7 @@ local WINDOW_TEMPLATE = {
         -- library skin's edge color, which no setting could reach -- so "Bar
         -- border" was a switch with no dial and no swatch beside it.
         borderStyle     = "None",              -- LSM "border" key; None = flat
+        borderStyleFromSkin = true,            -- the skin's `bar.borderStyle`
         borderThickness = 1,
         borderColor     = { r = 0, g = 0, b = 0, a = 1 },
         -- The mode beside that swatch (options-ui-§17). `class` is the class of
@@ -414,6 +433,7 @@ local WINDOW_TEMPLATE = {
         -- abbreviating: "1.41M" is four glyphs whatever the value, where
         -- "1410000" was seven and "53571.392857143" was fifteen.
         font         = "Friz Quadrata TT",
+        fontFromSkin = true,   -- the skin's `hud.font`
         size         = 11,
         outline      = "NONE",
         shadow       = true,
@@ -483,6 +503,7 @@ local WINDOW_TEMPLATE = {
         -- tooltip is a different surface at a different size, and a texture that
         -- reads well across a 90px cell often does not across a 14px line.
         barTexture         = "Blizzard Raid Bar",  -- LSM "statusbar" key
+        barTextureFromSkin = true,                 -- the skin's `bar.texture`
         barSpacing         = 1,                    -- px between tooltip lines
         -- The fill and the backdrop each carry a color, a MODE and an opacity.
         -- The fill was the hovered player's class with no setting reaching it; the
@@ -496,6 +517,7 @@ local WINDOW_TEMPLATE = {
         barBgColorMode     = "custom",
         barBgAlpha         = 0.1,
         barBorderStyle     = "None",               -- LSM "border" key
+        barBorderStyleFromSkin = true,             -- the skin's `bar.borderStyle`
         barBorderSize      = 1,
         barBorderColor     = { r = 0, g = 0, b = 0, a = 1 },
         -- The mode beside that swatch (options-ui-§17). `class` is the HOVERED
@@ -506,6 +528,7 @@ local WINDOW_TEMPLATE = {
         -- FontStrings, which are SHARED with every other addon — so every line
         -- touched is restored when the tooltip hides. See modules/Tooltip.lua.
         font               = "Friz Quadrata TT",
+        fontFromSkin       = true,                 -- the skin's `hud.font`
         fontSize           = 12,
         fontOutline        = "NONE",   -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         -- Off, so the tooltip keeps the face it has always had.
