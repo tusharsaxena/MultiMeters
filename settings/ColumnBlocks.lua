@@ -160,7 +160,7 @@ local function acquireBlock(parent)
         if not GameTooltip then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine(block.mmEnabled and L["Click to hide this column"]
-            or L["Click to show this column"], 1, 1, 1)
+            or L["Click to show this column"], NS.SkinColor("gtip.value"))
         GameTooltip:Show()
     end)
     glyph:SetScript("OnLeave", function()

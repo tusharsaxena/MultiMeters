@@ -127,6 +127,8 @@ NS.SKIN_FALLBACK = {
     ["text.heading"]   = { 1, 0.82, 0, 1 },
     ["text.accent"]    = { 1, 0.82, 0, 1 },
     ["text.disabled"]  = { 0.5, 0.5, 0.5, 1 },
+    ["gtip.title"]     = { 1, 0.82, 0, 1 },
+    ["gtip.value"]     = { 1, 1, 1, 1 },
 }
 
 --- A color token's components AS A CALL SITE WRITES THEM: r, g, b for an opaque color and r, g, b,

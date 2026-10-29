@@ -695,7 +695,7 @@ local function addSpellLine(spell, numberStyle, max, style, sourceTotal)
     -- Neither is inspected on the way. `formatNumber` may hand back the ORIGINAL
     -- OPAQUE VALUE when no formatter is reachable; it travels to SetText, which is
     -- a widget setter and accepts a secret.
-    GameTooltip:AddLine(label, 1, 1, 1)
+    GameTooltip:AddLine(label, NS.SkinColor("gtip.value"))
 
     local amount = formatNumber(spell.totalAmount, numberStyle)
     local share = sourceTotal ~= nil and formatShare(spell.totalAmount, sourceTotal) or ""

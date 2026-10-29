@@ -372,6 +372,8 @@ local SUITES = {
     -- The AceGUI widgets this addon acquires itself, painted for its skin, and the column blocks'
     -- label colors.
     "test_skin_settings",
+    -- The tool surfaces painted for this owner, and the tooltip lines on the skin's gtip tokens.
+    "test_skin_tools",
     "test_columnblocks",
     "test_columns",
     "test_windows_rail",

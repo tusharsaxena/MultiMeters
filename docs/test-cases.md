@@ -2541,6 +2541,14 @@ Total.
 - Skin settings: under another skin the column-block labels take its accent and disabled text
 - Skin settings: degraded, PaintAce and PaintAceTree paint nothing and raise nothing
 
+### test_skin_tools.lua (5)
+
+- Skin tools: the debug console is painted for this owner
+- Skin tools: the perf panel is painted for this owner
+- Skin tools: the sim step panel is painted for this owner
+- Skin tools: under Ka0s Default the tooltip lines keep their pixels
+- Skin tools: under another skin the tooltip lines take its gtip tokens
+
 ### test_columnblocks.lua (35)
 
 - Blocks: one block per item, each carrying its index and its label
@@ -2784,6 +2792,7 @@ Total.
 | test_skin_hud.lua | 8 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
+| test_skin_tools.lua | 5 |
 | test_columnblocks.lua | 35 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
@@ -2793,4 +2802,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2395** |
+| **Total** | **2400** |
