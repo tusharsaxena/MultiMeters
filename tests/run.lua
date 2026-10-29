@@ -369,6 +369,9 @@ local SUITES = {
     -- The first-run skin picker: its spec, when it shows (login, profile events, combat, the
     -- stand-down) and that only the player's close marks it seen.
     "test_skin_picker",
+    -- The AceGUI widgets this addon acquires itself, painted for its skin, and the column blocks'
+    -- label colors.
+    "test_skin_settings",
     "test_columnblocks",
     "test_columns",
     "test_windows_rail",

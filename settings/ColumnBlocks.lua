@@ -189,11 +189,9 @@ local function applyBlock(block, index, item, spec)
     block.mmLabel:SetText(item.label or "")
     -- Grayed rather than hidden: a label you cannot read is a block you cannot
     -- aim at, and aiming at it is how you turn the column back on.
-    if item.enabled then
-        block.mmLabel:SetTextColor(1, 0.82, 0)
-    else
-        block.mmLabel:SetTextColor(0.5, 0.5, 0.5)
-    end
+    -- The skin's accent and disabled text (Ka0s Default: the gold and the 0.5 gray this drew),
+    -- read on every apply, so a skin switch's re-render repaints it.
+    block.mmLabel:SetTextColor(NS.SkinColor(item.enabled and "text.accent" or "text.disabled"))
 
     block:SetAlpha(1)
     block:Show()
@@ -268,6 +266,7 @@ local function drawBlock(AceGUI, scroll, i, item, spec)
     -- the blocks flowing with the rest of the page without asking AceGUI for
     -- a widget it does not have.
     local slot = AceGUI:Create("SimpleGroup")
+    NS.SkinPaintAce(slot)   -- for this addon's skin (core/SkinSetup.lua)
     slot:SetLayout(nil)
     slot:SetFullWidth(true)
     slot:SetHeight(NS.BLOCK_STRIDE)
@@ -299,7 +298,7 @@ local function registerRow(list, block, item)
         dimmed         = not item.enabled,
         ghostText      = item.label,
         ghostIcon      = block.mmGlyphTexture,
-        ghostTextColor = item.enabled and { 1, 0.82, 0 } or { 0.5, 0.5, 0.5 },
+        ghostTextColor = { NS.SkinColor(item.enabled and "text.accent" or "text.disabled") },
         height         = NS.BLOCK_HEIGHT,
     })
 end
@@ -315,6 +314,7 @@ local function addBoundaryRule(AceGUI, scroll, i, boundary, count)
     if i ~= boundary or boundary >= count then return end
 
     local rule = AceGUI:Create("Heading")
+    NS.SkinPaintAce(rule)   -- the rule in the skin's divider, as every Heading on the page
     rule:SetText("")
     rule:SetFullWidth(true)
     rule:SetHeight(12)
