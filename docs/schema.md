@@ -137,14 +137,36 @@ db.profile = {
         whisperTo = "",                -- meaningful only while channel is WHISPER
         lines     = 5,                 -- ranked lines per chat export, 1..MAX_ROWS
     },
+    skin         = {                   -- the skin this addon wears (skinning-§2), per profile
+        source      = "ka0s",          -- ka0s (the Ka0s skins) | eui (EllesmereUI's)
+        skin        = "ka0s",          -- which Ka0s skin; "ka0s" is Ka0s Default
+        ignorePanel = true,            -- the Scope: leave the settings panel the client's
+        ignoreFonts = false,           -- the Scope: leave every font the client's
+        font        = "",              -- an LSM font key overriding the skin's face; "" = the skin's own
+        texture     = "",              -- an LSM statusbar key overriding the skin's bar; "" = the skin's own
+        pickerSeen  = false,           -- the first-run skin picker was closed on this profile
+    },
+    -- statColors.* (the per-statistic palette) is stored here too; see its section
 }
 ```
 
-Seven keys, and that is the design working rather than the profile being thin. A window is an
+Eight keys, and that is the design working rather than the profile being thin. A window is an
 **instance, not a singleton** (design §6): there are no global display settings, so `frame`,
 `header`, `rows`, `bars`, `text`, `icons`, `tooltip`, `visibility`, `columns` and `data` all live
 inside one window's config. What is left at profile level is the handful of things that cannot
 sensibly differ between windows.
+
+### `skin` — the skin this addon wears
+
+Seven addon-wide keys (`core/SkinSetup.lua`; the 2026-10-29 skinning rollout's MM-01), each a
+`skipRender` row in `settings/Schema_Skin.lua` on the General page, so the defaults resolve, every
+reset reaches them (the page's Defaults and Reset all settings put the skin back on Ka0s Default) and
+`/mm get|set skin.skin` validates against the registered skins. The library's Skin tab draws the
+first six; nothing draws `pickerSeen`. They are written only through `NS.SetByPath`, by the tab, the
+picker and another Ka0s addon's "Copy to every Ka0s addon", and each row's `onChange` applies only
+its own half. **New keys with defaults, so no migration was owed**: AceDB merges them into every
+stored profile. `pickerSeen` is false on every profile, old and new (owner ruling O3), and is set by
+the player's close of the first-run picker only.
 
 ### `windows` is an array, and it is empty in the defaults
 
@@ -439,11 +461,24 @@ schema validator.
 }
 ```
 
+**Following the skin** (skinning-§6). Every HUD media pick in the template has a "Use the skin's
+..." companion beside it, `<key>FromSkin`, **true** in the template (DECISIONS X3): `header`,
+`columnHeader`, `text` and `tooltip` `.fontFromSkin` (the skin's `hud.font`), `bars.textureFromSkin`
+and `tooltip.barTextureFromSkin` (`bar.texture`), and `bars.borderStyleFromSkin` and
+`tooltip.barBorderStyleFromSkin` (`bar.borderStyle`). While a companion is on, the pick beside it is
+kept but not read (`NS.SkinMediaKey`), so turning it off brings the pick back. Sizes, outlines,
+shadows, thicknesses and every color stay the player's (X4); the window's own edge,
+`frame.borderStyle`, is chrome and has none. Two more, `window.barTextureFromSkin` and
+`window.fontFromSkin`, are meta rows (below). The v20 step put every stored window's eight on once.
+
 Those ten group names are also `modules/WindowManager.lua`'s `COPY_GROUPS` and the settings panel's
 "Settings to copy" dropdown — one list, three jobs. **A group added to the template and not to
 `COPY_GROUPS` simply never copies.**
 
 ### The four meta rows
+
+(Six since the skinning rollout: the two companion broadcasts are described at the end of this
+section.)
 
 `window.colorMode`, `window.barTexture`, `window.font` and `window.fontOutline` (which ships as
 `NONE`, matching the two text surfaces that ship without an outline) are rows on the
@@ -483,6 +518,12 @@ windows would not repaint.
 because the Frame entry's Defaults button walks every row of that page — and a meta row that
 broadcast from there would make that button silently reset six settings on three other pages, which
 is the one thing a per-page reset must not do.
+
+**The companion pair.** `window.barTextureFromSkin` and `window.fontFromSkin` (both shipped `true`)
+make the same bargain over the "Use the skin's ..." companions: the texture one sets
+`bars.textureFromSkin` and `tooltip.barTextureFromSkin`, the font one the four `.fontFromSkin`
+companions, each through the seam, and nothing reads either back (DECISIONS D11). The two bar
+border companions have no broadcast, as the bar border style has none.
 
 ### The four text controls
 
@@ -548,9 +589,12 @@ either alone. `text.shadow` keeps its long-standing `true`.
 | `minimized` | `false` | a **hidden** schema row: writable through `NS.SetByPath` and listed by `/mm list`, but drawn as no control. It is per-window state the header's own minimize button writes, not a preference |
 | `position` | `{ point="CENTER", relativePoint="CENTER", x=0, y=0 }` | **not a schema row** — named non-setting state, see below |
 
-The chrome itself is `LibKa0s-Core-1.0`'s shared `SKIN` / `ApplySkin`, which tints `frame.title` and
-`frame.divider` on its own, so the accent colors are not settings here. What the player owns is
-geometry, the backdrop and the LSM border, layered over the skin in that order.
+The chrome itself is the skin's: `LibKa0s-Core-1.0`'s `ApplySkin` builds it and, since the
+2026-10-29 skinning rollout, the owner's `S.Shell` (no top bar, no edge) paints it in this addon's
+skin, tinting `frame.divider` on its own, so the accent colors are not settings here. What the player
+owns is geometry, the backdrop and the LSM border, layered over the skin in that order and laid
+again after every skin change (`WindowManager:Reskin`); the inner rule shown with an edge takes the
+skin's `win.inner`.
 
 **`frame.position` is not a schema row, and it is named non-setting state** (`architecture-§5`):
 geometry only a drag determines. It is four values behind one concept, no control chooses it (the
@@ -568,7 +612,7 @@ verb and goes straight to `modules/WindowManager.lua`, which owns re-anchoring a
 
 ### `header` — the strip above the rows
 
-`show = true` · `font = "Friz Quadrata TT"` · `size = 12` ·
+`show = true` · `font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 12` ·
 `outline = "NONE"` · `shadow = true` · `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "custom"` ·
 `align = "LEFT"` · `height = 26` · `bgColor = { r=0, g=0, b=0, a=0.5 }`.
 
@@ -662,7 +706,7 @@ every other mode has exactly one color to draw.
 
 ### `columnHeader` — the "Player | Damage | Healing" strip
 
-`font = "Friz Quadrata TT"` · `size = 11` · `outline = "OUTLINE"` ·
+`font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 11` · `outline = "OUTLINE"` ·
 `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "custom"` · `bgColor = { r=0, g=0, b=0, a=0 }` ·
 `bgColorMode = "custom"`.
 
@@ -721,9 +765,9 @@ settings-panel controls answering a question that was already answered one page 
 
 ### `bars` — the StatusBar in every cell
 
-`texture = "Blizzard Raid Bar"` (LSM `statusbar`) · `colorMode = "class"` · `customColor =
+`texture = "Blizzard Raid Bar"` (LSM `statusbar`) · `textureFromSkin = true` · `colorMode = "class"` · `customColor =
 { r=0.35, g=0.55, b=0.85, a=1 }` · `bgColor = { r=0, g=0, b=0, a=1 }` · `bgColorMode = "class"` ·
-`bgAlpha = 0.35` · `border = false` · `borderThickness = 1` ·
+`bgAlpha = 0.1` · `border = false` · `borderStyle = "None"` · `borderStyleFromSkin = true` · `borderThickness = 1` ·
 `borderColor = { r=0, g=0, b=0, a=1 }` · `borderColorMode = "custom"` · `alpha = 1.0` ·
 `fillDirection = "LEFT"` · `animate = true`.
 
@@ -782,7 +826,7 @@ nothing else: `TitleRowMid` centers the title row against the `DIVIDER_INSET` co
 against the texture.
 
 **`skin` is the shipped mode, and it writes nothing.** It does not resolve `SKIN.divider` and apply
-it — it leaves the texture exactly as `NS.ApplySkin` painted it a few lines earlier in `ApplyConfig`.
+it — it leaves the texture exactly as the skin painted it (`NS.ApplySkin`, then the owner's `S.Shell`).
 That is how a per-window color picker coexists with `standalone-windows`: the shared value is never
 copied into this repo, never stored in a profile, and never has to be migrated when it changes, so a
 re-skin still reaches this window along with the debug console and the perf panel. The two override
@@ -888,7 +932,7 @@ rebuild each other's formatter every refresh, and each is **probed against its o
 — a client that accepts `SetBreakpoints` and keeps its own rules is detected rather than assumed.
 
 `deathTimeFormat = "clock"` (`clock` / `ago`) · `maxNameLength = 15` (0 = no
-cap) · `font = Const.FONT_MONO_NAME` ("JetBrains Mono") · `size = 11` · `outline = "NONE"` ·
+cap) · `font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 11` · `outline = "NONE"` ·
 `shadow = true` · `color = { r=1, g=1, b=1, a=1 }` · `alpha = 1.0`.
 
 `text.alpha` is applied to the two **FontStrings**, never to the cell's StatusBar. The FontStrings
@@ -962,11 +1006,11 @@ every number to its right is opaque.
 
 Its own appearance, kept separate from `bars` and `text` on purpose — a 14px spell line and a 90px
 cell are different surfaces, and a texture or a size that reads across one often does not across the
-other: `barTexture = "Blizzard Raid Bar"` · `barSpacing = 1` · `scale = 1.0` · `barColorMode = "class"` · `barAlpha = 0.85` · `barBgColorMode = "custom"` ·
-`barBgAlpha = 0.1` · `barBorderStyle = "None"` ·
+other: `barTexture = "Blizzard Raid Bar"` · `barTextureFromSkin = true` · `barSpacing = 1` · `scale = 1.0` · `barColorMode = "class"` · `barAlpha = 0.85` · `barBgColorMode = "custom"` ·
+`barBgAlpha = 0.1` · `barBorderStyle = "None"` · `barBorderStyleFromSkin = true` ·
 `barBorderSize = 1` · `barBorderColor = { r = 0, g = 0, b = 0, a = 1 }` ·
 `barBorderColorMode = "custom"` ·
-`font = "Friz Quadrata TT"` · `fontSize = 12` · `fontOutline = "NONE"` ·
+`font = "Friz Quadrata TT"` · `fontFromSkin = true` · `fontSize = 12` · `fontOutline = "NONE"` ·
 `textColor = { r = 1, g = 1, b = 1, a = 1 }`. One color for **both** number slots: the amount used
 to be hardcoded gold and the share hardcoded white, which read as two kinds of number when they are
 one line's two figures.
@@ -1234,13 +1278,13 @@ The runtime's `resolveRoot` resolves that prefix against the window id a caller 
 none, against the session's **active window** — `NS.State.activeWindowId`, which the settings
 panel's window picker moves. Global rows keep absolute paths and resolve against `db.profile` — all
 but one: `global.minimap.shown` names its store because `launcher-§3` puts LibDBIcon's table in the
-global one, and its own get/set pair reaches it. There are twenty-two of them:
+global one, and its own get/set pair reaches it. There are twenty-nine of them:
 `enabled`, `global.minimap.shown`, the four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
 the session-only view over every window's own `frame.locked`), `data.mergePets`, `data.throttle`,
-the four `export.*` preferences, the eight `statColors.*` swatches, and the two composed
-`sessionOnly` rows `state.testMode` and `state.debugConsole`. Those two and `master.locked` are the
-three session rows, whose own `get`/`set` are the whole of their storage. The other 147 rows are
-window rows.
+the four `export.*` preferences, the eight `statColors.*` swatches, the seven `skin.*` rows, and
+the two composed `sessionOnly` rows `state.testMode` and `state.debugConsole`. Those two and
+`master.locked` are the three session rows, whose own `get`/`set` are the whole of their storage. The
+other 157 rows are window rows.
 
 ```lua
 -- settings/Schema_Paths.lua (abridged)

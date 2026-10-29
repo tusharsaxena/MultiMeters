@@ -47,6 +47,8 @@ Want a second window? Click **New window** beside the window picker at the top o
 
 Want to see the meter work without a group? `/mm sim` runs a scripted fight through it. It only starts when you're solo and outside an instance, and it offers four scenarios: a dungeon pull and boss, a 20-player raid boss, a wipe and reset, and a zone change between fights. Every window shows a SIMULATION strip while it plays, and you can pause it and step through it one row at a time. The group, the fights and the numbers are made up. Nothing is saved, nothing is sent to chat, and your real segments come back when it stops.
 
+Want a different look? Multi Meters wears one of the Ka0s skins, Ka0s Default to start with, and a small picker asks you to choose one the first time you log in on a profile. You can change it any time on General → Skin, with no reload: the windows, the tooltips, the export window and the debug tools all follow. The window fonts and bar textures follow the skin too, while each **Use the skin's font**, **Use the skin's texture** or **Use the skin's border** box beside them is ticked. Untick one and your own pick comes back. Your colors, sizes and outlines are never touched. With EllesmereUI installed, the addon can wear its look instead.
+
 Everything else is on the addon's page under Settings → AddOns, and `/mm` (or `/multimeters`) on its own opens it. `/mm help` prints the full command list.
 
 ## How it works

@@ -12,7 +12,7 @@ skipping a repaint — not running. Unticking *Enable Multi Meters* gets the sam
 the addon in Blizzard's own AddOns list, minus the `/reload`.
 
 **This replaced a draw gate.** Through v1.0.0 the stored `enabled` key was one rung of
-`NS.ShouldShow`'s ladder: the windows went away and all twenty-one game-event registrations, every
+`NS.ShouldShow`'s ladder: the windows went away and all twenty-two game-event registrations, every
 module's bus subscription and every window's OnUpdate stayed exactly where they were. The client went
 on walking this addon's registration list on every `UNIT_SPELLCAST_SUCCEEDED` in a raid for an addon
 the player had switched off — it had not stopped watching, it had stopped reacting (anti-pattern
@@ -33,7 +33,8 @@ second was written.
 | On the way down (`standDown`) | What it reaches |
 |---|---|
 | `NS.Sim:Stop("standDown")` | **first**, a running simulation (`/mm sim`, MultiMeters#60, host contract H6), while every module its resync reaches is still up |
-| `NS:UnregisterAllEvents()` | all twenty-one game events — `core/MultiMeters.lua` is the only file that owns one |
+| `NS.HideSkinPicker()` | the first-run skin picker, taken down **without** marking it seen (its pending preview put back, a combat-held start dropped), so it comes back on the next login the addon stands up for |
+| `NS:UnregisterAllEvents()` | all twenty-two game events — `core/MultiMeters.lua` is the only file that owns one |
 | `NS:CancelAllTimers()` + `NS.ResetStatePending()` | the player-state settle pass, and the flag that would otherwise never re-book one |
 | every AceAddon child's `UnregisterAllMessages()` | each module is its own AceEvent target, so the addon object's own call reaches none of them |
 | `NS.BusStandDown()` | every event and message registration on every bus target `NS.NewBusTarget` has made — windows, `Format`, `Targets`, the export modal, the Profiles page — through `LibKa0s-Bus-1.0`'s record, which keeps what it took down |
