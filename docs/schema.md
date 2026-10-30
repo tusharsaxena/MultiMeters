@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 21,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
+    schemaVersion = 22,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data (+ count, stored)
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -61,7 +61,7 @@ the runner advances it to N+1 only after `migrations[N]` returned, so a step tha
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
 **Twenty steps are wired today**, `migrations[1]` through `migrations[20]`, walking an account from
-the shipped v1 shape to v21. Each is one line of the header block at the top of
+the shipped v1 shape to v22. Each is one line of the header block at the top of
 `core/Database.lua`, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -86,12 +86,13 @@ the shipped v1 shape to v21. Each is one line of the header block at the top of
 | v18 → v19 | every window of every profile still on the old shipped `frame.height = 220` (nine rows under the 30px bar) moves to 228, which fits ten again. Any other height is left alone. See [`frame`](#frame--the-standalone-window) |
 | v19 → v20 | the one-time HUD reset onto the skin (skinning-§6, the owner's ruling O2): every window of every profile has its eight "Use the skin's ..." companions (`header`, `columnHeader`, `text`, `tooltip` `.fontFromSkin`; `bars.textureFromSkin`, `tooltip.barTextureFromSkin`; `bars.borderStyleFromSkin`, `tooltip.barBorderStyleFromSkin`) set on through LibKa0s-Skin-1.0's `ResetToSkin`, one call per window; the list names each companion, so `ResetToSkin` (Skin minor 8) sets an absent one with no seeding first. The picks themselves are kept, and no color, size, outline or thickness is touched. It runs once: a companion turned off afterwards stays off |
 | v20 → v21 | the one-time chrome reset onto the skin (the skinning rollout's MM-A1, the owner's ruling R-3): every window of every profile has its five chrome color modes (`frame.backdropColorMode`, `frame.borderColorMode`, `header.colorMode`, `frame.controlColorMode`, `frame.controlHoverColorMode`) set to `skin`, whatever they were, and `header.bgColorFromSkin` set on. The stored colors, `frame.borderStyle` and `frame.borderSize` are kept, so a mode set back to Custom draws them again. A group absent from a stored window is left to `EnsureWindowShape`, whose template ships the same values. It runs once: a mode changed afterwards stays changed |
+| v21 → v22 | the font flags onto From skin (LibKa0s v1.82.0, ruling D-07; the skin fonts run's Addendum 01): every window of every profile has each flag still at the default it shipped (`header.outline`, `text.outline`, `tooltip.fontOutline` and the all-surfaces `fontOutline` at `"NONE"`, `columnHeader.outline` at `"OUTLINE"`) moved to `"@skin"`, which the Skin tab's Font outline answers. A flag the player changed stays. It runs once: a `NONE` picked afterwards is kept. See [The four text surfaces](#the-four-text-surfaces-and-their-color-modes) |
 
-Adding a v22 is two edits and no bootstrap change:
+Adding a v23 is two edits and no bootstrap change:
 
 ```lua
-migrations[21] = function(db) ... end       -- the runner stamps the version
-local CURRENT_DB_VERSION = 22
+migrations[22] = function(db) ... end       -- the runner stamps the version
+local CURRENT_DB_VERSION = 23
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -485,7 +486,7 @@ Those ten group names are also `modules/WindowManager.lua`'s `COPY_GROUPS` and t
 section.)
 
 `window.colorMode`, `window.barTexture`, `window.font` and `window.fontOutline` (which ships as
-`NONE`, matching the two text surfaces that ship without an outline) are rows on the
+`@skin`, From skin, like every surface's own flags since LibKa0s v1.82.0) are rows on the
 **Frame** page that set the others rather than being read by anything. Each fans out to the surfaces
 that have a setting of its kind: the color mode to six, the bar texture to two (the grid and the
 tooltip), and the font and its outline to four each (the cells, both header strips and the tooltip).
@@ -617,7 +618,7 @@ verb and goes straight to `modules/WindowManager.lua`, which owns re-anchoring a
 ### `header` — the strip above the rows
 
 `show = true` · `font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 12` ·
-`outline = "NONE"` · `shadow = true` · `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "skin"` ·
+`outline = "@skin"` · `shadow = true` · `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "skin"` ·
 `align = "LEFT"` · `height = 26` · `bgColor = { r=0, g=0, b=0, a=0.5 }` · `bgColorFromSkin = true`.
 
 **The title and the title bar follow the skin** (the skinning rollout's MM-A1). `colorMode` is `skin` \|
@@ -628,7 +629,9 @@ skin's background", shipped on: the skin's `title.bg` while on (clear for a skin
 band), the swatch, kept and never disabled, while off. `migrations[20]` (v20 → v21) moved every stored
 window onto both, once.
 
-**The face is `GameFontNormal` spelled out** — Friz Quadrata, 12px, no outline, a 1/-1 drop shadow —
+**The face is `GameFontNormal` spelled out** — Friz Quadrata, 12px, a 1/-1 drop shadow, and since
+LibKa0s v1.82.0 the flags From skin (the Skin tab's Font outline, All text by default; Off is the
+old unoutlined look) —
 because that is what Ka0s DPS Race's title bar draws (`Style.FONT.TITLE`) and the two headers sit side
 by side. Until 2026-10-24 the header shipped `outline = "OUTLINE"` with `shadow = false`; the size was
 already 12, and the outline, which rings every glyph in a pixel of black, is what made this title read
@@ -693,6 +696,15 @@ statistic" could only paint it the sort column's color — a fact on screen twic
 used to have: `true` → `"class"`, `false` → `"custom"`, which is exactly what it meant, and the dead
 key is pruned.
 
+**Every one is the minimum font set** (ruling D-07): a size, a color with a class-color option (the
+`colorMode` beside the swatch), flags and a shadow. The flags lead with **From skin** (`"@skin"`, the
+composer's `flagsFromSkin`), the default, drawn through `NS.SkinFontFlags` → `S.FontFlags`: the Skin
+tab's Font outline answers it (All text and HUD text only: OUTLINE; Off: none; Ignore fonts:
+OUTLINE). A picked flag wins, and `NONE` stays this addon's word for none. While a surface's face
+follows the skin (`fontFromSkin`), its size draws at `S.HudFontSize(stored, true)` (D-09,
+`NS.SkinHudFontSize`): the skin's HUD scale, so the text is as wide in every skin; its own face and
+Ignore fonts draw the stored size, and the stored size is never rewritten.
+
 **`stat` means a different statistic per surface, and that is the point** — it is one question ("which
 statistic is this text about?") answered by whichever statistic the surface actually describes:
 
@@ -718,7 +730,7 @@ every other mode has exactly one color to draw.
 
 ### `columnHeader` — the "Player | Damage | Healing" strip
 
-`font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 11` · `outline = "OUTLINE"` ·
+`font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 11` · `outline = "@skin"` ·
 `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "custom"` · `bgColor = { r=0, g=0, b=0, a=0 }` ·
 `bgColorMode = "custom"`.
 
@@ -945,7 +957,7 @@ rebuild each other's formatter every refresh, and each is **probed against its o
 — a client that accepts `SetBreakpoints` and keeps its own rules is detected rather than assumed.
 
 `deathTimeFormat = "clock"` (`clock` / `ago`) · `maxNameLength = 15` (0 = no
-cap) · `font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 11` · `outline = "NONE"` ·
+cap) · `font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 11` · `outline = "@skin"` ·
 `shadow = true` · `color = { r=1, g=1, b=1, a=1 }` · `alpha = 1.0`.
 
 `text.alpha` is applied to the two **FontStrings**, never to the cell's StatusBar. The FontStrings
@@ -1023,7 +1035,7 @@ other: `barTexture = "Blizzard Raid Bar"` · `barTextureFromSkin = true` · `bar
 `barBgAlpha = 0.1` · `barBorderStyle = "None"` · `barBorderStyleFromSkin = true` ·
 `barBorderSize = 1` · `barBorderColor = { r = 0, g = 0, b = 0, a = 1 }` ·
 `barBorderColorMode = "custom"` ·
-`font = "Friz Quadrata TT"` · `fontFromSkin = true` · `fontSize = 12` · `fontOutline = "NONE"` ·
+`font = "Friz Quadrata TT"` · `fontFromSkin = true` · `fontSize = 12` · `fontOutline = "@skin"` ·
 `textColor = { r = 1, g = 1, b = 1, a = 1 }`. One color for **both** number slots: the amount used
 to be hardcoded gold and the share hardcoded white, which read as two kinds of number when they are
 one line's two figures.

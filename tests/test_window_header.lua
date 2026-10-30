@@ -930,18 +930,19 @@ end)
 -- The header's four text controls
 -- ---------------------------------------------------------------------------
 
-test("Header ships GameFontNormal spelled out: 12px, no outline, a 1/-1 shadow", function()
+test("Header ships GameFontNormal spelled out: 12px, flags From skin, a 1/-1 shadow", function()
     -- Ka0s DPS Race's title bar draws its title in GameFontNormal (Friz Quadrata,
     -- 12px, unoutlined, shadowed) and the two headers are compared side by side.
     -- The size was always 12; the OUTLINE is what made this one read larger.
-    -- red under: header.outline = "OUTLINE" or header.shadow = false in
-    -- defaults/Profile.lua.
+    -- Since LibKa0s v1.82.0 (ruling D-07) the flags ship From skin: the Skin tab's Font outline,
+    -- All text by default, outlines the title; Off gives back the unoutlined GameFontNormal.
+    -- red under: header.outline not "@skin" or header.shadow = false in defaults/Profile.lua.
     local _, window, cfg = scene()
     assertEqual(cfg.header.size, 12)
-    assertEqual(cfg.header.outline, "NONE")
+    assertEqual(cfg.header.outline, "@skin")
     for _, fs in ipairs({ window.frame.title, window.sessionText }) do
         assertEqual(fs.__font.size, 12, "the header line is not 12px")
-        assertEqual(fs.__font.flags, nil, "the header line is still outlined")
+        assertEqual(fs.__font.flags, "OUTLINE", "From skin under All text is not outlined")
         assertEqual(fs.__shadow[1], 1, "the header line has no shadow")
         assertEqual(fs.__shadow[2], -1)
     end

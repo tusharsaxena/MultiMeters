@@ -270,7 +270,9 @@ local function nameColumnWidth(cfg)
     -- size itself from -- so it keeps the shipped width.
     if type(cap) ~= "number" or cap <= 0 then return Const.NAME_COLUMN_WIDTH end
 
+    -- The size the cells DRAW at (the skin's HUD scale, D-09; still from config): a capped name fits.
     local size = text.size or 11
+    if NS.SkinHudFontSize then size = NS.SkinHudFontSize(size, text.fontFromSkin) end
     local width = math.ceil(cap * size * Const.NAME_CHAR_RATIO) + Const.NAME_COLUMN_PAD
 
     if icons.showIcon then

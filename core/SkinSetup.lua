@@ -58,6 +58,12 @@ local addonName, NS = ...
 --                           (and the window edge the Shell draws) follows only a live skin.
 --   NS.SkinMediaKey(g,k,t)  the LSM key a HUD surface draws: the skin's token `t` while the group's
 --                           `<k>FromSkin` companion is on, else the stored pick (skinning-§6).
+--   NS.SkinFontFlags(v)     the flags a HUD surface hands SetFont from its stored flags `v`: From skin
+--                           ("@skin") through S.FontFlags and the owner's Font outline, a pick as is,
+--                           and nil for none ("NONE", or the empty string the library answers).
+--   NS.SkinHudFontSize(n,f) the size a HUD surface draws from its stored size `n`: S.HudFontSize, the
+--                           skin's HUD scale while the face follows the skin (`f`, its fontFromSkin),
+--                           else `n` (D-09). The stored size is never rewritten.
 --   NS.SkinPaintAce(w)      an AceGUI widget this addon acquired itself, painted for this owner:
 --   NS.SkinPaintAceTree(c)  `Skin:PaintAce` / `Skin:PaintAceTree` with the owner bound (the facade
 --                           carries neither). Nothing while the owner ignores its settings panel;
@@ -275,6 +281,32 @@ function NS.SkinMediaKey(group, key, token)
         if v ~= nil then return v end
     end
     return stored
+end
+
+--- The font flags a HUD surface draws with, from its stored flags (LibKa0s v1.82.0, ruling D-07):
+--- From skin ("@skin", every flags row's default) resolves through S.FontFlags, which reads the
+--- owner's Font outline (All text and HUD text only: OUTLINE; Off: none; Ignore fonts: OUTLINE); a
+--- flag the player picked wins, as is. This addon stores "NONE" for none and SetFont wants nil, so
+--- both "NONE" and the library's "" answer nil. The meter, its headers and its tooltip are HUD text,
+--- so `where` is the default. Degraded, the facade's stub answers OUTLINE for From skin.
+function NS.SkinFontFlags(stored)
+    local v = stored
+    if v == "NONE" then return nil end
+    local S = NS.Skin
+    if S and type(S.FontFlags) == "function" then v = S.FontFlags(v) end
+    if v == nil or v == "" or v == "NONE" or v == "@skin" then return nil end
+    return v
+end
+
+--- The size a HUD surface draws at, from its stored size (D-09): S.HudFontSize scales it by the
+--- skin's HUD factor while the face follows the skin (`fromSkin`, the group's fontFromSkin), and
+--- answers it as stored for the player's own face and under Ignore fonts. Read on ApplyConfig and
+--- on a tooltip's build like the face, never on the refresh path; the stored value is never written.
+function NS.SkinHudFontSize(size, fromSkin)
+    local S = NS.Skin
+    if S and type(S.HudFontSize) == "function" then return S.HudFontSize(size, fromSkin == true) end
+    local n = tonumber(size)
+    return (n and n > 0) and n or 12
 end
 
 -- The source row's values, and the skin row's: every registered skin, Ka0s Default first. Without

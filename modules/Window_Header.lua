@@ -149,15 +149,18 @@ local function onColumnClick(button)
 end
 
 --- The font every line of the header strip is drawn in: the player's face, its
---- size, and the outline flag WoW wants as nil rather than as the string "NONE".
+--- size (the skin's HUD scale while the face follows it, D-09), and the outline flag
+--- WoW wants as nil rather than as the string "NONE" (From skin through the Font
+--- outline, D-07).
 --- One reader for all three so the title, the session line and the column labels
 --- can never drift onto different fonts.
 ---
 --- @param header table  the window's `header` config group
 --- @return string path, number size, string|nil flags
 local function headerFont(header)
-    local flags = (header.outline ~= "NONE") and header.outline or nil
-    return fontPath(NS.SkinMediaKey(header, "font", "hud.font")), header.size or 12, flags
+    local flags = NS.SkinFontFlags(header.outline)
+    return fontPath(NS.SkinMediaKey(header, "font", "hud.font")),
+        NS.SkinHudFontSize(header.size or 12, header.fontFromSkin), flags
 end
 
 --- Which statistic the WINDOW is about, for the two header surfaces that answer
@@ -260,8 +263,9 @@ end
 --- — so changing the cell font silently restyled the headers and no setting
 --- could make the strip differ from the numbers beneath it.
 local function columnHeaderFont(colHeader)
-    local flags = (colHeader.outline ~= "NONE") and colHeader.outline or nil
-    return fontPath(NS.SkinMediaKey(colHeader, "font", "hud.font")), colHeader.size or 11, flags
+    local flags = NS.SkinFontFlags(colHeader.outline)
+    return fontPath(NS.SkinMediaKey(colHeader, "font", "hud.font")),
+        NS.SkinHudFontSize(colHeader.size or 11, colHeader.fontFromSkin), flags
 end
 
 --- Where something `h` pixels tall sits so it is CENTERED in the title bar.

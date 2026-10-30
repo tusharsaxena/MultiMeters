@@ -1326,7 +1326,7 @@ Total.
 - Minimize leaves the STORED height alone, so expanding restores it
 - A collapsed window does not aggregate or render
 - A collapsed window keeps the notice hidden
-- Header ships GameFontNormal spelled out: 12px, no outline, a 1/-1 shadow
+- Header ships GameFontNormal spelled out: 12px, flags From skin, a 1/-1 shadow
 - Header shadow reaches every line of the strip
 - Column header shadow is its OWN setting, not the header's
 - The header's text answers its modes, and the custom one is the picker
@@ -2543,6 +2543,20 @@ Total.
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
 
+### test_skin_fonts.lua (11)
+
+- Skin fonts: every font group carries size, color with a class option, flags and shadow
+- Skin fonts: every flags row leads with From skin and defaults to it, the template too
+- Skin fonts: From skin draws the Font outline: OUTLINE under All text and HUD only, none under Off
+- Skin fonts: a flag the player picked wins over the Font outline, and NONE draws none
+- Skin fonts: the all-surfaces flags row writes From skin to every surface
+- Skin fonts: the v22 step moves every stored old-default flag onto From skin, in every profile
+- Skin fonts: the v22 move runs once, so a NONE picked after it is kept
+- Skin fonts: the v22 step survives a junk window and a group that is not a table
+- Skin fonts: a HUD size follows the skin's scale while the face does, never rewritten
+- Skin fonts: the tooltip's size scales with the skin too
+- Skin fonts: degraded, From skin draws OUTLINE and a size draws as stored
+
 ### test_skin_window.lua (13)
 
 - Skin window: the five chrome modes and the title bar companion ship on the skin
@@ -2834,6 +2848,7 @@ Total.
 | test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
+| test_skin_fonts.lua | 11 |
 | test_skin_window.lua | 13 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
@@ -2847,4 +2862,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2433** |
+| **Total** | **2444** |

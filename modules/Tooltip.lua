@@ -303,8 +303,10 @@ local function tooltipConfig(window)
         barBorderColor     = field("barBorderColor", nil),
         barBorderColorMode = field("barBorderColorMode", "custom"),
         font               = media("font", "hud.font", "Friz Quadrata TT"),
+        -- Whether that face is the skin's: the size's HUD scale follows it (D-09, tooltipFont).
+        fontFromSkin       = field("fontFromSkin", false),
         fontSize           = field("fontSize", 12),
-        fontOutline        = field("fontOutline", "NONE"),
+        fontOutline        = field("fontOutline", "@skin"),
         fontShadow         = field("fontShadow", false),
         colorMode          = field("colorMode", "custom"),
         -- WHICH statistic `colorMode == "stat"` means. Filled in by the CALLER,
@@ -357,7 +359,15 @@ local function tooltipFont(config)
         or Const.FONT_MONO or _G.STANDARD_TEXT_FONT
     local size = config.fontSize
     if type(size) ~= "number" or size < 1 then size = 12 end
-    local flags = (config.fontOutline ~= "NONE") and config.fontOutline or nil
+    -- The skin's HUD scale while the face is the skin's (D-09); From skin flags through the Font
+    -- outline, nil for none (D-07; core/SkinSetup.lua).
+    if NS.SkinHudFontSize then size = NS.SkinHudFontSize(size, config.fontFromSkin) end
+    local flags
+    if NS.SkinFontFlags then
+        flags = NS.SkinFontFlags(config.fontOutline)
+    elseif config.fontOutline ~= "NONE" and config.fontOutline ~= "@skin" then
+        flags = config.fontOutline
+    end
     return path, size, flags
 end
 

@@ -361,13 +361,20 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   never on the refresh path, and never through `S.BarTexture`, which reads a StatusBar back (D6;
   a cell holds a secret value). The stored pick is never rewritten. The schema's v20 step put every
   stored window's companions on once through `Skin.ResetToSkin` (owner ruling O2), so under Ka0s
-  Default the HUD draws Ka0s Oxanium SemiBold and the Ka0s Default bar where it drew Friz Quadrata
+  Default the HUD draws Ka0s Prototype (Oxanium SemiBold until LibKa0s v1.82.0) and the Ka0s Default bar where it drew Friz Quadrata
   and Blizzard Raid Bar (X5); every other skin draws its own HUD face (LibKa0s v1.81.0). The v20 step
   names the companions themselves, so `ResetToSkin` (Skin minor 8) sets an absent one with no seeding.
   **Ignore fonts covers the HUD:** while the owner ignores fonts, `S.Resolve` answers the stored pick
   for `hud.font` whatever the companion says, so every face above draws each window's own pick, live
   through `OnLooksChanged`; a nil answer falls back to the stored pick in `NS.SkinMediaKey`. Textures
   and borders are not fonts and keep following.
+- **Font flags and HUD sizes** (LibKa0s v1.82.0, rulings D-07 and D-09). Every font setting is the
+  minimum set (size, color with a class option, flags, shadow), and each flags row leads with From
+  skin (`"@skin"`), the default, which `NS.SkinFontFlags` draws through `S.FontFlags` and the Skin
+  tab's Font outline (`skin.outline`); a picked flag wins. The schema's v22 step moved every stored
+  flag still at its old default onto From skin, once. While a face follows the skin, its size draws
+  at `S.HudFontSize` (`NS.SkinHudFontSize`, the skin's HUD scale; the name column's width follows the
+  drawn size); its own face and Ignore fonts draw the stored size, which is never rewritten.
 - **The tooltips.** GameTooltip's frame stays Blizzard's (skinning-§7); the lines this addon writes
   take `gtip.title`, `gtip.value` and `mm.tipHint` (X8), and the tooltip's bars, borders and face
   follow the HUD companions above. `modules/Tooltip.lua` still sets the face on the GameTooltip lines

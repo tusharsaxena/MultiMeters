@@ -372,6 +372,9 @@ local SUITES = {
     -- The HUD following the skin: the companions, the cell / header / tooltip media through
     -- them, a skin switch, the meta pair, and the one-time v20 reset.
     "test_skin_hud",
+    -- The font settings' minimum set, their From skin flags (S.FontFlags), the one-time v22 move
+    -- and the HUD size scale (S.HudFontSize), LibKa0s v1.82.0.
+    "test_skin_fonts",
     -- The meter window's chrome on the skin: the five `skin` modes and the title bar companion,
     -- following live under two skins, the player's own picks, and the one-time v21 reset.
     "test_skin_window",

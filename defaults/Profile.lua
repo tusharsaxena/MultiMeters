@@ -70,11 +70,10 @@ local WINDOW_TEMPLATE = {
     -- is read by nothing.
     barTexture  = "Blizzard Raid Bar",
     font        = "Friz Quadrata TT",
-    -- NONE, matching the two text surfaces that ship without one (`text.outline`
-    -- and `tooltip.fontOutline`). An outline is a legibility tool for text over a
-    -- bright bar, not a default look, and broadcasting one to every surface at
-    -- once was the meta row's most visible effect on a fresh profile.
-    fontOutline = "NONE",
+    -- FROM SKIN ("@skin", LibKa0s v1.82.0, ruling D-07), as every surface's own flags below: the
+    -- Skin tab's Font outline decides (All text and HUD text only: OUTLINE; Off: none). It shipped
+    -- NONE until then; the v22 step moved a stored NONE onto From skin once (core/Database.lua).
+    fontOutline = "@skin",
     -- The meta pair over the "Use the skin's ..." companions below, same bargain: each sets the
     -- companion of every surface that has one, stores what it last broadcast, and is read by
     -- nothing (settings/Schema_Compose.lua's broadcastFromSkin, DECISIONS D11).
@@ -241,7 +240,8 @@ local WINDOW_TEMPLATE = {
         -- header used to ship OUTLINE with no shadow (until 2026-10-24); a
         -- player who wants that back has both controls on the Header tab.
         size            = 12,
-        outline         = "NONE",      -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
+        -- From skin (D-07): the Skin tab's Font outline. Shipped NONE until v22.
+        outline         = "@skin",     -- @skin | NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         shadow          = true,
         -- SKIN since MM-A1 (it shipped CUSTOM): the skin's title color, gold under
         -- Ka0s Default, the swatch below read under `custom`. See the note in
@@ -295,7 +295,7 @@ local WINDOW_TEMPLATE = {
         font     = "Friz Quadrata TT",
         fontFromSkin = true,   -- the skin's `hud.font`
         size     = 11,
-        outline  = "OUTLINE",   -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
+        outline  = "@skin",     -- From skin (D-07; OUTLINE until v22) | NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         -- Both off for the reason the header's are: a new setting must not
         -- restyle a window that already exists.
         shadow   = false,
@@ -445,7 +445,7 @@ local WINDOW_TEMPLATE = {
         font         = "Friz Quadrata TT",
         fontFromSkin = true,   -- the skin's `hud.font`
         size         = 11,
-        outline      = "NONE",
+        outline      = "@skin",     -- From skin (D-07); NONE until v22
         shadow       = true,
         color        = { r = 1, g = 1, b = 1, a = 1 },
         -- THIS one takes the ROW's class, not the local player's: a cell is about
@@ -540,7 +540,7 @@ local WINDOW_TEMPLATE = {
         font               = "Friz Quadrata TT",
         fontFromSkin       = true,                 -- the skin's `hud.font`
         fontSize           = 12,
-        fontOutline        = "NONE",   -- NONE | OUTLINE | THICKOUTLINE | MONOCHROME
+        fontOutline        = "@skin",  -- From skin (D-07; NONE until v22) | NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         -- Off, so the tooltip keeps the face it has always had.
         fontShadow         = false,
         -- Both number slots on a spell line. The amount used to be hardcoded
