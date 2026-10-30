@@ -438,7 +438,11 @@ if not lib then
     -- second value, "queued": there is no queue), and HideSkinPicker is a no-op.
     Helpers.SkinPicker     = function() return nil end
     Helpers.HideSkinPicker = function() end
-    Helpers.__pages    = function() return {} end
+    -- The reserved `/mm skin` verb's act (LibKa0s v1.82.0, OptionsSkinPicker minor 3, O.SkinVerb):
+    -- no picker without the library, so it answers nil, "absent" and NS.RunSkinVerb prints the
+    -- library-absent line.
+    Helpers.SkinVerb       = function() return nil, "absent" end
+    Helpers.__pages   = function() return {} end
     Helpers.__panels   = function() return {} end
     Helpers.__panelFor = function() return nil end
 

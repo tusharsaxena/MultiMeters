@@ -470,6 +470,17 @@ if not Skin then
     S.GetFont = function() return STANDARD_TEXT_FONT end
     S.ChartStyle = function() return {} end
     S.BarStyle = function() return {} end
+    -- LibKa0s v1.82.0 (Skin minor 9): never nil, because SetFont reads nil as no flags. A picked
+    -- flag as is; From skin ("@skin") or nothing is the library's default mode, All text: OUTLINE.
+    S.FontFlags = function(v)
+        if type(v) == "string" and v ~= S.FROM_SKIN then return v end
+        return "OUTLINE"
+    end
+    -- The HUD size scale (D-09): no skin, no scale, so a positive stored size as is, else 12.
+    S.HudFontSize = function(size)
+        local n = tonumber(size)
+        return (n and n > 0) and n or 12
+    end
 
     NS.Skin = S
     function NS.ApplySkinChoice() return false, false end

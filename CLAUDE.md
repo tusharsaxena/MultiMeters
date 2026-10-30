@@ -59,5 +59,5 @@ Green gate before every commit: `lua tests/run.lua` and
 `luacheck` loads no kit, so it runs through the bounded runner, testing-§15). Never
 auto-stage/commit/push and never bump the version without an explicit instruction.
 
-Bundles [LibKa0s](https://github.com/tusharsaxena/LibKa0s) v1.81.0 (MIT).
+Bundles [LibKa0s](https://github.com/tusharsaxena/LibKa0s) v1.82.0 (MIT).
 LibKa0s icons: chat, chevron-down, clear, close, confirm, copy, expand, export, eye, info, lock, minimise, reset, segment, settings, sort-down, sort-up, spreadsheet, unlock.
