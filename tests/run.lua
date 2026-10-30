@@ -386,6 +386,9 @@ local SUITES = {
     "test_skin_settings",
     -- The tool surfaces painted for this owner, and the tooltip lines on the skin's gtip tokens.
     "test_skin_tools",
+    -- The display-glyph guard (kit revision 45, D-19): no string this addon paints in a skin face
+    -- carries a character some shipped face cannot draw.
+    "test_glyphs",
     "test_columnblocks",
     "test_columns",
     "test_windows_rail",

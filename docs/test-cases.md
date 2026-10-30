@@ -2543,7 +2543,7 @@ Total.
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
 
-### test_skin_fonts.lua (11)
+### test_skin_fonts.lua (14)
 
 - Skin fonts: every font group carries size, color with a class option, flags and shadow
 - Skin fonts: every flags row leads with From skin and defaults to it, the template too
@@ -2556,6 +2556,9 @@ Total.
 - Skin fonts: a HUD size follows the skin's scale while the face does, never rewritten
 - Skin fonts: the tooltip's size scales with the skin too
 - Skin fonts: degraded, From skin draws OUTLINE and a size draws as stored
+- Skin fonts: the column labels draw the Font outline and the HUD size scale
+- Skin fonts: a capped name column sizes itself from the scaled HUD size
+- Skin fonts: the empty-state notice draws the HUD size scale with the HUD face
 
 ### test_skin_window.lua (13)
 
@@ -2603,6 +2606,10 @@ Total.
 - Skin tools: the sim step panel is painted for this owner
 - Skin tools: under Ka0s Default the tooltip lines keep their pixels
 - Skin tools: under another skin the tooltip lines take its gtip tokens
+
+### test_glyphs.lua (1)
+
+- glyphs: display strings use only characters every shipped skin face draws
 
 ### test_columnblocks.lua (36)
 
@@ -2848,11 +2855,12 @@ Total.
 | test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
-| test_skin_fonts.lua | 11 |
+| test_skin_fonts.lua | 14 |
 | test_skin_window.lua | 13 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
+| test_glyphs.lua | 1 |
 | test_columnblocks.lua | 36 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
@@ -2862,4 +2870,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2444** |
+| **Total** | **2448** |
