@@ -68,7 +68,7 @@ secret-value rules the checks refer to.
 - **INSTALL-3. SavedVariables shape.** After INSTALL-1, `/reload`, then read `MultiMeters.lua` on disk
   → `profileKeys`, `profiles.Default`, `global.schemaVersion = 21`, a one-entry `profile.windows`
   whose window has `id = 1`, and `profile.nextWindowId = 2`. (Amended by MM-05, 2026-10-29, the skinning rollout: the stamp is 20 since the
-  v20 skin reset, MM-03.) (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result:
+  v20 skin reset, MM-03.) (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result: pass (owner-marked 2026-10-30)
 - **INSTALL-4. `/reload` keeps the layout.** Move the window, resize it, change its bar color and its
   column set, `/reload` → position, size, color and columns survive; the window is in the same
   visibility state; no error during load; `nextWindowId` has not moved. Result: pass (owner-marked 2026-10-10)
@@ -129,14 +129,14 @@ secret-value rules the checks refer to.
   strength in 18px slots (WIN-49 to WIN-51); the second keeps *Thick outline* and size 20;
   `/dump MultiMetersDB.global.schemaVersion` prints `21`. A first window still outlined, white or
   faded means the v17 step did not reach it. (Amended by MM-05, 2026-10-29, the skinning rollout: the stamp is 20 since the v20 skin reset.)
-  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result:
+  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result: pass (owner-marked 2026-10-30)
 - **INSTALL-13. Upgrade from v17 (the 30px title bar).** On the first header-match build
   (`schemaVersion` 17), with two windows, leave the first window's Header → Title bar → Header height
   at the shipped 18 and set the second's to 24; log out, update and log in → the first window's
   Header height reads 26 and its bar measures 30px from the frame's top edge to the divider (WIN-52);
   the second keeps 24; `/dump MultiMetersDB.global.schemaVersion` prints `21`. A first window still on
   the short bar means the v18 step did not reach it. (Amended by MM-05, 2026-10-29, the skinning rollout: the stamp is 20 since the v20 skin reset.)
-  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result:
+  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result: pass (owner-marked 2026-10-30)
 - **INSTALL-14. Upgrade from v18 (the ten-row 228px window).** On the 30px-bar build
   (`schemaVersion` 18), with two windows, leave the first window's Window → Height at the shipped 220
   and set the second's to 300; log out, update and log in → the first window's Height reads 228 and,
@@ -144,7 +144,7 @@ secret-value rules the checks refer to.
   under the last one; the second keeps 300; `/dump MultiMetersDB.global.schemaVersion` prints
   `21`. A first window still at 220 showing nine rows means the v19 step did not reach it.
   (Amended by MM-05, 2026-10-29, the skinning rollout: the stamp is 20 since the v20 skin reset.)
-  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result:
+  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result: pass (owner-marked 2026-10-30)
 - **INSTALL-15. Upgrade from v19 (the one-time skin reset, owner ruling O2).** On the build before the
   skinning rollout (`schemaVersion` 19), with two windows, leave the first window as shipped and on
   the second pick Bars → Bar → Bar texture *Blizzard* and Columns → Column header → Font *Morpheus*;
@@ -161,7 +161,7 @@ secret-value rules the checks refer to.
   means the v20 step did not reach that window. (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21, and the v21 chrome reset runs
   in the same walk.) (Amended by MM-02, 2026-10-30, the skin library follow-ups: the step no longer seeds the companions before
   LibKa0s's ResetToSkin, which now sets an absent one itself, so re-check that every companion is
-  ticked; and the grayed picker shows the skin's value, as the library has always drawn it.) Result:
+  ticked; and the grayed picker shows the skin's value, as the library has always drawn it.) Result: pass (owner-marked 2026-10-30)
 - **INSTALL-16. Upgrade from v20 (the one-time chrome reset, the owner's ruling R-3; MM-A1).** On the
   build before MM-A1 (`schemaVersion` 20), with two windows, leave the first window as shipped and on
   the second set Frame → Background and border → Background color mode *Class color* with a red
@@ -173,7 +173,7 @@ secret-value rules the checks refer to.
   wear Ka0s Default's window look (SKIN-1). The second window's swatches still hold the red
   Background color and its control color: set its Background color mode to *Custom color* → the red
   fill comes back at once; `/reload` → it stays on Custom (the reset ran once). A mode left on Class
-  or Custom, or a swatch rewritten, means the v21 step did not reach that window. Result:
+  or Custom, or a swatch rewritten, means the v21 step did not reach that window. Result: pass (owner-marked 2026-10-30)
 
 ## SLASH
 
@@ -347,7 +347,7 @@ right. Open the panel with `/mm config`.
   Reset position button, no Show resize grip and no Minimized checkbox; Header has no Column headers
   tab. Stored paths did not move with the rows: `/mm get window.text.size` and `/mm get
   window.frame.closeButton` still answer (the close row keeps its older key; there is no
-  `showClose`). (Amended by MM-A1, 2026-10-29, the skinning rollout: Use the skin's background under Title bar.) Result:
+  `showClose`). (Amended by MM-A1, 2026-10-29, the skinning rollout: Use the skin's background under Title bar.) Result: pass (owner-marked 2026-10-30)
 - **PANEL-14. The Controls tab reads like the strip.** Header → Controls → each checkbox draws its
   control's own icon between the tick box and the words, and the rows run in the strip's left-to-right
   order: the segment line (no icon), export, reset, segment picker, settings, lock, minimize, close.
@@ -407,7 +407,7 @@ right. Open the panel with `/mm config`.
   one → the four surfaces' *Use the skin's font* untick together (Header → Title text, Bars → Text,
   Columns → Column header, Tooltip → Text); tick it → all four tick. The texture one does the same for
   Bars → Bar and Tooltip → Bar's *Use the skin's texture*. (Amended by MM-05, 2026-10-29, the skinning rollout: the two companion broadcasts
-  and the companions over the pickers.) Result:
+  and the companions over the pickers.) Result: pass (owner-marked 2026-10-30)
 - **PANEL-23. Media pickers see late-registered media.** Load a media pack that registers fonts,
   borders and bar textures (SharedMedia_MyMedia or similar), then open all eleven pickers: Frame →
   General's Font and Bar texture, Frame → Border style, Bars → Texture and Border style, Tooltip → Bar
@@ -418,7 +418,7 @@ right. Open the panel with `/mm config`.
   font picker every name is drawn in its own face, not all in the default one. First untick each
   surface's *Use the skin's ...* (or the two Quick style broadcasts): a picker governed by a ticked
   companion is grayed out and does not open. (Amended by MM-05, 2026-10-29, the skinning rollout: the companions disable the pickers they
-  govern.) Result:
+  govern.) Result: pass (owner-marked 2026-10-30)
 - **PANEL-24. The Border dropdown is flush, whoever loaded last.** Open Frame → Border style and
   Tooltip → Bar border style → the closed control's left edge is flush with the controls stacked with
   it (no ~42px gap), and opening it still draws a border preview per row on hover. Then enable KickCD,
@@ -573,7 +573,7 @@ right. Open the panel with `/mm config`.
   the skin's texture and Use the skin's font (amended by MM-05, 2026-10-29). Rows has *Grid* (Row height |
   Row spacing, Maximum rows | Growth direction, Always show yourself) and *Highlighting* (Highlight
   yourself | Highlight on mouseover, Alternating background, whose tooltip points to Windows > Bars >
-  Bar). Result:
+  Bar). Result: pass (owner-marked 2026-10-30)
 - **PANEL-54. Header (item 020).** The strip reads Title bar, Title text, Controls. Title bar → *Layout*
   shows Show title bar | **Title bar height**, and *Background* shows **Title bar background**, then
   **Use the skin's background** on its own line, ticked (the swatch is not grayed). Title
@@ -585,7 +585,7 @@ right. Open the panel with `/mm config`.
   *Size* (Control size), *Color* (the two color pairs), *Opacity* (Reveal controls on hover alone, then
   Control opacity | Control hover opacity). Every control still does what it did. (Amended by MM-05, 2026-10-29, the skinning rollout: the
   companion under Title text.) (Amended by MM-A1, 2026-10-29, the skinning rollout: the title bar's companion; every color mode on the tab opens
-  on Skin, Class color, Custom color.) Result:
+  on Skin, Class color, Custom color.) Result: pass (owner-marked 2026-10-30)
 - **PANEL-55. Bars (item 020).** The strip reads Bar, Text, Icons. Bar → *Fill* (the bar rows with
   **Use the skin's texture** after them, fill direction, Animate bar fills), *Background* (the three
   bar background rows) and *Border* (**Show border** leads, then style, thickness, color and its mode,
@@ -594,7 +594,7 @@ right. Open the panel with `/mm config`.
   with Font color / Font color mode / Font flags / Font shadow and **Use the skin's font**, then Text
   opacity). Hover Bar color mode, Bar background color mode and Font color mode → each ends
   "Per-statistic colors are set on the General page > Statistic colors.". (Amended by MM-05, 2026-10-29, the skinning rollout: the three
-  companions.) Result:
+  companions.) Result: pass (owner-marked 2026-10-30)
 - **PANEL-56. Tooltip (item 020).** The strip reads General, Contents, Bar, Text. General shows **X
   offset** | **Y offset**. Contents → *Breakdown* (spells and targets), *Deaths* (**Death
   timestamps** alone on its line, then Name the killer | **Name the killing spell**) and *Player name*
@@ -603,14 +603,14 @@ right. Open the panel with `/mm config`.
   *Fill* (with **Use the skin's texture** and **Line spacing**), *Background* (Background color,
   Background color mode, Background opacity) and *Border* (Border style, Border thickness, Border
   color, Border color mode, **Use the skin's border**). Text → the canonical font labels and **Use the
-  skin's font**. (Amended by MM-05, 2026-10-29, the skinning rollout: the three companions.) Result:
+  skin's font**. (Amended by MM-05, 2026-10-29, the skinning rollout: the three companions.) Result: pass (owner-marked 2026-10-30)
 - **PANEL-57. Visibility and Columns (item 020).** Visibility shows one tab, **Rules**, with *Show in*
   (the seven contexts), *Hide when* (the eight hide rules) and *Combat* (the two combat rules); every
   rule still hides and shows the window as before. Columns' strip reads Columns, **Column header**;
   Column header shows a *Text* heading over the font rows (with **Use the skin's font**, amended by
   MM-05, 2026-10-29) and a *Background* heading over the background pair, with no heading repeating
   the tab name. Leaving the Columns tab mid-drag still
-  leaves no handle behind (PANEL-42). Result:
+  leaves no handle behind (PANEL-42). Result: pass (owner-marked 2026-10-30)
 
 ## PROFILE
 
@@ -748,7 +748,7 @@ right. Open the panel with `/mm config`.
   mode** to *Custom color*, then change **Control color** (gray by default) and **Control hover color**
   (gold) → the strip follows at once, at rest and under the pointer. Back on *Skin* → the skin's icon
   and hover colors again, the swatches kept. (Amended by MM-A1, 2026-10-29, the skinning rollout: both modes ship on Skin, so the swatches are
-  read under Custom color.) Result:
+  read under Custom color.) Result: pass (owner-marked 2026-10-30)
 - **WIN-8. Each color has its own mode.** Set **Control color mode** to Class color → the resting strip
   takes your class and the hover color is unchanged. Set only **Control hover color mode** to Class
   color → the resting color is unchanged and the hovered control takes your class. Both at Class is
@@ -782,19 +782,19 @@ right. Open the panel with `/mm config`.
   thickness** grows it downward. **Divider color mode** ships as Skin (the line as the shared
   skin painted it); switch to Class color → your class; to Custom color → the swatch. With a low
   swatch opacity, switching between Custom and Class leaves the opacity alone. There is no
-  per-statistic mode. Result:
+  per-statistic mode. Result: pass (owner-marked 2026-10-30)
 - **WIN-19. The header background stops at the title bar.** Header → Title bar → untick **Use the
   skin's background**, set Title bar background to something loud and Columns → Header background →
   Background color to something else → two distinct bands, the second starting where the first ends.
   Tick **Use the skin's background** → the title bar takes the skin's band and the swatch keeps its
-  color. (Amended by MM-A1, 2026-10-29, the skinning rollout: the companion ships ticked.) Result:
+  color. (Amended by MM-A1, 2026-10-29, the skinning rollout: the companion ships ticked.) Result: pass (owner-marked 2026-10-30)
 - **WIN-20. The window name takes the header's color.** Header → Title text → set **Font color mode**
   to *Custom color* and change **Font color** → the window name follows it, with its font, size,
   outline and shadow; set the mode to Class color → the title takes your class, the same as the
   session line beside it; to *Skin* → the skin's title color. With a low swatch opacity, switching
   between Custom and Class leaves the opacity alone. No per-statistic mode. The Settings window's
   footer Defaults also resets this tab (back to Skin). (Amended by MM-A1, 2026-10-29, the skinning rollout: the mode ships on Skin and offers
-  it.) Result:
+  it.) Result: pass (owner-marked 2026-10-30)
 - **WIN-21. Scale scales the whole window.** Frame → Scale to 0.5, then 2.0 → the window's outline
   grows and shrinks with its contents (a box that keeps its size while the grid shrinks into a corner
   means the scale missed the anchor). Result: pass (owner-marked 2026-10-10)
@@ -802,7 +802,7 @@ right. Open the panel with `/mm config`.
   color*, then Border style **None** and Border thickness **0** → no edge of any kind (a surviving 1px
   line is the skin's `frame.innerBorder`). None at a non-zero thickness → also no edge, not the Ka0s
   edge. Back on *Skin* → the skin's own edge returns, whatever Border style says. (Amended by MM-A1, 2026-10-29, the skinning rollout: the
-  Skin mode draws the skin's edge and reads neither picker.) Result:
+  Skin mode draws the skin's edge and reads neither picker.) Result: pass (owner-marked 2026-10-30)
 - **WIN-24. The resize grip follows the lock.** Unlocked → the bottom-right grip shows and resizes the
   window (persistence across `/reload` is INSTALL-4); locked → no grip. There is no Show resize grip
   setting. The grip is LibKa0s-Core's since MultiMeters#58: 16 px (it was 12) and one pixel inside
@@ -885,7 +885,7 @@ right. Open the panel with `/mm config`.
   Quadrata with a soft drop shadow, gold, once Header → Title text → **Use the skin's font** is
   unticked (it ships ticked, and the title then draws the skin's face, SKIN-1). Header → Title text
   shows Font outline *None* and Text shadow ticked. (Amended by MM-05, 2026-10-29, the skinning rollout: since the v20 reset the title follows
-  the skin's face, so the Friz Quadrata match needs the companion off.) Result:
+  the skin's face, so the Friz Quadrata match needs the companion off.) Result: pass (owner-marked 2026-10-30)
 - **WIN-50. The controls match DPS Race's color (2026-10-24).** Same profile, pointer away from the
   window → every header control is the light gray DPS Race's controls rest in, at full strength (none
   faded); point at one → only it turns gold, and back to gray on leaving. Header → Button style shows
@@ -1153,17 +1153,17 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
 - **TIP-25. The tooltip's own bar texture.** Untick Tooltip → Bar → **Use the skin's texture** and
   Bars → Bar → **Use the skin's texture**, then Tooltip → Bar → Bar texture unlike the grid's → the
   tooltip bars change and the grid's do not; change the grid's → the tooltip's do not. (Amended by MM-05, 2026-10-29, the skinning rollout: the
-  companions ship ticked.) Result:
+  companions ship ticked.) Result: pass (owner-marked 2026-10-30)
 - **TIP-26. Bar spacing.** Tooltip → Bar → **Bar spacing** 6 → space opens between lines; back to 1
   (the shipped default) → the tight spacing returns. Result: pass (owner-marked 2026-10-10)
 - **TIP-27. The tooltip font.** Untick Tooltip → Text → **Use the skin's font**, then font, size and
   **Thick outline** → apply to the spell names as well as both number columns. With the companion
   ticked again the size and outline still apply and the face is the skin's. (Amended by MM-05, 2026-10-29, the skinning rollout: the companion.)
-  Result:
+  Result: pass (owner-marked 2026-10-30)
 - **TIP-28. The tooltip bar border.** Untick Tooltip → Bar → **Use the skin's border**, then Bar border
   → a real LSM border at thickness 2, hover → a border around each spell bar; set it back to **None**,
   hover the same cell → no border at all (a lingering border is the pooled line not being cleared).
-  (Amended by MM-05, 2026-10-29, the skinning rollout: the companion.) Result:
+  (Amended by MM-05, 2026-10-29, the skinning rollout: the companion.) Result: pass (owner-marked 2026-10-30)
 - **TIP-29. Offsets.** Tooltip → General → Horizontal offset 60, Vertical offset -60 → the tooltip
   moves and still stays on screen near the edges. Result: pass (owner-marked 2026-10-10)
 - **TIP-30. Maximum spells 0.** Tooltip → Contents → **Maximum spells** 0, hover someone with a long
@@ -1413,7 +1413,7 @@ stayed empty; "no errors" from a dummy is not evidence here.
 - **COMBAT-30. Cell borders mid-pull.** Tick Bars → Border → **Bar border** (it ships off), untick
   **Use the skin's border** and pick a **Border style** other than None (an LSM edge, the backdrop
   path), then pull → the borders draw around the cells and no Lua error appears. (Amended by MM-05, 2026-10-29, the skinning rollout: the
-  companion.) Result:
+  companion.) Result: pass (owner-marked 2026-10-30)
 
 ## DIAG
 
@@ -1639,7 +1639,7 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
   stored ones beside each *Skin* mode (black fill, Blizzard Tooltip edge, gold title, gray and gold
   controls on a window never changed), since there is no skin to follow. (Amended by MM-A1,
   2026-10-29, the skinning rollout: a chrome Skin mode falls back to its swatch without the
-  library.) Result:
+  library.) Result: pass (owner-marked 2026-10-30)
 - **DEGRADED-9. Restoring.** Rename the folder back, `/reload` → everything returns. Result: pass (owner-marked 2026-10-10)
 
 ## SIM
@@ -1724,7 +1724,7 @@ chrome follows by the owner's ruling R-3, MM-A1).
   gold column labels, no cell borders. Fail: a color, size, outline or spacing outside the list
   above that changed, a string still in Friz Quadrata while its companion is ticked, the old black
   fill or Blizzard Tooltip edge on a window whose modes read *Skin*, or text clipped or overlapping
-  because the face is wider. (Amended by MM-A1, 2026-10-29, the skinning rollout: the window chrome follows the skin.) Result:
+  because the face is wider. (Amended by MM-A1, 2026-10-29, the skinning rollout: the window chrome follows the skin.) Result: pass (owner-marked 2026-10-30)
 - **SKIN-2. Ka0s Default elsewhere: its colors as before, its own faces (MM-02, MM-04).** Still on
   Ka0s Default, open the export modal and its copy window, the debug console, the perf panel, the sim
   step panel and the settings pages, turn test mode off on an empty segment, and hover a cell, a name
@@ -1745,14 +1745,14 @@ chrome follows by the owner's ruling R-3, MM-A1).
   columns, and the sim step panel's row, command and button labels. The column blocks' labels keep Friz Quadrata (the tooltip
   lines' face is the HUD's, SKIN-1). Fail: a color that changed, a modal change beyond D8's, or one of the surfaces above
   still in Friz Quadrata with Ignore fonts unticked. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the library's menus, strips and
-  tool-window labels draw Oxanium too, LibKa0s D-13.) Result:
+  tool-window labels draw Oxanium too, LibKa0s D-13.) Result: pass (owner-marked 2026-10-30)
 - **SKIN-3. The Skin tab (MM-01).** Settings → General → the strip reads Master controls, Behavior,
   Statistic colors, **Skin**, Keybindings. **Skin** shows Skin source, the nine skins with their
   swatches under a **Look** heading, **Font and texture** (Font and Texture, both *Skin's own* on a
   new profile), the Scope (**Ignore settings panel** ticked, **Ignore fonts** unticked), **Copy to
   every Ka0s addon...** and the note that skins change every visual element. `/mm get skin.skin` →
   `ka0s`. The page's **Defaults** and **Reset all settings** put the skin back on Ka0s Default.
-  Result:
+  Result: pass (owner-marked 2026-10-30)
 - **SKIN-4. Each skin, live, on the meter window (MM-02, MM-03, MM-A1).** With two windows open in
   test mode, pick each skin in turn and Ka0s Default last → with **no reload** each window repaints:
   **its chrome takes the skin's own look** (the window fill, the edge in the skin's style, thickness
@@ -1776,7 +1776,7 @@ chrome follows by the owner's ruling R-3, MM-A1).
   moved. (Amended by MM-A1, 2026-10-29, the skinning rollout: the owner ruled the window chrome follows the skin, R-3, so the question this check
   put is answered and the chrome is now checked here.) (Amended by MM-02, 2026-10-30, the skin library follow-ups: every skin draws HUD text in a face
   of its own, where the eight non-Ka0s skins drew Friz Quadrata; the owner judges each face here,
-  LibKa0s R-4.) Result:
+  LibKa0s R-4.) Result: pass (owner-marked 2026-10-30)
 - **SKIN-5. The HUD companions (MM-03).** Under **Obsidian**, untick Bars → Text → **Use the skin's
   font** → the cell text goes back to the window's own Font pick at once, while the title, the column
   labels and the tooltip keep the skin's face; tick it → the skin's again. Do the same with Bars → Bar
@@ -1786,17 +1786,17 @@ chrome follows by the owner's ruling R-3, MM-A1).
   or bar), and the stored pick comes back when it is unticked; with Skin → **Ignore fonts** ticked a
   ticked font companion's grayed picker shows the stored pick instead, which is what the surface then
   draws (SKIN-8). Its tooltip says so. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the picker's two states; the old text said it
-  showed the stored pick, which the library never drew.) Result:
+  showed the stored pick, which the library never drew.) Result: pass (owner-marked 2026-10-30)
 - **SKIN-6. A new window follows the skin (MM-03, MM-A1; DECISIONS X3).** Windows → **New window** →
   every companion on the new window is ticked, its five chrome color modes read *Skin*, and it draws
   the skin's face, bar and window look; **Duplicate window** and **Copy settings from** carry the
   companions and the modes as they are on the source. (Amended by MM-A1, 2026-10-29, the skinning
-  rollout: the chrome modes.) Result:
+  rollout: the chrome modes.) Result: pass (owner-marked 2026-10-30)
 - **SKIN-7. Font and texture overrides (MM-01; LibKa0s#63).** Skin → Font and texture → **Font** →
   pick *Morpheus* → every string whose companion is ticked (titles, labels, cells, tooltip lines) and
   the export modal take Morpheus live; a surface with its companion unticked keeps its own pick.
   **Texture** → a distinct bar → every grid and tooltip bar with *Use the skin's texture* ticked takes
-  it. Set both back to *Skin's own* → the skin's face and bar return. Result:
+  it. Set both back to *Skin's own* → the skin's face and bar return. Result: pass (owner-marked 2026-10-30)
 - **SKIN-8. Ignore fonts (MM-01).** With a font override set, tick **Ignore fonts** → every string the
   addon draws keeps its own face and size and the skin still colors it, **the HUD included**: the
   title, the session line, the column labels, the cells and the tooltip lines draw each window's own
@@ -1805,7 +1805,7 @@ chrome follows by the owner's ruling R-3, MM-A1).
   library's menus and strips keep their template faces too. Untick → the skin's face (and the
   override) return everywhere, live. Fail: a HUD string still in the skin's face (or the override)
   while Ignore fonts is ticked, or a bar that changed. (Amended by MM-02, 2026-10-30, the skin library follow-ups: Ignore fonts reaches the HUD,
-  LibKa0s R-1.) Result:
+  LibKa0s R-1.) Result: pass (owner-marked 2026-10-30)
 - **SKIN-9. The settings pages (MM-04).** With a non-default skin and **Ignore settings panel**
   unticked, walk every page → the nav rail, tabs, headings, check boxes, sliders, dropdowns and edit
   boxes are skinned, and so are the Windows page's window-name box and its action dropdown, the
@@ -1819,16 +1819,16 @@ chrome follows by the owner's ruling R-3, MM-A1).
   the settings strip's tabs and the page panel wear the Ka0s look (they kept the client's art
   before). Fail: one page mixing the two looks. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the reorder list and this addon's own
   Columns colors obey the panel scope, LibKa0s R-5 and D-03; the stock look under Ka0s Default is
-  retired, R-2.) Result:
+  retired, R-2.) Result: pass (owner-marked 2026-10-30)
 - **SKIN-10. The tooltip lines (MM-04; DECISIONS X8).** Under **Azeroth** and **High Contrast**, hover
   a cell, a name and a Deaths cell → the section headings, the values and the hints take the skin's
   tooltip colors, the tooltip bars its texture and face; the class-colored names and the statistic
   colors stay theirs; the tooltip frame itself is Blizzard's. Then hover a bag item → stock, as in
-  TIP-31. Result:
+  TIP-31. Result: pass (owner-marked 2026-10-30)
 - **SKIN-11. The export modal (MM-02).** Under each of three skins (Obsidian, Azeroth, Glass) open
   the export modal → its window, title band, buttons, selectors and their menus, the whisper row and
   the refusal line (Export to Whisper with an empty name) wear the skin; Export to CSV's copy window
-  too. Result:
+  too. Result: pass (owner-marked 2026-10-30)
 - **SKIN-12. The tool windows (MM-04).** Under a non-default skin open the debug console (`/mm debug
   on`), the perf panel (`/mm perf`) and the sim step panel (`/mm sim`) → each wears the skin, live
   when the skin changes with it open; the sim strip on every window takes the skin's sim tint; under a
@@ -1836,13 +1836,13 @@ chrome follows by the owner's ruling R-3, MM-A1).
   and the sim panel's scenario and size dropdowns and their menus wear the skin. Tick **Ignore fonts**
   → their labels go back to the template faces, live; tick **Ignore settings panel** → they stay
   skinned (they are windows). (Amended by MM-02, 2026-10-30, the skin library follow-ups: the Scope reaches the tool windows, LibKa0s R-5 and D-01.)
-  Result:
+  Result: pass (owner-marked 2026-10-30)
 - **SKIN-13. Profiles (MM-01).** Give two profiles different skins, switch between them on the
   Profiles page, then reset one → the skin follows the profile each time with no reload, and each
-  window keeps the companion states of its own profile. Result:
+  window keeps the companion states of its own profile. Result: pass (owner-marked 2026-10-30)
 - **SKIN-14. A skin change mid-pull (R1: the cells hold secret values).** In a real pull, run `/mm
   set skin.skin obsidian`, then `/mm set skin.skin ka0s` → whatever the verb answers, no Lua error and
-  no taint warning, and the cells keep updating. Result:
+  no taint warning, and the cells keep updating. Result: pass (owner-marked 2026-10-30)
 - **SKIN-15. The picker after the update (MM-04; O3).** On a character that ran the build before the
   rollout, log in → about two seconds after the world loads a small window titled **Choose a skin**
   opens (if another Ka0s addon's picker is up, it opens when that one closes): **Ka0s Multi Meters** on
@@ -1850,39 +1850,39 @@ chrome follows by the owner's ruling R-3, MM-A1).
   a gear button, **Apply**, and a close mark. A zone
   change or a dungeon entrance never opens it. Close it → `/reload` → it does not come back on that
   profile. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the title is "Choose a skin" and the addon's name has its own line, LibKa0s
-  R-11.) Result:
+  R-11.) Result: pass (owner-marked 2026-10-30)
 - **SKIN-16. The picker previews and Apply saves (MM-04).** On a new profile (Profiles page → new),
   the picker opens. Pick **Obsidian** in its dropdown → the windows repaint in Obsidian at once and
   the picker stays open; `/mm get skin.skin` still prints `ka0s`. Press **Apply** → it closes, the
-  skin stays Obsidian and `/mm get skin.skin` prints `obsidian`. Result:
+  skin stays Obsidian and `/mm get skin.skin` prints `obsidian`. Result: pass (owner-marked 2026-10-30)
 - **SKIN-17. Closing the picker puts the stored skin back (MM-04).** On another new profile, preview
   **Azeroth**, then close the picker with its close mark (and on a third, with Escape) → the windows
   go back to Ka0s Default with no reload and nothing is saved; the picker does not open again on
-  that profile. Result:
+  that profile. Result: pass (owner-marked 2026-10-30)
 - **SKIN-18. The picker's eye (MM-04; DECISIONS X6).** With a preview pending, press the eye → every
   window goes into test mode (the test strip shows, sample rows in the previewed skin) and the picker
-  stays above the windows, its controls clickable. Result:
+  stays above the windows, its controls clickable. Result: pass (owner-marked 2026-10-30)
 - **SKIN-19. The picker's gear (MM-04).** On a new profile, preview **Obsidian** and press the gear →
   the settings panel opens on **General** with its **Skin** tab selected, showing Obsidian, and the
-  picker closes; `/reload` → still Obsidian, no picker. Result:
+  picker closes; `/reload` → still Obsidian, no picker. Result: pass (owner-marked 2026-10-30)
 - **SKIN-20. The picker waits for combat (MM-04).** On a new profile, `/reload` and pull a target
   dummy within two seconds of the world loading → no picker while in combat; leave combat → it opens
-  then, once. Result:
+  then, once. Result: pass (owner-marked 2026-10-30)
 - **SKIN-21. The picker and the addon switched off (MM-04).** With the picker open, `/mm disable` → it
   closes and any preview is put back; `/mm enable`, then `/reload` → it opens again, because the
   player never closed it. Switch to a profile that already closed it while it is open → it goes and
-  the other profile's skin shows. Result:
+  the other profile's skin shows. Result: pass (owner-marked 2026-10-30)
 - **SKIN-22. EllesmereUI on (MM-01; LibKa0s EllesmereUI provider).** With EllesmereUI loaded, its
   third-party skinning on and Ka0s Multi Meters ticked in its third-party list → Skin → **Skin
   source** offers **EllesmereUI**; choose it → the windows, the export modal and (Ignore settings
-  panel off) the settings pages take the EllesmereUI look, live. Result:
+  panel off) the settings pages take the EllesmereUI look, live. Result: pass (owner-marked 2026-10-30)
 - **SKIN-23. EllesmereUI off (MM-01).** Untick Ka0s Multi Meters in EllesmereUI's third-party list
   (or disable EllesmereUI) and `/reload` → the EllesmereUI choice is disabled, the failing condition
   is named on the Skin tab, and the addon wears its Ka0s skin. With EllesmereUI as the source, pick
-  **Ka0s skins** → a reload is asked for; after it the Ka0s skin shows. Result:
+  **Ka0s skins** → a reload is asked for; after it the Ka0s skin shows. Result: pass (owner-marked 2026-10-30)
 - **SKIN-24. Copy to every Ka0s addon (MM-01).** With another Ka0s addon that uses skins loaded, pick
   **Ember** and press **Copy to every Ka0s addon...** → both addons wear Ember with no reload and each
-  Skin tab shows it; `/reload` → both still Ember. Result:
+  Skin tab shows it; `/reload` → both still Ember. Result: pass (owner-marked 2026-10-30)
 
 ## Non-English client
 
@@ -1894,19 +1894,6 @@ chrome follows by the owner's ruling R-3, MM-A1).
 
 ## Pending sign-off
 
-Owed from the 2026-10-29 skinning rollout (Ka0sAddonsCommonTasks `docs/2026-10-29-SKINNING_ROLLOUT/`,
-MM-RV to MM-05): **SKIN-1 to SKIN-24** (new), **INSTALL-15** and **DEGRADED-11** (new), and
-**INSTALL-3**, **INSTALL-12** to **INSTALL-14** (the stamp is 20), **WIN-18** (the divider's mode now reads Skin), **WIN-49** (the title follows the
-skin's face), **PANEL-22**, **PANEL-23**, **PANEL-53** to **PANEL-57**, **TIP-25**, **TIP-27**,
-**TIP-28** and **COMBAT-30** (amended for the "Use the skin's ..." companions); and from MM-A1 (the
-window chrome follows the skin), **INSTALL-16** (new), **SKIN-1** and **SKIN-4** (rewritten),
-and **INSTALL-3**, **INSTALL-12** to **INSTALL-15** (the stamp is 21), **SKIN-6**,
-**WIN-7**, **WIN-19**, **WIN-20**, **WIN-22**, **PANEL-13**, **PANEL-54** and **DEGRADED-11** (amended for the
-*Skin* modes and the title bar's companion); and from the 2026-10-30 skin library follow-ups
-(Ka0sAddonsCommonTasks `docs/2026-10-30-SKIN_LIBRARY_FOLLOWUPS/`, MM-RV to MM-02, LibKa0s v1.81.0),
-**INSTALL-15**, **SKIN-2**, **SKIN-4**, **SKIN-5**, **SKIN-8**, **SKIN-9**, **SKIN-12** and
-**SKIN-15** (amended), each until its `Result:` line records the owner's pass.
-
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass
 keeps it. A check added or rewritten after that date is listed here until its `Result:` line records
@@ -1914,3 +1901,10 @@ a pass. On 2026-10-24 the owner reported that every check of the keybindings, se
 frame-layering run passed (INSTALL-3, INSTALL-9, INSTALL-12 to INSTALL-14, WIN-52 to WIN-54,
 PANEL-49 to PANEL-57, GRID-34 and SLASH-30 to SLASH-32), recorded on each `Result:` line as
 `pass (owner-marked 2026-10-24)`.
+
+On 2026-10-30 the owner reported that every check of the skinning rollout (Ka0sAddonsCommonTasks
+`docs/2026-10-29-SKINNING_ROLLOUT/`, MM-RV to MM-05 and MM-A1) and the skin library follow-ups
+(`docs/2026-10-30-SKIN_LIBRARY_FOLLOWUPS/`, MM-RV to MM-02, LibKa0s v1.81.0) passed: INSTALL-3,
+INSTALL-12 to INSTALL-16, PANEL-13, PANEL-22, PANEL-23, PANEL-53 to PANEL-57, WIN-7, WIN-18 to WIN-20,
+WIN-22, WIN-49, TIP-25, TIP-27, TIP-28, COMBAT-30, DEGRADED-11 and SKIN-1 to SKIN-24, each recorded on
+its `Result:` line as `pass (owner-marked 2026-10-30)`.
