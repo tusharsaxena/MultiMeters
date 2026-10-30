@@ -85,6 +85,11 @@ local doEnabled
 NS.COMMANDS = {
     { "help",     "Show this help",            function() cli:PrintHelp() end },
     { "config",   "Open the settings panel",   function() if NS.OpenOptionsPanel then NS.OpenOptionsPanel() end end },
+    -- THE SKIN VERB (LibKa0s v1.82.0, O.SkinVerb; ruling D-16), reserved in every skinned Ka0s
+    -- addon and placed right after `config`. Its help is the library's VERB_HELP, one wording for
+    -- every host. A feature verb, not one of the library's LIVE_VERBS, so the dispatcher refuses it
+    -- while disabled; core/SkinSetup.lua's NS.RunSkinVerb says the rest (combat, library absent).
+    { "skin",     L["Choose a skin: open the skin picker"], function() if NS.RunSkinVerb then NS.RunSkinVerb() end end },
     -- RESERVED ALIASES, NOT A SECOND SWITCH (slash-commands-§2). Both write the path the
     -- `Enable Multi Meters` checkbox writes, through the seam it writes through, so the two
     -- surfaces can never show the player different answers and one onChange runs whichever
@@ -173,8 +178,9 @@ NS.COMMANDS = {
 -- repair settings and reach the panel while the addon is off -- which is exactly when they are most likely to
 -- need to -- and `enable` above all, or the pair is one-way.
 --
--- WHAT IS REFUSED: this addon's own six feature verbs -- `lock`, `test`,
--- `toggle`, `window`, `reset-positions`, `export`. Taking the SHOULD is a
+-- WHAT IS REFUSED: the reserved `skin` (the skin picker, LibKa0s v1.82.0: a
+-- feature verb in every skinned addon) and this addon's own six feature verbs --
+-- `lock`, `test`, `toggle`, `window`, `reset-positions`, `export`. Taking the SHOULD is a
 -- judgment and this addon takes it: six of them is enough that a silent no-op
 -- would be a real puzzle. `lock` is on that list under slash-commands-§8's own
 -- ruling -- unlocking a frame that is not drawn is not a coherent request -- and

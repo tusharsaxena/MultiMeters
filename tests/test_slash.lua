@@ -90,9 +90,10 @@ test("Slash: every reserved verb is present, in the order the standard fixes", f
     -- and sit where the standard's own COMMANDS example puts them: after `config`, ahead of the
     -- schema verbs. They are ALIASES for the `enabled` row -- the assertions below pin that they
     -- hold no state of their own. `diagnostics` (debug-logging-§14) follows `debug`, where the
-    -- standard's example puts it.
+    -- standard's example puts it. `skin` (LibKa0s v1.82.0's O.SkinVerb, ruling D-16) is reserved in
+    -- every skinned addon, right after `config`, and is a feature verb, refused while disabled.
     local RESERVED = {
-        "help", "config", "enable", "disable", "list", "get", "set",
+        "help", "config", "skin", "enable", "disable", "list", "get", "set",
         "reset", "resetall", "debug", "diagnostics", "perf", "version",
     }
     local names = verbNames(NS.COMMANDS)

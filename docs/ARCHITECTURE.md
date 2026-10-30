@@ -154,7 +154,7 @@ every refusal line: **[slash-dispatch.md](slash-dispatch.md)**.
 ### Disabled — total, and the slash surface is not
 
 `slash-commands-§7`. Disabled means the addon is not running, and the command surface stays: all
-thirteen reserved verbs and the `profile` verb answer and only the seven feature verbs refuse, on one line naming `/mm enable`.
+thirteen live reserved verbs and the `profile` verb answer and only the eight feature verbs (the reserved `skin`, LibKa0s v1.82.0, and this addon's seven) refuse, on one line naming `/mm enable`.
 The gate and its live list: [slash-dispatch.md](slash-dispatch.md#disabled--total-and-the-slash-surface-is-not);
 the teardown: [disabled-state.md](disabled-state.md).
 

@@ -72,6 +72,10 @@ local addonName, NS = ...
 --   NS.ResumeSkinPicker()   the PLAYER_REGEN_ENABLED edge (core/MultiMeters.lua OnCombatChanged):
 --                           shows a start combat held, once.
 --   NS.SkinPickerSpec()     the spec MaybeShowSkinPicker hands O.SkinPicker.
+--   NS.RunSkinVerb()        the reserved `/mm skin` verb's act (LibKa0s v1.82.0, O.SkinVerb, D-16):
+--                           the picker a new profile shows, whatever skin.pickerSeen says. The
+--                           library prints its own lines (combat on every call, queued,
+--                           unavailable); without LibKa0s it prints the library-absent line.
 --
 -- ── WHERE IT LOADS ───────────────────────────────────────────────────────────────────────────
 --
@@ -425,6 +429,25 @@ function NS.MaybeShowSkinPicker()
     end
     pickerHeld = false
     return O.SkinPicker(NS.SkinPickerSpec())
+end
+
+--- The reserved `/mm skin` verb's act: O.SkinVerb with the spec the first-run start builds, so it
+--- shows the picker a new profile shows whatever skin.pickerSeen says. The dispatcher refuses it
+--- while disabled (`skin` is not a LIVE_VERB); in combat the library prints its gray line on every
+--- call. The Options stub answers nil, "absent", and this prints the library-absent line. Answers
+--- the picker's frame, or nil and the reason.
+function NS.RunSkinVerb()
+    local O = NS.Helpers
+    local win, why
+    if O and type(O.SkinVerb) == "function" then
+        win, why = O.SkinVerb(NS.SkinPickerSpec())
+    else
+        why = "absent"
+    end
+    if win == nil and why == "absent" and NS.Print then
+        NS.Print(L["%s is unavailable. %s."]:format("/mm skin", NS.LIBKA0S_MISSING or ""))
+    end
+    return win, why
 end
 
 --- The combat edge: a start combat held shows now, once.

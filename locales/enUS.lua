@@ -790,6 +790,9 @@ L["The texture this addon's bars use, over the skin's own. Empty keeps the skin'
 -- The Font outline row (LibKa0s v1.82.0, Skin minor 9): its label, tooltip and three modes, the
 -- Skin tab's own words.
 L["Font outline"] = "Font outline"
+-- The reserved `/mm skin` verb's help: LibKa0s's SKIN_PICKER_STRINGS.VERB_HELP, one wording for every
+-- host (settings/Slash.lua).
+L["Choose a skin: open the skin picker"] = "Choose a skin: open the skin picker"
 L["Where the skin outlines this addon's text: all of it, its HUD text only, or nowhere."] =
     "Where the skin outlines this addon's text: all of it, its HUD text only, or nowhere."
 L["All text"] = "All text"

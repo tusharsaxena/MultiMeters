@@ -2511,6 +2511,15 @@ Total.
 - Skin outline: a profile switch applies the incoming profile's mode, and back
 - Skin outline: without the skin engine the apply is a quiet no-op and the store still takes it
 
+### test_skin_verb.lua (6)
+
+- Skin verb: the row sits right after config, with the library's help words
+- Skin verb: /mm skin shows the real picker on a profile that has closed it
+- Skin verb: NS.RunSkinVerb hands O.SkinVerb this addon's first-run spec
+- Skin verb: in combat every call prints the library's gray line and shows nothing
+- Skin verb: refused while the addon is disabled, and O.SkinVerb is never reached
+- Skin verb: without LibKa0s the verb prints the library-absent line
+
 ### test_skin_chrome.lua (8)
 
 - Skin chrome: a Custom window keeps the player's fill and edge through the Shell
@@ -2822,6 +2831,7 @@ Total.
 | test_options_panel.lua | 51 |
 | test_skinsetup.lua | 20 |
 | test_skin_outline.lua | 9 |
+| test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
 | test_skin_window.lua | 13 |
@@ -2837,4 +2847,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2427** |
+| **Total** | **2433** |
