@@ -150,6 +150,37 @@ test("Skin HUD: the title, the column labels and the tooltip resolve through the
     assertTrue(window.frame.title.__font.path ~= face, "the title kept the skin's face with its companion off")
 end)
 
+test("Skin HUD: Ignore fonts gives every HUD face back to the player's pick, live, and leaves the bars", function()
+    -- Ignore fonts covers the HUD (the owner's ruling R-1 of Ka0sAddonsCommonTasks
+    -- 2026-10-30-SKIN_LIBRARY_FOLLOWUPS): while the owner ignores fonts, LibKa0s-Skin-1.0's Resolve
+    -- answers the stored pick for `hud.font` whatever the companion says (Skin minor 8), and every
+    -- HUD face resolves through it (NS.SkinMediaKey). Textures and borders are not fonts: they stay
+    -- the skin's. The switch reaches the window through OnLooksChanged, with no host re-apply.
+    -- red under: a HUD site reading Token("hud.font") past Resolve, or no repaint on SetIgnore.
+    local inst, NS, window, row, cfg = scene(function(c)
+        c.text.font, c.header.font, c.tooltip.font = "GridFont", "GridFont", "GridFont"
+    end)
+    local lsm = media(inst)
+    lsm:Register("font", "GridFont", [[Interface\GridFont.ttf]])
+    local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0")
+    local face, bar = skinFile(inst, NS, "font", "hud.font"), skinFile(inst, NS, "statusbar", "bar.texture")
+    window:ApplyConfig()
+    row:ApplyLayout(window.layout)
+    local cell = row.cells.DamageDone
+    assertEqual(cell.left.__font.path, face, "the fixture's cell does not follow the skin's face")
+
+    Skin:SetIgnore(OWNER, nil, true)
+    assertEqual(cell.left.__font.path, [[Interface\GridFont.ttf]], "the cell kept the skin's face under Ignore fonts")
+    assertEqual(window.frame.title.__font.path, [[Interface\GridFont.ttf]], "the title kept the skin's face")
+    assertEqual(NS.TooltipInternals.tooltipConfig(cfg).font, "GridFont", "the tooltip kept the skin's face")
+    assertEqual(cell.frame.__barTexture, bar, "Ignore fonts moved the bar texture")
+    assertEqual(cfg.text.fontFromSkin, true, "Ignore fonts wrote the companion")
+
+    Skin:SetIgnore(OWNER, nil, false)
+    assertEqual(cell.left.__font.path, face, "the skin's face did not come back with Ignore fonts off")
+    assertEqual(window.frame.title.__font.path, face, "the title did not come back to the skin's face")
+end)
+
 test("Skin HUD: a skin switch repaints the bars, and every color stays the player's", function()
     -- red under: the HUD not reached by OnLooksChanged (the bars keep the old skin's texture), or a
     -- skin switch writing a color (X4).

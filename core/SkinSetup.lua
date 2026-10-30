@@ -42,6 +42,8 @@ local addonName, NS = ...
 --                           so a literal that became a token keeps its arity on Ka0s Default.
 --   NS.SkinEscape(name)     a color token as a "|cffrrggbb" escape, rounded to the byte, so markup
 --                           written as a literal keeps its bytes on Ka0s Default (|cff9d9d9d).
+--   NS.SkinPanelColor(name) NS.SkinColor for a color this addon paints on its own settings pages:
+--                           the stock (host copy) pixel while the owner ignores its settings panel.
 --   NS.SkinWindowLooks(t)   the colors and escapes a meter window draws on its refresh path (the
 --                           row wash, stripe, self edge and classless name, the session line's
 --                           dim and TEST MODE escapes) and its chrome's `skin` modes read (the
@@ -160,6 +162,23 @@ function NS.SkinEscape(name)
     if r == nil then return nil end
     local function byte(v) return math.floor(v * 255 + 0.5) end
     return ("|cff%02x%02x%02x"):format(byte(r), byte(g), byte(b))
+end
+
+--- A color token for a surface THIS ADDON paints on its own settings pages (the Columns editor's
+--- labels, carried copy and glyph tip), as NS.SkinColor answers it, except while the owner ignores
+--- its settings panel: then the stock pixel the page drew before skins, which is the host copy's
+--- Ka0s Default value. The library's own panel widgets stand down the same way (Ka0sAddonsCommonTasks
+--- 2026-10-30-SKIN_LIBRARY_FOLLOWUPS DECISIONS D-03, on `Skin:GetIgnore`'s public panel half), so
+--- one page never mixes two looks. Read at call time; the page's re-render on the switch repaints it.
+function NS.SkinPanelColor(name)
+    if Skin and type(Skin.GetIgnore) == "function" and Skin:GetIgnore(addonName) == true then
+        local c = NS.SKIN_FALLBACK[name]
+        if c then
+            if c[4] == nil or c[4] == 1 then return c[1], c[2], c[3] end
+            return c[1], c[2], c[3], c[4]
+        end
+    end
+    return NS.SkinColor(name)
 end
 
 -- The colors a meter window reads on its refresh path: field, token. A token the skin answers

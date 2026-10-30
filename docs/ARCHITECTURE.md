@@ -362,7 +362,12 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   a cell holds a secret value). The stored pick is never rewritten. The schema's v20 step put every
   stored window's companions on once through `Skin.ResetToSkin` (owner ruling O2), so under Ka0s
   Default the HUD draws Ka0s Oxanium SemiBold and the Ka0s Default bar where it drew Friz Quadrata
-  and Blizzard Raid Bar (X5).
+  and Blizzard Raid Bar (X5); every other skin draws its own HUD face (LibKa0s v1.81.0). The v20 step
+  names the companions themselves, so `ResetToSkin` (Skin minor 8) sets an absent one with no seeding.
+  **Ignore fonts covers the HUD:** while the owner ignores fonts, `S.Resolve` answers the stored pick
+  for `hud.font` whatever the companion says, so every face above draws each window's own pick, live
+  through `OnLooksChanged`; a nil answer falls back to the stored pick in `NS.SkinMediaKey`. Textures
+  and borders are not fonts and keep following.
 - **The tooltips.** GameTooltip's frame stays Blizzard's (skinning-§7); the lines this addon writes
   take `gtip.title`, `gtip.value` and `mm.tipHint` (X8), and the tooltip's bars, borders and face
   follow the HUD companions above. `modules/Tooltip.lua` still sets the face on the GameTooltip lines
@@ -376,14 +381,20 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
 - **The settings pages** follow the owner through the library unless **Ignore settings panel** is on
   (the shipped default). The AceGUI widgets this addon acquires itself (the Windows page's action
   dropdown and window-name box, the Columns blocks' slots and rule, the Profiles page's
-  AceConfigDialog tree) are painted through `NS.SkinPaintAce` / `NS.SkinPaintAceTree`.
+  AceConfigDialog tree) are painted through `NS.SkinPaintAce` / `NS.SkinPaintAceTree`. The Columns
+  editor's reorder list (`W.ReorderList`, its drop line, carried copy and drag handle) is panel-scoped
+  by the library (WidgetsReorder minor 3), and the three colors this addon paints there itself (the
+  block labels, the carried copy's text, the glyph's tooltip line) read `NS.SkinPanelColor`, which
+  answers the stock pixel while `Skin:GetIgnore` says the panel is ignored (the skin library
+  follow-ups' D-03), so the page never mixes two looks.
 - **The first-run picker** (owner ruling O3). `NS.MaybeShowSkinPicker` shows the library's
   `O.SkinPicker` two seconds after a login or reload, and after every profile event, while the
   profile's `skin.pickerSeen` is false and the addon stands up; a start in combat is held for the
   `PLAYER_REGEN_ENABLED` edge `core/MultiMeters.lua` already receives. A pick previews; Apply, the
   gear and Apply to all save through `NS.WriteSkinChoice`; the player's close sets `pickerSeen`, and
   `NS.HideSkinPicker` (the stand-down, a profile event) takes it down without setting it. Its eye
-  puts the windows in test mode (X6).
+  puts the windows in test mode (X6). The library titles it "Choose a skin" and puts the owner label,
+  "Ka0s Multi Meters", on its own line above the dropdown (OptionsSkinPicker minor 2).
 - **The EllesmereUI provider** is the library's (`SkinEUI.lua`), chosen by `skin.source = "eui"`; when
   its gate fails the addon wears its Ka0s skin and the Skin tab names the condition.
 - **What stays.** Chat output (X7), inline help markup (X9), StaticPopups, the class and spell art,

@@ -538,6 +538,47 @@ test("Blocks: the carried copy says the same thing the row does", function()
     end
 end)
 
+test("Blocks: the page's own colors stand down with Ignore settings panel, and follow the skin without it",
+function()
+    -- The Columns editor is a settings page, and three of its colors are this file's own, read off
+    -- the skin: the block label, the carried copy's text and the glyph's tooltip line. The library's
+    -- ReorderList gives its own colors back while the owner ignores its settings panel (WidgetsReorder
+    -- minor 3), so a host color that kept the skin would mix two looks on one page (Ka0sAddonsCommonTasks
+    -- 2026-10-30-SKIN_LIBRARY_FOLLOWUPS DECISIONS D-03). Ember, because its accent is not the gold.
+    -- red under: any of the three read through NS.SkinColor rather than NS.SkinPanelColor.
+    local inst = T.load()
+    local NS = inst.NS
+    local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0")
+    Skin:SetChoice("MultiMeters", "ka0s", "ember")
+
+    local function rgb(r, g, b) return string.format("%.3f,%.3f,%.3f", r, g, b) end
+    local function looks()
+        inst.mocks.GameTooltip.__lines = {}
+        local blocks, _, ctx = render(inst)
+        blocks[1].mmGlyph:_run("OnEnter")
+        local tip = inst.mocks.GameTooltip.__lines[1]
+        local ghost = ctx.mmReorder.rows[4].ghostTextColor
+        return rgb(blocks[1].mmLabel:GetTextColor()), rgb(blocks[4].mmLabel:GetTextColor()),
+            rgb(ghost[1], ghost[2], ghost[3]), rgb(tip.r, tip.g, tip.b)
+    end
+
+    Skin:SetIgnore("MultiMeters", false, nil)
+    local accent, disabled = rgb(NS.Skin.Color("text.accent")), rgb(NS.Skin.Color("text.disabled"))
+    assertTrue(accent ~= "1.000,0.820,0.000", "the fixture needs a skin whose accent is not the gold")
+    local label, dim, ghost, tip = looks()
+    assertEqual(label, accent, "a skinned page's shown label is the skin's accent")
+    assertEqual(dim, disabled, "a skinned page's hidden label is the skin's disabled text")
+    assertEqual(ghost, disabled, "a skinned page's carried copy is the skin's")
+    assertEqual(tip, rgb(NS.Skin.Color("gtip.value")), "a skinned page's glyph tip is the skin's")
+
+    Skin:SetIgnore("MultiMeters", true, nil)
+    label, dim, ghost, tip = looks()
+    assertEqual(label, "1.000,0.820,0.000", "an ignored panel's shown label is the stock gold")
+    assertEqual(dim, "0.500,0.500,0.500", "an ignored panel's hidden label is the stock gray")
+    assertEqual(ghost, "0.500,0.500,0.500", "an ignored panel's carried copy is the stock gray")
+    assertEqual(tip, "1.000,1.000,1.000", "an ignored panel's glyph tip is the stock white")
+end)
+
 test("Blocks: every hidden row is registered, so the indices the library moves are the real ones",
 function()
     -- The half the handle case cannot see. `draggable = false` returns nil from AddRow, so a split

@@ -593,14 +593,16 @@ end
 -- FOLLOWING THE SKIN (skinning-§6). Every HUD media picker takes the composer's `fromSkin`
 -- companion, `<picker path>FromSkin`, on a line of its own after the block's canonical rows: while
 -- it is on, the picker is disabled and shows the skin's value, and the surface draws the skin's
--- token (core/SkinSetup.lua's NS.SkinMediaKey). Default ON (DECISIONS X3), as the template
--- declares; the v20 step (core/Database.lua) put every stored window on it once (O2). Only the
--- face, the bar texture and the bar border style follow (X4): no color, size or thickness row is
--- governed. The window's own edge has none (FRAME_BORDER_ROWS): it follows the skin through
--- `frame.borderColorMode = "skin"` instead, the Shell drawing the skin's whole edge (MM-A1).
+-- token (core/SkinSetup.lua's NS.SkinMediaKey), except a face while the owner ignores fonts: the
+-- picker then shows the stored pick and the surface draws it (LibKa0s-Skin-1.0 minor 8's Resolve).
+-- Default ON (DECISIONS X3), as the template declares; the v20 step (core/Database.lua) put every
+-- stored window on it once (O2). Only the face, the bar texture and the bar border style follow (X4):
+-- no color, size or thickness row is governed. The window's own edge has none (FRAME_BORDER_ROWS):
+-- it follows the skin through `frame.borderColorMode = "skin"` instead, the Shell drawing the
+-- skin's whole edge (MM-A1).
 local FROM_SKIN_ROWS = {
     font    = { leaf = "fontFromSkin", label = L["Use the skin's font"],
-        tip = L["Draw this text in the skin's font. The font picker is kept but not read while this is on."] },
+        tip = L["Draw this text in the skin's font. The font picker is kept but not read while this is on, unless Ignore fonts is ticked on the Skin tab."] },
     texture = { leaf = "barTextureFromSkin", label = L["Use the skin's texture"],
         tip = L["Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."] },
     border  = { leaf = "borderStyleFromSkin", label = L["Use the skin's border"],

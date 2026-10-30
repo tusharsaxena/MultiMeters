@@ -1073,19 +1073,19 @@ Database.FROM_SKIN_KEYS = {
     "bars.borderStyleFromSkin", "tooltip.barBorderStyleFromSkin",
 }
 
---- One window's companions put back on the skin. Backfilled to false first where a stored group
---- lacks one (every window stored before v20 does), because LibKa0s-Skin-1.0's ResetToSkin,
---- handed an absent key, cannot tell it is a bool and writes its "@skin" sentinel into it; a group
---- that is absent altogether is left to EnsureWindowShape, whose template says true already.
---- Without the library the companions are set directly: they mean nothing until it loads, and
---- then they must already say "follow".
+--- One window's companions put back on the skin. The list names each companion itself
+--- (`header.fontFromSkin`), and LibKa0s-Skin-1.0's ResetToSkin sets a listed `*FromSkin` key to
+--- true whether or not it is stored (Skin minor 8, the skin library follow-ups' LK-07), so a stored
+--- group that lacks one (every window stored before v20 does) needs no seeding first; a group that
+--- is absent altogether is left to EnsureWindowShape, whose template says true already. Without the
+--- library the companions are set directly: they mean nothing until it loads, and then they must
+--- already say "follow".
 local function v20FollowSkin(w, resetToSkin)
     local keys = {}
     for _, path in ipairs(Database.FROM_SKIN_KEYS) do
         local group, leaf = path:match("^([^.]+)%.(.+)$")
         local g = w[group]
         if type(g) == "table" then
-            if type(g[leaf]) ~= "boolean" then g[leaf] = false end
             if resetToSkin then keys[#keys + 1] = path else g[leaf] = true end
         end
     end

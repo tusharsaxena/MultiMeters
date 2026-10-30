@@ -798,8 +798,8 @@ L["Reload your interface (/reload) to finish changing the skin."] =
 L["Use the skin's font"] = "Use the skin's font"
 L["Use the skin's texture"] = "Use the skin's texture"
 L["Use the skin's border"] = "Use the skin's border"
-L["Draw this text in the skin's font. The font picker is kept but not read while this is on."] =
-    "Draw this text in the skin's font. The font picker is kept but not read while this is on."
+L["Draw this text in the skin's font. The font picker is kept but not read while this is on, unless Ignore fonts is ticked on the Skin tab."] =
+    "Draw this text in the skin's font. The font picker is kept but not read while this is on, unless Ignore fonts is ticked on the Skin tab."
 L["Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."] =
     "Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."
 L["Draw this border in the skin's border style. The style picker is kept but not read while this is on; the thickness and the color stay yours."] =

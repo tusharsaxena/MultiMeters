@@ -641,6 +641,10 @@ function WindowProto:BuildFrame()
     -- tokens are the contract, and a matching literal in this file is the copy
     -- that goes stale one hex digit at a time (standalone-windows).
     frame.title = frame:CreateFontString(nil, "OVERLAY")
+    -- A font before the Shell paints it: the client gives a template-less FontString an invalid
+    -- size until one is set, and the Shell scales the title's own size into the skin's font.
+    -- ApplyHeader sets the player's header font over it.
+    frame.title:SetFontObject("GameFontNormal")
     frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -5)
 
     frame.divider = frame:CreateTexture(nil, "ARTWORK")
