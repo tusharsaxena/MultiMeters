@@ -5,8 +5,9 @@
 -- library cannot see: the AceGUI widgets this addon creates itself (the Windows page's action
 -- dropdown and name box, the Columns page's block slots and boundary rule), the AceConfigDialog
 -- tree on the Profiles page (acquired from AceGUI past the owner proxy), and the column blocks'
--- label colors, which are the skin's accent and disabled text (Ka0s Default's gold and 0.5 gray,
--- pinned in tests/test_columnblocks.lua). Without the library both helpers paint nothing.
+-- label colors, which are the skin's accent and disabled text while the page wears the skin (Ka0s
+-- Default's gold and 0.5 gray, and the stock pair under Ignore settings panel, pinned in
+-- tests/test_columnblocks.lua). Without the library both helpers paint nothing.
 --
 -- EACH CASE ON ITS OWN INSTANCE: a skin change is library session state.
 
@@ -108,12 +109,15 @@ test("Skin settings: the column blocks paint their slots and boundary rule", fun
 end)
 
 test("Skin settings: under another skin the column-block labels take its accent and disabled text", function()
-    -- Ka0s Default's gold and gray are pinned in tests/test_columnblocks.lua.
+    -- Ka0s Default's gold and gray are pinned in tests/test_columnblocks.lua, and so is the stock
+    -- pair while the owner ignores its settings panel (on for a new profile), so this case wears the
+    -- panel: Ignore settings panel off.
     -- red under: the literal 1, 0.82, 0 / 0.5 gray back in applyBlock.
     local inst = T.load{}
     local NS = inst.NS
     local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0")
     Skin:SetChoice(OWNER, "ka0s", "ember")
+    Skin:SetIgnore(OWNER, false, nil)
     local blocks = renderBlocks(NS)
     for i, token in ipairs({ "text.accent", "text.disabled" }) do
         local want = { NS.Skin.Color(token) }

@@ -160,7 +160,7 @@ local function acquireBlock(parent)
         if not GameTooltip then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine(block.mmEnabled and L["Click to hide this column"]
-            or L["Click to show this column"], NS.SkinColor("gtip.value"))
+            or L["Click to show this column"], NS.SkinPanelColor("gtip.value"))
         GameTooltip:Show()
     end)
     glyph:SetScript("OnLeave", function()
@@ -190,8 +190,9 @@ local function applyBlock(block, index, item, spec)
     -- Grayed rather than hidden: a label you cannot read is a block you cannot
     -- aim at, and aiming at it is how you turn the column back on.
     -- The skin's accent and disabled text (Ka0s Default: the gold and the 0.5 gray this drew),
-    -- read on every apply, so a skin switch's re-render repaints it.
-    block.mmLabel:SetTextColor(NS.SkinColor(item.enabled and "text.accent" or "text.disabled"))
+    -- read on every apply, so a skin switch's re-render repaints it; the stock pair while the
+    -- owner ignores its settings panel (NS.SkinPanelColor, D-03), as the library's list beside it.
+    block.mmLabel:SetTextColor(NS.SkinPanelColor(item.enabled and "text.accent" or "text.disabled"))
 
     block:SetAlpha(1)
     block:Show()
@@ -251,7 +252,8 @@ local function newReorderList(spec, boundary)
         handleTooltip = NS.L and NS.L["Drag to reorder"] or nil,
         onMove     = spec.onMove,
         -- The skin owner (LibKa0s-Widgets-1.0 16, skinning-§1): the drop line and the ghost follow
-        -- this addon's skin.
+        -- this addon's skin. No `panel`: a list is panel-scoped by default (WidgetsReorder minor 3), so
+        -- while the owner ignores its settings panel it draws as the client would, as this page does.
         owner      = NS.name,
         debug      = (NS.State and NS.State.debug and NS.Debug)
             and function(fmt, ...) NS.Debug("Blocks", fmt, ...) end or nil,
@@ -298,7 +300,7 @@ local function registerRow(list, block, item)
         dimmed         = not item.enabled,
         ghostText      = item.label,
         ghostIcon      = block.mmGlyphTexture,
-        ghostTextColor = { NS.SkinColor(item.enabled and "text.accent" or "text.disabled") },
+        ghostTextColor = { NS.SkinPanelColor(item.enabled and "text.accent" or "text.disabled") },
         height         = NS.BLOCK_HEIGHT,
     })
 end
