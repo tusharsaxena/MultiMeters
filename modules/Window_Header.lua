@@ -30,18 +30,20 @@
 -- The methods below hang on the SAME `WindowProto` modules/Window.lua builds —
 -- there is one window prototype, not two — so that file publishes it as
 -- `NS.WindowProto` for this file and for modules/Window_Placement.lua, and for
--- nothing else. The font reader, the surface-color reader and the collaborator
--- resolver come across the same way. All four are resolved at FILE SCOPE, so this
--- file MUST load after modules/Window.lua; the TOC says so at its line.
+-- nothing else. The font reader and the collaborator resolver come across the
+-- same way, and the surface-color reader from modules/Window_Frame.lua (MM-04).
+-- All four are resolved at FILE SCOPE, so this file MUST load after both; the TOC
+-- says so at its line.
 
 local _, NS = ...
 
 local Const = NS.Constants
 local L     = NS.L
 
--- The window prototype this file adds to, and the three readers modules/Window.lua
--- keeps: `fontPath` because ApplyConfig sets the notice font from it too, and
--- `surfaceColor` because ApplyBorder paints the window's own backdrop with it.
+-- The window prototype this file adds to, and the three readers its siblings keep:
+-- `fontPath` because ApplyConfig sets the notice font from it too, and
+-- `surfaceColor` because ApplyBorder paints the window's own backdrop with it
+-- (both in modules/Window_Frame.lua; fontPath is published by modules/Window.lua).
 -- One reader each rather than a second copy of the fallback chain in this file.
 local WindowProto  = NS.WindowProto
 local fontPath     = NS.WindowFontPath

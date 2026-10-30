@@ -120,14 +120,24 @@ modules\Aggregator_Preview.lua
 modules\Aggregator_Order.lua
 modules\WindowManager.lua
 modules\Window.lua
+# The build-and-apply half and the draw half of the loop, peeled out of modules\Window.lua at
+# the cap (MM-04). LOAD-BEARING POSITIONS: both resolve NS.WindowProto, NS.WindowModule and
+# NS.WindowInternals at FILE SCOPE, so both MUST follow modules\Window.lua. Window_Frame.lua
+# publishes NS.SurfaceColor, which Window_Header.lua resolves at file scope, and
+# Window_Render.lua hangs newRowPool and onUpdate on NS.WindowInternals, which
+# Window_Lifecycle.lua resolves at file scope: so both MUST precede those two.
+modules\Window_Frame.lua
+modules\Window_Render.lua
 # The bus wiring and lifecycle tail (Window.New, SetConfig, Destroy, Suspend, Resume), peeled out
 # of modules\Window.lua for layout-§1. LOAD-BEARING POSITION: it resolves NS.Window, NS.WindowProto
-# and NS.WindowInternals at FILE SCOPE, so it MUST follow modules\Window.lua, which publishes them.
+# and NS.WindowInternals at FILE SCOPE, so it MUST follow modules\Window.lua, which publishes them,
+# and modules\Window_Render.lua, which adds the pool constructor and the clock to the last.
 modules\Window_Lifecycle.lua
 # The two files modules\Window.lua was peeled into for layout-§1 (issue #29): the header band,
 # and the window's placement and presence. LOAD-BEARING POSITIONS, both of them: each resolves
 # NS.WindowProto -- and Window_Header.lua also NS.WindowFontPath, NS.SurfaceColor and
-# NS.WindowModule -- at FILE SCOPE, so both MUST follow modules\Window.lua, which publishes them.
+# NS.WindowModule -- at FILE SCOPE, so both MUST follow modules\Window.lua, which publishes them
+# (NS.SurfaceColor comes from modules\Window_Frame.lua, above).
 # Ahead of the controls strip, which reads the NS.HeaderStyle Window_Header.lua publishes
 # -- at CALL time, so that part is order by intent rather than a load-time requirement.
 modules\Window_Header.lua

@@ -11,7 +11,7 @@ that outgrows a screen belongs in its topic doc with a summary and a link left b
 ## Overview
 
 
-Seventy non-vendored source files: 1 locale, 22 `core/`, 1 `defaults/`, 30 `modules/`, 16 `settings/`.
+Seventy-two non-vendored source files: 1 locale, 22 `core/`, 1 `defaults/`, 32 `modules/`, 16 `settings/`.
 
 The addon is built on the **private namespace** WoW hands each file. `core/MultiMeters.lua` calls
 `AceAddon-3.0:NewAddon(NS, addonName, …)`, which promotes that table in place — so **`NS` *is* the
@@ -57,7 +57,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_Runtime`, `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm diagnostics`, its addon-state sections (`_Runtime`), and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
 | `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`, `_Order`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret; `Aggregator_Order` holds the orderings and the row cap. |
-| `modules/` display | `WindowManager`, `Window` (+ `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Border`, `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window (with its test-mode strip, `LibKa0s-Widgets-1.0`'s `TestStrip` under the title, placed by `Window_Header`'s narrow `ApplyTestStrip` on the toggle; the red TEST MODE title word is written only while the strip is not shown — a minimized window, or a load without the Widgets library — and never while a simulation runs; and its simulation strip, the same `TestStrip` in its `kind = "sim"` flavor, in the same slot and on the same narrow path on `SIM_CHANGED`, shown while a `/mm sim` session runs, with no title word at all), one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
+| `modules/` display | `WindowManager`, `Window` (+ `_Frame`, `_Render`, `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Border`, `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window (with its test-mode strip, `LibKa0s-Widgets-1.0`'s `TestStrip` under the title, placed by `Window_Header`'s narrow `ApplyTestStrip` on the toggle; the red TEST MODE title word is written only while the strip is not shown — a minimized window, or a load without the Widgets library — and never while a simulation runs; and its simulation strip, the same `TestStrip` in its `kind = "sim"` flavor, in the same slot and on the same narrow path on `SIM_CHANGED`, shown while a `/mm sim` session runs, with no title word at all), one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
 | `modules/` simulator | `Sim`, `SimWorld`, `SimDrivers`, `SimScenario` | `/mm sim`'s session host (`modules/Sim.lua`: `NS.Sim` on LibKa0s-Sim-1.0, the refusals, the real-event classifier, the session-only stores and the stop's resync) and its invented world (MultiMeters#60): the real player plus seeded mates, zones, segments, deaths and recaps, and the providers `core/SimSetup.lua`'s seam answers from while a session runs. Plain invented numbers; it never reads a client meter value. The drivers edit that world and fire the client's events through `NS.Sim:Fire`, in the client's order; a fight's ticks are booked on the session's timer. The four #60 scenarios (`dungeon`, `raid`, `wipe`, `zone`) are timelines of labeled, tipped steps that `NS.SimHost.Play` plays through the drivers; `tests/test_sim_e2e.lua` runs each one stepped and auto-run through the real engine. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
 | `settings/` | `Schema_Compose` → `Schema` → `Schema_Skin` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 3 pages and 6 Windows-page entries | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, the seven skin rows appended to it, and the path and write seams. `ColumnBlocks` is the Columns entry's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
@@ -325,7 +325,7 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   the window's `skinLooks`), `ApplyBorder` re-runs after the Shell's repaint, the player's own edge,
   fill and header are laid over the new skin where a mode says Custom or Class, and the HUD media
   resolve again.
-- **The meter window** paints through `S.Shell` with no top bar (`modules/Window.lua`), and its chrome
+- **The meter window** paints through `S.Shell` with no top bar (`modules/Window_Frame.lua`), and its chrome
   follows the skin (item MM-A1, the owner's ruling R-3, which overrules X4 for this window: the
   inventory's D1, D3, D4 and D16). Five color modes carry `skin` beside `class` and `custom` and ship on
   it: the fill (`frame.backdropColorMode`, `win.bg`); the edge (`frame.borderColorMode`, the skin's
@@ -591,7 +591,10 @@ first, as ruled: the bus wiring and the lifecycle tail went to `modules/Window_L
 leaving it at 1321. `modules/Row.lua` reached 1446 after its live-cell set and `Release` left for
 `modules/Row_Cells.lua`, and was peeled again in the 2026-09-26 automated-tests sweep: the cell outline — the flat
 edges, the edge-art backdrop and the per-row re-tint — went to `modules/Row_Border.lua`, leaving it
-at 1226. It is still source, on the refresh path, and the file every identity, spec-icon and
+at 1226. `modules/Window.lua` grew back to exactly 1500 and was peeled again on 2026-10-31 (an owner
+ruling over issue #29's one-file loop): the build-and-apply half went to
+`modules/Window_Frame.lua` and the pool-and-draw half to `modules/Window_Render.lua`, leaving it at
+414. `modules/Row.lua` is still source, on the refresh path, and the file every identity, spec-icon and
 pet-fold change has historically landed in. `modules/Aggregator.lua` had grown back to 1432 and was
 peeled in the same sweep: the orderings and the row cap went to `modules/Aggregator_Order.lua`, leaving
 it at 1230, while the ladder that picks an ordering stayed with the rest of the pipeline. The band's figures are
@@ -644,8 +647,8 @@ the TOC: the client reads it from the addon folder by name. The binding constrai
 4. `core/MediaSetup.lua` **before `core/Constants.lua`**, which resolves `FONT_MONO` from the
    `NS.MediaFont` it publishes. It is the one seam outside the cause clause, so it is free to load
    first and has to.
-5. `core/PoolSetup.lua` after the `libs/` block and **before `modules/Window.lua`**, the pool's only
-   consumer. It carries no other constraint: it publishes `NS.Pool` and captures nothing.
+5. `core/PoolSetup.lua` after the `libs/` block and **before `modules/Window.lua`**, ahead of the
+   pool's only consumer, `modules/Window_Render.lua`. It carries no other constraint: it publishes `NS.Pool` and captures nothing.
 6. `core/CoreSetup.lua` before `core/MultiMeters.lua`, whose AceConsole reclaim reads
    `NS.Util.print`; and **first of the six seams that share the cause clause**, because it defines
    `NS.LIBKA0S_MISSING`. `core/SkinSetup.lua` follows it and sits **above every file that builds a
@@ -661,7 +664,7 @@ the TOC: the client reads it from the addon folder by name. The binding constrai
 9. `defaults/Profile.lua` after `core/Constants.lua`, whose stat catalog it captures at load.
 10. `modules/Format.lua` first in the module block; `modules/Row.lua` resolves `Tooltip` and
    `DrillDown` at *call* time because both load after it. `modules/Targets.lua` loads before
-   `modules/Tooltip.lua`, its only caller. **Each of the twelve `modules/` peels follows the parent it
+   `modules/Tooltip.lua`, its only caller. **Each of the fourteen `modules/` peels follows the parent it
    was cut from, and every one of those positions is load-bearing**: each resolves at *file scope*
    something its parent publishes, so a peel loading first captures nil and stays nil for the
    session. `modules/Export.lua` was the one file in the block whose position carried no constraint

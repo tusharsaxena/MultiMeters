@@ -3,7 +3,7 @@
 Where each responsibility lives, what each file publishes, and what it consumes. `MultiMeters.toc`
 is the source of truth for load order — check this map against it before editing.
 
-Seventy non-vendored source files: 1 locale, 22 `core/`, 1 `defaults/`, 30 `modules/`,
+Seventy-two non-vendored source files: 1 locale, 22 `core/`, 1 `defaults/`, 32 `modules/`,
 16 `settings/`.
 
 Thirteen of those arrived on one day, 2026-09-09, and **not one of them is a new module.** They are
@@ -94,7 +94,7 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   │                     built before the library-absent fork
 │   ├── PoolSetup.lua   — LibKa0s-Pool-1.0 seam: NS.Pool, the window row pool's
 │                         free/active halves. After libs/, BEFORE modules/Window.lua,
-│                         its only consumer. RANK STABILITY IS THE LIBRARY'S — minor 3
+│                         ahead of its only consumer, modules/Window_Render.lua. RANK STABILITY IS THE LIBRARY'S — minor 3
 │                         parks the active set backward — and the degraded fallback
 │                         here parks the same way rather than flickering
 │   ├── MediaSetup.lua  — the LibKa0s-Media seam: NS.Icon / NS.MediaFont, and the one
@@ -169,10 +169,16 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │   ├── WindowManager.lua — the window REGISTRY: create / delete / rename /
 │                         duplicate / copy-from, lock, test mode, toggle. The ONE
 │                         WINDOWS_CHANGED emitter
-│   ├── Window.lua      — one window instance and its LOOP: the anchor/visible
-│   │                     frame pair, the layout computation (R3), frame
-│   │                     construction, ApplyConfig, the row pool and the coalesced
-│   │                     refresh. Publishes WindowProto for the three files below
+│   ├── Window.lua      — one window instance and its LOOP's contract: the
+│   │                     refresh and anchor rules, the layout computation (R3)
+│   │                     and the cached config. Publishes WindowProto for the
+│   │                     five files below
+│   ├── Window_Frame.lua
+│   │                   — the two frames built once (BuildFrame), ApplyConfig,
+│   │                     the edge and fill (ApplyBorder) and NS.SurfaceColor
+│   ├── Window_Render.lua
+│   │                   — the row pool, the scroll, the OnUpdate clock, Refresh
+│   │                     and Render
 │   ├── Window_Lifecycle.lua
 │   │                   — how a window is born, re-pointed, stood down and put
 │   │                     away: Window.New, the private bus target's thirteen
@@ -315,7 +321,7 @@ own strings entirely.
 | `LifecycleSetup.lua` | The ONE `LibKa0s-Lifecycle-1.0` latch and the addon's ONE teardown: `standDown` / `standUp`, the `disabled` hold taken from the stored `enabled` path, and the show ladder's answer. The descriptor passes the gated sink as `debug`, so the edge lines are the library's `[Lifecycle]` lines and this file writes none. **Loads before `PerfSetup.lua`** — the perf descriptor requires `lifecycle` and raises without it | `NS.lifecycle`, `NS.StandDown`, `NS.StandUp`, `NS.SyncEnabledHold`, `NS.IsStoodDown`, `NS.IsDisabled` | `NS.GetSetting`, and `Provider` / `WindowManager` / `Visibility` / `Export` at call time |
 | `PerfSetup.lua` | The perf descriptor: bucket list, the latch, log routing. **No `suspend` / `resume`** — from Perf minor 12 nothing reads them and the teardown is the latch's | `NS.Perf` | `NS.Version`, `NS.lifecycle` |
 | `DebugLogSetup.lua` | The console descriptor (including `addonName`, which is what makes the console's own close/copy/clear draw the collection's art), the debug sink, and the steady-state sink a timer-driven pass logs through (re-armed by turning logging on and by the console's Clear, through `onClear`), and the console's at-enable queue for a state line written while logging is off | `NS.DebugLog`, `NS.Debug`, `NS.DebugAtEnable`, `NS.DebugSteady`, `NS.DebugSteadyReset` | `NS.Constants.FONT_MONO`, `NS.State.debug`, `NS.Print`, `NS.SafeToString` |
-| `PoolSetup.lua` | The LibKa0s-Pool seam: the free/active halves of the window row pool. What stays in `modules/Window.lua` is what the library holds no opinion about — `pool.all` (every row ever built, so a **parked** row is re-laid-out too) and batch growth, folded into the `Acquire` factory closure. The degraded fallback is the same three members locally, parking **backward** exactly as `LibKa0s-Pool-1.0` minor 3 does; a forward-parked degraded install is the rank flicker back | `NS.Pool` | `LibKa0s-Pool-1.0`. Owns no state and registers no event |
+| `PoolSetup.lua` | The LibKa0s-Pool seam: the free/active halves of the window row pool. What stays in `modules/Window_Render.lua` is what the library holds no opinion about — `pool.all` (every row ever built, so a **parked** row is re-laid-out too) and batch growth, folded into the `Acquire` factory closure. The degraded fallback is the same three members locally, parking **backward** exactly as `LibKa0s-Pool-1.0` minor 3 does; a forward-parked degraded install is the rank flicker back | `NS.Pool` | `LibKa0s-Pool-1.0`. Owns no state and registers no event |
 | `LauncherSetup.lua` | The LibKa0s-Launcher seam: the descriptor for the ONE LibDataBroker object LibDBIcon and any broker display both draw from (`launcher-§1`). Holds what is genuinely this addon's — the **folder** name (LibDBIcon keys the button's saved position by it), the logo, `version` from the TOC for the status tooltip's title (Launcher minor 3; the library draws the tooltip and this file passes no `onTooltipShow`), and the options menu's four accessor-and-toggle pairs (Launcher minor 4, `launcher-§2` at v2.67.0): `isEnabled` = `not NS.IsDisabled()` with `setEnabled` → the `enable`/`disable` verb, `isLocked` = `WindowManager:IsLocked` with `toggleLock` → `lock`, `isTestMode` = `NS.State.testMode` with `toggleTestMode` → `test`, `isWindowShown` = `WindowManager:AnyShown` with `toggleWindow` → `toggle`. Every toggle is the verb's own handler, looked up in `NS.COMMANDS` at click time. Left-click opens the panel (`openSettings`), in either state. The `minimap` field is a **closure**, never the table: `db.global.minimap` does not exist when core/ loads. `debug` is the gated sink and `debugAtEnable` the console's at-enable queue (Launcher minor 5), so the library's `registered` line, written at login with logging off, lands when logging is turned on. The inversion is NOT here — it is the write seam's carve-out. It also builds the Show window key binding's button (`launcher-§6`): the plain, hidden, non-secure `MultiMetersToggleWindows` Button the root `Bindings.xml` clicks, registered `AnyDown`, whose OnClick is `toggleWindows`, the very function the descriptor's `toggleWindow` is. A key cannot be grayed, so `toggleWindows` prints `NS.Slash:DisabledLine()` while disabled, as the dispatcher does for `/mm toggle`; otherwise it runs the verb. Built **before** the library-absent fork, with the `BINDING_HEADER_MULTIMETERS` (the binding category's title) and `BINDING_NAME_CLICK MultiMetersToggleWindows:LeftButton` labels set by `rawset`, and `NS.BINDINGS`, the one bindings table (`{ command, tooltip }` in `Bindings.xml` order) the General page's Keybindings tab and the suite read | `NS.Launcher` — `Register`, `IsRegistered`, `Object`, `IsShown`, `SetShown`; `NS.BINDINGS` | `LibKa0s-Launcher-1.0`, `NS.Constants.LOGO_128` (at file scope), `NS.db.global.minimap`, `NS.WindowManager`, `NS.OpenOptionsPanel`, `NS.COMMANDS`, `NS.IsDisabled` (all at call time) |
 | `MultiMeters.lua` | AceAddon promotion, the printer reclaim, all 22 game-event registrations (the `EVENTS` array, each through `NS.SafeRegisterEvent` with the one handler `OnGameEvent`, refusals in `NS.State.rejectedEvents`), the dispatch table, the fan-out onto the bus, and `NS.ShouldShow` | `NS.addon`, `NS.ShouldShow`, `NS:OnInitialize` / `OnEnable`, `NS:OnGameEvent`, `NS.DeliverEvent`, `NS.HANDLER_BY_EVENT`, `NS.RealEventFilter` (the simulator's hook) | `NS.Constants.MSG`, `NS.State`, `NS.Secrets`, `NS.Launcher`, `NS.CreateOptionsPanel`, `NS.Slash` |
 | `Database.lua` | The AceDB instance, window shape key-fill, the monotonic id counter, seeding, migrations, and the AceDB profile callbacks | `NS.Database` (`GetWindows`, `FindWindow`, `NextWindowId`, `SeedWindows`, `EnsureWindowShape`), `NS.db`, `NS:InitDB`, `NS:RunMigrations` | `NS.defaults`, `NS.WINDOW_TEMPLATE`, `NS.DefaultWindow`, `NS.Constants.MSG` |
@@ -352,7 +358,9 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 | `Aggregator_Preview.lua` | — | The invented meter: the placeholder group, spells and scaling a player sees when they unlock a window at a target dummy. Placeholder data is required of any addon with a positionable display | `NS.Aggregator.TestGroup`, `TestColumn`, `TestRecap`, `TestSourceDetail` | the module table, and nothing else. **No upvalue crosses the line in either direction** — which is what made this the cheapest second cut once the identity seam had not got the file under on its own. `Provider`, `Roster`, `Tooltip` and `DrillDown` reach these four at call time, behind an `and`, exactly as before |
 | `Aggregator_Order.lua` | — | The orderings (`reverseRows`, `orderByProvider`, `orderByValue`, `orderByName`, `orderByRoster`) and the row cap. Each ordering takes a row array and a direction and reads no pass table, which is why they could leave while the ladder that picks among them (`applySortMode`) and Build stayed: peeled in the 2026-09-26 automated-tests sweep (ATS-12), 1432 → 1230 | `NS.Aggregator.ApplyRowLimit`, `SelfPinIndex`; and `orderByProvider`, `orderByValue`, `orderByName`, `orderByRoster` on `Aggregator._order` | `NS.Aggregator`, `NS.Roster`, `NS.Secrets`, `NS.Constants`, and `UNRANKED` off `Aggregator._order` — all **at file scope**, which is what pins its TOC line after `modules/Aggregator.lua` |
 | `WindowManager.lua` | AceAddon | The live instance registry and every runtime mutation of the window list: the `architecture-§5` registry writer, with the load pass (`Database.SeedWindows`) the only other writer. Deep-copies on duplicate and copy-from | `NS.WindowManager` — `Resolve`, `Get`, `All`, `Init`, `Create`, `Delete`, `Rename`, `Duplicate`, `CopyFrom`, `RefreshAll`, `MarkAllDirty`, `ResetPosition(s)`, `SetLocked` / `IsLocked`, `SetTestMode` / `IsTest`, `Toggle` / `AnyShown`, `BuildListLines`, `Suspend` / `Resume`, `COPY_GROUPS` | `NS.Database`, `NS.Window`, `NS.State`, `NS.DefaultWindow`. Subscribes `PROFILE_CHANGED`. **The one `WINDOWS_CHANGED` sender** |
-| `Window.lua` | plain table + prototype | One instance and its **loop**: the anchor/visible frame pair, `BuildLayout` (R3), `RefreshUpvalues`, `BuildFrame` (with its once-only helpers `BuildBody` and `BuildStrips`), `ApplyConfig`, `ApplyBorder`, the row pool, the scroll, the `OnUpdate` throttle, `Refresh` and `Render`. Issue #29 names that chain as one causal sequence and forbids cutting inside it — splitting it would put a reader on two files to follow one frame | `NS.Window` and the loop's `WindowProto` methods, among them `ChromeOffsets()` (the strip's, the column headers' and the body's top, from the layout alone); and, for the three files below, `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor`, `NS.WindowModule` and `NS.WindowInternals` (the row pool's constructor and the `OnUpdate` clock) | `NS.Constants`, `NS.Row`, `NS.Provider`, `NS.Aggregator`, `NS.DrillDown`, `NS.ShouldShow`, `NS.Format`, `NS.ApplySkin`, `NS.MakeResizable` |
+| `Window.lua` | plain table + prototype | One instance and its **loop's contract**: the anchor/visible frame rule and the refresh rule in its header, `BuildLayout` (R3), `ChromeOffsets`, `RefreshUpvalues`, and the helpers its siblings share. Issue #29 kept the whole loop in this file; at the cap the owner ruled it split (MM-04, 2026-10-31), along its own banners, into the build-and-apply half and the draw half below | `NS.Window` and the layout `WindowProto` methods, among them `ChromeOffsets()` (the strip's, the column headers' and the body's top, from the layout alone); and, for the five files below, `NS.WindowProto`, `NS.WindowFontPath`, `NS.WindowModule` and `NS.WindowInternals` (`clamp`, `lsm`; `Window_Render.lua` adds the row pool's constructor and the `OnUpdate` clock) | `NS.Constants`, `NS.State`, `NS.Sim`, `NS.DataSetting`, `NS.SkinHudFontSize`, `NS.SkinWindowLooks` |
+| `Window_Frame.lua` | — | How a window's frames are built once and dressed on every settings change: the anchor/visible pair, the drag bar, `BuildFrame` (with its once-only helpers `BuildBody` and `BuildStrips`), `ApplyConfig`, `ApplyBorder` and the surface-color reader. Peeled out of `Window.lua` at the cap (MM-04): it runs on a settings change and never on a refresh | `WindowProto:BuildFrame`, `BuildBody`, `BuildStrips`, `ApplyConfig`, `ApplyBorder`; and `NS.SurfaceColor` for `Window_Header.lua` | `NS.WindowProto`, `NS.WindowFontPath`, `NS.WindowModule`, `NS.WindowInternals.clamp` / `.lsm` **at file scope**; `NS.ApplySkin`, `NS.Skin`, `NS.MakeResizable`, `NS.MasterSetting`, `NS.HeaderControls`, `NS.PlayerClassRGB`, `NS.RGBA`, `NS.StatColor` |
+| `Window_Render.lua` | — | What a window draws and when: the row pool, the scroll, the `OnUpdate` throttle, `Refresh` and `Render`. Peeled out of `Window.lua` at the cap (MM-04): the half of the loop that runs on the clock | `WindowProto:Acquire`, `HideAll`, `ReleaseSurplus`, `PlaceRow`, `MaxScroll`, `ScrollBy`, `ResetScroll`, `MarkDirty`, `ShouldPoll`, `IsTest`, `Refresh`, `SelfPin`, `Render`; and `newRowPool` / `onUpdate` on `NS.WindowInternals` for `Window_Lifecycle.lua` | `NS.WindowProto`, `NS.WindowModule`, `NS.WindowInternals` **at file scope**; `NS.Row`, `NS.Pool`, `NS.Provider`, `NS.Aggregator`, `NS.DrillDown`, `NS.Secrets`, `NS.Skin` at call time |
 | `Window_Lifecycle.lua` | — | How a window is born, re-pointed, stood down and put away, and the bus wiring that keeps it listening in between. Peeled out of `Window.lua` for layout-§1 along the seam the automated-test disposition named: it arms the clock and marks the window dirty, and never decides what is drawn, so it sits outside issue #29's refresh chain | `NS.Window.New(config)`, `WindowProto:RegisterBus`, `UnregisterBus`, `SetConfig`, `Destroy`, `Suspend`, `Resume` | `NS.Window`, `NS.WindowProto` and `NS.WindowInternals`, all at file scope; `NS.NewBusTarget` and `NS.IsStoodDown` at call time. Each instance subscribes 12 messages on **its own** private bus target |
 | `Window_Header.lua` | — | The header **band**: the sort art and its ladder, the title bar, the session line, the column labels above the grid, the sort a click on one of those labels performs, the segment dropdown, the session label, the restricted notice and the unavailable notice. The band is computed from config and read back from nothing at all, which is why it separates from the loop cleanly | `NS.HeaderStyle(window)` (the header's font and color, read by `modules/HeaderControls.lua` at call time), and the band's `WindowProto` methods — `ApplyHeader`, `ApplyTitle`, `ApplyHeaderStrip`, `ApplySessionLine`, `ApplyColumnHeaders`, `ApplyMinimized`, `PlaceTestStrip` and `ApplyTestStrip` (the test-mode strip: placed, and on the toggle the narrow re-layout that never runs `ApplyConfig`), `SortByColumn`, `SetSegment`, `SetSessionType`, `OpenSegmentMenu`, `UpdateHeaderText`, `ShowNotice`, `TitleBandHeight()` (the bar from the frame's top edge to the divider: the midline, the divider and the drag strip are all placed from it) and `TitleRowMid(h)` — the one midline the title, the session line and the control strip are all anchored by their middles on | `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor`, `NS.WindowModule`, `NS.Constants`, `NS.L`, `NS.PlayerClassRGB`, `NS.RGBA` — the first four **at file scope**, which is what makes its TOC position load-bearing |
 | `Window_Placement.lua` | — | Where a window sits, how big it is, whether it is locked, and whether it is on screen at all — everything the player's hands and the visibility ladder do to the frame, as against what the loop draws inside it. **R3 did not weaken on this side of the seam**: `SavePosition` and `SaveSize` ask `inst.anchor`, the bare frame that has never held a meter value, and never `inst.frame` | the placement `WindowProto` methods — `ApplyPosition`, `SavePosition`, `SaveSize`, `ApplyResizeBounds`, `ApplyLock`, `ApplyLevels`, `BringToFront`, `RefreshVisibility`, `Show`, `ClearForcedShow`, `Hide`, `IsShown` | `NS.WindowProto`, **at file scope** |
@@ -446,8 +454,8 @@ draws) come from `core/LauncherSetup.lua` at load.
    10. `MediaSetup.lua` — **before `Constants.lua`**, which resolves `FONT_MONO` from `NS.MediaFont`,
       and therefore before `defaults/Profile.lua` names the font at load. This is one of the few
       TOC positions in `core/` that is load-bearing rather than conventional.
-   11. `PoolSetup.lua` — after the `libs/` block and **before `modules/Window.lua`**, the pool's
-      only consumer. It carries no other constraint: it publishes `NS.Pool` and captures nothing.
+   11. `PoolSetup.lua` — after the `libs/` block and **before `modules/Window.lua`**, ahead of the
+      pool's only consumer, `modules/Window_Render.lua`. It carries no other constraint: it publishes `NS.Pool` and captures nothing.
    12. `MultiMeters.lua` — after every setup file; promotes `NS` into the AceAddon object.
    13. `Database.lua` — after `State`, before `OnInitialize` runs. Reads `NS.defaults` at *call*
        time, because `defaults/` loads later.
@@ -472,7 +480,7 @@ draws) come from `core/LauncherSetup.lua` at load.
 5. **`modules/`** — `Format` first (nothing reads another module, and `Row` and `Tooltip` both format
    on their first render), then `Provider` → `Roster` → `Feign` → `Aggregator` →
    **`Aggregator_Identity` → `Aggregator_Preview` → `Aggregator_Order`** → `WindowManager` → `Window` →
-   **`Window_Lifecycle` → `Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_Border`** → **`Row_Cells`** → **`Row_NameCell`** →
+   **`Window_Frame` → `Window_Render` → `Window_Lifecycle` → `Window_Header` → `Window_Placement`** → `HeaderControls` → `Row` → **`Row_Border`** → **`Row_Cells`** → **`Row_NameCell`** →
    `Targets` → `Tooltip` → **`Tooltip_Lines` → `Tooltip_Builders`** → `DrillDown` → `Export` →
    **`Export_Modal`** → `Visibility` → `Sim` → `SimWorld` → `SimDrivers` → `SimScenario`.
 
@@ -484,16 +492,19 @@ draws) come from `core/LauncherSetup.lua` at load.
    `NS.SimHost.SCENARIOS` and sets `NS.SimHost.Play` at *file scope* and captures `NS.SimHost.Drivers`
    and `NS.SimHost.World` there, so it follows `SimDrivers` (its own LOAD-BEARING note).
 
-   The twelve in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
+   The fourteen in bold are the layout-§1 peels, and **every one of their positions is load-bearing**
    for the same reason: each resolves something its parent publishes at *file scope*, so a peel
    ahead of its parent captures nil and stays nil for the session.
    `modules/Aggregator_Identity.lua` takes the five row-assembly helpers off `Aggregator._identity`;
    `Aggregator_Preview.lua` needs only the module table, but is kept beside its sibling because that
    is where the reading order puts it. `Aggregator_Order.lua` takes `UNRANKED` off `Aggregator._order`.
-   `Window_Lifecycle.lua` resolves `NS.Window`, `NS.WindowProto` and `NS.WindowInternals`,
-   `Window_Header.lua` resolves `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor` and
-   `NS.WindowModule`, and `Window_Placement.lua` resolves `NS.WindowProto` — all three after
-   `modules/Window.lua`, which publishes every one of them. `Window_Header.lua` also sits **ahead of**
+   `Window_Frame.lua` and `Window_Render.lua` resolve `NS.WindowProto`, `NS.WindowModule` and
+   `NS.WindowInternals` (`Window_Frame.lua` also `NS.WindowFontPath`), all published by
+   `modules/Window.lua`, and they come next because the three after them read what they add:
+   `Window_Lifecycle.lua` resolves `NS.Window`, `NS.WindowProto` and `NS.WindowInternals` (whose
+   `newRowPool` and `onUpdate` `Window_Render.lua` hangs on it), `Window_Header.lua` resolves
+   `NS.WindowProto`, `NS.WindowFontPath`, `NS.SurfaceColor` (published by `Window_Frame.lua`) and
+   `NS.WindowModule`, and `Window_Placement.lua` resolves `NS.WindowProto`. `Window_Header.lua` also sits **ahead of**
    `HeaderControls.lua`, which reads the `NS.HeaderStyle` it publishes; that read is at *call* time,
    so this half is order by intent rather than a load-time requirement, and the TOC says which is
    which.
@@ -642,7 +653,7 @@ Which events reach which handler, and what each becomes on the bus, is tabulated
 table does not say is why an edge cannot simply be dropped:
 
 **These edges are load-bearing, not an optimization.** There is no fallback poll: `onUpdate` in
-`modules/Window.lua` refreshes *data* and never re-asks `NS.ShouldShow`, so the show ladder is
+`modules/Window_Render.lua` refreshes *data* and never re-asks `NS.ShouldShow`, so the show ladder is
 re-run only from a bus message a window subscribes to (`ROSTER_CHANGED`, `ZONE_CHANGED`,
 `ENTERING_WORLD`, `COMBAT_CHANGED`, `PLAYER_STATE_CHANGED`, `TEST_MODE_CHANGED`, `CONFIG_CHANGED`).
 A visibility input with no edge on the bus is a rule that never fires — which is exactly what

@@ -295,7 +295,7 @@ NS.MakeCloseButton = function(parent, onClick)
     return lib.MakeCloseButton(parent, onClick, addonName)
 end
 
--- THE RESIZE GRIP, GATED ON CORE MINOR 10. modules/Window.lua sizes the bare
+-- THE RESIZE GRIP, GATED ON CORE MINOR 10. modules/Window_Frame.lua sizes the bare
 -- anchor (rule R3) but draws the grip on the art frame, and saves on release
 -- only (issue #49). `gripParent` and `onResizeStop` are what say that, and both
 -- arrived at Core minor 10. An older Core answers the member and silently

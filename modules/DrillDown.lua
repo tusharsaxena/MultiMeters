@@ -102,7 +102,7 @@ local Perf = NS.Perf or {}
 -- out of the aggregated row at Enter.
 --
 -- IT IS A SNAPSHOT, AND HAS TO BE. While a window is drilled in,
--- modules/Window.lua renders BuildRows INSTEAD of running an aggregate pass, so
+-- modules/Window_Render.lua renders BuildRows INSTEAD of running an aggregate pass, so
 -- there is no current row to re-read the deaths off. The consequence is
 -- narrow and worth stating: a player who dies again while somebody is staring
 -- at their death list will not see the new death until the list is left and

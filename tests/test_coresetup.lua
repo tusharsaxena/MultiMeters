@@ -272,7 +272,7 @@ end)
 -- ── the window chrome seam ──────────────────────────────────────────────────
 
 test("CoreSetup: NS.MakeResizable is the library's grip on Core 10, by reference", function()
-    -- modules/Window.lua passes gripParent and onResizeStop, both Core minor 10.
+    -- modules/Window_Frame.lua passes gripParent and onResizeStop, both Core minor 10.
     -- red under: a host wrapper or a host-built grip behind the name.
     local inst = T.load()
     local lib = inst.mocks.LibStub("LibKa0s-Core-1.0", true)

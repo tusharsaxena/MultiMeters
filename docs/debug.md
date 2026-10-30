@@ -124,7 +124,7 @@ the route for a host that keeps its own.
 | `Aggregator` | `modules/Aggregator.lua` | one pass summary per window (`window=… rows=… dropped=… sort=… reason=…`) | yes |
 | `Aggregator` | `modules/Aggregator.lua` | `dropped guid=…` — why the first refused source of a pass was refused | yes |
 | `Aggregator` | `modules/Aggregator_Identity.lua` | the identity-correlation rectangle, on a mid-pull pass | yes |
-| `Render` | `modules/Window.lua` | `window N drew D/E rows` per window per pass | yes |
+| `Render` | `modules/Window_Render.lua` | `window N drew D/E rows` per window per pass | yes |
 | `Roster` | `modules/Roster.lua` | `built members=…` or `partial build (a of b) — will retry` (a held build, flushed by the next `built`) | yes |
 | `Roster` | `modules/Roster.lua` | the remembered roster pruned or forgotten | — |
 | `Visibility` | `modules/Visibility.lua` | every window's show answer and its rule (`#1=show(dungeon)`), on a roster, zone, combat or player-state edge, under debug only | yes |

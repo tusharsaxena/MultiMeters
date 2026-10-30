@@ -411,7 +411,7 @@ end
 --- STAT IS THE WINDOW'S SORT COLUMN, the statistic the grid being hovered is
 --- ranked by. A tooltip lists several statistics at once and is not "about" any
 --- one of them, so per-column would have no meaning here; the sort column is the
---- same answer the title bar gives (modules/Window.lua's surfaceColor).
+--- same answer the title bar gives (modules/Window_Frame.lua's surfaceColor).
 ---
 --- With nothing to read either way the passed-in color stands, which is the
 --- configured one at every call site.
@@ -457,7 +457,7 @@ local function lineStyle(config, color)
     -- hovering is currently ranked by. A tooltip lists several statistics at once
     -- and is not "about" any one of them, so per-column would have no meaning
     -- here; the sort column is the same answer the title bar gives, for the same
-    -- reason (modules/Window.lua's surfaceColor).
+    -- reason (modules/Window_Frame.lua's surfaceColor).
     --
     -- With nothing to read either way, the configured color stands.
     tr, tg, tb = modeColor(config.colorMode, config.statKey, color, tr, tg, tb)

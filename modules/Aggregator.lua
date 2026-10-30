@@ -1214,7 +1214,7 @@ end
 ---
 --- `parentKey` is the perf bracket the CALLER runs inside, handed to Perf.Note so
 --- a capture observes the nesting instead of trusting the descriptor
---- (performance-§3, issue #47). modules/Window.lua's refresh passes "refresh".
+--- (performance-§3, issue #47). modules/Window_Render.lua's refresh passes "refresh".
 --- An export build passes nothing, because it runs inside no bracket, and naming
 --- one it is not in would be the false claim this argument exists to replace.
 ---

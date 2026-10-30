@@ -365,7 +365,7 @@ end
 --- The LSM edge file for a border style, or nil for "no art".
 ---
 --- A CHOICE OF "None" IS NOT A FAILED FETCH, and the two must not share an
---- answer: modules/Window.lua's borderPath and modules/Tooltip.lua's mediaPath
+--- answer: modules/Window_Frame.lua's borderPath and modules/Tooltip.lua's mediaPath
 --- both say the same thing, and both say it because a resolver that fell back to
 --- the library's own edge on "None" drew a border the player had just switched
 --- off. nil here means "draw the flat one", which is this file's own four

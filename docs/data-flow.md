@@ -99,7 +99,7 @@ local function dirty() self:MarkDirty() end
 bus:RegisterMessage(MSG.METER_UPDATED, dirty)
 ```
 
-`modules/Window.lua`'s single `OnUpdate` is the only clock in the file. It accumulates `elapsed`,
+`modules/Window_Render.lua`'s single `OnUpdate` is the only clock in the file. It accumulates `elapsed`,
 returns until `self.throttle` has passed, and only then turns a set flag into one `Refresh`. The
 throttle is per-window (`data.throttle`, default 0.25s), cached into an instance field by
 `RefreshUpvalues` rather than read back through three table lookups forty times a second, and clamped
@@ -602,7 +602,7 @@ inside the comparator with "attempt to compare nil with number". Booleans off th
 `isDeadly`, `hideCaster`) go through `Secrets.PlainTruth`, because a boolean test on a *secret boolean* raises.
 
 **Drill-down** (`modules/DrillDown.lua`) builds no row frames at all. `BuildRows` returns rows in the
-same shape the aggregator produces, and `modules/Window.lua` feeds them to the same row pool and the
+same shape the aggregator produces, and `modules/Window_Render.lua` feeds them to the same row pool and the
 same cell path — so everything the player configured about rows, bars, text and fonts applies for
 free. A spell is a "row" whose synthesized `guid` is `"spell:<id>"` (a plain string, so the pool can
 key on it). It does **not** sort: a live view that reshuffled under the cursor the instant the

@@ -253,7 +253,7 @@ addresses it. That naming is the compliance; this is the detail behind it.
 - **Owner.** `WindowProto`, in `modules/Window_Placement.lua`, which also reads it
   (`ApplyPosition`).
 - **Writers, and the act that reaches each.**
-  - `WindowProto:SavePosition` — the title bar's drag-stop (`modules/Window.lua`). It reads
+  - `WindowProto:SavePosition` — the title bar's drag-stop (`modules/Window_Frame.lua`). It reads
     `GetPoint` off the anchor frame that never holds a value (rule R3).
   - `WindowManager:ResetPosition` — the *Reset position* button on General → Master controls, for
     the window the picker is pointed at. It puts back the shipped center, which chooses nothing.
@@ -333,7 +333,7 @@ row's own [get/set pair](#the-minimap-row--exactly-one-inverted-row).
 `options-ui-§15` fixes this set and its order across every Ka0s addon. `master.visibility`,
 `master.scale` and `master.alpha` are **addon-wide**, and none of them is a promoted per-window row: a
 window here is an instance, so its own `frame.scale` and `frame.alpha` stay under Windows > Frame where
-the banner says which window they mean. `modules/Window.lua` **multiplies** each pair rather than
+the banner says which window they mean. `modules/Window_Frame.lua` **multiplies** each pair rather than
 choosing between them, so one control can shrink a whole layout without erasing the differences a
 player set between its windows. `master.visibility` is read by `core/MultiMeters.lua`'s show ladder,
 below test mode, and `never` is unforceable.
@@ -350,7 +350,7 @@ unable to unlock anything. The v13 → v14 step carried a stored `true` onto eve
 page's Defaults and Reset all settings write, so both unlock every window.
 
 `NS.MasterSetting` (`defaults/Profile.lua`) is the **one reader** of the three stored keys, shaped exactly like
-`NS.DataSetting` below and for the same reason; `modules/Window.lua` clamps what it answers to the
+`NS.DataSetting` below and for the same reason; `modules/Window_Frame.lua` clamps what it answers to the
 bounds of the sliders that write it, because these paths are also reachable from `/mm set` and from a
 hand-edited SavedVariables.
 
@@ -550,7 +550,7 @@ player's. The two header strips are about the **window** rather than about any r
 row of the grid can never disagree about what a warlock looks like.
 
 `stat` is resolved the same way — see [the table above](#the-four-text-surfaces-and-their-color-modes)
-— and `modules/Window.lua`'s `NS.SurfaceColor` is the one reader for both header strips and both of
+— and `modules/Window_Frame.lua`'s `NS.SurfaceColor` is the one reader for both header strips and both of
 their backgrounds.
 
 The configured **alpha survives** every mode on every surface but `skin`, which is the skin's color whole (the window chrome's, MM-A1). `RAID_CLASS_COLORS` carries none, and

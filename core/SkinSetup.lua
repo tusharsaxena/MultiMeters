@@ -204,7 +204,7 @@ local WINDOW_LOOKS = {
     rowStripe = "mm.rowStripe",    -- the alternating stripe
     selfEdge  = "text.accent",     -- the "this row is you" edge (its alpha is the setting's)
     nameText  = "text.highlight",  -- a name with no class
-    -- The chrome's `skin` modes (MM-A1, the owner's ruling R-3; modules/Window.lua's ApplyBorder,
+    -- The chrome's `skin` modes (MM-A1, the owner's ruling R-3; modules/Window_Frame.lua's ApplyBorder,
     -- Window_Header.lua's title and title bar, HeaderControls.lua's tint).
     winBg        = "win.bg",       -- frame.backdropColorMode
     titleText    = "title.text",   -- header.colorMode, the title and the session line

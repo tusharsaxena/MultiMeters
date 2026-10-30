@@ -295,7 +295,7 @@ test("Skin seam: every library widget factory this addon calls is handed the own
     -- TestStrips (test mode, simulation) each skin themselves for `owner`, and draw stock without
     -- it. red under: a factory call added or kept without `owner = NS.name`.
     local files = {
-        ["modules/Export_Modal.lua"] = 1, ["settings/ColumnBlocks.lua"] = 1, ["modules/Window.lua"] = 2,
+        ["modules/Export_Modal.lua"] = 1, ["settings/ColumnBlocks.lua"] = 1, ["modules/Window_Frame.lua"] = 2,
     }
     for path, want in pairs(files) do
         local src = T.Loader.readFile(path):gsub("%-%-[^\r\n]*", "")

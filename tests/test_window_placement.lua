@@ -671,9 +671,9 @@ test("`resizeGrip` is gone from the code, not just from the panel", function()
     -- `if frameCfg.resizeGrip ~= false then` reads a key no profile has any more,
     -- so it is always true and every case still passes -- right up until someone
     -- re-adds the schema row and the old bug with it. So the guard is static.
-    -- red under: any read of frameCfg.resizeGrip anywhere in these two files.
+    -- red under: any read of frameCfg.resizeGrip anywhere in these files.
     local offenders = {}
-    for _, path in ipairs{ "/modules/Window.lua", "/settings/Schema.lua",
+    for _, path in ipairs{ "/modules/Window.lua", "/modules/Window_Frame.lua", "/settings/Schema.lua",
                            "/defaults/Profile.lua" } do
         local fh = assert(io.open(T.root .. path, "r"))
         local n = 0

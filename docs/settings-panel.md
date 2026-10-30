@@ -251,7 +251,7 @@ and does nothing. With no context-menu API, right-click opens this panel instead
 here is an instance (design §6), and its own **Lock window**, **Window scale** and **Window opacity**
 stay on the Frame entry (Size and position) where the banner says which window they mean — promoting one would give the General page,
 which draws no banner, a control that retargeted silently every time the picker moved. The scale and
-opacity pairs are different settings, and `modules/Window.lua` **composes** each pair rather than
+opacity pairs are different settings, and `modules/Window_Frame.lua` **composes** each pair rather than
 choosing between them; the lock works differently:
 
 - `master.scale` and `master.alpha` **multiply** into `frame.scale` / `frame.alpha`, so a window at
@@ -297,7 +297,7 @@ column for it or not, so there is no window to read a color off in the first pla
 
 Every surface that wears a statistic color reads it through **one seam**, `NS.StatColor(statKey)`
 in `core/Namespace.lua` — the grid's bars and cell text (`modules/Row.lua`), the column-header strip
-(`modules/Window.lua`) and both tooltip paths (`modules/Tooltip_Lines.lua` for a bar's fill,
+(`modules/Window_Header.lua`) and both tooltip paths (`modules/Tooltip_Lines.lua` for a bar's fill,
 `modules/Tooltip_Builders.lua` for the all-statistics list). `Constants.STAT_COLORS` stays
 the shipped palette and the **fallback**: it answers for a key nothing has stored, for a stat added to
 the catalog after a profile was written, and for a degraded install with no database to read.
