@@ -17,8 +17,8 @@ secret-value rules the checks refer to.
 
 | ID range | Theme | What it covers |
 |---|---|---|
-| INSTALL-1 to INSTALL-16 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load, the one-time HUD and chrome skin resets |
-| SLASH-1 to SLASH-32 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding and the General page's Keybindings tab |
+| INSTALL-1 to INSTALL-17 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load, the one-time HUD and chrome skin resets |
+| SLASH-1 to SLASH-33 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding and the General page's Keybindings tab |
 | PANEL-1 to PANEL-57 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
@@ -31,7 +31,7 @@ secret-value rules the checks refer to.
 | DIAG-1 to DIAG-42 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
 | SIM-1 to SIM-12 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
-| SKIN-1 to SKIN-24 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat |
+| SKIN-1 to SKIN-27 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
 ## Before you start
@@ -68,7 +68,7 @@ secret-value rules the checks refer to.
 - **INSTALL-3. SavedVariables shape.** After INSTALL-1, `/reload`, then read `MultiMeters.lua` on disk
   → `profileKeys`, `profiles.Default`, `global.schemaVersion = 21`, a one-entry `profile.windows`
   whose window has `id = 1`, and `profile.nextWindowId = 2`. (Amended by MM-05, 2026-10-29, the skinning rollout: the stamp is 20 since the
-  v20 skin reset, MM-03.) (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result: pass (owner-marked 2026-10-30)
+  v20 skin reset, MM-03.) (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the stamp is 22 since the v22 font flags move.) Result:
 - **INSTALL-4. `/reload` keeps the layout.** Move the window, resize it, change its bar color and its
   column set, `/reload` → position, size, color and columns survive; the window is in the same
   visibility state; no error during load; `nextWindowId` has not moved. Result: pass (owner-marked 2026-10-10)
@@ -129,14 +129,14 @@ secret-value rules the checks refer to.
   strength in 18px slots (WIN-49 to WIN-51); the second keeps *Thick outline* and size 20;
   `/dump MultiMetersDB.global.schemaVersion` prints `21`. A first window still outlined, white or
   faded means the v17 step did not reach it. (Amended by MM-05, 2026-10-29, the skinning rollout: the stamp is 20 since the v20 skin reset.)
-  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result: pass (owner-marked 2026-10-30)
+  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the stamp is 22 since the v22 font flags move, which moves the first window's NONE outline onto *From skin*: with the Skin tab's Font outline on *All text* its title is outlined, and with Font outline *Off* it is unoutlined as described; the second keeps *Thick outline*.) Result:
 - **INSTALL-13. Upgrade from v17 (the 30px title bar).** On the first header-match build
   (`schemaVersion` 17), with two windows, leave the first window's Header → Title bar → Header height
   at the shipped 18 and set the second's to 24; log out, update and log in → the first window's
   Header height reads 26 and its bar measures 30px from the frame's top edge to the divider (WIN-52);
   the second keeps 24; `/dump MultiMetersDB.global.schemaVersion` prints `21`. A first window still on
   the short bar means the v18 step did not reach it. (Amended by MM-05, 2026-10-29, the skinning rollout: the stamp is 20 since the v20 skin reset.)
-  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result: pass (owner-marked 2026-10-30)
+  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the stamp is 22 since the v22 font flags move.) Result:
 - **INSTALL-14. Upgrade from v18 (the ten-row 228px window).** On the 30px-bar build
   (`schemaVersion` 18), with two windows, leave the first window's Window → Height at the shipped 220
   and set the second's to 300; log out, update and log in → the first window's Height reads 228 and,
@@ -144,7 +144,7 @@ secret-value rules the checks refer to.
   under the last one; the second keeps 300; `/dump MultiMetersDB.global.schemaVersion` prints
   `21`. A first window still at 220 showing nine rows means the v19 step did not reach it.
   (Amended by MM-05, 2026-10-29, the skinning rollout: the stamp is 20 since the v20 skin reset.)
-  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) Result: pass (owner-marked 2026-10-30)
+  (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the stamp is 22 since the v22 font flags move.) Result:
 - **INSTALL-15. Upgrade from v19 (the one-time skin reset, owner ruling O2).** On the build before the
   skinning rollout (`schemaVersion` 19), with two windows, leave the first window as shipped and on
   the second pick Bars → Bar → Bar texture *Blizzard* and Columns → Column header → Font *Morpheus*;
@@ -161,7 +161,7 @@ secret-value rules the checks refer to.
   means the v20 step did not reach that window. (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21, and the v21 chrome reset runs
   in the same walk.) (Amended by MM-02, 2026-10-30, the skin library follow-ups: the step no longer seeds the companions before
   LibKa0s's ResetToSkin, which now sets an absent one itself, so re-check that every companion is
-  ticked; and the grayed picker shows the skin's value, as the library has always drawn it.) Result: pass (owner-marked 2026-10-30)
+  ticked; and the grayed picker shows the skin's value, as the library has always drawn it.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the stamp is 22 since the v22 font flags move, and the skin's value the grayed picker shows is *Ka0s Prototype*, Ka0s Default's face since v1.82.0, where it read *Ka0s Oxanium SemiBold*; both windows draw Prototype.) Result:
 - **INSTALL-16. Upgrade from v20 (the one-time chrome reset, the owner's ruling R-3; MM-A1).** On the
   build before MM-A1 (`schemaVersion` 20), with two windows, leave the first window as shipped and on
   the second set Frame → Background and border → Background color mode *Class color* with a red
@@ -173,8 +173,17 @@ secret-value rules the checks refer to.
   wear Ka0s Default's window look (SKIN-1). The second window's swatches still hold the red
   Background color and its control color: set its Background color mode to *Custom color* → the red
   fill comes back at once; `/reload` → it stays on Custom (the reset ran once). A mode left on Class
-  or Custom, or a swatch rewritten, means the v21 step did not reach that window. Result: pass (owner-marked 2026-10-30)
-
+  or Custom, or a swatch rewritten, means the v21 step did not reach that window. (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the stamp is 22 since the v22 font flags move.) Result:
+- **INSTALL-17. Upgrade from v21 (the font flags onto From skin; MM-01, ruling D-07).** On the build
+  before the skin fonts run (`schemaVersion` 21), with two windows, leave the first window's fonts as
+  shipped and on the second set Bars → Text → Font outline *Thick outline* and Columns → Column
+  header → Text → Font outline *None*; log out, update and log in → `/dump
+  MultiMetersDB.global.schemaVersion` prints `22`. On the first window Header → Title text, Bars →
+  Text, Columns → Column header → Text and Tooltip → Text each show Font outline **From skin**, as
+  does Frame → Quick style → Font outline (all surfaces), and its text is outlined (the Skin tab's
+  Font outline is *All text*). The second keeps *Thick outline* on its cells and *None* on its column
+  labels, and the rest of its flags read From skin. Set the first window's Bars → Text → Font outline
+  to *None*, `/reload` → it stays *None* (the move ran once). Result:
 ## SLASH
 
 - **SLASH-1. Banner and help.** `/mm help` → the help index; every line the addon prints starts with
@@ -252,7 +261,7 @@ secret-value rules the checks refer to.
   taint message (the windows are not secure). Result: pass (owner-marked 2026-10-23)
 - SLASH-20 to SLASH-29 were the first cut of the simulator checks (2026-10-23). They moved whole to
   the [SIM](#sim) theme, SLASH-20 to SLASH-28 as SIM-1 to SIM-9 and SLASH-29 as SIM-11, and the
-  numbers are retired. SLASH-30 to SLASH-32 follow; the next SLASH check is SLASH-33.
+  numbers are retired. SLASH-30 to SLASH-33 follow; the next SLASH check is SLASH-34.
 - **SLASH-30. The binding has a section of its own** (run 2026-10-24, SM-MM-KB1). Options →
   Keybindings shows a section titled *Ka0s Multi Meters*, holding the one *Toggle meter windows*
   entry, with no blank spacer row above it and no entry left under *AddOns*. A key bound before the
@@ -272,6 +281,13 @@ secret-value rules the checks refer to.
   the capture cancels and Settings stays open. In combat, click the key button → the outcome line
   reads *Key bindings can be changed after combat.* and no key changes. Result: pass (owner-marked 2026-10-24)
 
+- **SLASH-33. `/mm skin` (MM-01; LibKa0s O.SkinVerb, ruling D-16).** On a profile that already closed
+  the first-run picker, `/mm skin` → the **Choose a skin** window opens, the same one a new profile
+  shows; preview a skin and close it → the stored skin comes back. `/mm help` lists `skin` right after
+  `config` as *Choose a skin: open the skin picker*. In combat, `/mm skin` twice → each time one gray
+  line says the picker cannot open during combat, and nothing opens. `/mm disable`, then `/mm skin`
+  → one line saying the addon is disabled and naming `/mm enable`, and nothing opens. With another
+  Ka0s addon's picker up, `/mm skin` says it is queued and opens when that one closes. Result:
 ## PANEL
 
 The Windows page is one page per window: the Active window band on top, the nav rail on the left
@@ -885,7 +901,7 @@ right. Open the panel with `/mm config`.
   Quadrata with a soft drop shadow, gold, once Header → Title text → **Use the skin's font** is
   unticked (it ships ticked, and the title then draws the skin's face, SKIN-1). Header → Title text
   shows Font outline *None* and Text shadow ticked. (Amended by MM-05, 2026-10-29, the skinning rollout: since the v20 reset the title follows
-  the skin's face, so the Friz Quadrata match needs the companion off.) Result: pass (owner-marked 2026-10-30)
+  the skin's face, so the Friz Quadrata match needs the companion off.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the title's flags ship *From skin*, so the unoutlined Friz Quadrata match also needs the Skin tab's Font outline on *Off*, or Header → Title text → Font outline *None*; Header → Title text shows Font outline *From skin*.) Result:
 - **WIN-50. The controls match DPS Race's color (2026-10-24).** Same profile, pointer away from the
   window → every header control is the light gray DPS Race's controls rest in, at full strength (none
   faded); point at one → only it turns gold, and back to gray on leaving. Header → Button style shows
@@ -1705,8 +1721,11 @@ frame stays Blizzard's); the **export modal** and its copy window; the **setting
 Ignore settings panel off); and the **tool windows** (the debug console, the perf panel, the sim step
 panel). What does not: every HUD color the player set (bar fill and background, border colors, text
 colors, the column labels' colors, the class and per-statistic colors), any chrome color the player
-set to *Class color* or *Custom color*, sizes, outlines and thicknesses (DECISIONS X4; the window
-chrome follows by the owner's ruling R-3, MM-A1).
+set to *Class color* or *Custom color*, a font flag the player picked, the stored sizes, and
+thicknesses (DECISIONS X4; the window chrome follows by the owner's ruling R-3, MM-A1). Since LibKa0s
+v1.82.0 two things do follow: a font flags setting on **From skin** (every one, by default) draws the
+Skin tab's **Font outline**, and a HUD face that follows the skin draws its size scaled by that skin,
+so the text is as wide as under Ka0s Default (the stored size is never rewritten).
 
 - **SKIN-1. Ka0s Default after the update: the HUD's and the window's visible change (MM-03, MM-A1;
   O2, R-3, DECISIONS X5).** On a profile that never touched its windows' fonts, textures or chrome
@@ -1724,7 +1743,7 @@ chrome follows by the owner's ruling R-3, MM-A1).
   gold column labels, no cell borders. Fail: a color, size, outline or spacing outside the list
   above that changed, a string still in Friz Quadrata while its companion is ticked, the old black
   fill or Blizzard Tooltip edge on a window whose modes read *Skin*, or text clipped or overlapping
-  because the face is wider. (Amended by MM-A1, 2026-10-29, the skinning rollout: the window chrome follows the skin.) Result: pass (owner-marked 2026-10-30)
+  because the face is wider. (Amended by MM-A1, 2026-10-29, the skinning rollout: the window chrome follows the skin.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: Ka0s Default's face is **Ka0s Prototype** where it was Ka0s Oxanium SemiBold, and the HUD text is outlined by default (the Skin tab's Font outline, *All text*, with every flags setting on *From skin*): both are expected.) Result:
 - **SKIN-2. Ka0s Default elsewhere: its colors as before, its own faces (MM-02, MM-04).** Still on
   Ka0s Default, open the export modal and its copy window, the debug console, the perf panel, the sim
   step panel and the settings pages, turn test mode off on an empty segment, and hover a cell, a name
@@ -1745,14 +1764,14 @@ chrome follows by the owner's ruling R-3, MM-A1).
   columns, and the sim step panel's row, command and button labels. The column blocks' labels keep Friz Quadrata (the tooltip
   lines' face is the HUD's, SKIN-1). Fail: a color that changed, a modal change beyond D8's, or one of the surfaces above
   still in Friz Quadrata with Ignore fonts unticked. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the library's menus, strips and
-  tool-window labels draw Oxanium too, LibKa0s D-13.) Result: pass (owner-marked 2026-10-30)
+  tool-window labels draw Oxanium too, LibKa0s D-13.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: Ka0s Default's own face is **Ka0s Prototype**, one weight, where the surfaces above drew Ka0s Oxanium Bold and SemiBold, and the window text is outlined under the default Font outline, *All text*.) Result:
 - **SKIN-3. The Skin tab (MM-01).** Settings → General → the strip reads Master controls, Behavior,
   Statistic colors, **Skin**, Keybindings. **Skin** shows Skin source, the nine skins with their
   swatches under a **Look** heading, **Font and texture** (Font and Texture, both *Skin's own* on a
   new profile), the Scope (**Ignore settings panel** ticked, **Ignore fonts** unticked), **Copy to
   every Ka0s addon...** and the note that skins change every visual element. `/mm get skin.skin` →
   `ka0s`. The page's **Defaults** and **Reset all settings** put the skin back on Ka0s Default.
-  Result: pass (owner-marked 2026-10-30)
+  (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the Skin tab also shows **Reset font** and **Reset texture** under the two dropdowns, disabled while each is the skin's own, and **Font outline** on *All text*; **Copy to every Ka0s addon...** sits under its own **Other Ka0s addons** heading.) Result:
 - **SKIN-4. Each skin, live, on the meter window (MM-02, MM-03, MM-A1).** With two windows open in
   test mode, pick each skin in turn and Ka0s Default last → with **no reload** each window repaints:
   **its chrome takes the skin's own look** (the window fill, the edge in the skin's style, thickness
@@ -1776,7 +1795,7 @@ chrome follows by the owner's ruling R-3, MM-A1).
   moved. (Amended by MM-A1, 2026-10-29, the skinning rollout: the owner ruled the window chrome follows the skin, R-3, so the question this check
   put is answered and the chrome is now checked here.) (Amended by MM-02, 2026-10-30, the skin library follow-ups: every skin draws HUD text in a face
   of its own, where the eight non-Ka0s skins drew Friz Quadrata; the owner judges each face here,
-  LibKa0s R-4.) Result: pass (owner-marked 2026-10-30)
+  LibKa0s R-4.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the HUD faces are now Obsidian **Expressway** (where it was Inter SemiBold), Ka0s Default **Prototype** (where it was Oxanium SemiBold) and WoW Forever Fira Sans SemiBold (titles and HUD; its body text is Fira Sans Medium), and in each skin the HUD text measures about as wide as under Ka0s Default, its size scaled by the skin, SKIN-27.) Result:
 - **SKIN-5. The HUD companions (MM-03).** Under **Obsidian**, untick Bars → Text → **Use the skin's
   font** → the cell text goes back to the window's own Font pick at once, while the title, the column
   labels and the tooltip keep the skin's face; tick it → the skin's again. Do the same with Bars → Bar
@@ -1796,7 +1815,7 @@ chrome follows by the owner's ruling R-3, MM-A1).
   pick *Morpheus* → every string whose companion is ticked (titles, labels, cells, tooltip lines) and
   the export modal take Morpheus live; a surface with its companion unticked keeps its own pick.
   **Texture** → a distinct bar → every grid and tooltip bar with *Use the skin's texture* ticked takes
-  it. Set both back to *Skin's own* → the skin's face and bar return. Result: pass (owner-marked 2026-10-30)
+  it. Set both back to *Skin's own* → the skin's face and bar return. (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: choosing another skin now puts both overrides back to *Skin's own*, LibKa0s D-10, so pick the override after the skin; Reset font and Reset texture do the same one half at a time.) Result:
 - **SKIN-8. Ignore fonts (MM-01).** With a font override set, tick **Ignore fonts** → every string the
   addon draws keeps its own face and size and the skin still colors it, **the HUD included**: the
   title, the session line, the column labels, the cells and the tooltip lines draw each window's own
@@ -1882,8 +1901,32 @@ chrome follows by the owner's ruling R-3, MM-A1).
   **Ka0s skins** → a reload is asked for; after it the Ka0s skin shows. Result: pass (owner-marked 2026-10-30)
 - **SKIN-24. Copy to every Ka0s addon (MM-01).** With another Ka0s addon that uses skins loaded, pick
   **Ember** and press **Copy to every Ka0s addon...** → both addons wear Ember with no reload and each
-  Skin tab shows it; `/reload` → both still Ember. Result: pass (owner-marked 2026-10-30)
-
+  Skin tab shows it; `/reload` → both still Ember. (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the copy also carries the Font outline: set it to *HUD text only* first and the other addon's Skin tab shows *HUD text only* too.) Result:
+- **SKIN-25. The Font outline (MM-01; LibKa0s Skin minor 9, ruling D-06).** Skin → **Font outline**
+  reads *All text* on a new profile, and every window's title, session line, column labels, cells and
+  tooltip lines are outlined. Pick *HUD text only* → the meter text stays outlined (it is HUD text),
+  while the export modal's and the settings pages' text loses its outline, live. Pick *Off* → no
+  text the addon draws is outlined, live, with no reload; `/mm get skin.outline` prints `off`;
+  `/reload` → still Off. `/mm set skin.outline hud` applies at once; `/mm set skin.outline thick` is
+  refused. Tick **Ignore fonts** → the Font outline dropdown grays out. Switch to another profile →
+  that profile's own outline applies. Result:
+- **SKIN-26. Font flags From skin (MM-01; ruling D-07).** On a new window, Header → Title text, Bars →
+  Text, Columns → Column header → Text and Tooltip → Text each carry Font size, Font color with its
+  color mode (Class color among them), Font outline and Text shadow, and each Font outline reads
+  **From skin**, first in its list. With the Skin tab's Font outline on *Off*, set Bars → Text → Font
+  outline to *Thick outline* → the cells draw a thick outline while the title and labels stay
+  unoutlined; set the Skin tab's Font outline back to *All text* → the cells keep *Thick outline* and
+  the rest are outlined. Frame → Quick style → Font outline (all surfaces) → *From skin* puts all four
+  back on it. Result:
+- **SKIN-27. Width parity of the meter window (MM-01; rulings D-08, D-09).** With a window in test
+  mode showing names and numbers, and every *Use the skin's font* ticked, pick each skin in turn and
+  Ka0s Default last → in every skin the title, the column labels, the cells and a cell tooltip's
+  lines read about as wide as under Ka0s Default: a skin whose face runs narrow draws a little
+  larger (Obsidian's text is a size or so bigger) and no label, name or number is clipped or runs
+  into its neighbor; with Bars → Text → Max name length set, a name at the cap still fits its
+  column. Untick Bars → Text → *Use the skin's font* → the cells draw the stored size again; tick
+  **Ignore fonts** → every size is the stored one. `/mm get window.text.size` prints the same number
+  throughout (the stored size is never rewritten). Result:
 ## Non-English client
 
 - **LOC-1. The CSV header does not translate.** On a non-English client (German, for example), export
@@ -1908,3 +1951,7 @@ On 2026-10-30 the owner reported that every check of the skinning rollout (Ka0sA
 INSTALL-12 to INSTALL-16, PANEL-13, PANEL-22, PANEL-23, PANEL-53 to PANEL-57, WIN-7, WIN-18 to WIN-20,
 WIN-22, WIN-49, TIP-25, TIP-27, TIP-28, COMBAT-30, DEGRADED-11 and SKIN-1 to SKIN-24, each recorded on
 its `Result:` line as `pass (owner-marked 2026-10-30)`.
+
+Pending from the skin fonts run (Ka0sAddonsCommonTasks `docs/2026-10-30-SKIN_FONTS_AND_FEEDBACK/`,
+MM-01, LibKa0s v1.82.0): new INSTALL-17, SLASH-33 and SKIN-25 to SKIN-27, and re-opened INSTALL-3,
+INSTALL-12 to INSTALL-16, WIN-49, SKIN-1 to SKIN-4, SKIN-7 and SKIN-24, each with an empty `Result:`.
