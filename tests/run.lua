@@ -314,6 +314,7 @@ local SUITES = {
     "test_aggregator_sort",
     -- the display
     "test_window",
+    "test_window_static",
     "test_window_header",
     "test_window_header_sort",
     "test_window_placement",

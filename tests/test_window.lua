@@ -497,34 +497,6 @@ test("R3: no geometry is read back off a cell that has held a secret", function(
     assertTrue(ok, tostring(err))
 end)
 
-test("modules/Window.lua reads geometry back off the anchor and nothing else", function()
-    -- A static sweep beside the dynamic one: the dynamic case can only catch a
-    -- read on a path it happened to drive, and this catches the line. Over the
-    -- loop's three files since MM-04 peeled the frame and the draw out of it.
-    local offenders = {}
-    for _, rel in ipairs{ "modules/Window.lua", "modules/Window_Frame.lua",
-                          "modules/Window_Render.lua" } do
-        local fh = assert(io.open(T.root .. "/" .. rel, "r"))
-        local n = 0
-        for line in fh:lines() do
-            n = n + 1
-            if not line:match("^%s*%-%-") then
-                local code = line:gsub("%s%-%-.*$", "")
-                for _, getter in ipairs{ "GetWidth", "GetHeight", "GetLeft", "GetPoint" } do
-                    local at = code:find(":" .. getter .. "%(")
-                    if at and not code:find("self%.anchor:" .. getter) then
-                        offenders[#offenders + 1] = rel .. ":" .. n
-                    end
-                end
-            end
-        end
-        fh:close()
-    end
-    assertEqual(#offenders, 0,
-        "geometry is read off something other than the anchor: "
-        .. table.concat(offenders, ", "))
-end)
-
 -- ---------------------------------------------------------------------------
 -- The meter-unavailable path
 -- ---------------------------------------------------------------------------

@@ -1210,7 +1210,7 @@ Total.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (68)
+### test_window.lua (67)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - BuildLayout computes every coordinate from config alone
@@ -1231,7 +1231,6 @@ Total.
 - Render honors layout.maxRows and places rows from Row.OffsetFor
 - growthDirection UP anchors from the bottom of the body
 - R3: no geometry is read back off a cell that has held a secret
-- modules/Window.lua reads geometry back off the anchor and nothing else
 - An unavailable meter renders the prompt INSTEAD of rows
 - The notice omits a reason it cannot safely render
 - An empty session says so rather than leaving a blank grid
@@ -1280,6 +1279,10 @@ Total.
 - At minimum height the strip takes the row and the bounds do not move
 - The strip is born hidden, with the localized line and the info art
 - With no Widgets library the window builds and reserves nothing
+
+### test_window_static.lua (1)
+
+- modules/Window.lua reads geometry back off the anchor and nothing else
 
 ### test_window_header.lua (62)
 
@@ -2815,7 +2818,8 @@ Total.
 | test_aggregator_identity.lua | 32 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 68 |
+| test_window.lua | 67 |
+| test_window_static.lua | 1 |
 | test_window_header.lua | 62 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 44 |

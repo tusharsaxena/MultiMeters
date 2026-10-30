@@ -394,7 +394,8 @@ test("The show ladder is re-run ONLY from a message, never from the refresh tick
     end
     assertTrue(window:IsShown(),
         "if this ever goes red the tick has started re-running the ladder — " ..
-        "rewrite the comments in modules/Window.lua and modules/Visibility.lua that say it does not")
+        "rewrite docs/module-map.md (onUpdate in modules/Window_Render.lua) and the comments in " ..
+        "modules/Visibility.lua that say it does not")
 
     NS:SendMessage(NS.Constants.MSG.PLAYER_STATE_CHANGED)
     assertFalse(window:IsShown())

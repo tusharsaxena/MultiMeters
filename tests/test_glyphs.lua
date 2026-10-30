@@ -5,8 +5,9 @@
 -- Ten skins draw this addon's text in a dozen faces, and a character one of them lacks is a box in
 -- that skin only. So every string literal in a tracked .lua file outside libs/ and tests/ carries
 -- only characters every shipped face draws (the kit's safe set, read from their cmaps). The
--- addon's non-ASCII display characters are the em dash, the middle dot, the ellipsis and the
--- section sign, all in the set; the one arrow (core/Database.lua's profile-copy line) is a debug
+-- addon's non-ASCII display characters are the em dash, the middle dot, the right single
+-- quotation mark (U+2019) and the single right-pointing angle quotation mark (U+203A), all in the
+-- set; the one arrow (core/Database.lua's profile-copy line) is a debug
 -- call, which the kit skips because the console draws in mono. At adoption the guard found no
 -- hits, so nothing carries a `glyph:` marker.
 
