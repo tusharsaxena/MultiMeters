@@ -437,3 +437,21 @@ test("Diagnostics runtime: with LibKa0s absent the sim section says so and does 
     assertTrue(text:find("active: no", 1, true) ~= nil, text)
     assertTrue(text:find("unwrapped: 0", 1, true) ~= nil, text)
 end)
+
+test("Diagnostics runtime: a seam with keys that escaped the wrap names each of them", function()
+    -- Characterizes Runtime.sim's seam tail before MM-03 split it out (CCN 17): the count line,
+    -- then one line naming the escaped keys, and nothing else changed by the read.
+    -- red under: the unwrapped-keys line dropped, or the keys joined with anything but a space.
+    local inst = T.load{ enable = true }
+    local seam = inst.NS.SimSeam
+    local keys = #seam:Keys()
+    local orig = seam.Unwrapped
+    seam.Unwrapped = function() return { "GetSessionA", "GetSessionB" } end
+    local ok, err = pcall(function()
+        local section = sectionOf(select(2, report(inst)), "sim")
+        assertTrue(section:find("seam keys: " .. keys .. " unwrapped: 2", 1, true) ~= nil, section)
+        assertTrue(section:find("  unwrapped keys: GetSessionA GetSessionB", 1, true) ~= nil, section)
+    end)
+    seam.Unwrapped = orig
+    if not ok then error(err, 0) end
+end)
