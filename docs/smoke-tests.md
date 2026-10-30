@@ -31,7 +31,7 @@ secret-value rules the checks refer to.
 | DIAG-1 to DIAG-42 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
 | SIM-1 to SIM-12 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
-| SKIN-1 to SKIN-24 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope, the first-run picker, EllesmereUI on and off, profiles and combat |
+| SKIN-1 to SKIN-24 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
 ## Before you start
@@ -151,14 +151,17 @@ secret-value rules the checks refer to.
   log out, update and log in → `/dump MultiMetersDB.global.schemaVersion` prints `21`, and on BOTH
   windows every "Use the skin's ..." companion is ticked (Header → Title text, Bars → Text, Columns →
   Column header and Tooltip → Text: *Use the skin's font*; Bars → Bar and Tooltip → Bar: *Use the
-  skin's texture* and *Use the skin's border*), each picker beside it grayed out and still showing the
-  stored pick (*Blizzard*, *Morpheus* on the second window). Both windows draw Oxanium and the Ka0s
-  Default bar (SKIN-1). Untick the second window's *Use the skin's texture* → its bars go back to
+  skin's texture* and *Use the skin's border*), each picker beside it grayed out and showing the
+  skin's value (*Ka0s Oxanium SemiBold*, the *Ka0s Default* bar), while the stored picks are kept
+  underneath (untick a companion and *Blizzard* or *Morpheus* comes back on the second window). Both
+  windows draw Oxanium and the Ka0s Default bar (SKIN-1). Untick the second window's *Use the skin's texture* → its bars go back to
   *Blizzard* at once; `/reload` → it stays unticked (the reset ran once). No stored color, size,
   outline or thickness moved on either window; the window chrome also moved onto the skin, which is
   the v21 step's (INSTALL-16). A companion left unticked, or a pick rewritten to the skin's,
   means the v20 step did not reach that window. (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21, and the v21 chrome reset runs
-  in the same walk.) Result:
+  in the same walk.) (Amended by MM-02, 2026-10-30, the skin library follow-ups: the step no longer seeds the companions before
+  LibKa0s's ResetToSkin, which now sets an absent one itself, so re-check that every companion is
+  ticked; and the grayed picker shows the skin's value, as the library has always drawn it.) Result:
 - **INSTALL-16. Upgrade from v20 (the one-time chrome reset, the owner's ruling R-3; MM-A1).** On the
   build before MM-A1 (`schemaVersion` 20), with two windows, leave the first window as shipped and on
   the second set Frame → Background and border → Background color mode *Class color* with a red
@@ -1736,9 +1739,13 @@ chrome follows by the owner's ruling R-3, MM-A1).
   data yet* and its line under it, draw Ka0s Default's own **Ka0s Oxanium** (Bold for the titles,
   SemiBold for the rest) where they drew Friz Quadrata, as the library tool windows do. That is
   v1.79.0's Ka0s Default reaching every surface the skin paints, not a regression; with **Ignore
-  fonts** ticked they keep Friz Quadrata. The column blocks' labels keep Friz Quadrata (the tooltip
+  fonts** ticked they keep Friz Quadrata. So, since LibKa0s v1.81.0, do the strings the library's own
+  controls and tool windows draw: the rows of every dropdown menu (the export modal's selectors), the
+  test and sim strips' line, the debug console's title-bar labels, the perf panel's step and command
+  columns, and the sim step panel's row, command and button labels. The column blocks' labels keep Friz Quadrata (the tooltip
   lines' face is the HUD's, SKIN-1). Fail: a color that changed, a modal change beyond D8's, or one of the surfaces above
-  still in Friz Quadrata with Ignore fonts unticked. Result:
+  still in Friz Quadrata with Ignore fonts unticked. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the library's menus, strips and
+  tool-window labels draw Oxanium too, LibKa0s D-13.) Result:
 - **SKIN-3. The Skin tab (MM-01).** Settings → General → the strip reads Master controls, Behavior,
   Statistic colors, **Skin**, Keybindings. **Skin** shows Skin source, the nine skins with their
   swatches under a **Look** heading, **Font and texture** (Font and Texture, both *Skin's own* on a
@@ -1751,8 +1758,10 @@ chrome follows by the owner's ruling R-3, MM-A1).
   **its chrome takes the skin's own look** (the window fill, the edge in the skin's style, thickness
   and color with its inner rule, the title bar's band, the title and session line in the skin's
   title color, the header controls in the skin's icon color at rest and its hover color under the
-  pointer); its faces take the skin's own family (Azeroth's Vollkorn, for one; a skin with no face of
-  its own draws Friz Quadrata), its bars the skin's texture, its divider the skin's line, the test
+  pointer); its faces take the skin's own HUD face, every skin now having one (Obsidian Inter
+  SemiBold, Azeroth Vollkorn Bold, Glass Nunito SemiBold, High Contrast Atkinson Bold, Ember Bitter
+  Bold, WoW Midnight Philosopher Bold, WoW Forever Fira Sans SemiBold, WoW Default Friz Quadrata, Ka0s
+  Default Oxanium SemiBold), its bars the skin's texture, its divider the skin's line, the test
   strip the skin's; the rows' hover wash, the alternating stripe (Rows → Alternating background), the
   gold "this row is you" edge and the white name of a classless row (a training dummy) take the
   skin's list hover, stripe, accent and highlight text; the bar colors and the column labels' colors
@@ -1765,14 +1774,19 @@ chrome follows by the owner's ruling R-3, MM-A1).
   `/reload`, a row or cell left on the old texture or face (scroll a long grid to reach pooled rows),
   a chrome surface on *Skin* that does not follow, a Custom one that does, or a player color that
   moved. (Amended by MM-A1, 2026-10-29, the skinning rollout: the owner ruled the window chrome follows the skin, R-3, so the question this check
-  put is answered and the chrome is now checked here.) Result:
+  put is answered and the chrome is now checked here.) (Amended by MM-02, 2026-10-30, the skin library follow-ups: every skin draws HUD text in a face
+  of its own, where the eight non-Ka0s skins drew Friz Quadrata; the owner judges each face here,
+  LibKa0s R-4.) Result:
 - **SKIN-5. The HUD companions (MM-03).** Under **Obsidian**, untick Bars → Text → **Use the skin's
   font** → the cell text goes back to the window's own Font pick at once, while the title, the column
   labels and the tooltip keep the skin's face; tick it → the skin's again. Do the same with Bars → Bar
   → **Use the skin's texture** (the grid's bars only, the tooltip's keep the skin's) and **Use the
   skin's border** with Show border ticked (the cells' edge style; its thickness and color stay
-  yours). While a companion is ticked its picker is grayed and shows the stored pick, never the
-  skin's name. Result:
+  yours). While a companion is ticked its picker is grayed and shows the skin's value (Obsidian's face
+  or bar), and the stored pick comes back when it is unticked; with Skin → **Ignore fonts** ticked a
+  ticked font companion's grayed picker shows the stored pick instead, which is what the surface then
+  draws (SKIN-8). Its tooltip says so. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the picker's two states; the old text said it
+  showed the stored pick, which the library never drew.) Result:
 - **SKIN-6. A new window follows the skin (MM-03, MM-A1; DECISIONS X3).** Windows → **New window** →
   every companion on the new window is ticked, its five chrome color modes read *Skin*, and it draws
   the skin's face, bar and window look; **Duplicate window** and **Copy settings from** carry the
@@ -1784,15 +1798,28 @@ chrome follows by the owner's ruling R-3, MM-A1).
   **Texture** → a distinct bar → every grid and tooltip bar with *Use the skin's texture* ticked takes
   it. Set both back to *Skin's own* → the skin's face and bar return. Result:
 - **SKIN-8. Ignore fonts (MM-01).** With a font override set, tick **Ignore fonts** → every string the
-  addon draws keeps its own face and size and the skin still colors it; untick → the skin's face (and
-  the override) return. Result:
+  addon draws keeps its own face and size and the skin still colors it, **the HUD included**: the
+  title, the session line, the column labels, the cells and the tooltip lines draw each window's own
+  Font pick even with *Use the skin's font* ticked, live with no reload, and that companion's grayed
+  picker shows the pick; the bars keep the skin's texture and border. The tool windows' labels and the
+  library's menus and strips keep their template faces too. Untick → the skin's face (and the
+  override) return everywhere, live. Fail: a HUD string still in the skin's face (or the override)
+  while Ignore fonts is ticked, or a bar that changed. (Amended by MM-02, 2026-10-30, the skin library follow-ups: Ignore fonts reaches the HUD,
+  LibKa0s R-1.) Result:
 - **SKIN-9. The settings pages (MM-04).** With a non-default skin and **Ignore settings panel**
   unticked, walk every page → the nav rail, tabs, headings, check boxes, sliders, dropdowns and edit
   boxes are skinned, and so are the Windows page's window-name box and its action dropdown, the
   Columns editor's blocks (labels in the skin's accent when shown and its disabled gray when not, the
-  divider rule) and every widget on the **Profiles** page. Open another addon's AceGUI page between
-  them → that one stays stock every time. Tick Ignore settings panel → this addon's pages are stock
-  again while its windows keep the skin. Result:
+  divider rule, the drag handle, the drop line and the carried copy while dragging a block, the
+  handle's tooltip in the skin's tooltip colors) and every widget on the **Profiles** page. Open
+  another addon's AceGUI page between them → that one stays stock every time. Tick Ignore settings
+  panel → this addon's pages are stock again while its windows keep the skin, **the Columns editor
+  whole**: its block labels gold and gray, the drop line, the carried copy (gold or gray text) and the
+  glyph's tooltip white, as before skins. Under **Ka0s Default** with Ignore settings panel unticked,
+  the settings strip's tabs and the page panel wear the Ka0s look (they kept the client's art
+  before). Fail: one page mixing the two looks. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the reorder list and this addon's own
+  Columns colors obey the panel scope, LibKa0s R-5 and D-03; the stock look under Ka0s Default is
+  retired, R-2.) Result:
 - **SKIN-10. The tooltip lines (MM-04; DECISIONS X8).** Under **Azeroth** and **High Contrast**, hover
   a cell, a name and a Deaths cell → the section headings, the values and the hints take the skin's
   tooltip colors, the tooltip bars its texture and face; the class-colored names and the statistic
@@ -1804,7 +1831,12 @@ chrome follows by the owner's ruling R-3, MM-A1).
   too. Result:
 - **SKIN-12. The tool windows (MM-04).** Under a non-default skin open the debug console (`/mm debug
   on`), the perf panel (`/mm perf`) and the sim step panel (`/mm sim`) → each wears the skin, live
-  when the skin changes with it open; the sim strip on every window takes the skin's sim tint. Result:
+  when the skin changes with it open; the sim strip on every window takes the skin's sim tint; under a
+  skin other than Ka0s Default and WoW Default each window's resize grip takes the skin's icon tint,
+  and the sim panel's scenario and size dropdowns and their menus wear the skin. Tick **Ignore fonts**
+  → their labels go back to the template faces, live; tick **Ignore settings panel** → they stay
+  skinned (they are windows). (Amended by MM-02, 2026-10-30, the skin library follow-ups: the Scope reaches the tool windows, LibKa0s R-5 and D-01.)
+  Result:
 - **SKIN-13. Profiles (MM-01).** Give two profiles different skins, switch between them on the
   Profiles page, then reset one → the skin follows the profile each time with no reload, and each
   window keeps the companion states of its own profile. Result:
@@ -1812,11 +1844,13 @@ chrome follows by the owner's ruling R-3, MM-A1).
   set skin.skin obsidian`, then `/mm set skin.skin ka0s` → whatever the verb answers, no Lua error and
   no taint warning, and the cells keep updating. Result:
 - **SKIN-15. The picker after the update (MM-04; O3).** On a character that ran the build before the
-  rollout, log in → about two seconds after the world loads a small window titled **Choose a skin for
-  Ka0s Multi Meters** opens (if another Ka0s addon's picker is up, it opens when that one closes): a
-  dropdown showing Ka0s Default, an eye button and a gear button, **Apply**, and a close mark. A zone
+  rollout, log in → about two seconds after the world loads a small window titled **Choose a skin**
+  opens (if another Ka0s addon's picker is up, it opens when that one closes): **Ka0s Multi Meters** on
+  a line of its own, whole and never cut off, above a dropdown showing Ka0s Default, an eye button and
+  a gear button, **Apply**, and a close mark. A zone
   change or a dungeon entrance never opens it. Close it → `/reload` → it does not come back on that
-  profile. Result:
+  profile. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the title is "Choose a skin" and the addon's name has its own line, LibKa0s
+  R-11.) Result:
 - **SKIN-16. The picker previews and Apply saves (MM-04).** On a new profile (Profiles page → new),
   the picker opens. Pick **Obsidian** in its dropdown → the windows repaint in Obsidian at once and
   the picker stays open; `/mm get skin.skin` still prints `ka0s`. Press **Apply** → it closes, the
@@ -1868,7 +1902,10 @@ skin's face), **PANEL-22**, **PANEL-23**, **PANEL-53** to **PANEL-57**, **TIP-25
 window chrome follows the skin), **INSTALL-16** (new), **SKIN-1** and **SKIN-4** (rewritten),
 and **INSTALL-3**, **INSTALL-12** to **INSTALL-15** (the stamp is 21), **SKIN-6**,
 **WIN-7**, **WIN-19**, **WIN-20**, **WIN-22**, **PANEL-13**, **PANEL-54** and **DEGRADED-11** (amended for the
-*Skin* modes and the title bar's companion), each until its `Result:` line records the owner's pass.
+*Skin* modes and the title bar's companion); and from the 2026-10-30 skin library follow-ups
+(Ka0sAddonsCommonTasks `docs/2026-10-30-SKIN_LIBRARY_FOLLOWUPS/`, MM-RV to MM-02, LibKa0s v1.81.0),
+**INSTALL-15**, **SKIN-2**, **SKIN-4**, **SKIN-5**, **SKIN-8**, **SKIN-9**, **SKIN-12** and
+**SKIN-15** (amended), each until its `Result:` line records the owner's pass.
 
 On 2026-10-10 the owner marked every check in this file as passed, recorded on its
 `Result:` line as `pass (owner-marked 2026-10-10)`; a check that already carried a dated owner pass

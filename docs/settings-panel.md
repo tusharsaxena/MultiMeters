@@ -119,8 +119,10 @@ Five things about how this addon calls them are worth knowing before editing a b
   header → Text; Bars → Bar → Fill and Border, Tooltip → Bar → Fill and Border) ask the composer for
   its `fromSkin` companion (`followsSkin()` in `settings/Schema_Compose.lua`), labeled *Use the skin's
   font*, *Use the skin's texture* or *Use the skin's border*, default on: while it is ticked the
-  picker beside it is disabled (`disabledIf`, the one the schema carries) and shows the stored pick,
-  and the surface draws the skin's token. Frame → Background and border → Border has none: the
+  picker beside it is disabled (`disabledIf`, the one the schema carries) and shows the skin's value,
+  and the surface draws the skin's token. A font companion is the exception while Skin → **Ignore
+  fonts** is ticked: the picker then shows the stored pick and the surface draws it (LibKa0s
+  v1.81.0's `S.Resolve`), as the companion's tooltip says. Frame → Background and border → Border has none: the
   composer's companion would follow `bar.borderStyle`, the wrong token for a window edge, so the
   window's edge follows the skin through its color mode's **Skin** value instead (MM-A1). Colors,
   sizes, flags and thicknesses are never governed by a companion (DECISIONS X4).

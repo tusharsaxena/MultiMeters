@@ -2510,18 +2510,19 @@ Total.
 - Skin chrome: a skin switch repaints the rows from the skin's tokens
 - Skin chrome: the session line's escapes are cached on ApplyConfig, not read per refresh
 
-### test_skin_hud.lua (8)
+### test_skin_hud.lua (9)
 
 - Skin HUD: the eight companions ship on, as rows defaulted on, each governing its picker
 - Skin HUD: a cell draws the skin's texture, face and border while on, the player's picks off
 - Skin HUD: the title, the column labels and the tooltip resolve through the skin too
+- Skin HUD: Ignore fonts gives every HUD face back to the player's pick, live, and leaves the bars
 - Skin HUD: a skin switch repaints the bars, and every color stays the player's
 - Skin HUD: the meta pair turns every surface's companion at once
 - Skin HUD: the v20 step puts every window of every profile on the skin, keeping the picks
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
 
-### test_skin_window.lua (12)
+### test_skin_window.lua (13)
 
 - Skin window: the five chrome modes and the title bar companion ship on the skin
 - Skin window: under Ka0s Default the window wears Ka0s Default's own chrome
@@ -2535,6 +2536,7 @@ Total.
 - Skin window: the v21 reset runs once, so a pick made after it is kept
 - Skin window: a v19 account takes both resets in one walk
 - Skin window: the v21 step survives a junk window and leaves an absent group to the template
+- Skin window: the title has a font before the Shell paints it
 
 ### test_skin_picker.lua (12)
 
@@ -2567,7 +2569,7 @@ Total.
 - Skin tools: under Ka0s Default the tooltip lines keep their pixels
 - Skin tools: under another skin the tooltip lines take its gtip tokens
 
-### test_columnblocks.lua (35)
+### test_columnblocks.lua (36)
 
 - Blocks: one block per item, each carrying its index and its label
 - Blocks: the glyph says enabled or disabled, and clicking it toggles
@@ -2594,6 +2596,7 @@ Total.
 - Blocks: no rule is drawn when there is no divide to mark, at either end
 - Blocks: the label is gold when the column is shown and gray when it is not
 - Blocks: the carried copy says the same thing the row does
+- Blocks: the page's own colors stand down with Ignore settings panel, and follow the skin without it
 - Blocks: every hidden row is registered, so the indices the library moves are the real ones
 - Blocks: the geometry handed to the library is the published pair, not a private copy
 - Blocks: the handle offers the localized drag tooltip, and the cataloged icon
@@ -2807,12 +2810,12 @@ Total.
 | test_options_panel.lua | 51 |
 | test_skinsetup.lua | 20 |
 | test_skin_chrome.lua | 8 |
-| test_skin_hud.lua | 8 |
-| test_skin_window.lua | 12 |
+| test_skin_hud.lua | 9 |
+| test_skin_window.lua | 13 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
-| test_columnblocks.lua | 35 |
+| test_columnblocks.lua | 36 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
 | test_degraded.lua | 38 |
@@ -2821,4 +2824,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2415** |
+| **Total** | **2418** |
