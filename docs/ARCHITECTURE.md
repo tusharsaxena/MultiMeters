@@ -76,8 +76,8 @@ touching the data path.
 
 ## Settings schema
 
-`NS.Schema` in `settings/Schema.lua` is the single source of truth: **187 rows across 8 page keys**
-(windows 1, frame 28, header 37, bars 31, tooltip 34, visibility 17, columns 9, general 29; the seven
+`NS.Schema` in `settings/Schema.lua` is the single source of truth: **188 rows across 8 page keys**
+(windows 1, frame 28, header 37, bars 31, tooltip 34, visibility 17, columns 9, general 30; the eight
 skin rows are appended by `settings/Schema_Skin.lua`), each one
 wiring automatically into its panel widget — one tab per distinct `group`, via
 `LibKa0s-Options-1.0`'s `RenderTabbedSchema` — its `/mm get|set|list|reset` coverage, and the
@@ -106,7 +106,7 @@ rows ([schema.md](schema.md#the-window-relative-path-model) lists both sets).
 
 Profiles carries **zero** rows: AceDBOptions' own tree, the one place `AceConfigDialog` is permitted,
 and vetoed from reset-all ([profiles.md](profiles.md)). Columns carries nine
-`window.columnHeader.*` rows beside its block editor, whose array is a hidden 188th row, [`window.columns`](schema.md#the-columns-row).
+`window.columnHeader.*` rows beside its block editor, whose array is a hidden 189th row, [`window.columns`](schema.md#the-columns-row).
 
 **The window registry has one writer** (`architecture-§5`), since no row can name a window's
 existence. Its storage keys are `db.profile.windows` (entries carry their `id` and unique `name`) and
@@ -312,13 +312,13 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   `NS.SkinPaintAce` and `NS.SkinPaintAceTree`. Its degraded arm answers every facade name, its colors
   from `NS.SKIN_FALLBACK`, a host copy of the Ka0s Default values `tests/test_skinsetup.lua` holds to
   the library's.
-- **The choice** is seven addon-wide profile keys under `skin` (`source`, `skin`, the Scope's
-  `ignorePanel` and `ignoreFonts`, the overrides `font` and `texture`, and `pickerSeen`), skip-render
+- **The choice** is eight addon-wide profile keys under `skin` (`source`, `skin`, the Scope's
+  `ignorePanel` and `ignoreFonts`, the overrides `font` and `texture`, the Font outline `outline`, and `pickerSeen`), skip-render
   rows in `settings/Schema_Skin.lua` written only through `NS.SetByPath` ([schema.md](schema.md)). The
-  library's Skin tab (key `Appearance`, `O.AppearanceTab`) draws the first six on the General page,
+  library's Skin tab (key `Appearance`, `O.AppearanceTab`) draws every one but `pickerSeen` on the General page,
   after Statistic colors and before Keybindings ([settings-panel.md](settings-panel.md)).
 - **Repaint flow.** `NS.ApplySkinChoice` runs right after `NS:InitDB` and on every profile event
-  (`core/Database.lua`'s rebuild), applying the stored Scope and overrides with the stored skin, and
+  (`core/Database.lua`'s rebuild), applying the stored Scope, overrides and Font outline with the stored skin, and
   from each Skin tab row with only its own half. `Skin:SetChoice` repaints every frame recorded for
   this owner and then fires `NS.Skin.OnLooksChanged`, whose one listener, `WindowManager:Reskin`,
   re-runs `ApplyConfig` on every live window, so the chrome's `skin` colors are resolved again (into
@@ -667,7 +667,7 @@ the TOC: the client reads it from the addon folder by name. The binding constrai
     `Slash.lua` and `OptionsSetup.lua` both point their seams at the `NS.SetByPath` / `NS.GetSetting`
     that `settings/Schema_Paths.lua` — not `Schema.lua` — publishes. That pins the path file from
     **both** sides, which is why splitting the schema took three files rather than two.
-    `settings/Schema_Skin.lua` sits between `Schema.lua` and `Schema_Paths.lua`: it appends the seven
+    `settings/Schema_Skin.lua` sits between `Schema.lua` and `Schema_Paths.lua`: it appends the eight
     skin rows to the finished array, which the path file then indexes. Then
     `settings/OptionsSetup.lua` before every page file, which call `NS.Helpers` members inside
     schema-row literals at file load.

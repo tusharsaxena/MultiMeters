@@ -2483,7 +2483,7 @@ Total.
 - Skin seam: every owner token is registered, namespaced mm., and keeps its pixel on Ka0s Default
 - Skin seam: another skin draws each owner token from its follow token
 - Skin seam: the skin keys default to Ka0s Default, the panel ignored and the picker unseen
-- Skin seam: the seven skin keys are skip-render rows in the Skin tab's group
+- Skin seam: the eight skin keys are skip-render rows in the Skin tab's group
 - Skin seam: the skin row's values are every registered skin, in the library's order
 - Skin seam: /mm set refuses a skin that is not registered and applies one that is
 - Skin seam: /mm set reaches an exception, and only its own half
@@ -2498,6 +2498,18 @@ Total.
 - Skin seam: the seam publishes the same NS members on both paths
 - Skin seam: each host-copy skin token is the live library's Ka0s Default value
 - Skin seam: degraded, the facade answers today's colors and the seam never raises
+
+### test_skin_outline.lua (9)
+
+- Skin outline: a fresh profile stores All text, the library's default, and wears it
+- Skin outline: the schema row offers the library's three modes, in its order, skip-render
+- Skin outline: the write seam stores media.outline, and leaves it alone when it is nil
+- Skin outline: another addon's copy reaches the store through WriteChoice
+- Skin outline: /mm set applies the mode live, its own half only
+- Skin outline: /mm set refuses a mode the library does not know
+- Skin outline: the stored mode is applied with the stored pair at load
+- Skin outline: a profile switch applies the incoming profile's mode, and back
+- Skin outline: without the skin engine the apply is a quiet no-op and the store still takes it
 
 ### test_skin_chrome.lua (8)
 
@@ -2809,6 +2821,7 @@ Total.
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 51 |
 | test_skinsetup.lua | 20 |
+| test_skin_outline.lua | 9 |
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
 | test_skin_window.lua | 13 |
@@ -2824,4 +2837,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2418** |
+| **Total** | **2427** |

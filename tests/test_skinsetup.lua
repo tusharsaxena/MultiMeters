@@ -2,7 +2,7 @@
 --
 -- What this addon owes the skin engine, and nothing the library pins itself: the owner is
 -- registered under the folder name with this addon's read and write seams and its owner tokens;
--- the seven skin.* keys are addon-wide, default to Ka0s Default, and are skip-render schema rows
+-- the eight skin.* keys are addon-wide, default to Ka0s Default, and are skip-render schema rows
 -- in the Skin tab's group; the tab sits after Statistic colors and before Keybindings; the
 -- profile's skin is applied right after AceDB exists and on every profile event; one pick, from
 -- this addon's tab or from another addon's copy, is ONE effective SetChoice (one OnLooksChanged),
@@ -19,7 +19,7 @@ local OWNER = "MultiMeters"
 
 local SKIN_PATHS = {
     "skin.source", "skin.skin", "skin.ignorePanel", "skin.ignoreFonts", "skin.font",
-    "skin.texture", "skin.pickerSeen",
+    "skin.texture", "skin.outline", "skin.pickerSeen",
 }
 
 --- A fresh instance with a counter on this owner's OnLooksChanged.
@@ -143,10 +143,11 @@ test("Skin seam: the skin keys default to Ka0s Default, the panel ignored and th
     assertEqual(d.ignoreFonts, false)
     assertEqual(d.font, "")
     assertEqual(d.texture, "")
+    assertEqual(d.outline, "all", "the Font outline: All text (LibKa0s v1.82.0)")
     assertEqual(d.pickerSeen, false)
 end)
 
-test("Skin seam: the seven skin keys are skip-render rows in the Skin tab's group", function()
+test("Skin seam: the eight skin keys are skip-render rows in the Skin tab's group", function()
     -- red under: a row that renders itself on top of the library's tab, or one outside the group
     -- whose place the tab takes.
     local _, NS = scene()

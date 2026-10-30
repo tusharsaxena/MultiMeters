@@ -887,6 +887,9 @@ NS.defaults = {
             ignoreFonts = false,
             font        = "",
             texture     = "",
+            -- The Font outline (LibKa0s v1.82.0, Skin minor 9, ruling D-06): "all" text, "hud"
+            -- text only, or "off". New with a default, so AceDB merges it into every profile.
+            outline     = "all",
             pickerSeen  = false,
         },
     },

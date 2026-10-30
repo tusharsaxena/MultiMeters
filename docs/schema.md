@@ -159,11 +159,14 @@ sensibly differ between windows.
 
 ### `skin` — the skin this addon wears
 
-Seven addon-wide keys (`core/SkinSetup.lua`; the 2026-10-29 skinning rollout's MM-01), each a
+Eight addon-wide keys (`core/SkinSetup.lua`; the 2026-10-29 skinning rollout's MM-01, and
+`outline` from the 2026-10-30 skin fonts run's MM-01), each a
 `skipRender` row in `settings/Schema_Skin.lua` on the General page, so the defaults resolve, every
 reset reaches them (the page's Defaults and Reset all settings put the skin back on Ka0s Default) and
-`/mm get|set skin.skin` validates against the registered skins. The library's Skin tab draws the
-first six; nothing draws `pickerSeen`. They are written only through `NS.SetByPath`, by the tab, the
+`/mm get|set skin.skin` validates against the registered skins. The library's Skin tab draws
+every one but `pickerSeen`, which nothing draws. `outline` is the Font outline (LibKa0s v1.82.0, Skin
+minor 9, ruling D-06): `all` text (the default), `hud` text only, or `off`, applied with
+`Skin:SetOutline` with the stored pair; the write seam stores it from `media.outline`. They are written only through `NS.SetByPath`, by the tab, the
 picker and another Ka0s addon's "Copy to every Ka0s addon", and each row's `onChange` applies only
 its own half. **New keys with defaults, so no migration was owed**: AceDB merges them into every
 stored profile. `pickerSeen` is false on every profile, old and new (owner ruling O3), and is set by
@@ -1288,10 +1291,10 @@ The runtime's `resolveRoot` resolves that prefix against the window id a caller 
 none, against the session's **active window** — `NS.State.activeWindowId`, which the settings
 panel's window picker moves. Global rows keep absolute paths and resolve against `db.profile` — all
 but one: `global.minimap.shown` names its store because `launcher-§3` puts LibDBIcon's table in the
-global one, and its own get/set pair reaches it. There are twenty-nine of them:
+global one, and its own get/set pair reaches it. There are thirty of them:
 `enabled`, `global.minimap.shown`, the four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
 the session-only view over every window's own `frame.locked`), `data.mergePets`, `data.throttle`,
-the four `export.*` preferences, the eight `statColors.*` swatches, the seven `skin.*` rows, and
+the four `export.*` preferences, the eight `statColors.*` swatches, the eight `skin.*` rows, and
 the two composed `sessionOnly` rows `state.testMode` and `state.debugConsole`. Those two and
 `master.locked` are the three session rows, whose own `get`/`set` are the whole of their storage. The
 other 158 rows are window rows.

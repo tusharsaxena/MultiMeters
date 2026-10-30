@@ -55,7 +55,8 @@ end
 -- The media rows' value keys are the LibSharedMedia keys the harness holds, which the vendored
 -- LibKa0s registers: they move at a re-vendor (v1.80.0 added the skin faces, the eight generated
 -- bars and the Ka0s Glass border), never with a setting.
--- The seven skin.* rows (settings/Schema_Skin.lua, the 2026-10-29 skinning rollout's MM-01) are
+-- The eight skin.* rows (settings/Schema_Skin.lua, the 2026-10-29 skinning rollout's MM-01, and
+-- skin.outline from the 2026-10-30 skin fonts run's MM-01, LibKa0s v1.82.0) are
 -- new settings, added after the pin was taken; the skin row's value keys are the skins the vendored
 -- LibKa0s-Skin-1.0 registers, so they move at a re-vendor too.
 -- The ten "Use the skin's ..." companions (skinning-§6, the rollout's MM-03) are new settings too,
@@ -86,6 +87,7 @@ local PIN = {
     "skin.font|string||nil|nil|nil|-|false|false|false",
     "skin.ignoreFonts|bool|false|nil|nil|nil|-|false|false|false",
     "skin.ignorePanel|bool|true|nil|nil|nil|-|false|false|false",
+    "skin.outline|string|all|nil|nil|nil|all,hud,off|false|false|false",
     "skin.pickerSeen|bool|false|nil|nil|nil|-|false|false|false",
     "skin.skin|string|ka0s|nil|nil|nil|azeroth,contrast,ember,forever,glass,ka0s,midnight,obsidian,wow|false|false|false",
     "skin.source|string|ka0s|nil|nil|nil|eui,ka0s|false|false|false",

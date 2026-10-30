@@ -1,7 +1,7 @@
 -- settings/Schema_Skin.lua
 --
 -- THE SKIN ROWS (skinning-§2, §3): which skin this addon wears, its Scope's two exceptions, its
--- font and texture overrides, and the first-run picker's memory. Seven schema rows appended to
+-- font and texture overrides, its font outline, and the first-run picker's memory. Eight schema rows appended to
 -- the one array, on the General page, in the Skin tab's group.
 --
 -- A FILE OF ITS OWN because settings/Schema.lua sits within sixty lines of layout-§1's 1500-line
@@ -83,6 +83,17 @@ local ROWS = {
         label = L["Texture"],
         desc = L["The texture this addon's bars use, over the skin's own. Empty keeps the skin's."],
         onChange = function(v) if NS.ApplySkinOverride then NS.ApplySkinOverride(nil, v) end end,
+    },
+    -- The Font outline (LibKa0s-Skin-1.0 minor 9, ruling D-06), drawn by the same tab as its "Font
+    -- outline" dropdown: where the skin outlines this addon's text. The library's three modes, in
+    -- its order; `/mm set skin.outline` validates against them.
+    {
+        path = "skin.outline", type = "string", default = PD.outline, skipRender = true,
+        values = NS.SKIN_OUTLINE_VALUES, sorting = NS.SKIN_OUTLINE_SORT,
+        page = "general", group = TAB,
+        label = L["Font outline"],
+        desc = L["Where the skin outlines this addon's text: all of it, its HUD text only, or nowhere."],
+        onChange = function(v) if NS.ApplySkinOutline then NS.ApplySkinOutline(v) end end,
     },
     -- The first-run skin picker's memory: set when the picker closes, so it shows once per profile.
     -- Drawn by nothing; a reset puts it back to false (owner ruling O3).

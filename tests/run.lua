@@ -360,6 +360,9 @@ local SUITES = {
     -- The LibKa0s-Skin-1.0 seam (core/SkinSetup.lua): the owner, the skin rows, the Skin tab,
     -- the profile events and the degraded facade.
     "test_skinsetup",
+    -- The font outline (LibKa0s v1.82.0): skin.outline stored through the write seam and
+    -- applied with Skin:SetOutline at load, on the profile events and on its own row.
+    "test_skin_outline",
     -- The chrome painted through that facade: the meter window's Shell, its header escapes, the
     -- empty state and the export modal, under Ka0s Default and across a skin switch.
     "test_skin_chrome",
