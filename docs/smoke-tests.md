@@ -1655,7 +1655,11 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
   stored ones beside each *Skin* mode (black fill, Blizzard Tooltip edge, gold title, gray and gold
   controls on a window never changed), since there is no skin to follow. (Amended by MM-A1,
   2026-10-29, the skinning rollout: a chrome Skin mode falls back to its swatch without the
-  library.) Result: pass (owner-marked 2026-10-30)
+  library.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: every font flag now
+  defaults to *From skin*, and without the library *From skin* draws OUTLINE, the library's default
+  All text mode, so the title, the session line, the column labels, the cells and the tooltip lines
+  are outlined where the pre-skin look drew the title, cells and tooltip plain; a flag set to *None*
+  still draws plain. Fail: From skin text drawn plain without the library, or a Lua error.) Result:
 - **DEGRADED-9. Restoring.** Rename the folder back, `/reload` → everything returns. Result: pass (owner-marked 2026-10-10)
 
 ## SIM
@@ -1824,7 +1828,11 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   library's menus and strips keep their template faces too. Untick → the skin's face (and the
   override) return everywhere, live. Fail: a HUD string still in the skin's face (or the override)
   while Ignore fonts is ticked, or a bar that changed. (Amended by MM-02, 2026-10-30, the skin library follow-ups: Ignore fonts reaches the HUD,
-  LibKa0s R-1.) Result: pass (owner-marked 2026-10-30)
+  LibKa0s R-1.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: Ignore fonts
+  keeps each string's own face and stored size, but its flags still follow the Font outline, so text
+  whose flag is *From skin* (the default on every font setting) stays outlined under All text and HUD
+  text only while Ignore fonts is ticked, including the title, the cells and the tooltip lines that
+  drew plain before; a flag set to *None* draws plain.) Result:
 - **SKIN-9. The settings pages (MM-04).** With a non-default skin and **Ignore settings panel**
   unticked, walk every page → the nav rail, tabs, headings, check boxes, sliders, dropdowns and edit
   boxes are skinned, and so are the Windows page's window-name box and its action dropdown, the
@@ -1954,4 +1962,4 @@ its `Result:` line as `pass (owner-marked 2026-10-30)`.
 
 Pending from the skin fonts run (Ka0sAddonsCommonTasks `docs/2026-10-30-SKIN_FONTS_AND_FEEDBACK/`,
 MM-01, LibKa0s v1.82.0): new INSTALL-17, SLASH-33 and SKIN-25 to SKIN-27, and re-opened INSTALL-3,
-INSTALL-12 to INSTALL-16, WIN-49, SKIN-1 to SKIN-4, SKIN-7 and SKIN-24, each with an empty `Result:`.
+INSTALL-12 to INSTALL-16, WIN-49, DEGRADED-11, SKIN-1 to SKIN-4, SKIN-7, SKIN-8 and SKIN-24, each with an empty `Result:`.

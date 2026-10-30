@@ -267,3 +267,55 @@ test("Skin fonts: degraded, From skin draws OUTLINE and a size draws as stored",
     assertEqual(NS.SkinFontFlags("THICKOUTLINE"), "THICKOUTLINE")
     assertEqual(NS.SkinHudFontSize(14, true), 14)
 end)
+
+test("Skin fonts: the column labels draw the Font outline and the HUD size scale", function()
+    -- red under: columnHeaderFont passing the stored "@skin" to SetFont, or the stored size past
+    -- S.HudFontSize (the review's mutation of Window_Header.lua's columnHeaderFont).
+    local inst, _, window, _, cfg = scene(function(c)
+        c.columnHeader.size, c.columnHeader.fontFromSkin = 12, true
+    end)
+    window:ApplyColumnHeaders()
+    local _, size, flags = window.columnHeaders[1].text:GetFont()
+    assertEqual(flags, "OUTLINE", "the column label under All text")
+    assertEqual(size, 12, "Ka0s Default draws the stored size")
+
+    skin(inst):SetOutline(OWNER, "off")
+    window:ApplyColumnHeaders()
+    _, _, flags = window.columnHeaders[1].text:GetFont()
+    assertEqual(flags, nil, "Off takes the column label's outline")
+
+    skin(inst):SetChoice(OWNER, "ka0s", "obsidian")
+    local scaled = inst.NS.Skin.HudFontSize(12, true)
+    assertTrue(scaled ~= 12, "Obsidian's HUD scale is 1: this case asserts nothing")
+    window:ApplyColumnHeaders()
+    _, size = window.columnHeaders[1].text:GetFont()
+    assertEqual(size, scaled, "the column label under Obsidian")
+    assertEqual(cfg.columnHeader.size, 12, "the stored size was rewritten")
+end)
+
+test("Skin fonts: a capped name column sizes itself from the scaled HUD size", function()
+    -- red under: nameColumnWidth sizing from the stored text.size, so a capped name drawn at
+    -- Obsidian's larger HUD size no longer fits its column.
+    local inst, NS, window, _, cfg = scene(function(c)
+        c.text.size, c.text.fontFromSkin, c.text.maxNameLength = 12, true, 30
+    end)
+    local before = window.layout.nameColumn.width
+    skin(inst):SetChoice(OWNER, "ka0s", "obsidian")
+    assertTrue(NS.SkinHudFontSize(12, true) > 12, "Obsidian's HUD scale does not grow 12")
+    window:ApplyConfig()
+    assertTrue(window.layout.nameColumn.width > before,
+        "the capped name column did not grow with the HUD size")
+    assertEqual(cfg.text.size, 12, "the stored size was rewritten")
+end)
+
+test("Skin fonts: the empty-state notice draws the HUD size scale with the HUD face", function()
+    -- red under: the notice passing the stored text.size past S.HudFontSize (D-09: the scale goes
+    -- wherever the skin's HUD face does).
+    local inst, NS, window = scene(function(c)
+        c.text.size, c.header.fontFromSkin = 12, true
+    end)
+    skin(inst):SetChoice(OWNER, "ka0s", "obsidian")
+    window:ApplyConfig()
+    local _, size = window.notice:GetFont()
+    assertEqual(size, NS.SkinHudFontSize(12, true), "the notice under Obsidian")
+end)
