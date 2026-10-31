@@ -66,6 +66,13 @@ do
         -- out of it (options-ui-§15, §16), so a re-vendor that dropped it would
         -- take 50-odd schema rows with it rather than merely losing a widget.
         "OptionsWidgets.lua", "OptionsCompose.lua", "OptionsScroll.lua",
+        -- v1.84.0 peeled these off their shells, and each is loaded only when present, so a payload
+        -- missing one raises nothing: OptionsFlow.lua is the two-column flow engine every page
+        -- draws through, OptionsTabbed.lua the tabbed page, OptionsSkinPickerRows.lua the Skin
+        -- tab's rows, SkinDefsOthers.lua the eight skins past Ka0s Default, SkinOwnerTokens.lua
+        -- the HUD owner's tokens and SimPanelRender.lua the step panel's renderer.
+        "OptionsFlow.lua", "OptionsTabbed.lua", "OptionsSkinPickerRows.lua",
+        "SkinDefsOthers.lua", "SkinOwnerTokens.lua", "SimPanelRender.lua",
         -- The tab strip and page banner, peeled off Options.lua in v1.39.0. It adds and renames
         -- no member, so nothing here calls it BY NAME -- which is exactly why it is listed: a
         -- re-vendor that dropped it would leave every page tab-less with nothing to read.

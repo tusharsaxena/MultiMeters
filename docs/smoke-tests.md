@@ -28,7 +28,7 @@ secret-value rules the checks refer to.
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
-| DIAG-1 to DIAG-42 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
+| DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
 | SIM-1 to SIM-12 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
 | SKIN-1 to SKIN-27 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat |
@@ -1630,6 +1630,10 @@ stayed empty; "no errors" from a dummy is not evidence here.
   the plain fields beside them still print. No Lua error. The sentinel is now the library's
   `Core.SECRET` rather than the report's own copy (MultiMeters#58). Result: pass (owner-marked 2026-10-10)
 
+- **DIAG-43. The diagnostics header names Charts.** `/mm diagnostics` → the library identity lines
+  name `Charts` between `Toast` and `Media`, with a version, though this addon draws no chart. The
+  rest of the report reads as before. No Lua error (LibKa0s v1.84.0, DebugLogDiagnostics minor 6). Result:
+
 ## DEGRADED
 
 Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the install), then `/reload`.
@@ -1975,5 +1979,5 @@ SLASH-33 and SKIN-25 to SKIN-27, and re-opened INSTALL-3, INSTALL-12 to INSTALL-
 SKIN-1 to SKIN-4, SKIN-7, SKIN-8 and SKIN-24, each recorded on its `Result:` line as
 `Owner reported pass, 2026-10-31`.
 
-Pending from the findings remediation (`docs/2026-10-31-FINDINGS_REMEDIATION/`): new INSTALL-18 and
-WIN-55, each with an empty `Result:`.
+Pending from the findings remediation (`docs/2026-10-31-FINDINGS_REMEDIATION/`): new INSTALL-18,
+WIN-55 and DIAG-43, each with an empty `Result:`.
