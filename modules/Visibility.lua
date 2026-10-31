@@ -36,7 +36,7 @@
 --
 -- BUT "THE NEXT TIME ANYTHING ASKS" IS NOT A CLOCK, and an earlier version of
 -- this header claimed it was — "at worst one refresh interval later". It is not.
--- modules/Window.lua's onUpdate refreshes DATA and never re-asks NS.ShouldShow,
+-- modules/Window_Render.lua's onUpdate refreshes DATA and never re-asks NS.ShouldShow,
 -- so the ladder is re-run only from a bus message a window subscribes to. Every
 -- input to the rules below therefore needs an edge on the bus, or the rule that
 -- reads it is dead. That is what core/MultiMeters.lua's player-state block is

@@ -47,7 +47,7 @@ local isSimulatedSecret = Secrets.isSimulatedSecret
 --   STATUS BAR values — `SetValue` / `SetMinMaxValues` are where a secret ends
 --     up. Recording them raw is how a suite proves the handle reached the widget
 --     without anything having looked at it.
---   BACKDROP — modules/Window.lua's ApplyBorder branches on `frame.SetBackdrop`
+--   BACKDROP — modules/Window_Frame.lua's ApplyBorder branches on `frame.SetBackdrop`
 --     and writes a table whose edgeFile/edgeSize encode the "borderSize == 0
 --     means no edge" rule.
 --
@@ -167,7 +167,7 @@ function FRAME.GetParent(self) return self.__parent end
 
 -- ── movement / sizing ──────────────────────────────────────────────────────
 --
--- Recorded rather than no-opped: modules/Window.lua's drag and resize handlers
+-- Recorded rather than no-opped: modules/Window_Frame.lua's drag and resize handlers
 -- are the ONLY place in the addon permitted to read geometry back off a widget,
 -- and the whole two-frame anchor design exists so that read lands on a frame
 -- that never held a value. A test proves that by seeing StartMoving land on

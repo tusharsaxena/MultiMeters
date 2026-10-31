@@ -316,8 +316,8 @@ test("Skin window: the v21 step puts every window of every profile's chrome on t
         global   = { schemaVersion = 20 },
     })
     local NS = inst.NS
-    assertEqual(NS.SCHEMA_VERSION, 21)
-    assertEqual(NS.db.global.schemaVersion, 21)
+    assertEqual(NS.SCHEMA_VERSION, 22)
+    assertEqual(NS.db.global.schemaVersion, 22)
     for _, name in ipairs({ "Default", "Raid" }) do
         for i, w in ipairs(NS.db.sv.profiles[name].windows) do
             local where = name .. " window " .. i
@@ -346,7 +346,7 @@ test("Skin window: the v21 reset runs once, so a pick made after it is kept", fu
     assertEqual(w.header.bgColorFromSkin, false, "a second walk took the player's pick back")
 
     local again = initWith(_G.MultiMetersDB)
-    assertEqual(again.NS.db.global.schemaVersion, 21)
+    assertEqual(again.NS.db.global.schemaVersion, 22)
     local w2 = again.NS.Database.FindWindow(1)
     assertEqual(w2.frame.backdropColorMode, "custom", "a reload re-ran the reset")
     assertEqual(w2.header.bgColorFromSkin, false, "a reload re-ran the reset")
@@ -361,7 +361,7 @@ test("Skin window: a v19 account takes both resets in one walk", function()
         global   = { schemaVersion = 19 },
     })
     local w = inst.NS.Database.FindWindow(1)
-    assertEqual(inst.NS.db.global.schemaVersion, 21)
+    assertEqual(inst.NS.db.global.schemaVersion, 22)
     assertOnSkin(w, "v19 window")
     assertEqual(w.header.fontFromSkin, true, "the v20 companions did not land")
 end)

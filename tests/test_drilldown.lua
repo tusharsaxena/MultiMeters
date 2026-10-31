@@ -267,10 +267,10 @@ test("A view with no name still produces a title, without an `or` on the name", 
 end)
 
 test("The window branches on BuildRows' rows, never on its title", function()
-    -- The structural claim, checked against the source: modules/Window.lua takes
+    -- The structural claim, checked against the source: modules/Window_Render.lua takes
     -- the drill-down branch on the plain rows table, and the title reaches a
     -- SetText and nothing else.
-    local fh = assert(io.open(T.root .. "/modules/Window.lua", "r"))
+    local fh = assert(io.open(T.root .. "/modules/Window_Render.lua", "r"))
     local n, offenders, sawRowsBranch = 0, {}, false
     for line in fh:lines() do
         n = n + 1
@@ -284,7 +284,7 @@ test("The window branches on BuildRows' rows, never on its title", function()
                     or code:find("drillTitle%)")          -- passed on as an argument
                     or code:find("drillTitle$")           -- a parameter list
                     or code:find("drillTitle,")
-                if not safe then offenders[#offenders + 1] = "modules/Window.lua:" .. n end
+                if not safe then offenders[#offenders + 1] = "modules/Window_Render.lua:" .. n end
             end
         end
     end

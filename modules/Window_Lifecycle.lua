@@ -20,7 +20,8 @@
 -- FILE-SCOPE READS, and why the TOC line is load-bearing. This file resolves three
 -- things modules/Window.lua publishes -- NS.Window, NS.WindowProto and
 -- NS.WindowInternals (the row pool's constructor and the OnUpdate clock, which
--- stay with the chain they belong to) -- so it MUST load after modules/Window.lua.
+-- stay with the chain they belong to and which modules/Window_Render.lua hangs on
+-- that table) -- so it MUST load after modules/Window.lua and Window_Render.lua.
 
 local _, NS = ...
 

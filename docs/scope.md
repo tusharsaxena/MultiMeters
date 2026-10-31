@@ -48,7 +48,7 @@ Retail only · English only.
 - **Cell drill-down** into a player's per-spell breakdown, rendered through the same row path as the
   grid, plus a hand-off to Blizzard's own death recap from the Deaths column.
 - **Pet folding** into owners, best-effort — see the caveat below.
-- **A three-page settings panel** (General, Windows, Profiles) driven by one 187-row schema, with
+- **A three-page settings panel** (General, Windows, Profiles) driven by one 188-row schema, with
   full `/mm` CLI parity for every schema-shaped operation.
 - **Visibility rules** per window — **show everywhere, hide nowhere** out of the box. Seven contexts
   (dungeon, raid, arena, battleground, delve, scenario, open world), all on by default; ten hide
@@ -307,7 +307,7 @@ default to total and rate.
   carries the captures. `/mm debug recap`'s **dating** section is what proved each one could not
   work, and is kept for whoever tries again. Deaths are dated by wall clock or by "how long ago".
 - **The death list is a snapshot taken on entry.** While a window is drilled into a player's deaths,
-  `modules/Window.lua` renders `DrillDown:BuildRows` *instead of* running an aggregate pass, so there
+  `modules/Window_Render.lua` renders `DrillDown:BuildRows` *instead of* running an aggregate pass, so there
   is no current row to re-read the deaths off. A player who dies again while somebody is looking at
   their list will not appear in it until the list is left and re-entered. Re-deriving it would cost a
   second aggregate pass per frame to keep fresh a list nobody is watching change.

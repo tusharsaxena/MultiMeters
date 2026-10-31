@@ -350,7 +350,7 @@ NS.Schema = {
         onChange = broadcastFont,
     },
     {
-        path = "window.fontOutline", type = "string", default = "NONE",
+        path = "window.fontOutline", type = "string", default = "@skin",
         values = OUTLINE_VALUES, sorting = OUTLINE_SORT,
         page = "frame", group = L["Quick style"], subgroup = L["All surfaces"],
         label = L["Font outline (all surfaces)"],

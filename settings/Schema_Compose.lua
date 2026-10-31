@@ -157,7 +157,7 @@ local function broadcastBarTexture(value) broadcast(BAR_TEXTURE_PATHS, value) en
 --- @param value string  an LSM font key
 local function broadcastFont(value) broadcast(FONT_PATHS, value) end
 
---- @param value string  NONE | OUTLINE | THICKOUTLINE | MONOCHROME
+--- @param value string  @skin | NONE | OUTLINE | THICKOUTLINE | MONOCHROME
 local function broadcastOutline(value) broadcast(OUTLINE_PATHS, value) end
 
 -- The meta pair over the "Use the skin's ..." companions (DECISIONS D11): every surface's own
@@ -190,13 +190,17 @@ local STRATA_SORT    = { "LOW", "MEDIUM", "HIGH", "DIALOG" }
 local ALIGN_VALUES   = { LEFT = L["Left"], CENTER = L["Center"], RIGHT = L["Right"] }
 local ALIGN_SORT     = { "LEFT", "CENTER", "RIGHT" }
 
+-- "@skin" is From skin (LibKa0s v1.82.0's FROM_SKIN, ruling D-07), the default of every flags row:
+-- the Skin tab's Font outline answers it through S.FontFlags (core/SkinSetup.lua's NS.SkinFontFlags).
+-- NONE stays this addon's stored word for none, so every flag a player picked before is still a key.
 local OUTLINE_VALUES = {
+    ["@skin"]    = L["From skin"],
     NONE         = L["None"],
     OUTLINE      = L["Outline"],
     THICKOUTLINE = L["Thick outline"],
     MONOCHROME   = L["Monochrome"],
 }
-local OUTLINE_SORT   = { "NONE", "OUTLINE", "THICKOUTLINE", "MONOCHROME" }
+local OUTLINE_SORT   = { "@skin", "NONE", "OUTLINE", "THICKOUTLINE", "MONOCHROME" }
 
 local GROWTH_VALUES  = { DOWN = L["Down"], UP = L["Up"] }
 local GROWTH_SORT    = { "DOWN", "UP" }
@@ -961,8 +965,9 @@ local HEADER_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     defaults = {
         font = "Friz Quadrata TT", fontSize = 12,
         fontColor = { r = 1, g = 0.82, b = 0, a = 1 },
-        fontFlags = "NONE", fontShadow = true,
+        fontFlags = "@skin", fontShadow = true,
     },
+    flagsFromSkin = true,
     classColor = { source = "player" },
 }))
 dress(HEADER_TEXT_ROWS, {
@@ -974,7 +979,7 @@ dress(HEADER_TEXT_ROWS, {
     ["window.header.color"] = { desc = L["Color of the window's title and the fight name beside it. Not read while the mode beside it is Skin."] },
     ["window.header.outline"] = {
         values = OUTLINE_VALUES, sorting = OUTLINE_SORT,
-        desc = L["Outline and monochrome flags applied to the text."],
+        desc = L["Outline and monochrome flags applied to the text. From skin follows the Font outline on the Skin tab."],
     },
     ["window.header.shadow"] = {
         desc = L["Draw a drop shadow behind the header text so it stays readable over a bright backdrop."],
@@ -1133,8 +1138,9 @@ local BARS_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     defaults = {
         font = "Friz Quadrata TT", fontSize = 11,
         fontColor = { r = 1, g = 1, b = 1, a = 1 },
-        fontFlags = "NONE", fontShadow = true,
+        fontFlags = "@skin", fontShadow = true,
     },
+    flagsFromSkin = true,
     classColor = { source = "unit" },
     extra = { {
         path = "window.text.alpha", type = "number", default = 1.0,
@@ -1152,7 +1158,7 @@ dress(BARS_TEXT_ROWS, {
     ["window.text.color"] = { desc = L["Color of the numbers and names."] },
     ["window.text.outline"] = {
         values = OUTLINE_VALUES, sorting = OUTLINE_SORT,
-        desc = L["Outline and monochrome flags applied to the text."],
+        desc = L["Outline and monochrome flags applied to the text. From skin follows the Font outline on the Skin tab."],
     },
     ["window.text.shadow"] = {
         desc = L["Draw a drop shadow behind the text so it stays readable over a bright bar."],
@@ -1289,8 +1295,9 @@ local TIP_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     defaults = {
         font = "Friz Quadrata TT", fontSize = 12,
         fontColor = { r = 1, g = 1, b = 1, a = 1 },
-        fontFlags = "NONE", fontShadow = false,
+        fontFlags = "@skin", fontShadow = false,
     },
+    flagsFromSkin = true,
     classColor = { source = "unit" },
 }))
 dress(TIP_TEXT_ROWS, {
@@ -1308,7 +1315,7 @@ dress(TIP_TEXT_ROWS, {
     },
     ["window.tooltip.fontOutline"] = {
         values = OUTLINE_VALUES, sorting = OUTLINE_SORT,
-        desc = L["Outline and monochrome flags applied to the tooltip text."],
+        desc = L["Outline and monochrome flags applied to the tooltip text. From skin follows the Font outline on the Skin tab."],
     },
     ["window.tooltip.fontShadow"] = {
         desc = L["Draw a drop shadow behind the tooltip text so it stays readable over a bright bar."],
@@ -1332,8 +1339,9 @@ local COLHEAD_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     defaults = {
         font = "Friz Quadrata TT", fontSize = 11,
         fontColor = { r = 1, g = 0.82, b = 0, a = 1 },
-        fontFlags = "OUTLINE", fontShadow = false,
+        fontFlags = "@skin", fontShadow = false,
     },
+    flagsFromSkin = true,
     -- One strip across the whole window, so `class` can only be the local player's,
     -- exactly as it is for the title bar above it.
     classColor = { source = "player" },
@@ -1350,7 +1358,7 @@ dress(COLHEAD_TEXT_ROWS, {
     ["window.columnHeader.color"] = { desc = L["Color of the column header labels."] },
     ["window.columnHeader.outline"] = {
         values = OUTLINE_VALUES, sorting = OUTLINE_SORT,
-        desc = L["Outline and monochrome flags applied to the column headers."],
+        desc = L["Outline and monochrome flags applied to the column headers. From skin follows the Font outline on the Skin tab."],
     },
     ["window.columnHeader.shadow"] = {
         desc = L["Draw a drop shadow behind the column labels so they stay readable over a bright backdrop."],

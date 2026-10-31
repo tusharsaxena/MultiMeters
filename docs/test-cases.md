@@ -472,7 +472,7 @@ Total.
 - Diagnostics: a cast line survives a full ring of judge rows
 - Diagnostics: the ring keeps its newest entries and reads them oldest first
 
-### test_diagnostics_runtime.lua (21)
+### test_diagnostics_runtime.lua (22)
 
 - Diagnostics runtime: the addon's state leads, the probes follow, rejected events close
 - Diagnostics runtime: the state section prints the latch, its holds and the schema stamps
@@ -495,6 +495,7 @@ Total.
 - Diagnostics runtime: the sim section follows roster and caches and reads idle when idle
 - Diagnostics runtime: during a simulation the sim section names the scenario and the step
 - Diagnostics runtime: with LibKa0s absent the sim section says so and does not raise
+- Diagnostics runtime: a seam with keys that escaped the wrap names each of them
 
 ### test_defaults.lua (24)
 
@@ -1209,7 +1210,7 @@ Total.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (68)
+### test_window.lua (67)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - BuildLayout computes every coordinate from config alone
@@ -1230,7 +1231,6 @@ Total.
 - Render honors layout.maxRows and places rows from Row.OffsetFor
 - growthDirection UP anchors from the bottom of the body
 - R3: no geometry is read back off a cell that has held a secret
-- modules/Window.lua reads geometry back off the anchor and nothing else
 - An unavailable meter renders the prompt INSTEAD of rows
 - The notice omits a reason it cannot safely render
 - An empty session says so rather than leaving a blank grid
@@ -1280,6 +1280,10 @@ Total.
 - The strip is born hidden, with the localized line and the info art
 - With no Widgets library the window builds and reserves nothing
 
+### test_window_static.lua (1)
+
+- modules/Window.lua reads geometry back off the anchor and nothing else
+
 ### test_window_header.lua (62)
 
 - The header carries a lock and a gear, and the padlock shows the state
@@ -1326,7 +1330,7 @@ Total.
 - Minimize leaves the STORED height alone, so expanding restores it
 - A collapsed window does not aggregate or render
 - A collapsed window keeps the notice hidden
-- Header ships GameFontNormal spelled out: 12px, no outline, a 1/-1 shadow
+- Header ships GameFontNormal spelled out: 12px, flags From skin, a 1/-1 shadow
 - Header shadow reaches every line of the strip
 - Column header shadow is its OWN setting, not the header's
 - The header's text answers its modes, and the custom one is the picker
@@ -2483,11 +2487,11 @@ Total.
 - Skin seam: every owner token is registered, namespaced mm., and keeps its pixel on Ka0s Default
 - Skin seam: another skin draws each owner token from its follow token
 - Skin seam: the skin keys default to Ka0s Default, the panel ignored and the picker unseen
-- Skin seam: the seven skin keys are skip-render rows in the Skin tab's group
+- Skin seam: the eight skin keys are skip-render rows in the Skin tab's group
 - Skin seam: the skin row's values are every registered skin, in the library's order
 - Skin seam: /mm set refuses a skin that is not registered and applies one that is
 - Skin seam: /mm set reaches an exception, and only its own half
-- Skin seam: the write seam stores media's halves, "" for the skin's own
+- Skin seam: the write seam stores media's halves, "" for the skin's default
 - Skin seam: one tab pick is one effective SetChoice, one repaint, in the profile
 - Skin seam: the tab's Ignore fonts reaches the library and the profile, one repaint
 - Skin seam: another addon's copy to every Ka0s addon repaints this one once
@@ -2498,6 +2502,27 @@ Total.
 - Skin seam: the seam publishes the same NS members on both paths
 - Skin seam: each host-copy skin token is the live library's Ka0s Default value
 - Skin seam: degraded, the facade answers today's colors and the seam never raises
+
+### test_skin_outline.lua (9)
+
+- Skin outline: a fresh profile stores HUD text only, the library's default, and wears it
+- Skin outline: the schema row offers the library's three modes, in its order, skip-render
+- Skin outline: the write seam stores media.outline, and leaves it alone when it is nil
+- Skin outline: another addon's copy reaches the store through WriteChoice
+- Skin outline: /mm set applies the mode live, its own half only
+- Skin outline: /mm set refuses a mode the library does not know
+- Skin outline: the stored mode is applied with the stored pair at load
+- Skin outline: a profile switch applies the incoming profile's mode, and back
+- Skin outline: without the skin engine the apply is a quiet no-op and the store still takes it
+
+### test_skin_verb.lua (6)
+
+- Skin verb: the row sits right after config, with the library's help words
+- Skin verb: /mm skin shows the real picker on a profile that has closed it
+- Skin verb: NS.RunSkinVerb hands O.SkinVerb this addon's first-run spec
+- Skin verb: in combat every call prints the library's gray line and shows nothing
+- Skin verb: refused while the addon is disabled, and O.SkinVerb is never reached
+- Skin verb: without LibKa0s the verb prints the library-absent line
 
 ### test_skin_chrome.lua (8)
 
@@ -2521,6 +2546,23 @@ Total.
 - Skin HUD: the v20 step puts every window of every profile on the skin, keeping the picks
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
+
+### test_skin_fonts.lua (14)
+
+- Skin fonts: every font group carries size, color with a class option, flags and shadow
+- Skin fonts: every flags row leads with From skin and defaults to it, the template too
+- Skin fonts: From skin draws the Font outline: OUTLINE under HUD only and All text, none under Off
+- Skin fonts: a flag the player picked wins over the Font outline, and NONE draws none
+- Skin fonts: the all-surfaces flags row writes From skin to every surface
+- Skin fonts: the v22 step moves every stored old-default flag onto From skin, in every profile
+- Skin fonts: the v22 move runs once, so a NONE picked after it is kept
+- Skin fonts: the v22 step survives a junk window and a group that is not a table
+- Skin fonts: a HUD size follows the skin's scale while the face does, never rewritten
+- Skin fonts: the tooltip's size scales with the skin too
+- Skin fonts: degraded, From skin draws OUTLINE and a size draws as stored
+- Skin fonts: the column labels draw the Font outline and the HUD size scale
+- Skin fonts: a capped name column sizes itself from the scaled HUD size
+- Skin fonts: the empty-state notice draws the HUD size scale with the HUD face
 
 ### test_skin_window.lua (13)
 
@@ -2568,6 +2610,10 @@ Total.
 - Skin tools: the sim step panel is painted for this owner
 - Skin tools: under Ka0s Default the tooltip lines keep their pixels
 - Skin tools: under another skin the tooltip lines take its gtip tokens
+
+### test_glyphs.lua (1)
+
+- glyphs: display strings use only characters every shipped skin face draws
 
 ### test_columnblocks.lua (36)
 
@@ -2746,7 +2792,7 @@ Total.
 | test_diagnostics_deathrecap.lua | 31 |
 | test_diagnostics_identity.lua | 23 |
 | test_diagnostics_feign.lua | 19 |
-| test_diagnostics_runtime.lua | 21 |
+| test_diagnostics_runtime.lua | 22 |
 | test_defaults.lua | 24 |
 | test_coresetup.lua | 31 |
 | test_perfsetup.lua | 26 |
@@ -2772,7 +2818,8 @@ Total.
 | test_aggregator_identity.lua | 32 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 68 |
+| test_window.lua | 67 |
+| test_window_static.lua | 1 |
 | test_window_header.lua | 62 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 44 |
@@ -2809,12 +2856,16 @@ Total.
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 51 |
 | test_skinsetup.lua | 20 |
+| test_skin_outline.lua | 9 |
+| test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
+| test_skin_fonts.lua | 14 |
 | test_skin_window.lua | 13 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
+| test_glyphs.lua | 1 |
 | test_columnblocks.lua | 36 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
@@ -2824,4 +2875,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2418** |
+| **Total** | **2449** |

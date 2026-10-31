@@ -56,11 +56,12 @@ NS.Database = Database
 -- v19 grows the shipped window to 228px, ten rows under that bar.
 -- v20 puts every window's HUD faces, bar textures and bar borders on the skin, once.
 -- v21 puts every window's chrome (fill, edge, title bar, title, controls) on the skin, once.
+-- v22 moves every window's font flags still at their old default onto From skin, once.
 --
 -- The defaults declare `global.schemaVersion = 0`, which means UNSTAMPED: a fresh
 -- install or an account from before the runner stamped anything. It is never the
 -- current version (savedvariables-§1); see defaults/Profile.lua for why.
-local CURRENT_DB_VERSION = 21
+local CURRENT_DB_VERSION = 22
 
 --- The runner's target, published under the name savedvariables-§1 gives it.
 --- Raising it means registering the step that reaches it; the defaults' 0 never moves.
@@ -1141,6 +1142,38 @@ migrations[20] = function(db)
                         if type(w[group]) == "table" then w[group][leaf] = "skin" end
                     end
                     if type(w.header) == "table" then w.header.bgColorFromSkin = true end
+                end
+            end
+        end
+    end
+end
+
+--- A window's five font flags with the default each shipped before v22 (LibKa0s v1.82.0, ruling
+--- D-07): the four surfaces' own and the all-surfaces meta. The v22 step's list.
+Database.FONT_FLAG_DEFAULTS_V21 = {
+    { "header", "outline", "NONE" }, { "columnHeader", "outline", "OUTLINE" },
+    { "text", "outline", "NONE" }, { "tooltip", "fontOutline", "NONE" },
+    { false, "fontOutline", "NONE" },
+}
+
+--- v21 -> v22: THE FONT FLAGS ON FROM SKIN, ONCE (ruling D-07; the run's Addendum 01).
+---
+--- Every flags row now leads with From skin ("@skin"), its default, which the Skin tab's Font
+--- outline answers. A window stores its whole config (it is an array entry, never an AceDB
+--- default), so every window stored before v22 holds the old default explicitly. A flag still
+--- equal to the default it shipped moves to From skin; one the player changed (any other value)
+--- stays. Every window of every profile, so the move is per profile; the account-wide stamp makes
+--- it once, so a NONE picked after it is kept. A group that is not a table is left to
+--- EnsureWindowShape, whose template ships From skin already. `false` as the group is the window.
+migrations[21] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile.windows) == "table" then
+            for _, w in pairs(profile.windows) do
+                if type(w) == "table" then
+                    for _, d in ipairs(Database.FONT_FLAG_DEFAULTS_V21) do
+                        local t = d[1] and w[d[1]] or w
+                        if type(t) == "table" and t[d[2]] == d[3] then t[d[2]] = "@skin" end
+                    end
                 end
             end
         end

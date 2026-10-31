@@ -256,7 +256,9 @@ test("migrations: v17 moves every window still on the old shipped header onto th
     for _, name in ipairs({ "Default", "Raid" }) do
         for i, w in ipairs(inst.NS.db.sv.profiles[name].windows) do
             local where = name .. " window " .. i
-            assertEqual(w.header.outline, "NONE", where .. " kept the outline")
+            -- v17 wrote NONE; the walk goes on to v22, which carries that old default onto From
+            -- skin (LibKa0s v1.82.0, ruling D-07).
+            assertEqual(w.header.outline, "@skin", where .. " kept the outline")
             assertEqual(w.header.shadow, true, where .. " has no shadow")
             assertEqual(w.frame.hoverReveal, false, where .. " still fades its controls")
             assertEqual(w.frame.controlSize, 18, where .. " kept the 16px slot")
@@ -307,8 +309,8 @@ test("migrations: the v17 step run twice is a no-op, and survives a junk window"
     assertEqual(table.concat(after, "; "), table.concat(before, "; "),
         "a second run of the v17 step changed the account")
     assertEqual(inst.NS.db.sv.profiles.Odd.windows[1], "junk", "the step rewrote a non-window")
-    assertEqual(inst.NS.db.sv.profiles.Odd.windows[2].header.outline, "NONE",
-        "the window after the junk entry was skipped")
+    assertEqual(inst.NS.db.sv.profiles.Odd.windows[2].header.outline, "@skin",
+        "the window after the junk entry was skipped (v17's NONE, carried on by v22)")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -349,7 +351,8 @@ test("migrations: v18 leaves a header height a player chose", function()
     assertEqual(D.FindWindow(1).header.height, 24)
     assertEqual(D.FindWindow(2).header.height, 30)
     assertEqual(D.FindWindow(3).header.height, 8)
-    assertEqual(D.FindWindow(1).header.outline, "NONE", "the step touched another header key")
+    -- The stored NONE is v21's shipped default, which the v22 step (not this one) moves to From skin.
+    assertEqual(D.FindWindow(1).header.outline, "@skin", "the step touched another header key")
 end)
 
 test("migrations: the v18 step run twice is a no-op, and survives a junk window", function()

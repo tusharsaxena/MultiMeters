@@ -22,7 +22,7 @@
 -- -- resolves nothing and writes nothing, leaving ApplySkin's tint standing. So
 -- the shared value is never copied into this repo and never into a profile, and a
 -- re-skin still lands on this window along with the debug console and the perf
--- panel. See modules/Window.lua's ApplyHeaderStrip.
+-- panel. See modules/Window_Header.lua's ApplyHeaderStrip.
 
 local _, NS = ...
 

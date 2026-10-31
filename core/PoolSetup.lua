@@ -4,7 +4,7 @@ local _, NS = ...
 --
 -- ── WHAT MOVED, AND WHAT DELIBERATELY DID NOT ────────────────────────────────────────────────
 --
--- The free/active half of the window row pool is the library's. What stays in modules/Window.lua
+-- The free/active half of the window row pool is the library's. What stays in modules/Window_Render.lua
 -- is the part the library holds no opinion about, and there are two pieces of it:
 --
 --   `pool.all` — every row ever built, free ones included, iterated whenever the layout or the

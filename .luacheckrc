@@ -185,8 +185,8 @@ files["modules/Visibility.lua"]     = { ignore = { "212/self" } }
 
 -- `WindowProto:IsTest` is a window PROTOTYPE method: it is reached as `window:IsTest()` through the
 -- metatable every window carries, so the receiver is what finds the method even when the body
--- answers from module state.
-files["modules/Window.lua"] = { ignore = { "212/self" } }
+-- answers from module state. It moved to modules/Window_Render.lua with the draw half (MM-04).
+files["modules/Window_Render.lua"] = { ignore = { "212/self" } }
 
 -- The seventeen-method manager surface -- Init, Create, Delete, Rename, Duplicate, CopyFrom,
 -- RefreshAll, MarkAllDirty, ResetPosition(s), SetLocked, IsLocked, SetTestMode, IsTest, Toggle,

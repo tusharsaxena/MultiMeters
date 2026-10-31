@@ -16,9 +16,9 @@ A bare `/mm` (empty, or whitespace only) runs the `config` verb with `""` and op
 panel on its landing page; `/mm help` prints the index (`slash-commands-§4`, LibKa0s-Slash minor 11).
 The library-absent stub in `settings/Slash.lua` mirrors the rule, so there `config` answers that the
 panel is unavailable.
-`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **21 verbs**, the
-thirteen reserved ones first in the order the standard fixes, then this addon's eight: `profile`, the
-six window verbs, then `sim`. The dispatcher, the
+`NS.COMMANDS` in `settings/Slash.lua` is the sender-authoritative dispatch table: **22 verbs**, the
+fourteen reserved ones first in the order the standard fixes (`skin`, LibKa0s v1.82.0's skin picker
+verb, right after `config`), then this addon's eight: `profile`, the six window verbs, then `sim`. The dispatcher, the
 help renderer and the schema CLI are LibKa0s-Slash-1.0's; the verb table stays this addon's and is
 passed *in*, because the settings landing page renders the same rows and library ownership would make
 that a load-time cycle between two majors.
@@ -27,7 +27,8 @@ that a load-time cycle between two majors.
 |---|---|
 | `help` | Show the command index |
 | `config` | Open the settings panel on its landing page (`options` is accepted as an alias). A bare `/mm` runs this verb |
-| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgment is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: nothing unregisters the chat command, tears down `NS.COMMANDS` or drops the dispatcher, so every reserved verb — and the bare `/mm`, which opens the panel — still works with the addon off, and the pair is never one-way. `disable` **stands the addon down** rather than hiding its windows; what that means, and what the seven feature verbs answer instead, is [disabled-state.md](disabled-state.md). **On a library-absent or partial load they keep working, by `options-ui-§1` route (a)**: the `enabled` row is composed by LibKa0s-Options-1.0's MasterControls, so with that major missing there is no row for `CliSet` to parse against (and with the Slash major missing `CliSet` is the stub's). The pair then calls `NS.SetByPath("enabled", want)` directly; the Schema seam, live or stub, stores the path through its `writeThrough` list and pulls the latch in its `announce` ([schema.md](schema.md#the-degradation-stub)). The reply is `enabled = <value>`, or the seam's refusal |
+| `skin` | Open the skin picker a new profile shows, whatever `skin.pickerSeen` says (`NS.RunSkinVerb`, LibKa0s's `O.SkinVerb`, ruling D-16). In combat the library prints a gray line on every call and shows nothing; queued behind another Ka0s addon's picker it says so. A feature verb: refused while disabled. Without LibKa0s it names `/mm skin` and the missing library |
+| `enable` / `disable` | Turn the addon on or off. **Aliases, never a second switch** (`slash-commands-§2`): both write `enabled` — the path General → Master controls' **Enable Multi Meters** box writes — through `NS.SetByPath`, the same single write seam, so they hold no state of their own and one `onChange` runs whichever surface was used. `/mm set enabled true` is the same write by its long name, and the acknowledgment is `slash-commands-§5`'s `path = value` line, re-read after the write. **The dispatcher survives the disabled state**: nothing unregisters the chat command, tears down `NS.COMMANDS` or drops the dispatcher, so every reserved verb — and the bare `/mm`, which opens the panel — still works with the addon off, and the pair is never one-way. `disable` **stands the addon down** rather than hiding its windows; what that means, and what the eight feature verbs answer instead, is [disabled-state.md](disabled-state.md). **On a library-absent or partial load they keep working, by `options-ui-§1` route (a)**: the `enabled` row is composed by LibKa0s-Options-1.0's MasterControls, so with that major missing there is no row for `CliSet` to parse against (and with the Slash major missing `CliSet` is the stub's). The pair then calls `NS.SetByPath("enabled", want)` directly; the Schema seam, live or stub, stores the path through its `writeThrough` list and pulls the latch in its `announce` ([schema.md](schema.md#the-degradation-stub)). The reply is `enabled = <value>`, or the seam's refusal |
 | `list` | List every setting and its current value |
 | `get <path>` | Read one setting |
 | `set <path> <value>` | Write one setting |
@@ -122,8 +123,8 @@ nothing written from a game event. It is one `LibKa0s-Lifecycle-1.0` latch with 
 `disabled` from the stored `enabled` path, `perf` from the capture harness — and releasing one never
 stands up an addon the other still holds down. It replaced a draw gate.
 
-**The command surface is deliberately unchanged.** All thirteen reserved verbs and `profile` answer,
-and the bare `/mm` opens the settings panel; only this addon's own seven feature verbs refuse, on one line naming
+**The command surface is deliberately unchanged.** The library's thirteen live reserved verbs and `profile` answer,
+and the bare `/mm` opens the settings panel; only the eight feature verbs (`skin` and this addon's own seven) refuse, on one line naming
 `/mm enable`. Full detail, the teardown table and the launcher's options menu while disabled:
 [disabled-state.md](disabled-state.md).
 
@@ -139,7 +140,8 @@ to need it (`debug-logging-§14`).
 
 - **Still answers while disabled:** `help`, `config`, `version`, `enable`, `disable`, `debug`,
   `diagnostics`, `perf`, `get`, `set`, `list`, `reset`, `resetall`, `profile`, and the bare `/mm`.
-- **Refused while disabled:** `lock`, `test`, `toggle`, `window`, `reset-positions`, `export`, `sim`.
+- **Refused while disabled:** `skin` (reserved, but a feature verb: it opens a picker), `lock`, `test`,
+  `toggle`, `window`, `reset-positions`, `export`, `sim`.
 
 **The Show window key binding refuses like `/mm toggle`** (`launcher-§6`). The *Toggle meter windows*
 key clicks `MultiMetersToggleWindows`, whose OnClick is the launcher's `toggleWindow` function: it

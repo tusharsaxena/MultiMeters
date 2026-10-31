@@ -149,7 +149,7 @@ local EVENTS = {
     --
     -- THESE EDGES ARE LOAD-BEARING, NOT AN OPTIMIZATION, and the first cut of
     -- the player-state rules shipped believing otherwise. There is no fallback
-    -- poll: modules/Window.lua's onUpdate refreshes DATA and never re-asks
+    -- poll: modules/Window_Render.lua's onUpdate refreshes DATA and never re-asks
     -- NS.ShouldShow, so a rule whose edge nothing announces takes effect on the
     -- next zone change, group change or settings write and never on its own. A
     -- missed edge here is a rule that looks broken.

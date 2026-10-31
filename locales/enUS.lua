@@ -504,8 +504,8 @@ L["Font used for every number in the grid. A monospace font keeps the columns fr
 L["Font size"] = "Font size"
 L["Text size in pixels."] = "Text size in pixels."
 L["Font flags"] = "Font flags"
-L["Outline and monochrome flags applied to the text."] =
-    "Outline and monochrome flags applied to the text."
+L["Outline and monochrome flags applied to the text. From skin follows the Font outline on the Skin tab."] =
+    "Outline and monochrome flags applied to the text. From skin follows the Font outline on the Skin tab."
 L["Font shadow"] = "Font shadow"
 L["Use class color"] = "Use class color"
 L["Draw a drop shadow behind the text so it stays readable over a bright bar."] =
@@ -588,8 +588,8 @@ L["Color of the border around each spell bar."] =
 L["Font used for the tooltip's spell names and numbers."] =
     "Font used for the tooltip's spell names and numbers."
 L["Tooltip text size in pixels."] = "Tooltip text size in pixels."
-L["Outline and monochrome flags applied to the tooltip text."] =
-    "Outline and monochrome flags applied to the tooltip text."
+L["Outline and monochrome flags applied to the tooltip text. From skin follows the Font outline on the Skin tab."] =
+    "Outline and monochrome flags applied to the tooltip text. From skin follows the Font outline on the Skin tab."
 
 L["Tooltip targets"] = "Tooltip targets"
 L["Show targets"] = "Show targets"
@@ -618,8 +618,8 @@ L["Column header"] = "Column header"
 L["Font used for the column header strip above the rows."] =
     "Font used for the column header strip above the rows."
 L["Column header text size in pixels."] = "Column header text size in pixels."
-L["Outline and monochrome flags applied to the column headers."] =
-    "Outline and monochrome flags applied to the column headers."
+L["Outline and monochrome flags applied to the column headers. From skin follows the Font outline on the Skin tab."] =
+    "Outline and monochrome flags applied to the column headers. From skin follows the Font outline on the Skin tab."
 L["Color of the column header labels."] = "Color of the column header labels."
 L["Color drawn behind the column header strip. Transparent by default \226\128\148 the strip has never had a backdrop."] =
     "Color drawn behind the column header strip. Transparent by default \226\128\148 the strip has never had a backdrop."
@@ -787,6 +787,17 @@ L["The font this addon's text uses, over the skin's own. Empty keeps the skin's.
 L["Texture"] = "Texture"
 L["The texture this addon's bars use, over the skin's own. Empty keeps the skin's."] =
     "The texture this addon's bars use, over the skin's own. Empty keeps the skin's."
+-- The Font outline row (LibKa0s v1.82.0, Skin minor 9): its label, tooltip and three modes, the
+-- Skin tab's own words.
+L["Font outline"] = "Font outline"
+-- The reserved `/mm skin` verb's help: LibKa0s's SKIN_PICKER_STRINGS.VERB_HELP, one wording for every
+-- host (settings/Slash.lua).
+L["Choose a skin: open the skin picker"] = "Choose a skin: open the skin picker"
+L["Where the skin outlines this addon's text: all of it, its HUD text only, or nowhere."] =
+    "Where the skin outlines this addon's text: all of it, its HUD text only, or nowhere."
+L["All text"] = "All text"
+L["HUD text only"] = "HUD text only"
+L["Off"] = "Off"
 L["Skin picker seen"] = "Skin picker seen"
 L["Whether the first-run skin picker was closed on this profile."] =
     "Whether the first-run skin picker was closed on this profile."
@@ -1131,6 +1142,8 @@ L["Bottom left"] = "Bottom left"
 L["Bottom right"] = "Bottom right"
 
 L["None"] = "None"
+-- A font flags row's From skin ("@skin", LibKa0s v1.82.0): the Skin tab's Font outline decides.
+L["From skin"] = "From skin"
 L["Outline"] = "Outline"
 L["Thick outline"] = "Thick outline"
 L["Monochrome"] = "Monochrome"

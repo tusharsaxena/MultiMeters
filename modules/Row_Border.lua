@@ -51,7 +51,7 @@ local BORDER_ANCHOR = {
 --- around a cell belongs to the player whose cell it is, exactly as the fill it
 --- surrounds does (modules/Row.lua's barColor). It is deliberately not the local player's:
 --- the window's own edge is a different swatch on a different page and answers
---- that question its own way (modules/Window.lua's ApplyBorder).
+--- that question its own way (modules/Window_Frame.lua's ApplyBorder).
 ---
 --- The skin's edge is still the FALLBACK for a profile that never picked a color,
 --- and the CONFIGURED ALPHA survives the mode, so a class-colored outline is as

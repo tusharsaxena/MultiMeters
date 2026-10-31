@@ -70,6 +70,9 @@ do
         -- no member, so nothing here calls it BY NAME -- which is exactly why it is listed: a
         -- re-vendor that dropped it would leave every page tab-less with nothing to read.
         "OptionsTabs.lua",
+        -- The media pickers (v1.83.0): the Skin tab's Font and Texture rows are Ka0sMedia_* types, and an
+        -- attachment raises nothing when it is absent, so the suite would go on green without them.
+        "OptionsMedia.lua",
         -- Three more attachment files the shell calls only when present (`if lib.__AttachX
         -- then`), so a payload missing one raises nothing and the suite would go on green:
         -- OptionsRegistry.lua (v1.62.0) defines RegisterOptionsPage, CreateOptionsPanel and
@@ -314,6 +317,7 @@ local SUITES = {
     "test_aggregator_sort",
     -- the display
     "test_window",
+    "test_window_static",
     "test_window_header",
     "test_window_header_sort",
     "test_window_placement",
@@ -360,12 +364,21 @@ local SUITES = {
     -- The LibKa0s-Skin-1.0 seam (core/SkinSetup.lua): the owner, the skin rows, the Skin tab,
     -- the profile events and the degraded facade.
     "test_skinsetup",
+    -- The font outline (LibKa0s v1.82.0): skin.outline stored through the write seam and
+    -- applied with Skin:SetOutline at load, on the profile events and on its own row.
+    "test_skin_outline",
+    -- The reserved `skin` verb (LibKa0s v1.82.0, O.SkinVerb): the row after config, the spec,
+    -- combat, disabled and the library absent.
+    "test_skin_verb",
     -- The chrome painted through that facade: the meter window's Shell, its header escapes, the
     -- empty state and the export modal, under Ka0s Default and across a skin switch.
     "test_skin_chrome",
     -- The HUD following the skin: the companions, the cell / header / tooltip media through
     -- them, a skin switch, the meta pair, and the one-time v20 reset.
     "test_skin_hud",
+    -- The font settings' minimum set, their From skin flags (S.FontFlags), the one-time v22 move
+    -- and the HUD size scale (S.HudFontSize), LibKa0s v1.82.0.
+    "test_skin_fonts",
     -- The meter window's chrome on the skin: the five `skin` modes and the title bar companion,
     -- following live under two skins, the player's own picks, and the one-time v21 reset.
     "test_skin_window",
@@ -377,6 +390,9 @@ local SUITES = {
     "test_skin_settings",
     -- The tool surfaces painted for this owner, and the tooltip lines on the skin's gtip tokens.
     "test_skin_tools",
+    -- The display-glyph guard (kit revision 45, D-19): no string this addon paints in a skin face
+    -- carries a character some shipped face cannot draw.
+    "test_glyphs",
     "test_columnblocks",
     "test_columns",
     "test_windows_rail",

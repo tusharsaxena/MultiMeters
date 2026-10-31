@@ -393,6 +393,27 @@ local function simSessionLines(w, sim, st)
         session and session.mmSends or 0)
 end
 
+--- The last session's stop, or "none". Split out of Runtime.sim for the CCN gate (MM-03).
+local function simLastStopLine(w)
+    local last = NS.SimHost and NS.SimHost.lastStop
+    if type(last) == "table" then
+        w:add(TAG, "last stop: reason=%s events=%s sends=%s segments=%s", last.reason, last.events,
+            last.sends, last.segments)
+    else
+        w:add(TAG, "%s", "last stop: none")
+    end
+end
+
+--- How many Compat keys the seam wraps and how many escaped the wrap (expected 0), naming any
+--- that did. Split out of Runtime.sim for the CCN gate (MM-03).
+local function simSeamLines(w)
+    local seam = NS.SimSeam
+    local keys = seam and seam.Keys and seam:Keys() or {}
+    local unwrapped = seam and seam.Unwrapped and seam:Unwrapped() or {}
+    w:add(TAG, "seam keys: %s unwrapped: %s", #keys, #unwrapped)
+    if #unwrapped > 0 then w:add(TAG, "  unwrapped keys: %s", table.concat(unwrapped, " ")) end
+end
+
 --- Whether LibKa0s-Sim-1.0 is loaded, the session (scenario, step, play state, counters), the last
 --- stop, and the seam: how many Compat keys it wraps and how many escaped the wrap (expected 0). Read
 --- only: Status, Session, Keys and Unwrapped change nothing.
@@ -403,16 +424,6 @@ function Runtime.sim(w)
     local sim = NS.Sim
     local st = sim and sim.Status and sim:Status() or { active = false }
     if st.active then simSessionLines(w, sim, st) else w:add(TAG, "%s", "active: no") end
-    local last = NS.SimHost and NS.SimHost.lastStop
-    if type(last) == "table" then
-        w:add(TAG, "last stop: reason=%s events=%s sends=%s segments=%s", last.reason, last.events,
-            last.sends, last.segments)
-    else
-        w:add(TAG, "%s", "last stop: none")
-    end
-    local seam = NS.SimSeam
-    local keys = seam and seam.Keys and seam:Keys() or {}
-    local unwrapped = seam and seam.Unwrapped and seam:Unwrapped() or {}
-    w:add(TAG, "seam keys: %s unwrapped: %s", #keys, #unwrapped)
-    if #unwrapped > 0 then w:add(TAG, "  unwrapped keys: %s", table.concat(unwrapped, " ")) end
+    simLastStopLine(w)
+    simSeamLines(w)
 end

@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2418%2F2418_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2449%2F2449_passing-green)
 
 Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
@@ -47,7 +47,7 @@ Want a second window? Click **New window** beside the window picker at the top o
 
 Want to see the meter work without a group? `/mm sim` runs a scripted fight through it. It only starts when you're solo and outside an instance, and it offers four scenarios: a dungeon pull and boss, a 20-player raid boss, a wipe and reset, and a zone change between fights. Every window shows a SIMULATION strip while it plays, and you can pause it and step through it one row at a time. The group, the fights and the numbers are made up. Nothing is saved, nothing is sent to chat, and your real segments come back when it stops.
 
-Want a different look? Multi Meters wears one of the Ka0s skins, Ka0s Default to start with, and a small picker asks you to choose one the first time you log in on a profile. You can change it any time on General → Skin, with no reload: the windows, the tooltips, the export window and the debug tools all follow. The window fonts and bar textures follow the skin too, while each **Use the skin's font**, **Use the skin's texture** or **Use the skin's border** box beside them is ticked. Untick one and your own pick comes back, or tick **Ignore fonts** on the Skin tab to keep every font your own. Your colors, sizes and outlines are never touched. With EllesmereUI installed, the addon can wear its look instead.
+Want a different look? Multi Meters wears one of the Ka0s skins, Ka0s Default to start with, and a small picker asks you to choose one the first time you log in on a profile. It carries the Skin tab's font, texture, outline and scope rows too, and they preview live until you press Apply. You can change it any time on General → Skin, with no reload: the windows, the tooltips, the export window and the debug tools all follow. The window fonts and bar textures follow the skin too, while each **Use the skin's font**, **Use the skin's texture** or **Use the skin's border** box beside them is ticked. Untick one and your own pick comes back, or tick **Ignore fonts** on the Skin tab to keep every font your own. Choosing another skin puts the Skin tab's own Font and Texture back to that skin's. **Font outline**, on the Skin tab, says where the skin outlines text: HUD text only (the default), all of it, or nowhere; every font setting's flags start on **From skin**, which follows it, and a flag you pick yourself wins. While a font follows the skin its size scales too, so the text is as wide in every skin; your stored sizes and colors are never rewritten. `/mm skin` opens the skin picker again whenever you want it. With EllesmereUI installed, the addon can wear its look instead.
 
 Everything else is on the addon's page under Settings → AddOns, and `/mm` (or `/multimeters`) on its own opens it. `/mm help` prints the full command list.
 
@@ -106,26 +106,8 @@ Please raise them on GitHub:
 
 ## Credits
 
-The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL
-Open Font License 1.1.
-
-Ka0s Default, the skin every profile starts on, draws [Oxanium](https://github.com/sevmeyer/oxanium)
-by The Oxanium Project Authors, also SIL Open Font License 1.1.
-
-The other skins draw on seven more SIL Open Font License 1.1 faces, one family per skin:
-[Inter](https://github.com/rsms/inter) by The Inter Project Authors,
-[Nunito](https://github.com/googlefonts/nunito) by The Nunito Project Authors,
-[Vollkorn](https://github.com/FAlthausen/Vollkorn-Typeface) by The Vollkorn Project Authors,
-[Bitter](https://github.com/solmatas/BitterPro) by The Bitter Project Authors,
-[Philosopher](https://github.com/alexeiva/philosopher) by The Philosopher Project Authors,
-[Fira Sans](https://github.com/mozilla/Fira) by The Mozilla Foundation and Telefonica S.A., and
-[Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) by the Braille Institute of
-America. Inter, Nunito, Vollkorn, Bitter and Oxanium are static weights cut from upstream's
-variable fonts.
-
 The header controls, the column sort arrows, the Export window, the debug console, the simulator's
 step panel and the first-run skin picker draw icons from
 [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only the icons this addon
-draws ship. The fonts and the icons sit inside the bundled LibKa0s payload, each with its license
-text beside it.
+draws ship. They sit inside the bundled LibKa0s payload, with their license text beside them.
 

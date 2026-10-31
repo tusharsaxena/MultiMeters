@@ -423,7 +423,7 @@ test("PerfSetup: every instrumented module takes the probe as a file-scope upval
     -- its own header; every module below is on the per-frame path and has no
     -- such excuse.
     for _, rel in ipairs({ "modules/Provider.lua", "modules/Aggregator.lua",
-                           "modules/Window.lua", "modules/Row.lua",
+                           "modules/Window_Render.lua", "modules/Row.lua",
                            "modules/Tooltip.lua", "modules/DrillDown.lua" }) do
         local fh = assert(io.open(ROOT .. "/" .. rel, "r"))
         local src = fh:read("*a")

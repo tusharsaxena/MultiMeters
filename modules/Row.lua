@@ -365,7 +365,7 @@ end
 --- The LSM edge file for a border style, or nil for "no art".
 ---
 --- A CHOICE OF "None" IS NOT A FAILED FETCH, and the two must not share an
---- answer: modules/Window.lua's borderPath and modules/Tooltip.lua's mediaPath
+--- answer: modules/Window_Frame.lua's borderPath and modules/Tooltip.lua's mediaPath
 --- both say the same thing, and both say it because a resolver that fell back to
 --- the library's own edge on "None" drew a border the player had just switched
 --- off. nil here means "draw the flat one", which is this file's own four
@@ -775,11 +775,12 @@ function Cell:ApplyEntryTextColor(entry)
 end
 
 function Cell:ApplyTextStyle(text)
-    -- The face only follows the skin (`hud.font` while `text.fontFromSkin` is on); the size,
-    -- outline, shadow and color stay the player's (DECISIONS X4, D12).
+    -- The face follows the skin (`hud.font` while `text.fontFromSkin` is on), and with it the size's
+    -- HUD scale (D-09, NS.SkinHudFontSize); From skin flags follow the Font outline (D-07,
+    -- NS.SkinFontFlags). The shadow and color stay the player's (DECISIONS X4, D12).
     local path = fontPath(NS.SkinMediaKey(text, "font", "hud.font"))
-    local flags = (text.outline ~= "NONE") and text.outline or nil
-    local size = text.size or 11
+    local flags = NS.SkinFontFlags(text.outline)
+    local size = NS.SkinHudFontSize(text.size or 11, text.fontFromSkin)
     local tr, tg, tb = RGBA(text.color, 1, 1, 1, 1)
     local ta = textAlpha(text)
     local shadowX = text.shadow and 1 or 0

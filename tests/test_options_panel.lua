@@ -336,7 +336,7 @@ function()
     local w = NSi.Database.GetWindows()[1]
     assertEqual(w.columnHeader.font, "Friz Quadrata TT",
         "the header font must be back to shipped after the page-wide Defaults click")
-    assertEqual(w.columnHeader.outline, "OUTLINE",
+    assertEqual(w.columnHeader.outline, "@skin",
         "the header outline must be back to shipped after the page-wide Defaults click")
 end)
 

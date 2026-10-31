@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 21,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
+    schemaVersion = 22,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data (+ count, stored)
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -61,7 +61,7 @@ the runner advances it to N+1 only after `migrations[N]` returned, so a step tha
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
 **Twenty steps are wired today**, `migrations[1]` through `migrations[20]`, walking an account from
-the shipped v1 shape to v21. Each is one line of the header block at the top of
+the shipped v1 shape to v22. Each is one line of the header block at the top of
 `core/Database.lua`, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -86,12 +86,13 @@ the shipped v1 shape to v21. Each is one line of the header block at the top of
 | v18 → v19 | every window of every profile still on the old shipped `frame.height = 220` (nine rows under the 30px bar) moves to 228, which fits ten again. Any other height is left alone. See [`frame`](#frame--the-standalone-window) |
 | v19 → v20 | the one-time HUD reset onto the skin (skinning-§6, the owner's ruling O2): every window of every profile has its eight "Use the skin's ..." companions (`header`, `columnHeader`, `text`, `tooltip` `.fontFromSkin`; `bars.textureFromSkin`, `tooltip.barTextureFromSkin`; `bars.borderStyleFromSkin`, `tooltip.barBorderStyleFromSkin`) set on through LibKa0s-Skin-1.0's `ResetToSkin`, one call per window; the list names each companion, so `ResetToSkin` (Skin minor 8) sets an absent one with no seeding first. The picks themselves are kept, and no color, size, outline or thickness is touched. It runs once: a companion turned off afterwards stays off |
 | v20 → v21 | the one-time chrome reset onto the skin (the skinning rollout's MM-A1, the owner's ruling R-3): every window of every profile has its five chrome color modes (`frame.backdropColorMode`, `frame.borderColorMode`, `header.colorMode`, `frame.controlColorMode`, `frame.controlHoverColorMode`) set to `skin`, whatever they were, and `header.bgColorFromSkin` set on. The stored colors, `frame.borderStyle` and `frame.borderSize` are kept, so a mode set back to Custom draws them again. A group absent from a stored window is left to `EnsureWindowShape`, whose template ships the same values. It runs once: a mode changed afterwards stays changed |
+| v21 → v22 | the font flags onto From skin (LibKa0s v1.82.0, ruling D-07; the skin fonts run's Addendum 01): every window of every profile has each flag still at the default it shipped (`header.outline`, `text.outline`, `tooltip.fontOutline` and the all-surfaces `fontOutline` at `"NONE"`, `columnHeader.outline` at `"OUTLINE"`) moved to `"@skin"`, which the Skin tab's Font outline answers. A flag the player changed stays. It runs once: a `NONE` picked afterwards is kept. See [The four text surfaces](#the-four-text-surfaces-and-their-color-modes) |
 
-Adding a v22 is two edits and no bootstrap change:
+Adding a v23 is two edits and no bootstrap change:
 
 ```lua
-migrations[21] = function(db) ... end       -- the runner stamps the version
-local CURRENT_DB_VERSION = 22
+migrations[22] = function(db) ... end       -- the runner stamps the version
+local CURRENT_DB_VERSION = 23
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -143,8 +144,8 @@ db.profile = {
         skin        = "ka0s",          -- which Ka0s skin; "ka0s" is Ka0s Default
         ignorePanel = true,            -- the Scope: leave the settings panel the client's
         ignoreFonts = false,           -- the Scope: leave every font the client's (the HUD: each window's pick)
-        font        = "",              -- an LSM font key overriding the skin's face; "" = the skin's own
-        texture     = "",              -- an LSM statusbar key overriding the skin's bar; "" = the skin's own
+        font        = "",              -- an LSM font key overriding the skin's face; "" = the skin's default
+        texture     = "",              -- an LSM statusbar key overriding the skin's bar; "" = the skin's default
         pickerSeen  = false,           -- the first-run skin picker was closed on this profile
     },
     -- statColors.* (the per-statistic palette) is stored here too; see its section
@@ -159,11 +160,14 @@ sensibly differ between windows.
 
 ### `skin` — the skin this addon wears
 
-Seven addon-wide keys (`core/SkinSetup.lua`; the 2026-10-29 skinning rollout's MM-01), each a
+Eight addon-wide keys (`core/SkinSetup.lua`; the 2026-10-29 skinning rollout's MM-01, and
+`outline` from the 2026-10-30 skin fonts run's MM-01), each a
 `skipRender` row in `settings/Schema_Skin.lua` on the General page, so the defaults resolve, every
 reset reaches them (the page's Defaults and Reset all settings put the skin back on Ka0s Default) and
-`/mm get|set skin.skin` validates against the registered skins. The library's Skin tab draws the
-first six; nothing draws `pickerSeen`. They are written only through `NS.SetByPath`, by the tab, the
+`/mm get|set skin.skin` validates against the registered skins. The library's Skin tab draws
+every one but `pickerSeen`, which nothing draws. `outline` is the Font outline (LibKa0s v1.82.0, Skin
+minor 9, ruling D-06): `hud` text only (the default since v1.83.0, D-10), `all` text, or `off`, applied with
+`Skin:SetOutline` with the stored pair; the write seam stores it from `media.outline`. They are written only through `NS.SetByPath`, by the tab, the
 picker and another Ka0s addon's "Copy to every Ka0s addon", and each row's `onChange` applies only
 its own half. **New keys with defaults, so no migration was owed**: AceDB merges them into every
 stored profile. `pickerSeen` is false on every profile, old and new (owner ruling O3), and is set by
@@ -249,7 +253,7 @@ addresses it. That naming is the compliance; this is the detail behind it.
 - **Owner.** `WindowProto`, in `modules/Window_Placement.lua`, which also reads it
   (`ApplyPosition`).
 - **Writers, and the act that reaches each.**
-  - `WindowProto:SavePosition` — the title bar's drag-stop (`modules/Window.lua`). It reads
+  - `WindowProto:SavePosition` — the title bar's drag-stop (`modules/Window_Frame.lua`). It reads
     `GetPoint` off the anchor frame that never holds a value (rule R3).
   - `WindowManager:ResetPosition` — the *Reset position* button on General → Master controls, for
     the window the picker is pointed at. It puts back the shipped center, which chooses nothing.
@@ -329,7 +333,7 @@ row's own [get/set pair](#the-minimap-row--exactly-one-inverted-row).
 `options-ui-§15` fixes this set and its order across every Ka0s addon. `master.visibility`,
 `master.scale` and `master.alpha` are **addon-wide**, and none of them is a promoted per-window row: a
 window here is an instance, so its own `frame.scale` and `frame.alpha` stay under Windows > Frame where
-the banner says which window they mean. `modules/Window.lua` **multiplies** each pair rather than
+the banner says which window they mean. `modules/Window_Frame.lua` **multiplies** each pair rather than
 choosing between them, so one control can shrink a whole layout without erasing the differences a
 player set between its windows. `master.visibility` is read by `core/MultiMeters.lua`'s show ladder,
 below test mode, and `never` is unforceable.
@@ -346,7 +350,7 @@ unable to unlock anything. The v13 → v14 step carried a stored `true` onto eve
 page's Defaults and Reset all settings write, so both unlock every window.
 
 `NS.MasterSetting` (`defaults/Profile.lua`) is the **one reader** of the three stored keys, shaped exactly like
-`NS.DataSetting` below and for the same reason; `modules/Window.lua` clamps what it answers to the
+`NS.DataSetting` below and for the same reason; `modules/Window_Frame.lua` clamps what it answers to the
 bounds of the sliders that write it, because these paths are also reachable from `/mm set` and from a
 hand-edited SavedVariables.
 
@@ -482,7 +486,7 @@ Those ten group names are also `modules/WindowManager.lua`'s `COPY_GROUPS` and t
 section.)
 
 `window.colorMode`, `window.barTexture`, `window.font` and `window.fontOutline` (which ships as
-`NONE`, matching the two text surfaces that ship without an outline) are rows on the
+`@skin`, From skin, like every surface's own flags since LibKa0s v1.82.0) are rows on the
 **Frame** page that set the others rather than being read by anything. Each fans out to the surfaces
 that have a setting of its kind: the color mode to six, the bar texture to two (the grid and the
 tooltip), and the font and its outline to four each (the cells, both header strips and the tooltip).
@@ -546,7 +550,7 @@ player's. The two header strips are about the **window** rather than about any r
 row of the grid can never disagree about what a warlock looks like.
 
 `stat` is resolved the same way — see [the table above](#the-four-text-surfaces-and-their-color-modes)
-— and `modules/Window.lua`'s `NS.SurfaceColor` is the one reader for both header strips and both of
+— and `modules/Window_Frame.lua`'s `NS.SurfaceColor` is the one reader for both header strips and both of
 their backgrounds.
 
 The configured **alpha survives** every mode on every surface but `skin`, which is the skin's color whole (the window chrome's, MM-A1). `RAID_CLASS_COLORS` carries none, and
@@ -604,7 +608,7 @@ and its owner is `WindowProto`. The naming, with every writer and the act that r
 `docs/ARCHITECTURE.md` → Settings schema; it is what makes the write outside the helper compliant,
 and it is why the deviation register carries no row for it. It
 is also the one piece of window state that must never be *read back* off the live frame (rule R3).
-`modules/Window.lua` keeps an empty, invisible `anchor` frame that never receives a value, and
+`modules/Window_Frame.lua` builds an empty, invisible `anchor` frame that never receives a value, and
 `modules/Window_Placement.lua`'s `SavePosition` reads `GetPoint` off **that**; the visible window is anchored to it. Because positions have no row,
 `NS.ApplyDefault` never reaches them. A global reset reaches them anyway, because "Reset all
 settings" is a **profile reset** and a position lives in the profile. (`NS.ResetPositions` used to
@@ -614,7 +618,7 @@ verb and goes straight to `modules/WindowManager.lua`, which owns re-anchoring a
 ### `header` — the strip above the rows
 
 `show = true` · `font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 12` ·
-`outline = "NONE"` · `shadow = true` · `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "skin"` ·
+`outline = "@skin"` · `shadow = true` · `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "skin"` ·
 `align = "LEFT"` · `height = 26` · `bgColor = { r=0, g=0, b=0, a=0.5 }` · `bgColorFromSkin = true`.
 
 **The title and the title bar follow the skin** (the skinning rollout's MM-A1). `colorMode` is `skin` \|
@@ -625,7 +629,9 @@ skin's background", shipped on: the skin's `title.bg` while on (clear for a skin
 band), the swatch, kept and never disabled, while off. `migrations[20]` (v20 → v21) moved every stored
 window onto both, once.
 
-**The face is `GameFontNormal` spelled out** — Friz Quadrata, 12px, no outline, a 1/-1 drop shadow —
+**The face is `GameFontNormal` spelled out** — Friz Quadrata, 12px, a 1/-1 drop shadow, and since
+LibKa0s v1.82.0 the flags From skin (the Skin tab's Font outline, HUD text only by default; Off is the
+old unoutlined look) —
 because that is what Ka0s DPS Race's title bar draws (`Style.FONT.TITLE`) and the two headers sit side
 by side. Until 2026-10-24 the header shipped `outline = "OUTLINE"` with `shadow = false`; the size was
 already 12, and the outline, which rings every glyph in a pixel of black, is what made this title read
@@ -690,6 +696,15 @@ statistic" could only paint it the sort column's color — a fact on screen twic
 used to have: `true` → `"class"`, `false` → `"custom"`, which is exactly what it meant, and the dead
 key is pruned.
 
+**Every one is the minimum font set** (ruling D-07): a size, a color with a class-color option (the
+`colorMode` beside the swatch), flags and a shadow. The flags lead with **From skin** (`"@skin"`, the
+composer's `flagsFromSkin`), the default, drawn through `NS.SkinFontFlags` → `S.FontFlags`: the Skin
+tab's Font outline answers it (All text and HUD text only: OUTLINE; Off: none; Ignore fonts:
+OUTLINE). A picked flag wins, and `NONE` stays this addon's word for none. While a surface's face
+follows the skin (`fontFromSkin`), its size draws at `S.HudFontSize(stored, true)` (D-09,
+`NS.SkinHudFontSize`): the skin's HUD scale, so the text is as wide in every skin; its own face and
+Ignore fonts draw the stored size, and the stored size is never rewritten.
+
 **`stat` means a different statistic per surface, and that is the point** — it is one question ("which
 statistic is this text about?") answered by whichever statistic the surface actually describes:
 
@@ -715,7 +730,7 @@ every other mode has exactly one color to draw.
 
 ### `columnHeader` — the "Player | Damage | Healing" strip
 
-`font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 11` · `outline = "OUTLINE"` ·
+`font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 11` · `outline = "@skin"` ·
 `color = { r=1, g=0.82, b=0, a=1 }` · `colorMode = "custom"` · `bgColor = { r=0, g=0, b=0, a=0 }` ·
 `bgColorMode = "custom"`.
 
@@ -942,7 +957,7 @@ rebuild each other's formatter every refresh, and each is **probed against its o
 — a client that accepts `SetBreakpoints` and keeps its own rules is detected rather than assumed.
 
 `deathTimeFormat = "clock"` (`clock` / `ago`) · `maxNameLength = 15` (0 = no
-cap) · `font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 11` · `outline = "NONE"` ·
+cap) · `font = "Friz Quadrata TT"` · `fontFromSkin = true` · `size = 11` · `outline = "@skin"` ·
 `shadow = true` · `color = { r=1, g=1, b=1, a=1 }` · `alpha = 1.0`.
 
 `text.alpha` is applied to the two **FontStrings**, never to the cell's StatusBar. The FontStrings
@@ -1020,7 +1035,7 @@ other: `barTexture = "Blizzard Raid Bar"` · `barTextureFromSkin = true` · `bar
 `barBgAlpha = 0.1` · `barBorderStyle = "None"` · `barBorderStyleFromSkin = true` ·
 `barBorderSize = 1` · `barBorderColor = { r = 0, g = 0, b = 0, a = 1 }` ·
 `barBorderColorMode = "custom"` ·
-`font = "Friz Quadrata TT"` · `fontFromSkin = true` · `fontSize = 12` · `fontOutline = "NONE"` ·
+`font = "Friz Quadrata TT"` · `fontFromSkin = true` · `fontSize = 12` · `fontOutline = "@skin"` ·
 `textColor = { r = 1, g = 1, b = 1, a = 1 }`. One color for **both** number slots: the amount used
 to be hardcoded gold and the share hardcoded white, which read as two kinds of number when they are
 one line's two figures.
@@ -1288,10 +1303,10 @@ The runtime's `resolveRoot` resolves that prefix against the window id a caller 
 none, against the session's **active window** — `NS.State.activeWindowId`, which the settings
 panel's window picker moves. Global rows keep absolute paths and resolve against `db.profile` — all
 but one: `global.minimap.shown` names its store because `launcher-§3` puts LibDBIcon's table in the
-global one, and its own get/set pair reaches it. There are twenty-nine of them:
+global one, and its own get/set pair reaches it. There are thirty of them:
 `enabled`, `global.minimap.shown`, the four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
 the session-only view over every window's own `frame.locked`), `data.mergePets`, `data.throttle`,
-the four `export.*` preferences, the eight `statColors.*` swatches, the seven `skin.*` rows, and
+the four `export.*` preferences, the eight `statColors.*` swatches, the eight `skin.*` rows, and
 the two composed `sessionOnly` rows `state.testMode` and `state.debugConsole`. Those two and
 `master.locked` are the three session rows, whose own `get`/`set` are the whole of their storage. The
 other 158 rows are window rows.

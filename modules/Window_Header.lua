@@ -30,18 +30,20 @@
 -- The methods below hang on the SAME `WindowProto` modules/Window.lua builds —
 -- there is one window prototype, not two — so that file publishes it as
 -- `NS.WindowProto` for this file and for modules/Window_Placement.lua, and for
--- nothing else. The font reader, the surface-color reader and the collaborator
--- resolver come across the same way. All four are resolved at FILE SCOPE, so this
--- file MUST load after modules/Window.lua; the TOC says so at its line.
+-- nothing else. The font reader and the collaborator resolver come across the
+-- same way, and the surface-color reader from modules/Window_Frame.lua (MM-04).
+-- All four are resolved at FILE SCOPE, so this file MUST load after both; the TOC
+-- says so at its line.
 
 local _, NS = ...
 
 local Const = NS.Constants
 local L     = NS.L
 
--- The window prototype this file adds to, and the three readers modules/Window.lua
--- keeps: `fontPath` because ApplyConfig sets the notice font from it too, and
--- `surfaceColor` because ApplyBorder paints the window's own backdrop with it.
+-- The window prototype this file adds to, and the three readers its siblings keep:
+-- `fontPath` because ApplyConfig sets the notice font from it too, and
+-- `surfaceColor` because ApplyBorder paints the window's own backdrop with it
+-- (both in modules/Window_Frame.lua; fontPath is published by modules/Window.lua).
 -- One reader each rather than a second copy of the fallback chain in this file.
 local WindowProto  = NS.WindowProto
 local fontPath     = NS.WindowFontPath
@@ -149,15 +151,18 @@ local function onColumnClick(button)
 end
 
 --- The font every line of the header strip is drawn in: the player's face, its
---- size, and the outline flag WoW wants as nil rather than as the string "NONE".
+--- size (the skin's HUD scale while the face follows it, D-09), and the outline flag
+--- WoW wants as nil rather than as the string "NONE" (From skin through the Font
+--- outline, D-07).
 --- One reader for all three so the title, the session line and the column labels
 --- can never drift onto different fonts.
 ---
 --- @param header table  the window's `header` config group
 --- @return string path, number size, string|nil flags
 local function headerFont(header)
-    local flags = (header.outline ~= "NONE") and header.outline or nil
-    return fontPath(NS.SkinMediaKey(header, "font", "hud.font")), header.size or 12, flags
+    local flags = NS.SkinFontFlags(header.outline)
+    return fontPath(NS.SkinMediaKey(header, "font", "hud.font")),
+        NS.SkinHudFontSize(header.size or 12, header.fontFromSkin), flags
 end
 
 --- Which statistic the WINDOW is about, for the two header surfaces that answer
@@ -260,8 +265,9 @@ end
 --- — so changing the cell font silently restyled the headers and no setting
 --- could make the strip differ from the numbers beneath it.
 local function columnHeaderFont(colHeader)
-    local flags = (colHeader.outline ~= "NONE") and colHeader.outline or nil
-    return fontPath(NS.SkinMediaKey(colHeader, "font", "hud.font")), colHeader.size or 11, flags
+    local flags = NS.SkinFontFlags(colHeader.outline)
+    return fontPath(NS.SkinMediaKey(colHeader, "font", "hud.font")),
+        NS.SkinHudFontSize(colHeader.size or 11, colHeader.fontFromSkin), flags
 end
 
 --- Where something `h` pixels tall sits so it is CENTERED in the title bar.

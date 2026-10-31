@@ -313,7 +313,7 @@ function Provider.GetColumn(a, b, c, d, e)
 
     -- TEST MODE SUBSTITUTES THE DATA SOURCE AND NOTHING ELSE.
     --
-    -- It used to be a branch in modules/Window.lua's render path, which handed
+    -- It used to be a branch in modules/Window_Render.lua's render path, which handed
     -- the renderer a whole separate result table built by a separate function.
     -- The consequence was that test mode and normal mode were two code paths that
     -- LOOKED alike and behaved differently at every seam nobody thought to
@@ -915,7 +915,7 @@ end
 ---
 --- THE MEMO IS A CORRECTNESS REQUIREMENT, NOT AN OPTIMIZATION. The death
 --- drill-down needs one read PER DEATH merely to label its rows with a wall-clock
---- time, and modules/Window.lua rebuilds those rows on every refresh pass — four
+--- time, and modules/Window_Render.lua rebuilds those rows on every refresh pass — four
 --- times a second. Uncached, a five-death list is twenty client calls a second
 --- for a list that cannot change: a death that has already happened is immutable,
 --- which is exactly what makes caching it safe.

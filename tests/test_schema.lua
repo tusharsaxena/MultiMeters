@@ -277,11 +277,11 @@ local PARTITION = {
     -- composed; the other three follow the set. §15 forbids reordering, renaming
     -- or splitting the canonical set; it does not forbid an addon's own rows after
     -- it, and the case below pins that the seven come FIRST and contiguous.
-    -- Appearance is the seven skip-render skin rows (settings/Schema_Skin.lua): the group whose
+    -- Appearance is the eight skip-render skin rows (settings/Schema_Skin.lua): the group whose
     -- place the library's Skin tab takes, keyed "Appearance" because that is the key
     -- O.AppearanceTab answers.
     general    = { { "Master controls", 8 }, { "Behavior", 2 }, { "Statistic colors", 8 },
-                   { "Appearance", 7 } },
+                   { "Appearance", 8 } },
     -- The Windows rail's strips after item 020 (the settings-layout pass): Size and position
     -- leads Frame, the broadcasts are Quick style, one Bar tab per styled surface on Bars and
     -- Tooltip, one Controls tab on Header, one Rules tab on Visibility and one Column header

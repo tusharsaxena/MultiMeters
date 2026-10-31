@@ -156,7 +156,11 @@ value-carrying frame and then drive a save through them, so a rule-R3 read that 
 stack trace rather than something a reviewer has to notice. When the bus wiring and the lifecycle
 tail left for `modules/Window_Lifecycle.lua`, their cases left with them, names unchanged, for
 `tests/test_window_lifecycle.lua`: the exact thirteen subscriptions on a private target, the dirty flag
-every data message sets, `SetConfig`, `Suspend` / `Resume` and `Destroy`.
+every data message sets, `SetConfig`, `Suspend` / `Resume` and `Destroy`. When `modules/Window_Frame.lua` and
+`modules/Window_Render.lua` were peeled off at the cap (MM-04), their cases stayed in
+`tests/test_window.lua`, names unchanged: they drive one window through its prototype, which is the
+same table in every file. That took the suite to the 1500-line cap, so the review moved its static
+geometry sweep, which now reads all three files, into `tests/test_window_static.lua`.
 
 `tests/test_row_namecell.lua` covers the one cell in the row that never holds a figure. Because it
 holds no meter value it stays **out** of the secret set, its geometry stays readable through a
