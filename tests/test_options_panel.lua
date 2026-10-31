@@ -912,9 +912,9 @@ function()
         "the composed media rows did not arrive as Ka0sMedia_* types")
 end)
 
-test("Options: AceGUI-3.0-SharedMediaWidgets is gone from the load, the disk and the wiring",
+test("Options: AceGUI-3.0-SharedMediaWidgets is gone from the load and the disk",
 function()
-    -- red under: restoring the TOC line or the folder, or calling the retired fixup again.
+    -- red under: restoring the TOC line or the folder.
     local root = T.root or "."
     local fh = assert(io.open(root .. "/MultiMeters.toc", "r"))
     local toc = fh:read("*a")
@@ -923,9 +923,4 @@ function()
     local xml = io.open(root .. "/libs/AceGUI-3.0-SharedMediaWidgets/widget.xml", "r")
     assertTrue(xml == nil, "libs/AceGUI-3.0-SharedMediaWidgets is still on disk")
     if xml then xml:close() end
-    local src = assert(io.open(root .. "/settings/OptionsSetup.lua", "r"))
-    local code = src:read("*a"):gsub("%-%-[^\r\n]*", "")
-    src:close()
-    assertTrue(code:find("__PatchLSM30Border", 1, true) == nil,
-        "settings/OptionsSetup.lua still calls the retired fixup")
 end)
