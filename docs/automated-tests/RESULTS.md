@@ -32,6 +32,7 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 | Run | Commit | Tree | Version | Lint w/e | Files | Tests | Perf | NLOC | Funcs | Avg NLOC | Avg CCN | Max CCN | CCN warn | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| [`20261101-000911`](20261101-000911/) | `ee356f1` | clean | 1.2.0 | 0/0 | 183 | 2449/1/2450 | pass | 52831 | 5719 | 8.4 | 2.5 | 15 | 0 | **green** |
 | [`20261031-213738`](20261031-213738/) | `a309925` | clean | 1.2.0 | 0/0 | 183 | 2449/1/2450 | pass | 52828 | 5719 | 8.4 | 2.5 | 15 | 0 | **green** |
 | [`20261031-202021`](20261031-202021/) | `0d603a4` | clean | 1.2.0 | 0/0 | 178 | 2449/1/2450 | pass | 52646 | 5713 | 8.4 | 2.5 | 15 | 0 | **green** |
 | [`20261009-191721`](20261009-191721/) | `b3c8b4f` | clean | 1.1.0 → 1.2.0 | 0/0 | 146 | 2196/1/2197 | pass | 45504 | 4913 | 8.4 | 2.5 | 15 | 0 | **green** |
@@ -53,10 +54,11 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 ## Test suite
 
 **2450 cases** — 2449 passed, 0 failed, 1 skipped. The generated inventory
-[`20261031-213738/test-cases.md`](20261031-213738/test-cases.md) is the authority on which cases existed at this run;
+[`20261101-000911/test-cases.md`](20261101-000911/test-cases.md) is the authority on which cases existed at this run;
 `docs/test-cases.md` is that same list at HEAD.
 
-Unchanged from the previous run at 2450 cases.
+The count has been **flat at 2450 across the last 3 runs**. A suite that stopped growing while
+the addon did is a coverage gap, and it is the one thing the table above cannot show.
 
 **1 case(s) reported a `skip`.** A skip is counted in the total and never in `passed`, and at
 the release gate it is NOT EVALUATED rather than passed (`automated-tests-§3`).
@@ -73,35 +75,35 @@ to whoever thinks to open `.luacheckrc`.
 ## Perf
 
 **18 scenarios** from `tests/perf.lua`; the measurements are in
-[`20261031-213738/perf.json`](20261031-213738/perf.json).
+[`20261101-000911/perf.json`](20261101-000911/perf.json).
 
 | `scenario` | `iters` | `ms/iter` | `api/iter` | `bytes/iter` |
 |---|---|---|---|---|
-| `refresh20x7` | 300 | 0.82672 | 8.00 | 297216.1 |
-| `refresh20x7Restricted` | 300 | 1.17754 | 8.00 | 406173.3 |
-| `throttleBurst` | 1 | 17.61300 | 8.00 | 317269.0 |
-| `throttleIdle` | 300 | 0.00085 | 0.00 | 0.0 |
-| `drillOpenClose` | 300 | 0.02958 | 1.00 | 12746.2 |
-| `refreshWhileDrilled` | 300 | 0.05113 | 1.00 | 16170.1 |
-| `rosterRebuild` | 300 | 0.70135 | 8.00 | 315144.1 |
-| `rosterBurst` | 300 | 0.73449 | 8.00 | 315142.0 |
-| `rosterCached` | 300 | 0.64575 | 8.00 | 297216.1 |
-| `rosterPartial` | 300 | 0.71304 | 8.00 | 314374.5 |
-| `applyConfig` | 300 | 0.43624 | 0.00 | 26194.5 |
-| `probeOverheadOff` | 300 | 0.62463 | 8.00 | 297216.1 |
-| `probeOverheadOn` | 300 | 0.67056 | 8.00 | 297220.9 |
-| `suspended` | 300 | 0.00015 | 0.00 | 0.0 |
-| `feignTraceAbsent` | 300 | 0.16410 | 2.00 | 65344.1 |
-| `feignTraceOff` | 300 | 0.15697 | 2.00 | 65344.1 |
-| `spellEventOff` | 300 | 0.00023 | 0.00 | 0.0 |
-| `spellEventOn` | 300 | 0.00040 | 0.00 | 0.7 |
+| `refresh20x7` | 300 | 0.80213 | 8.00 | 297216.1 |
+| `refresh20x7Restricted` | 300 | 1.05381 | 8.00 | 406173.3 |
+| `throttleBurst` | 1 | 14.50500 | 8.00 | 317269.0 |
+| `throttleIdle` | 300 | 0.00061 | 0.00 | 0.0 |
+| `drillOpenClose` | 300 | 0.02627 | 1.00 | 12746.2 |
+| `refreshWhileDrilled` | 300 | 0.05283 | 1.00 | 16170.1 |
+| `rosterRebuild` | 300 | 0.74749 | 8.00 | 315144.1 |
+| `rosterBurst` | 300 | 0.80277 | 8.00 | 315142.0 |
+| `rosterCached` | 300 | 0.68350 | 8.00 | 297216.1 |
+| `rosterPartial` | 300 | 0.75402 | 8.00 | 314374.5 |
+| `applyConfig` | 300 | 0.51705 | 0.00 | 26194.5 |
+| `probeOverheadOff` | 300 | 0.69520 | 8.00 | 297216.1 |
+| `probeOverheadOn` | 300 | 0.70788 | 8.00 | 297220.9 |
+| `suspended` | 300 | 0.00013 | 0.00 | 0.0 |
+| `feignTraceAbsent` | 300 | 0.16491 | 2.00 | 65344.1 |
+| `feignTraceOff` | 300 | 0.18375 | 2.00 | 65344.1 |
+| `spellEventOff` | 300 | 0.00022 | 0.00 | 0.0 |
+| `spellEventOn` | 300 | 0.00042 | 0.00 | 0.7 |
 
 `perf` never fails a run and never blocks a commit — it is recorded, read and compared, not
 thresholded (`performance-§9`). It does gate the **tag** (`automated-tests-§3`).
 
 ## Complexity watch list
 
-Current as of [`20261031-213738`](20261031-213738/) — **this run's measurement, not its diff.** Max CCN **15** across 5719
+Current as of [`20261101-000911`](20261101-000911/) — **this run's measurement, not its diff.** Max CCN **15** across 5719
 functions, **0** of them warned on; 22 file(s) in the 1000–1500 band and 0 over the 1500 cap
 (`layout-§1`).
 
