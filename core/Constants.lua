@@ -660,7 +660,7 @@ Constants.MAX_ROWS = 40
 --   FULLSCREEN_DIALOG  the library's dropdown menu, AceGUI pullouts, Blizzard menus
 --   TOOLTIP            GameTooltip and its spell lines at the tooltip's own level
 --                      (+ TOOLTIP_LINE, re-stated per draw); the reorder drag ghost;
---                      the LSM30 media pullouts
+--                      the Ka0sMedia_* pull-outs
 --
 -- The library's reorder drop line (+20) belongs to the settings panel, not to a
 -- window. Levels are always `base:GetFrameLevel() + LEVEL.<NAME>`, never absolute
