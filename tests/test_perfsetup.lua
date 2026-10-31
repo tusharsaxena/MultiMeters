@@ -144,7 +144,7 @@ function()
     -- THE HOOK IS GONE AND THAT IS WHAT THIS CASE GUARDS. From PerfPanel minor 4
     -- the library draws the control itself, from `d.addonName or d.name`, at the
     -- same inset from the same corner — so a hook here would be a second copy of
-    -- library behavior, and the branch at libs/LibKa0s/PerfPanel.lua:185-196 is
+    -- library behavior, and the branch at libs/LibKa0s/PerfPanel.lua:271 is
     -- EXCLUSIVE: a host that supplies `decorate` never runs the library's arm at
     -- all. Nothing would say so once the two drifted. Its absence is reasoned at
     -- core/PerfSetup.lua's `NO decorate` block; this is the case that keeps the

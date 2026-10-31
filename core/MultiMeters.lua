@@ -685,7 +685,7 @@ function NS.ShouldShow(window)
     -- window out at a target dummy under "Only in combat" would otherwise be
     -- looking at nothing, and step 1's one-way force is the documented way that is
     -- avoided for every other rule too. `never` is still not something an explicit
-    -- `/mm toggle` may overrule -- see modules/Window.lua's UNFORCEABLE, which
+    -- `/mm toggle` may overrule -- see modules/Window_Placement.lua's UNFORCEABLE, which
     -- names its reason.
     local allowed, why = masterVisibilityAllows()
     if not allowed then return false, why end

@@ -81,6 +81,9 @@ test("parity: the Options stub carries every public member of the live Helpers s
         -- block is empty — a documented deviation in docs/ARCHITECTURE.md, and the difference
         -- tests/test_degraded.lua measures row for row. A stub member here would have no caller.
         "MasterControls", "ColorPair", "BarGroup", "BorderGroup", "FontGroup",
+        -- O.PositionBlock (v1.84.0) is a composer as well, on the same table. This addon has no
+        -- position rows and does not call it, so no stub is owed.
+        "PositionBlock",
         --
         -- The composers' published vocabularies. `grep -rn 'MASTER_GROUP\|CLASS_COLOR_NOTE\|
         -- FONT_FLAGS\|VISIBILITY_' core modules settings` returns nothing: the composers stamp

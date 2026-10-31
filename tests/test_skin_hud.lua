@@ -4,7 +4,7 @@
 -- faces follow `hud.font`, the two bar textures `bar.texture` and the two bar border styles
 -- `bar.borderStyle`. While a companion is on the surface draws the skin's token (core/SkinSetup.lua's
 -- NS.SkinMediaKey); off, the player's pick, which is never rewritten. The companions ship on
--- (DECISIONS X3), and the v20 step (core/Database.lua) put every stored window on them once (O2):
+-- (DECISIONS X3), and the v20 step (core/Database_Migrations.lua) put every stored window on them once (O2):
 -- a pick made after it is kept. Only texture, border and font follow; no color moves (X4).
 --
 -- EACH CASE ON ITS OWN INSTANCE: a skin change is library session state.

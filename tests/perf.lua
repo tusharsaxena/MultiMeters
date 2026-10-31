@@ -511,7 +511,12 @@ assert_(rebuild.unitsPerIter > 0,
 do
     -- The lazy-rebuild property, stated as a number: ten roster messages followed
     -- by ONE refresh must cost exactly ONE walk, not ten.
-    local burst = measure("rosterBurst", 1, function()
+    --
+    -- ITERS, NOT ONE (issue #54). A single iteration is one timer sample with no
+    -- averaging: the same tree read 1.8, 10.3 and 13.2 ms on consecutive runs, with
+    -- api/iter and bytes/iter to the tenth unchanged. The property is per burst, so
+    -- averaging it loses nothing.
+    local burst = measure("rosterBurst", ITERS, function()
         for _ = 1, 10 do NS:SendMessage(MSG.ROSTER_CHANGED) end
         inst.dirty = true
         inst:Refresh()
@@ -564,9 +569,23 @@ do
 end
 
 -- Full window rebuild: a settings change re-applies config and re-lays every row.
-measure("applyConfig", ITERS, function()
+local applyConfig = measure("applyConfig", ITERS, function()
     inst:ApplyConfig()
 end)
+
+-- A SETTINGS PATH, NOT A HOT ONE, and pinned because it rose unread. 46232.3 at
+-- b3c8b4f to 63874.5 at 8d6b438, bisected step by step: 1eb8713 +1728, 5e6c410 +1312
+-- and 18b2c7a +2304 (the test and sim strips, the title word), 530f66f +3705 and
+-- f43617c +1360 (the skin paint on the window and rows), 44b21ad +7231 (the Shell's
+-- own edge ring and inner rule, eight regions). A line-attributed profile put 60.6K
+-- of the 63.9K in tests/mock_frame.lua recording those widget calls, which the
+-- client's C setters do not allocate, so the rise was harness: more calls recorded,
+-- each one a table. SetPoint's records are recycled now, and the strips' placement
+-- no longer builds three tables a pass, which is what this ceiling measures.
+local APPLY_CONFIG_BYTES_CEILING = 27100   -- measured 26194.5 over 3 runs, 2026-10-31, +3.5%
+assert_(applyConfig.bytesPerIter <= APPLY_CONFIG_BYTES_CEILING,
+    ("a config pass allocated %.0f bytes/iter, over the %d-byte ceiling — one ApplyConfig "
+     .. "of this window grew"):format(applyConfig.bytesPerIter, APPLY_CONFIG_BYTES_CEILING))
 
 -- ── 5. THE ZERO-OVERHEAD SCENARIO (performance-§9 MUST) ─────────────────────
 --
@@ -576,10 +595,9 @@ end)
 
 -- ONE UNMEASURED PASS FIRST. The applyConfig scenario above bumped the window's
 -- layoutVersion, so the next Refresh re-anchors every bound row once (review
--- F-007) -- and the mock's SetPoint allocates where the client's does not. Left
--- in, that one-time ~3 KB lands in whichever arm runs first and reads as the
--- dormant bracket costing more than the armed one. Both arms measure the steady
--- state instead.
+-- F-007). That one-time pass lands in whichever arm runs first and would read as
+-- the dormant bracket costing more than the armed one. Both arms measure the
+-- steady state instead.
 inst.dirty = true
 inst:Refresh()
 

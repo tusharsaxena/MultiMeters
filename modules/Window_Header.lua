@@ -821,6 +821,14 @@ end
 -- The test-mode and simulation strips (MultiMeters#59, #60, LibKa0s#48)
 -- ---------------------------------------------------------------------------
 
+local function placeStrip(strip, frame, pad, stripTop, show)
+    if not strip then return end
+    strip:ClearAllPoints()
+    strip:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -stripTop)
+    strip:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, -stripTop)
+    strip:SetShown(show)
+end
+
 --- The anchoring half of ApplyTestStrip: place both strips in the one slot under
 --- the title, inset by the padding on both sides, and show the one the slot is
 --- reserved for -- the sim strip while a simulation runs, the test strip
@@ -831,15 +839,8 @@ function WindowProto:PlaceTestStrip()
     local pad = self.layout.padding
     local stripTop = self:ChromeOffsets()
     local shown, sim = stripShown(self), simRunning()
-    for _, pair in ipairs({ { self.testStrip, not sim }, { self.simStrip, sim } }) do
-        local strip = pair[1]
-        if strip then
-            strip:ClearAllPoints()
-            strip:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -stripTop)
-            strip:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -pad, -stripTop)
-            strip:SetShown(shown and pair[2])
-        end
-    end
+    placeStrip(self.testStrip, self.frame, pad, stripTop, shown and not sim)
+    placeStrip(self.simStrip, self.frame, pad, stripTop, shown and sim)
 end
 
 --- The test-mode toggle's whole effect on a window, and NARROW on purpose: the

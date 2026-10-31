@@ -442,7 +442,7 @@ end)
 -- recap ids are identical across the two in the same order (measured over three
 -- live runs). That was the reasoning behind attempt two. The block below
 -- supersedes it: measured on a live client, the Current session held no deaths
--- to join to at all, so nothing reads the field now (core/Diagnostics.lua:677).
+-- to join to at all, so nothing reads the field now (core/Diagnostics_DeathRecap.lua:373).
 
 -- ---------------------------------------------------------------------------
 -- Segment offsets — the anchor the client does not supply

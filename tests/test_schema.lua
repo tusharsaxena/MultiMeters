@@ -1027,7 +1027,7 @@ test("Schema: every LSM border setting is one this suite knows honors \"None\"",
     -- for that, named below. It enumerates the border settings, so a THIRD one
     -- added later cannot quietly ship without someone checking it behaves like
     -- these two.
-    -- red under: adding an LSM30_Border row without a "None" case behind it.
+    -- red under: adding a Ka0sMedia_Border row without a "None" case behind it.
     local COVERED = {
         -- path -> the case that proves this surface honors "None"
         ["window.frame.borderStyle"] =
@@ -1041,7 +1041,7 @@ test("Schema: every LSM border setting is one this suite knows honors \"None\"",
     local inst = T.load()
     local uncovered = {}
     for _, row in ipairs(inst.NS.Schema) do
-        if row.dialogControl == "LSM30_Border" and not COVERED[row.path] then
+        if row.dialogControl == "Ka0sMedia_Border" and not COVERED[row.path] then
             uncovered[#uncovered + 1] = row.path
         end
     end
@@ -1122,7 +1122,7 @@ test("Schema: every text surface offers face, outline, shadow and color", functi
         -- picker, or "font selector" is an edit box you can type a typo into.
         local face = need("font selector", surface.font, "string")
         if face then
-            assertEqual(face.dialogControl, "LSM30_Font",
+            assertEqual(face.dialogControl, "Ka0sMedia_Font",
                 surface.label .. "'s font is not the LSM picker")
         end
 

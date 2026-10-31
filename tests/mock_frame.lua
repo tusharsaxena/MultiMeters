@@ -69,11 +69,14 @@ local makeFrame  -- forward declaration; regions are frames too
 --- Normalize SetPoint's two overloads into one record. Both forms are used by
 --- modules/Window.lua (`SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -5)`) and by
 --- modules/Row.lua (`SetPoint("LEFT", bar, "LEFT", 2, 0)`).
-local function recordPoint(point, a, b, c, d)
+local function recordPoint(rec, point, a, b, c, d)
+    rec.point = point
     if type(a) == "number" or a == nil then
-        return { point = point, relativeTo = nil, relativePoint = point, x = a or 0, y = b or 0 }
+        rec.relativeTo, rec.relativePoint, rec.x, rec.y = nil, point, a or 0, b or 0
+    else
+        rec.relativeTo, rec.relativePoint, rec.x, rec.y = a, b or point, c or 0, d or 0
     end
-    return { point = point, relativeTo = a, relativePoint = b or point, x = c or 0, y = d or 0 }
+    return rec
 end
 
 local FRAME = {}
@@ -119,11 +122,25 @@ function FRAME.IsVisible(self)
 end
 
 -- ── geometry ───────────────────────────────────────────────────────────────
+-- The records are RECYCLED, because the client's SetPoint allocates no Lua memory
+-- and this one is what tests/perf.lua's `applyConfig` bytes/iter measures: a fresh
+-- table per anchor put 33 KB of harness into a 64 KB figure, and every anchor a skin
+-- paint re-laid read as the addon allocating.
 function FRAME.SetPoint(self, point, a, b, c, d)
-    self.__points[#self.__points + 1] = recordPoint(point, a, b, c, d)
+    local points, spent = self.__points, self.__spentPoints
+    local rec = spent[#spent] or {}
+    spent[#spent] = nil
+    points[#points + 1] = recordPoint(rec, point, a, b, c, d)
     return self
 end
-function FRAME.ClearAllPoints(self) self.__points = {}; return self end
+function FRAME.ClearAllPoints(self)
+    local points, spent = self.__points, self.__spentPoints
+    for i = #points, 1, -1 do
+        spent[#spent + 1] = points[i]
+        points[i] = nil
+    end
+    return self
+end
 function FRAME.GetNumPoints(self) return #self.__points end
 function FRAME.GetPoint(self, i)
     local p = self.__points[i or 1]
@@ -554,6 +571,7 @@ function makeFrame(objectType, parent, name)
         __parent     = parent,
         __shown      = true,   -- CreateFrame'd frames start shown
         __points     = {},
+        __spentPoints = {},
         __regions    = {},
         __scripts    = {},
         __events     = {},

@@ -1,7 +1,7 @@
 # Testing
 
 A headless Lua unit harness lives under `tests/` — run `lua tests/run.lua` from the repo root (it
-exits non-zero on any failure); `luacheck .` must stay at 0 warnings and 0 errors. The tree is clean
+exits non-zero on any failure); `~/.claude/dev-copilot/bin/ka0s-bounded luacheck .` must stay at 0 warnings and 0 errors. The tree is clean
 on both counts today, so a new warning is a regression rather than background noise.
 
 The suites load every source under a WoW-API mock and assert what is genuinely ours: the LibKa0s
@@ -170,9 +170,8 @@ cell and the shared color, media, highlight and pool parts stay in `tests/test_r
 asks the tooltip the narrow question and a click routes to the drill-down, while inside a breakdown
 the row is a spell, the row owns the mouse and a right click leaves.
 
-`tests/test_database_migrations.lua` took `core/Database.lua`'s migration runner and every step it
-walks out of `tests/test_database.lua` on the same day, mirroring the module's own `Migrations`
-section; the AceDB instance, the `== nil` merge, the window registry and the profile callbacks stay
+`tests/test_database_migrations.lua` took the migration runner and every step it walks out of
+`tests/test_database.lua` on the same day, mirroring what is now `core/Database_Migrations.lua`; the AceDB instance, the `== nil` merge, the window registry and the profile callbacks stay
 behind. Who owns the schema stamp is still `tests/test_migrations.lua`'s subject.
 
 `modules/Tooltip.lua` is the bent seam — two modules, three suites. `tests/test_tooltip_lines.lua`
@@ -440,8 +439,8 @@ function`, so none of the three is unique on name plus file. The CCN breaks that
 of them: `migrations[4]` is 17 and carries its ruling forward like any other row. `migrations[1]`
 and `migrations[12]` are both 16, so **those two** — and only those two — were unique on neither key,
 and their generated cells read blank on every run that regenerates them. The register was where
-their disposition existed at all, and the runner's Disposition column was transcribed from it. Those three functions still sit
-in `core/Database.lua` and would key the same way, so a row that comes back for one of them belongs
+their disposition existed at all, and the runner's Disposition column was transcribed from it. Those three functions sit in
+`core/Database_Migrations.lua` now and would key the same way, so a row that comes back for one of them belongs
 in the hub for the same reason it did the first time.
 
 ### The texture-path census gate
@@ -490,7 +489,7 @@ look at a number. This one does, and it is scoped to the single citation that le
 ### The suppression gate
 
 `tests/test_lintconfig.lua` is the fourth register, and it guards the thing the other three rest on:
-that `luacheck .` reaching 0/0 is a statement about the code rather than about `.luacheckrc`.
+that `ka0s-bounded luacheck .` reaching 0/0 is a statement about the code rather than about `.luacheckrc`.
 
 It exists because this repo spent the whole 2026-09-07 remediation with
 `ignore = { "212/self", "212/event", "211/addonName" }` at the top of that file. That list looks
@@ -595,7 +594,7 @@ differs between them, so a bare "gates? yes/no" column cannot be written honestl
 
 | Suite | Command | Gates the **commit**? | Gates the **release** (tag)? |
 |---|---|---|---|
-| `lint` | `luacheck .` | **yes** | **yes** |
+| `lint` | `ka0s-bounded luacheck .` | **yes** | **yes** |
 | `tests` | `lua tests/run.lua` | **yes** | **yes** |
 | `perf` | `lua tests/perf.lua` | **no — recorded only** | **yes** |
 | `complexity` | `bash tests/_kit/run-automated-tests.sh --suite complexity` (`lizard -l lua -L 1500 -x "./libs/*" -x "./tests/_kit/*" .` over the sighted shadow, with function-count parity) | **no — recorded only** | **yes** |

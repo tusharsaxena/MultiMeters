@@ -737,7 +737,7 @@ end
 -- visibility rules, the show ladder, the tooltip and the drill-down make. None
 -- of them is deprecated; they live here because they are exactly the reads
 -- `/mm sim` answers (MultiMeters#60, the LibKa0s Sim host contract H1), and the
--- standard (compat.md, preview-mode.md "The in-game simulator") routes a
+-- standard (WowAddonStandards compat.md, preview-mode.md "The in-game simulator") routes a
 -- simulator-answered read through compat even when nothing is deprecated, so
 -- the seam is one file rather than a dozen call sites.
 --
@@ -866,7 +866,7 @@ end
 --- The function that sends one chat message, or nil where the client has none.
 ---
 --- The bare `SendChatMessage` global has been deprecated since patch 11.2.0
---- (Deprecated_ChatInfo.lua) in favor of `C_ChatInfo.SendChatMessage`, which
+--- (Blizzard's Deprecated_ChatInfo.lua) in favor of `C_ChatInfo.SendChatMessage`, which
 --- takes the same `(text, chatType, languageID, target)`. This file is the only
 --- one allowed to name the global (compat), so modules/Export.lua asks here.
 --- Resolved at CALL time, not captured at load, so a namespace that arrives

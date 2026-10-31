@@ -13,7 +13,7 @@
 --     (a fresh install reads 0) can safely walk the whole ladder from v1.
 --
 -- The runner's step table is reached through `NS.Database.__migrations`, the documented test seam
--- in core/Database.lua. Each T.load builds a fresh instance, so a step replaced here is replaced in
+-- in core/Database_Migrations.lua. Each T.load builds a fresh instance, so a step replaced here is replaced in
 -- that instance alone, and every case restores what it replaced before it asserts.
 
 local T = _G.MULTIMETERS_TEST

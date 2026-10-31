@@ -1,6 +1,6 @@
 local _, NS = ...
 -- modules/SimScenario.lua — the simulator's four scenarios, their steps and how each step plays
--- (MultiMeters#60; design-mm-sim.md §2.7).
+-- (MultiMeters#60; Ka0sAddonsCommonTasks docs/2026-10-23-SIM_PREVIEW_MODE_STRIPS/inputs/design-mm-sim.md §2.7).
 --
 -- WHAT IT FILLS. modules/Sim.lua builds NS.Sim with NS.SimHost.SCENARIOS and hands the library
 -- `play = Host.Play`, read at call time. This file fills both IN PLACE when it loads, which is the

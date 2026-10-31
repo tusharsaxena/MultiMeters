@@ -511,7 +511,7 @@ test("SetByPath: a path INTO the column array is refused by name", function()
 end)
 
 test("Schema: NS.NormalizeColumns is published for the migration ladder", function()
-    -- core/Database.lua's migrations[10] needs this rule and cannot reach a local
+    -- core/Database_Migrations.lua's migrations[10] needs this rule and cannot reach a local
     -- in a file eighteen TOC entries later. A private copy there is how the
     -- migration and the write seam end up disagreeing about the shape.
     local inst = T.load()

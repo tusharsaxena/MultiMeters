@@ -26,7 +26,7 @@ local addonName, NS = ...
 -- in either state; RIGHT-click opens the client's own context menu, titled with the label, with a
 -- checkbox per toggle this addon really has. The library builds both; this file only answers.
 --
--- THIS ADDON HAS ALL FOUR, and `ADDONS.md` records them as its menu entries:
+-- THIS ADDON HAS ALL FOUR, and WowAddonStandards `ADDONS.md` records them as its menu entries:
 --
 --     [x] Enabled         isEnabled     + setEnabled     /mm enable | /mm disable
 --     [ ] Locked          isLocked      + toggleLock     /mm lock
@@ -60,7 +60,7 @@ local addonName, NS = ...
 --
 -- GLOBAL, not profile, and that is `launcher-§3`'s decision rather than an accident: a minimap
 -- button belongs to the INSTALLATION, so a profile switch must not move the player's buttons.
--- core/Database.lua's v15 step carries the table across from `db.profile.minimap`, `minimapPos`
+-- core/Database_Migrations.lua's v15 step carries the table across from `db.profile.minimap`, `minimapPos`
 -- included.
 --
 -- SURVIVING A RESET IS A SEPARATE PROPERTY AND THE SCOPE IS NOT THE ARGUMENT FOR IT. Whether the

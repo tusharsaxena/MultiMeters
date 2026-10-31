@@ -231,7 +231,7 @@ Constants.COLUMN_WIDTH = 92
 -- widens the column.
 --
 -- Lives here rather than in modules/Window.lua because the layout builder and
--- core/Database.lua's width migration both have to agree on it — the migration
+-- core/Database_Migrations.lua's width migration both have to agree on it — the migration
 -- sizes a frame to hold the grid the layout builder is about to lay out, and two
 -- copies of "2" is the duplicate that drifts the first time one of them changes.
 Constants.COLUMN_GAP = 2
@@ -487,7 +487,7 @@ Constants.NAME_COLUMN_MIN = 46
 -- then say — reads as a convenience and behaves as a guess: the one thing a
 -- player wants to be certain of, before pressing a button that puts their
 -- numbers in front of other people, is WHICH other people. It was removed as
--- ambiguous; core/Database.lua's v3 -> v4 step folds a stored "AUTO" back to
+-- ambiguous; core/Database_Migrations.lua's v3 -> v4 step folds a stored "AUTO" back to
 -- SELF, and modules/Export.lua names the retired key one last time so a profile
 -- that escaped the migration cannot reach SendChatMessage with it.
 Constants.EXPORT_CHANNELS = {
@@ -660,7 +660,7 @@ Constants.MAX_ROWS = 40
 --   FULLSCREEN_DIALOG  the library's dropdown menu, AceGUI pullouts, Blizzard menus
 --   TOOLTIP            GameTooltip and its spell lines at the tooltip's own level
 --                      (+ TOOLTIP_LINE, re-stated per draw); the reorder drag ghost;
---                      the LSM30 media pullouts
+--                      the Ka0sMedia_* pull-outs
 --
 -- The library's reorder drop line (+20) belongs to the settings panel, not to a
 -- window. Levels are always `base:GetFrameLevel() + LEVEL.<NAME>`, never absolute

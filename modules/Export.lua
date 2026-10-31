@@ -478,7 +478,7 @@ local function chatHeader(result, stat, session, F)
     -- DECIDED FROM THE PLAIN INPUT, never from the formatter's answer. Duration
     -- can hand back a secret string, and `~= ""` on one is a comparison — which
     -- is on the forbidden list even though `..` two lines up is not.
-    -- modules/Window.lua's DurationText makes the same distinction.
+    -- The retired DurationText made the same distinction.
     local seconds = result.durationSeconds
     if seconds ~= nil and F.Duration then
         head = head .. " (" .. F.Duration(seconds) .. ")"
@@ -644,7 +644,7 @@ end
 ---
 --- AUTO IS RETIRED and is named here anyway. It used to resolve itself at send
 --- time and was removed as ambiguous (core/Constants.lua's catalog comment says
---- why); core/Database.lua's v3 -> v4 step folds the stored key to SELF. This
+--- why); core/Database_Migrations.lua's v3 -> v4 step folds the stored key to SELF. This
 --- line is for the profile that arrives afterwards from a copy or a hand edit:
 --- without it the fallback below would hand SendChatMessage a chat type of
 --- "AUTO", which is not one.

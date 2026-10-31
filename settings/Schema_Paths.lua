@@ -541,8 +541,8 @@ local function normalizeColumns(value)
     return out
 end
 
---- Published because core/Database.lua's migration ladder needs this same rule and
---- cannot reach a local in a file that loads eighteen TOC entries after it. Read
+--- Published because core/Database_Migrations.lua's migration ladder needs this same rule and
+--- cannot reach a local in a file that loads later in the TOC. Read
 --- at MIGRATION time rather than at load time: the ladder runs on Init, long after
 --- every file is in memory. A second implementation of "what shape is a column
 --- array" is how the migration and the write seam end up disagreeing about it.
@@ -618,6 +618,8 @@ local S = SchemaLib:New({
         NO_ROOT   = L["No window is selected."],
     },
 })
+-- No shipped reader, kept on purpose: this is the instance tests/test_surface_parity.lua holds the
+-- degraded stub to, and the one the options-panel cases drive.
 NS.SchemaRuntime = S
 
 -- ---------------------------------------------------------------------------

@@ -128,7 +128,7 @@ consequences, and the second one is easy to miss:
   column-header strip under `columnHeader.colorMode` / `bgColorMode`, and — always, whatever any of
   those are set to — the statistic's whole line in the name tooltip's all-statistics list, taken down
   by `Constants.STAT_DIM` when the hovered window has no column for it.
-- **It generates a settings row.** `settings/Schema.lua` appends one `color` row per palette entry to
+- **It generates a settings row.** `settings/Schema_General.lua` appends one `color` row per palette entry to
   General → Statistic colors, and `defaults/Profile.lua`'s `statColorDefaults()` seeds the stored
   table from the same place. A statistic with no palette entry gets **no swatch** and cannot be
   recolored, which is the honest outcome rather than a black one.
@@ -307,7 +307,7 @@ One row, one default, one locale entry. A schema row automatically gains `/mm ge
 profile reset behind `/mm resetall`, so **do not** write a parallel mutator for a field that already
 has a row.
 
-**1. `settings/Schema.lua`** — add the row in the block for its page **and tab**: `group` is now the
+**1. `settings/Schema.lua`, or `settings/Schema_General.lua` for the Visibility, Columns and General pages** — add the row in the block for its page **and tab**: `group` is now the
 tab label, not just a section heading, so the row lands wherever an existing row already carries that
 `group` on that `page` (positioned where you want it to render within the tab — the flow engine pairs
 consecutive rows two to a line, so neighbors here are neighbors on screen). Use an existing group to
@@ -376,7 +376,7 @@ hand-writing one is anti-pattern #73. In practice:
   strips, the backdrop, the border). The path does not decide this and an audit reads the stamp.
 - **Never `disabledIf` a color row.** Its alpha is still read under every mode, so graying it would
   say something untrue. The sentence that replaces it is appended to every non-palette swatch
-  automatically by the `SWATCH_NOTE` pass at the foot of `settings/Schema.lua`.
+  automatically by the `SWATCH_NOTE` pass at the foot of `settings/Schema_General.lua`.
 - **A palette swatch is the one exemption** — one color per statistic identifies a column, not a
   player, so `statColors.*` takes no companion and no note.
 - **A group over a background is not a bar group.** A backdrop with no fill texture takes the swatch
@@ -455,8 +455,8 @@ end
 
 **2. `MultiMeters.toc`** — add the file in the `# Settings` block, **after** `settings/Schema.lua`
 and `settings/OptionsSetup.lua`, in the position you want the page to appear in the **tree** — the
-tree's order is registration order, and it is not the same order as `settings/Schema.lua`'s own row
-order (General registers first and is declared last in the schema file; see
+tree's order is registration order, and it is not the same order as the schema array's own row
+order (General registers first and is declared last in `settings/Schema_General.lua`; see
 [settings-panel.md](settings-panel.md#the-pages)).
 
 **3. `settings/Schema.lua`** — the rows, with `page = "<pagekey>"` and a `group` for each: one

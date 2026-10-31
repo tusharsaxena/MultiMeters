@@ -126,9 +126,9 @@ Five things about how this addon calls them are worth knowing before editing a b
   composer's companion would follow `bar.borderStyle`, the wrong token for a window edge, so the
   window's edge follows the skin through its color mode's **Skin** value instead (MM-A1). Colors,
   sizes, flags and thicknesses are never governed by a companion (DECISIONS X4). Every picker
-  previews its entries: the panel's rows are `LSM30_*` controls from the vendored
-  AceGUI-3.0-SharedMediaWidgets, and the Skin tab's Font and Texture, like the first-run picker's
-  rows, are the library's `Ka0sMedia_*` pickers (LibKa0s v1.83.0, `OptionsMedia.lua`).
+  previews its entries: every media row in the panel, the Skin tab's Font and Texture and the
+  first-run picker's rows are the library's `Ka0sMedia_*` pickers (`OptionsMedia.lua`), which read
+  LibSharedMedia and wear the skin.
 
 - **Nothing stored moved.** Each call passes `keys` and `defaults`, so the composed rows land on this
   addon's existing paths at this addon's shipped values. `dress()` in `settings/Schema_Compose.lua`
@@ -140,7 +140,7 @@ Five things about how this addon calls them are worth knowing before editing a b
 - **The boolean companion is swapped for a dropdown.** The composers emit a `Use class color`
   checkbox beside every swatch; this addon ships the **color-mode dropdown** instead, which
   `options-ui-§17` names as the richer form of the same control and forbids converting back — `stat`,
-  `skin` and `none` are answers a checkbox cannot give, and `core/Database.lua`'s v10 and v13 steps
+  `skin` and `none` are answers a checkbox cannot give, and `core/Database_Migrations.lua`'s v10 and v13 steps
   are what migrated this addon's booleans into them. So every call omits the companion and
   `withMode()` splices the mode into the slot it vacated, immediately right of the swatch.
 - **The composers are reached off a table of this file's own**, not off `NS.Helpers`.
@@ -155,20 +155,17 @@ Five things about how this addon calls them are worth knowing before editing a b
   blocks are **empty** — a [documented deviation](ARCHITECTURE.md#documented-deviations), and one
   that costs nothing a player can reach, because a degraded install has neither a settings panel nor
   a schema CLI.
-- **Two `LSM30_*` pickers survive outside a composer call, and they are not a group.**
-  `grep -rn 'LSM30_Font\|LSM30_Border\|LSM30_Statusbar' settings/` returns two DECLARATIONS —
-  `settings/Schema.lua:338` (`window.barTexture`) and `:346` (`window.font`) — and neither is
-  composer-able. The other hits are prose: two lines of the comment above
-  `settings/OptionsSetup.lua`'s `lib.__PatchLSM30Border()` call, which names `LSM30_Border` because
-  that is the widget it argues about. No `dialogControl` there, and nothing for this bullet to
-  account for. They are two of the
+- **Two `Ka0sMedia_*` pickers survive outside a composer call, and they are not a group.**
+  `grep -rn 'Ka0sMedia_Font\|Ka0sMedia_Border\|Ka0sMedia_Statusbar' settings/` returns two
+  DECLARATIONS — `settings/Schema.lua:312` (`window.barTexture`) and `:320` (`window.font`) — and
+  neither is composer-able. They are two of the
   four **broadcast meta rows** on Frame → Quick style, under the *All surfaces* heading: each one *writes*
   a value into every surface that has a setting of that kind and is then read by nothing, which is
-  what the note above them at `settings/Schema.lua:292-310` says at length. `options-ui-§16` fixes
+  what the note above them at `settings/Schema.lua:270-280` says at length. `options-ui-§16` fixes
   the shape of a **group** — a contiguous font block, a border block, a bar block, each over one
   surface, each with a color row and a companion. A single write-only setter over six surfaces —
   these two rows between them, `BAR_TEXTURE_PATHS`' two targets and `FONT_PATHS`' four, at
-  `settings/Schema_Compose.lua:79-89` — has none of that shape: there is no size, no color, no flags
+  `settings/Schema_Compose.lua:114-124` — has none of that shape: there is no size, no color, no flags
   and no second surface to be contiguous with, and a composer asked to emit one would have to emit
   five rows this addon must not store. The
   headings are the guard — a reader who sees *All surfaces* over them cannot mistake them for the font
@@ -210,7 +207,7 @@ composer now drops `startsLine` from *Test mode* whenever a minimap row was emit
 `tests/test_schema.lua` pins the eight as the tab's rows with nothing after them.
 `tests/test_options_panel.lua` pins the LAID-OUT pairs above, which is the half the schema order
 cannot see. A `group` is not a stored path; the minimap row's **store** did move, from
-`db.profile.minimap` to `db.global.minimap`, and `core/Database.lua`'s v15 step carries it.
+`db.profile.minimap` to `db.global.minimap`, and `core/Database_Migrations.lua`'s v15 step carries it.
 
 **Minimap button is the one row on this page the Defaults button does not touch.** Whether the
 button is shown is a per-installation display preference — the same class of thing as the angle the

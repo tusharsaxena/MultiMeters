@@ -248,10 +248,10 @@ and every column backed by a real session.
 | `drillOpenClose` | `DrillDown:Enter` / `BuildRows` / `Exit` | zero `GetColumn` calls — a breakdown reads `GetSourceDetail`, never a whole column — and the view is really closed afterwards |
 | `refreshWhileDrilled` | a full refresh with a breakdown open | zero column reads; the grid is not being drawn behind the drill-down |
 | `rosterRebuild` | one `ROSTER_CHANGED` plus one refresh | the cache really was invalidated (walks > 0) |
-| `rosterBurst` | **ten** `ROSTER_CHANGED` plus one refresh | the same walk count as a single message — `modules/Roster.lua` rebuilds **lazily**, on the next read, not eagerly in the handler |
+| `rosterBurst` | **ten** `ROSTER_CHANGED` plus one refresh, 300 times | the same walk count as a single message — `modules/Roster.lua` rebuilds **lazily**, on the next read, not eagerly in the handler. It ran a single iteration until 2026-10-31, and that one timer sample read anywhere from 1.2 to 17.9 ms on the same tree (issue #54) |
 | `rosterCached` | refreshes with an unchanged roster | zero unit reads |
 | `rosterPartial` | refreshes with one raid member's unit token unresolved, so the roster stays **partial** and is retried | more than zero unit reads (the map is still retried) and **no more than one rebuild's** — `Roster.BeginPass` arms one retry per aggregate pass. Measured 2026-10-07: 20 unit reads per refresh against `rosterRebuild`'s 21, 0.70 ms and 314375 bytes/iter; before the fix (retry on every lookup) the same scenario read **3200** units per refresh, 9.76 ms and 3041542 bytes/iter (MM-R-03) |
-| `applyConfig` | a settings change re-applying config and re-laying every row | recorded only |
+| `applyConfig` | a settings change re-applying config and re-laying every row | an absolute allocation ceiling (`APPLY_CONFIG_BYTES_CEILING`, 27100 against a measured 26194.5, three runs, 2026-10-31) |
 | `probeOverheadOff` / `probeOverheadOn` | the same refresh with brackets dormant, then armed | the zero-overhead assertions below |
 | `suspended` | a refresh with the provider suspended | **zero** meter API calls — suspend stops the reads at the source |
 | `spellEventOff` / `spellEventOn` | `OnSpellSucceeded` with a spell that is **not** Feign Death — the early return nearly every cast in a raid takes — brackets dormant, then armed | the dormant arm allocates **exactly 0** bytes/iter; neither arm reaches the meter API |
@@ -273,6 +273,16 @@ make *two* `GetColumn` calls per column: `modules/Window.lua` re-entered the pro
 column's group total so the cells could divide by it, while `modules/Aggregator.lua` already held
 both operands and had already divided (`cell.percent`). That doubled the addon's entire session-read
 cost on its hot path, and it was invisible because nothing counted. Now something counts.
+
+**`applyConfig` read 63874.5 bytes/iter at the 2026-10-31 pre-merge run, up from 46232.3, and nearly
+all of that was the harness.** Bisecting the 106 commits since the 1.2.0 release run lands the rise on
+the test and sim strips and the skin paint, the largest step being `44b21ad`, the Shell's edge ring
+and inner rule. A line-attributed profile put 60.6K of the 63.9K in `tests/mock_frame.lua` recording
+widget calls that the client's C setters make without touching Lua memory. The mock recycles its
+`SetPoint` records now, and `PlaceTestStrip` no longer builds three tables a pass, so the scenario
+reads 26194.5. The scenario's ms/iter stays near 0.45 against 0.26 at the release run: the extra
+widget calls are real, each settings write pays them once, and no refresh pays them. Every other
+scenario's bytes/iter held, apart from `refresh20x7`, which lost its one-time 21 bytes.
 
 ### The disarmed feign trace
 
@@ -299,7 +309,8 @@ harness land within a byte of each other. On the run that closed this, both arms
 bytes/iter exactly, against 77944.1 and 71224.1 before the fix.
 
 Re-measured 2026-09-24 with `tests/perf.lua`: `feignTraceAbsent` and `feignTraceOff` both 71544.1
-bytes/iter; the arms are still equal. The figures above are the closing run's and stay as recorded.
+bytes/iter; the arms are still equal. Re-measured 2026-10-31: both 65344.1, still equal. The figures
+above are the closing run's and stay as recorded.
 
 ### The zero-overhead pair
 
@@ -313,7 +324,9 @@ bytes/iter; the arms are still equal. The figures above are the closing run's an
   ceiling this replaced had drifted to 10.7% of headroom, and the disarmed feign trace's 6720
   bytes/iter walked in underneath it while the suite exited 0. A ceiling three times looser than it
   reads is not guarding anything. `tests/perf.lua` carries the run-by-run derivation for both this
-  and `RESTRICTED_BYTES_CEILING` (427000 against 412373.3).
+  and `RESTRICTED_BYTES_CEILING` (427000 against 412373.3). Re-measured 2026-10-31, three runs: the
+  dormant arm 297216.1 and the restricted pass 406173.3, so the headroom now reads 5.6% and 5.1%.
+  Neither ceiling was moved: no finding asked for it, and this is the next re-derivation's input.
 - the dormant arm allocates no more than the armed one, which is what the gating idiom buys.
 - the probe changes neither how many meter API calls nor how many columns a pass costs.
 - the dormant arm reproduces the plain `refresh20x7` figure, proving the two are the same path.

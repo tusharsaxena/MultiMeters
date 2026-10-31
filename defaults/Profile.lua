@@ -72,7 +72,7 @@ local WINDOW_TEMPLATE = {
     font        = "Friz Quadrata TT",
     -- FROM SKIN ("@skin", LibKa0s v1.82.0, ruling D-07), as every surface's own flags below: the
     -- Skin tab's Font outline decides (All text and HUD text only: OUTLINE; Off: none). It shipped
-    -- NONE until then; the v22 step moved a stored NONE onto From skin once (core/Database.lua).
+    -- NONE until then; the v22 step moved a stored NONE onto From skin once (core/Database_Migrations.lua).
     fontOutline = "@skin",
     -- The meta pair over the "Use the skin's ..." companions below, same bargain: each sets the
     -- companion of every surface that has one, stores what it last broadcast, and is read by
@@ -85,7 +85,7 @@ local WINDOW_TEMPLATE = {
     -- (`header`, `columnHeader`, `text`, `tooltip`) follow `hud.font`, the two bar textures
     -- `bar.texture`, and the two bar border styles `bar.borderStyle`. ON for every new window and
     -- every reset (DECISIONS X3), so a new window follows the skin the way an adopted one does
-    -- after the v20 reset (core/Database.lua). While a companion is on the pick beside it is kept
+    -- after the v20 reset (core/Database_Migrations.lua). While a companion is on the pick beside it is kept
     -- but not read (core/SkinSetup.lua's NS.SkinMediaKey). Sizes, outlines, shadows, thicknesses
     -- and every HUD color stay the player's (X4, D12).
     --
@@ -660,7 +660,7 @@ local WINDOW_TEMPLATE = {
         -- statement about what a pet's damage IS, and the other is a refresh
         -- rate. A player who wanted them to differ between two windows on the
         -- same screen would be describing two different answers to one
-        -- question. core/Database.lua's v4 -> v5 step lifts them.
+        -- question. core/Database_Migrations.lua's v4 -> v5 step lifts them.
     },
 }
 
@@ -765,7 +765,7 @@ end
 
 --- The AceDB defaults table. `global.schemaVersion` is addon-wide rather than
 --- per-profile so a migration runs once per ACCOUNT (savedvariables-§1); see
---- core/Database.lua's migration runner, which owns the stamp.
+--- core/Database_Migrations.lua's migration runner, which owns the stamp.
 ---
 --- Its default is 0, meaning UNSTAMPED, and never the current version. AceDB's
 --- logout strip removes a stored value equal to its default, so a current-version
@@ -805,7 +805,7 @@ NS.defaults = {
             alpha      = 1.0,
             -- NO `locked`. Master controls' Lock frame is a session-only VIEW over
             -- every window's own `frame.locked` (settings/Schema_Compose.lua), so it
-            -- stores nothing here. core/Database.lua's v14 step carried a stored
+            -- stores nothing here. core/Database_Migrations.lua's v14 step carried a stored
             -- `master.locked` onto the windows and cleared it.
         },
 

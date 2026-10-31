@@ -11,7 +11,7 @@
 --
 -- THE FOUR THINGS ONLY THIS FILE CAN SEE:
 --
---   THE MENU ENTRIES. `ADDONS.md` records this addon's as Enabled · Locked · Test mode · Show
+--   THE MENU ENTRIES. WowAddonStandards `ADDONS.md` records this addon's as Enabled · Locked · Test mode · Show
 --   window, and each entry must call the SAME handler its slash verb runs, so the cases drive the
 --   real verbs through the menu rather than asserting a function exists.
 --
@@ -254,7 +254,7 @@ end)
 -- The options menu (right-click)
 -- ---------------------------------------------------------------------------
 --
--- ADDONS.md (standard v2.67.0) records this addon's entries as Enabled · Locked · Test mode · Show
+-- WowAddonStandards ADDONS.md (standard v2.67.0) records this addon's entries as Enabled · Locked · Test mode · Show
 -- window. The library draws the menu and grays it; what only this file can prove is that each
 -- entry reaches THE SAME HANDLER ITS SLASH VERB RUNS, so its refusals, combat rules and chat lines
 -- are the addon's own (launcher-§2). The spy cases swap the verb's own NS.COMMANDS handler and

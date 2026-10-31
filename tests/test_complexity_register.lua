@@ -18,7 +18,7 @@
 -- Two rows have a second reason to live in ARCHITECTURE.md rather than in RESULTS.md. The kit's
 -- runner keys a carried-forward disposition on function name plus file, tie-broken by CCN
 -- (tests/_kit/run-automated-tests.sh:537-556). Three of this addon's rows are named `]` in
--- core/Database.lua — lizard's spelling of `migrations[n] = function` — and two of those three are
+-- core/Database_Migrations.lua — lizard's spelling of `migrations[n] = function` — and two of those three are
 -- CCN 16, so they are unique on neither key and their generated cells read blank on every run. The
 -- register is where their disposition exists at all.
 --
@@ -94,7 +94,7 @@ local function registerRows()
             if not path then
                 fail("register row for `" .. fn .. "` has Location `" .. loc .. "`, which is not " ..
                      "`path:first-last` — the line range is what separates the three `]` rows in " ..
-                     "core/Database.lua from each other")
+                     "core/Database_Migrations.lua from each other")
             end
             rows[#rows + 1] = {
                 fn = fn, ccn = tonumber(ccn), path = path,
@@ -200,7 +200,7 @@ test("complexityregister: no function is entered twice", function()
     local seen, duplicates = {}, {}
     for _, row in ipairs(registerRows()) do
         -- Keyed on name AND location, because `Cell` is genuinely two functions in
-        -- modules/Row.lua and `]` is genuinely three in core/Database.lua. A duplicate here is a
+        -- modules/Row.lua and `]` is genuinely three in core/Database_Migrations.lua. A duplicate here is a
         -- row copied and half-edited, which is how a disposition ends up attached to the wrong
         -- function — worse than a blank cell, because a blank cell asks for a decision and a wrong
         -- one answers a question nobody asked.
