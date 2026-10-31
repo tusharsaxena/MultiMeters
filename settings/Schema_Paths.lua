@@ -542,7 +542,7 @@ local function normalizeColumns(value)
 end
 
 --- Published because core/Database_Migrations.lua's migration ladder needs this same rule and
---- cannot reach a local in a file that loads eighteen TOC entries after it. Read
+--- cannot reach a local in a file that loads later in the TOC. Read
 --- at MIGRATION time rather than at load time: the ladder runs on Init, long after
 --- every file is in memory. A second implementation of "what shape is a column
 --- array" is how the migration and the write seam end up disagreeing about it.
