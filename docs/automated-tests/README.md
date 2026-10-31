@@ -32,7 +32,7 @@ differs between them, so a bare "gates? yes/no" column cannot be written honestl
 
 | Suite | Command | Gates the **commit**? | Gates the **release** (tag)? |
 |---|---|---|---|
-| `lint` | `luacheck .` | **yes** | **yes** |
+| `lint` | `ka0s-bounded luacheck .` | **yes** | **yes** |
 | `tests` | `lua tests/run.lua` | **yes** | **yes** |
 | `perf` | `lua tests/perf.lua` | **no — recorded only** | **yes** |
 | `complexity` | `bash tests/_kit/run-automated-tests.sh --suite complexity` | **no — recorded only** | **yes** |
@@ -79,7 +79,7 @@ rather than passed: install the tool, re-run, and tag from a run that actually m
   | File | Suite | What it is |
   |---|---|---|
   | `manifest.json` | — | the machine-readable verdict: per-suite status, notes, host tool versions, the release marker. The release gate reads this. |
-  | `lint.txt` | `lint` | `luacheck .` output, verbatim |
+  | `lint.txt` | `lint` | `ka0s-bounded luacheck .` output, verbatim |
   | `tests.txt` | `tests` | `lua tests/run.lua` output, verbatim |
   | `test-cases.md` | `tests` | the `--list` inventory as of that run |
   | `perf.txt` | `perf` | the offline scenario table |

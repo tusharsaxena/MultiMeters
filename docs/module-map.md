@@ -266,7 +266,7 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
     ├── Schema_General.lua
     │                   — the array's tail: the Visibility, Columns and General pages,
     │                     the statistic palette, and the two passes over the array
-    ├── Schema_Skin.lua — the seven skip-render skin.* rows (the skin, its Scope, its
+    ├── Schema_Skin.lua — the eight skip-render skin.* rows (the skin, its Scope, its
     │                     overrides, the picker's memory), appended to NS.Schema;
     │                     the library's Skin tab draws them
     ├── Schema_Paths.lua — THE SETTINGS RUNTIME'S DESCRIPTOR: one LibKa0s-Schema-1.0

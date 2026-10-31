@@ -60,7 +60,7 @@ safe because every step is idempotent against a fresh default profile. A step ne
 the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
-**Twenty steps are wired today**, `migrations[1]` through `migrations[20]`, walking an account from
+**Twenty-one steps are wired today**, `migrations[1]` through `migrations[21]`, walking an account from
 the shipped v1 shape to v22. Each is one line of the header block at the top of
 `core/Database.lua`, the version's home, and each is named where the key it moved is documented below:
 

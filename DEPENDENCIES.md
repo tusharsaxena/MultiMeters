@@ -31,7 +31,8 @@ such rather than listed as a requirement.
 | Tool | Version | Needed for | Evidence |
 |---|---|---|---|
 | `lua5.1` (+ `luac`) | **5.1 exactly** | the headless suite, `lua tests/run.lua` | `tests/_kit/loader.lua` uses `setfenv` |
-| `luacheck` | any recent | `luacheck .`, the other half of the green gate | `.luacheckrc` at the repo root |
+| `luacheck` | any recent | `~/.claude/dev-copilot/bin/ka0s-bounded luacheck .`, the other half of the green gate | `.luacheckrc` at the repo root |
+| `ka0s-bounded` | the dev-copilot plugin's | `~/.claude/dev-copilot/bin/ka0s-bounded`, the bounded runner `luacheck` goes through, because `luacheck` loads no kit and so bounds nothing itself | testing-§15; the dev-copilot plugin installs it |
 | `lizard` | any recent (verified with 1.24.0) | the `complexity` suite of `tests/_kit/run-automated-tests.sh` | `tests/_kit/run-automated-tests.sh` invokes `lizard` over the sighted shadow `tests/_kit/lizard_sighted.lua` builds and checks function-count parity, because `lizard` alone is blind in Lua (automated-tests-§3) |
 | `git` | any recent | the headless suite itself, vendoring, `diff -r` against the LibKa0s repo, and the runner's own provenance stamp | `lua tests/run.lua` shells out to `git ls-files` (`tests/test_doc_structure.lua:143`, `tests/test_lintconfig.lua:217`, `tests/test_texture_paths.lua:99`), so the green gate needs it; library-stack-§7; `tests/_kit/run-automated-tests.sh` calls `git describe` / `git rev-parse` / `git status --porcelain` |
 | `bash` | **4.x or later** | `tests/_kit/run-automated-tests.sh` — the whole automated-test bundle | its shebang is `#!/usr/bin/env bash`, and it declares an associative array (`declare -A ST DUR NOTE`), which `dash`/POSIX `sh` has no syntax for |
@@ -42,7 +43,7 @@ disprove.
 
 **`bash` is a requirement too, for the same kind of reason.** The runner keeps its four suites'
 status, duration and note in associative arrays; running it under `sh` fails at `declare -A` before
-a single suite starts. `lua tests/run.lua` and `luacheck .` — the green commit gate — need no shell
+a single suite starts. `lua tests/run.lua` and `ka0s-bounded luacheck .` — the green commit gate — need no shell
 beyond the one you typed them into.
 
 ```sh

@@ -309,7 +309,8 @@ harness land within a byte of each other. On the run that closed this, both arms
 bytes/iter exactly, against 77944.1 and 71224.1 before the fix.
 
 Re-measured 2026-09-24 with `tests/perf.lua`: `feignTraceAbsent` and `feignTraceOff` both 71544.1
-bytes/iter; the arms are still equal. The figures above are the closing run's and stay as recorded.
+bytes/iter; the arms are still equal. Re-measured 2026-10-31: both 65344.1, still equal. The figures
+above are the closing run's and stay as recorded.
 
 ### The zero-overhead pair
 
@@ -323,7 +324,9 @@ bytes/iter; the arms are still equal. The figures above are the closing run's an
   ceiling this replaced had drifted to 10.7% of headroom, and the disarmed feign trace's 6720
   bytes/iter walked in underneath it while the suite exited 0. A ceiling three times looser than it
   reads is not guarding anything. `tests/perf.lua` carries the run-by-run derivation for both this
-  and `RESTRICTED_BYTES_CEILING` (427000 against 412373.3).
+  and `RESTRICTED_BYTES_CEILING` (427000 against 412373.3). Re-measured 2026-10-31, three runs: the
+  dormant arm 297216.1 and the restricted pass 406173.3, so the headroom now reads 5.6% and 5.1%.
+  Neither ceiling was moved: no finding asked for it, and this is the next re-derivation's input.
 - the dormant arm allocates no more than the armed one, which is what the gating idiom buys.
 - the probe changes neither how many meter API calls nor how many columns a pass costs.
 - the dormant arm reproduces the plain `refresh20x7` figure, proving the two are the same path.
