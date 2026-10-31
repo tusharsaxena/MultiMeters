@@ -78,7 +78,7 @@ end)
 test("Cell:ApplyLayout places every cell from the layout table", function()
     -- No cap, so the name column is the shipped NAME_COLUMN_WIDTH and the x below
     -- is a stated number rather than one that happens to fall out of the default
-    -- cap. See the calibration case in tests/test_window.lua.
+    -- cap. See the calibration case in tests/test_window_layout.lua.
     local inst, window, row = bench(function(c) c.text.maxNameLength = 0 end)
     local layout = window.layout
     local Const = inst.NS.Constants

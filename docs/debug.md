@@ -114,7 +114,7 @@ the route for a host that keeps its own.
 | `Init` | `core/MultiMeters.lua` | an enable whose event registrations the client refused, naming them; at login it is held by the at-enable queue and written when logging is turned on | — |
 | `Lifecycle` | `LibKa0s-Lifecycle-1.0` (the library's) | `stood down: added <hold> (holds: <set>)` and `stood up: released <hold> (holds: none)`, one line per edge of the addon's own latch; a hold that moves no edge writes nothing | — |
 | `Cmd` | `LibKa0s-Slash-1.0` (the library's) | `refused <verb>[ <path>]: <guard>` — each refusal the dispatcher decides: the disabled gate (`refused lock: disabled`), an unknown verb, a get/set/reset path not found or a value it could not parse, a profile switch refused (unknown, already current, in combat); the chat line is unchanged | — |
-| `Migrate` | `core/Database.lua` | each schema step that runs, and a version with no step | — |
+| `Migrate` | `core/Database_Migrations.lua` | each schema step that runs, and a version with no step | — |
 | `Profile` | `core/Database.lua` | a profile switch | — |
 | `Set` | the schema runtime (library) and `core/Database.lua` | every settings write, bulk act and profile reset or copy — see [Settings lines](#settings-lines) | — |
 | `Set` | `settings/Schema_Paths.lua` | `<path> refused: <reason>` — a write the seam rejected, with the sentence the caller shows | — |

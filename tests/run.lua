@@ -317,6 +317,7 @@ local SUITES = {
     "test_aggregator_sort",
     -- the display
     "test_window",
+    "test_window_layout",
     "test_window_static",
     "test_window_header",
     "test_window_header_sort",
@@ -361,6 +362,7 @@ local SUITES = {
     -- refusals, the at-enable queue and the Clear re-arm.
     "test_library_lines",
     "test_options_panel",
+    "test_options_tabs",
     -- The LibKa0s-Skin-1.0 seam (core/SkinSetup.lua): the owner, the skin rows, the Skin tab,
     -- the profile events and the degraded facade.
     "test_skinsetup",

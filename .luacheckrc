@@ -149,6 +149,7 @@ files["tests/"] = {
 -- convention -- the library passes the handle and the profile key as arguments precisely so the
 -- callee does not have to reach for them through a receiver.
 files["core/Database.lua"] = { ignore = { "212/self" } }
+files["core/Database_Migrations.lua"] = { ignore = { "212/self" } }
 
 -- AceEvent-3.0 invokes a handler registered by name as `self[name](self, event, ...)`, so `self`
 -- arrives whether the body reads it or not. `OnSystemMessage` (registered at :194) hands the line

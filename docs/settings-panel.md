@@ -140,7 +140,7 @@ Five things about how this addon calls them are worth knowing before editing a b
 - **The boolean companion is swapped for a dropdown.** The composers emit a `Use class color`
   checkbox beside every swatch; this addon ships the **color-mode dropdown** instead, which
   `options-ui-§17` names as the richer form of the same control and forbids converting back — `stat`,
-  `skin` and `none` are answers a checkbox cannot give, and `core/Database.lua`'s v10 and v13 steps
+  `skin` and `none` are answers a checkbox cannot give, and `core/Database_Migrations.lua`'s v10 and v13 steps
   are what migrated this addon's booleans into them. So every call omits the companion and
   `withMode()` splices the mode into the slot it vacated, immediately right of the swatch.
 - **The composers are reached off a table of this file's own**, not off `NS.Helpers`.
@@ -168,7 +168,7 @@ Five things about how this addon calls them are worth knowing before editing a b
   the shape of a **group** — a contiguous font block, a border block, a bar block, each over one
   surface, each with a color row and a companion. A single write-only setter over six surfaces —
   these two rows between them, `BAR_TEXTURE_PATHS`' two targets and `FONT_PATHS`' four, at
-  `settings/Schema_Compose.lua:79-89` — has none of that shape: there is no size, no color, no flags
+  `settings/Schema_Compose.lua:114-124` — has none of that shape: there is no size, no color, no flags
   and no second surface to be contiguous with, and a composer asked to emit one would have to emit
   five rows this addon must not store. The
   headings are the guard — a reader who sees *All surfaces* over them cannot mistake them for the font
@@ -210,7 +210,7 @@ composer now drops `startsLine` from *Test mode* whenever a minimap row was emit
 `tests/test_schema.lua` pins the eight as the tab's rows with nothing after them.
 `tests/test_options_panel.lua` pins the LAID-OUT pairs above, which is the half the schema order
 cannot see. A `group` is not a stored path; the minimap row's **store** did move, from
-`db.profile.minimap` to `db.global.minimap`, and `core/Database.lua`'s v15 step carries it.
+`db.profile.minimap` to `db.global.minimap`, and `core/Database_Migrations.lua`'s v15 step carries it.
 
 **Minimap button is the one row on this page the Defaults button does not touch.** Whether the
 button is shown is a per-installation display preference — the same class of thing as the angle the

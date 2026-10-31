@@ -11,7 +11,7 @@ that outgrows a screen belongs in its topic doc with a summary and a link left b
 ## Overview
 
 
-Seventy-two non-vendored source files: 1 locale, 22 `core/`, 1 `defaults/`, 32 `modules/`, 16 `settings/`.
+Seventy-five non-vendored source files: 1 locale, 23 `core/`, 1 `defaults/`, 32 `modules/`, 18 `settings/`.
 
 The addon is built on the **private namespace** WoW hands each file. `core/MultiMeters.lua` calls
 `AceAddon-3.0:NewAddon(NS, addonName, …)`, which promotes that table in place — so **`NS` *is* the
@@ -53,14 +53,14 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `core/` values | `Constants.lua`, `Namespace.lua`, `State.lua` | The stat catalog, the bus catalog, identity, session-only flags and the shared cache. |
 | `core/` the rule | `Secrets.lua` | **The only file that inspects a meter value.** Its guards `IsSecret` / `CanAccess` / `IsSafeKey` are `LibKa0s-Compat-1.0`'s, with a guard arm that re-implements each body when the library is absent. |
 | `core/` seams | `MediaSetup`, `CoreSetup`, `SkinSetup`, `LifecycleSetup`, `PerfSetup`, `DebugLogSetup`, `PoolSetup`, `LauncherSetup` | LibKa0s wiring, the art and font seam, the skin seam ([Skins](#skins)), and the window row pool. `LifecycleSetup` is the ONE latch and the ONE teardown — `disabled` and `perf` are two holds on it — and it loads **before** `PerfSetup`, which raises without a `lifecycle`. The `LSM30_Border` fixup that used to make a seventh file here is `lib.__PatchLSM30Border()` now, called from `settings/OptionsSetup.lua`: AceGUI's widget registry is process-global, so a re-registration belongs to the library the whole collection shares. `LauncherSetup` hands `LibKa0s-Launcher-1.0` the descriptor for the one LDB object. The library owns the clicks and draws the status tooltip and, since Launcher minor 4 (`launcher-§2`, v2.67.0), the options menu: left-click opens the settings panel, right-click opens the menu (Enabled · Locked · Test mode · Show window). The descriptor only answers: `version`, and four accessor-and-toggle pairs whose toggles are the `enable`/`disable`, `lock`, `test` and `toggle` verbs' own `NS.COMMANDS` handlers. No host tooltip lines. `LauncherSetup` also owns the Show window key binding (`launcher-§6`): the plain, hidden `MultiMetersToggleWindows` button the root `Bindings.xml` clicks, whose OnClick is the descriptor's `toggleWindow` function and refuses exactly as `/mm toggle` does. Every `<Binding>` is in the category `BINDING_HEADER_MULTIMETERS` (the brand, so the client's Keybindings page gives the addon a section of its own) with no `header`. `LauncherSetup` declares `NS.BINDINGS`, the one bindings table in `Bindings.xml` order, which the General page's Keybindings tab (`options-ui-§20`, `O.KeybindingsTab`) draws. It is built before the library-absent fork, so a degraded install still answers the key. |
-| `core/` runtime | `MultiMeters.lua`, `Database.lua` | The single game-event listener and the show ladder; AceDB and migrations. |
+| `core/` runtime | `MultiMeters.lua`, `Database.lua`, `Database_Migrations.lua` | The single game-event listener and the show ladder; AceDB and migrations. |
 | `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_Runtime`, `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm diagnostics`, its addon-state sections (`_Runtime`), and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
 | `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`, `_Order`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret; `Aggregator_Order` holds the orderings and the row cap. |
 | `modules/` display | `WindowManager`, `Window` (+ `_Frame`, `_Render`, `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Border`, `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window (with its test-mode strip, `LibKa0s-Widgets-1.0`'s `TestStrip` under the title, placed by `Window_Header`'s narrow `ApplyTestStrip` on the toggle; the red TEST MODE title word is written only while the strip is not shown — a minimized window, or a load without the Widgets library — and never while a simulation runs; and its simulation strip, the same `TestStrip` in its `kind = "sim"` flavor, in the same slot and on the same narrow path on `SIM_CHANGED`, shown while a `/mm sim` session runs, with no title word at all), one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
 | `modules/` simulator | `Sim`, `SimWorld`, `SimDrivers`, `SimScenario` | `/mm sim`'s session host (`modules/Sim.lua`: `NS.Sim` on LibKa0s-Sim-1.0, the refusals, the real-event classifier, the session-only stores and the stop's resync) and its invented world (MultiMeters#60): the real player plus seeded mates, zones, segments, deaths and recaps, and the providers `core/SimSetup.lua`'s seam answers from while a session runs. Plain invented numbers; it never reads a client meter value. The drivers edit that world and fire the client's events through `NS.Sim:Fire`, in the client's order; a fight's ticks are booked on the session's timer. The four #60 scenarios (`dungeon`, `raid`, `wipe`, `zone`) are timelines of labeled, tipped steps that `NS.SimHost.Play` plays through the drivers; `tests/test_sim_e2e.lua` runs each one stepped and auto-run through the real engine. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
-| `settings/` | `Schema_Compose` → `Schema` → `Schema_Skin` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 3 pages and 6 Windows-page entries | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, the seven skin rows appended to it, and the path and write seams. `ColumnBlocks` is the Columns entry's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
+| `settings/` | `Schema_Vocab` → `Schema_Compose` → `Schema` → `Schema_General` → `Schema_Skin` → `Schema_Paths`, `Slash`, `OptionsSetup`, `ColumnBlocks` + 3 pages and 6 Windows-page entries | One schema drives the panel, the CLI and the defaults reset: what the array is composed from, the array, the seven skin rows appended to it, and the path and write seams. `ColumnBlocks` is the Columns entry's row, drawn into `LibKa0s-Widgets-1.0`'s `ReorderList`. |
 
 Thirteen of those files were created on 2026-09-09 and **none of them is a new module.** They are
 `layout-§1` peels of the seven source files that stood over the 1500-line cap, each cut along a seam
@@ -670,14 +670,16 @@ the TOC: the client reads it from the addon folder by name. The binding constrai
    session. `modules/Export.lua` was the one file in the block whose position carried no constraint
    at all, and that is no longer true — `modules/Export_Modal.lua` reads `Export.__EM_DASH`,
    `Export.__cfgOf` and `Export.__channelRow` at file scope, so it must follow it.
-11. The settings block opens with the three schema files in the order `settings/Schema_Compose.lua`
-    → `settings/Schema.lua` → `settings/Schema_Paths.lua`, and each of the three positions is
-    load-bearing for a different reason: the array resolves every `NS.SchemaCompose` member at *file
+11. The settings block opens with the schema files in the order `settings/Schema_Vocab.lua` →
+    `settings/Schema_Compose.lua` → `settings/Schema.lua` → `settings/Schema_General.lua` →
+    `settings/Schema_Skin.lua` → `settings/Schema_Paths.lua`, and each position is
+    load-bearing: the composers resolve `NS.SchemaVocab` at *file scope*, the array resolves every `NS.SchemaCompose` member at *file
     scope*, the path seam builds its `path → row` index by walking `NS.Schema` at *file scope*, and
     `Slash.lua` and `OptionsSetup.lua` both point their seams at the `NS.SetByPath` / `NS.GetSetting`
     that `settings/Schema_Paths.lua` — not `Schema.lua` — publishes. That pins the path file from
     **both** sides, which is why splitting the schema took three files rather than two.
-    `settings/Schema_Skin.lua` sits between `Schema.lua` and `Schema_Paths.lua`: it appends the eight
+    `settings/Schema_General.lua` appends the array's tail to what `Schema.lua` declared and runs the
+    two passes over it. `settings/Schema_Skin.lua` follows it: it appends the eight
     skin rows to the finished array, which the path file then indexes. Then
     `settings/OptionsSetup.lua` before every page file, which call `NS.Helpers` members inside
     schema-row literals at file load.

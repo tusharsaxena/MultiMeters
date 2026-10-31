@@ -1,8 +1,8 @@
--- tests/test_database_migrations.lua — core/Database.lua's migration runner and
+-- tests/test_database_migrations.lua — core/Database_Migrations.lua's migration runner and
 -- every step it walks.
 --
 -- Peeled from tests/test_database.lua (layout-§1) along the `Migrations` section
--- of core/Database.lua: the runner (the stamp, the account-wide version, the
+-- of core/Database_Migrations.lua: the runner (the stamp, the account-wide version, the
 -- walk forward, the unconditional shape normalization), each step from v1 -> v2
 -- onward, and the branch arms of the steps the complexity register warns on.
 -- What stays in tests/test_database.lua: the AceDB instance, the `== nil` merge,

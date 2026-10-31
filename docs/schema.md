@@ -48,7 +48,7 @@ full logout (INSTALL-5 in [smoke-tests.md](smoke-tests.md#install)).
 
 The version is **addon-wide rather than per-profile** (`savedvariables-§1`), so a migration runs
 once per account instead of once per profile. `NS:RunMigrations()` walks it forward one step at a
-time out of the `migrations` table in `core/Database.lua`, and is called from `NS:InitDB()` and
+time out of the `migrations` table in `core/Database_Migrations.lua`, and is called from `NS:InitDB()` and
 again from every AceDB profile callback (changed / copied / reset).
 
 **The runner owns the stamp** (`savedvariables-§1`). The defaults declare `schemaVersion = 0`,
@@ -62,7 +62,7 @@ stamp where it was and the next load retries it. `tests/test_migrations.lua` pin
 
 **Twenty steps are wired today**, `migrations[1]` through `migrations[20]`, walking an account from
 the shipped v1 shape to v22. Each is one line of the header block at the top of
-`core/Database.lua`, and each is named where the key it moved is documented below:
+`core/Database.lua`, the version's home, and each is named where the key it moved is documented below:
 
 | Step | What it does |
 |---|---|
@@ -91,8 +91,8 @@ the shipped v1 shape to v22. Each is one line of the header block at the top of
 Adding a v23 is two edits and no bootstrap change:
 
 ```lua
-migrations[22] = function(db) ... end       -- the runner stamps the version
-local CURRENT_DB_VERSION = 23
+migrations[22] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
+local CURRENT_DB_VERSION = 23               -- core/Database.lua
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -292,7 +292,7 @@ out of it, or a dragged button snaps back on the next login.
 **The scope is `launcher-§3`'s decision, not an accident of where the neighbors live.** A minimap
 button belongs to the INSTALLATION: a profile is how a player configures what the addon *draws*,
 while the ring of buttons around the minimap is furniture they arranged once, and profile-scoped it
-would appear and vanish on a switch made for an unrelated reason. `core/Database.lua`'s v15 step
+would appear and vanish on a switch made for an unrelated reason. `core/Database_Migrations.lua`'s v15 step
 carries `hide` and `minimapPos` across from every profile that had them and prunes the profile key.
 
 **Surviving a reset is a separate PROPERTY, and the scope is not the argument for it.** Whether the
@@ -412,7 +412,7 @@ misclick must not be able to put someone's numbers in front of a raid.
 `Constants.STATS` and `Constants.EXPORT_CHANNELS` — so the panel, the CLI's `values` constraint and
 the modal's own menu all offer exactly the keys that exist, and a stat or a channel removed from a
 catalog cannot linger as an option that resolves to nothing. Localization happens at the use site in
-`settings/Schema_Compose.lua`, which holds both vocabularies, rather than in the catalog, because
+`settings/Schema_Vocab.lua`, which holds both vocabularies, rather than in the catalog, because
 `core/Constants.lua` may load before `locales/enUS.lua`.
 
 `whisperTo` carries no non-empty check, unlike the window-name row it otherwise copies: `""` is both
@@ -658,7 +658,7 @@ it is. A Height of 60 to 69 therefore looks the same as 70 with the shipped head
 
 **`show` moved here from `window.frame.titleBar` at `schemaVersion` 12 → 13** (`window.header.show`,
 not `window.frame.titleBar` — a path naming `frame` for the Header entry's own master switch misled
-the next reader and read wrong in `/mm set`). `migrations[12]` in `core/Database.lua` copies a stored
+the next reader and read wrong in `/mm set`). `migrations[12]` in `core/Database_Migrations.lua` copies a stored
 `frame.titleBar` into `header.show` and deletes the old key; a profile saved before this branch opens
 with its title bar exactly as it was.
 
@@ -977,7 +977,7 @@ regardless of the number.
 The name column's own width is computed from this cap (`modules/Window.lua`'s `nameColumnWidth`), and
 `Constants.NAME_CHAR_RATIO` / `NAME_COLUMN_PAD` are calibrated so a **20**-character cap at 11pt with
 the icon on lands on exactly `NAME_COLUMN_WIDTH`, a measured value. The shipped cap computes
-narrower, which is the point of the setting; `tests/test_window.lua` pins the calibration.
+narrower, which is the point of the setting; `tests/test_window_layout.lua` pins the calibration.
 
 Both the strip and the cap are **gated on the concat probe**: `string.match` and `string.sub` read
 the characters of a value, and doing that to a secret is what rule R1 forbids, so a `ConditionalSecret`
@@ -1510,7 +1510,7 @@ panel re-reads its scalars. `onChange` exists only where the message genuinely c
 That is the only one. The minimap row used to be the second, with a `refreshMinimap` reactor that
 called LibDBIcon directly; moving the button is part of the **write** now, in the row's `set` above,
 so `/mm set` and the checkbox cannot take different routes to it. `refreshVisibility` lives in
-`settings/Schema_Compose.lua` alongside the vocabularies and the composers, and resolves
+`settings/Schema_Compose.lua` alongside the composers, and resolves
 `NS.Visibility` at **call** time rather than at file scope, so it does not depend on what had
 finished loading when the schema file ran.
 
@@ -1617,7 +1617,7 @@ Two things it still refuses outright, because neither has an answer it could inv
 is not gapless, and one with **nothing enabled** — a window of nothing but names reads as a broken
 addon, and there is no way to guess which column was meant to survive.
 
-It is published as `NS.NormalizeColumns` so `core/Database.lua`'s `migrations[11]` shares the one
+It is published as `NS.NormalizeColumns` so `core/Database_Migrations.lua`'s `migrations[11]` shares the one
 definition. That is a **deferred** read: `settings/Schema_Paths.lua` loads thirty-one TOC entries
 later, but the ladder runs on Init, which is the same pattern `migrations[1]` already uses for
 `NS.WINDOW_TEMPLATE`.

@@ -269,7 +269,7 @@ test("Defaults: the profile itself is nearly empty — almost everything is per-
     -- and an alpha multiplier over every window -- and each is DISTINCT from the
     -- per-window `frame.scale` / `frame.alpha` on the Frame page rather than a
     -- promotion of it. Lock frame stores nothing here: it is a view over every
-    -- window's own `frame.locked` (a documented deviation; core/Database.lua v14).
+    -- window's own `frame.locked` (a documented deviation; core/Database_Migrations.lua v14).
     --
     -- `skin` is the fifth, and it is per ADDON by the standard's own rule
     -- (skinning-§2): which skin this addon wears, its Scope, its two overrides and

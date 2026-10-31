@@ -644,7 +644,7 @@ end
 ---
 --- AUTO IS RETIRED and is named here anyway. It used to resolve itself at send
 --- time and was removed as ambiguous (core/Constants.lua's catalog comment says
---- why); core/Database.lua's v3 -> v4 step folds the stored key to SELF. This
+--- why); core/Database_Migrations.lua's v3 -> v4 step folds the stored key to SELF. This
 --- line is for the profile that arrives afterwards from a copy or a hand edit:
 --- without it the fallback below would hand SendChatMessage a chat type of
 --- "AUTO", which is not one.

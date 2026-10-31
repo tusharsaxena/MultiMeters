@@ -7,7 +7,7 @@
 --
 -- This addon's own spelling is `minimize` everywhere it owns the word: the header control's key,
 -- its `showMinimize` setting, the `window.frame.minimized` path, the locale keys and the prose.
--- The stored keys moved in schema v16 (core/Database.lua, migrations[15]). What is left below is
+-- The stored keys moved in schema v16 (core/Database_Migrations.lua, migrations[15]). What is left below is
 -- spelling this repository does not own, in the two shapes localization-§5 sanctions.
 
 return {
@@ -29,7 +29,7 @@ return {
         -- and moves them onto the US ones. It has to spell them the way the file on disk does, or
         -- the lookup never matches and every collapsed window comes back open. Its suite writes
         -- the same old keys into a fixture account to prove the move.
-        ["core/Database.lua"] = { minimis = true },
+        ["core/Database_Migrations.lua"] = { minimis = true },
         ["tests/test_migrations.lua"] = { minimis = true },
         -- A LIBRARY'S FIELD NAME. The kit's timer mock (tests/_kit/mock_record.lua) marks a
         -- canceled handle with AceTimer's own field, `cancelled`; the simulator suites' clock

@@ -886,7 +886,7 @@ test("Export.ResolveChannel folds the RETIRED \"AUTO\" key to self only", functi
     -- AUTO used to resolve itself at send time and was removed as ambiguous: a
     -- player pressing Print to Chat is choosing an audience, and a row that
     -- picks the audience is the one fact the dialog then does not state.
-    -- core/Database.lua's v3 -> v4 step rewrites the stored key; this is the
+    -- core/Database_Migrations.lua's v3 -> v4 step rewrites the stored key; this is the
     -- guard for a profile that arrives from a copy or a hand edit afterwards.
     -- red under: letting the unknown-key fallback have it, which would hand
     -- SendChatMessage a chat type of "AUTO".

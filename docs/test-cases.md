@@ -1210,17 +1210,9 @@ Total.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (67)
+### test_window.lua (49)
 
 - Window builds a bare anchor plus the visible frame, and names both
-- BuildLayout computes every coordinate from config alone
-- The name column's formula is calibrated to the shipped width at a 20 cap
-- A stat column never shrinks below the legible floor
-- BuildLayout drops a column whose stat this build does not offer
-- BuildLayout draws only the ENABLED columns, in stored order
-- A layout column carries no show-bar decision
-- BuildLayout derives how many rows FIT, capped by maxRows and MAX_ROWS
-- The throttle is clamped to the constants, whatever the profile says
 - The throttle coalesces N events into ONE refresh
 - A clean window costs nothing when the clock comes round
 - Refresh does nothing at all while the frame is hidden
@@ -1260,6 +1252,26 @@ Total.
 - Master scale and alpha are CLAMPED to the sliders that write them
 - The window's fill and its edge each answer a color mode
 - pool: every row built lands in `all`, including the batch surplus
+- Two passes over the same ten entries ask the pool for nothing the second time
+- A pass with fewer entries releases exactly the surplus, and keeps the rest bound
+- A second pass re-anchors nothing until ApplyConfig moves the layout
+- A refresh that changes nothing writes no [Aggregator] or [Render] line (quiet steady state)
+- Render's empty notice is for a live grid only, and its pass line names the count
+- BuildLayout reserves the test strip only in test mode
+- At minimum height the strip takes the row and the bounds do not move
+- The strip is born hidden, with the localized line and the info art
+- With no Widgets library the window builds and reserves nothing
+
+### test_window_layout.lua (18)
+
+- BuildLayout computes every coordinate from config alone
+- The name column's formula is calibrated to the shipped width at a 20 cap
+- A stat column never shrinks below the legible floor
+- BuildLayout drops a column whose stat this build does not offer
+- BuildLayout draws only the ENABLED columns, in stored order
+- A layout column carries no show-bar decision
+- BuildLayout derives how many rows FIT, capped by maxRows and MAX_ROWS
+- The throttle is clamped to the constants, whatever the profile says
 - The stored per-column width is what a NEW column is born at, never the drawn one
 - The name column is excluded from the share, and is not sized by the frame
 - The name column is placed first, at x 0, and carries its bar unconditionally
@@ -1270,15 +1282,6 @@ Total.
 - A window too short for even one row still asks the pool for one
 - A maxRows cap LARGER than the frame holds does not win
 - BuildLayout survives a config with the sub-tables missing, on the shipped numbers
-- Two passes over the same ten entries ask the pool for nothing the second time
-- A pass with fewer entries releases exactly the surplus, and keeps the rest bound
-- A second pass re-anchors nothing until ApplyConfig moves the layout
-- A refresh that changes nothing writes no [Aggregator] or [Render] line (quiet steady state)
-- Render's empty notice is for a live grid only, and its pass line names the count
-- BuildLayout reserves the test strip only in test mode
-- At minimum height the strip takes the row and the bounds do not move
-- The strip is born hidden, with the localized line and the info art
-- With no Widgets library the window builds and reserves nothing
 
 ### test_window_static.lua (1)
 
@@ -2426,7 +2429,7 @@ Total.
 - Library lines: rejected events, recorded at OnEnable, land when logging turns on
 - Library lines: after a Clear, an unchanged steady-state pass speaks again
 
-### test_options_panel.lua (51)
+### test_options_panel.lua (36)
 
 - Options: General is the FIRST page, above Windows
 - Options: the tree is General, Windows, Profiles, with no nesting mark
@@ -2464,6 +2467,9 @@ Total.
 - Options: the descriptor tells the library the FOLDER name (LibKa0s#42)
 - Options: the help-mark and test-strip art, info, is declared and vendored
 - Options: the shared LSM30_Border slot is re-registered once, above what AGSMW left in it
+
+### test_options_tabs.lua (15)
+
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip
 - Panel: switching tabs re-renders without leaving the previous tab's widgets behind
@@ -2491,7 +2497,7 @@ Total.
 - Skin seam: the skin row's values are every registered skin, in the library's order
 - Skin seam: /mm set refuses a skin that is not registered and applies one that is
 - Skin seam: /mm set reaches an exception, and only its own half
-- Skin seam: the write seam stores media's halves, "" for the skin's default
+- Skin seam: the write seam stores media's halves, "" for the skin's own
 - Skin seam: one tab pick is one effective SetChoice, one repaint, in the profile
 - Skin seam: the tab's Ignore fonts reaches the library and the profile, one repaint
 - Skin seam: another addon's copy to every Ka0s addon repaints this one once
@@ -2818,7 +2824,8 @@ Total.
 | test_aggregator_identity.lua | 32 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 67 |
+| test_window.lua | 49 |
+| test_window_layout.lua | 18 |
 | test_window_static.lua | 1 |
 | test_window_header.lua | 62 |
 | test_window_header_sort.lua | 17 |
@@ -2854,7 +2861,8 @@ Total.
 | test_slash_profile.lua | 11 |
 | test_disabled.lua | 27 |
 | test_library_lines.lua | 11 |
-| test_options_panel.lua | 51 |
+| test_options_panel.lua | 36 |
+| test_options_tabs.lua | 15 |
 | test_skinsetup.lua | 20 |
 | test_skin_outline.lua | 9 |
 | test_skin_verb.lua | 6 |

@@ -60,7 +60,7 @@ local addonName, NS = ...
 --
 -- GLOBAL, not profile, and that is `launcher-§3`'s decision rather than an accident: a minimap
 -- button belongs to the INSTALLATION, so a profile switch must not move the player's buttons.
--- core/Database.lua's v15 step carries the table across from `db.profile.minimap`, `minimapPos`
+-- core/Database_Migrations.lua's v15 step carries the table across from `db.profile.minimap`, `minimapPos`
 -- included.
 --
 -- SURVIVING A RESET IS A SEPARATE PROPERTY AND THE SCOPE IS NOT THE ARGUMENT FOR IT. Whether the

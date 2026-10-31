@@ -3,8 +3,8 @@
 Where each responsibility lives, what each file publishes, and what it consumes. `MultiMeters.toc`
 is the source of truth for load order — check this map against it before editing.
 
-Seventy-two non-vendored source files: 1 locale, 22 `core/`, 1 `defaults/`, 32 `modules/`,
-16 `settings/`.
+Seventy-five non-vendored source files: 1 locale, 23 `core/`, 1 `defaults/`, 32 `modules/`,
+18 `settings/`.
 
 Thirteen of those arrived on one day, 2026-09-09, and **not one of them is a new module.** They are
 peels. `layout-§1` caps an authored file at 1500 lines; seven source files were over it —
@@ -105,8 +105,8 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │                         PROBED, all but two fanned onto the bus), and
 │                         NS.ShouldShow — the one show ladder
 │   ├── Database.lua    — the AceDB instance, window-shape key-fill, the id counter,
-│                         SeedWindows, the migration runner, and the ONE
-│                         PROFILE_CHANGED emitter
+│                         SeedWindows, and the ONE PROFILE_CHANGED emitter
+│   ├── Database_Migrations.lua — the migration ladder and NS:RunMigrations
 │   ├── Diagnostics.lua — `/mm diagnostics`: the sectioned report a player pastes into
 │   │                     a bug report. Reads modules at CALL time, owns no state,
 │   │                     and every section is pcall-wrapped so one broken probe
@@ -253,17 +253,19 @@ MultiMeters (AceAddon; the private NS table is promoted in place — no _G.Multi
 │                         labeled, tipped steps, and NS.SimHost.Play, which
 │                         plays each step through the drivers
 └── settings/
+    ├── Schema_Vocab.lua — the dropdown vocabularies (NS.SchemaVocab); loads FIRST
     ├── Schema_Compose.lua
     │                   — WHAT THE ARRAY IS DECLARED OUT OF and nothing else: the
-    │                     refresh routing a row's onChange reaches for, the dropdown
-    │                     vocabularies, the common validators, and the
-    │                     LibKa0s-Options-1.0 composers with every canonical block
-    │                     composed out of them. Holds no row of its own. Published
-    │                     once as NS.SchemaCompose; loads FIRST of the three
-    ├── Schema.lua      — NS.Schema: the 180-row array itself, and nothing else. The
+    │                     refresh routing a row's onChange reaches for, the common
+    │                     validators, and the LibKa0s-Options-1.0 composers with
+    │                     every canonical block composed out of them. Holds no row
+    │                     of its own. Published once as NS.SchemaCompose
+    ├── Schema.lua      — NS.Schema: the array's Windows to Tooltip pages. The
     │                     composers decide WHICH rows there are; this file decides
-    │                     where each one sits. This is the file that grows, and a
-    │                     new setting is still one row in it
+    │                     where each one sits, and a new setting is still one row
+    ├── Schema_General.lua
+    │                   — the array's tail: the Visibility, Columns and General pages,
+    │                     the statistic palette, and the two passes over the array
     ├── Schema_Skin.lua — the seven skip-render skin.* rows (the skin, its Scope, its
     │                     overrides, the picker's memory), appended to NS.Schema;
     │                     the library's Skin tab draws them
@@ -324,7 +326,8 @@ own strings entirely.
 | `PoolSetup.lua` | The LibKa0s-Pool seam: the free/active halves of the window row pool. What stays in `modules/Window_Render.lua` is what the library holds no opinion about — `pool.all` (every row ever built, so a **parked** row is re-laid-out too) and batch growth, folded into the `Acquire` factory closure. The degraded fallback is the same three members locally, parking **backward** exactly as `LibKa0s-Pool-1.0` minor 3 does; a forward-parked degraded install is the rank flicker back | `NS.Pool` | `LibKa0s-Pool-1.0`. Owns no state and registers no event |
 | `LauncherSetup.lua` | The LibKa0s-Launcher seam: the descriptor for the ONE LibDataBroker object LibDBIcon and any broker display both draw from (`launcher-§1`). Holds what is genuinely this addon's — the **folder** name (LibDBIcon keys the button's saved position by it), the logo, `version` from the TOC for the status tooltip's title (Launcher minor 3; the library draws the tooltip and this file passes no `onTooltipShow`), and the options menu's four accessor-and-toggle pairs (Launcher minor 4, `launcher-§2` at v2.67.0): `isEnabled` = `not NS.IsDisabled()` with `setEnabled` → the `enable`/`disable` verb, `isLocked` = `WindowManager:IsLocked` with `toggleLock` → `lock`, `isTestMode` = `NS.State.testMode` with `toggleTestMode` → `test`, `isWindowShown` = `WindowManager:AnyShown` with `toggleWindow` → `toggle`. Every toggle is the verb's own handler, looked up in `NS.COMMANDS` at click time. Left-click opens the panel (`openSettings`), in either state. The `minimap` field is a **closure**, never the table: `db.global.minimap` does not exist when core/ loads. `debug` is the gated sink and `debugAtEnable` the console's at-enable queue (Launcher minor 5), so the library's `registered` line, written at login with logging off, lands when logging is turned on. The inversion is NOT here — it is the write seam's carve-out. It also builds the Show window key binding's button (`launcher-§6`): the plain, hidden, non-secure `MultiMetersToggleWindows` Button the root `Bindings.xml` clicks, registered `AnyDown`, whose OnClick is `toggleWindows`, the very function the descriptor's `toggleWindow` is. A key cannot be grayed, so `toggleWindows` prints `NS.Slash:DisabledLine()` while disabled, as the dispatcher does for `/mm toggle`; otherwise it runs the verb. Built **before** the library-absent fork, with the `BINDING_HEADER_MULTIMETERS` (the binding category's title) and `BINDING_NAME_CLICK MultiMetersToggleWindows:LeftButton` labels set by `rawset`, and `NS.BINDINGS`, the one bindings table (`{ command, tooltip }` in `Bindings.xml` order) the General page's Keybindings tab and the suite read | `NS.Launcher` — `Register`, `IsRegistered`, `Object`, `IsShown`, `SetShown`; `NS.BINDINGS` | `LibKa0s-Launcher-1.0`, `NS.Constants.LOGO_128` (at file scope), `NS.db.global.minimap`, `NS.WindowManager`, `NS.OpenOptionsPanel`, `NS.COMMANDS`, `NS.IsDisabled` (all at call time) |
 | `MultiMeters.lua` | AceAddon promotion, the printer reclaim, all 22 game-event registrations (the `EVENTS` array, each through `NS.SafeRegisterEvent` with the one handler `OnGameEvent`, refusals in `NS.State.rejectedEvents`), the dispatch table, the fan-out onto the bus, and `NS.ShouldShow` | `NS.addon`, `NS.ShouldShow`, `NS:OnInitialize` / `OnEnable`, `NS:OnGameEvent`, `NS.DeliverEvent`, `NS.HANDLER_BY_EVENT`, `NS.RealEventFilter` (the simulator's hook) | `NS.Constants.MSG`, `NS.State`, `NS.Secrets`, `NS.Launcher`, `NS.CreateOptionsPanel`, `NS.Slash` |
-| `Database.lua` | The AceDB instance, window shape key-fill, the monotonic id counter, seeding, migrations, and the AceDB profile callbacks | `NS.Database` (`GetWindows`, `FindWindow`, `NextWindowId`, `SeedWindows`, `EnsureWindowShape`), `NS.db`, `NS:InitDB`, `NS:RunMigrations` | `NS.defaults`, `NS.WINDOW_TEMPLATE`, `NS.DefaultWindow`, `NS.Constants.MSG` |
+| `Database.lua` | The AceDB instance, window shape key-fill, the monotonic id counter, seeding, and the AceDB profile callbacks | `NS.Database` (`GetWindows`, `FindWindow`, `NextWindowId`, `SeedWindows`, `EnsureWindowShape`), `NS.db`, `NS:InitDB` | `NS.defaults`, `NS.WINDOW_TEMPLATE`, `NS.DefaultWindow`, `NS.Constants.MSG` |
+| `Database_Migrations.lua` | The migration ladder and its runner, peeled for layout-§1 | `NS:RunMigrations`, `Database.__migrations`, `Database.FROM_SKIN_KEYS`, `Database.CHROME_SKIN_MODES`, `Database.FONT_FLAG_DEFAULTS_V21` | `NS.Database`, `NS.SCHEMA_VERSION`, `Database._copy`, at file scope |
 | `Diagnostics.lua` | The section list of the `/mm diagnostics` report and its client probes: atlas probes, the formatter ladder, visibility, header, name column, cells, tooltip font and width, the Targets cross-reference, the provider-order probe, and the rejected events, which close the report. The addon-state sections that open it live in `Diagnostics_Runtime.lua` and are reached through `NS.Diagnostics.Runtime` when they run. LibKa0s-DebugLog-1.0 runs them (`RunDiagnostics`, through the descriptor's `diagnostics` field in `core/DebugLogSetup.lua`), each under its own pcall, and nothing here inspects a meter value. It is also the FRAME the three probe files hang off — the print helpers are defined once, here | `NS.Diagnostics` (`Sections`, `SetEmit`) and, for the three files below, the shared helpers `out` / `safe` / `shown` / `probe` | `NS.DebugLog`, `NS.Print`, `NS.SECRET`, `NS.Provider`, `NS.Constants.STATS`, `NS.Database`, `NS.Secrets`, `NS.WindowManager` |
 | `Diagnostics_DeathRecap.lua` | `/mm debug recap` — issue #1's question, asked in one place: can a Death Recap window be built at all, and what does the recap API actually hand back. Self-contained, so it can be deleted with its issue; it also rides along in `/mm diagnostics`, which is why its section function goes back onto the shared table | `Diagnostics.ReportDeathRecap`, `Diagnostics.reportDeathRecap` (the section the frame calls) | `NS.Diagnostics` and its print helpers, **at file scope** — the reason its TOC line must follow `core/Diagnostics.lua` |
 | `Diagnostics_Identity.lua` | `/mm debug identity` — the issue #22 identity-correlation measurement: which fields could key a row while `sourceGUID` is secret, and what each one costs when it is absent. **Not** part of `/mm diagnostics`; nothing in the frame reaches into it | `Diagnostics.ReportIdentity` | `NS.Diagnostics` and its `out`, **at file scope**. Prints through the frame's `out` rather than a second printer, so a line from here takes the route the report set |
@@ -386,8 +389,10 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 
 | File | Owns | Publishes | Consumes |
 |---|---|---|---|
-| `Schema_Compose.lua` | What the array is **declared out of**, and nothing else: the refresh routing a row's `onChange` reaches for, the dropdown vocabularies its `values` point at, the common validators, and the LibKa0s-Options-1.0 composers together with every canonical block composed out of them. It holds no row of its own — the composers decide *which* rows there are, and `Schema.lua` decides where they sit | `NS.SchemaCompose` (one table rather than fifty names on `NS`, so the peel costs the namespace one entry and the array can re-localize each member under the name its rows already spell) and `NS.MasterControlsAfterGroup`, published separately because `settings/General.lua` is its reader | `NS.L`, `NS.Constants`. Captures nothing across the load boundary — but **not for one reason**, and the TOC only accounts for one of the four. `NS.Helpers` is the one this file genuinely loads before: `settings/OptionsSetup.lua` builds it afterwards, which is why a media row's `values` has to be the deferred `lsmValues` closure rather than a list. `NS.db` exists at **no** file's load time at all: `core/Database.lua` loads long before this one, but it only *declares* `NS:InitDB`, and the AceDB object is not assigned until that runs inside `OnInitialize`. `NS.WindowManager` and `NS.Visibility` both publish themselves at file scope and both load **before** this file, so a capture would in fact resolve; they are still reached through `NS` because the only things that reach them are runtime callbacks — `onResetPosition` wants the live registry and whatever `NS.State.activeWindowId` names at the moment of the click, Lock frame's `get`/`set` want the live registry's `IsLocked`/`SetLocked`, and `refreshVisibility` falls back to `NS:GetModule("Visibility", true)` so a partial install fails open rather than freezing a nil in |
-| `Schema.lua` | **The array, and nothing else.** 180 rows across 8 page keys, each one the single source of truth for a setting's widget, its CLI parser and its default. This is the file that grows, and a new setting is still one row in it | `NS.Schema` | every member of `NS.SchemaCompose`, resolved **at file scope** as the array is declared — which is what puts `settings/Schema_Compose.lua` ahead of it in the TOC |
+| `Schema_Vocab.lua` | The dropdown vocabularies a row's `values` and `sorting` point at, peeled for layout-§1 | `NS.SchemaVocab`, re-published on `NS.SchemaCompose` | `NS.L`, `NS.Constants`, at file scope |
+| `Schema_Compose.lua` | What the array is **declared out of**, and nothing else: the refresh routing a row's `onChange` reaches for, the common validators, and the LibKa0s-Options-1.0 composers together with every canonical block composed out of them. It holds no row of its own — the composers decide *which* rows there are, and `Schema.lua` decides where they sit | `NS.SchemaCompose` (one table rather than fifty names on `NS`, so the peel costs the namespace one entry and the array can re-localize each member under the name its rows already spell) and `NS.MasterControlsAfterGroup`, published separately because `settings/General.lua` is its reader | `NS.L`, `NS.Constants`. Captures nothing across the load boundary — but **not for one reason**, and the TOC only accounts for one of the four. `NS.Helpers` is the one this file genuinely loads before: `settings/OptionsSetup.lua` builds it afterwards, which is why a media row's `values` has to be the deferred `lsmValues` closure rather than a list. `NS.db` exists at **no** file's load time at all: `core/Database.lua` loads long before this one, but it only *declares* `NS:InitDB`, and the AceDB object is not assigned until that runs inside `OnInitialize`. `NS.WindowManager` and `NS.Visibility` both publish themselves at file scope and both load **before** this file, so a capture would in fact resolve; they are still reached through `NS` because the only things that reach them are runtime callbacks — `onResetPosition` wants the live registry and whatever `NS.State.activeWindowId` names at the moment of the click, Lock frame's `get`/`set` want the live registry's `IsLocked`/`SetLocked`, and `refreshVisibility` falls back to `NS:GetModule("Visibility", true)` so a partial install fails open rather than freezing a nil in |
+| `Schema.lua` | **The array, and nothing else.** With `Schema_General.lua`, 180 rows across 8 page keys, each one the single source of truth for a setting's widget, its CLI parser and its default. This file holds the Windows to Tooltip pages, and a new setting is still one row | `NS.Schema` | every member of `NS.SchemaCompose`, resolved **at file scope** as the array is declared — which is what puts `settings/Schema_Compose.lua` ahead of it in the TOC |
+| `Schema_General.lua` | The array's tail, peeled for layout-§1: the Visibility, Columns and General pages, the generated statistic palette, and the two passes over the finished array (`expandBlocks`, the swatch and palette notes) | nothing new; it appends to `NS.Schema` | `NS.Schema`, the `NS.SchemaCompose` members its rows name, `NS.Constants`, `NS.L`, at file scope |
 | `Schema_Skin.lua` | The eight skin rows (skinning-§2, §3): `skin.source`, `skin.skin`, the Scope's `skin.ignorePanel` and `skin.ignoreFonts`, the overrides `skin.font` and `skin.texture`, the Font outline `skin.outline`, and `skin.pickerSeen`, every one `skipRender` in the Skin tab's group (`NS.SKIN_TAB`, `"Appearance"`) on the General page, each `onChange` applying only its own half. A file of its own because `Schema.lua` sits near the 1500-line cap. **Load-bearing position**: after `Schema.lua`, whose array it appends to, and before `Schema_Paths.lua`, which indexes the finished array | rows appended to `NS.Schema` | `NS.defaults.profile.skin`, `NS.SKIN_TAB` and the value tables `core/SkinSetup.lua` publishes, `NS.ApplySkinChoice` / `ApplySkinIgnore` / `ApplySkinOverride` / `ApplySkinOutline` at call time |
 | `Schema_Paths.lua` | The settings runtime's descriptor (issue #52). The machinery — path splitting and walking, the `path → row` index, the single write seam, the all-or-nothing batch and the bulk bracket that logs a bulk copy or reset as one `[Set]` line — is `LibKa0s-Schema-1.0` minor 2's; this file builds its one instance, or the write-completing degradation stub in the shape the library's docs prescribe, and supplies what is this addon's: window resolution and the window-relative path model, the announce, the hidden `window.columns` row (written whole, repaired by its `normalize`), and the page and validation surfaces. The one inverted row keeps its own get/set in `Schema_Compose.lua` | `NS.SchemaRuntime`, `NS.__schemaLib`, and the shims `NS.GetSetting`, `NS.SetByPath`, `NS.SetByPaths` (both taking an optional window id), `NS.FindSchemaRow`, `NS.RegisterSchemaRows`, `NS.ApplyDefault`, `NS.Bulk` (`begin` / `finish` / `run`, the runtime's `BulkBegin` / `BulkEnd` / `BulkRun`); `NS.SchemaForPage`, `NS.ValidateSchema`, `NS.NormalizeColumns`, `NS.MINIMAP_PATH` | `NS.Schema` **at file scope** — the runtime builds its index by walking the array, which is why it must load *after* it — plus `NS.db`, `NS.State.activeWindowId`, `NS.Constants`, and `NS.Helpers` / `NS.Visibility` at call time. **The one `CONFIG_CHANGED` sender** |
 | `Slash.lua` | `NS.COMMANDS`, the five schema adapters pointed at the seam above, the `profile` row (the descriptor's `profiles` answers `NS.db`; the verb is the library's `CliProfile`), the six window verbs, the library-absent stub, and the descriptor's `isEnabled` / `brandName` — the LIBRARY's disabled gate, with `liveVerbs` = the library's thirteen reserved verbs plus `profile`, so only this addon's own feature verbs refuse (`slash-commands-§2`, `§7`). The descriptor's `debug` is the gated sink, so every refusal the dispatcher decides is the library's `[Cmd]` line. `NS.Slash.__dispatcher` is a debug seam for the parity case | `NS.Slash` — `Register`, `OnSlash`, `PrintHelp`, `HelpRows`, `LandingRows`, `DisabledLine`, `Version` | LibKa0s-Slash-1.0, `NS.WindowManager`, `NS.DebugLog`, `NS.Perf`, `NS.Export`, the schema seam |
@@ -404,8 +409,8 @@ restated: Damage · Healing · Interrupts · Dispels · Avoidable Damage · Deat
 | `Profiles.lua` | The AceDBOptions profile tree, hosted in this addon's canvas. **The one place `AceConfigDialog` is permitted**, and the one page vetoed from reset-all | a page registration | AceDBOptions-3.0, AceConfigDialog-3.0 |
 
 Schema rows total 188 across 8 page keys — windows 1, frame 28, header 38, bars 31, tooltip 34,
-visibility 17, columns 9, general 30. Counting them means reading `settings/Schema.lua` (180, the
-array is the whole of that file) and `settings/Schema_Skin.lua` (the eight skin rows it appends);
+visibility 17, columns 9, general 30. Counting them means reading `settings/Schema.lua` and
+`settings/Schema_General.lua` (180 between them) and `settings/Schema_Skin.lua` (the eight skin rows);
 `Schema_Compose.lua` contributes no row. `Schema_Paths.lua` appends exactly one more, the hidden
 `window.columns` row (189 at runtime). `profiles` is the only page with zero schema rows: it hosts
 AceDBOptions' own tree rather than any of ours, which is bespoke by necessity and says why in its
@@ -458,7 +463,8 @@ draws) come from `core/LauncherSetup.lua` at load.
       pool's only consumer, `modules/Window_Render.lua`. It carries no other constraint: it publishes `NS.Pool` and captures nothing.
    12. `MultiMeters.lua` — after every setup file; promotes `NS` into the AceAddon object.
    13. `Database.lua` — after `State`, before `OnInitialize` runs. Reads `NS.defaults` at *call*
-       time, because `defaults/` loads later.
+       time, because `defaults/` loads later. `Database_Migrations.lua` follows it directly and
+       resolves `NS.Database`, `NS.SCHEMA_VERSION` and `Database._copy` at *file scope*.
    14. `Diagnostics.lua` — **deliberately unconstrained.** It reads every module at *call* time
        and owns no state, so nothing depends on where *it* loads. What does depend on it is
        everything below.
@@ -524,10 +530,11 @@ draws) come from `core/LauncherSetup.lua` at load.
    capture no sibling at load and looks every one of them up when a button is clicked instead. It
    sits after `DrillDown.lua` because that is where the reading order puts it, the last of the things
    a window does with its rows, and not because anything would break elsewhere.
-6. **`settings/`** — last, and the three Schema files first inside it, **in that order and for three
-   different reasons**:
+6. **`settings/`** — last, and the Schema files first inside it, **in this order**:
 
-   1. `Schema_Compose.lua` — **before `Schema.lua`.** The array resolves every member of
+   1. `Schema_Vocab.lua` — **before `Schema_Compose.lua`**, which resolves `NS.SchemaVocab` at *file
+      scope*. It reads only the locale and `core/Constants.lua`.
+   2. `Schema_Compose.lua` — **before `Schema.lua`.** The array resolves every member of
       `NS.SchemaCompose` at *file scope* as it is declared, so a composer file loading second would
       leave the array declared out of nils. It captures nothing itself, and only **one** of the
       four names it reaches through `NS` is a load-order matter: `NS.Helpers`, which
@@ -535,8 +542,10 @@ draws) come from `core/LauncherSetup.lua` at load.
       `OnInitialize` and exists at no file's load time; `NS.WindowManager` and `NS.Visibility` both
       load *before* this file and could be captured, and are not because the only things that reach
       them are runtime callbacks. The per-file table above says which is which.
-   2. `Schema.lua` — the array.
-   3. `Schema_Paths.lua` — **after the array**, because its runtime builds the `path → row` index by walking
+   3. `Schema.lua` — the array's head.
+   4. `Schema_General.lua` — appends the tail and runs the two passes, so it follows `Schema.lua`.
+   5. `Schema_Skin.lua` — appends the skin rows to the finished array.
+   6. `Schema_Paths.lua` — **after the array**, because its runtime builds the `path → row` index by walking
       `NS.Schema` at *file scope*; and **still before `Slash.lua` and `OptionsSetup.lua`**, which
       point their seams at `NS.SetByPath` / `NS.GetSetting` / `NS.FindSchemaRow` / `NS.ApplyDefault`
       at load. It is the one file in the addon pinned from **both** sides, which is why splitting

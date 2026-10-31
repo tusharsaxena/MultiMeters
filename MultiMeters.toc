@@ -85,6 +85,9 @@ core\DebugLogSetup.lua
 core\LauncherSetup.lua
 core\MultiMeters.lua
 core\Database.lua
+# The migration ladder and its runner, peeled off for layout-§1. LOAD-BEARING POSITION: it reads
+# NS.Database, NS.SCHEMA_VERSION and Database._copy at FILE SCOPE.
+core\Database_Migrations.lua
 # `/mm diagnostics`. Last in the block: it reads modules at CALL time and owns no
 # state, so nothing depends on where it loads.
 core\Diagnostics.lua
@@ -187,11 +190,17 @@ modules\SimDrivers.lua
 modules\SimScenario.lua
 
 # Settings (last — depend on everything else being initialized)
+# The dropdown vocabularies, peeled off settings\Schema_Compose.lua for layout-§1. LOAD-BEARING
+# POSITION: that file resolves NS.SchemaVocab at FILE SCOPE.
+settings\Schema_Vocab.lua
 # The vocabularies, validators and composed blocks that the schema array is declared
 # out of, peeled off settings\Schema.lua for layout-§1. LOAD-BEARING POSITION: the
 # array resolves every member of NS.SchemaCompose at FILE SCOPE, so this precedes it.
 settings\Schema_Compose.lua
 settings\Schema.lua
+# The tail of the row array and the passes over it, peeled off for layout-§1. LOAD-BEARING POSITION:
+# appended to the array settings\Schema.lua declares, and ahead of settings\Schema_Skin.lua, whose rows come last.
+settings\Schema_General.lua
 # The skin rows (skinning-§2), peeled off for layout-§1. LOAD-BEARING POSITION: appended to the
 # array settings\Schema.lua declares, and before settings\Schema_Paths.lua indexes it at FILE SCOPE.
 settings\Schema_Skin.lua

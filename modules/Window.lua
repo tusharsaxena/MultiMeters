@@ -104,7 +104,7 @@ WindowProto.__index = WindowProto
 NS.WindowProto = WindowProto
 
 -- Gap between two adjacent columns. Defined in core/Constants.lua because
--- core/Database.lua's width migration sizes a frame around the same seam.
+-- core/Database_Migrations.lua's width migration sizes a frame around the same seam.
 local COLUMN_GAP = Const.COLUMN_GAP
 
 -- How tall the column-header strip is, as a multiple of the row height. The
