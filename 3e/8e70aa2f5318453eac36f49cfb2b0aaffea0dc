@@ -1,0 +1,4 @@
+Independent review of MM-F01 + MM-F02 (feat/2026-10-31-font-pickers-skin-faces, head 3e8e70a).
+Findings: none (the review handed this step an empty list). Fixed: nothing. Rejected: nothing. No MM-F02 review-fix commit.
+Gate re-run at this head: lua tests/run.lua 2449 passed, 0 failed, 1 skipped (2450 total); luacheck 0 warnings / 0 errors in 178 files; largest Lua file settings/Schema.lua at 1473 lines, under the 1500 cap.
+Tree clean. No smoke check marked passed.
