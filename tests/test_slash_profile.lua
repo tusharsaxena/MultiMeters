@@ -92,7 +92,7 @@ end
 
 test("Slash profile: the verb follows the thirteen reserved ones, with its localized description",
 function()
-    -- A host verb (slash-commands.md:7, not reserved), so it goes AFTER `version`, next to the
+    -- A host verb (not among slash-commands-§2's reserved sub-verbs), so it goes AFTER `version`, next to the
     -- settings verbs rather than among the window verbs. Its description is a locale key, so the
     -- help index and the landing page both read one string a translation can reach.
     --

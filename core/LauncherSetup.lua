@@ -26,7 +26,7 @@ local addonName, NS = ...
 -- in either state; RIGHT-click opens the client's own context menu, titled with the label, with a
 -- checkbox per toggle this addon really has. The library builds both; this file only answers.
 --
--- THIS ADDON HAS ALL FOUR, and `ADDONS.md` records them as its menu entries:
+-- THIS ADDON HAS ALL FOUR, and WowAddonStandards `ADDONS.md` records them as its menu entries:
 --
 --     [x] Enabled         isEnabled     + setEnabled     /mm enable | /mm disable
 --     [ ] Locked          isLocked      + toggleLock     /mm lock

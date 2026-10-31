@@ -478,7 +478,7 @@ local function chatHeader(result, stat, session, F)
     -- DECIDED FROM THE PLAIN INPUT, never from the formatter's answer. Duration
     -- can hand back a secret string, and `~= ""` on one is a comparison — which
     -- is on the forbidden list even though `..` two lines up is not.
-    -- modules/Window.lua's DurationText makes the same distinction.
+    -- The retired DurationText made the same distinction.
     local seconds = result.durationSeconds
     if seconds ~= nil and F.Duration then
         head = head .. " (" .. F.Duration(seconds) .. ")"

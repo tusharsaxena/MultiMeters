@@ -477,7 +477,7 @@ NS.Schema = {
     --   `showTotals`       a group total, over a column holding the same figure
     --                      per player.
     --
-    -- What the right-hand header line still says is in modules/Window.lua's
+    -- What the right-hand header line still says is in modules/Window_Header.lua's
     -- UpdateHeaderText, and it is state rather than preference: the drill-down
     -- title and the restricted notice.
     --
@@ -787,7 +787,7 @@ NS.Schema = {
     -- the one thing a hover color must never be.
     --
     -- CLASS IS THE LOCAL PLAYER'S on both: a header control belongs to the WINDOW
-    -- and not to any row in it, which is the same call modules/Window.lua's
+    -- and not to any row in it, which is the same call modules/Window_Header.lua's
     -- headerColor makes for the title beside them.
     {
         path = "window.frame.controlColor", type = "color",
@@ -1315,7 +1315,7 @@ NS.Schema = {
     -- first window in each profile. There is no Data PAGE any more -- the sort
     -- and session rows that used to share it with these two were deleted rather
     -- than moved, because the window's own controls already write them directly
-    -- (modules/Window.lua's SortByColumn and the header's segment picker), and a
+    -- (modules/Window_Header.lua's SortByColumn and the header's segment picker), and a
     -- settings page restating a control the player already has, three inches
     -- from where they are looking, was a second place for the same answer to
     -- live.

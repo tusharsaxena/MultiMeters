@@ -252,7 +252,7 @@ local descriptor = {
     -- dependency-budget breach. Without it a drag commits every frame — and this
     -- addon has a color row per column, so the omission would be felt.
     -- The return is deliberately nil. From LibKa0s-Options-1.0 24.31.x
-    -- (OptionsWidgets minor 31; libs/LibKa0s docs/api/Options/
+    -- (OptionsWidgets minor 31; LibKa0s docs/api/Options/
     -- version-24.31.4.7.4-docs.md, "The drag throttles keep their own armed
     -- flag") the library arms its own flag around this call and never reads
     -- what it returns, so the 50 ms slider/color throttle holds with this

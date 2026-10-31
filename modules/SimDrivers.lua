@@ -1,6 +1,6 @@
 local _, NS = ...
 -- modules/SimDrivers.lua — the simulator's drivers: each edits the world, then fires the client's
--- events (MultiMeters#60; design-mm-sim.md §2.6).
+-- events (MultiMeters#60; Ka0sAddonsCommonTasks docs/2026-10-23-SIM_PREVIEW_MODE_STRIPS/inputs/design-mm-sim.md §2.6).
 --
 -- ONE RULE PER DRIVER. A driver changes the world (NS.SimHost.world, modules/SimWorld.lua) FIRST,
 -- then fires the client's events through NS.Sim:Fire, with the client's payloads, in the client's

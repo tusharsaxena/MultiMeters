@@ -906,7 +906,7 @@ local FRAME_BG_ROWS = compose("ColorPair", {
     omit = { useClassColorBackdropColor = true },
     defaults = { backdropColor = { r = 0, g = 0, b = 0, a = 0.75 } },
     -- The window's chrome is about the WINDOW, so the only class it can mean is
-    -- the local player's (modules/Window.lua's headerColor makes the same call for
+    -- the local player's (modules/Window_Header.lua's headerColor makes the same call for
     -- the strip above it).
     classColor = { source = "player" },
 })

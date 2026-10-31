@@ -761,7 +761,7 @@ test("Export.ChatLines takes the duration from the result and never from the for
     -- DECIDED FROM THE PLAIN INPUT. `result.durationSeconds` is a number the
     -- aggregator put there; F.Duration's answer is a string a formatter built,
     -- and asking whether THAT is empty is a comparison on a value the meter may
-    -- be hiding. modules/Window.lua's DurationText makes the same distinction.
+    -- be hiding. The retired DurationText made the same distinction.
     -- red under: `if F.Duration(seconds) ~= "" then`.
     local result = built({ row("Kaosz", { DamageDone = cell(100) }) }, nil)
     local lines = T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")

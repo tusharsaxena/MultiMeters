@@ -551,7 +551,7 @@ end
 ---
 --- The LOCAL player's class, like every other header surface: the strip is about
 --- the window rather than about any row in it, so yours is the only class it can
---- sensibly mean (modules/Window.lua's headerColor says the same thing about the
+--- sensibly mean (modules/Window_Header.lua's headerColor says the same thing about the
 --- title and the session line). A player whose class cannot be read keeps the
 --- configured color, which is the honest answer rather than a fallback hue.
 ---
