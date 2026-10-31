@@ -429,7 +429,7 @@ the button it clicks, both labels and `NS.BINDINGS` (the table the General page'
 draws) come from `core/LauncherSetup.lua` at load.
 
 1. **`libs/`** — LibStub, CallbackHandler, AceAddon/Event/Timer/DB/DBOptions/Console/Config/GUI,
-   LibKa0s, LibSharedMedia, AceGUI-3.0-SharedMediaWidgets, LibDataBroker, LibDBIcon.
+   LibKa0s, LibSharedMedia, LibDataBroker, LibDBIcon.
 2. **`locales/enUS.lua`** — first, so `NS.L` exists for every declaration below.
 3. **`core/`**, in this order and for these reasons:
    1. `Compat.lua` — first in the block, though nothing now depends on that: the TOC-manifest
@@ -477,11 +477,8 @@ draws) come from `core/LauncherSetup.lua` at load.
        cutting on the probe rather than at a line number.
 
    `LSMPatch.lua` used to sit at 12, unconstrained, patching AceGUI's `LSM30_Border`
-   from a `PLAYER_LOGIN` frame. That registration writes into a **process-global**
-   registry, so it was never this addon's private business; it is
-   `lib.__PatchLSM30Border()` in `LibKa0s-Options-1.0` now, called from
-   `settings/OptionsSetup.lua`'s live arm. See that call site for why file load is
-   early enough and why the timing change is safe.
+   from a `PLAYER_LOGIN` frame. Nothing replaces it: the addon no longer carries that
+   widget, because every media row is the library's `Ka0sMedia_*` picker.
 4. **`defaults/Profile.lua`** — after `core/Constants.lua`, whose stat catalog it captures at load.
 5. **`modules/`** — `Format` first (nothing reads another module, and `Row` and `Tooltip` both format
    on their first render), then `Provider` → `Roster` → `Feign` → `Aggregator` →

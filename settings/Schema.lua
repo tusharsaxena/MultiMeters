@@ -267,8 +267,8 @@ NS.Schema = {
     -- read by anything itself (see the comment on the color-mode row below for
     -- the full argument, which applies to all four).
     --
-    -- TWO OF THEM CARRY AN `LSM30_*` dialogControl and are NOT a font or bar
-    -- group, so a grep for `LSM30_` under settings/ finds them outside any
+    -- TWO OF THEM CARRY A `Ka0sMedia_*` dialogControl and are NOT a font or bar
+    -- group, so a grep for `Ka0sMedia_` under settings/ finds them outside any
     -- composer call site and that is correct. options-ui-§16 fixes the shape of a
     -- GROUP: contiguous, over one surface, with a color row and its companion. A
     -- write-only setter over six surfaces has no size, no color, no flags and
@@ -309,7 +309,7 @@ NS.Schema = {
     },
     {
         path = "window.barTexture", type = "string", default = "Blizzard Raid Bar",
-        values = lsmValues("statusbar"), dialogControl = "LSM30_Statusbar",
+        values = lsmValues("statusbar"), dialogControl = "Ka0sMedia_Statusbar",
         page = "frame", group = L["Quick style"], subgroup = L["All surfaces"],
         label = L["Bar texture (all surfaces)"],
         desc = L["Set the bar texture for the grid and the tooltip at once. Each of them is still its own setting."],
@@ -317,7 +317,7 @@ NS.Schema = {
     },
     {
         path = "window.font", type = "string", default = "Friz Quadrata TT",
-        values = lsmValues("font"), dialogControl = "LSM30_Font",
+        values = lsmValues("font"), dialogControl = "Ka0sMedia_Font",
         page = "frame", group = L["Quick style"], subgroup = L["All surfaces"],
         label = L["Font (all surfaces)"],
         desc = L["Set the font for the cell text, both header strips and the tooltip at once. Each of them is still its own setting."],

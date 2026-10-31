@@ -2429,7 +2429,7 @@ Total.
 - Library lines: rejected events, recorded at OnEnable, land when logging turns on
 - Library lines: after a Clear, an unchanged steady-state pass speaks again
 
-### test_options_panel.lua (35)
+### test_options_panel.lua (37)
 
 - Options: General is the FIRST page, above Windows
 - Options: the tree is General, Windows, Profiles, with no nesting mark
@@ -2466,6 +2466,8 @@ Total.
 - Options: AceGUI is resolved once and published for the page builders
 - Options: the descriptor tells the library the FOLDER name (LibKa0s#42)
 - Options: the help-mark and test-strip art, info, is declared and vendored
+- Options: every media row asks for a Ka0sMedia_* picker, the two broadcast rows included
+- Options: AceGUI-3.0-SharedMediaWidgets is gone from the load, the disk and the wiring
 
 ### test_options_tabs.lua (15)
 
@@ -2860,7 +2862,7 @@ Total.
 | test_slash_profile.lua | 11 |
 | test_disabled.lua | 27 |
 | test_library_lines.lua | 11 |
-| test_options_panel.lua | 35 |
+| test_options_panel.lua | 37 |
 | test_options_tabs.lua | 15 |
 | test_skinsetup.lua | 20 |
 | test_skin_outline.lua | 9 |
@@ -2882,4 +2884,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2448** |
+| **Total** | **2450** |

@@ -446,7 +446,8 @@ right. Open the panel with `/mm config`.
   the load order (disable and re-enable addons, or rename a folder), `/reload` and walk them again →
   all five addons look the same on both passes (`LSM30_Border` is one process-wide AceGUI slot, now
   registered once by LibKa0s). A dropdown that differs, or changes with load order, is the finding. No
-  Lua error. Result: pass (owner-marked 2026-10-10)
+  Lua error. Superseded from 2026-11-01 by PANEL-58: `LSM30_Border` is no longer drawn at all.
+  Result: pass (owner-marked 2026-10-10)
 - **PANEL-25. Which pages have Defaults.** Open each page → General and Windows carry a **Defaults**
   button in the page header and Profiles does not. On Windows the one button acts on the entry on
   screen: Frame, Header, Bars, Tooltip, Visibility, Columns, or General, where it restores nothing
@@ -631,6 +632,13 @@ right. Open the panel with `/mm config`.
   MM-05, 2026-10-29) and a *Background* heading over the background pair, with no heading repeating
   the tab name. Leaving the Columns tab mid-drag still
   leaves no handle behind (PANEL-42). Result: pass (owner-marked 2026-10-30)
+- **PANEL-58. The font and border pickers are the skinned `Ka0sMedia_*` rows (M3-MEDIA, 2026-11-01).**
+  Pick any skin other than Ka0s Default. Open Frame → Quick style → **Font (all surfaces)** → the closed
+  row shows the chosen face, the pull-out wears the skin and every entry draws in its own face, on the
+  first open as on the second. Pick a face → the window's text changes. Open Frame → Background and
+  border → **Border style** → the row's left edge is flush with the controls stacked with it, the
+  pull-out wears the skin and every entry shows its border swatch. Pick a border, then **None** → the
+  window's edge follows each pick. Third-party LibSharedMedia media still lists. No Lua error. Result:
 
 ## PROFILE
 

@@ -890,3 +890,42 @@ test("Options: the help-mark and test-strip art, info, is declared and vendored"
     assertTrue(fh ~= nil, "libs/LibKa0s/media/icons/info.tga is missing")
     if fh then fh:close() end
 end)
+
+test("Options: every media row asks for a Ka0sMedia_* picker, the two broadcast rows included",
+function()
+    -- red under: a schema row naming an LSM30_* type, or a composer that stopped writing the
+    -- library's picker. The owner's ruling of 2026-11-01: Ka0sMedia_* is the one media picker.
+    local inst = T.load()
+    local byPath, seen = {}, { Font = 0, Border = 0, Statusbar = 0 }
+    for _, row in ipairs(inst.NS.Schema) do
+        byPath[row.path] = row
+        local control = row.dialogControl
+        assertTrue(control == nil or not control:find("^LSM30_"),
+            row.path .. " still names " .. tostring(control))
+        local kind = control and control:match("^Ka0sMedia_(%a+)$")
+        if kind then seen[kind] = (seen[kind] or 0) + 1 end
+    end
+    assertEqual(byPath["window.barTexture"].dialogControl, "Ka0sMedia_Statusbar")
+    assertEqual(byPath["window.font"].dialogControl, "Ka0sMedia_Font")
+    assertEqual(byPath["window.frame.borderStyle"].dialogControl, "Ka0sMedia_Border")
+    assertTrue(seen.Font > 1 and seen.Border > 1 and seen.Statusbar > 1,
+        "the composed media rows did not arrive as Ka0sMedia_* types")
+end)
+
+test("Options: AceGUI-3.0-SharedMediaWidgets is gone from the load, the disk and the wiring",
+function()
+    -- red under: restoring the TOC line or the folder, or calling the retired fixup again.
+    local root = T.root or "."
+    local fh = assert(io.open(root .. "/MultiMeters.toc", "r"))
+    local toc = fh:read("*a")
+    fh:close()
+    assertTrue(toc:find("SharedMediaWidgets", 1, true) == nil, "the TOC still loads the widgets")
+    local xml = io.open(root .. "/libs/AceGUI-3.0-SharedMediaWidgets/widget.xml", "r")
+    assertTrue(xml == nil, "libs/AceGUI-3.0-SharedMediaWidgets is still on disk")
+    if xml then xml:close() end
+    local src = assert(io.open(root .. "/settings/OptionsSetup.lua", "r"))
+    local code = src:read("*a"):gsub("%-%-[^\r\n]*", "")
+    src:close()
+    assertTrue(code:find("__PatchLSM30Border", 1, true) == nil,
+        "settings/OptionsSetup.lua still calls the retired fixup")
+end)
