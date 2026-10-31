@@ -2491,7 +2491,7 @@ Total.
 - Skin seam: the skin row's values are every registered skin, in the library's order
 - Skin seam: /mm set refuses a skin that is not registered and applies one that is
 - Skin seam: /mm set reaches an exception, and only its own half
-- Skin seam: the write seam stores media's halves, "" for the skin's own
+- Skin seam: the write seam stores media's halves, "" for the skin's default
 - Skin seam: one tab pick is one effective SetChoice, one repaint, in the profile
 - Skin seam: the tab's Ignore fonts reaches the library and the profile, one repaint
 - Skin seam: another addon's copy to every Ka0s addon repaints this one once
@@ -2505,7 +2505,7 @@ Total.
 
 ### test_skin_outline.lua (9)
 
-- Skin outline: a fresh profile stores All text, the library's default, and wears it
+- Skin outline: a fresh profile stores HUD text only, the library's default, and wears it
 - Skin outline: the schema row offers the library's three modes, in its order, skip-render
 - Skin outline: the write seam stores media.outline, and leaves it alone when it is nil
 - Skin outline: another addon's copy reaches the store through WriteChoice
@@ -2551,7 +2551,7 @@ Total.
 
 - Skin fonts: every font group carries size, color with a class option, flags and shadow
 - Skin fonts: every flags row leads with From skin and defaults to it, the template too
-- Skin fonts: From skin draws the Font outline: OUTLINE under All text and HUD only, none under Off
+- Skin fonts: From skin draws the Font outline: OUTLINE under HUD only and All text, none under Off
 - Skin fonts: a flag the player picked wins over the Font outline, and NONE draws none
 - Skin fonts: the all-surfaces flags row writes From skin to every surface
 - Skin fonts: the v22 step moves every stored old-default flag onto From skin, in every profile

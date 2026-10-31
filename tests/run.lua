@@ -70,6 +70,9 @@ do
         -- no member, so nothing here calls it BY NAME -- which is exactly why it is listed: a
         -- re-vendor that dropped it would leave every page tab-less with nothing to read.
         "OptionsTabs.lua",
+        -- The media pickers (v1.83.0): the Skin tab's Font and Texture rows are Ka0sMedia_* types, and an
+        -- attachment raises nothing when it is absent, so the suite would go on green without them.
+        "OptionsMedia.lua",
         -- Three more attachment files the shell calls only when present (`if lib.__AttachX
         -- then`), so a payload missing one raises nothing and the suite would go on green:
         -- OptionsRegistry.lua (v1.62.0) defines RegisterOptionsPage, CreateOptionsPanel and

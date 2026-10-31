@@ -47,7 +47,7 @@ Want a second window? Click **New window** beside the window picker at the top o
 
 Want to see the meter work without a group? `/mm sim` runs a scripted fight through it. It only starts when you're solo and outside an instance, and it offers four scenarios: a dungeon pull and boss, a 20-player raid boss, a wipe and reset, and a zone change between fights. Every window shows a SIMULATION strip while it plays, and you can pause it and step through it one row at a time. The group, the fights and the numbers are made up. Nothing is saved, nothing is sent to chat, and your real segments come back when it stops.
 
-Want a different look? Multi Meters wears one of the Ka0s skins, Ka0s Default to start with, and a small picker asks you to choose one the first time you log in on a profile. You can change it any time on General → Skin, with no reload: the windows, the tooltips, the export window and the debug tools all follow. The window fonts and bar textures follow the skin too, while each **Use the skin's font**, **Use the skin's texture** or **Use the skin's border** box beside them is ticked. Untick one and your own pick comes back, or tick **Ignore fonts** on the Skin tab to keep every font your own. Choosing another skin puts the Skin tab's own Font and Texture back to that skin's. **Font outline**, on the Skin tab, says where the skin outlines text: all of it (the default), HUD text only, or nowhere; every font setting's flags start on **From skin**, which follows it, and a flag you pick yourself wins. While a font follows the skin its size scales too, so the text is as wide in every skin; your stored sizes and colors are never rewritten. `/mm skin` opens the skin picker again whenever you want it. With EllesmereUI installed, the addon can wear its look instead.
+Want a different look? Multi Meters wears one of the Ka0s skins, Ka0s Default to start with, and a small picker asks you to choose one the first time you log in on a profile. You can change it any time on General → Skin, with no reload: the windows, the tooltips, the export window and the debug tools all follow. The window fonts and bar textures follow the skin too, while each **Use the skin's font**, **Use the skin's texture** or **Use the skin's border** box beside them is ticked. Untick one and your own pick comes back, or tick **Ignore fonts** on the Skin tab to keep every font your own. Choosing another skin puts the Skin tab's own Font and Texture back to that skin's. **Font outline**, on the Skin tab, says where the skin outlines text: HUD text only (the default), all of it, or nowhere; every font setting's flags start on **From skin**, which follows it, and a flag you pick yourself wins. While a font follows the skin its size scales too, so the text is as wide in every skin; your stored sizes and colors are never rewritten. `/mm skin` opens the skin picker again whenever you want it. With EllesmereUI installed, the addon can wear its look instead.
 
 Everything else is on the addon's page under Settings → AddOns, and `/mm` (or `/multimeters`) on its own opens it. `/mm help` prints the full command list.
 
@@ -106,34 +106,8 @@ Please raise them on GitHub:
 
 ## Credits
 
-The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL
-Open Font License 1.1.
-
-Ka0s Default, the skin every profile starts on, draws [Prototype](https://www.dafont.com/prototype.font)
-v2.0 (2001). It is **not** under the OFL: it is "free for personal use, freely distributed with
-Prototype.txt", so the author's `Prototype.txt` ships beside it unchanged, on the owner's ruling of
-2026-10-30.
-
-Obsidian draws [Expressway](https://www.dafont.com/expressway.font) Rg Bold 2.100 (2005) by Ray
-Larabie, Typodermic. It is **not** under the OFL either, and ships against its terms: its name table
-reads "Do not distribute", and the Typodermic Desktop EULA 2026 puts embedding in software outside
-the free license. It ships on the owner's ruling of 2026-10-30, "Ship it anyways.", with the EULA
-(`Expressway-EULA.pdf`) and its quick guide (`Expressway-EULA-Guide.html`) beside it as the record of
-the terms that ruling overrode. Expressway is a trademark of Typodermic.
-
-The other skins draw on six SIL Open Font License 1.1 families:
-[Nunito](https://github.com/googlefonts/nunito) by The Nunito Project Authors,
-[Vollkorn](https://github.com/FAlthausen/Vollkorn-Typeface) by The Vollkorn Project Authors,
-[Bitter](https://github.com/solmatas/BitterPro) by The Bitter Project Authors,
-[Philosopher](https://github.com/alexeiva/philosopher) by The Philosopher Project Authors,
-[Fira Sans](https://github.com/mozilla/Fira) by The Mozilla Foundation and Telefonica S.A. (Medium
-and SemiBold, WoW Forever's), and
-[Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) by the Braille Institute of
-America. Nunito, Vollkorn and Bitter are static weights cut from upstream's variable fonts.
-
 The header controls, the column sort arrows, the Export window, the debug console, the simulator's
 step panel and the first-run skin picker draw icons from
 [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only the icons this addon
-draws ship. The fonts and the icons sit inside the bundled LibKa0s payload, each with its license
-text beside it.
+draws ship. They sit inside the bundled LibKa0s payload, with their license text beside them.
 

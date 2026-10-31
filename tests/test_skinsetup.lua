@@ -143,7 +143,7 @@ test("Skin seam: the skin keys default to Ka0s Default, the panel ignored and th
     assertEqual(d.ignoreFonts, false)
     assertEqual(d.font, "")
     assertEqual(d.texture, "")
-    assertEqual(d.outline, "all", "the Font outline: All text (LibKa0s v1.82.0)")
+    assertEqual(d.outline, "hud", "the Font outline: HUD text only (LibKa0s v1.83.0)")
     assertEqual(d.pickerSeen, false)
 end)
 

@@ -144,8 +144,8 @@ db.profile = {
         skin        = "ka0s",          -- which Ka0s skin; "ka0s" is Ka0s Default
         ignorePanel = true,            -- the Scope: leave the settings panel the client's
         ignoreFonts = false,           -- the Scope: leave every font the client's (the HUD: each window's pick)
-        font        = "",              -- an LSM font key overriding the skin's face; "" = the skin's own
-        texture     = "",              -- an LSM statusbar key overriding the skin's bar; "" = the skin's own
+        font        = "",              -- an LSM font key overriding the skin's face; "" = the skin's default
+        texture     = "",              -- an LSM statusbar key overriding the skin's bar; "" = the skin's default
         pickerSeen  = false,           -- the first-run skin picker was closed on this profile
     },
     -- statColors.* (the per-statistic palette) is stored here too; see its section
@@ -166,7 +166,7 @@ Eight addon-wide keys (`core/SkinSetup.lua`; the 2026-10-29 skinning rollout's M
 reset reaches them (the page's Defaults and Reset all settings put the skin back on Ka0s Default) and
 `/mm get|set skin.skin` validates against the registered skins. The library's Skin tab draws
 every one but `pickerSeen`, which nothing draws. `outline` is the Font outline (LibKa0s v1.82.0, Skin
-minor 9, ruling D-06): `all` text (the default), `hud` text only, or `off`, applied with
+minor 9, ruling D-06): `hud` text only (the default since v1.83.0, D-10), `all` text, or `off`, applied with
 `Skin:SetOutline` with the stored pair; the write seam stores it from `media.outline`. They are written only through `NS.SetByPath`, by the tab, the
 picker and another Ka0s addon's "Copy to every Ka0s addon", and each row's `onChange` applies only
 its own half. **New keys with defaults, so no migration was owed**: AceDB merges them into every
@@ -630,7 +630,7 @@ band), the swatch, kept and never disabled, while off. `migrations[20]` (v20 →
 window onto both, once.
 
 **The face is `GameFontNormal` spelled out** — Friz Quadrata, 12px, a 1/-1 drop shadow, and since
-LibKa0s v1.82.0 the flags From skin (the Skin tab's Font outline, All text by default; Off is the
+LibKa0s v1.82.0 the flags From skin (the Skin tab's Font outline, HUD text only by default; Off is the
 old unoutlined look) —
 because that is what Ka0s DPS Race's title bar draws (`Style.FONT.TITLE`) and the two headers sit side
 by side. Until 2026-10-24 the header shipped `outline = "OUTLINE"` with `shadow = false`; the size was

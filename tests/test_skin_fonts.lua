@@ -5,7 +5,7 @@
 -- D-07. The four font groups a window carries (the title, the column labels, the cell text and the
 -- tooltip) each have a size, a color with a class-color option (the color mode beside the swatch),
 -- flags and a shadow. Their flags lead with "From skin" ("@skin", the composer's flagsFromSkin),
--- the default, which draws through S.FontFlags: the owner's Font outline answers it (All text and
+-- the default, which draws through S.FontFlags: the owner's Font outline answers it (HUD text only and
 -- HUD text only: OUTLINE; Off: none). A flag the player picked wins; "NONE" stays this addon's
 -- word for none. The v21 -> v22 step moves a stored flag equal to the old default onto From skin,
 -- once, in every window of every profile (Addendum 01); a flag the player changed stays.
@@ -107,19 +107,19 @@ end)
 
 -- ── the flags drawn ──────────────────────────────────────────────────────────────────────────
 
-test("Skin fonts: From skin draws the Font outline: OUTLINE under All text and HUD only, none under Off", function()
+test("Skin fonts: From skin draws the Font outline: OUTLINE under HUD only and All text, none under Off", function()
     -- red under: a draw site passing the stored "@skin" to SetFont, or one reading the stored value
     -- past S.FontFlags (the Skin tab's Font outline would change nothing on the meter).
     local inst, NS, window, row, cfg = scene()
     local cell = row.cells.DamageDone
-    assertEqual(cell.left.__font.flags, "OUTLINE", "the cell under All text")
-    assertEqual(window.frame.title.__font.flags, "OUTLINE", "the title under All text")
+    assertEqual(cell.left.__font.flags, "OUTLINE", "the cell under the default, HUD only")
+    assertEqual(window.frame.title.__font.flags, "OUTLINE", "the title under the default, HUD only")
     local _, _, tipFlags = NS.TooltipInternals.tooltipFont(NS.TooltipInternals.tooltipConfig(cfg))
-    assertEqual(tipFlags, "OUTLINE", "the tooltip under All text")
+    assertEqual(tipFlags, "OUTLINE", "the tooltip under the default, HUD only")
 
-    skin(inst):SetOutline(OWNER, "hud")
+    skin(inst):SetOutline(OWNER, "all")
     row:ApplyLayout(window.layout)
-    assertEqual(cell.left.__font.flags, "OUTLINE", "the meter is HUD text: HUD only keeps it")
+    assertEqual(cell.left.__font.flags, "OUTLINE", "All text keeps the meter's outline too")
 
     skin(inst):SetOutline(OWNER, "off")
     window:ApplyConfig()
@@ -276,7 +276,7 @@ test("Skin fonts: the column labels draw the Font outline and the HUD size scale
     end)
     window:ApplyColumnHeaders()
     local _, size, flags = window.columnHeaders[1].text:GetFont()
-    assertEqual(flags, "OUTLINE", "the column label under All text")
+    assertEqual(flags, "OUTLINE", "the column label under the default, HUD only")
     assertEqual(size, 12, "Ka0s Default draws the stored size")
 
     skin(inst):SetOutline(OWNER, "off")

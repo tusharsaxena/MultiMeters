@@ -54,7 +54,8 @@ end
 
 -- The media rows' value keys are the LibSharedMedia keys the harness holds, which the vendored
 -- LibKa0s registers: they move at a re-vendor (v1.80.0 added the skin faces, the eight generated
--- bars and the Ka0s Glass border), never with a setting.
+-- bars and the Ka0s Glass border; v1.83.0 added the D-05 faces and registered every older face), never
+-- with a setting.
 -- The eight skin.* rows (settings/Schema_Skin.lua, the 2026-10-29 skinning rollout's MM-01, and
 -- skin.outline from the 2026-10-30 skin fonts run's MM-01, LibKa0s v1.82.0) are
 -- new settings, added after the pin was taken; the skin row's value keys are the skins the vendored
@@ -87,7 +88,7 @@ local PIN = {
     "skin.font|string||nil|nil|nil|-|false|false|false",
     "skin.ignoreFonts|bool|false|nil|nil|nil|-|false|false|false",
     "skin.ignorePanel|bool|true|nil|nil|nil|-|false|false|false",
-    "skin.outline|string|all|nil|nil|nil|all,hud,off|false|false|false",
+    "skin.outline|string|hud|nil|nil|nil|all,hud,off|false|false|false",
     "skin.pickerSeen|bool|false|nil|nil|nil|-|false|false|false",
     "skin.skin|string|ka0s|nil|nil|nil|azeroth,contrast,ember,forever,glass,ka0s,midnight,obsidian,wow|false|false|false",
     "skin.source|string|ka0s|nil|nil|nil|eui,ka0s|false|false|false",
@@ -117,7 +118,7 @@ local PIN = {
     "window.columnHeader.bgColor|color|{a=0,b=0,g=0,r=0}|nil|nil|nil|-|false|false|false",
     "window.columnHeader.colorMode|string|custom|nil|nil|nil|class,custom,stat|false|false|false",
     "window.columnHeader.color|color|{a=1,b=0,g=0.82,r=1}|nil|nil|nil|-|false|false|false",
-    "window.columnHeader.font|string|Friz Quadrata TT|nil|nil|nil|JetBrains Mono,Ka0s Atkinson,Ka0s Atkinson Bold,Ka0s Bitter,Ka0s Bitter Bold,Ka0s Expressway,Ka0s Fira Sans Medium,Ka0s Fira Sans SemiBold,Ka0s Nunito,Ka0s Nunito SemiBold,Ka0s Philosopher,Ka0s Philosopher Bold,Ka0s Prototype,Ka0s Vollkorn,Ka0s Vollkorn Bold|false|false|false",
+    "window.columnHeader.font|string|Friz Quadrata TT|nil|nil|nil|JetBrains Mono,Ka0s Atkinson,Ka0s Atkinson Bold,Ka0s Avant Garde,Ka0s Bitter,Ka0s Bitter Bold,Ka0s Doris PP,Ka0s Emblem,Ka0s Expressway,Ka0s Fira Sans,Ka0s Fira Sans Medium,Ka0s Fira Sans SemiBold,Ka0s Friz Quadrata TT,Ka0s Inter,Ka0s Inter SemiBold,Ka0s Nunito,Ka0s Nunito SemiBold,Ka0s Open Sans,Ka0s Open Sans Bold,Ka0s Open Sans Condensed,Ka0s Open Sans Light,Ka0s Open Sans Semibold,Ka0s Oxanium Bold,Ka0s Oxanium SemiBold,Ka0s Philosopher,Ka0s Philosopher Bold,Ka0s Prototype,Ka0s Segoe UI,Ka0s Segoe UI Bold,Ka0s Segoe UI Light,Ka0s Segoe UI Semibold,Ka0s Vollkorn,Ka0s Vollkorn Bold|false|false|false",
     "window.columnHeader.fontFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.columnHeader.outline|string|@skin|nil|nil|nil|@skin,MONOCHROME,NONE,OUTLINE,THICKOUTLINE|false|false|false",
     "window.columnHeader.shadow|bool|false|nil|nil|nil|-|false|false|false",
@@ -129,7 +130,7 @@ local PIN = {
     "window.data.sortColumn|string|DamageDone|nil|nil|nil|-|false|true|false",
     "window.data.sortMode|string|value|nil|nil|nil|-|false|true|false",
     "window.fontOutline|string|@skin|nil|nil|nil|@skin,MONOCHROME,NONE,OUTLINE,THICKOUTLINE|false|false|false",
-    "window.font|string|Friz Quadrata TT|nil|nil|nil|JetBrains Mono,Ka0s Atkinson,Ka0s Atkinson Bold,Ka0s Bitter,Ka0s Bitter Bold,Ka0s Expressway,Ka0s Fira Sans Medium,Ka0s Fira Sans SemiBold,Ka0s Nunito,Ka0s Nunito SemiBold,Ka0s Philosopher,Ka0s Philosopher Bold,Ka0s Prototype,Ka0s Vollkorn,Ka0s Vollkorn Bold|false|false|false",
+    "window.font|string|Friz Quadrata TT|nil|nil|nil|JetBrains Mono,Ka0s Atkinson,Ka0s Atkinson Bold,Ka0s Avant Garde,Ka0s Bitter,Ka0s Bitter Bold,Ka0s Doris PP,Ka0s Emblem,Ka0s Expressway,Ka0s Fira Sans,Ka0s Fira Sans Medium,Ka0s Fira Sans SemiBold,Ka0s Friz Quadrata TT,Ka0s Inter,Ka0s Inter SemiBold,Ka0s Nunito,Ka0s Nunito SemiBold,Ka0s Open Sans,Ka0s Open Sans Bold,Ka0s Open Sans Condensed,Ka0s Open Sans Light,Ka0s Open Sans Semibold,Ka0s Oxanium Bold,Ka0s Oxanium SemiBold,Ka0s Philosopher,Ka0s Philosopher Bold,Ka0s Prototype,Ka0s Segoe UI,Ka0s Segoe UI Bold,Ka0s Segoe UI Light,Ka0s Segoe UI Semibold,Ka0s Vollkorn,Ka0s Vollkorn Bold|false|false|false",
     "window.fontFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.frame.alpha|number|1|0|1|0.01|-|false|false|false",
     "window.frame.backdropColorMode|string|skin|nil|nil|nil|class,custom,skin|false|false|false",
@@ -171,7 +172,7 @@ local PIN = {
     "window.header.dividerColor|color|{a=0.85,b=0.5,g=0.5,r=0.5}|nil|nil|nil|-|false|false|false",
     "window.header.dividerThickness|number|1|1|8|1|-|false|false|false",
     "window.header.divider|bool|true|nil|nil|nil|-|false|false|false",
-    "window.header.font|string|Friz Quadrata TT|nil|nil|nil|JetBrains Mono,Ka0s Atkinson,Ka0s Atkinson Bold,Ka0s Bitter,Ka0s Bitter Bold,Ka0s Expressway,Ka0s Fira Sans Medium,Ka0s Fira Sans SemiBold,Ka0s Nunito,Ka0s Nunito SemiBold,Ka0s Philosopher,Ka0s Philosopher Bold,Ka0s Prototype,Ka0s Vollkorn,Ka0s Vollkorn Bold|false|false|false",
+    "window.header.font|string|Friz Quadrata TT|nil|nil|nil|JetBrains Mono,Ka0s Atkinson,Ka0s Atkinson Bold,Ka0s Avant Garde,Ka0s Bitter,Ka0s Bitter Bold,Ka0s Doris PP,Ka0s Emblem,Ka0s Expressway,Ka0s Fira Sans,Ka0s Fira Sans Medium,Ka0s Fira Sans SemiBold,Ka0s Friz Quadrata TT,Ka0s Inter,Ka0s Inter SemiBold,Ka0s Nunito,Ka0s Nunito SemiBold,Ka0s Open Sans,Ka0s Open Sans Bold,Ka0s Open Sans Condensed,Ka0s Open Sans Light,Ka0s Open Sans Semibold,Ka0s Oxanium Bold,Ka0s Oxanium SemiBold,Ka0s Philosopher,Ka0s Philosopher Bold,Ka0s Prototype,Ka0s Segoe UI,Ka0s Segoe UI Bold,Ka0s Segoe UI Light,Ka0s Segoe UI Semibold,Ka0s Vollkorn,Ka0s Vollkorn Bold|false|false|false",
     "window.header.fontFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.header.height|number|26|8|48|1|-|false|false|false",
     "window.header.outline|string|@skin|nil|nil|nil|@skin,MONOCHROME,NONE,OUTLINE,THICKOUTLINE|false|false|false",
@@ -194,7 +195,7 @@ local PIN = {
     "window.text.colorMode|string|custom|nil|nil|nil|class,custom,stat|false|false|false",
     "window.text.color|color|{a=1,b=1,g=1,r=1}|nil|nil|nil|-|false|false|false",
     "window.text.deathTimeFormat|string|clock|nil|nil|nil|ago,clock|false|false|false",
-    "window.text.font|string|Friz Quadrata TT|nil|nil|nil|JetBrains Mono,Ka0s Atkinson,Ka0s Atkinson Bold,Ka0s Bitter,Ka0s Bitter Bold,Ka0s Expressway,Ka0s Fira Sans Medium,Ka0s Fira Sans SemiBold,Ka0s Nunito,Ka0s Nunito SemiBold,Ka0s Philosopher,Ka0s Philosopher Bold,Ka0s Prototype,Ka0s Vollkorn,Ka0s Vollkorn Bold|false|false|false",
+    "window.text.font|string|Friz Quadrata TT|nil|nil|nil|JetBrains Mono,Ka0s Atkinson,Ka0s Atkinson Bold,Ka0s Avant Garde,Ka0s Bitter,Ka0s Bitter Bold,Ka0s Doris PP,Ka0s Emblem,Ka0s Expressway,Ka0s Fira Sans,Ka0s Fira Sans Medium,Ka0s Fira Sans SemiBold,Ka0s Friz Quadrata TT,Ka0s Inter,Ka0s Inter SemiBold,Ka0s Nunito,Ka0s Nunito SemiBold,Ka0s Open Sans,Ka0s Open Sans Bold,Ka0s Open Sans Condensed,Ka0s Open Sans Light,Ka0s Open Sans Semibold,Ka0s Oxanium Bold,Ka0s Oxanium SemiBold,Ka0s Philosopher,Ka0s Philosopher Bold,Ka0s Prototype,Ka0s Segoe UI,Ka0s Segoe UI Bold,Ka0s Segoe UI Light,Ka0s Segoe UI Semibold,Ka0s Vollkorn,Ka0s Vollkorn Bold|false|false|false",
     "window.text.fontFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.text.leftSlot|string|smart|nil|nil|nil|combined,none,percent,rate,smart,total|false|false|false",
     "window.text.maxNameLength|number|15|0|40|1|-|false|false|false",
@@ -222,7 +223,7 @@ local PIN = {
     "window.tooltip.fontOutline|string|@skin|nil|nil|nil|@skin,MONOCHROME,NONE,OUTLINE,THICKOUTLINE|false|false|false",
     "window.tooltip.fontShadow|bool|false|nil|nil|nil|-|false|false|false",
     "window.tooltip.fontSize|number|12|6|32|1|-|false|false|false",
-    "window.tooltip.font|string|Friz Quadrata TT|nil|nil|nil|JetBrains Mono,Ka0s Atkinson,Ka0s Atkinson Bold,Ka0s Bitter,Ka0s Bitter Bold,Ka0s Expressway,Ka0s Fira Sans Medium,Ka0s Fira Sans SemiBold,Ka0s Nunito,Ka0s Nunito SemiBold,Ka0s Philosopher,Ka0s Philosopher Bold,Ka0s Prototype,Ka0s Vollkorn,Ka0s Vollkorn Bold|false|false|false",
+    "window.tooltip.font|string|Friz Quadrata TT|nil|nil|nil|JetBrains Mono,Ka0s Atkinson,Ka0s Atkinson Bold,Ka0s Avant Garde,Ka0s Bitter,Ka0s Bitter Bold,Ka0s Doris PP,Ka0s Emblem,Ka0s Expressway,Ka0s Fira Sans,Ka0s Fira Sans Medium,Ka0s Fira Sans SemiBold,Ka0s Friz Quadrata TT,Ka0s Inter,Ka0s Inter SemiBold,Ka0s Nunito,Ka0s Nunito SemiBold,Ka0s Open Sans,Ka0s Open Sans Bold,Ka0s Open Sans Condensed,Ka0s Open Sans Light,Ka0s Open Sans Semibold,Ka0s Oxanium Bold,Ka0s Oxanium SemiBold,Ka0s Philosopher,Ka0s Philosopher Bold,Ka0s Prototype,Ka0s Segoe UI,Ka0s Segoe UI Bold,Ka0s Segoe UI Light,Ka0s Segoe UI Semibold,Ka0s Vollkorn,Ka0s Vollkorn Bold|false|false|false",
     "window.tooltip.fontFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.tooltip.hideInCombat|bool|false|nil|nil|nil|-|false|false|false",
     "window.tooltip.maxSpells|number|10|0|30|1|-|false|false|false",

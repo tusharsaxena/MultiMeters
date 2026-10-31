@@ -538,7 +538,8 @@ if not Skin then
     S.ChartStyle = function() return {} end
     S.BarStyle = function() return {} end
     -- LibKa0s v1.82.0 (Skin minor 9): never nil, because SetFont reads nil as no flags. A picked
-    -- flag as is; From skin ("@skin") or nothing is the library's default mode, All text: OUTLINE.
+    -- flag as is; From skin ("@skin") or nothing is the library's default mode, HUD text only, and
+    -- every string this stub draws through here is HUD text: OUTLINE.
     S.FontFlags = function(v)
         if type(v) == "string" and v ~= S.FROM_SKIN then return v end
         return "OUTLINE"
@@ -611,7 +612,7 @@ function NS.ApplySkinOverride(font, texture)
 end
 
 --- The applied font outline: Skin:SetOutline, live. No argument applies the stored mode; the
---- library reads an unknown mode as "all". A copy without SetOutline (before Skin minor 9) moves
+--- library reads an unknown mode as its OUTLINE_DEFAULT, "hud". A copy without SetOutline (before Skin minor 9) moves
 --- nothing.
 function NS.ApplySkinOutline(mode)
     if type(Skin.SetOutline) ~= "function" then return false end

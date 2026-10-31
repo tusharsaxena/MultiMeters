@@ -1,6 +1,6 @@
 -- tests/test_skin_outline.lua — the font outline (LibKa0s v1.82.0, Skin minor 9; MM-01 of
 -- Ka0sAddonsCommonTasks docs/2026-10-30-SKIN_FONTS_AND_FEEDBACK, ruling D-06): stored as skin.outline
--- ("all", the default, "hud", "off"), written only through the skin write seam (NS.WriteSkinChoice's
+-- ("hud", the default since v1.83.0, "all", "off"), written only through the skin write seam (NS.WriteSkinChoice's
 -- `media.outline`), and applied with Skin:SetOutline at load, on every profile event and on the row's
 -- own write. The reference is LibKa0sSkinTester's tests/test_skin_outline.lua.
 --
@@ -23,11 +23,11 @@ local function rowAt(NS, path)
     return nil
 end
 
-test("Skin outline: a fresh profile stores All text, the library's default, and wears it", function()
+test("Skin outline: a fresh profile stores HUD text only, the library's default, and wears it", function()
     local _, NS, Skin = scene()
-    assertEqual(NS.db.profile.skin.outline, "all")
+    assertEqual(NS.db.profile.skin.outline, "hud")
     assertEqual(NS.defaults.profile.skin.outline, Skin.OUTLINE_DEFAULT)
-    assertEqual(Skin:GetOutline(OWNER), "all")
+    assertEqual(Skin:GetOutline(OWNER), "hud")
 end)
 
 test("Skin outline: the schema row offers the library's three modes, in its order, skip-render", function()
@@ -62,6 +62,10 @@ end)
 
 test("Skin outline: /mm set applies the mode live, its own half only", function()
     local _, NS, Skin = scene()
+    NS.Slash:OnSlash("set skin.outline all")
+    assertEqual(NS.db.profile.skin.outline, "all")
+    assertEqual(Skin:GetOutline(OWNER), "all")
+    assertEqual(NS.Skin.Token("font.outline"), "OUTLINE", "All text outlines window text")
     NS.Slash:OnSlash("set skin.outline hud")
     assertEqual(NS.db.profile.skin.outline, "hud")
     assertEqual(Skin:GetOutline(OWNER), "hud")
@@ -75,8 +79,8 @@ end)
 test("Skin outline: /mm set refuses a mode the library does not know", function()
     local _, NS, Skin = scene()
     NS.Slash:OnSlash("set skin.outline thick")
-    assertEqual(NS.db.profile.skin.outline, "all")
-    assertEqual(Skin:GetOutline(OWNER), "all")
+    assertEqual(NS.db.profile.skin.outline, "hud")
+    assertEqual(Skin:GetOutline(OWNER), "hud")
 end)
 
 test("Skin outline: the stored mode is applied with the stored pair at load", function()
@@ -90,11 +94,11 @@ end)
 
 test("Skin outline: a profile switch applies the incoming profile's mode, and back", function()
     local _, NS, Skin = scene()
-    NS.Slash:OnSlash("set skin.outline hud")
+    NS.Slash:OnSlash("set skin.outline off")
     NS.db:SetProfile("OutlineProbe")
-    assertEqual(Skin:GetOutline(OWNER), "all", "the new profile keeps the default")
+    assertEqual(Skin:GetOutline(OWNER), "hud", "the new profile keeps the default")
     NS.db:SetProfile("Default")
-    assertEqual(Skin:GetOutline(OWNER), "hud", "Default's is back")
+    assertEqual(Skin:GetOutline(OWNER), "off", "Default's is back")
 end)
 
 test("Skin outline: without the skin engine the apply is a quiet no-op and the store still takes it", function()

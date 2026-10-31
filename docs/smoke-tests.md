@@ -181,7 +181,7 @@ secret-value rules the checks refer to.
   MultiMetersDB.global.schemaVersion` prints `22`. On the first window Header → Title text, Bars →
   Text, Columns → Column header → Text and Tooltip → Text each show Font outline **From skin**, as
   does Frame → Quick style → Font outline (all surfaces), and its text is outlined (the Skin tab's
-  Font outline is *All text*). The second keeps *Thick outline* on its cells and *None* on its column
+  Font outline is *HUD text only*). The second keeps *Thick outline* on its cells and *None* on its column
   labels, and the rest of its flags read From skin. Set the first window's Bars → Text → Font outline
   to *None*, `/reload` → it stays *None* (the move ran once). Result:
 ## SLASH
@@ -1656,8 +1656,8 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
   controls on a window never changed), since there is no skin to follow. (Amended by MM-A1,
   2026-10-29, the skinning rollout: a chrome Skin mode falls back to its swatch without the
   library.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: every font flag now
-  defaults to *From skin*, and without the library *From skin* draws OUTLINE, the library's default
-  All text mode, so the title, the session line, the column labels, the cells and the tooltip lines
+  defaults to *From skin*, and without the library *From skin* draws OUTLINE, as the library's default
+  mode, HUD text only, does for this text, so the title, the session line, the column labels, the cells and the tooltip lines
   are outlined where the pre-skin look drew the title, cells and tooltip plain; a flag set to *None*
   still draws plain. Fail: From skin text drawn plain without the library, or a Lua error.) Result:
 - **DEGRADED-9. Restoring.** Rename the folder back, `/reload` → everything returns. Result: pass (owner-marked 2026-10-10)
@@ -1771,11 +1771,11 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   tool-window labels draw Oxanium too, LibKa0s D-13.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: Ka0s Default's own face is **Ka0s Prototype**, one weight, where the surfaces above drew Ka0s Oxanium Bold and SemiBold, and the window text is outlined under the default Font outline, *All text*.) Result:
 - **SKIN-3. The Skin tab (MM-01).** Settings → General → the strip reads Master controls, Behavior,
   Statistic colors, **Skin**, Keybindings. **Skin** shows Skin source, the nine skins with their
-  swatches under a **Look** heading, **Font and texture** (Font and Texture, both *Skin's own* on a
-  new profile), the Scope (**Ignore settings panel** ticked, **Ignore fonts** unticked), **Copy to
+  swatches under a **Look** heading, **Font and texture** (Font and Texture, both *Skin's default* on a
+  new profile, each list showing its fonts in their own faces and its bars beside a swatch), the Scope (**Ignore settings panel** ticked, **Ignore fonts** unticked), **Copy to
   every Ka0s addon...** and the note that skins change every visual element. `/mm get skin.skin` →
   `ka0s`. The page's **Defaults** and **Reset all settings** put the skin back on Ka0s Default.
-  (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the Skin tab also shows **Reset font** and **Reset texture** under the two dropdowns, disabled while each is the skin's own, and **Font outline** on *All text*; **Copy to every Ka0s addon...** sits under its own **Other Ka0s addons** heading.) Result:
+  (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the Skin tab also shows **Reset font** and **Reset texture** under the two dropdowns, disabled while each is the skin's default, and **Font outline** on *HUD text only*; **Copy to every Ka0s addon...** sits under its own **Other Ka0s addons** heading.) Result:
 - **SKIN-4. Each skin, live, on the meter window (MM-02, MM-03, MM-A1).** With two windows open in
   test mode, pick each skin in turn and Ka0s Default last → with **no reload** each window repaints:
   **its chrome takes the skin's own look** (the window fill, the edge in the skin's style, thickness
@@ -1799,7 +1799,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   moved. (Amended by MM-A1, 2026-10-29, the skinning rollout: the owner ruled the window chrome follows the skin, R-3, so the question this check
   put is answered and the chrome is now checked here.) (Amended by MM-02, 2026-10-30, the skin library follow-ups: every skin draws HUD text in a face
   of its own, where the eight non-Ka0s skins drew Friz Quadrata; the owner judges each face here,
-  LibKa0s R-4.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the HUD faces are now Obsidian **Expressway** (where it was Inter SemiBold), Ka0s Default **Prototype** (where it was Oxanium SemiBold) and WoW Forever Fira Sans SemiBold (titles and HUD; its body text is Fira Sans Medium), and in each skin the HUD text measures about as wide as under Ka0s Default, its size scaled by the skin, SKIN-27.) Result:
+  LibKa0s R-4.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the HUD faces are now Obsidian **Expressway** (where it was Inter SemiBold), Ka0s Default **Prototype** (where it was Oxanium SemiBold) and WoW Forever Fira Sans SemiBold (titles and HUD; its body text is Fira Sans Medium), and in each skin the HUD text measures about as wide as under Ka0s Default, its size scaled by the skin, SKIN-27.) (Amended by MM-F01, 2026-10-31, the font pickers and skin faces run, LibKa0s v1.83.0: the HUD faces are now Azeroth **Open Sans Semibold**, Glass **Avant Garde**, High Contrast **Doris PP**, Ember **Emblem**, WoW Midnight **Segoe UI Semibold** and WoW Default **Ka0s Friz Quadrata TT**, which differs from Ka0s Default's Prototype whatever the client's own Friz file holds; Obsidian, WoW Forever and Ka0s Default keep theirs.) Result:
 - **SKIN-5. The HUD companions (MM-03).** Under **Obsidian**, untick Bars → Text → **Use the skin's
   font** → the cell text goes back to the window's own Font pick at once, while the title, the column
   labels and the tooltip keep the skin's face; tick it → the skin's again. Do the same with Bars → Bar
@@ -1819,7 +1819,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   pick *Morpheus* → every string whose companion is ticked (titles, labels, cells, tooltip lines) and
   the export modal take Morpheus live; a surface with its companion unticked keeps its own pick.
   **Texture** → a distinct bar → every grid and tooltip bar with *Use the skin's texture* ticked takes
-  it. Set both back to *Skin's own* → the skin's face and bar return. (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: choosing another skin now puts both overrides back to *Skin's own*, LibKa0s D-10, so pick the override after the skin; Reset font and Reset texture do the same one half at a time.) Result:
+  it. Set both back to *Skin's default* → the skin's face and bar return. (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: choosing another skin now puts both overrides back to *Skin's default*, LibKa0s D-10, so pick the override after the skin; Reset font and Reset texture do the same one half at a time.) Result:
 - **SKIN-8. Ignore fonts (MM-01).** With a font override set, tick **Ignore fonts** → every string the
   addon draws keeps its own face and size and the skin still colors it, **the HUD included**: the
   title, the session line, the column labels, the cells and the tooltip lines draw each window's own
@@ -1911,11 +1911,12 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   **Ember** and press **Copy to every Ka0s addon...** → both addons wear Ember with no reload and each
   Skin tab shows it; `/reload` → both still Ember. (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the copy also carries the Font outline: set it to *HUD text only* first and the other addon's Skin tab shows *HUD text only* too.) Result:
 - **SKIN-25. The Font outline (MM-01; LibKa0s Skin minor 9, ruling D-06).** Skin → **Font outline**
-  reads *All text* on a new profile, and every window's title, session line, column labels, cells and
-  tooltip lines are outlined. Pick *HUD text only* → the meter text stays outlined (it is HUD text),
-  while the export modal's and the settings pages' text loses its outline, live. Pick *Off* → no
+  reads *HUD text only* on a new profile (the default since LibKa0s v1.83.0, D-10): every window's
+  title, session line, column labels, cells and tooltip lines are outlined (they are HUD text), and
+  the export modal's and the settings pages' text is not. Pick *All text* → that text takes the
+  outline too, live, and the meter stays as it was. Pick *Off* → no
   text the addon draws is outlined, live, with no reload; `/mm get skin.outline` prints `off`;
-  `/reload` → still Off. `/mm set skin.outline hud` applies at once; `/mm set skin.outline thick` is
+  `/reload` → still Off. `/mm set skin.outline all` applies at once; `/mm set skin.outline thick` is
   refused. Tick **Ignore fonts** → the Font outline dropdown grays out. Switch to another profile →
   that profile's own outline applies. Result:
 - **SKIN-26. Font flags From skin (MM-01; ruling D-07).** On a new window, Header → Title text, Bars →
@@ -1923,7 +1924,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   color mode (Class color among them), Font outline and Text shadow, and each Font outline reads
   **From skin**, first in its list. With the Skin tab's Font outline on *Off*, set Bars → Text → Font
   outline to *Thick outline* → the cells draw a thick outline while the title and labels stay
-  unoutlined; set the Skin tab's Font outline back to *All text* → the cells keep *Thick outline* and
+  unoutlined; set the Skin tab's Font outline back to *HUD text only* → the cells keep *Thick outline* and
   the rest are outlined. Frame → Quick style → Font outline (all surfaces) → *From skin* puts all four
   back on it. Result:
 - **SKIN-27. Width parity of the meter window (MM-01; rulings D-08, D-09).** With a window in test
@@ -1934,7 +1935,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   into its neighbor; with Bars → Text → Max name length set, a name at the cap still fits its
   column. Untick Bars → Text → *Use the skin's font* → the cells draw the stored size again; tick
   **Ignore fonts** → every size is the stored one. `/mm get window.text.size` prints the same number
-  throughout (the stored size is never rewritten). Result:
+  throughout (the stored size is never rewritten). (Amended by MM-F01, 2026-10-31, the font pickers and skin faces run, LibKa0s v1.83.0: every new face is measured against Prototype too, so run this again; a font override with a Ka0s face also scales to Prototype's width, and a non-Ka0s media face stays unscaled. Report a clipped header control, name or number under any skin.) Result:
 ## Non-English client
 
 - **LOC-1. The CSV header does not translate.** On a non-English client (German, for example), export
