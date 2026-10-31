@@ -608,7 +608,7 @@ and its owner is `WindowProto`. The naming, with every writer and the act that r
 `docs/ARCHITECTURE.md` → Settings schema; it is what makes the write outside the helper compliant,
 and it is why the deviation register carries no row for it. It
 is also the one piece of window state that must never be *read back* off the live frame (rule R3).
-`modules/Window.lua` keeps an empty, invisible `anchor` frame that never receives a value, and
+`modules/Window_Frame.lua` builds an empty, invisible `anchor` frame that never receives a value, and
 `modules/Window_Placement.lua`'s `SavePosition` reads `GetPoint` off **that**; the visible window is anchored to it. Because positions have no row,
 `NS.ApplyDefault` never reaches them. A global reset reaches them anyway, because "Reset all
 settings" is a **profile reset** and a position lives in the profile. (`NS.ResetPositions` used to

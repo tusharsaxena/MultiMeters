@@ -456,7 +456,7 @@ reapplied it for the duration of a pull, so rows would not jump — keyed, that 
 that is secret exactly when the freeze was needed, and therefore never applicable to a single
 mid-pull row. The engine's ranking replaces it and is strictly better: live rather than a snapshot of
 the pull's first frame, and free of any comparison of ours. `ADDON_RESTRICTION_STATE_CHANGED` is no
-longer listened for in `modules/Aggregator.lua`; `modules/Window.lua` still redraws on it.
+longer listened for in `modules/Aggregator.lua`; `modules/Window_Lifecycle.lua` still marks the window dirty on it.
 
 The restriction keys off **`Combat`, not `ChallengeMode`**. Between packs in a key the values and the
 GUIDs are fully readable, so the exact join runs for most of a dungeon run and identity mode covers
@@ -558,7 +558,7 @@ position data secret too**, and that propagates to anything anchored to it. So:
   matters — secretness travels from a frame to whatever is anchored *to* it, and these are leaves.
 
 **The anchor frame.** Dragging and resizing genuinely need "where did the user just put this" (a
-`GetPoint`) and "how big did they make it" (a `GetWidth`). `modules/Window.lua` builds `inst.anchor`
+`GetPoint`) and "how big did they make it" (a `GetWidth`). `modules/Window_Frame.lua` builds `inst.anchor`
 and `modules/Window_Placement.lua` — which holds `SavePosition`, `SaveSize`, `ApplyPosition`,
 `ApplyResizeBounds` and `ApplyLock` — is where the two questions are asked. The anchor is a bare,
 empty, invisible `Frame` parented to `UIParent` with no children, no textures and no cells. The

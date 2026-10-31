@@ -34,7 +34,7 @@ and there is no way to unwind a partially sorted array.
 propagates that to everything anchored to it. There is not one `GetWidth` / `GetHeight` /
 `GetLeft` / `GetPoint` call anywhere in `modules/Row.lua`, in `modules/Row_Border.lua` or in
 `modules/Row_NameCell.lua`, the sibling that draws the leading cell. The single exception in the addon is
-`modules/Window.lua`'s `inst.anchor`, which `modules/Window_Placement.lua` reads: an empty,
+`modules/Window_Frame.lua`'s `inst.anchor`, which `modules/Window_Placement.lua` reads: an empty,
 invisible, childless frame the visible window is anchored *to*, upstream of everything, which can
 therefore never receive a value.
 
@@ -518,7 +518,7 @@ If the entry owns a new per-window config group, add it to `WINDOW_TEMPLATE` in
 
 ## Add a slash verb
 
-**1. `settings/Slash.lua`** — append to `NS.COMMANDS`, after the thirteen reserved verbs
+**1. `settings/Slash.lua`** — append to `NS.COMMANDS`, after the reserved verbs
 (`slash-commands-§2` fixes their order).
 
 ```lua

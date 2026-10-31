@@ -702,7 +702,7 @@ right. Open the panel with `/mm config`.
   `Raid`, and nothing moves on screen (a verb that printed the refusal and then acted is the failure).
   `/mm`, `/mm help`, `/mm config` (the panel opens), `/mm version`, `/mm list`, `/mm get enabled`,
   `/mm set master.scale 1.5`, `/mm reset master.scale`, `/mm resetall`, `/mm debug`, `/mm diagnostics`,
-  `/mm perf help` and `/mm profile` still answer. `/mm enable` → the addon returns and the six feature
+  `/mm perf help` and `/mm profile` still answer. `/mm enable` → the addon returns and the eight feature
   verbs work at once ([disabled-state.md](disabled-state.md)). Result: pass (owner-marked 2026-10-10)
 - **STATE-2. Help unchanged while disabled.** While disabled, `/mm help` and the landing page → every
   verb keeps its row, the refused ones included. Result: pass (owner-marked 2026-10-10)

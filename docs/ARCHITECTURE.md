@@ -77,7 +77,7 @@ touching the data path.
 ## Settings schema
 
 `NS.Schema` in `settings/Schema.lua` is the single source of truth: **188 rows across 8 page keys**
-(windows 1, frame 28, header 37, bars 31, tooltip 34, visibility 17, columns 9, general 30; the eight
+(windows 1, frame 28, header 38, bars 31, tooltip 34, visibility 17, columns 9, general 30; the eight
 skin rows are appended by `settings/Schema_Skin.lua`), each one
 wiring automatically into its panel widget — one tab per distinct `group`, via
 `LibKa0s-Options-1.0`'s `RenderTabbedSchema` — its `/mm get|set|list|reset` coverage, and the
@@ -146,7 +146,7 @@ also the one sanctioned second sender of `ENTERING_WORLD`, `METER_SESSION` and `
 ## Slash commands
 
 `/mm` and `/multimeters` dispatch `NS.COMMANDS` (`settings/Slash.lua`) through LibKa0s-Slash-1.0:
-**21 verbs**, the thirteen reserved ones then this addon's eight, plus the `window` sub-tree. The eighth
+**22 verbs**, the thirteen reserved ones and the reserved `skin` (LibKa0s v1.82.0), then this addon's eight, plus the `window` sub-tree. The eighth
 is `sim`, the simulator (MultiMeters#60), whose whole grammar is LibKa0s-Sim-1.0's `RunVerb`. A bare `/mm`
 opens the settings panel. The verb table, the sub-tree, the `debug` words, the degraded behavior and
 every refusal line: **[slash-dispatch.md](slash-dispatch.md)**.
@@ -382,7 +382,7 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
 - **The export modal** wears `S.Shell`, `S.TitleBar`, `S.Button`, `S.Inset`, `S.Text` and `S.Font`;
   its copy window and dropdowns take the owner. Under Ka0s Default it gains a title band and its
   buttons' fill, edge, icon and disabled gray move slightly (D8), and its strings, like the empty
-  state's two lines (`S.Text`), draw Ka0s Default's Oxanium faces where they drew Friz Quadrata:
+  state's two lines (`S.Text`), draw Ka0s Default's own face (Ka0s Prototype since LibKa0s v1.82.0, Oxanium before it) where they drew Friz Quadrata:
   v1.79.0's Ka0s Default reaching every surface the skin paints, kept unless **Ignore fonts** is
   ticked ([SKIN-2](smoke-tests.md)).
 - **The settings pages** follow the owner through the library unless **Ignore settings panel** is on
@@ -398,10 +398,10 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   `O.SkinPicker` two seconds after a login or reload, and after every profile event, while the
   profile's `skin.pickerSeen` is false and the addon stands up; a start in combat is held for the
   `PLAYER_REGEN_ENABLED` edge `core/MultiMeters.lua` already receives. A pick previews; Apply, the
-  gear and Apply to all save through `NS.WriteSkinChoice`; the player's close sets `pickerSeen`, and
+  gear and Apply to all save through `NS.WriteSkinChoice`, which is what gives it the Skin tab's Font, Texture, Font outline and Scope rows (LibKa0s v1.83.0; a preview left unapplied is put back on close); the player's close sets `pickerSeen`, and
   `NS.HideSkinPicker` (the stand-down, a profile event) takes it down without setting it. Its eye
   puts the windows in test mode (X6). The library titles it "Choose a skin" and puts the owner label,
-  "Ka0s Multi Meters", on its own line above the dropdown (OptionsSkinPicker minor 2).
+  "Ka0s Multi Meters", on its own line above the dropdown (OptionsSkinPicker minor 2). The reserved `/mm skin` verb opens the same window whatever `pickerSeen` says (`NS.RunSkinVerb`, `O.SkinVerb`).
 - **The EllesmereUI provider** is the library's (`SkinEUI.lua`), chosen by `skin.source = "eui"`; when
   its gate fails the addon wears its Ka0s skin and the Skin tab names the condition.
 - **What stays.** Chat output (X7), inline help markup (X9), StaticPopups, the class and spell art,

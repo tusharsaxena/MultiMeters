@@ -143,11 +143,11 @@ addon now passes it:
 | `meterEvent` | — | `core/MultiMeters.lua:571`, `:581`, `:589` | — |
 | `spellEvent` | — | `core/MultiMeters.lua:534` | — |
 | `systemEvent` | — | `core/MultiMeters.lua:525` | — |
-| `refresh` | — | `modules/Window.lua:1278`, `:1288`, `:1311`, `:1318` | — |
+| `refresh` | — | `modules/Window_Render.lua:320`, `:330`, `:353`, `:360` | — |
 | `providerRead` | — (more than one real parent) | `modules/Provider.lua:375` | Its caller's: `"aggregate"` from `modules/Aggregator.lua:1012` and `modules/Aggregator_Identity.lua:215`, `"targets"` from `modules/Targets.lua:347`, none from `core/Diagnostics.lua` or `core/Diagnostics_DeathRecap.lua` |
 | `aggregate` | `refresh` | `modules/Aggregator.lua:1264`, `modules/DrillDown.lua:710`, `:722` | Its caller's at `modules/Aggregator.lua:1264`; `"refresh"` at both `DrillDown` sites |
-| `render` | `refresh` | `modules/Window.lua:1488` | `"refresh"` |
-| `renderRow` | `render` | `modules/Row.lua:1214` | `"render"` |
+| `render` | `refresh` | `modules/Window_Render.lua:530` | `"refresh"` |
+| `renderRow` | `render` | `modules/Row.lua:1215` | `"render"` |
 | `tooltip` | — | `modules/Tooltip_Builders.lua:796`, `:938`, `:956`, `:1018`, `:1032`, `:1046` | — |
 | `targets` | `tooltip` | `modules/Targets.lua:443` | `"tooltip"` |
 

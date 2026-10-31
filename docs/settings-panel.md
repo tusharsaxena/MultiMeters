@@ -77,7 +77,7 @@ that filter drops `hidden` rows before grouping runs).
 | Visibility | `visibility` | 17 | 1 — Rules | **Rules** — every rule that can show or hide the window on one screen, which is the question "why is my window hidden?" needs answered. Three headings: *Show in* (dungeon / raid / arena / battleground / delve / scenario / world, all on), *Hide when* (solo, vehicles, mounted, skyriding, flight paths, player housing, pet battles, while dead, all off) and *Combat* (hide in combat, hide out of combat, both off — the one pair that can contradict each other, so it keeps a heading of its own). |
 | Columns | `columns` | 9 (Column header) | 2 — **Columns** (bespoke block editor), Column header | **Columns** — one block per statistic, a drag handle, a tick/cross toggle and a name; ticked ones are the columns, in block order. The row's **bounded box and its handle are the library's** (`options-ui-§18`), not this addon's. This is the *entry that is not tabbed by `RenderTabbedSchema`*: the strip is drawn directly with `H.TabStrip` and each tab renders its own filtered row list. Options minor 4's host tabs (`opts.tabs`) could carry the block editor, but the library's tab click clears the scroll itself and never re-enters the page's renderer, so the reorder cancel could no longer run before the clear. Declined in [issue #53](https://github.com/tusharsaxena/MultiMeters/issues/53). **Column header** — the `window.columnHeader.*` rows that used to sit under Windows > Header, under two headings: *Text* (the composed font block) and *Background* (a composed color pair). It renders through `RenderRows` with `noHeadings`, which drops only the group heading that would repeat the tab; the two subsection headings are drawn regardless. The name cannot be mistaken for the Header rail entry, which "Header text" could. |
 
-**187 schema rows total.** Every HUD media picker on Header, Bars, Tooltip and Columns has its "Use the skin's ..." companion after its block (see [The composed blocks](#the-composed-blocks)), which is the one row each of those counts gained in the skinning rollout, three on Bars and Tooltip. Five of the Windows page's seven entries — Frame, Header, Bars, Tooltip,
+**188 schema rows total.** Every HUD media picker on Header, Bars, Tooltip and Columns has its "Use the skin's ..." companion after its block (see [The composed blocks](#the-composed-blocks)), which is the one row each of those counts gained in the skinning rollout, three on Bars and Tooltip. Five of the Windows page's seven entries — Frame, Header, Bars, Tooltip,
 Visibility — draw their entire body from one `H.RenderTabbedSchema(c, key)` call, made by the page's
 renderer under the band and the rail, and nothing else. Adding an option to any of them means adding
 one row in `settings/Schema.lua` — with the `group` you want it to land on — and touching no entry
@@ -125,7 +125,10 @@ Five things about how this addon calls them are worth knowing before editing a b
   v1.81.0's `S.Resolve`), as the companion's tooltip says. Frame → Background and border → Border has none: the
   composer's companion would follow `bar.borderStyle`, the wrong token for a window edge, so the
   window's edge follows the skin through its color mode's **Skin** value instead (MM-A1). Colors,
-  sizes, flags and thicknesses are never governed by a companion (DECISIONS X4).
+  sizes, flags and thicknesses are never governed by a companion (DECISIONS X4). Every picker
+  previews its entries: the panel's rows are `LSM30_*` controls from the vendored
+  AceGUI-3.0-SharedMediaWidgets, and the Skin tab's Font and Texture, like the first-run picker's
+  rows, are the library's `Ka0sMedia_*` pickers (LibKa0s v1.83.0, `OptionsMedia.lua`).
 
 - **Nothing stored moved.** Each call passes `keys` and `defaults`, so the composed rows land on this
   addon's existing paths at this addon's shipped values. `dress()` in `settings/Schema_Compose.lua`
@@ -672,7 +675,7 @@ Confining column management to the settings panel removes the hazard rather than
 it. Layout is computed from config on the way **out** (`WindowProto:BuildLayout`, which consults not
 one widget) and never read back on the way **in** — design rule R3. There is no code path where a
 cell's geometry is a question anyone asks. The one place the addon *does* call `GetPoint` is
-`modules/Window_Placement.lua`'s `SavePosition`, on the `inst.anchor` `modules/Window.lua` builds:
+`modules/Window_Placement.lua`'s `SavePosition`, on the `inst.anchor` `modules/Window_Frame.lua` builds:
 an empty, invisible, childless frame that the visible window is anchored **to**, upstream of
 everything, and which can therefore never receive a value.
 
