@@ -119,7 +119,7 @@ test("Windows rail: the seven entries register under their page keys, on both bu
         for key, label in pairs(LABELS) do
             -- red under: a page file registering no section, or the registry defined inside the
             -- live arm only (a library-absent load would lose it)
-            local s = NSx.WindowSection and NSx.WindowSection(key)
+            local s = NSx.__WindowSection and NSx.__WindowSection(key)
             assertTrue(s ~= nil, build .. ": " .. key .. " registered no section")
             assertEqual(s.key, key, build .. ": " .. key .. " keeps its page key, so every row path is unchanged")
             assertEqual(s.label, L[label], build .. ": " .. key .. "'s rail label")

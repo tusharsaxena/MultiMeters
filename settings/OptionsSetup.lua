@@ -127,9 +127,9 @@ function NS.RegisterWindowSection(key, label, spec)
     sections[key] = { key = key, label = label, tooltip = spec.tooltip, spec = spec }
 end
 
---- The registered entry `key`, or nil. Read-only. TEST-ONLY TODAY: no in-addon caller;
---- published for the headless suite (tests/test_windows_rail.lua).
-function NS.WindowSection(key) return sections[key] end
+--- The registered entry `key`, or nil. Read-only. A TEST SEAM: no in-addon caller; the headless
+--- suite reads it because a library-absent load has no rail to look at (tests/test_windows_rail.lua).
+function NS.__WindowSection(key) return sections[key] end
 
 local lib = LibStub and LibStub("LibKa0s-Options-1.0", true)
 

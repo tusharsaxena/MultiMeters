@@ -618,6 +618,8 @@ local S = SchemaLib:New({
         NO_ROOT   = L["No window is selected."],
     },
 })
+-- No shipped reader, kept on purpose: this is the instance tests/test_surface_parity.lua holds the
+-- degraded stub to, and the one the options-panel cases drive.
 NS.SchemaRuntime = S
 
 -- ---------------------------------------------------------------------------
