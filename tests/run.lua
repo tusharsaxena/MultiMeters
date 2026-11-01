@@ -308,6 +308,7 @@ local SUITES = {
     -- The four #60 scenarios end to end, stepped and auto-run (modules/SimScenario.lua, MM-16).
     "test_sim_e2e",
     "test_launchersetup",
+    "test_launcher_skin_entry",
     "test_lifecycle",
     "test_dispatch",
     "test_vendor_sync",

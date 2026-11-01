@@ -338,6 +338,7 @@ NS.Launcher = Launcher:New({
     -- THE OPTIONS MENU'S PAIRS (Launcher minor 4) -- see "THE BUTTONS" in the header. Each toggle
     -- is the slash verb's own handler; each accessor is the one the tooltip or the verb reads.
     -- `setEnabled` is handed the state the addon is moving TO, which picks the verb.
+    openSkinPicker = function() if NS.RunSkinVerb then NS.RunSkinVerb() end end,
     isEnabled      = isEnabled,
     setEnabled     = function(on) runVerb(on and "enable" or "disable") end,
     isLocked       = isLocked,
