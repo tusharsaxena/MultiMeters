@@ -109,5 +109,5 @@ Please raise them on GitHub:
 The header controls, the column sort arrows, the Export window, the debug console, the simulator's
 step panel, the first-run skin picker and the small marks LibKa0s draws beside skinned controls
 draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only the icons this addon
-draws ship. They sit inside the bundled LibKa0s payload, with their license text beside them.
+draws ship. They sit inside the bundled LibKa0s payload, with their license text beside them. The chat mark on the header comes from [Phosphor Icons](https://github.com/phosphor-icons/core) (MIT) and ships the same way.
 

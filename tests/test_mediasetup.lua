@@ -126,7 +126,8 @@ test("MediaSetup: every name the declaration lists has a file in the vendored co
     local root = (T.root or ".") .. "/libs/LibKa0s/media/icons/"
     local missing = {}
     for _, name in ipairs(decl.names or {}) do
-        local fh = io.open(root .. name .. ".tga", "rb")
+        local path = name:gsub("^ph:", "phosphor/"):gsub("^gi:", "game-icons/")
+        local fh = io.open(root .. path .. ".tga", "rb")
         if fh then fh:close() else missing[#missing + 1] = name end
     end
     assertEqual(table.concat(missing, ", "), "")
