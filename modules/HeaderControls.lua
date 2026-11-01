@@ -140,7 +140,7 @@ local CONTROLS = {
       atlas = { "communities-icon-chat" },      ascii = "=" },
     { key = "reset",    setting = "showReset",     art = "reset",
       atlas = { "common-icon-undo" },           ascii = "@" },
-    { key = "export",   setting = "showExport",    art = "export",
+    { key = "export",   setting = "showExport",    art = "ph:chat-text",
       atlas = { "poi-scrollofresonance", "UI-HUD-MicroMenu-Questlog-Up" }, ascii = ">" },
 }
 
