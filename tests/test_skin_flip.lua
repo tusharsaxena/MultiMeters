@@ -194,10 +194,22 @@ end)
 
 test("Skin flip: the border groups put the thickness on the skin with the style", function()
     -- red under: BorderGroup{ fromSkin = true }, which leaves the thickness the player's.
+    -- A predicate since OptionsCompose minor 18: live under a skin's None, governed under a real style.
     local inst = T.load()
     local NS = inst.NS
-    assertEqual(rowAt(NS, "window.bars.borderThickness").disabledIf, "window.bars.borderStyleFromSkin")
-    assertEqual(rowAt(NS, "window.tooltip.barBorderSize").disabledIf, "window.tooltip.barBorderStyleFromSkin")
+    local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0", true)
+    local cfg = NS.Database.GetWindows()[1]
+    NS.State.SetActiveWindow(cfg.id)
+    for _, path in ipairs({ "window.bars.borderThickness", "window.tooltip.barBorderSize", "window.bars.border" }) do
+        local row = rowAt(NS, path)
+        assertEqual(type(row.disabledIf), "function", path)
+        assertFalse(row.disabledIf(row), path .. " under Ka0s Default's None draws the stored value")
+    end
+    Skin:SetChoice(OWNER, "ka0s", "azeroth")
+    for _, path in ipairs({ "window.bars.borderThickness", "window.tooltip.barBorderSize", "window.bars.border" }) do
+        local row = rowAt(NS, path)
+        assertTrue(row.disabledIf(row), path .. " under a real style is the skin's")
+    end
 end)
 
 test("Skin flip: the two scope rows and their defaults do not move", function()
@@ -341,25 +353,59 @@ test("Skin flip: the cell's outline takes the skin's color and thickness with th
     end)
     local r, g, b = NS.Skin.Color("bar.border")
     sameColor(last(colors, "the outline"), { r, g, b }, "the outline's color")
-    assertEqual(last(sizes, "the outline")[1], NS.Skin.Token("bar.borderSize"), "the outline's thickness")
+    assertEqual(NS.Skin.Token("bar.borderStyle"), "None", "the case is moot")
+    assertEqual(last(sizes, "the outline")[1], 3, "a skin's None hands the player's thickness back")
 end)
 
-test("Skin flip: a skin with border art shows it, with Show border off", function()
-    -- red under: `bars.border` alone deciding, so the skin's border never shows (cause D4).
-    local inst, NS, _, row, _, Skin = scene()
+test("Skin flip: a real style in a skin wins over Show border, and None defers to it", function()
+    -- red under: `bars.border` alone deciding, so the skin's border never shows (cause D4), or a
+    -- skin's None drawing nothing over a player's Show border (the owner's ruling of 2026-11-01).
+    local _, NS, _, row, cfg, Skin = scene()
+    local bars = statCell(row).window.config.bars
+    assertEqual(NS.Skin.Token("bar.borderStyle"), "None")
+    assertFalse(NS.SkinBorderShown(bars), "None, Show border off")
+    bars.border = true
+    assertTrue(NS.SkinBorderShown(bars), "None, Show border on")
+    Skin:SetChoice(OWNER, "ka0s", "azeroth")
+    assertFalse(NS.Skin.Token("bar.borderStyle") == "None", "azeroth states a real style")
+    bars.border = false
+    assertTrue(NS.SkinBorderShown(bars), "a real style, Show border off")
+    bars.borderStyleFromSkin = false
+    assertFalse(NS.SkinBorderShown(bars), "the companion off: the toggle decides")
+    assertTrue(cfg ~= nil)
+end)
+
+test("Skin flip: with no library a cell draws the stored border, through the stub's BarBorder", function()
+    -- red under: a no-op BarBorder, whose nil takes a player's Show border away.
+    local inst = T.load{ libFiles = {} }
+    local NS = inst.NS
+    assertEqual(select("#", NS.Skin.BarBorder("Grid", true, 3, true)), 3)
+    local style, show, size = NS.Skin.BarBorder("Grid", true, 3, true)
+    assertEqual(style, "Grid")
+    assertEqual(show, true)
+    assertEqual(size, 3)
+    assertTrue(NS.SkinBorderShown({ border = true, borderStyleFromSkin = true }), "Show border on")
+    assertFalse(NS.SkinBorderShown({ border = false, borderStyleFromSkin = true }), "Show border off")
+    assertEqual(NS.Skin.HoverArt({}), nil, "a no-op")
+end)
+
+test("Skin flip: a probe skin's real style and size reach the cell and the tooltip's bar", function()
+    -- red under: a stored style or thickness read past S.BarBorder, or a tooltip border with no skin.
+    local inst, NS, _, row, cfg, Skin = scene(function(c)
+        c.bars.borderThickness, c.tooltip.barBorderSize = 3, 3
+    end)
+    Skin:RegisterSkin({ key = "probe", tokens = { ["bar.borderStyle"] = "Probe Edge", ["bar.borderSize"] = 5 } })
+    inst.mocks.__media.border["Probe Edge"] = [[Interface\ProbeEdge]]
+    Skin:SetChoice(OWNER, "ka0s", "probe")
     local cell = statCell(row)
-    cell.frame.SetBackdrop = cell.frame.SetBackdrop or function() end
-    local real = NS.Skin.Resolve
-    NS.Skin.Resolve = function(token, value, on)
-        if token == "bar.borderStyle" then return on and "Grid Edge" or value end
-        return real(token, value, on)
-    end
-    inst.mocks.__libs["LibSharedMedia-3.0"].__byType = inst.mocks.__libs["LibSharedMedia-3.0"].__byType
-    assertTrue(NS.SkinBorderShown(cell.window.config.bars), "the companion on and art named: shown")
-    cell.window.config.bars.borderStyleFromSkin = false
-    assertFalse(NS.SkinBorderShown(cell.window.config.bars), "the companion off: the toggle decides")
-    NS.Skin.Resolve = real
-    assertTrue(Skin ~= nil)
+    cell.frame.SetBackdropBorderColor = function() end
+    cell:ApplyBorder(cfg.bars)
+    assertTrue(cell.borderShown, "the skin's style did not show with Show border off")
+    assertEqual((cell.frame.__backdrop or {}).edgeFile, [[Interface\ProbeEdge]])
+    assertEqual((cell.frame.__backdrop or {}).edgeSize, 5)
+    local tip = NS.TooltipInternals.tooltipConfig(cfg)
+    assertEqual(tip.barBorderStyle, "Probe Edge")
+    assertEqual(tip.barBorderSize, 5)
 end)
 
 test("Skin flip: a shadow reaches a font object, a skin's own and the stored one", function()

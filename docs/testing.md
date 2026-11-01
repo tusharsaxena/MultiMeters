@@ -222,6 +222,8 @@ refusal cases (`slash-commands-§2`) joined the schema-seam refusals in
 
 ## What the mock models, and what it admits it cannot
 
+**The two skin gates (kit revision 50, `skinning-§1`).** `test_skin_values` and `test_skin_switch` are kit suites declared by the pair; `tests/skin_facts.lua` is their facts, not a suite. Its rows are the typed values no token reaches, each with a cause id, and a stale row fails. Its surfaces are what this addon paints: a new painted surface goes in the list, or nothing tests it.
+
 **The mock is three files now, not one.** `tests/wow_mock.lua` layers this addon's half over the
 shared base in `tests/_kit/mock_base.lua`, overwriting per key. Its own header lists what it inherits
 and what it replaces, and why: the frame model (the base returns the frame itself from every widget

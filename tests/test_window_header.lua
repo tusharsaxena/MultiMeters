@@ -456,22 +456,33 @@ local function withSegments(opts)
     return inst, window, cfg
 end
 
---- Pick the `n`th row of the skinned segment menu, as a click on it does.
-local function pickSegmentRow(window, n)
-    local dd = window.segmentDropdown
-    dd.onSelect(dd._options[n].value)
+--- Open the skinned segment menu and answer the rows it was handed.
+local function openRows(inst, window)
+    local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0", true)
+    local real, rows = W.ContextMenu, nil
+    W.ContextMenu = function(_, r) rows = r end
+    local opened = window:OpenSegmentMenu()
+    W.ContextMenu = real
+    assertTrue(opened, "the menu must actually open")
+    return rows
 end
 
-test("Segment menu: stored segments first, then Current/Overall", function()
+--- Pick a row of the skinned segment menu, as a click on it does.
+local function pickSegmentRow(rows, n)
+    rows[n].onClick(rows[n].value, rows[n])
+end
+
+test("Segment menu: a title, stored segments first, a divider, then Current/Overall", function()
     -- The reason to open this menu at all is almost always to look back at a
     -- fight that just ended, so the fights come first.
     local inst, window = withSegments()
-    assertTrue(window:OpenSegmentMenu(), "the menu must actually open")
-
-    local opts = window.segmentDropdown._options
-    assertEqual(#opts, 4)
-    assertEqual(opts[3].label, inst.NS.L["Current"])
-    assertEqual(opts[4].label, inst.NS.L["Overall"])
+    local rows = openRows(inst, window)
+    assertEqual(#rows, 6)
+    assertEqual(rows[1].title, true, "the row naming the menu")
+    assertEqual(rows[1].label, inst.NS.L["Segment"])
+    assertEqual(rows[4].divider, true)
+    assertEqual(rows[5].label, inst.NS.L["Current"])
+    assertEqual(rows[6].label, inst.NS.L["Overall"])
 end)
 
 test("Segment menu: under the restriction the client's menu keeps its title and divider", function()
@@ -489,17 +500,15 @@ end)
 
 test("Segment menu: an entry is labeled with its name AND its duration", function()
     local inst, window = withSegments()
-    window:OpenSegmentMenu()
-    assertTrue(inst ~= nil)
-    assertEqual(window.segmentDropdown._options[1].label, "Bribed Guard   0:22")
+    assertEqual(openRows(inst, window)[2].label, "Bribed Guard   0:22")
 end)
 
 test("Segment menu: picking a segment pins it and marks the window dirty", function()
-    local _, window, cfg = withSegments()
-    window:OpenSegmentMenu()
+    local inst, window, cfg = withSegments()
+    local rows = openRows(inst, window)
     window.dirty = false
 
-    pickSegmentRow(window, 2)
+    pickSegmentRow(rows, 3)
     assertEqual(cfg.data.sessionID, 5, "the SECOND stored segment, not the first")
     assertEqual(window.dirty, true, "a pinned segment has to redraw to take effect")
 end)
@@ -511,8 +520,7 @@ test("Segment menu: picking Current CLEARS the pin", function()
     local inst, window, cfg = withSegments()
     window:SetSegment(4)
 
-    window:OpenSegmentMenu()
-    pickSegmentRow(window, 3)
+    pickSegmentRow(openRows(inst, window), 5)
 
     assertEqual(cfg.data.sessionID, inst.NS.Constants.NO_SEGMENT)
     assertEqual(cfg.data.sessionType, inst.NS.Constants.SESSION_TYPE.Current)

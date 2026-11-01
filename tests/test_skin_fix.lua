@@ -112,9 +112,10 @@ test("A1: the unit icon wears the skin's icon border, with its companion", funct
     local cell = row.nameCell
     local seen = 0
     local real = NS.Skin.IconBorder
-    NS.Skin.IconBorder = function(_, o)
+    NS.Skin.IconBorder = function(target, o)
         seen = seen + 1
         assertEqual(o.fromSkin, true)
+        assertEqual(target, cell.iconBorder or target)
     end
     cell.iconBorder = nil
     row:Update({ guid = "Player-1-0000000A", name = "Alpha", classFilename = "MAGE", values = {} }, 1)
@@ -134,20 +135,54 @@ end)
 
 -- ── A2: the segment picker ───────────────────────────────────────────────────────────────────
 
-test("A2: the segment picker drops the skinned menu, the active entry marked", function()
-    -- red under: MenuUtil, the client's stock menu, while the labels can be read.
+--- The picker opened through the real W.ContextMenu: the anchor, the rows, the opts and its answer.
+local function openPicker(inst, window)
+    local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0", true)
+    local real, got = W.ContextMenu, {}
+    W.ContextMenu = function(anchor, rows, opts)
+        got.anchor, got.rows, got.opts = anchor, rows, opts
+        got.menu = real(anchor, rows, opts)
+        return got.menu
+    end
+    local opened = window:OpenSegmentMenu()
+    W.ContextMenu = real
+    assertTrue(opened)
+    return got
+end
+
+test("A2: the segment picker is the shared context menu, titled, the active entry marked", function()
+    -- red under: MenuUtil, the client's stock menu, while the labels can be read, or W.Dropdown,
+    -- which draws no title row.
     local inst, _, window = scene()
     inst.mocks.setAvailableSessions{ { sessionID = 4, name = "Guard", durationSeconds = 22 } }
     inst.mocks.__lastMenu = nil
-    assertTrue(window:OpenSegmentMenu())
+    local got = openPicker(inst, window)
     assertTrue(inst.mocks.__lastMenu == nil, "the client's menu opened")
-    local dd = window.segmentDropdown
-    assertEqual(dd.__owner, OWNER, "the menu must wear this addon's skin")
-    local opts = dd._options
-    assertEqual(#opts, 3)
-    assertEqual(opts[1].label, "Guard   0:22")
-    assertEqual(opts[1].value, 4)
-    assertEqual(dd._value, "Overall", "the window's own session, marked")
+    assertTrue(got.menu ~= nil and got.menu:IsShown(), "no menu on screen")
+    assertEqual(got.opts.owner, OWNER, "the menu must wear this addon's skin")
+    local rows = got.rows
+    assertEqual(#rows, 5)
+    assertEqual(rows[1].title, true)
+    assertEqual(rows[1].label, inst.NS.L["Segment"])
+    assertEqual(rows[2].label, "Guard   0:22")
+    assertEqual(rows[2].value, 4)
+    assertEqual(rows[3].divider, true)
+    assertFalse(rows[2].isActive(), "the segment is not what the window shows")
+    assertTrue(rows[5].isActive(), "the window's own session, marked")
+end)
+
+test("A2: a pinned segment is the marked row, and a window hidden closes the menu", function()
+    -- red under: the mark read off the session type, or no OnHide close, which leaves the shared
+    -- menu floating with no window under it.
+    local inst, _, window = scene()
+    inst.mocks.setAvailableSessions{ { sessionID = 4, name = "Guard", durationSeconds = 22 } }
+    window:SetSegment(4)
+    local got = openPicker(inst, window)
+    assertTrue(got.rows[2].isActive(), "the pin, marked")
+    assertFalse(got.rows[5].isActive(), "Overall is not what the window shows")
+    assertEqual(window.segmentAnchor, got.anchor, "one anchor per window")
+    window.frame:Hide()
+    assertFalse(got.menu:IsShown(), "the menu outlived its window")
 end)
 
 test("A2: under the Combat restriction the client's menu stays, because a label may be secret", function()
@@ -158,7 +193,7 @@ test("A2: under the Combat restriction the client's menu stays, because a label 
     inst.mocks.setRestricted(true)
     assertTrue(window:OpenSegmentMenu())
     assertTrue(inst.mocks.__lastMenu ~= nil, "no menu while restricted")
-    assertTrue(window.segmentDropdown == nil, "the widget took labels it may not measure")
+    assertTrue(window.segmentAnchor == nil, "the widget took labels it may not measure")
 end)
 
 -- ── L6, L4: the Columns editor ───────────────────────────────────────────────────────────────
@@ -400,21 +435,17 @@ test("L8: the sort arrow draws its own look, not its label's", function()
 end)
 
 test("D4: a skin's border art takes the class tint with Show border off", function()
-    -- No shipped skin names art, so Resolve answers as one that does.
     -- red under: the re-tint gated on `bars.border`, which is off under a skin's own border.
-    local inst, NS, _, row, cfg = scene(function(c)
+    local inst, _, _, row, cfg, Skin = scene(function(c)
         c.bars.border, c.bars.borderColorMode = false, "class"
     end)
-    local real = NS.Skin.Resolve
-    NS.Skin.Resolve = function(kind, value, fromSkin)
-        if kind == "bar.borderStyle" and fromSkin then return "Blizzard Tooltip" end
-        return real(kind, value, fromSkin)
-    end
+    Skin:RegisterSkin({ key = "probe", tokens = { ["bar.borderStyle"] = "Probe Edge" } })
+    inst.mocks.__media.border["Probe Edge"] = [[Interface\ProbeEdge]]
+    Skin:SetChoice(OWNER, "ka0s", "probe")
     local cell = statCell(row)
     local painted
     cell.frame.SetBackdropBorderColor = function(_, ...) painted = { ... } end
     cell:ApplyBorder(cfg.bars)
-    NS.Skin.Resolve = real
     assertTrue(cell.borderShown, "the skin's border did not show")
     painted = nil
     cell:ApplyEntryBorderColor({ classFilename = "MAGE" })
@@ -423,11 +454,15 @@ test("D4: a skin's border art takes the class tint with Show border off", functi
     sameColor(painted, { c.r, c.g, c.b }, "the class color")
 end)
 
-test("D4: the tooltip's bar border thickness is the skin's while its style follows", function()
-    -- red under: the stored size past the companion.
+test("D4: the tooltip's bar border thickness is the skin's real style's, the player's under None", function()
+    -- red under: the stored size past the companion, or a skin's None taking the player's away.
     local _, NS, _, _, cfg, Skin = scene(function(c) c.tooltip.barBorderSize = 7 end)
-    chooseSkin(NS, Skin, function(S) return S.Token("bar.borderSize") ~= 7 end, "off the stored 7")
     local tipConfig = NS.TooltipInternals.tooltipConfig
+    assertEqual(NS.Skin.Token("bar.borderStyle"), "None")
+    assertEqual(tipConfig(cfg).barBorderSize, 7, "a skin's None hands the stored thickness back")
+    chooseSkin(NS, Skin, function(S)
+        return S.Token("bar.borderStyle") ~= "None" and S.Token("bar.borderSize") ~= 7
+    end, "a real style, off the stored 7")
     assertEqual(tipConfig(cfg).barBorderSize, NS.Skin.Token("bar.borderSize"))
     cfg.tooltip.barBorderStyleFromSkin = false
     assertEqual(tipConfig(cfg).barBorderSize, 7, "the player's own")

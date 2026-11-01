@@ -629,8 +629,10 @@ test("Schema: NO color row is ever disabled, and every one says why in words", f
         -- bar-family border, which that border's companion governs: never a swatch.
         if row.disabledIf ~= nil then
             local thickness = row.path:find("border", 1, true) ~= nil or row.path:find("Border", 1, true) ~= nil
+            -- A bar family row's is a predicate since OptionsCompose minor 18, Show border included.
             assertTrue(row.type ~= "color" and (row.disabledIf == row.path .. "FromSkin"
-                or (thickness and row.type == "number")), row.path .. " carries disabledIf")
+                or (thickness and (row.type == "number" or type(row.disabledIf) == "function"))),
+                row.path .. " carries disabledIf")
         end
         if row.type == "color" then
             if row.path:sub(1, 11) == "statColors." then

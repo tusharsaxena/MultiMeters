@@ -27,7 +27,7 @@
 -- NS.WindowManager and NS.Visibility are all resolved at CALL time, because this
 -- file loads before all four.
 
-local _, NS = ...
+local addonName, NS = ...
 
 local L = NS.L
 
@@ -339,8 +339,13 @@ do
         -- declared here: this addon ships the Profiles page, and its global reset IS
         -- a profile reset (options-ui-§12). `resetProfile` is not a second reset: it
         -- forwards at call time to the real descriptor's, published as
-        -- NS.OptionsDescriptor, so the tooltip and the act cannot disagree.
+        -- NS.OptionsDescriptor, so the tooltip and the act cannot disagree. `addonName` and
+        -- `get` are what a companion row reads at render (OptionsCompose's skinValue and
+        -- companionOn), the real descriptor's two: without them a picker shows no skin value
+        -- and a bar border's rows stay live under a real style in a skin.
         optlib.__AttachCompose(C, {
+            addonName = addonName,
+            get = function(path) return NS.GetSetting and NS.GetSetting(path) end,
             profilesPage = true,
             resetProfile = function(...)
                 local d = NS.OptionsDescriptor

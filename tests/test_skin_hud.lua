@@ -84,7 +84,13 @@ test("Skin HUD: the eight companions ship on, as rows defaulted on, each governi
         assertEqual(row.default, true, "window." .. path .. "'s row does not default on")
         local picker = rowAt(NS, "window." .. pickerOf(path))
         assertTrue(picker ~= nil, "no picker beside window." .. path)
-        assertEqual(picker.disabledIf, "window." .. path, picker.path .. " is not governed by its companion")
+        -- A bar border's style is a predicate since OptionsCompose minor 18: a skin's None leaves it
+        -- live, because the stored style is what draws there.
+        if path:find("orderStyle", 1, true) then
+            assertEqual(type(picker.disabledIf), "function", picker.path .. " is not governed by its companion")
+        else
+            assertEqual(picker.disabledIf, "window." .. path, picker.path .. " is not governed by its companion")
+        end
     end
     -- The meta pair on Frame > Quick style.
     for _, path in ipairs({ "window.barTextureFromSkin", "window.fontFromSkin" }) do
@@ -117,8 +123,8 @@ test("Skin HUD: a cell draws the skin's texture, face and border while on, the p
     assertEqual(cell.frame.__barTexture, skinFile(inst, NS, "statusbar", "bar.texture"), "the bar is not the skin's")
     assertEqual(cell.left.__font.path, skinFile(inst, NS, "font", "hud.font"), "the number is not in the skin's face")
     assertEqual(NS.Skin.Token("bar.borderStyle"), "None")
-    assertTrue(cell.frame.__backdrop == nil or cell.frame.__backdrop.edgeFile == nil,
-        "Ka0s Default's border style is None: the flat outline, no edge art")
+    assertEqual((cell.frame.__backdrop or {}).edgeFile, [[Interface\GridEdge]],
+        "a skin's None is no border of its own: the player's style draws, the companion on")
     assertEqual(cfg.bars.texture, "GridTexture", "following the skin rewrote the stored pick")
 
     cfg.bars.textureFromSkin, cfg.text.fontFromSkin, cfg.bars.borderStyleFromSkin = false, false, false

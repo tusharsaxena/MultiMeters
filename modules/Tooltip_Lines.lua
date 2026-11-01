@@ -100,7 +100,6 @@ local function lineWidget(index)
     b:SetAllPoints(frame)
     local bg = b:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints(b)
-    bg:SetColorTexture(0, 0, 0, 0.35)
     b.bg = bg
 
     -- Right to left: the share is pinned to the line's right edge, and the amount

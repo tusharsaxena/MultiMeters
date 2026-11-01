@@ -118,26 +118,28 @@ local function placeIcons(cell, slots, size, onRight, layout)
     end
 end
 
---- The skin's icon border around the unit icon (cause A1). S.IconBorder draws on a frame and the icon
---- is a bare texture, so a holder frame sits on it, built once and only for a window that asks. Its
---- anchor is the texture, on a cell that may hold a secret: nothing reads this frame back (rule R3).
---- A frame here is what modules/Row_Border.lua avoids, and under a skin whose `icon.borderStyle` is
---- art S.IconBorder calls SetBackdrop on it, so docs/smoke-tests.md's SKIN-34 checks it mid-pull.
---- Without the library there is no border to draw and no holder.
+--- The skin's icon border around the unit icon (cause A1), through S.IconBorder's Texture support: the
+--- library hangs the edge on its own child of the cell and shows it with the Texture it was handed.
+--- That Texture is a bare one on the icon, built once and only for a window that asks, and not the
+--- icon itself, because the edge has one more condition than the icon: the companion. With no art it
+--- draws nothing. Its anchor is the icon, on a cell that may hold a secret: nothing reads it or the
+--- edge back (rule R3). A frame here is what modules/Row_Border.lua avoids, and under a skin whose
+--- `icon.borderStyle` is art the library calls SetBackdrop on it, so docs/smoke-tests.md's SKIN-34
+--- checks it mid-pull. Without the library there is no border to draw and no Texture.
 ---
 --- @param cell table  the name cell
 --- @param tex table   the unit icon's texture
 local function ensureIconBorder(cell, tex)
     if cell.iconBorder or not NS.SKIN_LIVE then return end
-    local holder = CreateFrame("Frame", nil, cell.frame)
-    holder:SetAllPoints(tex)
-    holder:Hide()
-    NS.Skin.IconBorder(holder, { fromSkin = true })
-    cell.iconBorder = holder
+    local edge = cell.frame:CreateTexture(nil, "ARTWORK")
+    edge:SetAllPoints(tex)
+    edge:Hide()
+    NS.Skin.IconBorder(edge, { fromSkin = true })
+    cell.iconBorder = edge
 end
 
---- Show the holder exactly while its icon shows and the companion is on. Remembers the answer, so a
---- refresh tick that changes nothing makes no call.
+--- Show the edge's Texture exactly while its icon shows and the companion is on. Remembers the answer,
+--- so a refresh tick that changes nothing makes no call.
 function Cell:SyncIconBorder()
     local holder = self.iconBorder
     if not holder then return end

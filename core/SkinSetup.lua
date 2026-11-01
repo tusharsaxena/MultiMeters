@@ -68,7 +68,8 @@ local addonName, NS = ...
 --                           else `n` (D-09). The stored size is never rewritten.
 --   NS.SkinBorderSize(n,f)  a border's thickness from its stored `n`: `bar.borderSize` while the style's
 --                           companion `f` is on.
---   NS.SkinBorderShown(b)   whether a cell's outline shows: Show border, or a skin's border art.
+--   NS.SkinBorderShown(b)   whether a cell's outline shows: S.BarBorder's answer, Show border under a
+--                           skin's None, and always under a skin's real style.
 --   NS.SkinHudFont(fs,...)  S.HudFont for one HUD string, with one refilled opts table.
 --   NS.SkinPaintAce(w)      an AceGUI widget this addon acquired itself, painted for this owner:
 --   NS.SkinPaintAceTree(c)  `Skin:PaintAce` / `Skin:PaintAceTree` with the owner bound (the facade
@@ -148,7 +149,7 @@ NS.SKIN_TOKENS = {
     ["mm.hudShadow"] = { default = { 0, 0, 0, 1 }, follow = "hud.shadow" },
     -- The stripe and the "this row is you" edge a skin draws with both settings off (cause D4,
     -- rows.<key>FromSkin). Clear under Ka0s Default, which ships neither, so its pixels do not move.
-    -- Clear is the look here, as a border style of None is for NS.SkinBorderShown.
+    -- Clear is the look here, as a skin's border style of None is no border of its own.
     ["mm.skinStripe"]   = { default = { 1, 1, 1, 0 }, follow = "list.stripe" },
     ["mm.skinSelfEdge"] = { default = { 1, 0.82, 0, 0 }, follow = "text.accent" },
 }
@@ -351,15 +352,15 @@ function NS.SkinBorderSize(stored, fromSkin)
     return stored
 end
 
---- True when a cell's outline shows: the player's Show border, or a skin that names border art while
---- the style's companion is on (cause D4), since "off" would otherwise hide the skin's border for good.
---- A style of None draws nothing, so Ka0s Default's pixels do not move. Never degraded: no skin.
+--- True when a cell's outline shows, through S.BarBorder (the owner's ruling of 2026-11-01): a skin's
+--- None is no border of its own, so the player's Show border decides, with the companion on or off;
+--- a real style in a skin wins while the companion is on, Show border off included (cause D4).
+--- Degraded, the stub hands the stored toggle back.
 function NS.SkinBorderShown(bars)
     if type(bars) ~= "table" then return false end
-    if bars.border then return true end
-    if not NS.SKIN_LIVE or bars.borderStyleFromSkin ~= true then return false end
-    local style = NS.Skin.Resolve("bar.borderStyle", "None", true)
-    return type(style) == "string" and style ~= "None"
+    local _, show = NS.Skin.BarBorder(bars.borderStyle, bars.border, bars.borderThickness,
+        bars.borderStyleFromSkin == true)
+    return show and true or false
 end
 
 -- One opts table and one shadow, refilled before every call: S.HudFont keeps neither, and a surface
@@ -614,7 +615,7 @@ if not Skin then
         -- LibKa0s v1.85.0: nil is each getter's degraded answer. The three colors answer nothing, so
         -- the stored color draws; HudShadow's nil is "the stored shadow stands". BarGloss: no skin,
         -- no gloss.
-        "HudTextColor", "HudLabelColor", "BarFillColor", "HudShadow", "BarGloss",
+        "HudTextColor", "HudLabelColor", "BarFillColor", "HudShadow", "BarGloss", "HoverArt",
     }) do S[name] = noop end
 
     S.Token = function(name)
@@ -661,6 +662,8 @@ if not Skin then
         size = size or 14
         return ("|T%s:%d:%d|t"):format(path, size, size)
     end
+    -- LibKa0s v1.85.0 (SkinPaintExtras minor 16): the stored three, or a player loses a border.
+    S.BarBorder = function(style, show, size) return style, show, size end
     -- LibKa0s v1.85.0 (minor 14): the one vocabulary name that must draw, or a HUD string has no
     -- face. A 12.0.7 client draws no shadow set on a string, and a stub keeps no font object, so a
     -- stored shadow does not draw here (the Options document's section 7 accepts that).

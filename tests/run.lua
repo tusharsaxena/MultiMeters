@@ -432,6 +432,10 @@ local SUITES = {
     -- (automated-tests-§3). It needs no consumer facts; with lizard on PATH it also runs lizard
     -- end to end on a hazard fixture, and is a declared skip without it.
     { name = "test_lizard_sighted", dir = "tests/_kit/" },
+    -- Kit revision 50's two skin gates (skinning-§1): the typed-value check and the probe-skin
+    -- switch test, fed by Kit.skinValues and Kit.skinSwitch below.
+    { name = "test_skin_values", dir = "tests/_kit/" },
+    { name = "test_skin_switch", dir = "tests/_kit/" },
 }
 
 -- ---------------------------------------------------------------------------
@@ -459,6 +463,13 @@ Kit.diagnostics = {
     -- The `enabled` row, through the one write seam the checkbox and `/mm disable` use.
     setDisabled = function(off) contract().NS.SetByPath("enabled", not off) end,
 }
+
+-- ---------------------------------------------------------------------------
+-- The two skin gates' facts (skinning-§1, kit revision 50)
+-- ---------------------------------------------------------------------------
+local skinFacts = assert(loadfile(root .. "/tests/skin_facts.lua"))(loadInstance)
+Kit.skinValues = skinFacts.values
+Kit.skinSwitch = skinFacts.switch
 
 -- ---------------------------------------------------------------------------
 -- The exposed contract

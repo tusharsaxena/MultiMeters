@@ -1156,53 +1156,59 @@ end
 -- The two synthetic entries' menu values; a stored segment's value is its session id.
 local SEGMENT_CURRENT, SEGMENT_OVERALL = "Current", "Overall"
 
---- The shared menu's button for this window: built once, never shown, because the header's control is
---- what the player clicks. It exists to own the menu: the anchor below the session line, the skin
---- owner, and the choice. A window hidden by a route that is no click closes the menu with it.
-local function segmentDropdown(window)
-    local dd = window.segmentDropdown
-    if dd then return dd end
-    dd = W.Dropdown(window.frame, SESSION_LINE_WIDTH, { owner = NS.name })
-    dd:SetHeight(1)
-    dd:SetPoint("TOPRIGHT", window.sessionLine, "BOTTOMRIGHT", 0, 0)
-    dd:Hide()
-    dd.onSelect = function(value)
-        if value == SEGMENT_CURRENT then
-            window:SetSessionType(Const.SESSION_TYPE.Current)
-        elseif value == SEGMENT_OVERALL then
-            window:SetSessionType(Const.SESSION_TYPE.Overall)
-        else
-            window:SetSegment(value)
-        end
-    end
+--- The menu's anchor for this window: built once, never shown, because the header's control is what
+--- the player clicks. It keeps the menu's old place below the session line. A window hidden by a route
+--- that is no click closes the menu with it.
+local function segmentAnchor(window)
+    local anchor = window.segmentAnchor
+    if anchor then return anchor end
+    anchor = CreateFrame("Frame", nil, window.frame)
+    anchor:SetSize(SESSION_LINE_WIDTH, 1)
+    anchor:SetPoint("TOPRIGHT", window.sessionLine, "BOTTOMRIGHT", 0, 0)
+    anchor:Hide()
     if window.frame.HookScript then
         window.frame:HookScript("OnHide", function() W.CloseMenu() end)
     end
-    window.segmentDropdown = dd
-    return dd
+    window.segmentAnchor = anchor
+    return anchor
 end
 
---- Stored segments, newest first, then the two synthetic entries, on the skinned menu, the entry the
---- window shows marked. It has no title or divider row: the widget draws neither.
-function WindowProto:OpenSkinnedSegmentMenu(sessions)
-    local dd = segmentDropdown(self)
-    local options = {}
-    for _, entry in ipairs(sessions) do
-        if type(entry) == "table" and entry.sessionID ~= nil then
-            options[#options + 1] = { value = entry.sessionID, label = segmentLabel(entry) }
-        end
+--- A row's click: the choice its value names.
+local function pickSegment(window, value)
+    if value == SEGMENT_CURRENT then
+        window:SetSessionType(Const.SESSION_TYPE.Current)
+    elseif value == SEGMENT_OVERALL then
+        window:SetSessionType(Const.SESSION_TYPE.Overall)
+    else
+        window:SetSegment(value)
     end
-    options[#options + 1] = { value = SEGMENT_CURRENT, label = L["Current"] }
-    options[#options + 1] = { value = SEGMENT_OVERALL, label = L["Overall"] }
-    dd:SetOptions(options)
+end
 
+--- A title, the stored segments newest first, a divider, then the two synthetic entries, on the skinned
+--- menu, the entry the window shows marked. The same shape the client's menu draws below.
+function WindowProto:OpenSkinnedSegmentMenu(sessions)
     local data = self.config.data or {}
     local active = NS.Database.PinnedSegment(data)
     if active == nil then
         active = data.sessionType == Const.SESSION_TYPE.Overall and SEGMENT_OVERALL or SEGMENT_CURRENT
     end
-    dd:SelectValue(active)
-    dd:GetScript("OnClick")(dd)
+
+    local rows = { { title = true, label = L["Segment"] } }
+    local function add(value, label)
+        rows[#rows + 1] = {
+            value = value, label = label,
+            isActive = function() return value == active end,
+            onClick = function() pickSegment(self, value) end,
+        }
+    end
+    for _, entry in ipairs(sessions) do
+        if type(entry) == "table" and entry.sessionID ~= nil then add(entry.sessionID, segmentLabel(entry)) end
+    end
+    rows[#rows + 1] = { divider = true }
+    add(SEGMENT_CURRENT, L["Current"])
+    add(SEGMENT_OVERALL, L["Overall"])
+
+    W.ContextMenu(segmentAnchor(self), rows, { owner = NS.name, width = SESSION_LINE_WIDTH })
     return true
 end
 
@@ -1213,10 +1219,12 @@ end
 --- reaching for: the reason to open this menu at all is almost always to look
 --- back at a fight that just ended.
 ---
---- THE SKINNED MENU, EXCEPT WHILE A LABEL MAY BE SECRET (cause A2). W.Dropdown's menu measures every
---- row and concatenates it, which raises on a secret in tainted code, and a stored session's name
---- and duration are secret under the Combat restriction. The client's menu draws a secret, so it
---- stays for exactly that window. It also stays on an install without the library.
+--- THE SKINNED MENU, EXCEPT WHILE A LABEL MAY BE SECRET (cause A2). A stored session's duration is
+--- secret under the Combat restriction and `..` keeps a secret, so segmentLabel's answer can be one.
+--- W.ContextMenu sizes itself by every row's GetStringWidth, in math.min and an addition, which raises
+--- on the secret that answers (Widgets minor 21's menuWidth, which `opts.width` does not skip). The
+--- client's menu draws a secret, so it stays for exactly that window. It also stays on an install
+--- without the library.
 function WindowProto:OpenSegmentMenu()
     local Provider = mod("Provider")
     if not (Provider and Provider.GetAvailableSessions) then return false end
@@ -1225,7 +1233,7 @@ function WindowProto:OpenSegmentMenu()
     local data = self.config.data or {}
 
     local restricted = NS.Secrets and NS.Secrets.IsRestricted and NS.Secrets.IsRestricted()
-    if W and W.Dropdown and not restricted then return self:OpenSkinnedSegmentMenu(sessions) end
+    if W and W.ContextMenu and not restricted then return self:OpenSkinnedSegmentMenu(sessions) end
 
     return NS.Compat.OpenContextMenu(self.sessionLine, function(_, root)
         root:CreateTitle(L["Segment"])

@@ -1307,7 +1307,7 @@ Total.
 - The header line reads 'Test' while placeholder data is on screen
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
-- Segment menu: stored segments first, then Current/Overall
+- Segment menu: a title, stored segments first, a divider, then Current/Overall
 - Segment menu: under the restriction the client's menu keeps its title and divider
 - Segment menu: an entry is labeled with its name AND its duration
 - Segment menu: picking a segment pins it and marks the window dirty
@@ -2559,7 +2559,7 @@ Total.
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
 
-### test_skin_flip.lua (19)
+### test_skin_flip.lua (21)
 
 - Skin flip: the one step's list is every companion and flag a window has, and nothing else
 - Skin flip: every new companion ships on, in the template and as a row, and governs no swatch
@@ -2573,7 +2573,9 @@ Total.
 - Skin flip: a companion off draws the stored color under every skin
 - Skin flip: a class color comes first and the companion never reaches it
 - Skin flip: the cell's outline takes the skin's color and thickness with the companions
-- Skin flip: a skin with border art shows it, with Show border off
+- Skin flip: a real style in a skin wins over Show border, and None defers to it
+- Skin flip: with no library a cell draws the stored border, through the stub's BarBorder
+- Skin flip: a probe skin's real style and size reach the cell and the tooltip's bar
 - Skin flip: a shadow reaches a font object, a skin's own and the stored one
 - Skin flip: the step puts every window of every profile on the skin and keeps every pick
 - Skin flip: a second run writes nothing, and a companion turned off stays off
@@ -2581,14 +2583,15 @@ Total.
 - Skin flip: a new profile takes the step against a template that shows nothing new
 - Skin flip: without the library the step sets the companions by hand and writes the record
 
-### test_skin_fix.lua (27)
+### test_skin_fix.lua (28)
 
 - Gloss: a cell draws the skin's gloss while its texture follows the skin
 - Gloss: a bar with the player's own texture stays plain under Glass
 - Gloss: the tooltip's spell bars take it too, on their own companion
 - A1: the column header strip wears the skin's band, under Custom, with its companion
 - A1: the unit icon wears the skin's icon border, with its companion
-- A2: the segment picker drops the skinned menu, the active entry marked
+- A2: the segment picker is the shared context menu, titled, the active entry marked
+- A2: a pinned segment is the marked row, and a window hidden closes the menu
 - A2: under the Combat restriction the client's menu stays, because a label may be secret
 - L6: the column glyph takes a Ka0s mark in the skin's tint, the stock art while the panel is ignored
 - L8: the sort arrow takes icon.arrow while the label follows the skin
@@ -2607,7 +2610,7 @@ Total.
 - L8: the header strip draws the skin's title face, and the player's without the companion
 - L8: the sort arrow draws its own look, not its label's
 - D4: a skin's border art takes the class tint with Show border off
-- D4: the tooltip's bar border thickness is the skin's while its style follows
+- D4: the tooltip's bar border thickness is the skin's real style's, the player's under None
 - D4: with no library the tooltip bar's backdrop is the player's color and opacity
 - L9: the Export modal's title bar places its own text
 
@@ -2833,6 +2836,38 @@ Total.
 - lizard sighted: parity names every file whose counts differ, and only those
 - lizard sighted: lizard lists every function of a hazard fixture once it is sanitized
 
+### test_skin_values.lua (3)
+
+- skin values: every host row carries its file, substring, why and cause id
+- skin values: no typed value outside the kit's categories and the host's rows
+- skin values: the check is falsifiable, a planted value of each shape is reported
+
+### test_skin_switch.lua (23)
+
+- skin switch: the check is falsifiable, a surface that redraws a literal is reported
+- skin switch: the window's fill and edge changes
+- skin switch: the window's fill and edge changes with the Scope ignored
+- skin switch: the window's title changes
+- skin switch: the title bar's band changes
+- skin switch: the session line changes
+- skin switch: a column label changes
+- skin switch: the column header band changes
+- skin switch: the sort arrow changes
+- skin switch: the unavailable notice changes
+- skin switch: the unavailable notice changes with the Scope ignored
+- skin switch: a header control's tint changes
+- skin switch: a header control's tint changes with the Scope ignored
+- skin switch: a cell's number changes
+- skin switch: a cell's bar texture changes
+- skin switch: a cell's outline changes
+- skin switch: the row's mouseover wash changes
+- skin switch: the row's mouseover wash changes with the Scope ignored
+- skin switch: the row's self edge changes
+- skin switch: the unit icon's border changes
+- skin switch: the Export modal changes
+- skin switch: the Export modal changes with the Scope ignored
+- skin switch: a tooltip's spell bar changes
+
 ## Totals
 
 | Suite | Cases |
@@ -2928,8 +2963,8 @@ Total.
 | test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
-| test_skin_flip.lua | 19 |
-| test_skin_fix.lua | 27 |
+| test_skin_flip.lua | 21 |
+| test_skin_fix.lua | 28 |
 | test_skin_fonts.lua | 14 |
 | test_skin_window.lua | 13 |
 | test_skin_picker.lua | 12 |
@@ -2944,5 +2979,7 @@ Total.
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
+| test_skin_values.lua | 3 |
+| test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2503** |
+| **Total** | **2532** |

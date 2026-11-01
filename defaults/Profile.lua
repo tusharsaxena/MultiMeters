@@ -335,7 +335,7 @@ local WINDOW_TEMPLATE = {
         -- unrelated to the numbers is one the player should ask for.
         highlightSelf         = false,
         -- The skin's edge with the setting off (cause D4): Ka0s Default has none, so this draws
-        -- nothing there, as a border style of None draws nothing for `bars.borderStyleFromSkin`.
+        -- nothing there, as a skin's border style of None adds no border of its own.
         highlightSelfFromSkin = true,
         -- Shade every other row so the grid is easier to read across. A ROW-level
         -- fact, which is why it lives here — but it is EDITED on the Bars page,

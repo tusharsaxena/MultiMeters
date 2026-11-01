@@ -172,8 +172,8 @@ end
 --- anchored to this StatusBar would inherit its secretness the moment the bar is
 --- handed a value (rule R3), and would then be one more thing nobody may
 --- measure; a texture is a leaf, exactly like the cell's two FontStrings, and
---- nothing ever reads one back. The unit icon's border is the exception, on a child frame because
---- S.IconBorder draws on a frame (ensureIconBorder in modules/Row_NameCell.lua).
+--- nothing ever reads one back. The unit icon's border is the exception, on the child frame
+--- S.IconBorder makes for a Texture (ensureIconBorder in modules/Row_NameCell.lua).
 ---
 --- Built on FIRST USE and kept forever after, like every other widget in
 --- modules/Row.lua — a player toggling the setting off does not destroy them, because the
