@@ -1287,7 +1287,7 @@ Total.
 
 - modules/Window.lua reads geometry back off the anchor and nothing else
 
-### test_window_header.lua (62)
+### test_window_header.lua (63)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -1307,7 +1307,8 @@ Total.
 - The header line reads 'Test' while placeholder data is on screen
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
-- Segment menu: stored segments first, then a divider, then Current/Overall
+- Segment menu: stored segments first, then Current/Overall
+- Segment menu: under the restriction the client's menu keeps its title and divider
 - Segment menu: an entry is labeled with its name AND its duration
 - Segment menu: picking a segment pins it and marks the window dirty
 - Segment menu: picking Current CLEARS the pin
@@ -2467,7 +2468,7 @@ Total.
 - Options: the descriptor tells the library the FOLDER name (LibKa0s#42)
 - Options: the help-mark and test-strip art, info, is declared and vendored
 - Options: every media row asks for a Ka0sMedia_* picker, the two broadcast rows included
-- Options: AceGUI-3.0-SharedMediaWidgets is gone from the load, the disk and the wiring
+- Options: AceGUI-3.0-SharedMediaWidgets is gone from the load and the disk
 
 ### test_options_tabs.lua (15)
 
@@ -2553,6 +2554,45 @@ Total.
 - Skin HUD: the v20 step puts every window of every profile on the skin, keeping the picks
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
+
+### test_skin_flip.lua (18)
+
+- Skin flip: every new companion ships on, in the template and as a row, and governs no swatch
+- Skin flip: the picks' defaults are the Ka0s picks, in the template and on the rows
+- Skin flip: the border groups put the thickness on the skin with the style
+- Skin flip: the two scope rows and their defaults do not move
+- Skin flip: under Ka0s Default every surface draws what it drew before the flip
+- Skin flip: under Ka0s Default the header and the cells keep their shadow, the others none
+- Skin flip: no flags means none, never From skin
+- Skin flip: a skin switch redraws each flipped color, on the setter
+- Skin flip: a companion off draws the stored color under every skin
+- Skin flip: a class color comes first and the companion never reaches it
+- Skin flip: the cell's outline takes the skin's color and thickness with the companions
+- Skin flip: a skin with border art shows it, with Show border off
+- Skin flip: a shadow reaches a font object, a skin's own and the stored one
+- Skin flip: the step puts every window of every profile on the skin and keeps every pick
+- Skin flip: a second run writes nothing, and a companion turned off stays off
+- Skin flip: the record has no schema row, so no Defaults button walks it
+- Skin flip: a new profile takes the step against a template that shows nothing new
+- Skin flip: without the library the step sets the companions by hand and writes the record
+
+### test_skin_fix.lua (15)
+
+- Gloss: a cell draws the skin's gloss while its texture follows the skin
+- Gloss: a bar with the player's own texture stays plain under Glass
+- Gloss: the tooltip's spell bars take it too, on their own companion
+- A1: the column header strip wears the skin's band, under Custom, with its companion
+- A1: the unit icon wears the skin's icon border, with its companion
+- A2: the segment picker drops the skinned menu, the active entry marked
+- A2: under the Combat restriction the client's menu stays, because a label may be secret
+- L6: the column glyph takes a Ka0s mark in the skin's tint, the stock art while the panel is ignored
+- L8: the sort arrow takes icon.arrow while the label follows the skin
+- L8: the close control takes the close tokens under the Skin mode
+- L8: the meter-unavailable notice draws the Font outline
+- L8: the window's resize grip names its skin owner
+- L8: the Export whisper box is a skinned input
+- L9: the title takes the skin's alignment while its companion is on
+- L9: the Export modal's title bar is the skin's height
 
 ### test_skin_fonts.lua (14)
 
@@ -2828,7 +2868,7 @@ Total.
 | test_window.lua | 49 |
 | test_window_layout.lua | 18 |
 | test_window_static.lua | 1 |
-| test_window_header.lua | 62 |
+| test_window_header.lua | 63 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 44 |
 | test_window_lifecycle.lua | 9 |
@@ -2869,6 +2909,8 @@ Total.
 | test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
+| test_skin_flip.lua | 18 |
+| test_skin_fix.lua | 15 |
 | test_skin_fonts.lua | 14 |
 | test_skin_window.lua | 13 |
 | test_skin_picker.lua | 12 |
@@ -2884,4 +2926,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2450** |
+| **Total** | **2484** |

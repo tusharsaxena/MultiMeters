@@ -124,8 +124,12 @@ Five things about how this addon calls them are worth knowing before editing a b
   fonts** is ticked: the picker then shows the stored pick and the surface draws it (LibKa0s
   v1.81.0's `S.Resolve`), as the companion's tooltip says. Frame → Background and border → Border has none: the
   composer's companion would follow `bar.borderStyle`, the wrong token for a window edge, so the
-  window's edge follows the skin through its color mode's **Skin** value instead (MM-A1). Colors,
-  sizes, flags and thicknesses are never governed by a companion (DECISIONS X4). Every picker
+  window's edge follows the skin through its color mode's **Skin** value instead (MM-A1). A border's
+  companion governs its thickness too. Colors and shadows have companions of their own (*Use the
+  skin's color*, *Use the skin's shadow*), written as `extra` rows on their blocks: a swatch stays live
+  and is never grayed (options-ui-§17), and a class or per-statistic mode wins. *Use the skin's
+  alignment* grays Text alignment, and *Use the skin's icon border* is the icon's only border
+  setting. Font sizes are never governed. Every picker
   previews its entries: every media row in the panel, the Skin tab's Font and Texture and the
   first-run picker's rows are the library's `Ka0sMedia_*` pickers (`OptionsMedia.lua`), which read
   LibSharedMedia and wear the skin.

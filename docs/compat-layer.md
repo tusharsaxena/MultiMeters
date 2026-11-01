@@ -241,7 +241,7 @@ and the atlas rung inherits an invisible texture instead of replacing one.
 
 ## Context menus: one API, no fallbacks
 
-`OpenContextMenu` wires `MenuUtil` and nothing else. `UIDropDownMenu` and `EasyMenu` are pointedly
+`OpenContextMenu` wires `MenuUtil` and nothing else; its one caller, the segment picker, reaches it only under the Combat restriction or with no LibKa0s (cause A2, `docs/data-flow.md`). `UIDropDownMenu` and `EasyMenu` are pointedly
 not wired as fallbacks: they are absent on every client this addon supports, and a fallback nobody
 can run is a fallback nobody has tested. The generator is passed through unchanged rather than
 wrapped in a descriptor shape of our own, which would be a second menu vocabulary to keep in step

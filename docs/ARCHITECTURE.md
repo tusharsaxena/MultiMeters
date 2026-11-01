@@ -282,7 +282,7 @@ The header strip's **segment control** pins a window to one session the client s
 pin is `window.data.sessionID` (`Constants.NO_SEGMENT` when none), read through
 `Database.PinnedSegment`; every read path honors it, a stale pin is dropped at the top of the refresh,
 and `modules/Provider.lua` stays the only caller of `C_DamageMeter`. The menu, the threading and why
-this control keeps a context menu rather than a dropdown are in
+this control keeps the client's menu under the Combat restriction are in
 **[data-flow.md](data-flow.md#the-segment-selector)**.
 
 ## Frame layering
@@ -344,15 +344,21 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   Shell is called with `noTopBar` (the title bar is this window's own strip, `headerBG`), so under a
   skin whose title bar is a gradient (`title.bgTop` / `title.bgBottom`) the meter window's band draws
   `title.bg` flat rather than the gradient. Re-check if a skin's flat `title.bg` stops reading as its
-  title bar, or if the band moves onto the Shell's top bar. The column labels' colors and every HUD color stay the player's (X4). The notice, the
+  title bar, or if the band moves onto the Shell's top bar. The HUD's colors and shadows follow through their own companions (below). The notice, the
   empty state, the session line's dim notes (`mm.dim`) and the TEST MODE word (`mm.testWord`) read
   tokens, and both mode strips are handed the owner. The rows' hover wash (`mm.rowHover`), their
   alternating stripe (`mm.rowStripe`), the self edge (`text.accent`) and a classless name
   (`text.highlight`) follow the skin too, each Ka0s Default's old pixel. `RefreshUpvalues` resolves
   them, the chrome's five `skin` colors and the session line's two escapes, once into the window's `skinLooks`
   (`NS.SkinWindowLooks`), so no row and no refresh pass reads a token (R2).
-- **The HUD** (skinning-§6). Only the face, the bar texture and the bar border style follow the skin
-  (X4). Each HUD media picker has the composer's "Use the skin's ..." companion beside it
+- **The HUD** (skinning-§6; X4 reversed by the owner's rulings of 2026-11-01, FS-MM-FLIP). The face,
+  bar texture, border style and thickness, the HUD text, label and border colors, the tooltip bar's
+  backdrop and the four text shadows follow the skin, each through a companion read behind any class
+  or per-statistic mode. Every string takes `S.HudFont` through `NS.SkinHudFont`, since a 12.0.7 client
+  draws no shadow set on a FontString; shared GameTooltip lines take it too, and `restoreFonts` puts
+  `GameTooltipText` back. `mm.hudShadow` and `mm.tipBarBg` keep this addon's pixels under Ka0s Default.
+  `S.BarGloss` draws gloss on cell and tooltip bars (A3): it reads no value or color off a bar, so it
+  is safe on a cell holding a secret, where `S.BarTexture` is not. Each HUD media picker has the composer's "Use the skin's ..." companion beside it
   (`<key>FromSkin`: `header`, `columnHeader`, `text`, `tooltip` `.fontFromSkin` follow `hud.font`;
   `bars.textureFromSkin` and `tooltip.barTextureFromSkin` follow `bar.texture`;
   `bars.borderStyleFromSkin` and `tooltip.barBorderStyleFromSkin` follow `bar.borderStyle`), default
@@ -377,7 +383,7 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   drawn size); its own face and Ignore fonts draw the stored size, which is never rewritten.
 - **The tooltips.** GameTooltip's frame stays Blizzard's (skinning-§7); the lines this addon writes
   take `gtip.title`, `gtip.value` and `mm.tipHint` (X8), and the tooltip's bars, borders and face
-  follow the HUD companions above. `modules/Tooltip.lua` still sets the face on the GameTooltip lines
+  follow the HUD companions above. `modules/Tooltip.lua` still sets the font on the GameTooltip lines
   it writes and restores Blizzard's object on teardown (D10). Class and statistic colors stay theirs.
 - **The export modal** wears `S.Shell`, `S.TitleBar`, `S.Button`, `S.Inset`, `S.Text` and `S.Font`;
   its copy window and dropdowns take the owner. Under Ka0s Default it gains a title band and its

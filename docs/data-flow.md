@@ -784,9 +784,13 @@ remembered roster.
 
 ## The segment selector
 
-The **segment control** in the header strip — the three horizontal lines — opens a context menu of
-every session the client is still holding — name and duration, newest first as the API returns them — then a divider, then the
-two synthetic entries `Current` and `Overall`. The menu anchors to the header's session line, which
+The **segment control** in the header strip — the three horizontal lines — opens the shared Ka0s menu
+(`W.Dropdown`, wearing this owner's skin, cause A2) of
+every session the client is still holding — name and duration, newest first as the API returns them — then the
+two synthetic entries `Current` and `Overall`, the window's own entry marked. **Under the Combat
+restriction it opens the client's menu instead** (`Compat.OpenContextMenu`, with a title and a divider):
+a stored session's name and duration are secret there, and the Ka0s menu measures and concatenates
+each row, which raises on a secret. The menu anchors to the header's session line, which
 is where it has always come out; that line used to be a 220px Button and opened the menu itself,
 which put an invisible click target across the middle of the title bar and was removed.
 
