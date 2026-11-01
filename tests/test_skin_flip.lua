@@ -148,7 +148,8 @@ test("Skin flip: the one step's list is every companion and flag a window has, a
     -- which leaves every existing profile off the skin for that key, or a stale entry.
     local NS = T.load{}.NS
     local want = leaves(NS.WINDOW_TEMPLATE, function(k, v)
-        return v == "@skin" or (k:match("FromSkin$") and type(v) == "boolean")
+        -- header.alignFromSkin ships off (SF-MM-1): the skin's alignment is opt-in, never moved.
+        return v == "@skin" or (k:match("FromSkin$") and type(v) == "boolean" and v == true)
     end, nil, {})
     assertTrue(#want > 20, "the walk found no companions, so this proves nothing")
     local got = { unpack(NS.Database.FOLLOW_ONCE_KEYS) }
@@ -456,8 +457,8 @@ test("Skin flip: the step puts every window of every profile on the skin and kee
         global   = { schemaVersion = 22 },
     })
     local NS = inst.NS
-    assertEqual(NS.SCHEMA_VERSION, 23)
-    assertEqual(NS.db.global.schemaVersion, 23)
+    assertEqual(NS.SCHEMA_VERSION, 24)
+    assertEqual(NS.db.global.schemaVersion, 24)
     for _, name in ipairs({ "Default", "Raid" }) do
         local p = NS.db.sv.profiles[name]
         assertEqual(p.skin.fullSkinReset, true, name .. ": no record")

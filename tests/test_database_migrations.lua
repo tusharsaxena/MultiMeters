@@ -998,3 +998,18 @@ test("Database: v13 -> v14 survives a profile with no master block and a junk wi
     assertTrue(odd.windows[2].frame.locked, "the window after the junk entry arrived unlocked")
     assertNil(odd.master.locked)
 end)
+
+test("Database: v23 -> v24 turns a stored window's title alignment off the skin, once", function()
+    -- SF-MM-1: the skin's alignment is opt-in, so a window that followed it once left-aligns.
+    -- red under: leaving header.alignFromSkin true, or walking only the active profile.
+    local inst = preSeeded({
+        profiles = {
+            Default = { windows = { { id = 1, name = "A", header = { alignFromSkin = true } } } },
+            Raid    = { windows = { "junk", { id = 7, name = "R", header = { alignFromSkin = true } } } },
+        },
+        global = { schemaVersion = 23 },
+    })
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
+    assertEqual(inst.NS.Database.FindWindow(1).header.alignFromSkin, false)
+    assertEqual(inst.NS.db.sv.profiles.Raid.windows[2].header.alignFromSkin, false)
+end)

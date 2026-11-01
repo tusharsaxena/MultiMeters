@@ -196,7 +196,7 @@ end
 --- the two places this addon decorates a frame on a cell that carries meter
 --- values, which is why docs/smoke-tests.md asks for both to be checked mid-pull.
 function Cell:ApplyBorder(bars)
-    -- Show border, or a skin that names border art (NS.SkinBorderShown, cause D4). Recorded for the
+    -- Show border (NS.SkinBorderShown, SF-MM-2), in every skin. Recorded for the
     -- per-row re-tint below, which must not read a setting ApplyBorder already decided.
     local wanted = NS.SkinBorderShown(bars)
     self.borderShown = wanted

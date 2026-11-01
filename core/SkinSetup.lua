@@ -68,8 +68,8 @@ local addonName, NS = ...
 --                           else `n` (D-09). The stored size is never rewritten.
 --   NS.SkinBorderSize(n,f)  a border's thickness from its stored `n`: `bar.borderSize` while the style's
 --                           companion `f` is on.
---   NS.SkinBorderShown(b)   whether a cell's outline shows: S.BarBorder's answer, Show border under a
---                           skin's None, and always under a skin's real style.
+--   NS.SkinBorderShown(b)   whether a cell's outline shows: Show border (`bars.border`), in every
+--                           skin; a skin's art styles only the outline that is on (SF-MM-2).
 --   NS.SkinHudFont(fs,...)  S.HudFont for one HUD string, with one refilled opts table.
 --   NS.SkinPaintAce(w)      an AceGUI widget this addon acquired itself, painted for this owner:
 --   NS.SkinPaintAceTree(c)  `Skin:PaintAce` / `Skin:PaintAceTree` with the owner bound (the facade
@@ -352,10 +352,8 @@ function NS.SkinBorderSize(stored, fromSkin)
     return stored
 end
 
---- True when a cell's outline shows, through S.BarBorder (the owner's ruling of 2026-11-01): a skin's
---- None is no border of its own, so the player's Show border decides, with the companion on or off;
---- a real style in a skin wins while the companion is on, Show border off included (cause D4).
---- Degraded, the stub hands the stored toggle back.
+--- True when a cell's outline shows (SF-MM-2, a recorded deviation): only while Show border is on, in
+--- every skin. A skin's border style, real or None, restyles that outline and never draws one of its own.
 function NS.SkinBorderShown(bars)
     if type(bars) ~= "table" then return false end
     return bars.border == true

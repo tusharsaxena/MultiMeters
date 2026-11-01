@@ -947,7 +947,7 @@ Database.FOLLOW_ONCE_KEYS = {
     "bars.borderColorFromSkin", "tooltip.barBorderColorFromSkin", "tooltip.barBgColorFromSkin",
     "header.shadowFromSkin", "columnHeader.shadowFromSkin", "text.shadowFromSkin",
     "tooltip.fontShadowFromSkin",
-    "columnHeader.bgColorFromSkin", "icons.borderFromSkin", "header.alignFromSkin",
+    "columnHeader.bgColorFromSkin", "icons.borderFromSkin",
     "rows.highlightSelfFromSkin", "rows.alternatingBackgroundFromSkin",
     "header.outline", "columnHeader.outline", "text.outline", "tooltip.fontOutline", "fontOutline",
 }
@@ -1004,6 +1004,17 @@ end
 --- the stamp (a new one, a copy, a reset) takes it too. Idempotent.
 migrations[22] = function(db)
     for _, profile in ipairs(allProfiles(db)) do followSkinOnce(profile) end
+end
+
+--- v23 -> v24: THE TITLE'S ALIGNMENT OFF THE SKIN, ONCE (SF-MM-1). The v23 step set
+--- `header.alignFromSkin` on every stored window, which kept titles centered. The skin's alignment is
+--- opt-in now, so a stored window is set off it and left-aligns. Every profile, a junk entry skipped.
+migrations[23] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        eachWindow(profile, function(w)
+            if type(w.header) == "table" then w.header.alignFromSkin = false end
+        end)
+    end
 end
 
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every

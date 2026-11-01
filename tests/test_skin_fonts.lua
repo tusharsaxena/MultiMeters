@@ -185,8 +185,8 @@ test("Skin fonts: the v22 step moves every stored old-default flag onto From ski
         global   = { schemaVersion = 21 },
     })
     local NS = inst.NS
-    assertEqual(NS.SCHEMA_VERSION, 23)
-    assertEqual(NS.db.global.schemaVersion, 23)
+    assertEqual(NS.SCHEMA_VERSION, 24)
+    assertEqual(NS.db.global.schemaVersion, 24)
     for _, name in ipairs({ "Default", "Raid" }) do
         local w = NS.db.sv.profiles[name].windows[1]
         for _, d in ipairs(OLD_DEFAULTS) do
