@@ -168,6 +168,7 @@ function FRAME.GetEffectiveScale(self)
     return s
 end
 function FRAME.SetAlpha(self, a) self.__alpha = a or 1; return self end
+function FRAME.SetClipsChildren(self, on) self.__clips = on and true or false; return self end
 function FRAME.GetAlpha(self) return self.__alpha end
 function FRAME.SetFrameStrata(self, v) self.__strata = v; return self end
 function FRAME.GetFrameStrata(self) return self.__strata end

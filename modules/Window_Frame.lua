@@ -161,6 +161,8 @@ end
 --- Split out of BuildFrame to keep it under the CCN gate; runs once, from there.
 function WindowProto:BuildBody(frame)
     self.body = CreateFrame("Frame", nil, frame)
+    -- SF-MM-4: the grid is laid out on release, so a drag draws the old width; clip it to the body.
+    if self.body.SetClipsChildren then self.body:SetClipsChildren(true) end
 
     -- ── SCROLLING ────────────────────────────────────────────────────────────
     --
