@@ -104,6 +104,9 @@ test("MediaSetup: every icon this addon draws is declared and ships", function()
         "copy", "clear",                                          -- library-drawn, DebugLog
         "info",                                                   -- host-passed, TestStrip/IdList
         "eye",                                                    -- library-drawn, the skin picker's preview
+        -- What LibKa0s v1.85.0's library-drawn marks owe every consumer (kit revision 49), beyond
+        -- the names above that also draw here.
+        "chevron-up", "confirm", "move", "volume-high",
     }) do
         assertTrue(declared[name] == true,
             "this addon draws '" .. name .. "', which the CLAUDE.md `LibKa0s icons:` line omits")

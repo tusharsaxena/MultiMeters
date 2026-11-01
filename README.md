@@ -107,7 +107,7 @@ Please raise them on GitHub:
 ## Credits
 
 The header controls, the column sort arrows, the Export window, the debug console, the simulator's
-step panel and the first-run skin picker draw icons from
-[Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only the icons this addon
+step panel, the first-run skin picker and the small marks LibKa0s draws beside skinned controls
+draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only the icons this addon
 draws ship. They sit inside the bundled LibKa0s payload, with their license text beside them.
 

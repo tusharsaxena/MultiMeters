@@ -508,7 +508,11 @@ if not Skin then
         "GetAccentColor", "GetPanelColor", "GetFont",
         "TitleBar", "Divider", "Footer", "Card", "Slider", "NavItem", "Drawer", "ListRow", "MenuFrame",
         "Tooltip", "Strip", "Cover", "Text", "ChartStyle", "BarStyle", "IconBorder", "GlowColor",
-        "BarTexture",
+        "BarTexture", "Mark",
+        -- LibKa0s v1.85.0: nil is each getter's degraded answer. The three colors answer nothing, so
+        -- the stored color draws; HudShadow's nil is "the stored shadow stands". BarGloss: no skin,
+        -- no gloss.
+        "HudTextColor", "HudLabelColor", "BarFillColor", "HudShadow", "BarGloss",
     }) do S[name] = noop end
 
     S.Token = function(name)
@@ -548,6 +552,25 @@ if not Skin then
     S.HudFontSize = function(size)
         local n = tonumber(size)
         return (n and n > 0) and n or 12
+    end
+    -- LibKa0s v1.85.0 (SkinPaintExtras minor 9): a string a caller concatenates, so never nil. The
+    -- same markup in the art's own color, there being no tint to read.
+    S.MarkText = function(path, size)
+        size = size or 14
+        return ("|T%s:%d:%d|t"):format(path, size, size)
+    end
+    -- LibKa0s v1.85.0 (minor 14): the one vocabulary name that must draw, or a HUD string has no
+    -- face. A 12.0.7 client draws no shadow set on a string, and a stub keeps no font object, so a
+    -- stored shadow does not draw here (the Options document's section 7 accepts that).
+    S.HudFont = function(fs, opts)
+        opts = type(opts) == "table" and opts or {}
+        local face = opts.face
+        if type(face) ~= "string" or face == "" then face = STANDARD_TEXT_FONT end
+        if type(face) ~= "string" then return nil end
+        fs:SetFont(face, S.HudFontSize(opts.size), S.FontFlags(opts.flags))
+        local on = opts.shadow and true or false
+        fs:SetShadowColor(0, 0, 0, on and 1 or 0)
+        fs:SetShadowOffset(on and 1 or 0, on and -1 or 0)
     end
 
     NS.Skin = S
