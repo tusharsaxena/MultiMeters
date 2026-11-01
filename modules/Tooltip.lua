@@ -272,7 +272,7 @@ local function tooltipConfig(window)
     -- A media pick the skin can answer for (skinning-§6): the skin's `token` while the pick's
     -- `<key>FromSkin` companion is on, else the stored pick (core/SkinSetup.lua's
     -- NS.SkinMediaKey). Resolved here, once per build, so every line, bar and death-recap row the
-    -- builders draw reads the same answer. The colors are never resolved (DECISIONS X4).
+    -- builders draw reads the same answer. The colors are resolved in Tooltip_Lines' lineStyle.
     local function media(key, token, hardDefault)
         local pick = field(key, hardDefault)
         if not NS.SkinMediaKey then return pick end
@@ -290,24 +290,28 @@ local function tooltipConfig(window)
         showAllStatsOnName = field("showAllStatsOnName", true),
         hideInCombat       = field("hideInCombat", false),
         textColor          = field("textColor", nil),
-        barTexture         = media("barTexture", "bar.texture", "Blizzard Raid Bar"),
+        textColorFromSkin  = field("textColorFromSkin", false),
+        barTexture         = media("barTexture", "bar.texture", "Ka0s Default"),
         barColor           = field("barColor", nil),
         barColorMode       = field("barColorMode", "class"),
         barAlpha           = field("barAlpha", 0.85),
         barBgColor         = field("barBgColor", nil),
         barBgColorMode     = field("barBgColorMode", "custom"),
+        barBgColorFromSkin = field("barBgColorFromSkin", false),
         barBgAlpha         = field("barBgAlpha", 0.1),
         barSpacing         = field("barSpacing", 1),
         barBorderStyle     = media("barBorderStyle", "bar.borderStyle", "None"),
-        barBorderSize      = field("barBorderSize", 1),
+        barBorderSize      = NS.SkinBorderSize(field("barBorderSize", 1), field("barBorderStyleFromSkin", false)),
         barBorderColor     = field("barBorderColor", nil),
+        barBorderColorFromSkin = field("barBorderColorFromSkin", false),
         barBorderColorMode = field("barBorderColorMode", "custom"),
-        font               = media("font", "hud.font", "Friz Quadrata TT"),
+        font               = media("font", "hud.font", "Ka0s Prototype"),
         -- Whether that face is the skin's: the size's HUD scale follows it (D-09, tooltipFont).
         fontFromSkin       = field("fontFromSkin", false),
         fontSize           = field("fontSize", 12),
         fontOutline        = field("fontOutline", "@skin"),
         fontShadow         = field("fontShadow", false),
+        fontShadowFromSkin = field("fontShadowFromSkin", false),
         colorMode          = field("colorMode", "custom"),
         -- WHICH statistic `colorMode == "stat"` means. Filled in by the CALLER,
         -- because only the caller knows: a cell tooltip is about the column that
@@ -897,9 +901,9 @@ Tooltip.__fontProbe = nil
 --- because they are not all the same: a section gap gets the same face at half
 --- the size, and a single remembered font would have the post-layout pass stamp
 --- full size back over it and quietly restore the gap this addon just halved.
-local function applyLineFont(fontString, index, path, size, flags, shadowX, shadowY, textColor)
+local function applyLineFont(fontString, index, path, size, flags, shadow, shadowFromSkin, textColor)
     if not (fontString and fontString.SetFont) then return end
-    fontString:SetFont(path, size, flags)
+    NS.SkinHudFont(fontString, path, size, flags, shadow, shadowFromSkin)
 
     -- THE SPELL NAME IS TEXT INSIDE THE BAR, and the color mode governs it. It
     -- is the tooltip's OWN FontString rather than one of ours -- the name is
@@ -910,16 +914,12 @@ local function applyLineFont(fontString, index, path, size, flags, shadowX, shad
     if textColor and fontString.SetTextColor then
         fontString:SetTextColor(textColor[1], textColor[2], textColor[3])
     end
-    -- THE SHADOW RIDES WITH THE FONT, and is recorded with it, because
-    -- `reapplyFonts` runs after Show and would otherwise put back the face
-    -- without the shadow the same setting asked for. Restated on every line for
-    -- the reason the font is: GameTooltip is shared, and the line we are dressing
-    -- may carry another addon's shadow.
-    if fontString.SetShadowOffset then
-        fontString:SetShadowOffset(shadowX or 0, shadowY or 0)
-    end
+    -- THE SHADOW RIDES WITH THE FONT, on the one font object S.HudFont keeps for this line, and is
+    -- recorded with it, because `reapplyFonts` runs after Show and would otherwise put back the face
+    -- without the shadow the same setting asked for. Restated on every line for the reason the font
+    -- is: GameTooltip is shared, and the line we are dressing may carry another addon's shadow.
     fontedLines[index] = { fs = fontString, path = path, size = size, flags = flags,
-                           shadowX = shadowX or 0, shadowY = shadowY or 0,
+                           shadow = shadow, shadowFromSkin = shadowFromSkin,
                            recolored = textColor ~= nil }
 
     if State.debug and fontString.GetFont then
@@ -963,7 +963,7 @@ local function addSectionGap(style)
     local half = math.floor((style.fontSize or 12) / 2)
     if half < 1 then half = 1 end
     applyLineFont(left, index, style.fontPath, half, style.fontFlags,
-        style.shadowX, style.shadowY)
+        style.shadow, style.shadowFromSkin)
 end
 
 --- Put our font back on every line, AFTER GameTooltip:Show() has laid out.
@@ -992,10 +992,7 @@ end
 local function reapplyFonts()
     for _, entry in pairs(fontedLines) do
         if entry.fs.SetFont then
-            entry.fs:SetFont(entry.path, entry.size, entry.flags)
-            if entry.fs.SetShadowOffset then
-                entry.fs:SetShadowOffset(entry.shadowX, entry.shadowY)
-            end
+            NS.SkinHudFont(entry.fs, entry.path, entry.size, entry.flags, entry.shadow, entry.shadowFromSkin)
         end
     end
     sampleFontAfterShow()
@@ -1008,9 +1005,9 @@ local function restoreFonts()
         if fontString.SetFontObject and _G.GameTooltipText then
             fontString:SetFontObject(_G.GameTooltipText)
         end
-        -- The shadow goes back with the face. A font OBJECT does not carry one,
-        -- so ours would otherwise stay on a shared line and turn up under the
-        -- next addon's item tooltip -- the same class of leak as a bar left Shown.
+        -- The shadow goes back with the face: it lives on S.HudFont's object, which the line has just
+        -- left, and on the string where the client has no CreateFont. Left on, it would turn up under
+        -- the next addon's item tooltip, the same class of leak as a bar left Shown.
         if fontString.SetShadowOffset then fontString:SetShadowOffset(0, 0) end
         -- And the color, which a font OBJECT does not carry either. A line left
         -- in a class color turns up under the next addon's item tooltip exactly

@@ -282,7 +282,8 @@ test("migrations: v17 leaves every value a player chose for themselves", functio
     paired.header.shadow = true
     paired.frame.controlColorMode = "class"
     local inst = initWith({
-        profiles = { Default = { nextWindowId = 3, windows = { w, paired } } },
+        -- The record seeded: the v23 step's move onto the skin is not this case's subject.
+        profiles = { Default = { nextWindowId = 3, windows = { w, paired }, skin = { fullSkinReset = true } } },
         global   = { schemaVersion = 16 },
     })
     local a, b = inst.NS.Database.FindWindow(1), inst.NS.Database.FindWindow(2)

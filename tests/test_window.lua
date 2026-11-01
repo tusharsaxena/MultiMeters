@@ -388,6 +388,9 @@ end)
 
 test("An empty session says so rather than leaving a blank grid", function()
     local inst, window = scene()
+    -- A window face that is not the skin's, or the last case below compares the skin to itself.
+    window.config.header.font, window.config.header.fontFromSkin = "Friz Quadrata TT", false
+    window:ApplyConfig()
     window:Refresh()
     assertFalse(window.empty ~= nil and window.empty:IsShown(), "there is data, so no empty state")
     inst.mocks.setSession(CURRENT, "*", { combatSources = {}, maxAmount = 0, totalAmount = 0 })

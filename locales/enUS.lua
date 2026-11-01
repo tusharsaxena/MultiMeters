@@ -809,6 +809,31 @@ L["Reload your interface (/reload) to finish changing the skin."] =
 L["Use the skin's font"] = "Use the skin's font"
 L["Use the skin's texture"] = "Use the skin's texture"
 L["Use the skin's border"] = "Use the skin's border"
+-- The colors' and shadows' companions (FS-MM-FLIP).
+L["Use the skin's color"] = "Use the skin's color"
+L["Use the skin's shadow"] = "Use the skin's shadow"
+L["Draw this border in the skin's border style and thickness. Both are kept but not read while this is on."] =
+    "Draw this border in the skin's border style and thickness. Both are kept but not read while this is on."
+L["Draw the title in the skin's text shadow. Draw shadow is kept but not read while this is on."] =
+    "Draw the title in the skin's text shadow. Draw shadow is kept but not read while this is on."
+L["Draw the outline in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."] =
+    "Draw the outline in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."
+L["Draw the numbers in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."] =
+    "Draw the numbers in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."
+L["Draw the numbers and names in the skin's text shadow. Draw shadow is kept but not read while this is on."] =
+    "Draw the numbers and names in the skin's text shadow. Draw shadow is kept but not read while this is on."
+L["Draw the unfilled part in the skin's bar background while the mode is Custom. The background color and opacity are kept but not read while this is on."] =
+    "Draw the unfilled part in the skin's bar background while the mode is Custom. The background color and opacity are kept but not read while this is on."
+L["Draw the border in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."] =
+    "Draw the border in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."
+L["Draw the tooltip's text in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."] =
+    "Draw the tooltip's text in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."
+L["Draw the tooltip's text in the skin's text shadow. Draw shadow is kept but not read while this is on."] =
+    "Draw the tooltip's text in the skin's text shadow. Draw shadow is kept but not read while this is on."
+L["Draw the column labels in the skin's HUD label color while the mode is Custom. The font color is kept but not read while this is on."] =
+    "Draw the column labels in the skin's HUD label color while the mode is Custom. The font color is kept but not read while this is on."
+L["Draw the column labels in the skin's text shadow. Draw shadow is kept but not read while this is on."] =
+    "Draw the column labels in the skin's text shadow. Draw shadow is kept but not read while this is on."
 L["Draw this text in the skin's font. The font picker is kept but not read while this is on, unless Ignore fonts is ticked on the Skin tab."] =
     "Draw this text in the skin's font. The font picker is kept but not read while this is on, unless Ignore fonts is ticked on the Skin tab."
 L["Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."] =

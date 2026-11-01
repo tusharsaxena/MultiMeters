@@ -291,11 +291,11 @@ local PARTITION = {
     windows    = { { "Window", 1 } },
     frame      = { { "Size and position", 8 }, { "Quick style", 6 },
                    { "Background and border", 6 }, { "Rows", 8 } },
-    header     = { { "Title bar", 8 }, { "Title text", 8 }, { "Controls", 16 } },
-    bars       = { { "Bar", 16 }, { "Text", 12 }, { "Icons", 3 } },
-    tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 14 }, { "Text", 7 } },
+    header     = { { "Title bar", 8 }, { "Title text", 9 }, { "Controls", 16 } },
+    bars       = { { "Bar", 17 }, { "Text", 14 }, { "Icons", 3 } },
+    tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 16 }, { "Text", 9 } },
     visibility = { { "Rules", 17 } },
-    columns    = { { "Column header", 9 } },
+    columns    = { { "Column header", 11 } },
 }
 
 test("Schema: every page's tabs are the designed ones, in order, at the designed size",
@@ -625,10 +625,12 @@ test("Schema: NO color row is ever disabled, and every one says why in words", f
     local swatches = 0
     for _, row in ipairs(NS.Schema) do
         -- The one disabledIf the schema carries is the composer's on a HUD media PICKER, governed
-        -- by its own "Use the skin's ..." companion (skinning-§6): never a swatch.
+        -- by its own "Use the skin's ..." companion (skinning-§6), or on the thickness beside a
+        -- bar-family border, which that border's companion governs: never a swatch.
         if row.disabledIf ~= nil then
-            assertTrue(row.type ~= "color" and row.disabledIf == row.path .. "FromSkin",
-                row.path .. " carries disabledIf")
+            local thickness = row.path:find("border", 1, true) ~= nil or row.path:find("Border", 1, true) ~= nil
+            assertTrue(row.type ~= "color" and (row.disabledIf == row.path .. "FromSkin"
+                or (thickness and row.type == "number")), row.path .. " carries disabledIf")
         end
         if row.type == "color" then
             if row.path:sub(1, 11) == "statColors." then
@@ -946,7 +948,7 @@ function()
             row.path .. " is on the Columns page but is not a column-header setting")
     end
     -- Nine: the eight that moved, and the face's "Use the skin's font" companion (skinning-§6).
-    assertEqual(onColumns, 9, "all nine are column-header rows")
+    assertEqual(onColumns, 11, "all eleven are column-header rows")
 
     for _, row in ipairs(NS.SchemaForPage("header")) do
         assertFalse(row.path:find("^window%.columnHeader%.") and true or false,

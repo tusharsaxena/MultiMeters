@@ -223,21 +223,6 @@ local function titleBarColor(header, looks)
     return RGBA(header.bgColor, 0, 0, 0, 0.5)
 end
 
---- How far the text is offset to draw its drop shadow, or 0, 0 for none.
----
---- One reader for all four of this addon's text surfaces, which is the point:
---- `text`, `header`, `columnHeader` and the tooltip each carry the same four
---- controls now (face, outline, shadow, color), and four private opinions about
---- what "shadow" means in pixels is how two of them end up with different ones.
---- 1, -1 is the offset modules/Row.lua has always used.
----
---- @param on boolean|nil
---- @return number x, number y
-local function shadowOffset(on)
-    if not on then return 0, 0 end
-    return 1, -1
-end
-
 --- The header's font and color, in the one shape modules/HeaderControls.lua
 --- asks for it.
 ---
@@ -379,8 +364,8 @@ function WindowProto:ApplyTitle()
     frame.title:SetPoint("LEFT", frame, "TOPLEFT", 8, y)
     frame.title:SetPoint("RIGHT", frame, "TOPRIGHT", -self:HeaderRightInset(), y)
     frame.title:SetJustifyH(header.align or "LEFT")
-    frame.title:SetFont(path, size, flags)
-    frame.title:SetShadowOffset(shadowOffset(header.shadow))
+    NS.SkinHudFont(frame.title, path, size, flags, header.shadow, header.shadowFromSkin,
+        self.skinLooks and self.skinLooks.keptShadow)
     -- THE RED TEST MODE WORD marks test mode only where the strip does not: a
     -- minimized window (the strip goes with the body) or a load without the
     -- Widgets library (no strip is built). Test mode fills the grid with numbers
@@ -542,8 +527,8 @@ function WindowProto:ApplySessionLine()
     self.sessionLine:SetSize(SESSION_LINE_WIDTH, height)
     self.sessionLine:SetShown(shown)
 
-    self.sessionText:SetFont(path, size, flags)
-    self.sessionText:SetShadowOffset(shadowOffset(header.shadow))
+    NS.SkinHudFont(self.sessionText, path, size, flags, header.shadow, header.shadowFromSkin,
+        self.skinLooks and self.skinLooks.keptShadow)
     self.sessionText:SetTextColor(headerColor(header, self.skinLooks))
     self.sessionText:SetShown(shown)
 end
@@ -639,8 +624,7 @@ local function dressSortArrow(button, d, tr, tg, tb, ta)
         button.arrowTex:Show()
         button.arrow:Hide()
     else
-        button.arrow:SetFont(d.font, d.size, d.flags)
-        button.arrow:SetShadowOffset(d.shadowX, d.shadowY)
+        NS.SkinHudFont(button.arrow, d.font, d.size, d.flags, d.shadow, d.shadowFromSkin)
         button.arrow:SetTextColor(tr, tg, tb, ta)
         button.arrow:SetText(d.sortAscending and SORT_ASCII_UP or SORT_ASCII_DOWN)
         button.arrow:ClearAllPoints()
@@ -666,8 +650,7 @@ local function dressHeaderButton(button, key, label, width, d)
     -- belonged to them.
     button.text:SetWidth(width)
     button.text:SetHeight(d.headerHeight)
-    button.text:SetFont(d.font, d.size, d.flags)
-    button.text:SetShadowOffset(d.shadowX, d.shadowY)
+    NS.SkinHudFont(button.text, d.font, d.size, d.flags, d.shadow, d.shadowFromSkin)
     -- PER COLUMN, and only here. `stat` mode on every other surface resolves
     -- to one color for the whole surface; this strip is the one place where
     -- "per statistic" is literally per column, so each label takes the color
@@ -724,7 +707,6 @@ function WindowProto:ApplyColumnHeaders()
     local pad    = layout.padding
     local colHeader = cfg.columnHeader or {}
     local colFont, colSize, flags = columnHeaderFont(colHeader)
-    local shadowX, shadowY = shadowOffset(colHeader.shadow)
     -- The STRIP labels the grid rather than any row in it, so its class color is
     -- the local player's -- the same reading the title bar takes, and for the
     -- same reason. Its `stat` color is NOT the same, though, and that is the
@@ -734,6 +716,11 @@ function WindowProto:ApplyColumnHeaders()
     -- any unresolvable stat land on.
     local hr, hg, hb, ha = surfaceColor(colHeader.colorMode, colHeader.color,
         windowStat(self), 1, 0.82, 0, 1)
+    -- The skin's `hud.label` while the companion is on, under `custom` only: the other two modes are
+    -- a class and a statistic, which keep their color. Nil, degraded, leaves the swatch.
+    local skinLabel = colHeader.colorMode == "custom" and colHeader.colorFromSkin == true
+        and self.skinLooks and self.skinLooks.hudLabel
+    if skinLabel then hr, hg, hb, ha = skinLabel[1], skinLabel[2], skinLabel[3], skinLabel[4] or 1 end
 
     -- One FontString per drawn column plus the name column's, placed at the same
     -- x offsets the cells will use — from the SAME layout table, so a header can
@@ -777,7 +764,7 @@ function WindowProto:ApplyColumnHeaders()
     local d = headerDress
     d.headerHeight = layout.headerHeight
     d.font, d.size, d.flags = colFont, colSize, flags
-    d.shadowX, d.shadowY = shadowX, shadowY
+    d.shadow, d.shadowFromSkin = colHeader.shadow, colHeader.shadowFromSkin
     d.colorMode, d.color = colHeader.colorMode, colHeader.color
     d.hr, d.hg, d.hb, d.ha = hr, hg, hb, ha
     d.perColumnBG, d.bgColor = perColumnBG, colHeader.bgColor

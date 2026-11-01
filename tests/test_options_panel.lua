@@ -334,7 +334,7 @@ function()
     ctx.panel.defaultsOnClick()
 
     local w = NSi.Database.GetWindows()[1]
-    assertEqual(w.columnHeader.font, "Friz Quadrata TT",
+    assertEqual(w.columnHeader.font, "Ka0s Prototype",
         "the header font must be back to shipped after the page-wide Defaults click")
     assertEqual(w.columnHeader.outline, "@skin",
         "the header outline must be back to shipped after the page-wide Defaults click")

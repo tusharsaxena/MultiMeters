@@ -747,6 +747,7 @@ test("Column headers have their own color and background", function()
     local _, window = scene{ configure = function(c)
         c.header.color = { r = 0, g = 1, b = 0, a = 1 }
         c.columnHeader.color = { r = 1, g = 0, b = 0, a = 1 }
+        c.columnHeader.colorFromSkin = false   -- the player's own color, off the skin
         c.columnHeader.bgColor = { r = 0, g = 0, b = 1, a = 0.5 }
     end }
     window:ApplyColumnHeaders()
@@ -955,6 +956,7 @@ test("Header shadow reaches every line of the strip", function()
     -- red under: setting the header font without its shadow.
     local _, window, cfg = scene()
     cfg.header.shadow = true
+    cfg.header.shadowFromSkin = false   -- the player's own shadow, off the skin
     window:ApplyConfig()
 
     assertEqual(window.frame.title.__shadow[1], 1, "the title has no shadow")
@@ -973,6 +975,7 @@ test("Column header shadow is its OWN setting, not the header's", function()
     local _, window, cfg = scene()
     cfg.header.shadow       = false
     cfg.columnHeader.shadow = true
+    cfg.header.shadowFromSkin, cfg.columnHeader.shadowFromSkin = false, false   -- off the skin
     window:ApplyConfig()
 
     local button = window.columnHeaders and window.columnHeaders[1]

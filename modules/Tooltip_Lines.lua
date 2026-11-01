@@ -447,6 +447,13 @@ local function lineStyle(config, color)
 
     local tr, tg, tb = rgba(config.textColor,
         SLOT_COLOR_DEFAULT[1], SLOT_COLOR_DEFAULT[2], SLOT_COLOR_DEFAULT[3], 1)
+    -- The HUD colors' companions (FS-MM-FLIP): the skin's, ahead of the swatch and behind every mode,
+    -- which modeColor below applies over them. A degraded facade answers nothing: the swatch stands.
+    local S = NS.Skin
+    if config.textColorFromSkin == true then
+        local r, g, b = S.HudTextColor()
+        if r then tr, tg, tb = r, g, b end
+    end
 
     -- CLASS IS THE HOVERED PLAYER'S, which the bars already wear -- `color` is
     -- that same table, resolved by the caller off `row.classFilename`. A tooltip
@@ -470,21 +477,29 @@ local function lineStyle(config, color)
     fr, fg, fb = modeColor(config.barColorMode, config.statKey, color, fr, fg, fb)
 
     local br, bg_, bb = rgba(config.barBgColor, 0, 0, 0, 1)
+    local bgAlpha = alphaOf(config.barBgAlpha, 0.1)
+    -- Under Custom only: `mm.tipBarBg` is a whole color, opacity included, so the stored opacity is
+    -- not read beside it, and a class or per-statistic backdrop keeps that opacity.
+    if config.barBgColorFromSkin == true and config.barBgColorMode == "custom" then
+        local r, g, b, a = S.Color("mm.tipBarBg")
+        if r then br, bg_, bb, bgAlpha = r, g, b, a or 1 end
+    end
     br, bg_, bb = modeColor(config.barBgColorMode, config.statKey, color, br, bg_, bb)
 
     local ebr, ebg, ebb, eba = rgba(config.barBorderColor, 0, 0, 0, 1)
+    if config.barBorderColorFromSkin == true then
+        local r, g, b, a = S.Color("bar.border")
+        if r then ebr, ebg, ebb, eba = r, g, b, a or 1 end
+    end
     ebr, ebg, ebb = modeColor(config.barBorderColorMode, config.statKey, color, ebr, ebg, ebb)
-
-    local shadowX, shadowY = 0, 0
-    if config.fontShadow then shadowX, shadowY = 1, -1 end
 
     return {
         color      = color,
         textColor  = { tr, tg, tb },
         barColor   = { fr, fg, fb, alphaOf(config.barAlpha, 0.85) },
-        barBgColor = { br, bg_, bb, alphaOf(config.barBgAlpha, 0.1) },
-        shadowX    = shadowX,
-        shadowY    = shadowY,
+        barBgColor = { br, bg_, bb, bgAlpha },
+        shadow         = config.fontShadow,
+        shadowFromSkin = config.fontShadowFromSkin,
         texture    = mediaPath("statusbar", config.barTexture),
         -- Size zero drops the FILE with it. A zero edgeSize with a texture still
         -- present is the combination WoW draws as a hard 1px line, which is the
@@ -559,6 +574,10 @@ end
 --- @param style table        a resolved style from `lineStyle`
 --- @param label string|nil   text for the carrier's own name slot (target lines);
 ---                           nil leaves it empty, which is what a spell line wants
+local function slotFont(fs, style)
+    NS.SkinHudFont(fs, style.fontPath, style.fontSize, style.fontFlags, style.shadow, style.shadowFromSkin)
+end
+
 local function drawLine(lineIndex, amount, share, value, max, style, label, mode)
     local name = GameTooltip:GetName()
     local left = name and _G[name .. "TextLeft" .. lineIndex]
@@ -569,15 +588,12 @@ local function drawLine(lineIndex, amount, share, value, max, style, label, mode
     -- The player's font, on OUR two slots and on the tooltip's own line. The
     -- line is shared and is restored by `restoreFonts`; the slots are ours and
     -- are simply re-set on every draw.
-    frame.amount:SetFont(style.fontPath, style.fontSize, style.fontFlags)
-    frame.share:SetFont(style.fontPath, style.fontSize, style.fontFlags)
-    frame.label:SetFont(style.fontPath, style.fontSize, style.fontFlags)
     -- OUR OWN carriers, so no restore is owed on them the way it is on a shared
-    -- GameTooltip line -- but they are POOLED, so the offset is restated every
+    -- GameTooltip line -- but they are POOLED, so the shadow is restated every
     -- draw for the same reason the face and the color are.
-    frame.amount:SetShadowOffset(style.shadowX, style.shadowY)
-    frame.share:SetShadowOffset(style.shadowX, style.shadowY)
-    frame.label:SetShadowOffset(style.shadowX, style.shadowY)
+    slotFont(frame.amount, style)
+    slotFont(frame.share, style)
+    slotFont(frame.label, style)
 
     -- Which slots exist on this line, and how wide they are. Re-stated here for
     -- the same reason the font above it is: the carrier is pooled.
@@ -597,7 +613,7 @@ local function drawLine(lineIndex, amount, share, value, max, style, label, mode
     frame.share:SetTextColor(tc[1], tc[2], tc[3])
     frame.label:SetTextColor(tc[1], tc[2], tc[3])
     applyLineFont(left, lineIndex, style.fontPath, style.fontSize, style.fontFlags,
-        style.shadowX, style.shadowY, tc)
+        style.shadow, style.shadowFromSkin, tc)
 
     applyLineBorder(frame, style)
 

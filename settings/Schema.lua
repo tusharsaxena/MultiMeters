@@ -308,7 +308,7 @@ NS.Schema = {
         onChange = broadcastColorMode,
     },
     {
-        path = "window.barTexture", type = "string", default = "Blizzard Raid Bar",
+        path = "window.barTexture", type = "string", default = "Ka0s Default",
         values = lsmValues("statusbar"), dialogControl = "Ka0sMedia_Statusbar",
         page = "frame", group = L["Quick style"], subgroup = L["All surfaces"],
         label = L["Bar texture (all surfaces)"],
@@ -316,7 +316,7 @@ NS.Schema = {
         onChange = broadcastBarTexture,
     },
     {
-        path = "window.font", type = "string", default = "Friz Quadrata TT",
+        path = "window.font", type = "string", default = "Ka0s Prototype",
         values = lsmValues("font"), dialogControl = "Ka0sMedia_Font",
         page = "frame", group = L["Quick style"], subgroup = L["All surfaces"],
         label = L["Font (all surfaces)"],

@@ -124,10 +124,10 @@ test("Skin fonts: From skin draws the Font outline: OUTLINE under HUD only and A
     skin(inst):SetOutline(OWNER, "off")
     window:ApplyConfig()
     row:ApplyLayout(window.layout)
-    assertEqual(cell.left.__font.flags, nil, "Off takes the cell's outline")
-    assertEqual(window.frame.title.__font.flags, nil, "Off takes the title's")
+    assertEqual(cell.left.__font.flags, "", "Off takes the cell's outline")
+    assertEqual(window.frame.title.__font.flags, "", "Off takes the title's")
     _, _, tipFlags = NS.TooltipInternals.tooltipFont(NS.TooltipInternals.tooltipConfig(cfg))
-    assertEqual(tipFlags, nil, "Off takes the tooltip's")
+    assertEqual(tipFlags or "", "", "Off takes the tooltip's")
 end)
 
 test("Skin fonts: a flag the player picked wins over the Font outline, and NONE draws none", function()
@@ -140,7 +140,7 @@ test("Skin fonts: a flag the player picked wins over the Font outline, and NONE 
     assertEqual(row.cells.DamageDone.left.__font.flags, "THICKOUTLINE", "the pick wins under Off")
     skin(inst):SetOutline(OWNER, "all")
     window:ApplyConfig()
-    assertEqual(window.frame.title.__font.flags, nil, "NONE stays none under All text")
+    assertEqual(window.frame.title.__font.flags, "", "NONE stays none under All text")
     assertEqual(cfg.text.outline, "THICKOUTLINE", "nothing rewrote the pick")
 end)
 
@@ -178,13 +178,15 @@ test("Skin fonts: the v22 step moves every stored old-default flag onto From ski
     -- red under: no v21 -> v22 step, one that walks db.profile alone, or one that moves a flag the
     -- player changed.
     local inst = initWith({
-        profiles = { Default = { nextWindowId = 3, windows = { v21Window(1), v21Window(2, true) } },
-                     Raid    = { nextWindowId = 8, windows = { v21Window(7) } } },
+        -- The record seeded: the v23 step moves every flag, the player's too (tests/test_skin_flip.lua).
+        profiles = { Default = { nextWindowId = 3, windows = { v21Window(1), v21Window(2, true) },
+                                 skin = { fullSkinReset = true } },
+                     Raid    = { nextWindowId = 8, windows = { v21Window(7) }, skin = { fullSkinReset = true } } },
         global   = { schemaVersion = 21 },
     })
     local NS = inst.NS
-    assertEqual(NS.SCHEMA_VERSION, 22)
-    assertEqual(NS.db.global.schemaVersion, 22)
+    assertEqual(NS.SCHEMA_VERSION, 23)
+    assertEqual(NS.db.global.schemaVersion, 23)
     for _, name in ipairs({ "Default", "Raid" }) do
         local w = NS.db.sv.profiles[name].windows[1]
         for _, d in ipairs(OLD_DEFAULTS) do
@@ -282,7 +284,7 @@ test("Skin fonts: the column labels draw the Font outline and the HUD size scale
     skin(inst):SetOutline(OWNER, "off")
     window:ApplyColumnHeaders()
     _, _, flags = window.columnHeaders[1].text:GetFont()
-    assertEqual(flags, nil, "Off takes the column label's outline")
+    assertEqual(flags, "", "Off takes the column label's outline")
 
     skin(inst):SetChoice(OWNER, "ka0s", "obsidian")
     local scaled = inst.NS.Skin.HudFontSize(12, true)

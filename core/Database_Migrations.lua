@@ -932,6 +932,76 @@ migrations[21] = function(db)
     end
 end
 
+--- Everything a window follows the skin through, as dotted paths into a window (FS-MM-FLIP, the owner's
+--- rulings of 2026-11-01). Every companion by name, then the five font flags, whose readers are on
+--- S.FontFlags (NS.SkinFontFlags), so `ResetToSkin` writes them From skin. Named, because a stored
+--- color or pick is the player's to come back to. Never listed: a size, a class, per-statistic or
+--- other mode, `skin.ignorePanel`, `skin.ignoreFonts`.
+Database.FOLLOW_ONCE_KEYS = {
+    "barTextureFromSkin", "fontFromSkin",
+    "header.fontFromSkin", "columnHeader.fontFromSkin", "text.fontFromSkin", "tooltip.fontFromSkin",
+    "bars.textureFromSkin", "tooltip.barTextureFromSkin",
+    "bars.borderStyleFromSkin", "tooltip.barBorderStyleFromSkin",
+    "header.bgColorFromSkin",
+    "text.colorFromSkin", "columnHeader.colorFromSkin", "tooltip.textColorFromSkin",
+    "bars.borderColorFromSkin", "tooltip.barBorderColorFromSkin", "tooltip.barBgColorFromSkin",
+    "header.shadowFromSkin", "columnHeader.shadowFromSkin", "text.shadowFromSkin",
+    "tooltip.fontShadowFromSkin",
+    "header.outline", "columnHeader.outline", "text.outline", "tooltip.fontOutline", "fontOutline",
+}
+
+--- The no-library arm of one window's move: the same writes by hand, creating no table.
+local function followByHand(w)
+    for _, path in ipairs(Database.FOLLOW_ONCE_KEYS) do
+        local group, leaf = path:match("^([^.]+)%.(.+)$")
+        local t = group and w[group] or (not group and w) or nil
+        leaf = leaf or path
+        if type(t) == "table" then
+            t[leaf] = leaf:match("FromSkin$") and true or "@skin"
+        end
+    end
+end
+
+--- One profile onto the skin, once (LibKa0s Options doc, Moving to this version, section 4).
+---
+--- `Skin.FollowOnce` is the gate and writes `skin.fullSkinReset`. It is handed NO keys, because a
+--- window is an entry of the numeric `windows` array and its dotted walk reads every segment as a
+--- string, so `windows.1.text.colorFromSkin` would be skipped without a word: the v20 step's reason
+--- too. Its true answer says this profile has not moved, and each window then takes
+--- `Skin.ResetToSkin`, its own table as the root, so the record lands on the profile and no window
+--- grows a `skin` table. Without the library the same writes by hand, and the record by hand.
+---
+--- @param profile table
+local function followSkinOnce(profile)
+    if type(profile) ~= "table" then return end
+    local Skin = LibStub and LibStub("LibKa0s-Skin-1.0", true)
+    local reset = Skin and Skin.ResetToSkin
+    local follow = Skin and Skin.FollowOnce
+    local windows = type(profile.windows) == "table" and profile.windows or {}
+    if type(follow) == "function" and type(reset) == "function" then
+        if not follow(profile, {}) then return end
+        for _, w in pairs(windows) do
+            if type(w) == "table" then reset(w, Database.FOLLOW_ONCE_KEYS) end
+        end
+        return
+    end
+    if type(profile.skin) == "table" and profile.skin.fullSkinReset == true then return end
+    for _, w in pairs(windows) do
+        if type(w) == "table" then followByHand(w) end
+    end
+    if type(profile.skin) ~= "table" then profile.skin = {} end
+    profile.skin.fullSkinReset = true
+end
+
+--- v22 -> v23: THE HUD'S COLORS, BORDERS AND SHADOWS ON THE SKIN, ONCE (the owner's rulings of
+--- 2026-11-01: existing profiles follow, not new ones only). Every profile, for the reason
+--- allProfiles gives. The record, not the stamp, is what makes it once per profile, and the runner
+--- below calls the same gate for the active profile on every pass, so a profile that arrives after
+--- the stamp (a new one, a copy, a reset) takes it too. Idempotent.
+migrations[22] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do followSkinOnce(profile) end
+end
+
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every
 --- profile swap, and is a no-op once at the current version.
 function NS:RunMigrations()
@@ -965,6 +1035,10 @@ function NS:RunMigrations()
         end
         v = v + 1
     end
+
+    -- The stamp is per account and following the skin leaves no shape to read, so a profile made
+    -- after it is moved here, by its own record (Skin.FollowOnce).
+    followSkinOnce(db.profile)
 
     -- Shape normalization runs AFTER the version walk and unconditionally, so a
     -- profile that arrives from a copy or a hand edit is brought to the current

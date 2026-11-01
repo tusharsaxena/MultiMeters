@@ -91,11 +91,12 @@ test("Skin HUD: the eight companions ship on, as rows defaulted on, each governi
         local row = rowAt(NS, path)
         assertTrue(row ~= nil and row.default == true, path .. " is not a meta row defaulted on")
     end
-    -- No color, size, outline or thickness is governed (X4, D12).
+    -- No swatch and no font size is governed; a thickness beside a bar-family border is.
     for _, row in ipairs(NS.Schema) do
         if row.disabledIf ~= nil then
-            assertTrue(row.type ~= "color" and row.type ~= "number",
-                row.path .. " follows the skin, but only faces, textures and borders may")
+            assertTrue(row.type ~= "color", row.path .. ": a swatch stays live beside its companion")
+            assertTrue(row.type ~= "number" or row.path:lower():find("border", 1, true) ~= nil,
+                row.path .. " follows the skin, but a font size never does")
         end
     end
 end)
@@ -145,7 +146,7 @@ test("Skin HUD: the title, the column labels and the tooltip resolve through the
     assertEqual(tip.barTexture, cfg.tooltip.barTexture)
     assertEqual(tip.barBorderStyle, cfg.tooltip.barBorderStyle)
 
-    cfg.header.fontFromSkin = false
+    cfg.header.font, cfg.header.fontFromSkin = "Friz Quadrata TT", false
     window:ApplyConfig()
     assertTrue(window.frame.title.__font.path ~= face, "the title kept the skin's face with its companion off")
 end)
@@ -236,8 +237,8 @@ test("Skin HUD: the v20 step puts every window of every profile on the skin, kee
     -- The walk goes on to v21 (MM-A1's chrome reset, tests/test_skin_window.lua) and v22 (the font
     -- flags onto From skin, tests/test_skin_fonts.lua), which touch
     -- no companion this case reads.
-    assertEqual(NS.SCHEMA_VERSION, 22)
-    assertEqual(NS.db.global.schemaVersion, 22)
+    assertEqual(NS.SCHEMA_VERSION, 23)
+    assertEqual(NS.db.global.schemaVersion, 23)
     for _, name in ipairs({ "Default", "Raid" }) do
         for i, w in ipairs(NS.db.sv.profiles[name].windows) do
             local where = name .. " window " .. i
@@ -272,7 +273,7 @@ test("Skin HUD: the v20 reset runs once, so a pick made after it is kept", funct
     -- And across a reload: the stamp the first load wrote holds the step off.
     local saved = _G.MultiMetersDB
     local again = initWith(saved)
-    assertEqual(again.NS.db.global.schemaVersion, 22)
+    assertEqual(again.NS.db.global.schemaVersion, 23)
     assertEqual(again.NS.Database.FindWindow(1).bars.textureFromSkin, false, "a reload re-ran the reset")
     assertEqual(again.NS.Database.FindWindow(1).text.fontFromSkin, true)
 end)

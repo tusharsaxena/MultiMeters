@@ -68,8 +68,8 @@ local WINDOW_TEMPLATE = {
     -- The other three meta controls, same bargain: each sets its own kind of
     -- setting on every surface that has one, stores what it last broadcast, and
     -- is read by nothing.
-    barTexture  = "Blizzard Raid Bar",
-    font        = "Friz Quadrata TT",
+    barTexture  = "Ka0s Default",
+    font        = "Ka0s Prototype",
     -- FROM SKIN ("@skin", LibKa0s v1.82.0, ruling D-07), as every surface's own flags below: the
     -- Skin tab's Font outline decides (All text and HUD text only: OUTLINE; Off: none). It shipped
     -- NONE until then; the v22 step moved a stored NONE onto From skin once (core/Database_Migrations.lua).
@@ -230,7 +230,7 @@ local WINDOW_TEMPLATE = {
     -- renaming a window renames its header.
     header = {
         show            = true,
-        font            = "Friz Quadrata TT",
+        font            = "Ka0s Prototype",
         fontFromSkin    = true,   -- the skin's `hud.font` (FOLLOWING THE SKIN, above)
         -- GameFontNormal, SPELLED OUT: Friz Quadrata at 12px, no outline, a 1/-1
         -- drop shadow. That is what Ka0s DPS Race's title bar draws in
@@ -243,6 +243,7 @@ local WINDOW_TEMPLATE = {
         -- From skin (D-07): the Skin tab's Font outline. Shipped NONE until v22.
         outline         = "@skin",     -- @skin | NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         shadow          = true,
+        shadowFromSkin  = true,   -- the skin's shadow; `mm.hudShadow` keeps it under Ka0s Default
         -- SKIN since MM-A1 (it shipped CUSTOM): the skin's title color, gold under
         -- Ka0s Default, the swatch below read under `custom`. See the note in
         -- settings/Schema.lua for why there is no `stat` here and why `class`
@@ -292,14 +293,16 @@ local WINDOW_TEMPLATE = {
     -- existing window looks identical after the upgrade; what changes is that
     -- the settings are now reachable and independent.
     columnHeader = {
-        font     = "Friz Quadrata TT",
+        font     = "Ka0s Prototype",
         fontFromSkin = true,   -- the skin's `hud.font`
         size     = 11,
         outline  = "@skin",     -- From skin (D-07; OUTLINE until v22) | NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         -- Both off for the reason the header's are: a new setting must not
         -- restyle a window that already exists.
         shadow   = false,
+        shadowFromSkin = true,   -- the skin's `hud.shadow`
         color    = { r = 1, g = 0.82, b = 0, a = 1 },   -- Blizzard gold
+        colorFromSkin = true,    -- the skin's `hud.label`, under the `custom` mode below
         -- The local player's class, like the header's -- the strip labels the
         -- grid rather than any row in it.
         colorMode  = "custom",
@@ -349,7 +352,7 @@ local WINDOW_TEMPLATE = {
     -- bars — the StatusBar inside every cell
     -- -----------------------------------------------------------------------
     bars = {
-        texture       = "Blizzard Raid Bar",   -- LSM "statusbar" key
+        texture       = "Ka0s Default",        -- LSM "statusbar" key
         textureFromSkin = true,                -- the skin's `bar.texture`
         -- class  — the source's classFilename color (NeverSecret, so always
         --          available, even mid-pull)
@@ -379,6 +382,7 @@ local WINDOW_TEMPLATE = {
         borderStyleFromSkin = true,            -- the skin's `bar.borderStyle`
         borderThickness = 1,
         borderColor     = { r = 0, g = 0, b = 0, a = 1 },
+        borderColorFromSkin = true,            -- the skin's `bar.border`, under `custom`
         -- The mode beside that swatch (options-ui-§17). `class` is the class of
         -- the ROW being drawn, exactly as the bar's own mode above is -- a cell
         -- outline belongs to the player whose cell it is.
@@ -442,12 +446,14 @@ local WINDOW_TEMPLATE = {
         -- The jitter argument also lost most of its force when the numbers started
         -- abbreviating: "1.41M" is four glyphs whatever the value, where
         -- "1410000" was seven and "53571.392857143" was fifteen.
-        font         = "Friz Quadrata TT",
+        font         = "Ka0s Prototype",
         fontFromSkin = true,   -- the skin's `hud.font`
         size         = 11,
         outline      = "@skin",     -- From skin (D-07); NONE until v22
         shadow       = true,
+        shadowFromSkin = true,      -- the skin's shadow; `mm.hudShadow` keeps it under Ka0s Default
         color        = { r = 1, g = 1, b = 1, a = 1 },
+        colorFromSkin = true,       -- the skin's `hud.text`, under the `custom` mode below
         -- THIS one takes the ROW's class, not the local player's: a cell is about
         -- the player whose row it is. The Player column has always been drawn
         -- that way; this extends it to the numbers. Off by default, because the
@@ -512,7 +518,7 @@ local WINDOW_TEMPLATE = {
         -- The spell line's own appearance. Separate from `bars` on purpose: the
         -- tooltip is a different surface at a different size, and a texture that
         -- reads well across a 90px cell often does not across a 14px line.
-        barTexture         = "Blizzard Raid Bar",  -- LSM "statusbar" key
+        barTexture         = "Ka0s Default",       -- LSM "statusbar" key
         barTextureFromSkin = true,                 -- the skin's `bar.texture`
         barSpacing         = 1,                    -- px between tooltip lines
         -- The fill and the backdrop each carry a color, a MODE and an opacity.
@@ -525,11 +531,13 @@ local WINDOW_TEMPLATE = {
         barAlpha           = 0.85,
         barBgColor         = { r = 0, g = 0, b = 0, a = 1 },
         barBgColorMode     = "custom",
+        barBgColorFromSkin = true,                 -- `mm.tipBarBg`, color and opacity, under `custom`
         barBgAlpha         = 0.1,
         barBorderStyle     = "None",               -- LSM "border" key
         barBorderStyleFromSkin = true,             -- the skin's `bar.borderStyle`
         barBorderSize      = 1,
         barBorderColor     = { r = 0, g = 0, b = 0, a = 1 },
+        barBorderColorFromSkin = true,             -- the skin's `bar.border`, under `custom`
         -- The mode beside that swatch (options-ui-§17). `class` is the HOVERED
         -- player's, like the bar's own mode two fields up.
         barBorderColorMode = "custom",             -- class | custom
@@ -537,16 +545,18 @@ local WINDOW_TEMPLATE = {
         -- Applied to the addon's own number slots AND to the tooltip's line
         -- FontStrings, which are SHARED with every other addon — so every line
         -- touched is restored when the tooltip hides. See modules/Tooltip.lua.
-        font               = "Friz Quadrata TT",
+        font               = "Ka0s Prototype",
         fontFromSkin       = true,                 -- the skin's `hud.font`
         fontSize           = 12,
         fontOutline        = "@skin",  -- From skin (D-07; NONE until v22) | NONE | OUTLINE | THICKOUTLINE | MONOCHROME
         -- Off, so the tooltip keeps the face it has always had.
         fontShadow         = false,
+        fontShadowFromSkin = true,                 -- the skin's `hud.shadow`
         -- Both number slots on a spell line. The amount used to be hardcoded
         -- gold and the share hardcoded white, which read as two kinds of number
         -- when they are one row's two figures.
         textColor          = { r = 1, g = 1, b = 1, a = 1 },
+        textColorFromSkin  = true,                 -- the skin's `hud.text`, under `custom`
         -- The HOVERED row's class. A tooltip is already about one player, which
         -- is what makes the question answerable here and not on the header.
         colorMode          = "custom",
@@ -892,6 +902,11 @@ NS.defaults = {
             -- default, so AceDB merges it into every profile; a stored mode is never migrated.
             outline     = "hud",
             pickerSeen  = false,
+            -- The record of the one move onto the skin (LibKa0s Skin.FollowOnce, FS-MM-FLIP): true once
+            -- this profile took it. NO SCHEMA ROW, KickCD's convention: nothing draws or sets it but the
+            -- step, so no Defaults button can put it back and run the step again over a companion the
+            -- player turned off. A profile reset does, against defaults that show nothing new.
+            fullSkinReset = false,
         },
     },
     global = {

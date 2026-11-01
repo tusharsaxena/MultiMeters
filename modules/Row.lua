@@ -709,6 +709,15 @@ local function textAlpha(text)
     return colorAlpha * setting
 end
 
+--- A cell's number color before any class or per-statistic mode: the skin's `hud.text` while
+--- `text.colorFromSkin` is on, out of the window's cached looks (R2), else the swatch. Nil looks,
+--- degraded, leave the swatch.
+local function cellTextRGB(window, text)
+    local skin = text.colorFromSkin == true and window.skinLooks and window.skinLooks.hudText
+    if skin then return skin[1], skin[2], skin[3] end
+    return RGBA(text.color, 1, 1, 1, 1)
+end
+
 --- @param entry table|nil  defaults to the cell's current row
 function Cell:ApplyNameColor(entry)
     if self.key ~= "name" then return end
@@ -756,7 +765,7 @@ function Cell:ApplyEntryTextColor(entry)
     -- first: an unknown class and a statistic with no palette entry are both "no
     -- color information", which is honestly answered by the color the player
     -- picked rather than by an invented hue.
-    local r, g, b = RGBA(text.color, 1, 1, 1, 1)
+    local r, g, b = cellTextRGB(self.window, text)
 
     if mode == "class" then
         local cr, cg, cb = ClassRGB(entry and entry.classFilename)
@@ -777,21 +786,18 @@ end
 function Cell:ApplyTextStyle(text)
     -- The face follows the skin (`hud.font` while `text.fontFromSkin` is on), and with it the size's
     -- HUD scale (D-09, NS.SkinHudFontSize); From skin flags follow the Font outline (D-07,
-    -- NS.SkinFontFlags). The shadow and color stay the player's (DECISIONS X4, D12).
+    -- NS.SkinFontFlags). The shadow and the color take their own companions (FS-MM-FLIP).
     local path = fontPath(NS.SkinMediaKey(text, "font", "hud.font"))
     local flags = NS.SkinFontFlags(text.outline)
     local size = NS.SkinHudFontSize(text.size or 11, text.fontFromSkin)
-    local tr, tg, tb = RGBA(text.color, 1, 1, 1, 1)
+    local tr, tg, tb = cellTextRGB(self.window, text)
     local ta = textAlpha(text)
-    local shadowX = text.shadow and 1 or 0
-    local shadowY = text.shadow and -1 or 0
 
-    self.left:SetFont(path, size, flags)
-    self.right:SetFont(path, size, flags)
+    local kept = self.window.skinLooks and self.window.skinLooks.keptShadow
+    NS.SkinHudFont(self.left, path, size, flags, text.shadow, text.shadowFromSkin, kept)
+    NS.SkinHudFont(self.right, path, size, flags, text.shadow, text.shadowFromSkin, kept)
     self.left:SetTextColor(tr, tg, tb, ta)
     self.right:SetTextColor(tr, tg, tb, ta)
-    self.left:SetShadowOffset(shadowX, shadowY)
-    self.right:SetShadowOffset(shadowX, shadowY)
 
     -- ON THE TWO FONTSTRINGS, NEVER ON THE BAR. `text.alpha` used to be
     -- multiplied into the StatusBar's own alpha, on the reasoning that the two

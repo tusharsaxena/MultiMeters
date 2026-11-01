@@ -351,7 +351,8 @@ test("NONE is an absent outline flag, not the literal string", function()
 
     local lines = spellLines(inst)
     local _, _, flags = lines[1].amount:GetFont()
-    assertEqual(flags, nil, "\"NONE\" was passed to SetFont as a flag string")
+    -- "" is S.HudFont's none: its nil is From skin (NS.SkinHudFont).
+    assertEqual(flags, "", "\"NONE\" was passed to SetFont as a flag string")
 end)
 
 test("Every tooltip line we restyled is put back when the tooltip hides", function()

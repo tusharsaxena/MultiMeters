@@ -333,8 +333,20 @@ end
 function FRAME.SetJustifyH(self, v) self.__justifyH = v; return self end
 function FRAME.GetJustifyH(self) return self.__justifyH end
 function FRAME.SetJustifyV(self, v) self.__justifyV = v; return self end
-function FRAME.SetShadowOffset(self, x, y) self.__shadow = { x, y }; return self end
-function FRAME.SetShadowColor(self, r, g, b, a) self.__shadowColor = { r, g, b, a }; return self end
+-- Recycled, as SetPoint's records are: S.HudFont writes both on every string of every config pass,
+-- and a table per call is this harness's allocation, not the client's C setter's (tests/perf.lua).
+function FRAME.SetShadowOffset(self, x, y)
+    local t = self.__shadow or {}
+    t[1], t[2] = x, y
+    self.__shadow = t
+    return self
+end
+function FRAME.SetShadowColor(self, r, g, b, a)
+    local t = self.__shadowColor or {}
+    t[1], t[2], t[3], t[4] = r, g, b, a
+    self.__shadowColor = t
+    return self
+end
 function FRAME.SetWordWrap(self, v) self.__wordWrap = v; return self end
 
 -- ── textures ───────────────────────────────────────────────────────────────
