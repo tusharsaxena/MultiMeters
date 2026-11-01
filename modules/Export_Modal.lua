@@ -136,12 +136,12 @@ local ROW_H        = 24
 local GEOM = {
     rowHeight         = ROW_H,
     rowGap            = 6,
-    metricTop         = 36,
-    channelTop        = 66,
-    linesTop          = 96,
-    whisperTop        = 126,
-    warningTop        = 158,
-    height            = 236,
+    metricTop         = 40,
+    channelTop        = 70,
+    linesTop          = 100,
+    whisperTop        = 130,
+    warningTop        = 162,
+    height            = 240,
 }
 GEOM.heightWithWhisper = GEOM.height + GEOM.rowHeight + GEOM.rowGap
 
@@ -151,7 +151,7 @@ local MODAL_WIDTH  = 372
 local MODAL_HEIGHT = GEOM.height
 local COPY_WIDTH   = 640
 local COPY_HEIGHT  = 420
-local TITLEBAR_H   = 26
+local TITLEBAR_H   = 30   -- `title.height`; S.TitleBar's `place` sets the skin's over it (cause L9)
 local EDIT_FALLBACK_WIDTH = 590
 
 -- Built lazily, kept forever.
@@ -791,10 +791,10 @@ local function EnsureFrame()
     -- the refusal line.
     if NS.Skin then
         NS.Skin.Shell(modal, { noTopBar = true })
-        NS.Skin.TitleBar(modal.titleBar, { text = modal.title })
+        NS.Skin.TitleBar(modal.titleBar, { text = modal.title, place = true })
         NS.Skin.Inset(whisperRow)
         NS.Skin.Text(whisperCaption, "accent")
-        NS.Skin.Font(whisperBox)
+        NS.Skin.EditBox(whisperBox)
         NS.Skin.Text(warning, "mm.warn")
     end
     modal:Hide()

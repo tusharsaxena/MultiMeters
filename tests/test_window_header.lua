@@ -456,33 +456,50 @@ local function withSegments(opts)
     return inst, window, cfg
 end
 
-test("Segment menu: stored segments first, then a divider, then Current/Overall", function()
+--- Pick the `n`th row of the skinned segment menu, as a click on it does.
+local function pickSegmentRow(window, n)
+    local dd = window.segmentDropdown
+    dd.onSelect(dd._options[n].value)
+end
+
+test("Segment menu: stored segments first, then Current/Overall", function()
     -- The reason to open this menu at all is almost always to look back at a
     -- fight that just ended, so the fights come first.
     local inst, window = withSegments()
+    assertTrue(window:OpenSegmentMenu(), "the menu must actually open")
+
+    local opts = window.segmentDropdown._options
+    assertEqual(#opts, 4)
+    assertEqual(opts[3].label, inst.NS.L["Current"])
+    assertEqual(opts[4].label, inst.NS.L["Overall"])
+end)
+
+test("Segment menu: under the restriction the client's menu keeps its title and divider", function()
+    -- red under: the fallback dropped, which leaves a mid-pull click with no menu at all.
+    local inst, window = withSegments()
+    inst.mocks.setRestricted(true)
     assertTrue(window:OpenSegmentMenu(), "the menu must actually open")
 
     local menu = inst.mocks.__lastMenu
     local kinds = {}
     for _, e in ipairs(menu.entries) do kinds[#kinds + 1] = e.kind end
     assertEqual(table.concat(kinds, ","), "title,button,button,divider,button,button")
-
-    assertEqual(menu:Nth("button", 3).text, inst.NS.L["Current"])
-    assertEqual(menu:Nth("button", 4).text, inst.NS.L["Overall"])
+    menu:Nth("button", 2).callback()
 end)
 
 test("Segment menu: an entry is labeled with its name AND its duration", function()
     local inst, window = withSegments()
     window:OpenSegmentMenu()
-    assertEqual(inst.mocks.__lastMenu:Nth("button", 1).text, "Bribed Guard   0:22")
+    assertTrue(inst ~= nil)
+    assertEqual(window.segmentDropdown._options[1].label, "Bribed Guard   0:22")
 end)
 
 test("Segment menu: picking a segment pins it and marks the window dirty", function()
-    local inst, window, cfg = withSegments()
+    local _, window, cfg = withSegments()
     window:OpenSegmentMenu()
     window.dirty = false
 
-    inst.mocks.__lastMenu:Nth("button", 2).callback()
+    pickSegmentRow(window, 2)
     assertEqual(cfg.data.sessionID, 5, "the SECOND stored segment, not the first")
     assertEqual(window.dirty, true, "a pinned segment has to redraw to take effect")
 end)
@@ -495,7 +512,7 @@ test("Segment menu: picking Current CLEARS the pin", function()
     window:SetSegment(4)
 
     window:OpenSegmentMenu()
-    inst.mocks.__lastMenu:Nth("button", 3).callback()
+    pickSegmentRow(window, 3)
 
     assertEqual(cfg.data.sessionID, inst.NS.Constants.NO_SEGMENT)
     assertEqual(cfg.data.sessionType, inst.NS.Constants.SESSION_TYPE.Current)
@@ -503,6 +520,7 @@ end)
 
 test("Segment menu: with no menu API the click is refused, not an error", function()
     local inst, window = withSegments()
+    inst.mocks.setRestricted(true)   -- the one window the client's menu still serves
     inst.mocks.MenuUtil = nil
     assertFalse(window:OpenSegmentMenu())
 end)

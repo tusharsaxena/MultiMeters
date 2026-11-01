@@ -1252,6 +1252,8 @@ local COLHEAD_BG_ROWS = compose("ColorPair", {
     omit = { useClassColorBgColor = true },
     defaults = { bgColor = { r = 0, g = 0, b = 0, a = 0 } },
     classColor = { source = "player" },
+    extra = { followRow("window.columnHeader.bgColorFromSkin", L["Use the skin's color"],
+        L["Draw the strip in the skin's list header color while the mode is Custom. The background color is kept but not read while this is on."]) },
 })
 dress(COLHEAD_BG_ROWS, {
     ["window.columnHeader.bgColor"] = {

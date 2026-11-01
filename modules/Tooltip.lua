@@ -292,6 +292,7 @@ local function tooltipConfig(window)
         textColor          = field("textColor", nil),
         textColorFromSkin  = field("textColorFromSkin", false),
         barTexture         = media("barTexture", "bar.texture", "Ka0s Default"),
+        barTextureFromSkin = field("barTextureFromSkin", false),
         barColor           = field("barColor", nil),
         barColorMode       = field("barColorMode", "class"),
         barAlpha           = field("barAlpha", 0.85),

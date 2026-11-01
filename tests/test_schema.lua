@@ -291,11 +291,11 @@ local PARTITION = {
     windows    = { { "Window", 1 } },
     frame      = { { "Size and position", 8 }, { "Quick style", 6 },
                    { "Background and border", 6 }, { "Rows", 8 } },
-    header     = { { "Title bar", 8 }, { "Title text", 9 }, { "Controls", 16 } },
-    bars       = { { "Bar", 17 }, { "Text", 14 }, { "Icons", 3 } },
+    header     = { { "Title bar", 8 }, { "Title text", 10 }, { "Controls", 16 } },
+    bars       = { { "Bar", 17 }, { "Text", 14 }, { "Icons", 4 } },
     tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 16 }, { "Text", 9 } },
     visibility = { { "Rules", 17 } },
-    columns    = { { "Column header", 11 } },
+    columns    = { { "Column header", 12 } },
 }
 
 test("Schema: every page's tabs are the designed ones, in order, at the designed size",
@@ -948,7 +948,7 @@ function()
             row.path .. " is on the Columns page but is not a column-header setting")
     end
     -- Nine: the eight that moved, and the face's "Use the skin's font" companion (skinning-§6).
-    assertEqual(onColumns, 11, "all eleven are column-header rows")
+    assertEqual(onColumns, 12, "all twelve are column-header rows")
 
     for _, row in ipairs(NS.SchemaForPage("header")) do
         assertFalse(row.path:find("^window%.columnHeader%.") and true or false,

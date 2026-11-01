@@ -388,6 +388,9 @@ local SUITES = {
     -- The colors, borders and shadows on the skin: the companions, Ka0s Default's pixels, a skin
     -- switch on the drawing setters, and the one per-profile step.
     "test_skin_flip",
+    -- The addon's own gaps: gloss, the header band and unit icon, the segment menu, the Columns
+    -- glyph, the small misses and the title bars.
+    "test_skin_fix",
     -- The font settings' minimum set, their From skin flags (S.FontFlags), the one-time v22 move
     -- and the HUD size scale (S.HudFontSize), LibKa0s v1.82.0.
     "test_skin_fonts",

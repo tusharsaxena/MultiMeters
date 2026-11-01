@@ -118,6 +118,36 @@ local function placeIcons(cell, slots, size, onRight, layout)
     end
 end
 
+--- The skin's icon border around the unit icon (cause A1). S.IconBorder draws on a frame and the icon
+--- is a bare texture, so a holder frame sits on it, built once and only for a window that asks. Its
+--- anchor is the texture, on a cell that may hold a secret: nothing reads this frame back (rule R3).
+--- Without the library there is no border to draw and no holder.
+---
+--- @param cell table  the name cell
+--- @param tex table   the unit icon's texture
+local function ensureIconBorder(cell, tex)
+    if cell.iconBorder or not NS.SKIN_LIVE then return end
+    local holder = CreateFrame("Frame", nil, cell.frame)
+    holder:SetAllPoints(tex)
+    holder:Hide()
+    NS.Skin.IconBorder(holder, { fromSkin = true })
+    cell.iconBorder = holder
+end
+
+--- Show the holder exactly while its icon shows and the companion is on. Remembers the answer, so a
+--- refresh tick that changes nothing makes no call.
+function Cell:SyncIconBorder()
+    local holder = self.iconBorder
+    if not holder then return end
+    local tex = self.icons and self.icons.unit
+    local icons = self.window.config.icons or {}
+    local on = (tex and tex:IsShown() and icons.borderFromSkin == true) and true or false
+    if on ~= self.iconBorderShown then
+        self.iconBorderShown = on
+        holder:SetShown(on)
+    end
+end
+
 --- Hide any icon texture the config has just turned off.
 ---
 --- Kept rather than destroyed: the pool's whole point is that widget creation
@@ -208,6 +238,7 @@ function Cell:ApplyIcons(layout)
     -- setting and the picture came straight back on the next refresh. The
     -- textures are kept (pooling), so the answer is a flag rather than a nil.
     self.iconsShown = #slots > 0
+    self.iconBorderShown = nil
     self.icons = self.icons or {}
 
     local onRight = (icons.position == "RIGHT")
@@ -443,5 +474,9 @@ function Cell:SetPlayer(entry, _sortKey)
 
     local icons = self.icons
     if not (icons and self.iconsShown) then return end
-    if icons.unit then drawUnitIcon(icons.unit, entry) end
+    if icons.unit then
+        drawUnitIcon(icons.unit, entry)
+        ensureIconBorder(self, icons.unit)
+        self:SyncIconBorder()
+    end
 end

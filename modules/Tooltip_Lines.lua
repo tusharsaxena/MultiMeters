@@ -179,6 +179,10 @@ local ruler = nil
 --- The width of one PLAIN string at one font, or nil if unmeasurable.
 ---
 --- @param text string  a literal of ours — never a caption, never a meter value
+local function slotFont(fs, style)
+    NS.SkinHudFont(fs, style.fontPath, style.fontSize, style.fontFlags, style.shadow, style.shadowFromSkin)
+end
+
 local function measureText(text, path, size, flags)
     if not ruler then
         local host = CreateFrame("Frame")
@@ -259,7 +263,11 @@ local function applySlotLayout(frame, style, mode)
         or measureText(EVENT_TIME_WIDEST, path, size, flags) or 0) + SLOT_RIGHT_PAD
 
     frame.time:Show()
-    frame.time:SetFont(path, size, flags)
+    -- The recap's two extra slots wear what the label beside them wears (cause L8): nothing colored
+    -- them, so they stayed GameTooltipText's stock color and shadow under every skin.
+    local tc = style.textColor
+    slotFont(frame.time, style)
+    frame.time:SetTextColor(tc[1], tc[2], tc[3])
     frame.time:SetWidth(timeWidth)
     frame.time:ClearAllPoints()
     -- The same inset the share slot keeps on the right, so the row's two edges
@@ -275,7 +283,8 @@ local function applySlotLayout(frame, style, mode)
     label:SetPoint("LEFT", frame.time, "RIGHT", SLOT_GAP, 0)
 
     frame.caster:Show()
-    frame.caster:SetFont(path, size, flags)
+    slotFont(frame.caster, style)
+    frame.caster:SetTextColor(tc[1], tc[2], tc[3])
     frame.caster:SetWidth(style.eventCasterWidth
         or charSpan(EVENT_CASTER_CHARS, path, size, flags))
     frame.caster:ClearAllPoints()
@@ -501,6 +510,7 @@ local function lineStyle(config, color)
         shadow         = config.fontShadow,
         shadowFromSkin = config.fontShadowFromSkin,
         texture    = mediaPath("statusbar", config.barTexture),
+        textureFromSkin = config.barTextureFromSkin,
         -- Size zero drops the FILE with it. A zero edgeSize with a texture still
         -- present is the combination WoW draws as a hard 1px line, which is the
         -- setting doing the opposite of what it says (modules/Window.lua says
@@ -574,10 +584,6 @@ end
 --- @param style table        a resolved style from `lineStyle`
 --- @param label string|nil   text for the carrier's own name slot (target lines);
 ---                           nil leaves it empty, which is what a spell line wants
-local function slotFont(fs, style)
-    NS.SkinHudFont(fs, style.fontPath, style.fontSize, style.fontFlags, style.shadow, style.shadowFromSkin)
-end
-
 local function drawLine(lineIndex, amount, share, value, max, style, label, mode)
     local name = GameTooltip:GetName()
     local left = name and _G[name .. "TextLeft" .. lineIndex]
@@ -665,6 +671,9 @@ local function drawLine(lineIndex, amount, share, value, max, style, label, mode
     -- re-stated every draw and not once at creation.
     local fill = b.GetStatusBarTexture and b:GetStatusBarTexture()
     if fill and fill.SetDrawLayer then fill:SetDrawLayer("BACKGROUND", 1) end
+    -- The skin's gloss (cause A3), every draw for the reason above: the fill is a new Texture. Its
+    -- companion is the texture's, so a player's own texture stays plain.
+    NS.Skin.BarGloss(b, style.textureFromSkin == true)
     if max == nil then
         b:SetMinMaxValues(0, 1)
     else

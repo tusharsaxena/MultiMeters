@@ -73,6 +73,9 @@ local DIVIDER_INSET = 2
 -- so the number only has to be wide enough for the longest string it can hold.
 local SESSION_LINE_WIDTH = 220
 
+-- The shared skinned menu (LibKa0s-Widgets-1.0), for the segment picker. Nil without the library.
+local W = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
+
 -- ---------------------------------------------------------------------------
 -- HEADER ART, AND THE TWO WAYS IT ALREADY FAILED
 -- ---------------------------------------------------------------------------
@@ -363,7 +366,10 @@ function WindowProto:ApplyTitle()
     frame.title:ClearAllPoints()
     frame.title:SetPoint("LEFT", frame, "TOPLEFT", 8, y)
     frame.title:SetPoint("RIGHT", frame, "TOPRIGHT", -self:HeaderRightInset(), y)
-    frame.title:SetJustifyH(header.align or "LEFT")
+    -- The skin's `title.align` while the companion is on (cause L9); the session line keeps its RIGHT
+    -- anchor, so the two never trade ends. Degraded, the token answers nothing.
+    frame.title:SetJustifyH(NS.Skin.Resolve("title.align", header.align or "LEFT", header.alignFromSkin == true)
+        or header.align or "LEFT")
     NS.SkinHudFont(frame.title, path, size, flags, header.shadow, header.shadowFromSkin,
         self.skinLooks and self.skinLooks.keptShadow)
     -- THE RED TEST MODE WORD marks test mode only where the strip does not: a
@@ -607,6 +613,8 @@ local function dressSortArrow(button, d, tr, tg, tb, ta)
         -- No SetTexCoord: two assets, not one flipped. The atlas branch
         -- below flips because it has only one arrow to flip.
         button.arrowTex:SetTexCoord(0, 1, 0, 1)
+        local arrow = d.sortArrow
+        if arrow then tr, tg, tb = arrow[1], arrow[2], arrow[3] end
         button.arrowTex:SetVertexColor(tr, tg, tb)
         button.arrowTex:Show()
         button.arrow:Hide()
@@ -738,6 +746,10 @@ function WindowProto:ApplyColumnHeaders()
     local perColumnBG = (colHeader.bgColorMode == "stat")
     local bgr, bgg, bgb, bga = surfaceColor(perColumnBG and "custom" or colHeader.bgColorMode,
         colHeader.bgColor, windowStat(self), 0, 0, 0, 0)
+    -- The skin's band while the companion is on, under `custom` only (cause A1).
+    local band = colHeader.bgColorMode == "custom" and colHeader.bgColorFromSkin == true
+        and self.skinLooks and self.skinLooks.headerBand
+    if band then bgr, bgg, bgb, bga = band[1], band[2], band[3], band[4] or 1 end
     self.headerBg:SetColorTexture(bgr, bgg, bgb, bga)
     self.headerBg:SetShown(not perColumnBG)
 
@@ -766,6 +778,8 @@ function WindowProto:ApplyColumnHeaders()
     d.font, d.size, d.flags = colFont, colSize, flags
     d.shadow, d.shadowFromSkin = colHeader.shadow, colHeader.shadowFromSkin
     d.colorMode, d.color = colHeader.colorMode, colHeader.color
+    -- `icon.arrow` while the label follows the skin (cause L8); otherwise the arrow wears the label's.
+    d.sortArrow = skinLabel and self.skinLooks.sortArrow or nil
     d.hr, d.hg, d.hb, d.ha = hr, hg, hb, ha
     d.perColumnBG, d.bgColor = perColumnBG, colHeader.bgColor
     d.bgr, d.bgg, d.bgb, d.bga = bgr, bgg, bgb, bga
@@ -1127,18 +1141,79 @@ function WindowProto:SetSessionType(sessionType)
     self:MarkDirty()
 end
 
+-- The two synthetic entries' menu values; a stored segment's value is its session id.
+local SEGMENT_CURRENT, SEGMENT_OVERALL = "Current", "Overall"
+
+--- The shared menu's button for this window: built once, never shown, because the header's control is
+--- what the player clicks. It exists to own the menu: the anchor below the session line, the skin
+--- owner, and the choice. A window hidden by a route that is no click closes the menu with it.
+local function segmentDropdown(window)
+    local dd = window.segmentDropdown
+    if dd then return dd end
+    dd = W.Dropdown(window.frame, SESSION_LINE_WIDTH, { owner = NS.name })
+    dd:SetHeight(1)
+    dd:SetPoint("TOPRIGHT", window.sessionLine, "BOTTOMRIGHT", 0, 0)
+    dd:Hide()
+    dd.onSelect = function(value)
+        if value == SEGMENT_CURRENT then
+            window:SetSessionType(Const.SESSION_TYPE.Current)
+        elseif value == SEGMENT_OVERALL then
+            window:SetSessionType(Const.SESSION_TYPE.Overall)
+        else
+            window:SetSegment(value)
+        end
+    end
+    if window.frame.HookScript then
+        window.frame:HookScript("OnHide", function() W.CloseMenu() end)
+    end
+    window.segmentDropdown = dd
+    return dd
+end
+
+--- Stored segments, newest first, then the two synthetic entries, on the skinned menu, the entry the
+--- window shows marked. It has no title or divider row: the widget draws neither.
+function WindowProto:OpenSkinnedSegmentMenu(sessions)
+    local dd = segmentDropdown(self)
+    local options = {}
+    for _, entry in ipairs(sessions) do
+        if type(entry) == "table" and entry.sessionID ~= nil then
+            options[#options + 1] = { value = entry.sessionID, label = segmentLabel(entry) }
+        end
+    end
+    options[#options + 1] = { value = SEGMENT_CURRENT, label = L["Current"] }
+    options[#options + 1] = { value = SEGMENT_OVERALL, label = L["Overall"] }
+    dd:SetOptions(options)
+
+    local data = self.config.data or {}
+    local active = NS.Database.PinnedSegment(data)
+    if active == nil then
+        active = data.sessionType == Const.SESSION_TYPE.Overall and SEGMENT_OVERALL or SEGMENT_CURRENT
+    end
+    dd:SelectValue(active)
+    dd:GetScript("OnClick")(dd)
+    return true
+end
+
 --- Open the header's segment dropdown.
 ---
 --- Stored segments first, newest first as the API returns them, then a divider,
 --- then the two synthetic entries. That order matches what the player is
 --- reaching for: the reason to open this menu at all is almost always to look
 --- back at a fight that just ended.
+---
+--- THE SKINNED MENU, EXCEPT WHILE A LABEL MAY BE SECRET (cause A2). W.Dropdown's menu measures every
+--- row and concatenates it, which raises on a secret in tainted code, and a stored session's name
+--- and duration are secret under the Combat restriction. The client's menu draws a secret, so it
+--- stays for exactly that window. It also stays on an install without the library.
 function WindowProto:OpenSegmentMenu()
     local Provider = mod("Provider")
     if not (Provider and Provider.GetAvailableSessions) then return false end
 
     local sessions = Provider.GetAvailableSessions()
     local data = self.config.data or {}
+
+    local restricted = NS.Secrets and NS.Secrets.IsRestricted and NS.Secrets.IsRestricted()
+    if W and W.Dropdown and not restricted then return self:OpenSkinnedSegmentMenu(sessions) end
 
     return NS.Compat.OpenContextMenu(self.sessionLine, function(_, root)
         root:CreateTitle(L["Segment"])

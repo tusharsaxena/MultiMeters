@@ -647,6 +647,10 @@ function Cell:ApplyBarSkin(bars)
     -- implementations land on top of it: the flat one at OVERLAY, the art at
     -- BORDER. The text is OVERLAY and stays above both.
     if fill and fill.SetDrawLayer then fill:SetDrawLayer("BACKGROUND", 1) end
+
+    -- The skin's gloss (cause A3), once the bar has its texture; a skin change needs no call. Its
+    -- companion is the texture's: a player's own texture stays plain.
+    NS.Skin.BarGloss(bar, bars ~= nil and bars.textureFromSkin == true)
     -- fillDirection "LEFT" means the bar GROWS rightward from the left edge,
     -- which is SetReverseFill(false). The setting is named for where the fill
     -- starts because that is what a player looking at the window sees.

@@ -225,6 +225,10 @@ local WINDOW_LOOKS = {
     hudLabel     = "hud.label",    -- columnHeader.colorFromSkin
     barBorder    = "bar.border",   -- bars.borderColorFromSkin
     keptShadow   = "mm.hudShadow", -- the shadow the title and the cells keep (NS.SkinHudFont)
+    headerBand   = "list.header.bg", -- columnHeader.bgColorFromSkin (cause A1)
+    sortArrow    = "icon.arrow",   -- the sort arrow, while its label follows the skin (cause L8)
+    closeRest    = "close.rest",   -- the close control under the Skin modes (cause L8)
+    closeHot     = "close.hot",
 }
 
 -- The two that have a facade getter of their own (LibKa0s Options doc, Moving to this version).
@@ -239,7 +243,8 @@ local CLEAR_WHEN_UNSET = { titleBg = true }
 -- look (DEGRADED-11), as NS.SkinMediaKey falls back to the stored pick.
 local CHROME_LOOKS = {
     winBg = true, titleText = true, titleBg = true, controlRest = true, controlHover = true,
-    hudText = true, hudLabel = true, barBorder = true, keptShadow = true,
+    hudText = true, hudLabel = true, barBorder = true, keptShadow = true, headerBand = true,
+    sortArrow = true, closeRest = true, closeHot = true,
 }
 
 --- True while the live seam owns this addon's skin (set at the foot of this file); false on the
@@ -295,7 +300,8 @@ end
 --- The colors and shadows have their own companions since FS-MM-FLIP, read through NS.SkinWindowLooks,
 --- Tooltip_Lines' lineStyle and NS.SkinHudFont. Read
 --- on ApplyConfig and on a tooltip's build, never on the refresh path (R2). NOT S.BarTexture: it
---- reads a StatusBar's color back on every repaint, and a cell holds a secret (DECISIONS D6).
+--- reads a StatusBar's color back on every repaint, and a cell holds a secret (DECISIONS D6). S.BarGloss
+--- is safe beside it: it reads no value or color off the bar, only the fill Texture to anchor to.
 function NS.SkinMediaKey(group, key, token)
     if type(group) ~= "table" then return nil end
     local stored, S = group[key], NS.Skin

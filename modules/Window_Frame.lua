@@ -22,7 +22,7 @@
 -- it. It publishes NS.SurfaceColor, which modules/Window_Header.lua resolves at
 -- file scope, so it MUST load before that file.
 
-local _, NS = ...
+local addonName, NS = ...
 
 local Const = NS.Constants
 local L     = NS.L
@@ -394,6 +394,7 @@ function WindowProto:BuildFrame()
         local layout = self.layout or self:BuildLayout()
         self.grip = NS.MakeResizable(anchor, {
             gripParent   = frame,
+            owner        = addonName,   -- `icon.grip`, under every skin that sets one (cause L8)
             minWidth     = layout.minWidth,
             minHeight    = layout.minHeight,
             canResize    = function() return not self.locked end,
@@ -479,7 +480,8 @@ function WindowProto:ApplyConfig()
     self.notice:SetPoint("TOPLEFT", self.body, "TOPLEFT", 4, -8)
     self.notice:SetPoint("TOPRIGHT", self.body, "TOPRIGHT", -4, -8)
     self.notice:SetFont(fontPath(NS.SkinMediaKey(cfg.header or {}, "font", "hud.font")),
-        NS.SkinHudFontSize((cfg.text or {}).size or 11, (cfg.header or {}).fontFromSkin), "")
+        NS.SkinHudFontSize((cfg.text or {}).size or 11, (cfg.header or {}).fontFromSkin),
+        NS.SkinFontFlags((cfg.header or {}).outline) or "")
     -- The notice's text in the skin's highlight (white under Ka0s Default, the
     -- stock FontString color it always drew); re-run on every skin switch.
     if NS.SkinColor then self.notice:SetTextColor(NS.SkinColor("text.highlight")) end

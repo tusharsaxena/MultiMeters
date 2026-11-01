@@ -557,14 +557,16 @@ end
 ---
 --- `skin`, THE SHIPPED MODE ON BOTH (MM-A1, DECISIONS D4), is the skin's
 --- `icon.tint` at rest and `btn.hover` under the pointer, out of the window's
---- cached skinLooks (`looks`), so a hover reads no token. Not S.CloseButton for
---- the close control: its hover is `close.hot` red, beside six gold siblings.
+--- cached skinLooks (`looks`), so a hover reads no token. The close control takes
+--- `close.rest` and `close.hot` there (cause L8, which overrules MM-A1's D4), as the
+--- library's own closes do, so two closes on one screen answer one way.
 ---
 --- @param frameCfg table
 --- @param hovered boolean
 --- @param looks table|nil  the window's skinLooks
+--- @param isClose boolean|nil  this is the close control
 --- @return number r, number g, number b
-local function controlColor(frameCfg, hovered, looks)
+local function controlColor(frameCfg, hovered, looks, isClose)
     local r, g, b
     if hovered then
         r, g, b = color(frameCfg.controlHoverColor, 1, 0.82, 0)
@@ -583,7 +585,9 @@ local function controlColor(frameCfg, hovered, looks)
         mode = frameCfg.controlColorMode
     end
 
-    local skin = mode == "skin" and looks and looks[hovered and "controlHover" or "controlRest"]
+    local field = hovered and "controlHover" or "controlRest"
+    if isClose then field = hovered and "closeHot" or "closeRest" end
+    local skin = mode == "skin" and looks and looks[field]
     if skin then return skin[1], skin[2], skin[3] end
 
     if mode == "class" and NS.PlayerClassRGB then
@@ -684,7 +688,7 @@ end
 --- work nobody asked for.
 local function applyTint(button, control, window, frameCfg)
     local hovered = (window.hoveredControl == control.key)
-    local r, g, b = controlColor(frameCfg, hovered, window.skinLooks)
+    local r, g, b = controlColor(frameCfg, hovered, window.skinLooks, control.key == "close")
 
     -- FULL BRIGHTNESS IN EITHER STATE. This used to re-dim the "off" half of a
     -- two-state icon to 0.45 on every hover pass, which is the other half of the

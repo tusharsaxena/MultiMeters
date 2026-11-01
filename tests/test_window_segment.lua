@@ -128,7 +128,8 @@ test("Segment: picking a stored segment writes the pin through the seam for ITS 
     local seen = heardConfig(NS)
 
     window:OpenSegmentMenu()
-    inst.mocks.__lastMenu:Nth("button", 2).callback()
+    local dd = window.segmentDropdown
+    dd.onSelect(dd._options[2].value)
 
     assertEqual(cfg.data.sessionID, 5)
     assertEqual(#seen, 1, "one change, announced once")

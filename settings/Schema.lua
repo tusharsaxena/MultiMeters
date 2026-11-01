@@ -588,8 +588,15 @@ NS.Schema = {
         path = "window.header.align", type = "string", default = "LEFT",
         values = ALIGN_VALUES, sorting = ALIGN_SORT,
         page = "header", group = L["Title text"],
+        disabledIf = "window.header.alignFromSkin",
         startsLine = true,
         label = L["Text alignment"], desc = L["Where the window's title and the fight name beside it sit horizontally."],
+    },
+    -- Its "Use the skin's ..." companion (cause L9): `title.align` while on.
+    {
+        path = "window.header.alignFromSkin", type = "bool", default = true,
+        page = "header", group = L["Title text"],
+        label = L["Use the skin's alignment"], desc = L["Place the title where the skin places a title. The alignment above is kept but not read while this is on."],
     },
     -- ── The meter's controls (issue #6) ────────────────────────────────────
     -- ON THE HEADER PAGE, which is where a player looks for them. They were on
@@ -913,6 +920,11 @@ NS.Schema = {
         values = SIDE_VALUES, sorting = SIDE_SORT,
         page = "bars", group = L["Icons"],
         label = L["Icon position"], desc = L["Which side of the player's name the icons sit on."],
+    },
+    {
+        path = "window.icons.borderFromSkin", type = "bool", default = true,
+        page = "bars", group = L["Icons"],
+        label = L["Use the skin's icon border"], desc = L["Draw the skin's icon border around the icon. Off, the icon has no border."],
     },
     {
         path = "window.icons.size", type = "number", default = 14,

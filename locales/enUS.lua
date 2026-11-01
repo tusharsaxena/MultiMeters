@@ -809,6 +809,15 @@ L["Reload your interface (/reload) to finish changing the skin."] =
 L["Use the skin's font"] = "Use the skin's font"
 L["Use the skin's texture"] = "Use the skin's texture"
 L["Use the skin's border"] = "Use the skin's border"
+-- The title alignment, icon border and header band companions (FS-MM-FIX).
+L["Use the skin's alignment"] = "Use the skin's alignment"
+L["Use the skin's icon border"] = "Use the skin's icon border"
+L["Place the title where the skin places a title. The alignment above is kept but not read while this is on."] =
+    "Place the title where the skin places a title. The alignment above is kept but not read while this is on."
+L["Draw the skin's icon border around the icon. Off, the icon has no border."] =
+    "Draw the skin's icon border around the icon. Off, the icon has no border."
+L["Draw the strip in the skin's list header color while the mode is Custom. The background color is kept but not read while this is on."] =
+    "Draw the strip in the skin's list header color while the mode is Custom. The background color is kept but not read while this is on."
 -- The colors' and shadows' companions (FS-MM-FLIP).
 L["Use the skin's color"] = "Use the skin's color"
 L["Use the skin's shadow"] = "Use the skin's shadow"
