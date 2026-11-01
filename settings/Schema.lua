@@ -419,6 +419,14 @@ NS.Schema = {
         page = "frame", group = L["Rows"], subgroup = L["Highlighting"],
         label = L["Highlight yourself"], desc = L["Mark your own row so it stands out at a glance."],
     },
+    -- The two rows' "Use the skin's ..." companions (cause D4): a skin's look shows with the setting
+    -- off, as a skin's border shows with Show border off.
+    {
+        path = "window.rows.highlightSelfFromSkin", type = "bool", default = true,
+        page = "frame", group = L["Rows"], subgroup = L["Highlighting"],
+        label = L["Use the skin's row marker"],
+        desc = L["Mark your own row in a skin that draws a marker, even with Highlight yourself off. Ka0s Default draws none."],
+    },
     {
         path = "window.rows.mouseoverHighlight", type = "bool", default = true,
         page = "frame", group = L["Rows"], subgroup = L["Highlighting"],
@@ -433,6 +441,12 @@ NS.Schema = {
         page = "frame", group = L["Rows"], subgroup = L["Highlighting"],
         label = L["Alternating background"],
         desc = L["Shade every other row slightly so the grid is easier to read across. Sits behind each cell's bar background (Windows > Bars > Bar), so a strong tint there will hide it."],
+    },
+    {
+        path = "window.rows.alternatingBackgroundFromSkin", type = "bool", default = true,
+        page = "frame", group = L["Rows"], subgroup = L["Highlighting"],
+        label = L["Use the skin's row stripe"],
+        desc = L["Shade every other row in a skin that draws a stripe, even with Alternating background off. Ka0s Default draws none."],
     },
 
     -- ── Header ────────────────────────────────────────────────────

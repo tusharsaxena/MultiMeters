@@ -290,7 +290,7 @@ local PARTITION = {
     -- background companion (MM-A1) one more in Title bar.
     windows    = { { "Window", 1 } },
     frame      = { { "Size and position", 8 }, { "Quick style", 6 },
-                   { "Background and border", 6 }, { "Rows", 8 } },
+                   { "Background and border", 6 }, { "Rows", 10 } },
     header     = { { "Title bar", 8 }, { "Title text", 10 }, { "Controls", 16 } },
     bars       = { { "Bar", 17 }, { "Text", 14 }, { "Icons", 4 } },
     tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 16 }, { "Text", 9 } },

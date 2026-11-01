@@ -78,7 +78,16 @@ local function markGlyph(tex, enabled)
     })
 end
 
-NS.ColumnBlocksInternals = { markGlyph = markGlyph }
+--- The glyph as the drag's carried copy draws it: the same mark in the same tint, the client's art
+--- while the panel is stock. The library's ghost takes a path and a color, so S.Mark cannot reach it.
+--- @return string path, table|nil color  nil leaves the ghost its own tint
+local function ghostGlyph(enabled)
+    local mark = not NS.SkinPanelStock() and NS.Icon and NS.Icon(enabled and "confirm" or "close")
+    if not mark then return enabled and ENABLED_TEX or DISABLED_TEX, nil end
+    return mark, { NS.SkinPanelColor(enabled and "sem.good" or "sem.bad") }
+end
+
+NS.ColumnBlocksInternals = { markGlyph = markGlyph, ghostGlyph = ghostGlyph }
 
 --- The library, or nil on an install without it.
 local function widgets()
@@ -190,8 +199,8 @@ local function applyBlock(block, index, item, spec)
     -- last render's promise.
     block.mmEnabled = item.enabled and true or false
 
-    block.mmGlyphTexture = item.enabled and ENABLED_TEX or DISABLED_TEX
-    block.mmGlyph:SetNormalTexture(block.mmGlyphTexture)
+    block.mmGlyphTexture, block.mmGlyphColor = ghostGlyph(block.mmEnabled)
+    block.mmGlyph:SetNormalTexture(item.enabled and ENABLED_TEX or DISABLED_TEX)
     markGlyph(block.mmGlyph.GetNormalTexture and block.mmGlyph:GetNormalTexture(), block.mmEnabled)
 
     block.mmLabel:SetText(item.label or "")
@@ -294,7 +303,7 @@ end
 --- Hand one block to the library as a row, and record its handle on the block.
 ---
 --- The ghost's furniture comes off the same item the block was applied from --
---- `block.mmGlyphTexture` is the value applyBlock just set, not a re-derivation,
+--- `block.mmGlyphTexture` and its color are what applyBlock just set, not a re-derivation,
 --- so the copy under the cursor says what the row says.
 local function registerRow(list, block, item)
     -- A HIDDEN COLUMN IS NOT DRAGGABLE. The order of the hidden group is real -- it is
@@ -312,6 +321,7 @@ local function registerRow(list, block, item)
         dimmed         = not item.enabled,
         ghostText      = item.label,
         ghostIcon      = block.mmGlyphTexture,
+        ghostIconColor = block.mmGlyphColor,
         ghostTextColor = { NS.SkinPanelColor(item.enabled and "text.accent" or "text.disabled") },
         height         = NS.BLOCK_HEIGHT,
     })

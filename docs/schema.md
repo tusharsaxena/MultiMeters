@@ -470,7 +470,7 @@ schema validator.
 
 **Following the skin** (skinning-§6). Every HUD media pick in the template has a "Use the skin's
 ..." companion beside it, `<key>FromSkin`, **true** in the template (DECISIONS X3): `header`,
-`columnHeader`, `text` and `tooltip` `.fontFromSkin` (the skin's `hud.font`), `bars.textureFromSkin`
+`columnHeader`, `text` and `tooltip` `.fontFromSkin` (the skin's `hud.font`, `font.title` for `header`), `bars.textureFromSkin`
 and `tooltip.barTextureFromSkin` (`bar.texture`), and `bars.borderStyleFromSkin` and
 `tooltip.barBorderStyleFromSkin` (`bar.borderStyle`). While a companion is on, the pick beside it is
 kept but not read (`NS.SkinMediaKey`), so turning it off brings the pick back. Each border's companion
@@ -769,7 +769,8 @@ The Rows page is gone; the paths did not move with it.
 
 `maxRows = 0` (0 means "as many as fit the frame"; a positive value caps it, hard-ceilinged at
 `Constants.MAX_ROWS = 40`) · `height = 16` · `spacing = 1` · `growthDirection = "DOWN"` ·
-`alwaysShowSelf = true` · `highlightSelf = **false**` · `alternatingBackground = **false**` ·
+`alwaysShowSelf = true` · `highlightSelf = **false**` · `highlightSelfFromSkin = true` ·
+`alternatingBackground = **false**` · `alternatingBackgroundFromSkin = true` ·
 `mouseoverHighlight = true`.
 
 `alwaysShowSelf` spends the last visible slot on the local player rather than growing the list, so
@@ -781,7 +782,9 @@ draws (`layout.maxRows` of them from the scroll offset), so the pin holds on the
 **The two row decorations ship OFF, and the other two on that tab ship ON**, which is one
 distinction rather than four decisions. A meter's job is telling rows apart by their numbers;
 `highlightSelf` and `alternatingBackground` shade rows for reasons that are not the numbers, so they
-are the player's to ask for. `alwaysShowSelf` changes *which* rows are on screen rather than how they
+are the player's to ask for under Ka0s Default. Every other skin draws its own stripe and edge with
+both off while `alternatingBackgroundFromSkin` and `highlightSelfFromSkin` are on (cause D4, the rule
+`bars.borderStyleFromSkin` follows for a border); Ka0s Default's tokens for them are clear. `alwaysShowSelf` changes *which* rows are on screen rather than how they
 are painted, and `mouseoverHighlight` answers the *cursor* — it appears where the player is pointing
 and leaves with them. Changing a default does not change a stored value: an existing profile that had
 either switched on keeps it, and only a profile that never touched the key follows the new default.

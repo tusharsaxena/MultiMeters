@@ -153,7 +153,8 @@ local function onColumnClick(button)
     if inst then inst:SortByColumn(button.mmKey) end
 end
 
---- The font every line of the header strip is drawn in: the player's face, its
+--- The font every line of the header strip is drawn in: the player's face or the
+--- skin's title face (NS.SkinTitleFontKey, cause L8), its
 --- size (the skin's HUD scale while the face follows it, D-09), and the outline flag
 --- WoW wants as nil rather than as the string "NONE" (From skin through the Font
 --- outline, D-07).
@@ -164,7 +165,7 @@ end
 --- @return string path, number size, string|nil flags
 local function headerFont(header)
     local flags = NS.SkinFontFlags(header.outline)
-    return fontPath(NS.SkinMediaKey(header, "font", "hud.font")),
+    return fontPath(NS.SkinTitleFontKey(header)),
         NS.SkinHudFontSize(header.size or 12, header.fontFromSkin), flags
 end
 

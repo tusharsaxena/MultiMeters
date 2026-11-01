@@ -334,6 +334,9 @@ local WINDOW_TEMPLATE = {
         -- apart by their numbers. A decoration that shades a row for a reason
         -- unrelated to the numbers is one the player should ask for.
         highlightSelf         = false,
+        -- The skin's edge with the setting off (cause D4): Ka0s Default has none, so this draws
+        -- nothing there, as a border style of None draws nothing for `bars.borderStyleFromSkin`.
+        highlightSelfFromSkin = true,
         -- Shade every other row so the grid is easier to read across. A ROW-level
         -- fact, which is why it lives here — but it is EDITED on the Bars page,
         -- beside the per-cell tint it competes with, because choosing between the
@@ -349,6 +352,8 @@ local WINDOW_TEMPLATE = {
         -- rather than the numbers -- it appears where the player is pointing and
         -- leaves with them.
         alternatingBackground = false,
+        -- The skin's stripe with the setting off (cause D4), none under Ka0s Default.
+        alternatingBackgroundFromSkin = true,
         mouseoverHighlight    = true,
     },
 

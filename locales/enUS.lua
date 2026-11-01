@@ -818,6 +818,13 @@ L["Draw the skin's icon border around the icon. Off, the icon has no border."] =
     "Draw the skin's icon border around the icon. Off, the icon has no border."
 L["Draw the strip in the skin's list header color while the mode is Custom. The background color is kept but not read while this is on."] =
     "Draw the strip in the skin's list header color while the mode is Custom. The background color is kept but not read while this is on."
+-- The row marker and stripe companions (cause D4).
+L["Use the skin's row marker"] = "Use the skin's row marker"
+L["Use the skin's row stripe"] = "Use the skin's row stripe"
+L["Mark your own row in a skin that draws a marker, even with Highlight yourself off. Ka0s Default draws none."] =
+    "Mark your own row in a skin that draws a marker, even with Highlight yourself off. Ka0s Default draws none."
+L["Shade every other row in a skin that draws a stripe, even with Alternating background off. Ka0s Default draws none."] =
+    "Shade every other row in a skin that draws a stripe, even with Alternating background off. Ka0s Default draws none."
 -- The colors' and shadows' companions (FS-MM-FLIP).
 L["Use the skin's color"] = "Use the skin's color"
 L["Use the skin's shadow"] = "Use the skin's shadow"

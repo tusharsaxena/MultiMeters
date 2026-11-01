@@ -489,7 +489,8 @@ local function lineStyle(config, color)
     local bgAlpha = alphaOf(config.barBgAlpha, 0.1)
     -- Under Custom only: `mm.tipBarBg` is a whole color, opacity included, so the stored opacity is
     -- not read beside it, and a class or per-statistic backdrop keeps that opacity.
-    if config.barBgColorFromSkin == true and config.barBgColorMode == "custom" then
+    -- Live only: a degraded facade answers owner tokens from their defaults, over the stored color.
+    if config.barBgColorFromSkin == true and config.barBgColorMode == "custom" and NS.SKIN_LIVE then
         local r, g, b, a = S.Color("mm.tipBarBg")
         if r then br, bg_, bb, bgAlpha = r, g, b, a or 1 end
     end

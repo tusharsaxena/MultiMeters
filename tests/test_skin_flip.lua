@@ -18,7 +18,7 @@ local NEW_COMPANIONS = {
     "text.colorFromSkin", "columnHeader.colorFromSkin", "tooltip.textColorFromSkin",
     "bars.borderColorFromSkin", "tooltip.barBorderColorFromSkin", "tooltip.barBgColorFromSkin",
     "header.shadowFromSkin", "columnHeader.shadowFromSkin", "text.shadowFromSkin",
-    "tooltip.fontShadowFromSkin",
+    "tooltip.fontShadowFromSkin", "rows.highlightSelfFromSkin", "rows.alternatingBackgroundFromSkin",
 }
 local FLAGS = { "header.outline", "columnHeader.outline", "text.outline", "tooltip.fontOutline", "fontOutline" }
 
@@ -132,6 +132,30 @@ local function storedWindow(id)
 end
 
 -- ── the rows and the defaults ────────────────────────────────────────────────────────────────
+
+--- Every leaf under `t` for which `keep(leaf name, value)` answers true, as a dotted path.
+local function leaves(t, keep, prefix, into)
+    for k, v in pairs(t) do
+        local path = prefix and (prefix .. "." .. k) or k
+        if type(v) == "table" then leaves(v, keep, path, into) elseif keep(k, v) then into[#into + 1] = path end
+    end
+    return into
+end
+
+test("Skin flip: the one step's list is every companion and flag a window has, and nothing else", function()
+    -- A list that loops over itself cannot miss an entry, so this one comes from the template.
+    -- red under: a companion or a flags key added to the template and left off FOLLOW_ONCE_KEYS,
+    -- which leaves every existing profile off the skin for that key, or a stale entry.
+    local NS = T.load{}.NS
+    local want = leaves(NS.WINDOW_TEMPLATE, function(k, v)
+        return v == "@skin" or (k:match("FromSkin$") and type(v) == "boolean")
+    end, nil, {})
+    assertTrue(#want > 20, "the walk found no companions, so this proves nothing")
+    local got = { unpack(NS.Database.FOLLOW_ONCE_KEYS) }
+    table.sort(want)
+    table.sort(got)
+    assertEqual(table.concat(got, "\n"), table.concat(want, "\n"))
+end)
 
 test("Skin flip: every new companion ships on, in the template and as a row, and governs no swatch", function()
     -- red under: a companion missing from the template or the schema, or one a swatch is disabled by

@@ -121,6 +121,8 @@ end
 --- The skin's icon border around the unit icon (cause A1). S.IconBorder draws on a frame and the icon
 --- is a bare texture, so a holder frame sits on it, built once and only for a window that asks. Its
 --- anchor is the texture, on a cell that may hold a secret: nothing reads this frame back (rule R3).
+--- A frame here is what modules/Row_Border.lua avoids, and under a skin whose `icon.borderStyle` is
+--- art S.IconBorder calls SetBackdrop on it, so docs/smoke-tests.md's SKIN-34 checks it mid-pull.
 --- Without the library there is no border to draw and no holder.
 ---
 --- @param cell table  the name cell
@@ -244,6 +246,8 @@ function Cell:ApplyIcons(layout)
     local onRight = (icons.position == "RIGHT")
     placeIcons(self, slots, size, onRight, layout)
     hideUnusedIcons(self, slots)
+    -- SetPlayer returns early with the icons off, so this pass is the one that takes the border down.
+    self:SyncIconBorder()
 
     local consumed = iconsInset(slots, size)
     placeNameText(self, layout, consumed, onRight)

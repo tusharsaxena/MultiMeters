@@ -84,6 +84,7 @@ NS.Row = Row
 --- NS.SkinWindowLooks on every ApplyConfig, so a row never reads a token, R2), or its Ka0s Default
 --- pixel when the window has none yet.
 local LOOK_DEFAULT = {
+    -- skinStripe and skinSelfEdge have none: no look is no skin to draw them.
     rowHover  = { 1, 1, 1, 0.10 },
     rowStripe = { 1, 1, 1, 0.05 },
     selfEdge  = { 1, 0.82, 0, 1 },
@@ -92,6 +93,24 @@ local LOOK_DEFAULT = {
 local function look(window, field)
     local looks = window and window.skinLooks
     return (looks and looks[field]) or LOOK_DEFAULT[field]
+end
+
+--- The stripe an even row draws, or nil. The player's setting, else the skin's while the companion is
+--- on (cause D4); `mm.skinStripe` is clear under Ka0s Default, which ships no stripe.
+local function stripeLook(window, rows)
+    if rows.alternatingBackground then return look(window, "rowStripe") end
+    if rows.alternatingBackgroundFromSkin ~= true then return nil end
+    local stripe = look(window, "skinStripe")
+    return (stripe and stripe[4] > 0) and stripe or nil
+end
+
+--- True when the "this row is you" edge draws: the player's setting, or a skin's while the companion
+--- is on (cause D4). Ka0s Default's `mm.skinSelfEdge` is clear, so it draws none.
+local function selfEdgeOn(window, rows)
+    if rows.highlightSelf then return true end
+    if rows.highlightSelfFromSkin ~= true then return false end
+    local edge = look(window, "skinSelfEdge")
+    return (edge and edge[4] > 0) and true or false
 end
 
 --- The number formatter (modules/Format.lua).
@@ -1163,7 +1182,7 @@ function RowProto:ApplyLayout(layout)
     -- Both colors are the window's cached skin looks (`text.accent`, `mm.rowHover`), re-read by
     -- the ApplyConfig every OnLooksChanged runs, so a skin switch repaints them here.
     local edge, hover = look(self.window, "selfEdge"), look(self.window, "rowHover")
-    self.selfHighlight:SetColorTexture(edge[1], edge[2], edge[3], rows.highlightSelf and 1 or 0)
+    self.selfHighlight:SetColorTexture(edge[1], edge[2], edge[3], selfEdgeOn(self.window, rows) and 1 or 0)
     self.mouseHighlight:SetColorTexture(hover[1], hover[2], hover[3], hover[4])
     self.mouseHighlight:SetShown(false)
 end
@@ -1193,8 +1212,8 @@ function RowProto:Update(entry, index)
     --
     -- What is left here is the alternating stripe, which is a ROW-level fact.
     local rows = self.window.config.rows or {}
-    if rows.alternatingBackground and index % 2 == 0 then
-        local stripe = look(self.window, "rowStripe")
+    local stripe = index % 2 == 0 and stripeLook(self.window, rows)
+    if stripe then
         self.bg:SetColorTexture(stripe[1], stripe[2], stripe[3], stripe[4])
         self.bg:Show()
     else
@@ -1205,7 +1224,7 @@ function RowProto:Update(entry, index)
     -- `isLocalPlayer`. Reading both is one `or` here against a bug report about
     -- a highlight that works in the grid and not in a breakdown.
     local isSelf = entry.isPlayer or entry.isLocalPlayer
-    self.selfHighlight:SetShown((rows.highlightSelf and isSelf) and true or false)
+    self.selfHighlight:SetShown((isSelf and selfEdgeOn(self.window, rows)) and true or false)
 
     self.nameCell:SetPlayer(entry, self.window.sortColumn)
 

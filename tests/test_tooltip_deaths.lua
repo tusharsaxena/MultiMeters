@@ -699,6 +699,16 @@ test("Tooltip: an event's time, spell and caster are three separate slots", func
     assertEqual(last.caster:GetText(), "Merektha")
 end)
 
+test("Tooltip: the caster slot takes the tooltip's text color", function()
+    -- red under: no SetTextColor on the slot, which leaves it on the pooled string's last color.
+    local inst, cfg, anchor, row = deathBench{ lastSource = "Merektha" }
+    cfg.tooltip.textColor = { r = 0.2, g = 0.4, b = 0.6, a = 1 }
+    cfg.tooltip.textColorFromSkin = false
+    inst.NS.Tooltip:SpellTooltip(row, anchor, cfg)
+    local r, g, b = spellLines(inst)[2].caster:GetTextColor()
+    assertEqual(string.format("%.1f,%.1f,%.1f", r, g, b), "0.2,0.4,0.6")
+end)
+
 test("Tooltip: each slot has a reserved width, so a long name cannot push the numbers off", function()
     -- The widths are fixed and the engine clips into them. Measuring the names
     -- to size the columns is what rule R3 forbids — a caption is secret mid-pull.

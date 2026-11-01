@@ -29,7 +29,7 @@ local function scene(configure, opts)
     window:ApplyConfig()
     local row = window:Acquire()
     row:ApplyLayout(window.layout)
-    return inst, NS, window, row, cfg, inst.mocks.LibStub("LibKa0s-Skin-1.0")
+    return inst, NS, window, row, cfg, inst.mocks.LibStub("LibKa0s-Skin-1.0", true)
 end
 
 local function statCell(row)
@@ -81,16 +81,13 @@ test("Gloss: a bar with the player's own texture stays plain under Glass", funct
 end)
 
 test("Gloss: the tooltip's spell bars take it too, on their own companion", function()
+    -- red under: lineStyle dropping the companion. The draw itself: tests/test_tooltip_lines.lua.
     local _, NS, _, _, cfg = scene()
-    local seen = {}
-    local real = NS.Skin.BarGloss
-    NS.Skin.BarGloss = function(_, fromSkin) seen[#seen + 1] = fromSkin end
     local style = NS.TooltipInternals.lineStyle(NS.TooltipInternals.tooltipConfig(cfg), nil)
     assertEqual(style.textureFromSkin, true)
     cfg.tooltip.barTextureFromSkin = false
     style = NS.TooltipInternals.lineStyle(NS.TooltipInternals.tooltipConfig(cfg), nil)
     assertEqual(style.textureFromSkin, false)
-    NS.Skin.BarGloss = real
 end)
 
 -- ── A1: the header band and the unit icon ────────────────────────────────────────────────────
@@ -262,4 +259,201 @@ test("L9: the Export modal's title bar is the skin's height", function()
     local NS = inst.NS
     assertEqual(NS.Export.__geometry.metricTop, 40)
     assertEqual(NS.Export.__geometry.height, 240)
+end)
+
+-- ── Review pins: each case reads what was drawn, through the real path ──────────────────────
+
+--- The first skin past Ka0s Default whose `pick(S)` answers true, chosen, or a failed case.
+local function chooseSkin(NS, Skin, pick, what)
+    for _, def in ipairs(Skin:Skins()) do
+        if def.key ~= "ka0s" then
+            Skin:SetChoice(OWNER, "ka0s", def.key)
+            if pick(NS.Skin) then return def.key end
+        end
+    end
+    assertTrue(false, "no skin " .. what)
+end
+
+--- A row with its config applied, as a settings change leaves it.
+local function reapply(window, row)
+    window:ApplyConfig()
+    row:ApplyLayout(window.layout)
+end
+
+local PLAYER = { guid = "Player-1-0000000A", name = "Alpha", classFilename = "MAGE", isPlayer = true, values = {} }
+PLAYER.cells = PLAYER.values
+
+test("A1: turning Show icons off takes the border down through the settings path", function()
+    -- red under: no SyncIconBorder in ApplyIcons, since SetPlayer returns early with the icons off.
+    local _, _, window, row, cfg = scene()
+    row:Update(PLAYER, 1)
+    local cell = row.nameCell
+    assertTrue(cell.iconBorder:IsShown(), "the border never came up, so this proves nothing")
+    cfg.icons.showIcon = false
+    reapply(window, row)
+    row:Update(PLAYER, 1)
+    assertFalse(cell.icons.unit:IsShown(), "the icon stayed")
+    assertFalse(cell.iconBorder:IsShown(), "an empty border")
+end)
+
+test("A1: the companion off takes the border down with no new row drawn", function()
+    -- red under: the border left up until the next SetPlayer.
+    local _, _, window, row, cfg = scene()
+    row:Update(PLAYER, 1)
+    cfg.icons.borderFromSkin = false
+    reapply(window, row)
+    assertFalse(row.nameCell.iconBorder:IsShown(), "the companion off")
+    cfg.icons.borderFromSkin = true
+    reapply(window, row)
+    assertTrue(row.nameCell.iconBorder:IsShown(), "the companion back on")
+end)
+
+test("D4: Ka0s Default draws no stripe and no self edge with both settings off", function()
+    -- red under: the companions reading `mm.rowStripe` or `text.accent`, which moves its pixels.
+    local _, _, _, row = scene()
+    row:Update(PLAYER, 2)
+    assertFalse(row.bg:IsShown(), "a stripe under Ka0s Default")
+    assertFalse(row.selfHighlight:IsShown(), "an edge under Ka0s Default")
+end)
+
+test("D4: a skin draws its stripe and self edge with both settings off", function()
+    -- red under: alternatingBackground or highlightSelf still the only gate.
+    local _, NS, window, row, _, Skin = scene()
+    Skin:SetChoice(OWNER, "ka0s", "obsidian")
+    reapply(window, row)
+    row:Update(PLAYER, 2)
+    assertTrue(row.bg:IsShown(), "no stripe")
+    sameColor(row.bg.__colorTexture, NS.Skin.Token("list.stripe"), "the stripe is the skin's list.stripe")
+    assertTrue(row.selfHighlight:IsShown(), "no edge")
+    local accent = NS.Skin.Token("text.accent")
+    sameColor(row.selfHighlight.__colorTexture, { accent[1], accent[2], accent[3], 1 }, "the edge")
+    row:Update(PLAYER, 1)
+    assertFalse(row.bg:IsShown(), "an odd row")
+end)
+
+test("D4: each companion off gives its row back to its setting, under a skin", function()
+    -- red under: a companion nothing reads.
+    local _, _, window, row, cfg, Skin = scene()
+    Skin:SetChoice(OWNER, "ka0s", "obsidian")
+    cfg.rows.alternatingBackgroundFromSkin = false
+    cfg.rows.highlightSelfFromSkin = false
+    reapply(window, row)
+    row:Update(PLAYER, 2)
+    assertFalse(row.bg:IsShown(), "the stripe stayed")
+    assertFalse(row.selfHighlight:IsShown(), "the edge stayed")
+    cfg.rows.alternatingBackground = true
+    cfg.rows.highlightSelf = true
+    reapply(window, row)
+    row:Update(PLAYER, 2)
+    assertTrue(row.bg:IsShown(), "the setting draws it")
+    assertTrue(row.selfHighlight:IsShown(), "the setting draws it")
+end)
+
+test("D4: without the library the companions draw nothing", function()
+    -- red under: the looks answered by the degraded arm, or a nil look raising on the row.
+    local _, _, _, row = scene(nil, { libFiles = {} })
+    row:Update(PLAYER, 2)
+    assertFalse(row.bg:IsShown(), "a stripe with no skin")
+    assertFalse(row.selfHighlight:IsShown(), "an edge with no skin")
+end)
+
+test("L8: the header strip draws the skin's title face, and the player's without the companion", function()
+    -- red under: hud.font under the title. Azeroth's title face is not its HUD face.
+    local _, NS, window, _, cfg, Skin = scene()
+    local faces = {}
+    local real = NS.SkinHudFont
+    NS.SkinHudFont = function(fs, face, ...)
+        faces[fs] = face
+        return real(fs, face, ...)
+    end
+    Skin:SetChoice(OWNER, "ka0s", "azeroth")
+    assertFalse(NS.Skin.Token("font.title") == NS.Skin.Token("hud.font"), "the case is moot")
+    local title = NS.WindowFontPath(NS.Skin.Token("font.title"))
+    window:ApplyConfig()
+    assertEqual(faces[window.frame.title], title)
+    assertEqual(faces[window.sessionText], title, "the strip's second string left the title's face")
+
+    Skin:SetIgnore(OWNER, nil, true)
+    assertEqual(NS.Skin.Token("hud.font"), nil, "Ignore fonts is not on")
+    window:ApplyConfig()
+    assertEqual(faces[window.frame.title], NS.WindowFontPath(cfg.header.font), "Ignore fonts")
+    Skin:SetIgnore(OWNER, nil, false)
+
+    cfg.header.fontFromSkin = false
+    window:ApplyConfig()
+    NS.SkinHudFont = real
+    assertEqual(faces[window.frame.title], NS.WindowFontPath(cfg.header.font), "the player's face")
+end)
+
+test("L8: the sort arrow draws its own look, not its label's", function()
+    -- Every shipped skin's icon.arrow is its hud.label, so the cached look is moved apart by hand.
+    -- red under: the arrow keeping the label's tint.
+    local _, _, window = scene()
+    window.skinLooks.sortArrow = { 0.1, 0.2, 0.3, 1 }
+    window:ApplyColumnHeaders()
+    local found
+    for _, button in ipairs(window.columnHeaders) do
+        if button.arrowTex and button.arrowTex:IsShown() then found = button.arrowTex end
+    end
+    assertTrue(found ~= nil, "no arrow drawn")
+    sameColor(found.__vertexColor, { 0.1, 0.2, 0.3 }, "the sort arrow")
+end)
+
+test("D4: a skin's border art takes the class tint with Show border off", function()
+    -- No shipped skin names art, so Resolve answers as one that does.
+    -- red under: the re-tint gated on `bars.border`, which is off under a skin's own border.
+    local inst, NS, _, row, cfg = scene(function(c)
+        c.bars.border, c.bars.borderColorMode = false, "class"
+    end)
+    local real = NS.Skin.Resolve
+    NS.Skin.Resolve = function(kind, value, fromSkin)
+        if kind == "bar.borderStyle" and fromSkin then return "Blizzard Tooltip" end
+        return real(kind, value, fromSkin)
+    end
+    local cell = statCell(row)
+    local painted
+    cell.frame.SetBackdropBorderColor = function(_, ...) painted = { ... } end
+    cell:ApplyBorder(cfg.bars)
+    NS.Skin.Resolve = real
+    assertTrue(cell.borderShown, "the skin's border did not show")
+    painted = nil
+    cell:ApplyEntryBorderColor({ classFilename = "MAGE" })
+    assertTrue(painted ~= nil, "no re-tint")
+    local c = inst.mocks.RAID_CLASS_COLORS.MAGE
+    sameColor(painted, { c.r, c.g, c.b }, "the class color")
+end)
+
+test("D4: the tooltip's bar border thickness is the skin's while its style follows", function()
+    -- red under: the stored size past the companion.
+    local _, NS, _, _, cfg, Skin = scene(function(c) c.tooltip.barBorderSize = 7 end)
+    chooseSkin(NS, Skin, function(S) return S.Token("bar.borderSize") ~= 7 end, "off the stored 7")
+    local tipConfig = NS.TooltipInternals.tooltipConfig
+    assertEqual(tipConfig(cfg).barBorderSize, NS.Skin.Token("bar.borderSize"))
+    cfg.tooltip.barBorderStyleFromSkin = false
+    assertEqual(tipConfig(cfg).barBorderSize, 7, "the player's own")
+end)
+
+test("D4: with no library the tooltip bar's backdrop is the player's color and opacity", function()
+    -- red under: the degraded facade's owner default, 0,0,0,0.10, over the stored swatch.
+    local _, NS, _, _, cfg = scene(function(c)
+        c.tooltip.barBgColor, c.tooltip.barBgAlpha = { r = 0.2, g = 0.3, b = 0.4, a = 1 }, 0.6
+        c.tooltip.barBgColorMode = "custom"
+    end, { libFiles = {} })
+    assertEqual(cfg.tooltip.barBgColorFromSkin, true, "the fixture needs the companion on")
+    local style = NS.TooltipInternals.lineStyle(NS.TooltipInternals.tooltipConfig(cfg), nil)
+    sameColor(style.barBgColor, { 0.2, 0.3, 0.4, 0.6 }, "the stored backdrop")
+end)
+
+test("L9: the Export modal's title bar places its own text", function()
+    -- red under: S.TitleBar without `place`, which leaves the title where the build put it.
+    local inst = T.load{}
+    local NS = inst.NS
+    local seen
+    local real = NS.Skin.TitleBar
+    NS.Skin.TitleBar = function(bar, o) seen = o; return real(bar, o) end
+    local modal = NS.Export.Open(NS.Database.GetWindows()[1])
+    NS.Skin.TitleBar = real
+    assertTrue(seen ~= nil, "no S.TitleBar")
+    assertEqual(seen.place, true)
+    assertEqual(seen.text, modal.title)
 end)

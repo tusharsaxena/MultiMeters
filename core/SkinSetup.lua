@@ -47,6 +47,8 @@ local addonName, NS = ...
 --                           so a literal that became a token keeps its arity on Ka0s Default.
 --   NS.SkinEscape(name)     a color token as a "|cffrrggbb" escape, rounded to the byte, so markup
 --                           written as a literal keeps its bytes on Ka0s Default (|cff9d9d9d).
+--   NS.SkinPanelStock()     true while this addon's settings pages draw the client's own look.
+--   NS.SkinTitleFontKey(h)  the header strip's face: `font.title` while it follows the skin.
 --   NS.SkinPanelColor(name) NS.SkinColor for a color this addon paints on its own settings pages:
 --                           the stock (host copy) pixel while the owner ignores its settings panel.
 --   NS.SkinWindowLooks(t)   the colors and escapes a meter window draws on its refresh path (the
@@ -144,6 +146,11 @@ NS.SKIN_TOKENS = {
     -- The meter's own drop shadow, on the title and the cells: this addon ships one where Ka0s
     -- Default's `hud.shadow` is none, so its 1, -1 in black stands there (NS.SkinHudFont).
     ["mm.hudShadow"] = { default = { 0, 0, 0, 1 }, follow = "hud.shadow" },
+    -- The stripe and the "this row is you" edge a skin draws with both settings off (cause D4,
+    -- rows.<key>FromSkin). Clear under Ka0s Default, which ships neither, so its pixels do not move.
+    -- Clear is the look here, as a border style of None is for NS.SkinBorderShown.
+    ["mm.skinStripe"]   = { default = { 1, 1, 1, 0 }, follow = "list.stripe" },
+    ["mm.skinSelfEdge"] = { default = { 1, 0.82, 0, 0 }, follow = "text.accent" },
 }
 
 -- The Ka0s Default library tokens the DEGRADED facade answers, copied from the library and limited
@@ -206,6 +213,13 @@ function NS.SkinPanelColor(name)
     return NS.SkinColor(name)
 end
 
+--- True when this addon's settings pages draw the client's own look: the owner ignores its panel, or
+--- there is no library to skin them. For art a page hands to a widget that S.Mark cannot reach.
+function NS.SkinPanelStock()
+    return not NS.SKIN_LIVE or not (Skin and type(Skin.GetIgnore) == "function")
+        or Skin:GetIgnore(addonName) == true
+end
+
 -- The colors a meter window reads on its refresh path: field, token. A token the skin answers
 -- nothing for falls back to its Ka0s Default pixel (the owner token's default, or the host copy).
 local WINDOW_LOOKS = {
@@ -229,6 +243,9 @@ local WINDOW_LOOKS = {
     sortArrow    = "icon.arrow",   -- the sort arrow, while its label follows the skin (cause L8)
     closeRest    = "close.rest",   -- the close control under the Skin modes (cause L8)
     closeHot     = "close.hot",
+    -- The rows' companions (cause D4): clear under Ka0s Default, which is "draw none".
+    skinStripe   = "mm.skinStripe",
+    skinSelfEdge = "mm.skinSelfEdge",
 }
 
 -- The two that have a facade getter of their own (LibKa0s Options doc, Moving to this version).
@@ -244,7 +261,7 @@ local CLEAR_WHEN_UNSET = { titleBg = true }
 local CHROME_LOOKS = {
     winBg = true, titleText = true, titleBg = true, controlRest = true, controlHover = true,
     hudText = true, hudLabel = true, barBorder = true, keptShadow = true, headerBand = true,
-    sortArrow = true, closeRest = true, closeHot = true,
+    sortArrow = true, closeRest = true, closeHot = true, skinStripe = true, skinSelfEdge = true,
 }
 
 --- True while the live seam owns this addon's skin (set at the foot of this file); false on the
@@ -310,6 +327,17 @@ function NS.SkinMediaKey(group, key, token)
         if v ~= nil then return v end
     end
     return stored
+end
+
+--- The LSM key the header strip draws, its title and the fight name beside it: the skin's `font.title`
+--- while the face follows the skin (cause L8), so one strip wears one face and a skin's title face
+--- reaches it. Every other case is NS.SkinMediaKey's answer. `hud.font` answering nothing is Ignore
+--- fonts, which `font.title` is not gated by, so it is read first.
+function NS.SkinTitleFontKey(header)
+    local stored = NS.SkinMediaKey(header, "font", "hud.font")
+    if not NS.SKIN_LIVE or type(header) ~= "table" or header.fontFromSkin ~= true then return stored end
+    if NS.Skin.Token("hud.font") == nil then return stored end
+    return NS.Skin.Token("font.title") or stored
 end
 
 --- A border's thickness, from its stored one: the skin's `bar.borderSize` while `fromSkin`, the border

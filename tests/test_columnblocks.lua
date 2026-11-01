@@ -579,6 +579,50 @@ function()
     assertEqual(tip, "1.000,1.000,1.000", "an ignored panel's glyph tip is the stock white")
 end)
 
+test("Blocks: the carried copy wears the block's mark and tint with the Scope cleared, the art without", function()
+    -- red under: the ReadyCheck path on the ghost, which the library draws as given.
+    local inst = T.load()
+    local NS = inst.NS
+    local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0")
+    Skin:SetIgnore("MultiMeters", false, nil)
+    local _, _, ctx = render(inst)
+    local rows = ctx.mmReorder.rows
+    assertEqual(rows[1].ghostIcon, NS.Icon("confirm"))
+    assertEqual(rows[4].ghostIcon, NS.Icon("close"))
+    local good = { NS.Skin.Color("sem.good") }
+    assertEqual(rows[1].ghostIconColor[1], good[1])
+    assertEqual(rows[1].ghostIconColor[2], good[2])
+
+    Skin:SetIgnore("MultiMeters", true, nil)
+    _, _, ctx = render(inst)
+    rows = ctx.mmReorder.rows
+    assertEqual(rows[1].ghostIcon, "Interface\\RaidFrame\\ReadyCheck-Ready")
+    assertEqual(rows[4].ghostIcon, "Interface\\RaidFrame\\ReadyCheck-NotReady")
+    assertEqual(rows[1].ghostIconColor, nil, "the client's art takes no tint of ours")
+end)
+
+test("Blocks: a block's glyph and label go through S.Mark and S.Text on every apply", function()
+    -- red under: the render dropping either call, which leaves the page stock with the Scope cleared.
+    local inst = T.load()
+    local NS = inst.NS
+    local marks, texts = {}, {}
+    local realMark, realText = NS.Skin.Mark, NS.Skin.Text
+    NS.Skin.Mark = function(tex, o) marks[#marks + 1] = { tex = tex, o = o }; return realMark(tex, o) end
+    NS.Skin.Text = function(fs, token, o) texts[#texts + 1] = { fs = fs, token = token, o = o }; return realText(fs, token, o) end
+    local blocks = render(inst)
+    NS.Skin.Mark, NS.Skin.Text = realMark, realText
+
+    assertEqual(#marks, #blocks)
+    assertEqual(marks[1].tex, blocks[1].mmGlyph:GetNormalTexture())
+    assertEqual(marks[1].o.token, "sem.good")
+    assertEqual(marks[4].o.token, "sem.bad")
+    assertEqual(#texts, #blocks)
+    assertEqual(texts[1].fs, blocks[1].mmLabel)
+    assertEqual(texts[1].token, "text.accent")
+    assertEqual(texts[4].token, "text.disabled")
+    assertEqual(texts[1].o.panel, true)
+end)
+
 test("Blocks: every hidden row is registered, so the indices the library moves are the real ones",
 function()
     -- The half the handle case cannot see. `draggable = false` returns nil from AddRow, so a split

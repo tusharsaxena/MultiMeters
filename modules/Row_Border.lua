@@ -172,7 +172,8 @@ end
 --- anchored to this StatusBar would inherit its secretness the moment the bar is
 --- handed a value (rule R3), and would then be one more thing nobody may
 --- measure; a texture is a leaf, exactly like the cell's two FontStrings, and
---- nothing ever reads one back.
+--- nothing ever reads one back. The unit icon's border is the exception, on a child frame because
+--- S.IconBorder draws on a frame (ensureIconBorder in modules/Row_NameCell.lua).
 ---
 --- Built on FIRST USE and kept forever after, like every other widget in
 --- modules/Row.lua — a player toggling the setting off does not destroy them, because the
@@ -191,9 +192,9 @@ end
 --- THE BACKDROP GOES ON THE BAR, NOT ON A CHILD FRAME, and that distinction is
 --- rule R3's: a child frame anchored to a StatusBar that has been handed a secret
 --- inherits its secret anchoring, while a backdrop is textures the frame owns.
---- Nothing here reads anything back either way. It is still the one place this
---- addon decorates a frame that carries meter values, which is why it is opt-in
---- and why docs/smoke-tests.md asks for it to be checked mid-pull.
+--- Nothing here reads anything back either way. This and the icon's holder are
+--- the two places this addon decorates a frame on a cell that carries meter
+--- values, which is why docs/smoke-tests.md asks for both to be checked mid-pull.
 function Cell:ApplyBorder(bars)
     -- Show border, or a skin that names border art (NS.SkinBorderShown, cause D4). Recorded for the
     -- per-row re-tint below, which must not read a setting ApplyBorder already decided.

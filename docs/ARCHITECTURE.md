@@ -305,8 +305,8 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
 
 - **The seam.** `core/SkinSetup.lua` registers the owner `"MultiMeters"` (the folder name) at file load
   with its read and write seams (`NS.SkinChoice`, `NS.WriteSkinChoice`, both through the schema seam)
-  and its six owner tokens (`NS.SKIN_TOKENS`: `mm.rowHover`, `mm.rowStripe`, `mm.tipHint`, `mm.dim`,
-  `mm.testWord`, `mm.warn`), each holding the exact pixel Ka0s Default drew before and following the
+  and its ten owner tokens (`NS.SKIN_TOKENS`: `mm.rowHover`, `mm.rowStripe`, `mm.tipHint`, `mm.dim`,
+  `mm.testWord`, `mm.warn`, `mm.tipBarBg`, `mm.hudShadow`, `mm.skinStripe`, `mm.skinSelfEdge`), each holding the exact pixel Ka0s Default drew before and following the
   nearest library role token under every other skin (X1, X2, X12). It publishes `NS.Skin` (the owner's
   facade) and the call-site helpers `NS.SkinColor`, `NS.SkinEscape`, `NS.SkinWindowLooks`, `NS.SkinMediaKey`,
   `NS.SkinPaintAce` and `NS.SkinPaintAceTree`. Its degraded arm answers every facade name, its colors
@@ -348,7 +348,9 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   empty state, the session line's dim notes (`mm.dim`) and the TEST MODE word (`mm.testWord`) read
   tokens, and both mode strips are handed the owner. The rows' hover wash (`mm.rowHover`), their
   alternating stripe (`mm.rowStripe`), the self edge (`text.accent`) and a classless name
-  (`text.highlight`) follow the skin too, each Ka0s Default's old pixel. `RefreshUpvalues` resolves
+  (`text.highlight`) follow the skin too, each Ka0s Default's old pixel. With both settings off a skin
+  still draws its stripe and edge through `rows.alternatingBackgroundFromSkin` and
+  `rows.highlightSelfFromSkin` (`mm.skinStripe`, `mm.skinSelfEdge`), which are clear under Ka0s Default. `RefreshUpvalues` resolves
   them, the chrome's five `skin` colors and the session line's two escapes, once into the window's `skinLooks`
   (`NS.SkinWindowLooks`), so no row and no refresh pass reads a token (R2).
 - **The HUD** (skinning-§6; X4 reversed by the owner's rulings of 2026-11-01, FS-MM-FLIP). The face,
@@ -359,7 +361,7 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   `GameTooltipText` back. `mm.hudShadow` and `mm.tipBarBg` keep this addon's pixels under Ka0s Default.
   `S.BarGloss` draws gloss on cell and tooltip bars (A3): it reads no value or color off a bar, so it
   is safe on a cell holding a secret, where `S.BarTexture` is not. Each HUD media picker has the composer's "Use the skin's ..." companion beside it
-  (`<key>FromSkin`: `header`, `columnHeader`, `text`, `tooltip` `.fontFromSkin` follow `hud.font`;
+  (`<key>FromSkin`: `columnHeader`, `text`, `tooltip` `.fontFromSkin` follow `hud.font`, `header.fontFromSkin` `font.title`;
   `bars.textureFromSkin` and `tooltip.barTextureFromSkin` follow `bar.texture`;
   `bars.borderStyleFromSkin` and `tooltip.barBorderStyleFromSkin` follow `bar.borderStyle`), default
   on for every new window (X3), and the Quick style tab carries a meta pair that broadcasts them

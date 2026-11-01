@@ -921,7 +921,7 @@ local function applyLineFont(fontString, index, path, size, flags, shadow, shado
     -- is: GameTooltip is shared, and the line we are dressing may carry another addon's shadow.
     fontedLines[index] = { fs = fontString, path = path, size = size, flags = flags,
                            shadow = shadow, shadowFromSkin = shadowFromSkin,
-                           recolored = textColor ~= nil }
+                           recolored = textColor ~= nil, textColor = textColor }
 
     if State.debug and fontString.GetFont then
         local gotPath, gotSize, gotFlags = fontString:GetFont()
@@ -994,6 +994,10 @@ local function reapplyFonts()
     for _, entry in pairs(fontedLines) do
         if entry.fs.SetFont then
             NS.SkinHudFont(entry.fs, entry.path, entry.size, entry.flags, entry.shadow, entry.shadowFromSkin)
+            -- S.HudFont ends in SetFontObject, which takes the object's color, and the object has
+            -- none: the color goes back after it, or the name leaves the amount beside it (D2).
+            local c = entry.textColor
+            if c and entry.fs.SetTextColor then entry.fs:SetTextColor(c[1], c[2], c[3]) end
         end
     end
     sampleFontAfterShow()

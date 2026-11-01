@@ -948,6 +948,7 @@ Database.FOLLOW_ONCE_KEYS = {
     "header.shadowFromSkin", "columnHeader.shadowFromSkin", "text.shadowFromSkin",
     "tooltip.fontShadowFromSkin",
     "columnHeader.bgColorFromSkin", "icons.borderFromSkin", "header.alignFromSkin",
+    "rows.highlightSelfFromSkin", "rows.alternatingBackgroundFromSkin",
     "header.outline", "columnHeader.outline", "text.outline", "tooltip.fontOutline", "fontOutline",
 }
 

@@ -1714,7 +1714,7 @@ Total.
 - The half-size gap survives the post-layout pass
 - The gap is restored with every other line it was applied alongside
 
-### test_tooltip_lines.lua (38)
+### test_tooltip_lines.lua (41)
 
 - A spell line carries a real class-colored BAR, not a run of characters
 - Bars are released between hovers, never stacked
@@ -1745,6 +1745,9 @@ Total.
 - The tooltip's own bar texture is used, not the grid's
 - Tooltip text takes the HOVERED player's class color when asked
 - With the class color off, the tooltip keeps its configured text color
+- The spell name keeps its color after the post-Show re-font
+- The post-Show re-font goes through S.HudFont, so a shared line keeps its shadow
+- A spell bar takes the skin's gloss on its own companion, on the draw
 - Tooltip shadow reaches the line, and survives the post-Show re-font
 - The tooltip puts a SHARED line's shadow back when it lets go
 - A bar border is applied when asked and cleared off the POOLED line when not
@@ -1781,7 +1784,7 @@ Total.
 - A tooltip resolves its window from row.windowId when it was not handed one
 - Tooltip:Hide is unconditional
 
-### test_tooltip_deaths.lua (57)
+### test_tooltip_deaths.lua (58)
 
 - Tooltip: hovering a death row lists its events, OLDEST first
 - Tooltip: a death row never reaches the client's spell tooltip
@@ -1809,6 +1812,7 @@ Total.
 - Tooltip: a cell for a player who has NOT died is unchanged
 - Tooltip: the death breakdown gets the same gap and caption every section has
 - Tooltip: an event's time, spell and caster are three separate slots
+- Tooltip: the caster slot takes the tooltip's text color
 - Tooltip: each slot has a reserved width, so a long name cannot push the numbers off
 - Tooltip: the amount slot carries the damage ALONE
 - Tooltip: a spell line gets its slots BACK after an event line used them
@@ -2555,8 +2559,9 @@ Total.
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
 
-### test_skin_flip.lua (18)
+### test_skin_flip.lua (19)
 
+- Skin flip: the one step's list is every companion and flag a window has, and nothing else
 - Skin flip: every new companion ships on, in the template and as a row, and governs no swatch
 - Skin flip: the picks' defaults are the Ka0s picks, in the template and on the rows
 - Skin flip: the border groups put the thickness on the skin with the style
@@ -2576,7 +2581,7 @@ Total.
 - Skin flip: a new profile takes the step against a template that shows nothing new
 - Skin flip: without the library the step sets the companions by hand and writes the record
 
-### test_skin_fix.lua (15)
+### test_skin_fix.lua (27)
 
 - Gloss: a cell draws the skin's gloss while its texture follows the skin
 - Gloss: a bar with the player's own texture stays plain under Glass
@@ -2593,6 +2598,18 @@ Total.
 - L8: the Export whisper box is a skinned input
 - L9: the title takes the skin's alignment while its companion is on
 - L9: the Export modal's title bar is the skin's height
+- A1: turning Show icons off takes the border down through the settings path
+- A1: the companion off takes the border down with no new row drawn
+- D4: Ka0s Default draws no stripe and no self edge with both settings off
+- D4: a skin draws its stripe and self edge with both settings off
+- D4: each companion off gives its row back to its setting, under a skin
+- D4: without the library the companions draw nothing
+- L8: the header strip draws the skin's title face, and the player's without the companion
+- L8: the sort arrow draws its own look, not its label's
+- D4: a skin's border art takes the class tint with Show border off
+- D4: the tooltip's bar border thickness is the skin's while its style follows
+- D4: with no library the tooltip bar's backdrop is the player's color and opacity
+- L9: the Export modal's title bar places its own text
 
 ### test_skin_fonts.lua (14)
 
@@ -2662,7 +2679,7 @@ Total.
 
 - glyphs: display strings use only characters every shipped skin face draws
 
-### test_columnblocks.lua (36)
+### test_columnblocks.lua (38)
 
 - Blocks: one block per item, each carrying its index and its label
 - Blocks: the glyph says enabled or disabled, and clicking it toggles
@@ -2690,6 +2707,8 @@ Total.
 - Blocks: the label is gold when the column is shown and gray when it is not
 - Blocks: the carried copy says the same thing the row does
 - Blocks: the page's own colors stand down with Ignore settings panel, and follow the skin without it
+- Blocks: the carried copy wears the block's mark and tint with the Scope cleared, the art without
+- Blocks: a block's glyph and label go through S.Mark and S.Text on every apply
 - Blocks: every hidden row is registered, so the indices the library moves are the real ones
 - Blocks: the geometry handed to the library is the published pair, not a private copy
 - Blocks: the handle offers the localized drag tooltip, and the cataloged icon
@@ -2882,9 +2901,9 @@ Total.
 | test_row_mouse.lua | 17 |
 | test_targets.lua | 28 |
 | test_tooltip.lua | 20 |
-| test_tooltip_lines.lua | 38 |
+| test_tooltip_lines.lua | 41 |
 | test_tooltip_builders.lua | 23 |
-| test_tooltip_deaths.lua | 57 |
+| test_tooltip_deaths.lua | 58 |
 | test_drilldown.lua | 59 |
 | test_export.lua | 94 |
 | test_export_modal.lua | 32 |
@@ -2909,15 +2928,15 @@ Total.
 | test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
-| test_skin_flip.lua | 18 |
-| test_skin_fix.lua | 15 |
+| test_skin_flip.lua | 19 |
+| test_skin_fix.lua | 27 |
 | test_skin_fonts.lua | 14 |
 | test_skin_window.lua | 13 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
 | test_glyphs.lua | 1 |
-| test_columnblocks.lua | 36 |
+| test_columnblocks.lua | 38 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
 | test_degraded.lua | 38 |
@@ -2926,4 +2945,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **2484** |
+| **Total** | **2503** |
