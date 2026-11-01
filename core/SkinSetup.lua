@@ -358,9 +358,7 @@ end
 --- Degraded, the stub hands the stored toggle back.
 function NS.SkinBorderShown(bars)
     if type(bars) ~= "table" then return false end
-    local _, show = NS.Skin.BarBorder(bars.borderStyle, bars.border, bars.borderThickness,
-        bars.borderStyleFromSkin == true)
-    return show and true or false
+    return bars.border == true
 end
 
 -- One opts table and one shadow, refilled before every call: S.HudFont keeps neither, and a surface

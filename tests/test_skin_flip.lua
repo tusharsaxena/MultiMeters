@@ -357,9 +357,8 @@ test("Skin flip: the cell's outline takes the skin's color and thickness with th
     assertEqual(last(sizes, "the outline")[1], 3, "a skin's None hands the player's thickness back")
 end)
 
-test("Skin flip: a real style in a skin wins over Show border, and None defers to it", function()
-    -- red under: `bars.border` alone deciding, so the skin's border never shows (cause D4), or a
-    -- skin's None drawing nothing over a player's Show border (the owner's ruling of 2026-11-01).
+test("Skin flip: Show border alone decides whether a cell has an outline, in every skin (SF-MM-2)", function()
+    -- red under: a skin's real style drawing an outline with Show border off.
     local _, NS, _, row, cfg, Skin = scene()
     local bars = statCell(row).window.config.bars
     assertEqual(NS.Skin.Token("bar.borderStyle"), "None")
@@ -369,9 +368,11 @@ test("Skin flip: a real style in a skin wins over Show border, and None defers t
     Skin:SetChoice(OWNER, "ka0s", "azeroth")
     assertFalse(NS.Skin.Token("bar.borderStyle") == "None", "azeroth states a real style")
     bars.border = false
-    assertTrue(NS.SkinBorderShown(bars), "a real style, Show border off")
+    assertFalse(NS.SkinBorderShown(bars), "a real style, Show border off")
+    bars.border = true
+    assertTrue(NS.SkinBorderShown(bars), "a real style, Show border on")
     bars.borderStyleFromSkin = false
-    assertFalse(NS.SkinBorderShown(bars), "the companion off: the toggle decides")
+    assertTrue(NS.SkinBorderShown(bars), "the companion off: the toggle decides")
     assertTrue(cfg ~= nil)
 end)
 
@@ -393,6 +394,7 @@ test("Skin flip: a probe skin's real style and size reach the cell and the toolt
     -- red under: a stored style or thickness read past S.BarBorder, or a tooltip border with no skin.
     local inst, NS, _, row, cfg, Skin = scene(function(c)
         c.bars.borderThickness, c.tooltip.barBorderSize = 3, 3
+        c.bars.border = true
     end)
     Skin:RegisterSkin({ key = "probe", tokens = { ["bar.borderStyle"] = "Probe Edge", ["bar.borderSize"] = 5 } })
     inst.mocks.__media.border["Probe Edge"] = [[Interface\ProbeEdge]]
@@ -400,7 +402,7 @@ test("Skin flip: a probe skin's real style and size reach the cell and the toolt
     local cell = statCell(row)
     cell.frame.SetBackdropBorderColor = function() end
     cell:ApplyBorder(cfg.bars)
-    assertTrue(cell.borderShown, "the skin's style did not show with Show border off")
+    assertTrue(cell.borderShown, "the skin's style did not show with Show border on")
     assertEqual((cell.frame.__backdrop or {}).edgeFile, [[Interface\ProbeEdge]])
     assertEqual((cell.frame.__backdrop or {}).edgeSize, 5)
     local tip = NS.TooltipInternals.tooltipConfig(cfg)
