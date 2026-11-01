@@ -409,6 +409,14 @@ end
 -- Applying config to the frames
 -- ---------------------------------------------------------------------------
 
+--- The unavailable notice's font: the title's face, the cells' size, the title's flags (cause L8).
+function WindowProto:ApplyNoticeFont(cfg)
+    local header = cfg.header or {}
+    self.notice:SetFont(fontPath(NS.SkinMediaKey(header, "font", "hud.font")),
+        NS.SkinHudFontSize((cfg.text or {}).size or 11, header.fontFromSkin),
+        NS.SkinFontFlags(header.outline) or "")
+end
+
 --- Push the whole config onto the widgets: geometry, chrome, header, column
 --- headers and every pooled row. Idempotent, and the ONE path a settings change
 --- takes — so "did I remember to re-apply X" has a single answer.
@@ -479,9 +487,7 @@ function WindowProto:ApplyConfig()
     self.notice:ClearAllPoints()
     self.notice:SetPoint("TOPLEFT", self.body, "TOPLEFT", 4, -8)
     self.notice:SetPoint("TOPRIGHT", self.body, "TOPRIGHT", -4, -8)
-    self.notice:SetFont(fontPath(NS.SkinMediaKey(cfg.header or {}, "font", "hud.font")),
-        NS.SkinHudFontSize((cfg.text or {}).size or 11, (cfg.header or {}).fontFromSkin),
-        NS.SkinFontFlags((cfg.header or {}).outline) or "")
+    self:ApplyNoticeFont(cfg)
     -- The notice's text in the skin's highlight (white under Ka0s Default, the
     -- stock FontString color it always drew); re-run on every skin switch.
     if NS.SkinColor then self.notice:SetTextColor(NS.SkinColor("text.highlight")) end

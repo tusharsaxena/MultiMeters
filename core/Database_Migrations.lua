@@ -963,6 +963,14 @@ local function followByHand(w)
     end
 end
 
+--- `fn` on every window a stored profile holds, a junk entry skipped.
+local function eachWindow(profile, fn)
+    if type(profile.windows) ~= "table" then return end
+    for _, w in pairs(profile.windows) do
+        if type(w) == "table" then fn(w) end
+    end
+end
+
 --- One profile onto the skin, once (LibKa0s Options doc, Moving to this version, section 4).
 ---
 --- `Skin.FollowOnce` is the gate and writes `skin.fullSkinReset`. It is handed NO keys, because a
@@ -976,20 +984,14 @@ end
 local function followSkinOnce(profile)
     if type(profile) ~= "table" then return end
     local Skin = LibStub and LibStub("LibKa0s-Skin-1.0", true)
-    local reset = Skin and Skin.ResetToSkin
-    local follow = Skin and Skin.FollowOnce
-    local windows = type(profile.windows) == "table" and profile.windows or {}
-    if type(follow) == "function" and type(reset) == "function" then
-        if not follow(profile, {}) then return end
-        for _, w in pairs(windows) do
-            if type(w) == "table" then reset(w, Database.FOLLOW_ONCE_KEYS) end
+    if Skin and type(Skin.FollowOnce) == "function" and type(Skin.ResetToSkin) == "function" then
+        if Skin.FollowOnce(profile, {}) then
+            eachWindow(profile, function(w) Skin.ResetToSkin(w, Database.FOLLOW_ONCE_KEYS) end)
         end
         return
     end
     if type(profile.skin) == "table" and profile.skin.fullSkinReset == true then return end
-    for _, w in pairs(windows) do
-        if type(w) == "table" then followByHand(w) end
-    end
+    eachWindow(profile, followByHand)
     if type(profile.skin) ~= "table" then profile.skin = {} end
     profile.skin.fullSkinReset = true
 end

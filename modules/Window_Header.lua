@@ -226,6 +226,19 @@ local function titleBarColor(header, looks)
     return RGBA(header.bgColor, 0, 0, 0, 0.5)
 end
 
+--- A cached look a column header surface follows: `field` of the window's skinLooks while the
+--- group's `modeKey` is Custom and its companion is on. A class or per-statistic mode keeps its color.
+local function customLook(group, modeKey, companion, window, field)
+    if group[modeKey] ~= "custom" or group[companion] ~= true then return nil end
+    return window.skinLooks and window.skinLooks[field]
+end
+
+--- `look`'s four channels, or the color handed in when there is no look.
+local function lookOver(look, r, g, b, a)
+    if not look then return r, g, b, a end
+    return look[1], look[2], look[3], look[4] or 1
+end
+
 --- The header's font and color, in the one shape modules/HeaderControls.lua
 --- asks for it.
 ---
@@ -726,9 +739,8 @@ function WindowProto:ApplyColumnHeaders()
         windowStat(self), 1, 0.82, 0, 1)
     -- The skin's `hud.label` while the companion is on, under `custom` only: the other two modes are
     -- a class and a statistic, which keep their color. Nil, degraded, leaves the swatch.
-    local skinLabel = colHeader.colorMode == "custom" and colHeader.colorFromSkin == true
-        and self.skinLooks and self.skinLooks.hudLabel
-    if skinLabel then hr, hg, hb, ha = skinLabel[1], skinLabel[2], skinLabel[3], skinLabel[4] or 1 end
+    hr, hg, hb, ha = lookOver(customLook(colHeader, "colorMode", "colorFromSkin", self, "hudLabel"),
+        hr, hg, hb, ha)
 
     -- One FontString per drawn column plus the name column's, placed at the same
     -- x offsets the cells will use — from the SAME layout table, so a header can
@@ -747,9 +759,8 @@ function WindowProto:ApplyColumnHeaders()
     local bgr, bgg, bgb, bga = surfaceColor(perColumnBG and "custom" or colHeader.bgColorMode,
         colHeader.bgColor, windowStat(self), 0, 0, 0, 0)
     -- The skin's band while the companion is on, under `custom` only (cause A1).
-    local band = colHeader.bgColorMode == "custom" and colHeader.bgColorFromSkin == true
-        and self.skinLooks and self.skinLooks.headerBand
-    if band then bgr, bgg, bgb, bga = band[1], band[2], band[3], band[4] or 1 end
+    bgr, bgg, bgb, bga = lookOver(customLook(colHeader, "bgColorMode", "bgColorFromSkin", self, "headerBand"),
+        bgr, bgg, bgb, bga)
     self.headerBg:SetColorTexture(bgr, bgg, bgb, bga)
     self.headerBg:SetShown(not perColumnBG)
 
@@ -779,7 +790,7 @@ function WindowProto:ApplyColumnHeaders()
     d.shadow, d.shadowFromSkin = colHeader.shadow, colHeader.shadowFromSkin
     d.colorMode, d.color = colHeader.colorMode, colHeader.color
     -- `icon.arrow` while the label follows the skin (cause L8); otherwise the arrow wears the label's.
-    d.sortArrow = skinLabel and self.skinLooks.sortArrow or nil
+    d.sortArrow = customLook(colHeader, "colorMode", "colorFromSkin", self, "sortArrow")
     d.hr, d.hg, d.hb, d.ha = hr, hg, hb, ha
     d.perColumnBG, d.bgColor = perColumnBG, colHeader.bgColor
     d.bgr, d.bgg, d.bgb, d.bga = bgr, bgg, bgb, bga
