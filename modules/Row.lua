@@ -336,7 +336,7 @@ end
 --- @return number r, number g, number b, number a
 local function cellBackground(bars, entry, statKey)
     local mode  = bars and bars.bgColorMode or "class"
-    local alpha = bars and bars.bgAlpha or 0.1
+    local alpha = bars and bars.bgAlpha or 0.15
 
     if mode == "none" then return 0, 0, 0, 0 end
 

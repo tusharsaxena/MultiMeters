@@ -804,7 +804,7 @@ settings-panel controls answering a question that was already answered one page 
 
 `texture = "Ka0s Default"` (LSM `statusbar`) · `textureFromSkin = true` · `colorMode = "class"` · `customColor =
 { r=0.35, g=0.55, b=0.85, a=1 }` · `bgColor = { r=0, g=0, b=0, a=1 }` · `bgColorMode = "class"` ·
-`bgAlpha = 0.1` · `border = false` · `borderStyle = "None"` · `borderStyleFromSkin = true` · `borderThickness = 1` ·
+`bgAlpha = 0.15` · `border = false` · `borderStyle = "None"` · `borderStyleFromSkin = true` · `borderThickness = 1` ·
 `borderColor = { r=0, g=0, b=0, a=1 }` · `borderColorMode = "custom"` · `alpha = 1.0` ·
 `fillDirection = "LEFT"` · `animate = true`.
 

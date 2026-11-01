@@ -917,7 +917,7 @@ local BARS_BG_ROWS = compose("ColorPair", {
     defaults = { bgColor = { r = 0, g = 0, b = 0, a = 1 } },
     classColor = { source = "unit" },
     extra = { {
-        path = "window.bars.bgAlpha", type = "number", default = 0.1,
+        path = "window.bars.bgAlpha", type = "number", default = 0.15,
         min = 0, max = 1, step = 0.01, isPercent = true,
         label = L["Bar background opacity"],
         desc = L["Opacity of the unfilled part of each bar."],

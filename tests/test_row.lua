@@ -1108,7 +1108,7 @@ test("The class tint is painted on the CELLS, not on the row", function()
     local bg = row.cells.DamageDone.bg
     assertEqual(bg:IsShown(), true)
     assertEqual(bg.__colorTexture[1], c.r)
-    assertEqual(bg.__colorTexture[4], 0.1, "a tint, not a second bar")
+    assertEqual(bg.__colorTexture[4], 0.15, "a tint, not a second bar")
 end)
 
 test("A row with no class falls back to the alternating stripe", function()
