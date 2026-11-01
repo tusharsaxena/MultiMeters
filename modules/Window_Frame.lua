@@ -218,6 +218,8 @@ function WindowProto:BuildStrips(frame)
         -- The skin owner (LibKa0s-Widgets-1.0 16, skinning-§1): the strip's legibility follows
         -- this addon's skin through its strip.* tokens; amber stays the meaning color.
         owner = NS.name,
+        -- SF-F1: the strip's right-click menu ends test mode (LibKa0s Widgets minor 21).
+        onEnd = function() NS.WindowManager:SetTestMode(false) end,
     }) or nil
 end
 
@@ -374,6 +376,7 @@ function WindowProto:BuildFrame()
         text = L["SIMULATION: a scripted fight, not your data. /mm sim stop ends it."],
         icon = NS.Icon and NS.Icon("info"),
         owner = NS.name,
+        sim = NS.Sim,   -- SF-F1: the strip's right-click menu ends, steps and restarts the sim
     }) or nil
 
     -- ALWAYS BUILT, never gated on a setting. There used to be a `resizeGrip`
