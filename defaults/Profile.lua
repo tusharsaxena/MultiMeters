@@ -251,7 +251,7 @@ local WINDOW_TEMPLATE = {
         colorMode       = "skin",      -- skin | class | custom (skin: `title.text`, MM-A1)
         color           = { r = 1, g = 0.82, b = 0, a = 1 },  -- Blizzard gold
         align           = "LEFT",      -- LEFT | CENTER | RIGHT
-        alignFromSkin   = true,        -- the skin's `title.align` (cause L9)
+        alignFromSkin   = false,       -- the skin's `title.align` (cause L9); OFF: the title sits LEFT (SF-MM-1)
         -- 26, so the bar a player sees -- frame top to divider, 6 padding + 26
         -- - 2 -- is Ka0s DPS Race's 30px title bar (`Style.TITLE_BAR_H`). It
         -- shipped 18 (a 22px bar) until 2026-10-24.
@@ -382,7 +382,7 @@ local WINDOW_TEMPLATE = {
         -- NeverSecret, so it keeps working mid-pull when every number is opaque.
         bgColorMode   = "class",   -- class | stat | custom | none
         bgColor       = { r = 0, g = 0, b = 0, a = 1 },
-        bgAlpha       = 0.1,
+        bgAlpha       = 0.15,   -- SF-MM-3: a skin never moves it
         border        = false,
         -- The outline's own thickness and color. It used to be one pixel of the
         -- library skin's edge color, which no setting could reach -- so "Bar

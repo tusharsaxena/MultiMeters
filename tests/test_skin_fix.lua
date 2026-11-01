@@ -278,9 +278,36 @@ end)
 
 -- ── L9 ───────────────────────────────────────────────────────────────────────────────────────
 
+test("SF-MM-1: a new window's title is LEFT, and the skin's alignment is opt-in", function()
+    -- red under: alignFromSkin shipped on, so a centered skin centered the title.
+    local _, _, window, _, cfg = scene()
+    assertEqual(cfg.header.alignFromSkin, false)
+    assertEqual(window.frame.title.__justifyH, "LEFT")
+end)
+
+test("SF-MM-3: the bar background opacity is 15% and a skin does not move it", function()
+    local _, _, _, _, cfg, Skin = scene()
+    assertEqual(cfg.bars.bgAlpha, 0.15)
+    Skin:SetChoice(OWNER, "ka0s", "azeroth")
+    assertEqual(cfg.bars.bgAlpha, 0.15)
+end)
+
+test("SF-MM-5: the export button is Phosphor's chat-text", function()
+    local _, _, window = scene()
+    local path = window.controls.export.tex.__texture
+    assertTrue(type(path) == "string" and path:find("chat%-text"), "export drew " .. tostring(path))
+end)
+
+test("SF-MM-4: the body clips its children so a drag never draws past the window", function()
+    local _, _, window = scene()
+    assertTrue(window.body.__clips == true, "the body does not clip")
+end)
+
 test("L9: the title takes the skin's alignment while its companion is on", function()
     -- red under: the stored LEFT past the companion.
     local _, NS, window, _, cfg = scene()
+    cfg.header.alignFromSkin = true
+    window:ApplyConfig()
     assertEqual(window.frame.title.__justifyH, NS.Skin.Token("title.align"))
     cfg.header.alignFromSkin = false
     cfg.header.align = "RIGHT"
@@ -434,10 +461,10 @@ test("L8: the sort arrow draws its own look, not its label's", function()
     sameColor(found.__vertexColor, { 0.1, 0.2, 0.3 }, "the sort arrow")
 end)
 
-test("D4: a skin's border art takes the class tint with Show border off", function()
-    -- red under: the re-tint gated on `bars.border`, which is off under a skin's own border.
+test("D4: a skin's border art takes the class tint with Show border on", function()
+    -- red under: the re-tint gated on something other than the drawn border.
     local inst, _, _, row, cfg, Skin = scene(function(c)
-        c.bars.border, c.bars.borderColorMode = false, "class"
+        c.bars.border, c.bars.borderColorMode = true, "class"
     end)
     Skin:RegisterSkin({ key = "probe", tokens = { ["bar.borderStyle"] = "Probe Edge" } })
     inst.mocks.__media.border["Probe Edge"] = [[Interface\ProbeEdge]]

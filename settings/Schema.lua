@@ -608,7 +608,7 @@ NS.Schema = {
     },
     -- Its "Use the skin's ..." companion (cause L9): `title.align` while on.
     {
-        path = "window.header.alignFromSkin", type = "bool", default = true,
+        path = "window.header.alignFromSkin", type = "bool", default = false,
         page = "header", group = L["Title text"],
         label = L["Use the skin's alignment"], desc = L["Place the title where the skin places a title. The alignment above is kept but not read while this is on."],
     },
