@@ -2583,7 +2583,7 @@ Total.
 - Skin flip: a new profile takes the step against a template that shows nothing new
 - Skin flip: without the library the step sets the companions by hand and writes the record
 
-### test_skin_fix.lua (28)
+### test_skin_fix.lua (29)
 
 - Gloss: a cell draws the skin's gloss while its texture follows the skin
 - Gloss: a bar with the player's own texture stays plain under Glass
@@ -2613,6 +2613,7 @@ Total.
 - D4: the tooltip's bar border thickness is the skin's real style's, the player's under None
 - D4: with no library the tooltip bar's backdrop is the player's color and opacity
 - L9: the Export modal's title bar places its own text
+- skin gate: every allow row names a cause of the run's SKIN_CAUSES.md, or MC
 
 ### test_skin_fonts.lua (14)
 
@@ -2964,7 +2965,7 @@ Total.
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
 | test_skin_flip.lua | 21 |
-| test_skin_fix.lua | 28 |
+| test_skin_fix.lua | 29 |
 | test_skin_fonts.lua | 14 |
 | test_skin_window.lua | 13 |
 | test_skin_picker.lua | 12 |
@@ -2982,4 +2983,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2532** |
+| **Total** | **2533** |

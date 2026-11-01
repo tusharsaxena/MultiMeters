@@ -492,3 +492,16 @@ test("L9: the Export modal's title bar places its own text", function()
     assertEqual(seen.place, true)
     assertEqual(seen.text, modal.title)
 end)
+
+test("skin gate: every allow row names a cause of the run's SKIN_CAUSES.md, or MC", function()
+    -- red under: an id such as FS-MM-01, which the kit's shape check takes and no document defines.
+    local f = assert(io.open("tests/skin_facts.lua", "rb"))
+    local src = f:read("*a")
+    f:close()
+    local count = 0
+    for cause in src:gmatch('cause = "([^"]+)"') do
+        count = count + 1
+        assertTrue(cause == "MC" or cause:find("^[LDA]%d+$") ~= nil, cause .. " is no cause id")
+    end
+    assertTrue(count > 0, "the rows were read")
+end)

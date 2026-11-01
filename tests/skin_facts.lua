@@ -162,8 +162,8 @@ return {
             { file = "modules/Row_NameCell.lua", substring = "SetStatusBarColor(0, 0, 0, 0)",
               why = "the name column's bar drawn clear: no color reaches the screen", cause = "A7" },
             { file = "modules/Tooltip.lua", substring = "fontString:SetTextColor(1, 1, 1)",
-              why = "a shared GameTooltip line's color handed back, for whichever addon draws it next",
-              cause = "FS-MM-01" },
+              why = "a GameTooltip line handed back to the client, which every addon shares, so a skin token here would leak into the next addon's tooltip; no MultiMeters surface draws it",
+              cause = "A7" },
         },
     },
     switch = {
