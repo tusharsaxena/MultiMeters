@@ -349,6 +349,13 @@ NS.Launcher = Launcher:New({
     toggleWindow   = toggleWindows,
 
     -- The tooltip's title. The rest of the status block reads the accessors above.
+    isSimMode = function() local s = NS.Sim; return type(s) == "table" and type(s.IsActive) == "function" and s:IsActive() == true end,
+    toggleSim = function()
+        local s = NS.Sim
+        if type(s) ~= "table" or type(s.RunVerb) ~= "function" then return end
+        -- The typed verb's own acts: stop a running sim, otherwise the bare verb (status and the sim panel).
+        s:RunVerb(s:IsActive() and "stop" or "")
+    end,
     version        = version,
 
     -- Both resolved at CALL time rather than captured, so this file's correctness does not depend
