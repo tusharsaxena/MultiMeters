@@ -308,6 +308,24 @@ test("SG-MM-1: the column-header strip clips its children too, it sits outside t
     assertTrue(window.headerFrame.__clips == true, "the header strip does not clip")
 end)
 
+test("SG-MM-1: the strip's clip box is the window's width, not the columns' (anchored to both corners)", function()
+    -- red under: SetSize(layout.rowWidth), a box as wide as the columns, which draws Deaths past the edge.
+    local _, _, window = scene()
+    local function corners()
+        local seen = {}
+        for i = 1, window.headerFrame:GetNumPoints() do
+            local p, rel = window.headerFrame:GetPoint(i)
+            seen[p] = rel
+        end
+        return seen
+    end
+    local c = corners()
+    assertTrue(c.TOPLEFT == window.frame and c.TOPRIGHT == window.frame, "the strip is not anchored to both window corners")
+    window:ApplyConfig()
+    c = corners()
+    assertTrue(c.TOPLEFT == window.frame and c.TOPRIGHT == window.frame, "a re-layout dropped the right corner")
+end)
+
 test("L9: the title takes the skin's alignment while its companion is on", function()
     -- red under: the stored LEFT past the companion.
     local _, NS, window, _, cfg = scene()

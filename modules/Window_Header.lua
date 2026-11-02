@@ -748,8 +748,11 @@ function WindowProto:ApplyColumnHeaders()
     -- never drift from the column under it.
     local _, headerTop = self:ChromeOffsets()
     self.headerFrame:ClearAllPoints()
+    -- Both top corners are the window's, so the strip's clip box is the window's width and a
+    -- column header dragged past the edge is cut there; layout.rowWidth only places the labels.
     self.headerFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -headerTop)
-    self.headerFrame:SetSize(layout.rowWidth, layout.headerHeight)
+    self.headerFrame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -pad, -headerTop)
+    self.headerFrame:SetHeight(layout.headerHeight)
 
     -- PER STATISTIC IS PER COLUMN HERE, so `stat` mode paints each header button
     -- rather than the strip: one rectangle behind each label, in that column's
@@ -873,6 +876,7 @@ function WindowProto:ApplyTestStrip()
     local _, headerTop, bodyTop = self:ChromeOffsets()
     self.headerFrame:ClearAllPoints()
     self.headerFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -headerTop)
+    self.headerFrame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -pad, -headerTop)
     self.body:ClearAllPoints()
     self.body:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -bodyTop)
     self.body:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -pad, pad)
