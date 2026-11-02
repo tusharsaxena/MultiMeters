@@ -185,8 +185,8 @@ test("Skin fonts: the v22 step moves every stored old-default flag onto From ski
         global   = { schemaVersion = 21 },
     })
     local NS = inst.NS
-    assertEqual(NS.SCHEMA_VERSION, 24)
-    assertEqual(NS.db.global.schemaVersion, 24)
+    assertEqual(NS.SCHEMA_VERSION, 25)
+    assertEqual(NS.db.global.schemaVersion, 25)
     for _, name in ipairs({ "Default", "Raid" }) do
         local w = NS.db.sv.profiles[name].windows[1]
         for _, d in ipairs(OLD_DEFAULTS) do
@@ -320,4 +320,27 @@ test("Skin fonts: the empty-state notice draws the HUD size scale with the HUD f
     window:ApplyConfig()
     local _, size = window.notice:GetFont()
     assertEqual(size, NS.SkinHudFontSize(12, true), "the notice under Obsidian")
+end)
+
+-- R3-FRIZ: LibKa0s v1.85.0 deleted Ka0s Friz Quadrata TT (R3-L7); v25 moves a stored pick of it to Ka0s
+-- Ubuntu in every profile, at any depth. red under: no v24 -> v25 step, one that walks db.profile alone
+-- or only the top level, or one that rewrites Blizzard's own "Friz Quadrata TT".
+test("Skin fonts: the v25 step moves a stored Ka0s Friz Quadrata TT to Ka0s Ubuntu in every profile, Blizzard's Friz kept", function()
+    local FRIZ = "Ka0s Friz Quadrata TT"
+    local inst = initWith({
+        profiles = { Default = { nextWindowId = 2, windows = { { id = 1, font = FRIZ, text = { font = FRIZ } } },
+                                 skin = { fullSkinReset = true, font = FRIZ } },
+                     Raid    = { nextWindowId = 8, windows = { { id = 7, tooltip = { font = FRIZ },
+                                 header = { font = "Friz Quadrata TT" } } }, skin = { fullSkinReset = true } } },
+        global   = { schemaVersion = 24 },
+    })
+    local NS = inst.NS
+    assertEqual(NS.db.global.schemaVersion, 25)
+    local d, r = NS.db.sv.profiles.Default, NS.db.sv.profiles.Raid
+    assertEqual(d.windows[1].font, "Ka0s Ubuntu", "a window's font")
+    assertEqual(d.windows[1].text.font, "Ka0s Ubuntu", "a nested font")
+    assertEqual(d.skin.font, "Ka0s Ubuntu", "the skin override")
+    assertEqual(r.windows[1].tooltip.font, "Ka0s Ubuntu", "a profile not active")
+    assertEqual(r.windows[1].header.font, "Friz Quadrata TT", "Blizzard's own Friz stays")
+    assertEqual(NS.Database.RetireFonts(r), 0, "a second pass moves nothing")
 end)

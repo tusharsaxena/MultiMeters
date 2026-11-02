@@ -281,7 +281,7 @@ Total.
 - Database: the profile a swap lands on is migrated and normalized before anything reads it
 - Database: a profile RESET re-seeds rather than leaving an empty registry
 
-### test_database_migrations.lua (48)
+### test_database_migrations.lua (49)
 
 - Database: RunMigrations stamps and holds the current schema version
 - Database: the schema version is account-wide, not per-profile
@@ -331,6 +331,7 @@ Total.
 - Database: v13 -> v14 clears an unticked master lock and leaves the windows alone
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
+- Database: v23 -> v24 turns a stored window's title alignment off the skin, once
 
 ### test_migrations.lua (17)
 
@@ -789,6 +790,11 @@ Total.
 - Degraded: with LibKa0s absent the seam stubs every member the addon calls
 - Degraded: with LibKa0s absent the stub still answers from the STORE
 - Degraded: core/LauncherSetup.lua passes the silent flag to LibStub
+
+### test_launcher_skin_entry.lua (2)
+
+- launcher descriptor passes openSkinPicker, which runs the skin verb
+- mode strips pass sim or onEnd, so the right-click menu has something to end (SF-F1)
 
 ### test_lifecycle.lua (40)
 
@@ -2573,7 +2579,7 @@ Total.
 - Skin flip: a companion off draws the stored color under every skin
 - Skin flip: a class color comes first and the companion never reaches it
 - Skin flip: the cell's outline takes the skin's color and thickness with the companions
-- Skin flip: a real style in a skin wins over Show border, and None defers to it
+- Skin flip: Show border alone decides whether a cell has an outline, in every skin (SF-MM-2)
 - Skin flip: with no library a cell draws the stored border, through the stub's BarBorder
 - Skin flip: a probe skin's real style and size reach the cell and the tooltip's bar
 - Skin flip: a shadow reaches a font object, a skin's own and the stored one
@@ -2583,7 +2589,7 @@ Total.
 - Skin flip: a new profile takes the step against a template that shows nothing new
 - Skin flip: without the library the step sets the companions by hand and writes the record
 
-### test_skin_fix.lua (29)
+### test_skin_fix.lua (35)
 
 - Gloss: a cell draws the skin's gloss while its texture follows the skin
 - Gloss: a bar with the player's own texture stays plain under Glass
@@ -2599,6 +2605,12 @@ Total.
 - L8: the meter-unavailable notice draws the Font outline
 - L8: the window's resize grip names its skin owner
 - L8: the Export whisper box is a skinned input
+- SF-MM-1: a new window's title is LEFT, and the skin's alignment is opt-in
+- SF-MM-3: the bar background opacity is 15% and a skin does not move it
+- SF-MM-5: the export button is Phosphor's chat-text
+- SF-MM-4: the body clips its children so a drag never draws past the window
+- SG-MM-1: the column-header strip clips its children too, it sits outside the body
+- SG-MM-1: the strip's clip box is the window's width, not the columns' (anchored to both corners)
 - L9: the title takes the skin's alignment while its companion is on
 - L9: the Export modal's title bar is the skin's height
 - A1: turning Show icons off takes the border down through the settings path
@@ -2609,13 +2621,13 @@ Total.
 - D4: without the library the companions draw nothing
 - L8: the header strip draws the skin's title face, and the player's without the companion
 - L8: the sort arrow draws its own look, not its label's
-- D4: a skin's border art takes the class tint with Show border off
+- D4: a skin's border art takes the class tint with Show border on
 - D4: the tooltip's bar border thickness is the skin's real style's, the player's under None
 - D4: with no library the tooltip bar's backdrop is the player's color and opacity
 - L9: the Export modal's title bar places its own text
 - skin gate: every allow row names a cause of the run's SKIN_CAUSES.md, or MC
 
-### test_skin_fonts.lua (14)
+### test_skin_fonts.lua (15)
 
 - Skin fonts: every font group carries size, color with a class option, flags and shadow
 - Skin fonts: every flags row leads with From skin and defaults to it, the template too
@@ -2631,6 +2643,7 @@ Total.
 - Skin fonts: the column labels draw the Font outline and the HUD size scale
 - Skin fonts: a capped name column sizes itself from the scaled HUD size
 - Skin fonts: the empty-state notice draws the HUD size scale with the HUD face
+- Skin fonts: the v25 step moves a stored Ka0s Friz Quadrata TT to Ka0s Ubuntu in every profile, Blizzard's Friz kept
 
 ### test_skin_window.lua (13)
 
@@ -2888,7 +2901,7 @@ Total.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 28 |
-| test_database_migrations.lua | 48 |
+| test_database_migrations.lua | 49 |
 | test_migrations.lua | 17 |
 | test_diagnostics.lua | 35 |
 | test_diagnostics_deathrecap.lua | 31 |
@@ -2907,6 +2920,7 @@ Total.
 | test_sim_session.lua | 22 |
 | test_sim_e2e.lua | 10 |
 | test_launchersetup.lua | 56 |
+| test_launcher_skin_entry.lua | 2 |
 | test_lifecycle.lua | 40 |
 | test_dispatch.lua | 11 |
 | test_vendor_sync.lua | 3 |
@@ -2965,8 +2979,8 @@ Total.
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
 | test_skin_flip.lua | 21 |
-| test_skin_fix.lua | 29 |
-| test_skin_fonts.lua | 14 |
+| test_skin_fix.lua | 35 |
+| test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
@@ -2983,4 +2997,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2533** |
+| **Total** | **2543** |

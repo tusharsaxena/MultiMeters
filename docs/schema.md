@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 23,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
+    schemaVersion = 25,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data (+ count, stored)
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -60,8 +60,8 @@ safe because every step is idempotent against a fresh default profile. A step ne
 the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
-**Twenty-one steps are wired today**, `migrations[1]` through `migrations[21]`, walking an account from
-the shipped v1 shape to v23. Each is one line of the header block at the top of
+**Twenty-four steps are wired today**, `migrations[1]` through `migrations[24]`, walking an account from
+the shipped v1 shape to v25. Each is one line of the header block at the top of
 `core/Database.lua`, the version's home, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -88,12 +88,14 @@ the shipped v1 shape to v23. Each is one line of the header block at the top of
 | v20 → v21 | the one-time chrome reset onto the skin (the skinning rollout's MM-A1, the owner's ruling R-3): every window of every profile has its five chrome color modes (`frame.backdropColorMode`, `frame.borderColorMode`, `header.colorMode`, `frame.controlColorMode`, `frame.controlHoverColorMode`) set to `skin`, whatever they were, and `header.bgColorFromSkin` set on. The stored colors, `frame.borderStyle` and `frame.borderSize` are kept, so a mode set back to Custom draws them again. A group absent from a stored window is left to `EnsureWindowShape`, whose template ships the same values. It runs once: a mode changed afterwards stays changed |
 | v21 → v22 | the font flags onto From skin (LibKa0s v1.82.0, ruling D-07; the skin fonts run's Addendum 01): every window of every profile has each flag still at the default it shipped (`header.outline`, `text.outline`, `tooltip.fontOutline` and the all-surfaces `fontOutline` at `"NONE"`, `columnHeader.outline` at `"OUTLINE"`) moved to `"@skin"`, which the Skin tab's Font outline answers. A flag the player changed stays. It runs once: a `NONE` picked afterwards is kept. See [The four text surfaces](#the-four-text-surfaces-and-their-color-modes) |
 | v22 → v23 | the HUD's colors, borders and shadows onto the skin (FS-MM-FLIP, the owner's rulings of 2026-11-01): every window of every profile has every companion in `Database.FOLLOW_ONCE_KEYS` set and its five font flags From skin, once per profile, recorded in `skin.fullSkinReset`. `Skin.FollowOnce` is the gate, handed no keys, and each window takes `Skin.ResetToSkin` itself, because the dotted walk cannot enter the numeric `windows` array. The runner calls the gate for the active profile on every pass, so a profile made after the stamp takes it too. Stored picks and colors stay, for a player who turns a companion off. |
+| v23 → v24 | the title's alignment off the skin (SF-MM-1): every stored window's `header.alignFromSkin` is set false, so titles left-align. |
+| v24 → v25 | the deleted Friz becomes Ka0s Ubuntu (R3-FRIZ): LibKa0s v1.85.0 deleted `Ka0s Friz Quadrata TT` (R3-L7) and WoW Default draws `Ka0s Ubuntu` in its place (R3-L6). `Database.RetireFonts` moves every stored string naming the deleted face, at any depth (a window's fonts, the skin's Font override), to `Ka0s Ubuntu` in every profile. Blizzard's own `Friz Quadrata TT` stays. |
 
-Adding a v23 is two edits and no bootstrap change:
+Adding a v26 is two edits and no bootstrap change:
 
 ```lua
-migrations[22] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
-local CURRENT_DB_VERSION = 23               -- core/Database.lua
+migrations[25] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
+local CURRENT_DB_VERSION = 26               -- core/Database.lua
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.

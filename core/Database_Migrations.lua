@@ -1017,6 +1017,32 @@ migrations[23] = function(db)
     end
 end
 
+-- The shipped faces LibKa0s retired, each to its successor (R3-FRIZ; LibKa0s R3-L7).
+Database.RETIRED_FONTS = { ["Ka0s Friz Quadrata TT"] = "Ka0s Ubuntu" }
+
+--- Moves every string naming a retired face, at any depth of `t`, to its successor. Answers how many moved.
+function Database.RetireFonts(t)
+    local n = 0
+    for k, v in pairs(t) do
+        if type(v) == "table" then
+            n = n + Database.RetireFonts(v)
+        elseif Database.RETIRED_FONTS[v] then
+            t[k], n = Database.RETIRED_FONTS[v], n + 1
+        end
+    end
+    return n
+end
+
+--- v24 -> v25: THE DELETED FRIZ BECOMES KA0S UBUNTU (R3-FRIZ). LibKa0s v1.85.0 deleted Ka0s Friz
+--- Quadrata TT (R3-L7) and WoW Default draws Ka0s Ubuntu in its place (R3-L6). Every stored string
+--- naming the deleted face, at any depth (a window's fonts, the skin's Font override), moves to its
+--- successor, in every profile. Blizzard's own "Friz Quadrata TT" is another key and stays. Idempotent.
+migrations[24] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile) == "table" then Database.RetireFonts(profile) end
+    end
+end
+
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every
 --- profile swap, and is a no-op once at the current version.
 function NS:RunMigrations()
