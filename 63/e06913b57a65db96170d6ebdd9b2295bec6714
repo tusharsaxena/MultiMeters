@@ -1,1 +1,3 @@
 R3 review (owner-ask lens, 2026-11-03): OK. lua tests/run.lua 2547/0/1. R3-SIM-MM sim.stepDelay as the other sims; R3-FRIZ v25 migration over every profile; R3-RV repins. Nit: modules/Row_NameCell.lua:126-128 still says an art icon.borderStyle makes the library SetBackdrop the edge; since R3-L3 it is always a flat 1 px edge.
+
+R3 review 2026-11-03 (independent, read-only): R3-RV, R3-FRIZ, R3-SIM-MM, R3-REC, R3-SMOKE reviewed at 63e0691. Suite 2547/0, luacheck 0/0. No defect: Host.StepDelay reads sim.stepDelay through GetSetting at each step (descriptor passes a function), the sim clock is simulated so the pace breaks no timing, and migrations[24] RetireFonts walks every profile.
