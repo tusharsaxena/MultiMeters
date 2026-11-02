@@ -1,0 +1,1 @@
+R3 review (owner-ask lens, 2026-11-03): OK. lua tests/run.lua 2547/0/1. R3-SIM-MM sim.stepDelay as the other sims; R3-FRIZ v25 migration over every profile; R3-RV repins. Nit: modules/Row_NameCell.lua:126-128 still says an art icon.borderStyle makes the library SetBackdrop the edge; since R3-L3 it is always a flat 1 px edge.
