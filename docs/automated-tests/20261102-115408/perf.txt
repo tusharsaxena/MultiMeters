@@ -1,0 +1,25 @@
+Ka0s Multi Meters — offline perf  (v1.2.0, label 'offline')
+20 group members, 7 columns, throttle 0.25s, 200 events per burst
+
+scenario                  iters     ms/iter   api/iter   bytes/iter
+refresh20x7                 300     0.84153       8.00     297216.1
+refresh20x7Restricted       300     1.06636       8.00     406173.3
+throttleBurst                 1    11.22200       8.00     317269.0
+throttleIdle                300     0.00059       0.00          0.0
+drillOpenClose              300     0.02381       1.00      12746.2
+refreshWhileDrilled         300     0.05096       1.00      16170.1
+rosterRebuild               300     0.75369       8.00     315144.1
+rosterBurst                 300     0.78521       8.00     315142.0
+rosterCached                300     0.61936       8.00     297216.1
+rosterPartial               300     0.62766       8.00     314374.5
+applyConfig                 300     0.64282       0.00      25092.2
+probeOverheadOff            300     0.58822       8.00     297216.1
+probeOverheadOn             300     0.59259       8.00     297220.9
+suspended                   300     0.00012       0.00          0.0
+feignTraceAbsent            300     0.15160       2.00      65344.1
+feignTraceOff               300     0.15649       2.00      65344.1
+spellEventOff               300     0.00020       0.00          0.0
+spellEventOn                300     0.00037       0.00          0.7
+
+timings are for orientation only — compare scenarios within a run, never across machines
+wrote docs/automated-tests/20261102-115408/perf.json

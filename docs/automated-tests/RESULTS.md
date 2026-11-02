@@ -32,6 +32,7 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 | Run | Commit | Tree | Version | Lint w/e | Files | Tests | Perf | NLOC | Funcs | Avg NLOC | Avg CCN | Max CCN | CCN warn | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| [`20261102-115408`](20261102-115408/) | `a09f3f0` | clean | 1.2.0 | 0/0 | 187 | 2541/1/2542 | pass | 54519 | 5929 | 8.3 | 2.5 | 15 | 0 | **green** |
 | [`20261102-004456`](20261102-004456/) | `a50d696` | clean | 1.2.0 | 0/0 | 186 | 2537/1/2538 | pass | 54437 | 5912 | 8.3 | 2.5 | 15 | 0 | **green** |
 | [`20261101-210026`](20261101-210026/) | `93c42e1` | clean | 1.2.0 | 0/0 | 186 | 2533/1/2534 | pass | 54411 | 5907 | 8.3 | 2.5 | 15 | 0 | **green** |
 | [`20261101-202709`](20261101-202709/) | `a5de38b` | clean | 1.2.0 | 0/0 | 186 | 2532/1/2533 | pass | 54400 | 5906 | 8.3 | 2.5 | 15 | 0 | **green** |
@@ -58,18 +59,18 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 ## Test suite
 
-**2538 cases** — 2537 passed, 0 failed, 1 skipped. The generated inventory
-[`20261102-004456/test-cases.md`](20261102-004456/test-cases.md) is the authority on which cases existed at this run;
+**2542 cases** — 2541 passed, 0 failed, 1 skipped. The generated inventory
+[`20261102-115408/test-cases.md`](20261102-115408/test-cases.md) is the authority on which cases existed at this run;
 `docs/test-cases.md` is that same list at HEAD.
 
-Moved **2534 → 2538** since the previous run.
+Moved **2538 → 2542** since the previous run.
 
 **1 case(s) reported a `skip`.** A skip is counted in the total and never in `passed`, and at
 the release gate it is NOT EVALUATED rather than passed (`automated-tests-§3`).
 
 ## Lint
 
-**0 warnings / 0 errors over 186 files** (`luacheck .`).
+**0 warnings / 0 errors over 187 files** (`luacheck .`).
 
 Read that figure with its scope attached: `.luacheckrc` excludes 5 path(s) from it — `libs/`, `tests/_kit/`, `docs/audits/`, `docs/reviews/`, `_dev/` —
 so nothing under them is in the count above. A `0/0` that never moves is partly a statement about
@@ -79,35 +80,35 @@ to whoever thinks to open `.luacheckrc`.
 ## Perf
 
 **18 scenarios** from `tests/perf.lua`; the measurements are in
-[`20261102-004456/perf.json`](20261102-004456/perf.json).
+[`20261102-115408/perf.json`](20261102-115408/perf.json).
 
 | `scenario` | `iters` | `ms/iter` | `api/iter` | `bytes/iter` |
 |---|---|---|---|---|
-| `refresh20x7` | 300 | 0.89157 | 8.00 | 297216.1 |
-| `refresh20x7Restricted` | 300 | 1.17438 | 8.00 | 406173.3 |
-| `throttleBurst` | 1 | 21.84600 | 8.00 | 317269.0 |
-| `throttleIdle` | 300 | 0.00061 | 0.00 | 0.0 |
-| `drillOpenClose` | 300 | 0.02677 | 1.00 | 12746.2 |
-| `refreshWhileDrilled` | 300 | 0.05932 | 1.00 | 16170.1 |
-| `rosterRebuild` | 300 | 0.76563 | 8.00 | 315144.1 |
-| `rosterBurst` | 300 | 0.90092 | 8.00 | 315142.0 |
-| `rosterCached` | 300 | 0.70603 | 8.00 | 297216.1 |
-| `rosterPartial` | 300 | 0.78594 | 8.00 | 314374.5 |
-| `applyConfig` | 300 | 0.76885 | 0.00 | 25092.2 |
-| `probeOverheadOff` | 300 | 0.67726 | 8.00 | 297216.1 |
-| `probeOverheadOn` | 300 | 0.82034 | 8.00 | 297220.9 |
-| `suspended` | 300 | 0.00022 | 0.00 | 0.0 |
-| `feignTraceAbsent` | 300 | 0.17793 | 2.00 | 65344.1 |
-| `feignTraceOff` | 300 | 0.18554 | 2.00 | 65344.1 |
-| `spellEventOff` | 300 | 0.00021 | 0.00 | 0.0 |
-| `spellEventOn` | 300 | 0.00040 | 0.00 | 0.7 |
+| `refresh20x7` | 300 | 0.84153 | 8.00 | 297216.1 |
+| `refresh20x7Restricted` | 300 | 1.06636 | 8.00 | 406173.3 |
+| `throttleBurst` | 1 | 11.22200 | 8.00 | 317269.0 |
+| `throttleIdle` | 300 | 0.00059 | 0.00 | 0.0 |
+| `drillOpenClose` | 300 | 0.02381 | 1.00 | 12746.2 |
+| `refreshWhileDrilled` | 300 | 0.05096 | 1.00 | 16170.1 |
+| `rosterRebuild` | 300 | 0.75369 | 8.00 | 315144.1 |
+| `rosterBurst` | 300 | 0.78521 | 8.00 | 315142.0 |
+| `rosterCached` | 300 | 0.61936 | 8.00 | 297216.1 |
+| `rosterPartial` | 300 | 0.62766 | 8.00 | 314374.5 |
+| `applyConfig` | 300 | 0.64282 | 0.00 | 25092.2 |
+| `probeOverheadOff` | 300 | 0.58822 | 8.00 | 297216.1 |
+| `probeOverheadOn` | 300 | 0.59259 | 8.00 | 297220.9 |
+| `suspended` | 300 | 0.00012 | 0.00 | 0.0 |
+| `feignTraceAbsent` | 300 | 0.15160 | 2.00 | 65344.1 |
+| `feignTraceOff` | 300 | 0.15649 | 2.00 | 65344.1 |
+| `spellEventOff` | 300 | 0.00020 | 0.00 | 0.0 |
+| `spellEventOn` | 300 | 0.00037 | 0.00 | 0.7 |
 
 `perf` never fails a run and never blocks a commit — it is recorded, read and compared, not
 thresholded (`performance-§9`). It does gate the **tag** (`automated-tests-§3`).
 
 ## Complexity watch list
 
-Current as of [`20261102-004456`](20261102-004456/) — **this run's measurement, not its diff.** Max CCN **15** across 5912
+Current as of [`20261102-115408`](20261102-115408/) — **this run's measurement, not its diff.** Max CCN **15** across 5929
 functions, **0** of them warned on; 24 file(s) in the 1000–1500 band and 0 over the 1500 cap
 (`layout-§1`).
 
@@ -127,7 +128,7 @@ None.
 
 | Band | File | LOC | Disposition |
 |---|---|---|---|
-| 1000–1500 (on notice) | `core/Database_Migrations.lua` | 1051 | **On notice, newly crossed by growth.** 973 → 1050 with the v23 step (FS-MM-FLIP). One ladder, with a natural peel at the skin steps (v20 onward) if it grows again. |
+| 1000–1500 (on notice) | `core/Database_Migrations.lua` | 1062 | **On notice, newly crossed by growth.** 973 → 1050 with the v23 step (FS-MM-FLIP). One ladder, with a natural peel at the skin steps (v20 onward) if it grows again. |
 | 1000–1500 (on notice) | `locales/enUS.lua` | 1277 | **On notice, crossed by growth, and it is a flat table rather than code.** 990 lines when first ruled, 1039 when it crossed, 1056 at `20260926-193124`: the 2026-09-23 remediation routed every user-facing slash line through `NS.L` with a plural (MM-22), named unknown windows and empty renames (MM-06), the chat-sender refusal (MM-04) and the enable/disable wording (MM-15). One `L[...]` key per line and no control flow, so its size is the addon's string count, not tangle; `layout-§1` still binds it. The seam, if it needs one, is a second locale file for the diagnostics and debug-console strings, which no player-facing path reads. Re-check at 1300. |
 | 1000–1500 (on notice) | `modules/Aggregator.lua` | 1343 | **On notice, peeled in MM-ATS-03 (the 2026-09-26 automated-tests sweep, ATS-12).** 2122 → 1331 on 2026-09-09 (identity mode and the correlation rectangle left for `Aggregator_Identity.lua` / `_Preview.lua`), grown back to 1432, then 1432 → 1230: the orderings (`reverseRows`, `orderByProvider`, `orderByValue`, `orderByName`, `orderByRoster`) and the row cap (`ApplyRowLimit`, `SelfPinIndex`) moved to `modules/Aggregator_Order.lua` (275 lines), a pure move over the `Aggregator._order` seam, which carries only `UNRANKED` out. None of them reads a pass table, so the pipeline was not cut inside: the ladder that picks an ordering (`applySortMode`) and Build stayed. Re-check at 1400; the source-admission helpers (`owningMember` to `rowForSource`, about 310 lines) are the next seam. |
 | 1000–1500 (on notice) | `modules/Provider.lua` | 1096 | **On notice, crossed by growth rather than by a peel.** 924 lines when first ruled, 1056 when it crossed, 1084 at `20260926-193124` — the roster/spec identity work. With `core/Database.lua` and `locales/enUS.lua` it is one of three band entries that arrived by growth; the rest are post-peel residue settling, and a module getting bigger is the direction that matters. Its suite, one file exactly on the 1500 cap when this was first ruled, is now three: `tests/test_provider.lua` (773), `tests/test_provider_fields.lua` (305) and `tests/test_provider_recap.lua` (456). Re-check at 1200. |
@@ -138,7 +139,7 @@ None.
 | 1000–1500 (on notice) | `settings/Schema.lua` | 1127 | **On notice, peeled 2026-10-31 (FX-MM-SIZE).** 1473 → 1101 at the page boundary this cell named: the Visibility, Columns and General pages, the generated palette and the two passes moved to `settings/Schema_General.lua` (397), and a dump of `NS.Schema` is identical before and after. Re-check at 1400. |
 | 1000–1500 (on notice) | `settings/Schema_Compose.lua` | 1349 | **On notice, peeled 2026-10-31 (FX-MM-SIZE).** 1470 → 1308: the dropdown vocabularies moved to `settings/Schema_Vocab.lua` (248), a cleaner cut than the `dress()` table this cell used to name, because they read only the locale and the constants. It still grows with new *kinds* of control rather than with new settings. Re-check at 1400. |
 | 1000–1500 (on notice) | `tests/test_aggregator.lua` | 1437 | **On notice.** 1840 → 1255 behind its module's peel, 1279 at `20260926-193124`; MM-ATS-03's `modules/Aggregator_Order.lua` peel moved no cases out of it. It was in the band before the peel too. Re-check at 1450. |
-| 1000–1500 (on notice) | `tests/test_database_migrations.lua` | 1000 | **On notice, newly crossed by growth.** 981 → 1000 with the case count unchanged at 48: MM-A1's v21 reset widened existing cases. One coherent subject, the migration walk in `core/Database_Migrations.lua`, so the size is case count rather than tangle. Re-check at 1300. |
+| 1000–1500 (on notice) | `tests/test_database_migrations.lua` | 1015 | **On notice, newly crossed by growth.** 981 → 1000 with the case count unchanged at 48: MM-A1's v21 reset widened existing cases. One coherent subject, the migration walk in `core/Database_Migrations.lua`, so the size is case count rather than tangle. Re-check at 1300. |
 | 1000–1500 (on notice) | `tests/test_export.lua` | 1408 | **On notice.** 1892 → 1275 behind the modal peel, and in the band before it as well; 1325 at `20260926-193124`. Re-check at 1450. |
 | 1000–1500 (on notice) | `tests/test_headercontrols.lua` | 1311 | **On notice, and never peeled** — 1159 when first ruled, 1177 at `20260926-193124`. It mirrors `modules/HeaderControls.lua` (756), which is under the cap. Named here so the band reads as measured rather than as a list of things the peels produced. Re-check at 1400. |
 | 1000–1500 (on notice) | `tests/test_launchersetup.lua` | 1074 | **On notice, newly crossed by growth.** 922 → 1074, 50 → 56 cases: MM-02's Show window binding cases (+127) and MM-KB's section. It pins `core/LauncherSetup.lua` (364) through the real slash verbs, so the size is case count rather than tangle. Re-check at 1300. |
