@@ -352,6 +352,8 @@ function WindowProto:BuildFrame()
     -- safely be measured — and still is not, for one rule rather than two.
     self.columnHeaders = {}
     self.headerFrame = CreateFrame("Frame", nil, frame)
+    -- SG-MM-1: the header strip is not a child of the body, so it needs its own clip for a resize drag.
+    if self.headerFrame.SetClipsChildren then self.headerFrame:SetClipsChildren(true) end
     -- The column-header strip's backdrop. A plain texture rather than a
     -- BackdropTemplate: it is a flat fill behind text, nothing measures it, and a
     -- texture is a leaf the way the row backgrounds are. Transparent by default,

@@ -303,6 +303,11 @@ test("SF-MM-4: the body clips its children so a drag never draws past the window
     assertTrue(window.body.__clips == true, "the body does not clip")
 end)
 
+test("SG-MM-1: the column-header strip clips its children too, it sits outside the body", function()
+    local _, _, window = scene()
+    assertTrue(window.headerFrame.__clips == true, "the header strip does not clip")
+end)
+
 test("L9: the title takes the skin's alignment while its companion is on", function()
     -- red under: the stored LEFT past the companion.
     local _, NS, window, _, cfg = scene()
