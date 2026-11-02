@@ -694,7 +694,7 @@ Total.
 - SimDrivers: no driver reaches the mock's C_DamageMeter
 - SimDrivers: with no world, every driver changes and fires nothing
 
-### test_sim_session.lua (22)
+### test_sim_session.lua (26)
 
 - Sim session: stood down refuses the start with its own line and leaves no session
 - Sim session: test mode refuses the start with its own line and leaves no session
@@ -718,6 +718,10 @@ Total.
 - Sim session: test mode is refused while a session runs
 - Sim session: SavedVariables come back byte-identical after a session that pins and resets
 - Sim session: DropStaleSegment writes nothing while a session runs
+- Sim step delay: sim.stepDelay ships at 1 s and its row is the other sims' slider
+- Sim step delay: the validator takes the slider's values and refuses the rest
+- Sim step delay: Host.StepDelay reads the stored setting, else the default
+- Sim step delay: a playing run waits the sim.stepDelay setting between steps
 
 ### test_sim_e2e.lua (10)
 
@@ -2917,7 +2921,7 @@ Total.
 | test_sim_seam.lua | 10 |
 | test_sim_world.lua | 17 |
 | test_sim_drivers.lua | 9 |
-| test_sim_session.lua | 22 |
+| test_sim_session.lua | 26 |
 | test_sim_e2e.lua | 10 |
 | test_launchersetup.lua | 56 |
 | test_launcher_skin_entry.lua | 2 |
@@ -2997,4 +3001,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2543** |
+| **Total** | **2547** |
