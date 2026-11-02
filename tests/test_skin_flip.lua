@@ -421,6 +421,8 @@ test("Skin flip: a shadow reaches a font object, a skin's own and the stored one
         function obj:SetFont(...) self.font = { ... } return true end
         function obj:SetShadowColor(...) self.color = { ... } end
         function obj:SetShadowOffset(...) self.offset = { ... } end
+        -- A real font object answers its face (LibKa0s R3-DR-1L reads it back to hold the face).
+        function obj:GetFont() return unpack(self.font or {}) end
         made[#made + 1] = obj
         return obj
     end)
