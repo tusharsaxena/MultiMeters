@@ -856,6 +856,11 @@ NS.defaults = {
             throttle  = 0.25,
         },
 
+        -- The simulator's pace (R3-SIM-MM): the seconds `/mm sim` waits between two steps as it
+        -- plays, 0.5 to 10 in 0.5 s steps, as the other sims have it. New with a default, so AceDB
+        -- merges it into every stored profile and no migration is owed for it.
+        sim          = { stepDelay = 1 },
+
         -- ONE COLOR PER STATISTIC, addon-wide, and the palette every surface that
         -- wears one reads through NS.StatColor. Per-window would be the wrong
         -- shape twice over: the palette's whole job is telling one column from

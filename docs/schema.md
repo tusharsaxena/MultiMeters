@@ -377,6 +377,18 @@ Both were `window.data.*` until `schemaVersion` 5 and neither described a window
 a missing db means. Its fallback is the defaults tree rather than a literal, so a second copy of
 `0.25` cannot drift from the schema row that claims to set it.
 
+### `sim` — the simulator's pace
+
+| Path | Type | Default | Control |
+|---|---|---|---|
+| `sim.stepDelay` | number | `1` | slider on `general` > Behavior > Simulator, `Host.STEP_DELAY_MIN` 0.5 .. `Host.STEP_DELAY_MAX` 10, step 0.5 |
+
+The Simulation step delay (R3-SIM-MM, the owner's 2026-11-02 ruling), the same setting the other sims
+carry: the seconds `/mm sim` waits between two steps as it plays. `NS.SimHost.StepDelay`
+(`modules/Sim.lua`) reads it at each step, so a change lands on the next, and falls back to the default
+when the stored value is not one the slider can make (`NS.SimHost.ValidStepDelay`, the row's validator).
+New with a default, so AceDB's merge supplies it and no `schemaVersion` step is owed.
+
 ### `export` — the remembered export choices
 
 | Path | Type | Default | Control |
@@ -1318,10 +1330,10 @@ The runtime's `resolveRoot` resolves that prefix against the window id a caller 
 none, against the session's **active window** — `NS.State.activeWindowId`, which the settings
 panel's window picker moves. Global rows keep absolute paths and resolve against `db.profile` — all
 but one: `global.minimap.shown` names its store because `launcher-§3` puts LibDBIcon's table in the
-global one, and its own get/set pair reaches it. There are thirty of them:
+global one, and its own get/set pair reaches it. There are thirty-one of them:
 `enabled`, `global.minimap.shown`, the four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
 the session-only view over every window's own `frame.locked`), `data.mergePets`, `data.throttle`,
-the four `export.*` preferences, the eight `statColors.*` swatches, the eight `skin.*` rows, and
+`sim.stepDelay`, the four `export.*` preferences, the eight `statColors.*` swatches, the eight `skin.*` rows, and
 the two composed `sessionOnly` rows `state.testMode` and `state.debugConsole`. Those two and
 `master.locked` are the three session rows, whose own `get`/`set` are the whole of their storage. The
 other 158 rows are window rows.

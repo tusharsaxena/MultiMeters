@@ -30,7 +30,7 @@ secret-value rules the checks refer to.
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
-| SIM-1 to SIM-12 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
+| SIM-1 to SIM-13 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
 | SKIN-1 to SKIN-43 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat, a stored pick of the deleted Friz |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
@@ -1723,6 +1723,10 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
   finishes its ticks first). Click a later step row → the run steps up to that row and stays paused.
   Resume → it plays on by itself. Restart → it plays again from the first step without a second
   click. Result: pass (owner-marked 2026-10-23)
+- **SIM-13. The Simulation step delay slider (R3-SIM-MM).** Settings → General → Behavior → under
+  *Simulator*, set **Simulation step delay (seconds)** to 4, then `/mm sim start dungeon` → about four
+  seconds pass between one step's row ticking and the next. Mid-run, set it to 1 → the step after next
+  follows about a second later. The slider runs 0.5 to 10 in 0.5 steps and ships at 1. Result: not run
 
 ## SKIN
 

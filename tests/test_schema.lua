@@ -280,7 +280,7 @@ local PARTITION = {
     -- Appearance is the eight skip-render skin rows (settings/Schema_Skin.lua): the group whose
     -- place the library's Skin tab takes, keyed "Appearance" because that is the key
     -- O.AppearanceTab answers.
-    general    = { { "Master controls", 8 }, { "Behavior", 2 }, { "Statistic colors", 8 },
+    general    = { { "Master controls", 8 }, { "Behavior", 3 }, { "Statistic colors", 8 },
                    { "Appearance", 8 } },
     -- The Windows rail's strips after item 020 (the settings-layout pass): Size and position
     -- leads Frame, the broadcasts are Quick style, one Bar tab per styled surface on Bars and
@@ -400,7 +400,8 @@ function()
     assertEqual(table.concat(extras, "\n"), "",
         "Master controls is exactly the canonical set now; an extra row belongs on Behavior")
 
-    -- And the two that left are on Behavior, in the order they had.
+    -- And the two that left are on Behavior, in the order they had, then the simulator's pace
+    -- under its own Simulator heading (R3-SIM-MM).
     local behavior = {}
     for _, row in ipairs(NS.SchemaForPage("general")) do
         if row.group == L["Behavior"] then
@@ -410,7 +411,8 @@ function()
     assertEqual(table.concat(behavior, "\n"), table.concat({
         "data.mergePets = " .. L["Merge pets into their owner"],
         "data.throttle = " .. L["Refresh interval"],
-    }, "\n"), "the Behavior tab is exactly the two rows that left Master controls")
+        "sim.stepDelay = " .. L["Simulation step delay (seconds)"],
+    }, "\n"), "the Behavior tab is the two rows that left Master controls, then the step delay")
 end)
 
 test("Schema: Test mode is the COMPOSED row right after Debug console, paired with the minimap row",

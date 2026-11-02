@@ -49,12 +49,24 @@ local Host = NS.SimHost
 local L = NS.L
 local MSG = NS.Constants.MSG
 
---- The pause, in seconds, after each step before a playing simulation plays the next one. A fixed
---- constant, as KickCD's is: no settings row (the run's lead decision on MM-18).
-Host.STEP_DELAY = 1
+-- The pace of a playing stepper (R3-SIM-MM, the owner's 2026-11-02 ruling, as the other sims have
+-- it): the seconds between two steps, the `sim.stepDelay` setting, read at each step so a change
+-- lands on the next. The range and the validator are the row's (settings/Schema_General.lua).
+Host.STEP_DELAY = NS.defaults.profile.sim.stepDelay
+Host.STEP_DELAY_MIN, Host.STEP_DELAY_MAX, Host.STEP_DELAY_STEP = 0.5, 10, 0.5
 
---- The seconds a playing simulation waits between steps (the descriptor's stepDelay).
+--- Whether `v` is a pace the setting takes.
+function Host.ValidStepDelay(v)
+    if type(v) ~= "number" or v ~= v or v < Host.STEP_DELAY_MIN or v > Host.STEP_DELAY_MAX then return false end
+    local n = v / Host.STEP_DELAY_STEP
+    return n == math.floor(n)
+end
+
+--- The seconds a playing simulation waits between steps (the descriptor's stepDelay): the stored
+--- setting, read now, else the default.
 function Host.StepDelay()
+    local v = NS.GetSetting and NS.GetSetting("sim.stepDelay")
+    if Host.ValidStepDelay(v) then return v end
     return Host.STEP_DELAY
 end
 

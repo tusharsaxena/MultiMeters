@@ -63,6 +63,8 @@ end
 -- The ten "Use the skin's ..." companions (skinning-§6, the rollout's MM-03) are new settings too,
 -- each pinned under the picker it governs: eight beside the HUD media pickers and the Quick style
 -- meta pair, each default on (DECISIONS X3).
+-- sim.stepDelay (R3-SIM-MM, the owner's 2026-11-02 ruling) is a new setting too: the Simulation
+-- step delay slider the other sims have, 0.5 to 10 s in 0.5 s steps, 1 s out of the box.
 -- path|type|default|min|max|step|value keys|sessionOnly|hidden|invert
 local PIN = {
     "data.mergePets|bool|false|nil|nil|nil|-|false|false|false",
@@ -77,6 +79,7 @@ local PIN = {
     "master.locked|bool|false|nil|nil|nil|-|true|false|false",
     "master.scale|number|1|0.5|2|0.05|-|false|false|false",
     "master.visibility|string|always|nil|nil|nil|always,inCombat,never,outOfCombat|false|false|false",
+    "sim.stepDelay|number|1|0.5|10|0.5|-|false|false|false",
     "skin.font|string||nil|nil|nil|-|false|false|false",
     "skin.ignoreFonts|bool|false|nil|nil|nil|-|false|false|false",
     "skin.ignorePanel|bool|true|nil|nil|nil|-|false|false|false",

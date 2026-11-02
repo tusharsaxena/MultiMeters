@@ -753,6 +753,11 @@ L["Which column's numbers decide the row order."] =
 L["Refresh interval"] = "Refresh interval"
 L["Seconds between refreshes. Lower is more responsive and costs more; the display updates at most this often no matter how fast the game reports numbers."] =
     "Seconds between refreshes. Lower is more responsive and costs more; the display updates at most this often no matter how fast the game reports numbers."
+-- The simulator's pace (R3-SIM-MM): the General page's Behavior tab, under its own heading.
+L["Simulator"] = "Simulator"
+L["Simulation step delay (seconds)"] = "Simulation step delay (seconds)"
+L["Paces /mm sim: how many seconds the simulator waits between steps as it plays. A change takes effect from the next step."] =
+    "Paces /mm sim: how many seconds the simulator waits between steps as it plays. A change takes effect from the next step."
 -- The confirmation the header's reset control opens. Its BUTTON label and
 -- tooltip went with the settings-page button that used to sit beside it: the
 -- one way to reach this now is the control on the window whose numbers you are
