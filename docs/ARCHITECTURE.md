@@ -411,15 +411,21 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   profile's `skin.pickerSeen` is false and the addon stands up; a start in combat is held for the
   `PLAYER_REGEN_ENABLED` edge `core/MultiMeters.lua` already receives. A pick previews; Apply, the
   gear and Apply to all save through `NS.WriteSkinChoice`, which is what gives it the Skin tab's Font, Texture, Font outline and Scope rows (LibKa0s v1.83.0; a preview left unapplied is put back on close); the player's close sets `pickerSeen`, and
-  `NS.HideSkinPicker` (the stand-down, a profile event) takes it down without setting it. Its eye
-  puts the windows in test mode (X6). The library titles it "Choose a skin" and puts the owner label,
+  `NS.HideSkinPicker` (the stand-down, a profile event) takes it down without setting it. Its preview
+  is test mode (`spec.preview`, LibKa0s OptionsSkinPicker 11, R6-PV): shown with no meter window on
+  screen, the picker puts the windows in test mode; the eye toggles it; every close (Apply, Apply to
+  all, the gear, the close mark, Escape, `NS.HideSkinPicker`) puts back the state it opened on. Each
+  enter and exit is `WindowManager:SetTestMode`, the switch `/mm test`, the General page's Test mode
+  box and the launcher share, so its combat and simulation refusals hold and the box follows; the
+  exit passes `keepShown = false`, so the windows go back where the visibility rules put them, and a
+  window `/mm toggle` had closed is closed again. The library titles it "Choose a skin" and puts the owner label,
   "Ka0s Multi Meters", on its own line above the dropdown (OptionsSkinPicker minor 2). The reserved `/mm skin` verb opens the same window whatever `pickerSeen` says (`NS.RunSkinVerb`, `O.SkinVerb`).
 - **The EllesmereUI provider** is the library's (`SkinEUI.lua`), chosen by `skin.source = "eui"`; when
   its gate fails the addon wears its Ka0s skin and the Skin tab names the condition.
 - **What stays.** Chat output (X7), inline help markup (X9), StaticPopups, the class and spell art,
   the statistic palette (D14) and the diagnostics report's escapes (D15).
 
-In-client checks: [smoke-tests.md](smoke-tests.md) SKIN-1 to SKIN-24, INSTALL-15 and DEGRADED-11.
+In-client checks: [smoke-tests.md](smoke-tests.md) SKIN-1 to SKIN-24, SKIN-50, INSTALL-15 and DEGRADED-11.
 
 ## Known limitations
 

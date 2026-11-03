@@ -59,7 +59,15 @@ test("Skin picker: the spec names this owner, its seams, the General page's Skin
     assertTrue(rawequal(spec.set, NS.WriteSkinChoice), "set is the write seam")
     assertEqual(spec.page, "general", "DECISIONS X6: the General page")
     assertEqual(spec.tab, NS.SKIN_TAB, "the Skin tab's key")
-    assertEqual(type(spec.onPreview), "function", "the eye: the meter windows in test mode")
+    -- R6-PV: the preview contract (LibKa0s OptionsSkinPicker 11), test mode, and never the
+    -- one-shot onPreview, which spec.preview would win over anyway.
+    local pv = spec.preview
+    assertEqual(type(pv), "table", "spec.preview: the eye's mode")
+    assertEqual(pv.mode, "test", "00_PLAN.md call 2: MultiMeters previews in test mode")
+    for _, k in ipairs({ "enter", "exit", "isActive", "isShown" }) do
+        assertEqual(type(pv[k]), "function", "spec.preview." .. k)
+    end
+    assertEqual(spec.onPreview, nil, "the one-shot eye is gone")
     assertEqual(type(spec.onClose), "function")
 end)
 
@@ -218,17 +226,163 @@ test("Skin picker: the stand-down takes a shown picker down, unmarked", function
     end)
 end)
 
-test("Skin picker: the eye puts the meter windows in test mode", function()
-    -- red under: an eye that writes a stored setting, or one that shows nothing to preview on.
+-- ── the preview (R6-PV; LibKa0s OptionsSkinPicker 11, spec.preview) ───────────────────────────
+--
+-- The owner's rule (Ka0sAddonsCommonTasks docs/2026-11-03-SMOKE_ROUND6): the picker shown with no
+-- meter window on screen puts the windows in test mode; the eye toggles it; every close puts back
+-- the state the picker opened on. Each enter and exit goes through M:SetTestMode, the switch
+-- `/mm test`, the General page's box and the launcher share, so its refusals hold and the box follows.
+
+--- An enabled scene with every meter window hidden by General visibility "Only in combat", out of
+--- combat and out of test mode. (A window `/mm toggle` hid comes back at the next ladder re-run,
+--- the picker's own seen write included, so a rule is the hidden state a close can be held to.)
+local function hiddenScene()
+    local _, NS, mocks = scene(true)
+    local M = NS.WindowManager
+    mocks.setInCombat(false)
+    assertTrue(NS.SetByPath("master.visibility", "inCombat"), "the visibility write")
+    for _, inst in ipairs(M.All()) do inst:RefreshVisibility() end
+    assertFalse(M:AnyShown(), "the scene hides every window")
+    assertFalse(M:IsTest(), "the scene starts out of test mode")
+    return NS, mocks, M
+end
+
+--- The library's real picker for this addon's own spec.
+local function openPicker(NS)
+    local f = NS.Helpers.SkinPicker(NS.SkinPickerSpec())
+    assertTrue(f ~= nil and f:IsShown(), "the library's picker did not show")
+    return f
+end
+
+test("Skin picker preview: shown with every window hidden, it enters test mode", function()
+    -- red under: the one-shot onPreview (nothing runs at show), or an enter that skips the seam.
+    local NS, mocks, M = hiddenScene()
+    quietly(mocks, function()
+        openPicker(NS)
+        assertTrue(M:IsTest(), "the picker did not enter test mode")
+        assertTrue(M:AnyShown(), "test mode put no window on screen")
+        assertEqual(NS.GetSetting("state.testMode"), true, "the General page's box reads the same switch")
+        NS.Helpers.HideSkinPicker()
+    end)
+end)
+
+test("Skin picker preview: the eye toggles test mode off and back on", function()
+    -- red under: an enter-only eye (a second press kept test mode on).
+    local NS, mocks, M = hiddenScene()
+    quietly(mocks, function()
+        local f = openPicker(NS)
+        assertTrue(M:IsTest())
+        f.preview:__fire("OnClick")
+        assertFalse(M:IsTest(), "the eye did not turn test mode off")
+        assertFalse(M:AnyShown(), "turning the preview off left a window the player had hidden")
+        assertFalse(f.preview.lit, "the eye reads dimmed")
+        f.preview:__fire("OnClick")
+        assertTrue(M:IsTest(), "the eye did not turn test mode back on")
+        assertTrue(f.preview.lit, "the eye reads lit")
+        NS.Helpers.HideSkinPicker()
+    end)
+end)
+
+--- Every close route the player has, each on a fresh scene, each by its own act on the window.
+local CLOSES = {
+    { "the close control", function(f) f.close:__fire("OnClick") end },
+    { "Escape", function(f) f:Hide() end },
+    { "Apply", function(f) f.apply:__fire("OnClick") end },
+    { "Apply to all", function(f) f.applyAll:__fire("OnClick") end },
+    { "the addon's own hide", function(_, NS) NS.HideSkinPicker() end },
+}
+
+test("Skin picker preview: every close puts the hidden windows back, out of test mode", function()
+    -- red under: no restore (test mode stays on after the close), or a restore through the
+    -- manual turn-off's Show, which leaves every window the player had hidden on screen.
+    for _, route in ipairs(CLOSES) do
+        local NS, mocks, M = hiddenScene()
+        quietly(mocks, function()
+            local f = openPicker(NS)
+            assertTrue(M:IsTest(), route[1] .. ": not entered")
+            route[2](f, NS)
+            assertFalse(f:IsShown(), route[1] .. ": the picker stayed up")
+            assertFalse(M:IsTest(), route[1] .. ": test mode stayed on after the close")
+            assertFalse(M:AnyShown(), route[1] .. ": a window stayed on screen after the close")
+        end)
+    end
+end)
+
+test("Skin picker preview: windows the player closed with /mm toggle are closed again after it", function()
+    -- red under: a turn-off through the manual Show, or no re-hide after the seen write, whose
+    -- ladder re-run shows a window `/mm toggle` hid.
     local _, NS, mocks = scene(true)
     local M = NS.WindowManager
     quietly(mocks, function()
-        assertFalse(M:IsTest(), "the scene starts out of test mode")
-        NS.SkinPickerSpec().onPreview()
-        assertTrue(M:IsTest(), "the eye did not start test mode")
-        assertTrue(M:AnyShown(), "the eye showed no window")
-        NS.SkinPickerSpec().onPreview()
-        assertTrue(M:IsTest(), "a second press keeps test mode on")
+        NS.SetByPath(PATH, true)                -- seen, so its own write is not the first one here
+        if M:AnyShown() then assertTrue(M:Toggle()) end
+        assertFalse(M:AnyShown(), "the scene hides every window by hand")
+        local f = openPicker(NS)
+        assertTrue(M:IsTest(), "not entered")
+        f.preview:__fire("OnClick")
+        assertFalse(M:AnyShown(), "the eye's exit left a window the player had closed")
+        f.preview:__fire("OnClick")
+        f.close:__fire("OnClick")
+        assertFalse(M:IsTest())
+        assertFalse(M:AnyShown(), "the close left a window the player had closed on screen")
+    end)
+end)
+
+test("Skin picker preview: the eye turned off and the close leaves it off", function()
+    local NS, mocks, M = hiddenScene()
+    quietly(mocks, function()
+        local f = openPicker(NS)
+        f.preview:__fire("OnClick")
+        f.close:__fire("OnClick")
+        assertFalse(M:IsTest(), "a close turned back on what the eye had turned off")
+        assertFalse(M:AnyShown())
+    end)
+end)
+
+test("Skin picker preview: a window already on screen is left alone, the eye undone at the close", function()
+    -- red under: an enter at show whatever the surface (the windows were already showing).
+    local _, NS, mocks = scene(true)
+    local M = NS.WindowManager
+    if not M:AnyShown() then assertTrue(M:Toggle()) end
+    assertTrue(M:AnyShown(), "the scene shows its windows")
+    quietly(mocks, function()
+        local f = openPicker(NS)
+        assertFalse(M:IsTest(), "the picker entered test mode over windows already shown")
+        f.preview:__fire("OnClick")
+        assertTrue(M:IsTest(), "the eye did not enter test mode")
+        f.close:__fire("OnClick")
+        assertFalse(M:IsTest(), "the close left the eye's test mode on")
+        assertTrue(M:AnyShown(), "the close hid a window that was on screen when the picker opened")
+    end)
+end)
+
+test("Skin picker preview: test mode the player had on stays on, and the eye's exit is undone", function()
+    local NS, mocks, M = hiddenScene()
+    quietly(mocks, function()
+        assertTrue(M:SetTestMode(true), "/mm test's own switch")
+        local f = openPicker(NS)
+        assertTrue(M:IsTest())
+        f.preview:__fire("OnClick")
+        assertFalse(M:IsTest(), "the eye did not turn the player's test mode off")
+        f.close:__fire("OnClick")
+        assertTrue(M:IsTest(), "the close did not put the player's test mode back")
         M:SetTestMode(false)
+    end)
+end)
+
+test("Skin picker preview: in combat the eye's start is refused and the close undoes nothing", function()
+    -- the window manager's own refusal, the one `/mm test` and the box print, holds for the eye.
+    local _, NS, mocks = scene(true)
+    local M = NS.WindowManager
+    if not M:AnyShown() then assertTrue(M:Toggle()) end
+    quietly(mocks, function()
+        local f = openPicker(NS)
+        mocks.setInCombat(true)
+        f.preview:__fire("OnClick")
+        assertFalse(M:IsTest(), "the eye started test mode in combat")
+        f.close:__fire("OnClick")
+        mocks.setInCombat(false)
+        assertFalse(M:IsTest(), "the close entered test mode")
+        assertTrue(M:AnyShown(), "the close hid the windows")
     end)
 end)

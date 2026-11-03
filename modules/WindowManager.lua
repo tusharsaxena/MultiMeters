@@ -701,9 +701,16 @@ end
 --- performance-§6). WindowProto:Show refuses on its own too; this keeps the
 --- intent visible at the call site.
 ---
+--- THE SKIN PICKER'S PREVIEW IS THE ONE CALLER THAT PASSES `opts.keepShown = false`
+--- (core/SkinSetup.lua, R6-PV). Its turn-off is a put-back, not the player
+--- leaving test mode: the windows the picker or its eye showed for the preview go
+--- back where the visibility rules put them, as on the pull's turn-off, and the
+--- refusals, the State write and the panel repaint stay this switch's own.
+---
 --- @param enabled boolean
+--- @param opts table|nil  `keepShown = false`: a turn-off without the manual Show
 --- @return boolean applied  false when the start was refused
-function M:SetTestMode(enabled)
+function M:SetTestMode(enabled, opts)
     -- Test mode and a simulation are exclusive (MultiMeters#60): each refuses
     -- while the other runs, and the simulation's start refuses test mode.
     if enabled and NS.Sim and NS.Sim:IsActive() then
@@ -715,7 +722,9 @@ function M:SetTestMode(enabled)
         if NS.State and NS.State.debug and NS.Debug then NS.Debug("Test", "start refused: in combat") end
         return refuseTestStart(L["Cannot start test mode during combat"])
     end
-    applyTestMode(enabled, not enabled and not (NS.IsStoodDown and NS.IsStoodDown()))
+    local keepShown = not enabled and not (NS.IsStoodDown and NS.IsStoodDown())
+    if type(opts) == "table" and opts.keepShown == false then keepShown = false end
+    applyTestMode(enabled, keepShown)
     return true
 end
 

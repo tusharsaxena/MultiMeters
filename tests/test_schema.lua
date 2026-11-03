@@ -1331,14 +1331,18 @@ test("RestoreAllDefaults logs ONE line in total: the profile handler's, and no b
     --- Every line `fn` logs, as "[tag] text". Lua 5.1's `%s` raises on a table,
     --- so the arguments are tostring()ed first.
     local function logged(fn)
-        local lines, original = {}, NS.Debug
+        -- The first-run skin picker a reset profile shows is tests/test_skin_picker.lua's: since R6-PV
+        -- its preview enters test mode when no window is on screen, and that [Test] line is the
+        -- picker's, not the reset's, so the picker is kept out of this count.
+        local lines, original, picker = {}, NS.Debug, NS.MaybeShowSkinPicker
+        NS.MaybeShowSkinPicker = function() end
         NS.Debug = function(tag, fmt, ...)
             local a = { ... }
             for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
             lines[#lines + 1] = "[" .. tag .. "] " .. tostring(fmt):format(a[1], a[2], a[3], a[4])
         end
         local ok, err = pcall(fn)
-        NS.Debug = original
+        NS.Debug, NS.MaybeShowSkinPicker = original, picker
         assertTrue(ok, tostring(err))
         return lines
     end

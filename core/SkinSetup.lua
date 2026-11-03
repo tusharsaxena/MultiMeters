@@ -497,27 +497,85 @@ end
 --
 -- PREVIEW. A pick only previews; `set` (NS.WriteSkinChoice) runs only on Apply, the gear or Apply
 -- to all, and the close control puts back the stored choice (the library's revert reads `get`).
--- The eye puts the meter windows in test mode, which is session state and writes nothing; the
--- library raises its DIALOG window over them once onPreview returns.
+--
+-- THE EYE (R6-PV; LibKa0s OptionsSkinPicker 11, spec.preview). Test mode is the preview: it is
+-- session state, writes nothing, and puts every meter window on screen with placeholder rows. The
+-- library calls `enter("picker")` when the picker shows with no window on screen and test mode
+-- off, the eye toggles it (`exit("eye")` / `enter("eye")`), and every close puts back the state the
+-- picker opened on, then raises its DIALOG window over the meters. Each enter and exit is
+-- WindowManager:SetTestMode, the switch `/mm test`, the General page's Test mode box and the
+-- launcher share, so a start refused in combat or during a simulation prints its own line and the
+-- box follows. The exit passes `keepShown = false`: the windows the preview put on screen go back
+-- where the visibility rules put them, and a window that was hidden when the preview entered (one
+-- the player closed with `/mm toggle`) is hidden again.
 
 local PICKER_PATH = "skin.pickerSeen"
 local pickerHeld = false   -- a start combat held for the PLAYER_REGEN_ENABLED edge
 local quietClose = false   -- true while NS.HideSkinPicker takes the picker down
 
---- The eye: the meter windows in test mode, so the player sees the skin on this addon's frames.
---- A start the window manager refuses (in combat, a simulation running) prints its own line.
-local function previewSkin()
+local previewHidden = nil   -- the windows that were hidden when the preview entered test mode
+local previewRehide = nil   -- the ones the last exit hid again, held for the seen write's re-run
+
+--- The window manager, when it can switch test mode (absent in a partial install).
+local function previewManager()
     local M = NS.WindowManager
-    if not (M and M.SetTestMode) then return end
-    if not M:IsTest() then M:SetTestMode(true) end
+    if M and M.SetTestMode and M.IsTest and M.All then return M end
+    return nil
 end
 
+--- Enter the preview: test mode through the shared switch, noting the windows hidden before it.
+--- @return boolean false when the window manager refused (combat, a simulation) or is absent
+local function previewEnter()
+    local M = previewManager()
+    if not M then return false end
+    local hidden = {}
+    for _, inst in ipairs(M.All()) do
+        if not inst:IsShown() then hidden[inst] = true end
+    end
+    if not M:SetTestMode(true) then return false end
+    previewHidden = hidden
+    return true
+end
+
+--- Hide again every window in `set` that is on screen (one the player had closed with `/mm toggle`,
+--- which the visibility ladder would otherwise put back at its next re-run).
+local function rehide(set)
+    for inst in pairs(set or {}) do
+        if inst:IsShown() then inst:Hide("preview") end
+    end
+end
+
+--- Leave the preview: test mode off without the manual Show, and every window that was hidden when
+--- the preview entered hidden again.
+local function previewExit()
+    local M = previewManager()
+    if not M then return false end
+    if not M:SetTestMode(false, { keepShown = false }) then return false end
+    previewRehide, previewHidden = previewHidden, nil
+    rehide(previewRehide)
+    return true
+end
+
+local PREVIEW = {
+    mode     = "test",
+    enter    = previewEnter,
+    exit     = previewExit,
+    isActive = function() local M = previewManager(); return M ~= nil and M:IsTest() end,
+    isShown  = function() local M = NS.WindowManager; return M ~= nil and M.AnyShown ~= nil and M:AnyShown() end,
+}
+
 --- The player's close: the picker seen, and nothing else. The library's put-back already wears the
---- stored choice, so the skin is not this callback's to move.
+--- stored choice, so the skin is not this callback's to move, and it has already put the preview
+--- back by the time this runs.
 local function pickerClosed()
+    local again = previewRehide
+    previewHidden, previewRehide = nil, nil
     if quietClose then return end
     if not (NS.db and NS.SetByPath) then return end
     NS.SetByPath(PICKER_PATH, true)
+    -- The seen write re-runs the ladder, which shows a window `/mm toggle` hid; the close puts
+    -- back the state the picker opened on, so the windows the preview's exit hid stay hidden.
+    rehide(again)
 end
 
 function NS.SkinPickerSpec()
@@ -526,7 +584,7 @@ function NS.SkinPickerSpec()
         -- The gear: O.OpenOptionsPanel("general"), then O.SelectTab("general", NS.SKIN_TAB), the
         -- Skin tab's key on the General page's strip (settings/General.lua).
         page = "general", tab = NS.SKIN_TAB,
-        onPreview = previewSkin, onClose = pickerClosed,
+        preview = PREVIEW, onClose = pickerClosed,
     }
 end
 
