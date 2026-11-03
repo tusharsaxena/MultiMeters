@@ -2595,13 +2595,14 @@ Total.
 - Skin flip: a new profile takes the step against a template that shows nothing new
 - Skin flip: without the library the step sets the companions by hand and writes the record
 
-### test_skin_fix.lua (35)
+### test_skin_fix.lua (36)
 
 - Gloss: a cell draws the skin's gloss while its texture follows the skin
 - Gloss: a bar with the player's own texture stays plain under Glass
 - Gloss: the tooltip's spell bars take it too, on their own companion
 - A1: the column header strip wears the skin's band, under Custom, with its companion
 - A1: the unit icon wears the skin's icon border, with its companion
+- R4-HUD: the unit icon's edge is the HUD's icon.border, black under Ka0s Default, never icon.outline
 - A2: the segment picker is the shared context menu, titled, the active entry marked
 - A2: a pinned segment is the marked row, and a window hidden closes the menu
 - A2: under the Combat restriction the client's menu stays, because a label may be secret
@@ -2985,7 +2986,7 @@ Total.
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
 | test_skin_flip.lua | 21 |
-| test_skin_fix.lua | 35 |
+| test_skin_fix.lua | 36 |
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
 | test_skin_picker.lua | 12 |
@@ -3003,4 +3004,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2549** |
+| **Total** | **2550** |

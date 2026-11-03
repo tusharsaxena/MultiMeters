@@ -128,6 +128,8 @@ end
 --- skin and never SetBackdrops it (LibKa0s R3-L3: `icon.borderStyle` is not read). Its 0.07 zoom
 --- lands on this bare Texture, not on the icon: drawUnitIcon crops a spec, spell or class icon to the same
 --- 0.07 itself. Without the library there is no border to draw and no Texture.
+--- The meter is the in-combat HUD, so the edge passes `hud = true` (LibKa0s R4-L4): it draws the HUD's
+--- `icon.border`, black under Ka0s Default, never R4-L3's window outline `icon.outline` (#4D4D57).
 ---
 --- @param cell table  the name cell
 --- @param tex table   the unit icon's texture
@@ -136,7 +138,7 @@ local function ensureIconBorder(cell, tex)
     local edge = cell.frame:CreateTexture(nil, "ARTWORK")
     edge:SetAllPoints(tex)
     edge:Hide()
-    NS.Skin.IconBorder(edge, { fromSkin = true })
+    NS.Skin.IconBorder(edge, { fromSkin = true, hud = true })
     cell.iconBorder = edge
 end
 

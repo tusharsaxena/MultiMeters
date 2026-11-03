@@ -133,6 +133,35 @@ test("A1: the unit icon wears the skin's icon border, with its companion", funct
     assertFalse(cell.iconBorder:IsShown(), "the companion off")
 end)
 
+test("R4-HUD: the unit icon's edge is the HUD's icon.border, black under Ka0s Default, never icon.outline", function()
+    -- red under: the row icon edged through S.IconBorder without `hud = true`, so LibKa0s R4-L3's
+    -- window outline (icon.outline, #4D4D57 under Ka0s Default) drew on the meter, which is the
+    -- in-combat HUD (Ka0sAddonsCommonTasks docs/2026-11-03-SMOKE_ROUND4, R4_ADDENDUM_HUD_ICON_EDGE.md).
+    local _, _, _, row, _, Skin = scene()
+    local cell = row.nameCell
+    cell.iconBorder = nil
+    row:Update({ guid = "Player-1-0000000A", name = "Alpha", classFilename = "MAGE", values = {} }, 1)
+    local rec = Skin.painted[cell.iconBorder]
+    assertTrue(rec ~= nil, "the edge was not painted through the library")
+    local function edges(key, want, label)
+        Skin:SetChoice(OWNER, "ka0s", key)
+        for _, side in ipairs({ "Top", "Bottom", "Left", "Right" }) do
+            local tex = rec.regions["edge" .. side]
+            assertTrue(tex ~= nil, label .. ": no " .. side .. " edge")
+            sameColor(tex.__colorTexture, want, label .. ": " .. side)
+        end
+    end
+    local outline = Skin:ResolveSkin("ka0s")["icon.outline"]
+    assertTrue(not (near(outline[1], 0) and near(outline[2], 0) and near(outline[3], 0)),
+        "Ka0s Default's window outline is not black, so this case can tell the two apart")
+    edges("ka0s", { 0, 0, 0, 1 }, "Ka0s Default")
+    for _, key in ipairs({ "glass", "ember", "midnight", "forever", "obsidian" }) do
+        local want = Skin:ResolveSkin(key)["icon.border"]
+        if want then edges(key, want, key) end
+    end
+    edges("ka0s", { 0, 0, 0, 1 }, "Ka0s Default again")
+end)
+
 -- ── A2: the segment picker ───────────────────────────────────────────────────────────────────
 
 --- The picker opened through the real W.ContextMenu: the anchor, the rows, the opts and its answer.
