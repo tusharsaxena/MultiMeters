@@ -398,6 +398,9 @@ local SUITES = {
     -- The meter window's chrome on the skin: the five `skin` modes and the title bar companion,
     -- following live under two skins, the player's own picks, and the one-time v21 reset.
     "test_skin_window",
+    -- The meter window's title band (R5-MM1, R5-WIN): flush inside the edge at the edge's own inset,
+    -- the title gradient, every header child on its middle, a collapsed window the band alone.
+    "test_header_band",
     -- The first-run skin picker: its spec, when it shows (login, profile events, combat, the
     -- stand-down) and that only the player's close marks it seen.
     "test_skin_picker",

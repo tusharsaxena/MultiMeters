@@ -259,9 +259,21 @@ function WindowProto:BuildFrame()
     -- from its title bar in every other frame in the game, and it is the one
     -- horizontal band of this window that no cell occupies — so dragging and
     -- hovering a number stop competing for the same clicks.
+    --
+    -- THE TITLE BAND (R5-MM1, R5-WIN): an invisible frame that takes no mouse,
+    -- laid flush inside the window's edge by ApplyHeaderStrip, which the tinted
+    -- strip fills and every header child (the title, the session line, each
+    -- control, this drag strip) is anchored to by its middle. One frame is the
+    -- one answer to "where is the bar", so nothing on it can sit off its center.
+    local headerBand = CreateFrame("Frame", nil, frame)
+    headerBand:EnableMouse(false)
+    headerBand:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    headerBand:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+    self.headerBand = headerBand
+
     local dragBar = CreateFrame("Frame", nil, frame)
-    dragBar:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-    dragBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+    dragBar:SetPoint("TOPLEFT", headerBand, "TOPLEFT", 0, 0)
+    dragBar:SetPoint("TOPRIGHT", headerBand, "TOPRIGHT", 0, 0)
     dragBar:EnableMouse(true)
     dragBar:RegisterForDrag("LeftButton")
     dragBar:SetScript("OnDragStart", onDragStart)
@@ -549,6 +561,7 @@ end
 
 --- The player's edge (`class` / `custom`), over the backdrop the Shell just wrote. Split out of
 --- ApplyBorder for the CCN gate.
+--- Answers how far in the player's edge reaches: its size with an edge drawn, else 0.
 local function applyOwnEdge(frame, frameCfg)
     local base = frame.GetBackdrop and frame:GetBackdrop() or nil
     base = type(base) == "table" and base or {}
@@ -568,6 +581,17 @@ local function applyOwnEdge(frame, frameCfg)
             nil, 0, 0, 0, 1)
         frame:SetBackdropBorderColor(er, eg, eb, ea)
     end
+    return inset
+end
+
+--- How far in S.Shell lays its bands under the live skin: a flat edge's
+--- `win.borderSize`, else 1 (LibKa0s SkinPaint's Shell, and S.Band's holder). Read
+--- on ApplyConfig, never on the refresh path (R2).
+local function shellInset()
+    local S = NS.Skin
+    local style = S and S.Token and S.Token("win.borderStyle") or "flat"
+    local size = S and S.Token and S.Token("win.borderSize")
+    return style == "flat" and type(size) == "number" and size or 1
 end
 
 --- @param frameCfg table  the window's `frame` config group
@@ -586,7 +610,14 @@ function WindowProto:ApplyBorder(frameCfg)
     local br, bg, bb, ba = surfaceColor(frameCfg.backdropColorMode, frameCfg.backdropColor,
         nil, 0, 0, 0, 0.75, looks.winBg)
 
-    if not skinEdge(frameCfg) then applyOwnEdge(frame, frameCfg) end
+    -- THE EDGE'S INSET, kept for the title band (ApplyHeaderStrip), which sits
+    -- flush inside whichever edge is drawn: the skin's at Shell's own inset, or
+    -- the player's at its size (R5-MM1, the skeptic's correction to `win.inset`).
+    if skinEdge(frameCfg) then
+        self.edgeInset = shellInset()
+    else
+        self.edgeInset = applyOwnEdge(frame, frameCfg)
+    end
     if frame.SetBackdropColor then frame:SetBackdropColor(br, bg, bb, ba) end
 end
 

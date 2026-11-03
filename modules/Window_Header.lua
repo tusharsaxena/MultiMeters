@@ -228,6 +228,51 @@ local function titleBarColor(header, looks)
     return RGBA(header.bgColor, 0, 0, 0, 0.5)
 end
 
+--- The title band's two stops, bottom then top: the skin's `title.bgBottom` and
+--- `title.bgTop` while `header.bgColorFromSkin` is on and the skin draws its band
+--- as a gradient (Ka0s Default, WoW Midnight), else nil and the band is flat.
+local function titleBarStops(header, looks)
+    if header.bgColorFromSkin ~= true or not looks then return nil end
+    local top, bottom = looks.titleBgTop, looks.titleBgBottom
+    if top and bottom then return bottom, top end
+    return nil
+end
+
+--- `c`'s four channels into the kept Color object `into`, made once per window.
+local function intoColor(into, r, g, b, a)
+    into = into or CreateColor(r, g, b, a)
+    into.r, into.g, into.b, into.a = r, g, b, a
+    return into
+end
+
+--- The tinted strip's fill: the skin's title gradient (LootHistory's band, R5-MM1),
+--- or one color for a flat skin and for the player's swatch.
+---
+--- ONE PATH FOR BOTH, ON A WHITE BASE: the strip is always a white texture under a
+--- vertical gradient, and a flat color is a gradient whose two stops agree. A
+--- texture drawn flat after a gradient would otherwise keep the gradient's tint
+--- unless it was reset, and that reset is state to track per texture (the skeptic's
+--- note against P.fill's copy). The two Color objects are kept on the window, so
+--- a repaint allocates nothing. Without CreateColor the swatch is drawn flat.
+function WindowProto:PaintHeaderStrip(header)
+    local tex, looks = self.headerBG, self.skinLooks
+    local br, bg, bb, ba = titleBarColor(header, looks)
+    local tr, tg, tb, ta = br, bg, bb, ba
+    local bottom, top = titleBarStops(header, looks)
+    if bottom then
+        br, bg, bb, ba = bottom[1], bottom[2], bottom[3], bottom[4] or 1
+        tr, tg, tb, ta = top[1], top[2], top[3], top[4] or 1
+    end
+    if type(CreateColor) ~= "function" or not tex.SetGradient then
+        tex:SetColorTexture(br, bg, bb, ba)
+        return
+    end
+    self.headerLow = intoColor(self.headerLow, br, bg, bb, ba)
+    self.headerHigh = intoColor(self.headerHigh, tr, tg, tb, ta)
+    tex:SetColorTexture(1, 1, 1, 1)
+    tex:SetGradient("VERTICAL", self.headerLow, self.headerHigh)
+end
+
 --- A cached look a column header surface follows: `field` of the window's skinLooks while the
 --- group's `modeKey` is Custom and its companion is on. A class or per-statistic mode keeps its color.
 local function customLook(group, modeKey, companion, window, field)
@@ -273,57 +318,54 @@ local function columnHeaderFont(colHeader)
         NS.SkinHudFontSize(colHeader.size or 11, colHeader.fontFromSkin), flags
 end
 
---- Where something `h` pixels tall sits so it is CENTERED in the title bar.
+--- Where something `h` pixels tall sits so it is CENTERED on the title band:
+--- the y offset to anchor its MIDDLE (LEFT, RIGHT or CENTER) at, relative to the
+--- band frame's own middle (`self.headerBand`, laid by ApplyHeaderStrip).
 ---
 --- WHY EVERY LINE OF THE TITLE BAR ASKS THIS. The title and the session line were
 --- pinned 5px below the frame's top edge — a constant that predates the title bar
 --- having a configurable height and had nothing to do with the band it draws in.
---- Nobody noticed until the header grew a strip of icons and the two disagreed.
 --- One center for the text, the session line and the controls means the row
 --- cannot drift again when the bar's height, the font size or the control size
 --- changes.
 ---
---- WHICH BAND IT CENTERS IN, AND WHY IT IS NOT THE TITLE BAR'S OWN. What a player
---- sees as the title bar runs from the frame's TOP EDGE down to BAR_INSET above the
---- band's bottom — the
---- padding above it is not a margin to anyone looking at the window, because the
---- backdrop is drawn behind it and there is no seam. Centering in the tinted band
---- alone (`padding` .. `padding + titleHeight`) is arithmetically centered and
---- optically wrong: it leaves the padding as dead space above the row and lands
---- the text hard against the bar's bottom, which is exactly what "everything is
---- anchored to the bottom" meant when it was reported.
----
---- ANCHORED BY ITS MIDDLE, the way Ka0s DPS Race places its title (CENTER) and
---- controls (RIGHT) at half its 30px bar. The row used to be placed by its TOP
---- edge at `(band - h) / 2`, which is the same line only while the widget is
---- exactly `h` tall; a FontString is as tall as its font's line, not its point
---- size, so a top-anchored title hung off a center it never had. A middle
---- anchor is centered whatever the box turns out to be.
----
---- WHOLE PIXELS. The gap above the box is floored, so a box of a whole-pixel
---- height has both edges on whole pixels: an even box lands exactly on the
---- band's midline, an odd one (or an odd band) half a pixel above it rather
---- than smeared across two.
+--- ON THE BAND, AT 0 (R5-MM1 and R5-WIN, the round 5 lead's call 6: every header
+--- child of every Ka0s window is anchored by its middle to the band at y 0). Until
+--- round 5 the row was centered on the frame's top edge down to BAR_INSET above
+--- the tinted strip's bottom, an offset off the frame while the strip itself hung
+--- at the padding; the two answered different middles. The band is now the strip
+--- and the drag handle and the row's middle, so there is one middle. No per-font
+--- nudge: a box is centered, a face's own baseline is the owner's smoke check.
 ---
 --- COMPUTED, NEVER MEASURED (rule R3): `h` is the caller's own configured size,
---- not something read back off a widget. Clamped at the frame's top edge so a
---- control larger than the bar it sits in overflows downward rather than off the
---- window.
+--- not something read back off a widget. A box taller than the band and its edges
+--- hangs from the frame's top edge instead, so it overflows downward rather than
+--- off the window.
 ---
 --- @param h number  the height of the thing being placed
---- @return number y  the offset to anchor its MIDDLE at, relative to the frame's top
+--- @return number y  the offset to anchor its MIDDLE at, relative to the band's middle
 function WindowProto:TitleRowMid(h)
     h = h or 0
-    local gap = math.floor((self:TitleBandHeight() - h) / 2)
-    if gap < 0 then gap = 0 end
-    return -(gap + h / 2)
+    local e = self:HeaderInset()
+    local over = e + (self:TitleBandHeight() - h) / 2
+    if over < 0 then return over end
+    return 0
 end
 
---- How tall the title bar a player sees is: the frame's top edge down to
---- BAR_INSET up from the bottom of the tinted band. 6 padding + 26 bar - 2 = 30
---- shipped, Ka0s DPS Race's `TITLE_BAR_H`. One number for the row's center and
---- the drag strip, so the two cannot disagree about where the bar ends. 0 with
---- the header hidden.
+--- How far in from the frame's edges the title band sits: flush inside the edge
+--- that is drawn (S.Shell's own inset under the skin's edge, the player's edge
+--- size under theirs; ApplyBorder records it), 1 before the first border pass.
+---
+--- @return number
+function WindowProto:HeaderInset()
+    return self.edgeInset or 1
+end
+
+--- How tall the title band is: the padding plus the header height, less
+--- BAR_INSET. 6 padding + 26 bar - 2 = 30 shipped, LootHistory's bar and Ka0s DPS
+--- Race's `TITLE_BAR_H` (only at the shipped settings: the player's Padding and
+--- Header height move it). One number for the band, the row's center and the drag
+--- strip, so none can disagree about where the bar ends. 0 with the header hidden.
 ---
 --- @return number
 function WindowProto:TitleBandHeight()
@@ -378,10 +420,12 @@ function WindowProto:ApplyTitle()
     -- the close button, and the session line keeps its own RIGHT anchor — the
     -- two halves of the strip are placed from opposite ends, so aligning one can
     -- never push the other off the frame.
-    local y = self:TitleRowMid(size)
+    -- On the band by its middle (TitleRowMid); the x offsets are the frame's, less
+    -- the band's inset, so the title keeps its place off the window's edges.
+    local y, e, band = self:TitleRowMid(size), self:HeaderInset(), self.headerBand
     frame.title:ClearAllPoints()
-    frame.title:SetPoint("LEFT", frame, "TOPLEFT", 8, y)
-    frame.title:SetPoint("RIGHT", frame, "TOPRIGHT", -self:HeaderRightInset(), y)
+    frame.title:SetPoint("LEFT", band, "LEFT", 8 - e, y)
+    frame.title:SetPoint("RIGHT", band, "RIGHT", e - self:HeaderRightInset(), y)
     -- The skin's `title.align` while the companion is on (cause L9); the session line keeps its RIGHT
     -- anchor, so the two never trade ends. Degraded, the token answers nothing.
     frame.title:SetJustifyH(NS.Skin.Resolve("title.align", header.align or "LEFT", header.alignFromSkin == true)
@@ -431,7 +475,6 @@ function WindowProto:ApplyHeaderStrip()
     local header = self.config.header or {}
     local layout = self.layout
     local frame  = self.frame
-    local pad    = layout.padding
 
     -- THE TITLE BAR ONLY. It used to cover both header rows — the title bar and
     -- the column labels — on the reading that "the header" is the whole block a
@@ -447,21 +490,32 @@ function WindowProto:ApplyHeaderStrip()
     -- the skin's companion (MM-A1, DECISIONS D3): while `bgColorFromSkin` is on it
     -- draws `title.bg` (clear for a skin that draws no title band), cached in
     -- skinLooks; off, the swatch, which following the skin never rewrites.
-    local ar, ag, ab, aa = titleBarColor(header, self.skinLooks)
+    -- LIKE LOOTHISTORY'S BAR (R5-MM1, the owner's round 5 item 2, image 33): the
+    -- band sits flush inside the window's edge, at the edge's own inset, rather
+    -- than at the row padding, which left a 4-5 px strip of the window's fill
+    -- between the edge and the band (the "black inner border"). TitleBandHeight
+    -- high: 30 at the shipped settings, as LootHistory's. The rows, the column
+    -- strip and the body keep the padding, LootHistory's 6 px content inset.
+    local e, height = self:HeaderInset(), self:TitleBandHeight()
+    local band = self.headerBand
+    band:ClearAllPoints()
+    band:SetPoint("TOPLEFT", frame, "TOPLEFT", e, -e)
+    band:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -e, -e)
+    band:SetHeight(height > 0 and height or 1)
+
     self.headerBG:ClearAllPoints()
-    self.headerBG:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -pad)
-    self.headerBG:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, -pad)
-    self.headerBG:SetHeight(layout.titleHeight)
-    self.headerBG:SetColorTexture(ar, ag, ab, aa)
+    self.headerBG:SetAllPoints(band)
+    self:PaintHeaderStrip(header)
     self.headerBG:SetShown(layout.titleHeight > 0)
 
-    -- The drag strip covers exactly the title bar a player sees: the frame's top
-    -- edge down to TitleBandHeight. It used to be `titleHeight` tall, which left the
-    -- bottom `padding - BAR_INSET` pixels of the bar (4 shipped) dead to a
-    -- drag. Sized from the layout like every other coordinate — never measured
-    -- off the title FontString.
-    local band = self:TitleBandHeight()
-    self.dragBar:SetHeight(band > 0 and band or 1)
+    -- The drag strip covers exactly the band. It used to be `titleHeight` tall,
+    -- which left the bottom `padding - BAR_INSET` pixels of the bar (4 shipped)
+    -- dead to a drag. Sized from the layout like every other coordinate — never
+    -- measured off the title FontString.
+    self.dragBar:ClearAllPoints()
+    self.dragBar:SetPoint("TOPLEFT", band, "TOPLEFT", 0, 0)
+    self.dragBar:SetPoint("TOPRIGHT", band, "TOPRIGHT", 0, 0)
+    self.dragBar:SetHeight(height > 0 and height or 1)
     self.dragBar:SetShown(layout.titleHeight > 0)
 
     -- NO LINE UNDER THE TITLE BAR (R4-SEP, the owner's 2026-11-03 sign-off: every
@@ -499,8 +553,8 @@ function WindowProto:ApplySessionLine()
     -- time the group total ticks over a magnitude.
     self.sessionLine:ClearAllPoints()
     local height = math.max(size + 4, 12)
-    self.sessionLine:SetPoint("RIGHT", self.frame, "TOPRIGHT",
-        -self:HeaderRightInset(), self:TitleRowMid(height))
+    self.sessionLine:SetPoint("RIGHT", self.headerBand, "RIGHT",
+        self:HeaderInset() - self:HeaderRightInset(), self:TitleRowMid(height))
     self.sessionLine:SetSize(SESSION_LINE_WIDTH, height)
     self.sessionLine:SetShown(shown)
 
@@ -879,7 +933,15 @@ function WindowProto:ApplyMinimized()
         frame:ClearAllPoints()
         frame:SetPoint("TOPLEFT", self.anchor, "TOPLEFT", 0, 0)
         frame:SetPoint("TOPRIGHT", self.anchor, "TOPRIGHT", 0, 0)
-        frame:SetHeight(self.layout.padding * 2 + self.layout.titleHeight)
+        -- EXACTLY THE BAND AND ITS EDGES (R5-MM1): the band plus the edge above and
+        -- below it, so no strip of the window's fill shows under a collapsed bar.
+        -- With the header hidden, the padding's own collapsed state stands.
+        local band = self:TitleBandHeight()
+        if band > 0 then
+            frame:SetHeight(band + 2 * self:HeaderInset())
+        else
+            frame:SetHeight(self.layout.padding * 2 + self.layout.titleHeight)
+        end
     else
         frame:ClearAllPoints()
         frame:SetPoint("TOPLEFT", self.anchor, "TOPLEFT", 0, 0)

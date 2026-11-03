@@ -492,8 +492,12 @@ function HeaderControls:Apply(window)
     -- title and the session line are placed against the same number: the strip
     -- used to be pinned a pixel under the frame padding, which put it 3px below
     -- the text beside it and read as the icons hanging off the bottom of the bar.
-    -- Anchored by the MIDDLE (RIGHT), as Ka0s DPS Race anchors its own controls.
-    local y = window.TitleRowMid and window:TitleRowMid(size) or -(layout.padding - 1 + size / 2)
+    -- Anchored by the MIDDLE (RIGHT) to the title band (R5-WIN, the round 5 lead's
+    -- call 6), at TitleRowMid's 0; the x offset is the frame's, less the band's
+    -- inset, so each control keeps its place off the window's right edge.
+    local y = window.TitleRowMid and window:TitleRowMid(size) or 0
+    local band = window.headerBand or window.frame
+    local e = (window.headerBand and window.HeaderInset) and window:HeaderInset() or 0
     local used = 0
 
     for i = 1, #CONTROLS do
@@ -514,9 +518,9 @@ function HeaderControls:Apply(window)
                 -- same width today, and this stays an accumulator anyway: it is
                 -- the shape that survived a control that was not, and it costs
                 -- one addition.
-                local dx = -(layout.padding + used)
+                local dx = e - (layout.padding + used)
                 button:ClearAllPoints()
-                button:SetPoint("RIGHT", window.frame, "TOPRIGHT", dx, y)
+                button:SetPoint("RIGHT", band, "RIGHT", dx, y)
                 button:SetSize(size, size)
                 -- The art, inset inside the slot. Floored rather than rounded so
                 -- a texture can never come out a pixel wider than the box it is

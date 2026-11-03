@@ -1484,7 +1484,7 @@ Total.
 - HeaderControls: the strip is CENTERED in the title bar
 - HeaderControls: the shipped bar is DPS Race's 30px, centered on its midline
 - HeaderControls: the strip and the title share one center line
-- HeaderControls: every edge in the title row lands on a whole pixel
+- HeaderControls: a box is centered on the band's geometric middle, odd sizes included
 - HeaderControls: a custom header height still centers the whole row
 - HeaderControls: the shipped icon fills the title's own 12px box
 - HeaderControls: a control taller than its bar overflows DOWNWARD
@@ -2668,6 +2668,19 @@ Total.
 - Skin window: the v21 step survives a junk window and leaves an absent group to the template
 - Skin window: the title has a font before the Shell paints it
 
+### test_header_band.lua (10)
+
+- Header band: flush inside the edge at Shell's inset, TitleBandHeight high, in every skin
+- Header band: a 2 px flat edge puts the band 2 px in; a nine-slice edge keeps it 1 px in
+- Header band: under the player's own edge the band sits inside that edge
+- Header band: the band follows the player's header height and padding
+- Header band: the drag strip covers the band
+- Header band: the strip draws the skin's title gradient, and flat for a flat skin
+- Header band: a custom color uses the same geometry, drawn flat, after a gradient
+- Header band: the title, the session line and every control sit on the band's middle, every skin
+- Header band: the header keeps its left and right offsets off the frame's edges
+- Header band: a collapsed window is exactly the band plus its edges
+
 ### test_skin_picker.lua (12)
 
 - Skin picker: the spec names this owner, its seams, the General page's Skin tab and the eye
@@ -2989,6 +3002,7 @@ Total.
 | test_skin_fix.lua | 36 |
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
+| test_header_band.lua | 10 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
@@ -3004,4 +3018,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2550** |
+| **Total** | **2560** |

@@ -233,6 +233,8 @@ local WINDOW_LOOKS = {
     winBg        = "win.bg",       -- frame.backdropColorMode
     titleText    = "title.text",   -- header.colorMode, the title and the session line
     titleBg      = "title.bg",     -- header.bgColorFromSkin
+    titleBgTop   = "title.bgTop",  -- its gradient's stops (R5-MM1): nil for a skin whose band is flat
+    titleBgBottom = "title.bgBottom",
     controlRest  = "icon.tint",    -- frame.controlColorMode
     controlHover = "btn.hover",    -- frame.controlHoverColorMode
     -- The HUD colors' companions (FS-MM-FLIP): a nil look is the stored swatch.
@@ -260,7 +262,7 @@ local CLEAR_WHEN_UNSET = { titleBg = true }
 -- follow, so each is left nil and its `skin` mode falls back to the swatch beside it, the pre-skin
 -- look (DEGRADED-11), as NS.SkinMediaKey falls back to the stored pick.
 local CHROME_LOOKS = {
-    winBg = true, titleText = true, titleBg = true, controlRest = true, controlHover = true,
+    winBg = true, titleText = true, titleBg = true, titleBgTop = true, titleBgBottom = true, controlRest = true, controlHover = true,
     hudText = true, hudLabel = true, barBorder = true, keptShadow = true, headerBand = true,
     sortArrow = true, closeRest = true, closeHot = true, skinStripe = true, skinSelfEdge = true,
 }

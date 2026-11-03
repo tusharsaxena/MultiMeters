@@ -404,6 +404,12 @@ function FRAME.SetColorTexture(self, r, g, b, a)
     self.__colorTexture = { r, g, b, a or 1 }
     return self
 end
+-- A gradient's two stops, copied (the client reads the Color objects when it is called).
+function FRAME.SetGradient(self, orientation, minColor, maxColor)
+    local function copy(c) return { r = c.r, g = c.g, b = c.b, a = c.a or 1 } end
+    self.__gradient = { orientation = orientation, min = copy(minColor), max = copy(maxColor) }
+    return self
+end
 function FRAME.SetVertexColor(self, r, g, b, a)
     self.__vertexColor = { r, g, b, a or 1 }
     return self

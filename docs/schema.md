@@ -669,9 +669,10 @@ old shipped ones — the outline and shadow as a pair, the white control color i
 cannot be told apart from a deliberate choice of it; the step takes it for the shipped default, so a
 player who had picked exactly those values sets them again on the Header tab.
 
-**`height = 26` makes the bar Ka0s DPS Race's 30px.** What a player sees as the title bar runs from the
-frame's top edge to the bar's bottom: `padding` (6) + `height` (26) − `BAR_INSET` (2) = 30, DPS Race's
-`Style.TITLE_BAR_H`. It shipped 18 (a 22px bar) until 2026-10-24. `migrations[17]` (v17 → v18) moves a
+**`height = 26` makes the bar Ka0s DPS Race's 30px.** The title band is `padding` (6) + `height` (26) −
+`BAR_INSET` (2) = 30 tall, DPS Race's `Style.TITLE_BAR_H` and LootHistory's bar, laid flush inside the
+window's edge (since R5-MM1; until then the tinted strip hung at the padding, 6 px in, and the 30 px ran
+from the frame's top edge). It shipped 18 (a 22px bar) until 2026-10-24. `migrations[17]` (v17 → v18) moves a
 stored 18 to 26 in every window of every profile, by the same rule as v17: a stored old default is
 taken for the default, and any other height is the player's. The taller bar comes out of the rows, not
 the window: the 220px window it shipped beside fitted nine rows where it had fitted ten (the window
@@ -857,19 +858,16 @@ bar grows rightward (`SetReverseFill(false)`).
 
 ### The header's controls
 
-The whole title row — name, session line and controls — is centered on one line through
-`Window:TitleRowMid`, computed from the padding, `header.height` and each item's own configured size.
-Each is anchored by its **middle** — the title `LEFT`/`RIGHT`, the session line and every control
-`RIGHT` — on the bar's midline, the way Ka0s DPS Race anchors its title `CENTER` and its controls
-`RIGHT` at half its bar; a FontString is as tall as its font's line rather than its point size, so a
-top anchor centered a box the text never filled. The gap above each box is floored, so every edge
-lands on a whole pixel and an odd box sits half a pixel above the midline. `Window:TitleBandHeight`
-(padding + height − 2, 30 shipped) is the one number the midline and the drag strip are both placed
-from.
-The band it centers in runs from the frame's **top edge** down to the bar's bottom, not the tinted band
-alone: the padding above is not a margin to anyone looking at the window, so centering in the band
-leaves it as dead space above the row and lands the text against the bar's bottom. Nothing in the title
-bar is anchored to a hand-picked offset any more.
+The whole title row — name, session line and controls — is centered on one line: the title band,
+`Window.headerBand`, an invisible frame laid flush inside the window's edge (`Window:HeaderInset`, the
+edge's own inset) and `Window:TitleBandHeight` (padding + height − 2, 30 shipped) tall. The tinted strip
+fills it and the drag strip covers it. Each item is anchored by its **middle** — the title `LEFT`/`RIGHT`,
+the session line and every control `RIGHT` — to the band at y 0 (`Window:TitleRowMid`), the round 5 rule
+for every Ka0s window (R5-WIN); a FontString is as tall as its font's line rather than its point size, so
+a top anchor centered a box the text never filled. There is no per-size nudge: an odd box sits on the
+band's geometric middle. A box taller than the band and its edges hangs from the frame's top edge
+instead. The x offsets are still the frame's (the title 8 px in, the controls the padding in), less the
+band's inset. Nothing in the title bar is anchored to a hand-picked offset any more.
 
 **No divider.** The hairline between the title bar and the column labels, and its four keys
 (`divider`, `dividerThickness`, `dividerColorMode`, `dividerColor`), are gone (R4-SEP, the owner's

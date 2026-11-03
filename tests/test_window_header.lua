@@ -156,8 +156,8 @@ test("No line under the title bar, and the title row sits where it did (R4-SEP)"
     -- The owner's 2026-11-03 sign-off: no window of any Ka0s addon draws a separator under its
     -- header, like the Ka0s Skin Tester's showroom. The window builds no `frame.divider` (which
     -- LibKa0s's ApplySkin would hide anyway) and the schema carries none of its four rows. The
-    -- title, the session line and the control strip keep the shipped 30px bar's midline, because
-    -- TitleRowMid centers against the BAR_INSET constant, never against a texture.
+    -- title, the session line and the control strip keep the shipped 30px bar's midline: since R5-WIN
+    -- each is anchored by its middle to the title band at y 0, never against a texture.
     -- red under: re-creating frame.divider, or a schema row on window.header.divider*.
     local inst, window = scene()
     window:ApplyConfig()
@@ -166,10 +166,13 @@ test("No line under the title bar, and the title row sits where it did (R4-SEP)"
     window:ApplyConfig()
     assertNil(window.frame.divider, "a re-skin brought a line under the title back")
 
-    local _, _, _, _, titleY = window.frame.title:GetPoint(1)
-    local _, _, _, _, lineY  = window.sessionLine:GetPoint(1)
-    assertEqual(titleY, -15, "the title left the 30px bar's midline")
-    assertEqual(lineY, -15, "the session line left the 30px bar's midline")
+    local _, titleRel, _, _, titleY = window.frame.title:GetPoint(1)
+    local _, lineRel, _, _, lineY  = window.sessionLine:GetPoint(1)
+    assertEqual(titleRel, window.headerBand, "the title is not on the title band")
+    assertEqual(lineRel, window.headerBand, "the session line is not on the title band")
+    assertEqual(window:TitleBandHeight(), 30, "the band is not the 30px bar")
+    assertEqual(titleY, 0, "the title left the 30px bar's midline")
+    assertEqual(lineY, 0, "the session line left the 30px bar's midline")
 
     for _, key in ipairs({ "divider", "dividerThickness", "dividerColor", "dividerColorMode" }) do
         assertNil(inst.NS.FindSchemaRow("window.header." .. key), "window.header." .. key .. " is still a row")
