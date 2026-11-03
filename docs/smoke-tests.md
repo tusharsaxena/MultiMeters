@@ -25,7 +25,7 @@ secret-value rules the checks refer to.
 | WIN-1 to WIN-57 | [Windows and the header](#win) | Header controls, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-34 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
-| TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
+| TIP-1 to TIP-37 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-56 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
@@ -1244,6 +1244,12 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
   first, led by the same three as at 3. Result: pass (owner-marked 2026-10-10)
 - **TIP-36. Targets off costs nothing.** Turn Show targets off → no Targets header, and a `/mm perf`
   capture while hovering shows no `targets` bucket activity. Result: pass (owner-marked 2026-10-10)
+- **TIP-37. Tooltip icons have no rough corners (R5-ICON).** After a real pull with a death, hover a
+  damage cell, a Deaths cell and a name with Show targets on → every spell icon, the skull on each death
+  line, the target icon and the question-mark fallback are cropped just inside the art's own bevel: no
+  gray or bevelled corner shows on any of them, and the icons still line up in one column with the
+  names beside them. They take no border (inline icons are cropped only). Fail: a native corner on any
+  tooltip icon, an icon column out of line, or a Lua error. Result:
 
 ## EXPORT
 
@@ -2066,4 +2072,4 @@ On 2026-11-02 the owner reported that every check on the smoke lists of the full
 
 Owed: PANEL-59 (R4-RV), SKIN-44 (R4-RV2), WIN-56 (R4-SEP), SKIN-45 (R4-ZOOM) and SKIN-46 (R4-HUD), the owner's fourth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND4/`), each with an empty `Result:`.
 
-Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-47 and SKIN-48 (R5-RV), WIN-57 (R5-MM1, R5-WIN), EXPORT-56 (R5-WIN), the owner's fifth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND5/`), each with an empty `Result:`.
+Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-47 and SKIN-48 (R5-RV), WIN-57 (R5-MM1, R5-WIN), EXPORT-56 (R5-WIN), TIP-37 (R5-ICON), the owner's fifth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND5/`), each with an empty `Result:`.

@@ -821,6 +821,39 @@ test("Tooltip: every death line in a Deaths cell carries the skull icon", functi
         "the skull icon is missing from the death lines")
 end)
 
+test("Tooltip: a death line's skull is cropped past the art's own bevel (R5-ICON)", function()
+    -- The round 5 icon rule (LibKa0s docs/api/README.md, "Icon art: the rule"): inline markup cannot
+    -- take an edge, so Blizzard art in a tooltip line is cropped 5..59 of 64 a side (0.078).
+    -- red under: `|T%d:%d:%d:0:0|t`, the full 0..1 art with its rough native corners.
+    local inst, cfg, anchor = bench()
+    inst.mocks.setDeathRecap({
+        HasRecapEvents = function() return true end,
+        GetRecapEvents = function(id) return { { spellId = 1, timestamp = id } } end,
+    })
+    inst.NS.Tooltip:CellTooltip(deadGridRow(), "Deaths", anchor, cfg)
+    local texts = table.concat(lineTexts(inst), "\n")
+    assertTrue(texts:find("|T237275:14:14:0:0:64:64:5:59:5:59|t", 1, true) ~= nil,
+        "the skull is drawn uncropped")
+end)
+
+test("Tooltip: every inline icon the tooltips write is cropped 5..59 of 64 (R5-ICON)", function()
+    -- Every `|T` escape in the two tooltip files heads a line with Blizzard art (a spell icon, the
+    -- skull, the target icon, the question mark fallback), so each carries the crop.
+    -- red under: any one of the four formats left at `:0:0|t`.
+    for _, path in ipairs({ "/modules/Tooltip_Builders.lua", "/modules/Tooltip_Lines.lua" }) do
+        local fh = assert(io.open(T.root .. path, "r"))
+        local src = fh:read("*a")
+        fh:close()
+        local n = 0
+        for fmt in src:gmatch('"(|T[^"]-|t)') do
+            n = n + 1
+            assertTrue(fmt:find(":0:0:64:64:5:59:5:59|t", 1, true) ~= nil,
+                path .. " writes uncropped markup: " .. fmt)
+        end
+        assertTrue(n > 0, path .. " writes no markup: the scan is moot")
+    end
+end)
+
 test("Tooltip: a Deaths cell's time sits at the right edge, where a share does", function()
     -- It was in the AMOUNT slot, which is inset by the width of the share slot
     -- beside it — so the times floated a column short of the bar's right edge
@@ -1092,7 +1125,7 @@ test("Tooltip: an event with no id and no name reads as #? under the question ma
     -- No id means no texture lookup either, so the line heads with the addon's
     -- own fallback rather than with an empty `|T|t`.
     assertTrue(table.concat(lineTexts(inst), "\n"):find(
-        "|T" .. [[Interface\ICONS\INV_Misc_QuestionMark]] .. ":14:14:0:0|t", 1, true) ~= nil,
+        "|T" .. [[Interface\ICONS\INV_Misc_QuestionMark]] .. ":14:14:0:0:64:64:5:59:5:59|t", 1, true) ~= nil,
         "an unnamed event lost its fallback icon")
 end)
 

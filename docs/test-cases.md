@@ -1796,7 +1796,7 @@ Total.
 - A tooltip resolves its window from row.windowId when it was not handed one
 - Tooltip:Hide is unconditional
 
-### test_tooltip_deaths.lua (58)
+### test_tooltip_deaths.lua (60)
 
 - Tooltip: hovering a death row lists its events, OLDEST first
 - Tooltip: a death row never reaches the client's spell tooltip
@@ -1832,6 +1832,8 @@ Total.
 - Tooltip: the death tooltip reserves a WIDER minimum than a spell breakdown
 - Tooltip: a Deaths cell's rows carry a FULL bar, not an empty one
 - Tooltip: every death line in a Deaths cell carries the skull icon
+- Tooltip: a death line's skull is cropped past the art's own bevel (R5-ICON)
+- Tooltip: every inline icon the tooltips write is cropped 5..59 of 64 (R5-ICON)
 - Tooltip: a Deaths cell's time sits at the right edge, where a share does
 - Tooltip: the caster column's CAP is narrower than the spell column's
 - Tooltip: both name columns refuse to wrap, so the engine clips them
@@ -2974,7 +2976,7 @@ Total.
 | test_tooltip.lua | 20 |
 | test_tooltip_lines.lua | 41 |
 | test_tooltip_builders.lua | 23 |
-| test_tooltip_deaths.lua | 58 |
+| test_tooltip_deaths.lua | 60 |
 | test_drilldown.lua | 59 |
 | test_export.lua | 94 |
 | test_export_modal.lua | 32 |
@@ -3019,4 +3021,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2561** |
+| **Total** | **2563** |
