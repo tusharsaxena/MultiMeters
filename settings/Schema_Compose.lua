@@ -27,7 +27,7 @@
 -- NS.WindowManager and NS.Visibility are all resolved at CALL time, because this
 -- file loads before all four.
 
-local _, NS = ...
+local addonName, NS = ...
 
 local L = NS.L
 
@@ -49,8 +49,6 @@ local CONTROLCOLOR_SORT   = Vocab.CONTROLCOLOR_SORT
 local CONTROLCOLOR_VALUES = Vocab.CONTROLCOLOR_VALUES
 local DEATHTIME_SORT      = Vocab.DEATHTIME_SORT
 local DEATHTIME_VALUES    = Vocab.DEATHTIME_VALUES
-local DIVIDERCOLOR_SORT   = Vocab.DIVIDERCOLOR_SORT
-local DIVIDERCOLOR_VALUES = Vocab.DIVIDERCOLOR_VALUES
 local GROWTH_SORT         = Vocab.GROWTH_SORT
 local GROWTH_VALUES       = Vocab.GROWTH_VALUES
 local NUMFMT_SORT         = Vocab.NUMFMT_SORT
@@ -339,8 +337,13 @@ do
         -- declared here: this addon ships the Profiles page, and its global reset IS
         -- a profile reset (options-ui-§12). `resetProfile` is not a second reset: it
         -- forwards at call time to the real descriptor's, published as
-        -- NS.OptionsDescriptor, so the tooltip and the act cannot disagree.
+        -- NS.OptionsDescriptor, so the tooltip and the act cannot disagree. `addonName` and
+        -- `get` are what a companion row reads at render (OptionsCompose's skinValue and
+        -- companionOn), the real descriptor's two: without them a picker shows no skin value
+        -- and a bar border's rows stay live under a real style in a skin.
         optlib.__AttachCompose(C, {
+            addonName = addonName,
+            get = function(path) return NS.GetSetting and NS.GetSetting(path) end,
             profilesPage = true,
             resetProfile = function(...)
                 local d = NS.OptionsDescriptor
@@ -437,24 +440,32 @@ end
 -- it is on, the picker is disabled and shows the skin's value, and the surface draws the skin's
 -- token (core/SkinSetup.lua's NS.SkinMediaKey), except a face while the owner ignores fonts: the
 -- picker then shows the stored pick and the surface draws it (LibKa0s-Skin-1.0 minor 8's Resolve).
--- Default ON (DECISIONS X3), as the template declares; the v20 step (core/Database_Migrations.lua) put every
--- stored window on it once (O2). Only the face, the bar texture and the bar border style follow (X4):
--- no color, size or thickness row is governed. The window's own edge has none (FRAME_BORDER_ROWS):
+-- Default ON (DECISIONS X3), as the template declares; the v23 step (core/Database_Migrations.lua) put every
+-- stored window on it once. No size row is governed. The window's own edge has none (FRAME_BORDER_ROWS):
 -- it follows the skin through `frame.borderColorMode = "skin"` instead, the Shell drawing the
 -- skin's whole edge (MM-A1).
+-- Since FS-MM-FLIP the colors and shadows have companions too (FOLLOW_ROW, below), and every border
+-- block is on the bar family, so its companion governs the thickness as well.
 local FROM_SKIN_ROWS = {
     font    = { leaf = "fontFromSkin", label = L["Use the skin's font"],
         tip = L["Draw this text in the skin's font. The font picker is kept but not read while this is on, unless Ignore fonts is ticked on the Skin tab."] },
     texture = { leaf = "barTextureFromSkin", label = L["Use the skin's texture"],
         tip = L["Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."] },
     border  = { leaf = "borderStyleFromSkin", label = L["Use the skin's border"],
-        tip = L["Draw this border in the skin's border style. The style picker is kept but not read while this is on; the thickness and the color stay yours."] },
+        tip = L["Draw this border in the skin's border style and thickness. Both are kept but not read while this is on."] },
 }
+
+--- One color's or shadow's companion row, for a block's `extra` (LibKa0s Options doc, Moving to this
+--- version, section 3). A bool of its own, with its full path; the swatch stays live and keeps its
+--- value (options-ui-§17), which is why no `disabledIf` goes on the pair.
+local function followRow(path, label, tip)
+    return { path = path, type = "bool", default = true, label = label, desc = tip }
+end
 
 --- `spec` with the `fromSkin` companion of `kind` asked for, labeled, worded and defaulted on.
 local function followsSkin(kind, spec)
     local f = FROM_SKIN_ROWS[kind]
-    spec.fromSkin = true
+    spec.fromSkin = (kind == "border") and "bar" or true
     spec.labels, spec.defaults, spec.tooltips = spec.labels or {}, spec.defaults or {}, spec.tooltips or {}
     spec.labels[f.leaf], spec.defaults[f.leaf], spec.tooltips[f.leaf] = f.label, true, f.tip
     return spec
@@ -567,6 +578,16 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     -- all settings has always closed the console -- it used to by writing nil.
     testModePath     = "state.testMode",
     defaults         = { testMode = false, debugConsole = false },
+    -- Sim mode (R6-SIM, LibKa0s compose minor 19, options-ui-§15): the composer's own session-only
+    -- row, straight after Test mode, at its default path `state.sim`. The hooks are the SAME two
+    -- functions the launcher's Sim mode entry carries (core/LauncherSetup.lua, which loads before
+    -- this file), so ticking runs `/mm sim`'s own act -- the bare verb's status and step panel, from
+    -- which the fight starts -- and unticking stops a running sim. The row's get / set are the
+    -- composer's, built from the pair: it stores nothing, and its set toggles only when the value
+    -- differs from the live state, so Reset all settings (default false) stops a running sim and
+    -- never starts one. modules/Sim.lua's listener repaints the box when the sim moves elsewhere.
+    isSimMode        = NS.IsSimMode,
+    toggleSim        = NS.ToggleSim,
     -- The four new addon-wide settings live under `master.` rather than at the
     -- profile root, which is where every other grouped answer in this addon lives
     -- (`data.`, `minimap.`, `export.`) and what keeps `master.scale` from reading
@@ -586,6 +607,7 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
         debugConsole = L["Debug console"],
         testMode     = L["Test mode"],
         minimap      = L["Minimap button"],
+        simMode      = L["Sim mode"],
     },
     -- Resolved at CALL time, both of them. The popup is declared by
     -- settings/General.lua, which loads after this file. The registry is
@@ -714,6 +736,11 @@ dress(MASTER_ROWS, {
     -- and the combat ending call, and it repaints the panel so this box follows
     -- them -- and through the state writer otherwise, which is the sole sender of
     -- TEST_MODE_CHANGED either way.
+    -- Sim mode's box: the words only. Its get / set are the composer's, over the launcher's own
+    -- sim pair, and are left alone here.
+    ["state.sim"] = {
+        desc = L["Run the simulation, the same as /mm sim: ticking it opens the sim panel, which plays a scripted fight through every window, and unticking it stops the simulation. Nothing is saved. Combat, a group, an instance or a reload ends it."],
+    },
     ["state.testMode"] = {
         desc = L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."],
         get = function() return NS.State ~= nil and NS.State.testMode == true end,
@@ -801,12 +828,14 @@ local HEADER_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     keys = { fontSize = "size", fontColor = "color", fontFlags = "outline", fontShadow = "shadow" },
     omit = { useClassColorFont = true },
     defaults = {
-        font = "Friz Quadrata TT", fontSize = 12,
+        fontSize = 12,
         fontColor = { r = 1, g = 0.82, b = 0, a = 1 },
         fontFlags = "@skin", fontShadow = true,
     },
     flagsFromSkin = true,
     classColor = { source = "player" },
+    extra = { followRow("window.header.shadowFromSkin", L["Use the skin's shadow"],
+        L["Draw the title in the skin's text shadow. Draw shadow is kept but not read while this is on."]) },
 }))
 dress(HEADER_TEXT_ROWS, {
     ["window.header.font"] = {
@@ -846,7 +875,7 @@ local BARS_BAR_ROWS = compose("BarGroup", followsSkin("texture", {
         barTexture = L["Bar texture"], barAlpha = L["Bar opacity"], barColor = L["Bar color"],
     },
     defaults = {
-        barTexture = "Blizzard Raid Bar", barAlpha = 1.0,
+        barAlpha = 1.0,
         barColor = { r = 0.35, g = 0.55, b = 0.85, a = 1 },
     },
     -- A CELL IS ABOUT THE ROW IT IS DRAWN ON, so `class` here is the class of the
@@ -902,7 +931,7 @@ local BARS_BG_ROWS = compose("ColorPair", {
     defaults = { bgColor = { r = 0, g = 0, b = 0, a = 1 } },
     classColor = { source = "unit" },
     extra = { {
-        path = "window.bars.bgAlpha", type = "number", default = 0.1,
+        path = "window.bars.bgAlpha", type = "number", default = 0.15,
         min = 0, max = 1, step = 0.01, isPercent = true,
         label = L["Bar background opacity"],
         desc = L["Opacity of the unfilled part of each bar."],
@@ -938,6 +967,8 @@ local BARS_BORDER_ROWS = compose("BorderGroup", followsSkin("border", {
         borderColor = { r = 0, g = 0, b = 0, a = 1 },
     },
     classColor = { source = "unit" },
+    extra = { followRow("window.bars.borderColorFromSkin", L["Use the skin's color"],
+        L["Draw the outline in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."]) },
 }))
 dress(BARS_BORDER_ROWS, {
     ["window.bars.border"] = { desc = L["Draw an outline around each bar."] },
@@ -974,7 +1005,7 @@ local BARS_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     keys = { fontSize = "size", fontColor = "color", fontFlags = "outline", fontShadow = "shadow" },
     omit = { useClassColorFont = true },
     defaults = {
-        font = "Friz Quadrata TT", fontSize = 11,
+        fontSize = 11,
         fontColor = { r = 1, g = 1, b = 1, a = 1 },
         fontFlags = "@skin", fontShadow = true,
     },
@@ -985,7 +1016,12 @@ local BARS_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
         min = 0, max = 1, step = 0.01, isPercent = true,
         label = L["Text opacity"], desc = L["Opacity of the numbers and names."],
         validate = isNumberIn(0, 1),
-    } },
+    },
+    followRow("window.text.colorFromSkin", L["Use the skin's color"],
+        L["Draw the numbers in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."]),
+    followRow("window.text.shadowFromSkin", L["Use the skin's shadow"],
+        L["Draw the numbers and names in the skin's text shadow. Draw shadow is kept but not read while this is on."]),
+    },
 }))
 dress(BARS_TEXT_ROWS, {
     ["window.text.font"] = {
@@ -1023,7 +1059,7 @@ local TIP_BAR_ROWS = compose("BarGroup", followsSkin("texture", {
         barTexture = L["Bar texture"], barAlpha = L["Bar opacity"], barColor = L["Bar color"],
     },
     defaults = {
-        barTexture = "Blizzard Raid Bar", barAlpha = 0.85,
+        barAlpha = 0.85,
         barColor = { r = 0.6, g = 0.6, b = 0.6, a = 1 },
     },
     -- The hovered PLAYER's class, not the local player's: a tooltip is opened over
@@ -1071,7 +1107,10 @@ local TIP_BARBG_ROWS = compose("ColorPair", {
         label = L["Background opacity"],
         desc = L["Opacity of the unfilled part of each tooltip bar."],
         validate = isNumberIn(0, 1),
-    } },
+    },
+    followRow("window.tooltip.barBgColorFromSkin", L["Use the skin's color"],
+        L["Draw the unfilled part in the skin's bar background while the mode is Custom. The background color and opacity are kept but not read while this is on."]),
+    },
 })
 dress(TIP_BARBG_ROWS, {
     ["window.tooltip.barBgColor"] = {
@@ -1101,6 +1140,8 @@ local TIP_BARBORDER_ROWS = compose("BorderGroup", followsSkin("border", {
         borderColor = { r = 0, g = 0, b = 0, a = 1 },
     },
     classColor = { source = "unit" },
+    extra = { followRow("window.tooltip.barBorderColorFromSkin", L["Use the skin's color"],
+        L["Draw the border in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."]) },
 }))
 dress(TIP_BARBORDER_ROWS, {
     ["window.tooltip.barBorderStyle"] = {
@@ -1131,12 +1172,18 @@ local TIP_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     keys = { fontColor = "textColor", fontFlags = "fontOutline" },
     omit = { useClassColorFont = true },
     defaults = {
-        font = "Friz Quadrata TT", fontSize = 12,
+        fontSize = 12,
         fontColor = { r = 1, g = 1, b = 1, a = 1 },
         fontFlags = "@skin", fontShadow = false,
     },
     flagsFromSkin = true,
     classColor = { source = "unit" },
+    extra = {
+        followRow("window.tooltip.textColorFromSkin", L["Use the skin's color"],
+            L["Draw the tooltip's text in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."]),
+        followRow("window.tooltip.fontShadowFromSkin", L["Use the skin's shadow"],
+            L["Draw the tooltip's text in the skin's text shadow. Draw shadow is kept but not read while this is on."]),
+    },
 }))
 dress(TIP_TEXT_ROWS, {
     ["window.tooltip.font"] = {
@@ -1175,7 +1222,7 @@ local COLHEAD_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     keys = { fontSize = "size", fontColor = "color", fontFlags = "outline", fontShadow = "shadow" },
     omit = { useClassColorFont = true },
     defaults = {
-        font = "Friz Quadrata TT", fontSize = 11,
+        fontSize = 11,
         fontColor = { r = 1, g = 0.82, b = 0, a = 1 },
         fontFlags = "@skin", fontShadow = false,
     },
@@ -1183,6 +1230,12 @@ local COLHEAD_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
     -- One strip across the whole window, so `class` can only be the local player's,
     -- exactly as it is for the title bar above it.
     classColor = { source = "player" },
+    extra = {
+        followRow("window.columnHeader.colorFromSkin", L["Use the skin's color"],
+            L["Draw the column labels in the skin's HUD label color while the mode is Custom. The font color is kept but not read while this is on."]),
+        followRow("window.columnHeader.shadowFromSkin", L["Use the skin's shadow"],
+            L["Draw the column labels in the skin's text shadow. Draw shadow is kept but not read while this is on."]),
+    },
 }))
 dress(COLHEAD_TEXT_ROWS, {
     ["window.columnHeader.font"] = {
@@ -1218,6 +1271,8 @@ local COLHEAD_BG_ROWS = compose("ColorPair", {
     omit = { useClassColorBgColor = true },
     defaults = { bgColor = { r = 0, g = 0, b = 0, a = 0 } },
     classColor = { source = "player" },
+    extra = { followRow("window.columnHeader.bgColorFromSkin", L["Use the skin's color"],
+        L["Draw the strip in the skin's list header color while the mode is Custom. The background color is kept but not read while this is on."]) },
 })
 dress(COLHEAD_BG_ROWS, {
     ["window.columnHeader.bgColor"] = {
@@ -1268,8 +1323,6 @@ NS.SchemaCompose = {
     CHROMECOLOR_VALUES   = CHROMECOLOR_VALUES,
     DEATHTIME_SORT       = DEATHTIME_SORT,
     DEATHTIME_VALUES     = DEATHTIME_VALUES,
-    DIVIDERCOLOR_SORT    = DIVIDERCOLOR_SORT,
-    DIVIDERCOLOR_VALUES  = DIVIDERCOLOR_VALUES,
     FRAME_BG_ROWS        = FRAME_BG_ROWS,
     FRAME_BORDER_ROWS    = FRAME_BORDER_ROWS,
     GROWTH_SORT          = GROWTH_SORT,

@@ -92,29 +92,21 @@ local CONTROLCOLOR_VALUES = {
 }
 local CONTROLCOLOR_SORT = { "class", "custom" }
 
--- The divider's three, and the extra one is the point. `skin` is not "a color
--- that happens to match the skin" -- it is *don't touch the texture*, so whatever
--- LibKa0s-Core-1.0's ApplySkin just wrote stands. That is what keeps a re-skin
--- landing on this window along with the debug console and the perf panel
--- (standalone-windows): the shared value is never copied into this repo, never
--- stored in a profile, and never has to be migrated when it changes.
+-- The window chrome's three (MM-A1, DECISIONS D16), where `skin` is the skin's own color
+-- (`win.bg`, `title.text`, `icon.tint`, `btn.hover`) and, for the edge, the skin's whole edge.
+-- The fill, the edge and the title here; the controls in settings/Schema.lua. They were the title
+-- bar divider's three until R4-SEP removed the divider.
 --
--- NO `stat` MODE, for the reason the header's other surfaces do not have one: the
--- divider is one line across the whole window, so "per statistic" could only ever
--- paint it the sort column's color -- a fact already on screen twice over.
-local DIVIDERCOLOR_VALUES = {
+-- NO `stat` MODE: each of these is one surface across the whole window, so "per statistic" could
+-- only ever paint it the sort column's color -- a fact already on screen twice over.
+local CHROMECOLOR_VALUES = {
     -- "Skin", the word the Skin tab uses: under EllesmereUI or any of the nine skins it
     -- is the skin the window wears, not only a Ka0s one (DECISIONS D16).
     skin   = L["Skin"],
     class  = L["Class color"],
     custom = L["Custom color"],
 }
-local DIVIDERCOLOR_SORT = { "skin", "class", "custom" }
-
--- The window chrome's three (MM-A1, DECISIONS D16): the divider's values, where `skin` is the
--- skin's own color (`win.bg`, `title.text`, `icon.tint`, `btn.hover`) and, for the edge, the
--- skin's whole edge. The fill, the edge and the title here; the controls in settings/Schema.lua.
-local CHROMECOLOR_VALUES, CHROMECOLOR_SORT = DIVIDERCOLOR_VALUES, DIVIDERCOLOR_SORT
+local CHROMECOLOR_SORT = { "skin", "class", "custom" }
 
 -- ONE set for both slots, and EVERY VALUE IS LITERAL — modules/Row.lua renders
 -- exactly what is asked for and never falls back to another figure. `none` in
@@ -229,8 +221,6 @@ NS.SchemaVocab = {
     CONTROLCOLOR_VALUES = CONTROLCOLOR_VALUES,
     DEATHTIME_SORT      = DEATHTIME_SORT,
     DEATHTIME_VALUES    = DEATHTIME_VALUES,
-    DIVIDERCOLOR_SORT   = DIVIDERCOLOR_SORT,
-    DIVIDERCOLOR_VALUES = DIVIDERCOLOR_VALUES,
     GROWTH_SORT         = GROWTH_SORT,
     GROWTH_VALUES       = GROWTH_VALUES,
     NUMFMT_SORT         = NUMFMT_SORT,

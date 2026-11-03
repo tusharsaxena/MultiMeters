@@ -307,7 +307,10 @@ local SUITES = {
     "test_sim_session",
     -- The four #60 scenarios end to end, stepped and auto-run (modules/SimScenario.lua, MM-16).
     "test_sim_e2e",
+    -- The Sim mode checkbox on Master controls (R6-SIM, LibKa0s compose minor 19).
+    "test_sim_checkbox",
     "test_launchersetup",
+    "test_launcher_skin_entry",
     "test_lifecycle",
     "test_dispatch",
     "test_vendor_sync",
@@ -334,6 +337,8 @@ local SUITES = {
     "test_window_simstrip",
     "test_layers",
     "test_headercontrols",
+    -- Every header glyph drawn at one visual size, the export bubble included (R6-MM2).
+    "test_header_glyph_size",
     "test_row",
     "test_row_namecell",
     "test_row_cells",
@@ -385,12 +390,21 @@ local SUITES = {
     -- The HUD following the skin: the companions, the cell / header / tooltip media through
     -- them, a skin switch, the meta pair, and the one-time v20 reset.
     "test_skin_hud",
+    -- The colors, borders and shadows on the skin: the companions, Ka0s Default's pixels, a skin
+    -- switch on the drawing setters, and the one per-profile step.
+    "test_skin_flip",
+    -- The addon's own gaps: gloss, the header band and unit icon, the segment menu, the Columns
+    -- glyph, the small misses and the title bars.
+    "test_skin_fix",
     -- The font settings' minimum set, their From skin flags (S.FontFlags), the one-time v22 move
     -- and the HUD size scale (S.HudFontSize), LibKa0s v1.82.0.
     "test_skin_fonts",
     -- The meter window's chrome on the skin: the five `skin` modes and the title bar companion,
     -- following live under two skins, the player's own picks, and the one-time v21 reset.
     "test_skin_window",
+    -- The meter window's title band (R5-MM1, R5-WIN): flush inside the edge at the edge's own inset,
+    -- the title gradient, every header child on its middle, a collapsed window the band alone.
+    "test_header_band",
     -- The first-run skin picker: its spec, when it shows (login, profile events, combat, the
     -- stand-down) and that only the player's close marks it seen.
     "test_skin_picker",
@@ -426,6 +440,10 @@ local SUITES = {
     -- (automated-tests-§3). It needs no consumer facts; with lizard on PATH it also runs lizard
     -- end to end on a hazard fixture, and is a declared skip without it.
     { name = "test_lizard_sighted", dir = "tests/_kit/" },
+    -- Kit revision 50's two skin gates (skinning-§1): the typed-value check and the probe-skin
+    -- switch test, fed by Kit.skinValues and Kit.skinSwitch below.
+    { name = "test_skin_values", dir = "tests/_kit/" },
+    { name = "test_skin_switch", dir = "tests/_kit/" },
 }
 
 -- ---------------------------------------------------------------------------
@@ -453,6 +471,13 @@ Kit.diagnostics = {
     -- The `enabled` row, through the one write seam the checkbox and `/mm disable` use.
     setDisabled = function(off) contract().NS.SetByPath("enabled", not off) end,
 }
+
+-- ---------------------------------------------------------------------------
+-- The two skin gates' facts (skinning-§1, kit revision 50)
+-- ---------------------------------------------------------------------------
+local skinFacts = assert(loadfile(root .. "/tests/skin_facts.lua"))(loadInstance)
+Kit.skinValues = skinFacts.values
+Kit.skinSwitch = skinFacts.switch
 
 -- ---------------------------------------------------------------------------
 -- The exposed contract

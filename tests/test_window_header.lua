@@ -5,7 +5,7 @@
 -- Peeled out of tests/test_window.lua alongside the module it mirrors. This is
 -- the band across the top of a window and everything the player clicks in it:
 -- the padlock and the gear, the title text and its two color modes, the
--- hairline divider, the header LINE that says which fight is on screen, the
+-- absence of any line under the title (R4-SEP), the header LINE that says which fight is on screen, the
 -- per-column header buttons (the arrow that marks the sort is proved in the
 -- sort file), the segment picker, the notice text, and the minimize collapse
 -- that takes the whole body away and leaves this strip behind.
@@ -152,90 +152,32 @@ test("The padlock toggles THIS window only", function()
     assertEqual(other.frame.locked, true, "the other window did not move")
 end)
 
-test("The title-bar divider can be switched off, and does not move the title row", function()
-    -- The one piece of the window's chrome a player can hide. What matters as much
-    -- as the hiding is that NOTHING ELSE MOVES: TitleRowMid centers the title row
-    -- against the DIVIDER_INSET constant, not against this texture, so a hidden
-    -- line leaves the title, the session line and the control strip exactly where
-    -- they were. A layout that measured the divider would shift all three.
-    -- It reads the anchors ApplyConfig actually SET, not TitleRowMid: that pure
-    -- function never sees the divider, so comparing it with itself proved nothing.
-    -- red under: gating the title row on the divider, or hiding it by height 0,
-    -- or any placement (title, session line, controls) offset by the divider.
-    local _, window, cfg = scene()
+test("No line under the title bar, and the title row sits where it did (R4-SEP)", function()
+    -- The owner's 2026-11-03 sign-off: no window of any Ka0s addon draws a separator under its
+    -- header, like the Ka0s Skin Tester's showroom. The window builds no `frame.divider` (which
+    -- LibKa0s's ApplySkin would hide anyway) and the schema carries none of its four rows. The
+    -- title, the session line and the control strip keep the shipped 30px bar's midline: since R5-WIN
+    -- each is anchored by its middle to the title band at y 0, never against a texture.
+    -- red under: re-creating frame.divider, or a schema row on window.header.divider*.
+    local inst, window = scene()
+    window:ApplyConfig()
+    assertNil(window.frame.divider, "the window built a line under its title")
+    if inst.NS.ApplySkin then inst.NS.ApplySkin(window.frame) end
+    window:ApplyConfig()
+    assertNil(window.frame.divider, "a re-skin brought a line under the title back")
 
-    local function placed()
-        local _, _, _, _, titleY = window.frame.title:GetPoint(1)
-        local _, _, _, _, lineY  = window.sessionLine:GetPoint(1)
-        local gearY
-        for _, p in ipairs(window.controls.settings.__points or {}) do
-            if p.point == "RIGHT" then gearY = p.y end
-        end
-        return titleY, lineY, gearY
+    local _, titleRel, _, _, titleY = window.frame.title:GetPoint(1)
+    local _, lineRel, _, _, lineY  = window.sessionLine:GetPoint(1)
+    assertEqual(titleRel, window.headerBand, "the title is not on the title band")
+    assertEqual(lineRel, window.headerBand, "the session line is not on the title band")
+    assertEqual(window:TitleBandHeight(), 30, "the band is not the 30px bar")
+    assertEqual(titleY, 0, "the title left the 30px bar's midline")
+    assertEqual(lineY, 0, "the session line left the 30px bar's midline")
+
+    for _, key in ipairs({ "divider", "dividerThickness", "dividerColor", "dividerColorMode" }) do
+        assertNil(inst.NS.FindSchemaRow("window.header." .. key), "window.header." .. key .. " is still a row")
+        assertNil(inst.NS.Database.GetWindows()[1].header[key], "a new window stored header." .. key)
     end
-
-    window:ApplyConfig()
-    local titleY, lineY, gearY = placed()
-    assertTrue(window.frame.divider:IsShown(), "the divider ships drawn")
-    assertTrue(gearY ~= nil, "the gear was not anchored by its RIGHT point")
-
-    cfg.header.divider = false
-    window:ApplyConfig()
-    assertFalse(window.frame.divider:IsShown(), "the divider ignored its setting")
-    local titleY2, lineY2, gearY2 = placed()
-    assertEqual(titleY2, titleY, "hiding the divider moved the title")
-    assertEqual(lineY2, lineY, "hiding the divider moved the session line")
-    assertEqual(gearY2, gearY, "hiding the divider moved the control strip")
-end)
-
-test("The divider's thickness is a setting", function()
-    local _, window, cfg = scene()
-    cfg.header.dividerThickness = 4
-    window:ApplyConfig()
-    assertEqual(window.frame.divider:GetHeight(), 4)
-end)
-
-test("The divider's SKIN mode writes no color at all, so a re-skin still reaches it", function()
-    -- The shipped mode, and the reason it is a mode rather than a stored color.
-    -- `skin` does not resolve SKIN.divider and write it -- it writes NOTHING, so
-    -- whatever ApplySkin put on the texture stands. That is how standalone-windows
-    -- survives a per-window color picker: the shared value is never copied into
-    -- this repo and never into a profile, so changing it upstream still lands here.
-    -- red under: seeding the swatch from SKIN.divider, or "skin" resolving to a
-    -- literal — either one freezes today's skin into every saved profile.
-    local inst, window, cfg = scene()
-    local skin = inst.mocks.LibStub("LibKa0s-Core-1.0", true).SKIN
-
-    cfg.header.dividerColorMode = "skin"
-    window:ApplyConfig()
-    local drawn = window.frame.divider.__colorTexture
-    assertEqual(drawn[1], skin.divider[1], "skin mode did not leave the library's tint standing")
-    assertEqual(drawn[4], skin.divider[4], "the divider's alpha was dropped")
-
-    -- And the profile holds no copy of it, which is the half that would rot.
-    assertFalse(inst.NS.GetSetting("window.header.dividerColor").r == skin.divider[1],
-        "the custom swatch was seeded from the skin")
-end)
-
-test("The divider takes a custom color and a class color, keeping the configured alpha", function()
-    -- A class color has no alpha of its own, so it takes the swatch's — the same
-    -- rule the cell text keeps, where the configured alpha survives every mode.
-    -- red under: a class divider drawn at 1.0 while the swatch says 0.4.
-    local inst, window, cfg = scene()
-
-    cfg.header.dividerColor     = { r = 0.1, g = 0.2, b = 0.3, a = 0.4 }
-    cfg.header.dividerColorMode = "custom"
-    window:ApplyConfig()
-    local c = window.frame.divider.__colorTexture
-    assertEqual(c[1], 0.1)
-    assertEqual(c[4], 0.4)
-
-    cfg.header.dividerColorMode = "class"
-    window:ApplyConfig()
-    local k = window.frame.divider.__colorTexture
-    local cr = inst.NS.PlayerClassRGB()
-    assertEqual(k[1], cr, "the divider ignored the class color")
-    assertEqual(k[4], 0.4, "the configured alpha did not survive the mode change")
 end)
 
 -- ---------------------------------------------------------------------------
@@ -456,33 +398,59 @@ local function withSegments(opts)
     return inst, window, cfg
 end
 
-test("Segment menu: stored segments first, then a divider, then Current/Overall", function()
+--- Open the skinned segment menu and answer the rows it was handed.
+local function openRows(inst, window)
+    local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0", true)
+    local real, rows = W.ContextMenu, nil
+    W.ContextMenu = function(_, r) rows = r end
+    local opened = window:OpenSegmentMenu()
+    W.ContextMenu = real
+    assertTrue(opened, "the menu must actually open")
+    return rows
+end
+
+--- Pick a row of the skinned segment menu, as a click on it does.
+local function pickSegmentRow(rows, n)
+    rows[n].onClick(rows[n].value, rows[n])
+end
+
+test("Segment menu: a title, stored segments first, a divider, then Current/Overall", function()
     -- The reason to open this menu at all is almost always to look back at a
     -- fight that just ended, so the fights come first.
     local inst, window = withSegments()
+    local rows = openRows(inst, window)
+    assertEqual(#rows, 6)
+    assertEqual(rows[1].title, true, "the row naming the menu")
+    assertEqual(rows[1].label, inst.NS.L["Segment"])
+    assertEqual(rows[4].divider, true)
+    assertEqual(rows[5].label, inst.NS.L["Current"])
+    assertEqual(rows[6].label, inst.NS.L["Overall"])
+end)
+
+test("Segment menu: under the restriction the client's menu keeps its title and divider", function()
+    -- red under: the fallback dropped, which leaves a mid-pull click with no menu at all.
+    local inst, window = withSegments()
+    inst.mocks.setRestricted(true)
     assertTrue(window:OpenSegmentMenu(), "the menu must actually open")
 
     local menu = inst.mocks.__lastMenu
     local kinds = {}
     for _, e in ipairs(menu.entries) do kinds[#kinds + 1] = e.kind end
     assertEqual(table.concat(kinds, ","), "title,button,button,divider,button,button")
-
-    assertEqual(menu:Nth("button", 3).text, inst.NS.L["Current"])
-    assertEqual(menu:Nth("button", 4).text, inst.NS.L["Overall"])
+    menu:Nth("button", 2).callback()
 end)
 
 test("Segment menu: an entry is labeled with its name AND its duration", function()
     local inst, window = withSegments()
-    window:OpenSegmentMenu()
-    assertEqual(inst.mocks.__lastMenu:Nth("button", 1).text, "Bribed Guard   0:22")
+    assertEqual(openRows(inst, window)[2].label, "Bribed Guard   0:22")
 end)
 
 test("Segment menu: picking a segment pins it and marks the window dirty", function()
     local inst, window, cfg = withSegments()
-    window:OpenSegmentMenu()
+    local rows = openRows(inst, window)
     window.dirty = false
 
-    inst.mocks.__lastMenu:Nth("button", 2).callback()
+    pickSegmentRow(rows, 3)
     assertEqual(cfg.data.sessionID, 5, "the SECOND stored segment, not the first")
     assertEqual(window.dirty, true, "a pinned segment has to redraw to take effect")
 end)
@@ -494,8 +462,7 @@ test("Segment menu: picking Current CLEARS the pin", function()
     local inst, window, cfg = withSegments()
     window:SetSegment(4)
 
-    window:OpenSegmentMenu()
-    inst.mocks.__lastMenu:Nth("button", 3).callback()
+    pickSegmentRow(openRows(inst, window), 5)
 
     assertEqual(cfg.data.sessionID, inst.NS.Constants.NO_SEGMENT)
     assertEqual(cfg.data.sessionType, inst.NS.Constants.SESSION_TYPE.Current)
@@ -503,6 +470,7 @@ end)
 
 test("Segment menu: with no menu API the click is refused, not an error", function()
     local inst, window = withSegments()
+    inst.mocks.setRestricted(true)   -- the one window the client's menu still serves
     inst.mocks.MenuUtil = nil
     assertFalse(window:OpenSegmentMenu())
 end)
@@ -747,6 +715,7 @@ test("Column headers have their own color and background", function()
     local _, window = scene{ configure = function(c)
         c.header.color = { r = 0, g = 1, b = 0, a = 1 }
         c.columnHeader.color = { r = 1, g = 0, b = 0, a = 1 }
+        c.columnHeader.colorFromSkin = false   -- the player's own color, off the skin
         c.columnHeader.bgColor = { r = 0, g = 0, b = 1, a = 0.5 }
     end }
     window:ApplyColumnHeaders()
@@ -955,6 +924,7 @@ test("Header shadow reaches every line of the strip", function()
     -- red under: setting the header font without its shadow.
     local _, window, cfg = scene()
     cfg.header.shadow = true
+    cfg.header.shadowFromSkin = false   -- the player's own shadow, off the skin
     window:ApplyConfig()
 
     assertEqual(window.frame.title.__shadow[1], 1, "the title has no shadow")
@@ -973,6 +943,7 @@ test("Column header shadow is its OWN setting, not the header's", function()
     local _, window, cfg = scene()
     cfg.header.shadow       = false
     cfg.columnHeader.shadow = true
+    cfg.header.shadowFromSkin, cfg.columnHeader.shadowFromSkin = false, false   -- off the skin
     window:ApplyConfig()
 
     local button = window.columnHeaders and window.columnHeaders[1]

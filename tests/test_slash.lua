@@ -366,13 +366,18 @@ local function resetallScene()
 
     local asked = {}
     inst.mocks.StaticPopup_Show = function(key) asked[#asked + 1] = key end
+    -- The first-run skin picker a reset profile shows is tests/test_skin_picker.lua's: since R6-PV
+    -- its preview enters test mode when no window is on screen, and that [Test] line is the
+    -- picker's, not the reset's, so the picker is kept out of this count.
+    local picker = NSi.MaybeShowSkinPicker
+    NSi.MaybeShowSkinPicker = function() end
     local lines, original = {}, NSi.Debug
     NSi.Debug = function(tag, fmt, ...)
         local a = { ... }
         for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
         lines[#lines + 1] = "[" .. tag .. "] " .. tostring(fmt):format(a[1], a[2], a[3], a[4])
     end
-    return inst, asked, lines, function() NSi.Debug = original end
+    return inst, asked, lines, function() NSi.Debug = original; NSi.MaybeShowSkinPicker = picker end
 end
 
 --- The two windows are still there, each at the width it was given.

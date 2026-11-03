@@ -168,6 +168,7 @@ function FRAME.GetEffectiveScale(self)
     return s
 end
 function FRAME.SetAlpha(self, a) self.__alpha = a or 1; return self end
+function FRAME.SetClipsChildren(self, on) self.__clips = on and true or false; return self end
 function FRAME.GetAlpha(self) return self.__alpha end
 function FRAME.SetFrameStrata(self, v) self.__strata = v; return self end
 function FRAME.GetFrameStrata(self) return self.__strata end
@@ -333,8 +334,20 @@ end
 function FRAME.SetJustifyH(self, v) self.__justifyH = v; return self end
 function FRAME.GetJustifyH(self) return self.__justifyH end
 function FRAME.SetJustifyV(self, v) self.__justifyV = v; return self end
-function FRAME.SetShadowOffset(self, x, y) self.__shadow = { x, y }; return self end
-function FRAME.SetShadowColor(self, r, g, b, a) self.__shadowColor = { r, g, b, a }; return self end
+-- Recycled, as SetPoint's records are: S.HudFont writes both on every string of every config pass,
+-- and a table per call is this harness's allocation, not the client's C setter's (tests/perf.lua).
+function FRAME.SetShadowOffset(self, x, y)
+    local t = self.__shadow or {}
+    t[1], t[2] = x, y
+    self.__shadow = t
+    return self
+end
+function FRAME.SetShadowColor(self, r, g, b, a)
+    local t = self.__shadowColor or {}
+    t[1], t[2], t[3], t[4] = r, g, b, a
+    self.__shadowColor = t
+    return self
+end
 function FRAME.SetWordWrap(self, v) self.__wordWrap = v; return self end
 
 -- ── textures ───────────────────────────────────────────────────────────────
@@ -389,6 +402,12 @@ function FRAME.GetTexCoord(self)
 end
 function FRAME.SetColorTexture(self, r, g, b, a)
     self.__colorTexture = { r, g, b, a or 1 }
+    return self
+end
+-- A gradient's two stops, copied (the client reads the Color objects when it is called).
+function FRAME.SetGradient(self, orientation, minColor, maxColor)
+    local function copy(c) return { r = c.r, g = c.g, b = c.b, a = c.a or 1 } end
+    self.__gradient = { orientation = orientation, min = copy(minColor), max = copy(maxColor) }
     return self
 end
 function FRAME.SetVertexColor(self, r, g, b, a)

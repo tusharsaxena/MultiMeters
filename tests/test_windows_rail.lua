@@ -358,7 +358,7 @@ test("Windows rail: Defaults restores the active entry's rows for the active win
     for i, col in ipairs(shipped) do
         assertEqual(after.columns[i].stat, col.stat, "column " .. i .. " is the shipped statistic")
     end
-    assertEqual(after.columnHeader.font, "Friz Quadrata TT", "and the header rows came back with it")
+    assertEqual(after.columnHeader.font, "Ka0s Prototype", "and the header rows came back with it")
 end)
 
 test("Windows rail: the page offers one Defaults button whose tooltip fits every entry", function()

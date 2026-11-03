@@ -84,6 +84,7 @@ NS.Row = Row
 --- NS.SkinWindowLooks on every ApplyConfig, so a row never reads a token, R2), or its Ka0s Default
 --- pixel when the window has none yet.
 local LOOK_DEFAULT = {
+    -- skinStripe and skinSelfEdge have none: no look is no skin to draw them.
     rowHover  = { 1, 1, 1, 0.10 },
     rowStripe = { 1, 1, 1, 0.05 },
     selfEdge  = { 1, 0.82, 0, 1 },
@@ -92,6 +93,24 @@ local LOOK_DEFAULT = {
 local function look(window, field)
     local looks = window and window.skinLooks
     return (looks and looks[field]) or LOOK_DEFAULT[field]
+end
+
+--- The stripe an even row draws, or nil. The player's setting, else the skin's while the companion is
+--- on (cause D4); `mm.skinStripe` is clear under Ka0s Default, which ships no stripe.
+local function stripeLook(window, rows)
+    if rows.alternatingBackground then return look(window, "rowStripe") end
+    if rows.alternatingBackgroundFromSkin ~= true then return nil end
+    local stripe = look(window, "skinStripe")
+    return (stripe and stripe[4] > 0) and stripe or nil
+end
+
+--- True when the "this row is you" edge draws: the player's setting, or a skin's while the companion
+--- is on (cause D4). Ka0s Default's `mm.skinSelfEdge` is clear, so it draws none.
+local function selfEdgeOn(window, rows)
+    if rows.highlightSelf then return true end
+    if rows.highlightSelfFromSkin ~= true then return false end
+    local edge = look(window, "skinSelfEdge")
+    return (edge and edge[4] > 0) and true or false
 end
 
 --- The number formatter (modules/Format.lua).
@@ -317,7 +336,7 @@ end
 --- @return number r, number g, number b, number a
 local function cellBackground(bars, entry, statKey)
     local mode  = bars and bars.bgColorMode or "class"
-    local alpha = bars and bars.bgAlpha or 0.1
+    local alpha = bars and bars.bgAlpha or 0.15
 
     if mode == "none" then return 0, 0, 0, 0 end
 
@@ -647,6 +666,10 @@ function Cell:ApplyBarSkin(bars)
     -- implementations land on top of it: the flat one at OVERLAY, the art at
     -- BORDER. The text is OVERLAY and stays above both.
     if fill and fill.SetDrawLayer then fill:SetDrawLayer("BACKGROUND", 1) end
+
+    -- The skin's gloss (cause A3), once the bar has its texture; a skin change needs no call. Its
+    -- companion is the texture's: a player's own texture stays plain.
+    NS.Skin.BarGloss(bar, bars ~= nil and bars.textureFromSkin == true)
     -- fillDirection "LEFT" means the bar GROWS rightward from the left edge,
     -- which is SetReverseFill(false). The setting is named for where the fill
     -- starts because that is what a player looking at the window sees.
@@ -709,6 +732,15 @@ local function textAlpha(text)
     return colorAlpha * setting
 end
 
+--- A cell's number color before any class or per-statistic mode: the skin's `hud.text` while
+--- `text.colorFromSkin` is on, out of the window's cached looks (R2), else the swatch. Nil looks,
+--- degraded, leave the swatch.
+local function cellTextRGB(window, text)
+    local skin = text.colorFromSkin == true and window.skinLooks and window.skinLooks.hudText
+    if skin then return skin[1], skin[2], skin[3] end
+    return RGBA(text.color, 1, 1, 1, 1)
+end
+
 --- @param entry table|nil  defaults to the cell's current row
 function Cell:ApplyNameColor(entry)
     if self.key ~= "name" then return end
@@ -756,7 +788,7 @@ function Cell:ApplyEntryTextColor(entry)
     -- first: an unknown class and a statistic with no palette entry are both "no
     -- color information", which is honestly answered by the color the player
     -- picked rather than by an invented hue.
-    local r, g, b = RGBA(text.color, 1, 1, 1, 1)
+    local r, g, b = cellTextRGB(self.window, text)
 
     if mode == "class" then
         local cr, cg, cb = ClassRGB(entry and entry.classFilename)
@@ -777,21 +809,18 @@ end
 function Cell:ApplyTextStyle(text)
     -- The face follows the skin (`hud.font` while `text.fontFromSkin` is on), and with it the size's
     -- HUD scale (D-09, NS.SkinHudFontSize); From skin flags follow the Font outline (D-07,
-    -- NS.SkinFontFlags). The shadow and color stay the player's (DECISIONS X4, D12).
+    -- NS.SkinFontFlags). The shadow and the color take their own companions (FS-MM-FLIP).
     local path = fontPath(NS.SkinMediaKey(text, "font", "hud.font"))
     local flags = NS.SkinFontFlags(text.outline)
     local size = NS.SkinHudFontSize(text.size or 11, text.fontFromSkin)
-    local tr, tg, tb = RGBA(text.color, 1, 1, 1, 1)
+    local tr, tg, tb = cellTextRGB(self.window, text)
     local ta = textAlpha(text)
-    local shadowX = text.shadow and 1 or 0
-    local shadowY = text.shadow and -1 or 0
 
-    self.left:SetFont(path, size, flags)
-    self.right:SetFont(path, size, flags)
+    local kept = self.window.skinLooks and self.window.skinLooks.keptShadow
+    NS.SkinHudFont(self.left, path, size, flags, text.shadow, text.shadowFromSkin, kept)
+    NS.SkinHudFont(self.right, path, size, flags, text.shadow, text.shadowFromSkin, kept)
     self.left:SetTextColor(tr, tg, tb, ta)
     self.right:SetTextColor(tr, tg, tb, ta)
-    self.left:SetShadowOffset(shadowX, shadowY)
-    self.right:SetShadowOffset(shadowX, shadowY)
 
     -- ON THE TWO FONTSTRINGS, NEVER ON THE BAR. `text.alpha` used to be
     -- multiplied into the StatusBar's own alpha, on the reasoning that the two
@@ -1153,7 +1182,7 @@ function RowProto:ApplyLayout(layout)
     -- Both colors are the window's cached skin looks (`text.accent`, `mm.rowHover`), re-read by
     -- the ApplyConfig every OnLooksChanged runs, so a skin switch repaints them here.
     local edge, hover = look(self.window, "selfEdge"), look(self.window, "rowHover")
-    self.selfHighlight:SetColorTexture(edge[1], edge[2], edge[3], rows.highlightSelf and 1 or 0)
+    self.selfHighlight:SetColorTexture(edge[1], edge[2], edge[3], selfEdgeOn(self.window, rows) and 1 or 0)
     self.mouseHighlight:SetColorTexture(hover[1], hover[2], hover[3], hover[4])
     self.mouseHighlight:SetShown(false)
 end
@@ -1183,8 +1212,8 @@ function RowProto:Update(entry, index)
     --
     -- What is left here is the alternating stripe, which is a ROW-level fact.
     local rows = self.window.config.rows or {}
-    if rows.alternatingBackground and index % 2 == 0 then
-        local stripe = look(self.window, "rowStripe")
+    local stripe = index % 2 == 0 and stripeLook(self.window, rows)
+    if stripe then
         self.bg:SetColorTexture(stripe[1], stripe[2], stripe[3], stripe[4])
         self.bg:Show()
     else
@@ -1195,7 +1224,7 @@ function RowProto:Update(entry, index)
     -- `isLocalPlayer`. Reading both is one `or` here against a bug report about
     -- a highlight that works in the grid and not in a breakdown.
     local isSelf = entry.isPlayer or entry.isLocalPlayer
-    self.selfHighlight:SetShown((rows.highlightSelf and isSelf) and true or false)
+    self.selfHighlight:SetShown((isSelf and selfEdgeOn(self.window, rows)) and true or false)
 
     self.nameCell:SetPlayer(entry, self.window.sortColumn)
 

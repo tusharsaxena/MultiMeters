@@ -80,6 +80,39 @@ end
 
 local function tint(button) return button.tex.__vertexColor or {} end
 
+--- The title bar's color as drawn: since R5-MM1 the strip is a white base under a vertical
+--- gradient, and a flat color is a gradient whose two stops agree. Answers the bottom stop and
+--- the top one; a strip with no gradient answers its flat color twice.
+local function strip(window)
+    local tex = window.headerBG
+    local g = tex.__gradient
+    if g then
+        return { g.min.r, g.min.g, g.min.b, g.min.a }, { g.max.r, g.max.g, g.max.b, g.max.a }
+    end
+    local c = tex.__colorTexture or {}
+    return c, c
+end
+
+--- The strip is `want` flat: both stops.
+local function flatStrip(window, want, msg)
+    local bottom, top = strip(window)
+    sameColor(bottom, want, msg)
+    sameColor(top, want, msg .. " (top)")
+end
+
+--- The strip is the skin's band: its title gradient where the skin sets both stops, else title.bg.
+local function skinStrip(NS, window, msg)
+    local bottom, top = strip(window)
+    local hi, lo = NS.Skin.Color("title.bgTop"), NS.Skin.Color("title.bgBottom")
+    if hi and lo then
+        sameColor(bottom, token(NS, "title.bgBottom"), msg .. " (title.bgBottom)")
+        sameColor(top, token(NS, "title.bgTop"), msg .. " (title.bgTop)")
+    else
+        sameColor(bottom, token(NS, "title.bg"), msg)
+        sameColor(top, token(NS, "title.bg"), msg .. " (top)")
+    end
+end
+
 --- Every chrome surface against the skin's tokens: the fill, the Shell's edge, the title bar
 --- background, the title, and both control colors.
 local function assertFollows(NS, window, Skin, label)
@@ -88,7 +121,7 @@ local function assertFollows(NS, window, Skin, label)
     local edge = shellEdge(Skin, f)
     assertTrue(edge ~= nil, label .. ": the Shell draws no edge, so the window wears the player's")
     sameColor(edge, token(NS, "win.border"), label .. ": the edge is win.border")
-    sameColor(window.headerBG.__colorTexture or {}, token(NS, "title.bg"), label .. ": the title bar is title.bg")
+    skinStrip(NS, window, label .. ": the title bar is the skin's title band")
     local tt = token(NS, "title.text")
     sameColor({ f.title:GetTextColor() }, { tt[1], tt[2], tt[3] }, label .. ": the title is title.text")
     local rest, hover = token(NS, "icon.tint"), token(NS, "btn.hover")
@@ -194,7 +227,7 @@ test("Skin window: switched back to custom, every surface draws the player's col
     assertEqual((f.__backdrop or {}).edgeSize, 3, "the player's edge thickness")
     sameColor(f.__backdropBorderColor or {}, { 0.5, 0.6, 0.7, 1 }, "the edge color")
     assertTrue(shellEdge(Skin, f) == nil, "the Shell's edge is still drawn under the player's")
-    sameColor(window.headerBG.__colorTexture or {}, { 0.9, 0.1, 0.1, 0.5 }, "the title bar")
+    flatStrip(window, { 0.9, 0.1, 0.1, 0.5 }, "the title bar")
     sameColor({ f.title:GetTextColor() }, { 0.2, 0.9, 0.2 }, "the title")
     local button = window.controls.settings
     sameColor(tint(button), { 0, 0, 1 }, "a control at rest")
@@ -206,7 +239,7 @@ test("Skin window: switched back to custom, every surface draws the player's col
     Skin:SetChoice(OWNER, "ka0s", "obsidian")
     sameColor(fill(f), { 0.1, 0.2, 0.3, 0.4 }, "the fill after a skin switch")
     assertEqual((f.__backdrop or {}).edgeFile, [[Interface\GridEdge]], "the edge after a skin switch")
-    sameColor(window.headerBG.__colorTexture or {}, { 0.9, 0.1, 0.1, 0.5 }, "the title bar after a skin switch")
+    flatStrip(window, { 0.9, 0.1, 0.1, 0.5 }, "the title bar after a skin switch")
 end)
 
 test("Skin window: class mode still takes the local player's class on every chrome surface", function()
@@ -249,7 +282,7 @@ test("Skin window: without the library the Skin modes draw the stored colors, th
     local f = window.frame
     sameColor(fill(f), { 0.1, 0.2, 0.3, 0.4 }, "the fill")
     sameColor({ f.title:GetTextColor() }, { 0.2, 0.9, 0.2 }, "the title")
-    sameColor(window.headerBG.__colorTexture or {}, { 0.9, 0.1, 0.1, 0.5 }, "the title bar")
+    flatStrip(window, { 0.9, 0.1, 0.1, 0.5 }, "the title bar")
     -- The edge is the player's: no Shell can draw the skin's (skinEdge needs NS.SKIN_LIVE).
     local bd = f.__backdrop or {}
     assertEqual(bd.edgeFile, [[Interface\GridEdge]], "the stored border style is not drawn")
@@ -272,12 +305,13 @@ test("Skin window: a skin that sets no title band draws a clear title bar", func
     local _, NS, window = scene()
     local real = NS.Skin.Color
     NS.Skin.Color = function(name, ...)
-        if name == "title.bg" then return nil end
+        -- A band of none is all three unset: the blend and both gradient stops (R5-MM1).
+        if name == "title.bg" or name == "title.bgTop" or name == "title.bgBottom" then return nil end
         return real(name, ...)
     end
     window:ApplyConfig()
     NS.Skin.Color = real
-    sameColor(window.headerBG.__colorTexture or {}, { 0, 0, 0, 0 }, "the title bar")
+    flatStrip(window, { 0, 0, 0, 0 }, "the title bar")
 end)
 
 -- ── the one-time reset (O2, the owner's ruling R-3) ──────────────────────────────────────────
@@ -316,8 +350,8 @@ test("Skin window: the v21 step puts every window of every profile's chrome on t
         global   = { schemaVersion = 20 },
     })
     local NS = inst.NS
-    assertEqual(NS.SCHEMA_VERSION, 22)
-    assertEqual(NS.db.global.schemaVersion, 22)
+    assertEqual(NS.SCHEMA_VERSION, 26)
+    assertEqual(NS.db.global.schemaVersion, 26)
     for _, name in ipairs({ "Default", "Raid" }) do
         for i, w in ipairs(NS.db.sv.profiles[name].windows) do
             local where = name .. " window " .. i
@@ -346,7 +380,7 @@ test("Skin window: the v21 reset runs once, so a pick made after it is kept", fu
     assertEqual(w.header.bgColorFromSkin, false, "a second walk took the player's pick back")
 
     local again = initWith(_G.MultiMetersDB)
-    assertEqual(again.NS.db.global.schemaVersion, 22)
+    assertEqual(again.NS.db.global.schemaVersion, 26)
     local w2 = again.NS.Database.FindWindow(1)
     assertEqual(w2.frame.backdropColorMode, "custom", "a reload re-ran the reset")
     assertEqual(w2.header.bgColorFromSkin, false, "a reload re-ran the reset")
@@ -361,7 +395,7 @@ test("Skin window: a v19 account takes both resets in one walk", function()
         global   = { schemaVersion = 19 },
     })
     local w = inst.NS.Database.FindWindow(1)
-    assertEqual(inst.NS.db.global.schemaVersion, 22)
+    assertEqual(inst.NS.db.global.schemaVersion, 26)
     assertOnSkin(w, "v19 window")
     assertEqual(w.header.fontFromSkin, true, "the v20 companions did not land")
 end)

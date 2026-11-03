@@ -49,12 +49,24 @@ local Host = NS.SimHost
 local L = NS.L
 local MSG = NS.Constants.MSG
 
---- The pause, in seconds, after each step before a playing simulation plays the next one. A fixed
---- constant, as KickCD's is: no settings row (the run's lead decision on MM-18).
-Host.STEP_DELAY = 1
+-- The pace of a playing stepper (R3-SIM-MM, the owner's 2026-11-02 ruling, as the other sims have
+-- it): the seconds between two steps, the `sim.stepDelay` setting, read at each step so a change
+-- lands on the next. The range and the validator are the row's (settings/Schema_General.lua).
+Host.STEP_DELAY = NS.defaults.profile.sim.stepDelay
+Host.STEP_DELAY_MIN, Host.STEP_DELAY_MAX, Host.STEP_DELAY_STEP = 0.5, 10, 0.5
 
---- The seconds a playing simulation waits between steps (the descriptor's stepDelay).
+--- Whether `v` is a pace the setting takes.
+function Host.ValidStepDelay(v)
+    if type(v) ~= "number" or v ~= v or v < Host.STEP_DELAY_MIN or v > Host.STEP_DELAY_MAX then return false end
+    local n = v / Host.STEP_DELAY_STEP
+    return n == math.floor(n)
+end
+
+--- The seconds a playing simulation waits between steps (the descriptor's stepDelay): the stored
+--- setting, read now, else the default.
 function Host.StepDelay()
+    local v = NS.GetSetting and NS.GetSetting("sim.stepDelay")
+    if Host.ValidStepDelay(v) then return v end
     return Host.STEP_DELAY
 end
 
@@ -335,3 +347,14 @@ end
 -- Library absent: NS.Sim stays core/SimSetup.lua's inert stub, whose OnStop does nothing.
 
 for _, step in ipairs(STOP_STEPS) do NS.Sim:OnStop(step) end
+
+-- THE SIM MODE CHECKBOX FOLLOWS THE SESSION (R6-SIM, LibKa0s compose minor 19). The library tells its
+-- listeners whenever the session starts, gets ready, steps or stops, whoever started or stopped it:
+-- `/mm sim`, the step panel, the launcher's entry, the box itself or an auto-stop (combat, a group,
+-- an instance). An in-place scalar refresh re-reads the box on an open page; a hidden page re-reads
+-- it on its next show. Resolved at call time: settings/OptionsSetup.lua publishes NS.Helpers after
+-- this file loads. The stub's AddListener does nothing.
+NS.Sim:AddListener(function()
+    local H = NS.Helpers
+    if H and H.RefreshScalars then H.RefreshScalars() end
+end)

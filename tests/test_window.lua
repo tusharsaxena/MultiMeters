@@ -388,6 +388,9 @@ end)
 
 test("An empty session says so rather than leaving a blank grid", function()
     local inst, window = scene()
+    -- A window face that is not the skin's, or the last case below compares the skin to itself.
+    window.config.header.font, window.config.header.fontFromSkin = "Friz Quadrata TT", false
+    window:ApplyConfig()
     window:Refresh()
     assertFalse(window.empty ~= nil and window.empty:IsShown(), "there is data, so no empty state")
     inst.mocks.setSession(CURRENT, "*", { combatSources = {}, maxAmount = 0, totalAmount = 0 })
@@ -1105,13 +1108,13 @@ test("At minimum height the strip takes the row and the bounds do not move", fun
 end)
 
 test("The strip is born hidden, with the localized line and the info art", function()
-    -- red under: building the strip without the L key, or enabling its mouse (it has no tooltip).
+    -- red under: building the strip without the L key, or dropping onEnd (SF-F1: the strip takes the mouse for its right-click menu, still no tooltip).
     local inst, window = scene()
     local strip = window.testStrip
     assertTrue(strip ~= nil, "W.TestStrip is built in BuildFrame")
     assertFalse(strip:IsShown())
     assertEqual(strip.text:GetText(), inst.NS.L[STRIP_LINE])
-    assertFalse(strip:IsMouseEnabled())
+    assertTrue(strip:IsMouseEnabled(), "onEnd gives the strip its right-click End test menu")
     assertTrue(strip.__icon ~= nil and strip.__icon:GetTexture() == inst.NS.Icon("info"),
         "the host passes its info icon")
 end)

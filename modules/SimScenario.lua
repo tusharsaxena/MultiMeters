@@ -31,21 +31,34 @@ local World = assert(Host.World, "modules/SimScenario.lua loads after modules/Si
 --
 -- modules/SimDrivers.lua's fight shape: { name, enemy, ticks, secondsPerTick, ends, deaths }.
 -- A death names a role (the first living mate of that role, never the player), or `all`.
+--
+-- WALL TIME (R4-MM1, Ka0sAddonsCommonTasks docs/2026-11-03-SMOKE_ROUND4). Every fight plays for
+-- FIGHT_SECONDS of wall time: the pull and tick 1 at once, then a tick every D.TICK, so TICKS =
+-- FIGHT_SECONDS / D.TICK + 1 (21: two meter updates a second). The host's gate holds the next step
+-- until the last tick, so a playing fight step lasts max(sim.stepDelay, FIGHT_SECONDS), and the
+-- slider tops out at FIGHT_SECONDS (modules/Sim.lua's STEP_DELAY_MAX). secondsPerTick is the
+-- SIMULATED time each tick adds, picked so each segment models about what it did before the fights
+-- were stretched (trash about 20 s, the dungeon boss about 3 minutes, the raid boss about 5), and the
+-- deaths sit at the same point of the fight as they did over the old tick counts.
+
+Host.FIGHT_SECONDS = 10
+local TICKS = math.floor(Host.FIGHT_SECONDS / D.TICK + 0.5) + 1
 
 local SHADOWCROWN = { creatureID = 211290, name = "Speaker Shadowcrown" }
 local VEXIE = { creatureID = 225821, name = "Vexie and the Geargrinders" }
 
 local FIGHTS = {
-    dungeonTrash = { name = "Trash", ticks = 6, secondsPerTick = 4, ends = true },
-    dungeonBoss = { name = SHADOWCROWN.name, enemy = SHADOWCROWN, ticks = 10, secondsPerTick = 18, ends = true,
-        deaths = { { tick = 7, role = "DAMAGER" } } },
-    raidBoss = { name = VEXIE.name, enemy = VEXIE, ticks = 12, secondsPerTick = 25, ends = true,
-        deaths = { { tick = 6, role = "DAMAGER" }, { tick = 9, role = "HEALER" } } },
+    dungeonTrash = { name = "Trash", ticks = TICKS, secondsPerTick = 1, ends = true },
+    dungeonBoss = { name = SHADOWCROWN.name, enemy = SHADOWCROWN, ticks = TICKS, secondsPerTick = 9, ends = true,
+        deaths = { { tick = 15, role = "DAMAGER" } } },
+    raidBoss = { name = VEXIE.name, enemy = VEXIE, ticks = TICKS, secondsPerTick = 15, ends = true,
+        deaths = { { tick = 11, role = "DAMAGER" }, { tick = 16, role = "HEALER" } } },
     -- Everyone dies once by the last tick: a damage dealer, then a healer, then the rest together.
-    wipeBoss = { name = SHADOWCROWN.name .. " (wipe)", enemy = SHADOWCROWN, ticks = 8, secondsPerTick = 15,
-        ends = true, deaths = { { tick = 5, role = "DAMAGER" }, { tick = 6, role = "HEALER" }, { tick = 8, all = true } } },
-    wipeRepull = { name = "Trash", ticks = 4, secondsPerTick = 4, ends = true },
-    zoneTrash = { name = "Trash", ticks = 5, secondsPerTick = 4, ends = true },
+    wipeBoss = { name = SHADOWCROWN.name .. " (wipe)", enemy = SHADOWCROWN, ticks = TICKS, secondsPerTick = 6,
+        ends = true, deaths = { { tick = 13, role = "DAMAGER" }, { tick = 16, role = "HEALER" },
+            { tick = TICKS, all = true } } },
+    wipeRepull = { name = "Trash", ticks = TICKS, secondsPerTick = 1, ends = true },
+    zoneTrash = { name = "Trash", ticks = TICKS, secondsPerTick = 1, ends = true },
 }
 Host.FIGHTS = FIGHTS
 
@@ -80,9 +93,12 @@ local function deathsOf(fight)
     return n == 0 and L["no deaths"] or L["%d deaths"]:format(n)
 end
 
+--- The fight step. The label shows the step's wall duration ("Pull Trash (10 s)"); the tip says
+--- how the ticks map to the segment's simulated length.
 local function fight(f)
-    return { kind = "fight", fight = f,
-        label = L["Pull %s (%d ticks x %d s)"]:format(f.name, f.ticks, f.secondsPerTick), tip = {
+    local wall = math.floor((f.ticks - 1) * D.TICK + 0.5)
+    return { kind = "fight", fight = f, label = L["Pull %s (%d s)"]:format(f.name, wall), tip = {
+            { L["Plays"], L["%d meter ticks in %d s, a %d s fight"]:format(f.ticks, wall, f.ticks * f.secondsPerTick) },
             { FIRES, "PLAYER_REGEN_DISABLED, DAMAGE_METER_CURRENT_SESSION_UPDATED" },
             { L["Ends with"], "PLAYER_REGEN_ENABLED, DAMAGE_METER_COMBAT_SESSION_UPDATED" },
             { HOLDS, L["a new segment, %s; %s"]:format(f.name, deathsOf(f)) },

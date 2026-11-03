@@ -312,3 +312,73 @@ test("Sim session: DropStaleSegment writes nothing while a session runs", functi
     ns.Sim:Stop()
     undo()
 end)
+
+-- ── the step delay (R3-SIM-MM) ────────────────────────────────────────────────────────────────
+--
+-- The owner's 2026-11-02 ruling: MultiMeters gets the Simulation step delay slider the other five
+-- sims have, the same `sim.stepDelay` setting (0.5 to 10 s in 0.5 s steps, 1 s by default) on the
+-- General page's Behavior tab, read at each step so a change lands on the next.
+
+test("Sim step delay: sim.stepDelay ships at 1 s and its row is the other sims' slider", function()
+    local inst = T.load{ enable = true }
+    local ns = inst.NS
+    assertEqual(ns.defaults.profile.sim.stepDelay, 1)
+    assertEqual(ns.GetSetting("sim.stepDelay"), 1)
+    local row = ns.FindSchemaRow("sim.stepDelay")
+    assertTrue(row ~= nil, "no sim.stepDelay row")
+    assertEqual(row.type, "number")
+    assertEqual(row.page, "general")
+    assertEqual(row.group, "Behavior")
+    assertEqual(row.subgroup, "Simulator")
+    assertEqual(row.label, "Simulation step delay (seconds)")
+    assertEqual(row.default, 1)
+    assertEqual(row.min, 0.5)
+    assertEqual(row.max, 10)
+    assertEqual(row.step, 0.5)
+    assertFalse(row.hidden and true or false, "the slider is hidden")
+end)
+
+test("Sim step delay: the validator takes the slider's values and refuses the rest", function()
+    local inst = T.load{ enable = true }
+    local ns = inst.NS
+    for _, v in ipairs({ 0.5, 1, 2.5, 10 }) do
+        assertTrue(ns.SetByPath("sim.stepDelay", v) ~= false, "refused " .. v)
+        assertEqual(ns.GetSetting("sim.stepDelay"), v)
+    end
+    for _, v in ipairs({ 0, 0.3, 0.75, 10.5, "2" }) do
+        assertFalse(ns.SimHost.ValidStepDelay(v), "took " .. tostring(v))
+    end
+end)
+
+test("Sim step delay: Host.StepDelay reads the stored setting, else the default", function()
+    local inst = T.load{ enable = true }
+    local ns = inst.NS
+    assertEqual(ns.SimHost.StepDelay(), 1)
+    ns.SetByPath("sim.stepDelay", 3.5)
+    assertEqual(ns.SimHost.StepDelay(), 3.5)
+    ns.db.profile.sim.stepDelay = 0.3   -- a hand-edited value the slider cannot make
+    assertEqual(ns.SimHost.StepDelay(), 1)
+end)
+
+test("Sim step delay: a playing run waits the sim.stepDelay setting between steps", function()
+    local inst = T.load{ enable = true }
+    local ns = inst.NS
+    local noop = function() end
+    local undo = S.inject(inst, { { kind = "noop", label = "One", run = noop },
+        { kind = "noop", label = "Two", run = noop }, { kind = "noop", label = "Three", run = noop } })
+    local clock = S.clock(inst.mocks)
+    ns.SetByPath("sim.stepDelay", 4)
+    ns.Sim:RunVerb("start case")
+    clock.advance(0.5)
+    local first = ns.Sim:Status().pos
+    assertTrue(first >= 1, "the first step did not play at once")
+    clock.advance(3)
+    assertEqual(ns.Sim:Status().pos, first, "a step played inside the setting's 4 s")
+    clock.advance(1)
+    assertEqual(ns.Sim:Status().pos, first + 1, "the next step did not play after 4 s")
+    ns.SetByPath("sim.stepDelay", 1)
+    clock.advance(4.1)
+    assertEqual(ns.Sim:Status().pos, first + 2, "a change did not land on the next step")
+    ns.Sim:Stop()
+    undo()
+end)

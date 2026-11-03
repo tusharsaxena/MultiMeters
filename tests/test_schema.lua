@@ -277,10 +277,11 @@ local PARTITION = {
     -- composed; the other three follow the set. §15 forbids reordering, renaming
     -- or splitting the canonical set; it does not forbid an addon's own rows after
     -- it, and the case below pins that the seven come FIRST and contiguous.
+    -- Master controls is nine since R6-SIM: the composer's Sim mode row (compose minor 19).
     -- Appearance is the eight skip-render skin rows (settings/Schema_Skin.lua): the group whose
     -- place the library's Skin tab takes, keyed "Appearance" because that is the key
     -- O.AppearanceTab answers.
-    general    = { { "Master controls", 8 }, { "Behavior", 2 }, { "Statistic colors", 8 },
+    general    = { { "Master controls", 9 }, { "Behavior", 3 }, { "Statistic colors", 8 },
                    { "Appearance", 8 } },
     -- The Windows rail's strips after item 020 (the settings-layout pass): Size and position
     -- leads Frame, the broadcasts are Quick style, one Bar tab per styled surface on Bars and
@@ -290,12 +291,12 @@ local PARTITION = {
     -- background companion (MM-A1) one more in Title bar.
     windows    = { { "Window", 1 } },
     frame      = { { "Size and position", 8 }, { "Quick style", 6 },
-                   { "Background and border", 6 }, { "Rows", 8 } },
-    header     = { { "Title bar", 8 }, { "Title text", 8 }, { "Controls", 16 } },
-    bars       = { { "Bar", 16 }, { "Text", 12 }, { "Icons", 3 } },
-    tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 14 }, { "Text", 7 } },
+                   { "Background and border", 6 }, { "Rows", 10 } },
+    header     = { { "Title bar", 4 }, { "Title text", 10 }, { "Controls", 16 } },
+    bars       = { { "Bar", 17 }, { "Text", 14 }, { "Icons", 4 } },
+    tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 16 }, { "Text", 9 } },
     visibility = { { "Rules", 17 } },
-    columns    = { { "Column header", 9 } },
+    columns    = { { "Column header", 12 } },
 }
 
 test("Schema: every page's tabs are the designed ones, in order, at the designed size",
@@ -355,6 +356,8 @@ local MASTER_ROWS = {
     -- launcher-§3 puts LibDBIcon's table in the global one.
     { "global.minimap.shown", "Minimap button"     },
     { "state.testMode",     "Test mode"           },
+    -- R6-SIM (compose minor 19): Sim mode follows Test mode and opens the next line.
+    { "state.sim",          "Sim mode"            },
 }
 
 test("Schema: the General page opens on Master controls, holding exactly the canonical set",
@@ -400,7 +403,8 @@ function()
     assertEqual(table.concat(extras, "\n"), "",
         "Master controls is exactly the canonical set now; an extra row belongs on Behavior")
 
-    -- And the two that left are on Behavior, in the order they had.
+    -- And the two that left are on Behavior, in the order they had, then the simulator's pace
+    -- under its own Simulator heading (R3-SIM-MM).
     local behavior = {}
     for _, row in ipairs(NS.SchemaForPage("general")) do
         if row.group == L["Behavior"] then
@@ -410,7 +414,8 @@ function()
     assertEqual(table.concat(behavior, "\n"), table.concat({
         "data.mergePets = " .. L["Merge pets into their owner"],
         "data.throttle = " .. L["Refresh interval"],
-    }, "\n"), "the Behavior tab is exactly the two rows that left Master controls")
+        "sim.stepDelay = " .. L["Simulation step delay (seconds)"],
+    }, "\n"), "the Behavior tab is the two rows that left Master controls, then the step delay")
 end)
 
 test("Schema: Test mode is the COMPOSED row right after Debug console, paired with the minimap row",
@@ -625,9 +630,13 @@ test("Schema: NO color row is ever disabled, and every one says why in words", f
     local swatches = 0
     for _, row in ipairs(NS.Schema) do
         -- The one disabledIf the schema carries is the composer's on a HUD media PICKER, governed
-        -- by its own "Use the skin's ..." companion (skinning-§6): never a swatch.
+        -- by its own "Use the skin's ..." companion (skinning-§6), or on the thickness beside a
+        -- bar-family border, which that border's companion governs: never a swatch.
         if row.disabledIf ~= nil then
-            assertTrue(row.type ~= "color" and row.disabledIf == row.path .. "FromSkin",
+            local thickness = row.path:find("border", 1, true) ~= nil or row.path:find("Border", 1, true) ~= nil
+            -- A bar family row's is a predicate since OptionsCompose minor 18, Show border included.
+            assertTrue(row.type ~= "color" and (row.disabledIf == row.path .. "FromSkin"
+                or (thickness and (row.type == "number" or type(row.disabledIf) == "function"))),
                 row.path .. " carries disabledIf")
         end
         if row.type == "color" then
@@ -660,7 +669,6 @@ test("Schema: which class a color means is DECLARED, not inferred from its path"
         ["window.frame.controlColorMode"]       = "player",
         ["window.frame.controlHoverColorMode"]  = "player",
         ["window.header.colorMode"]             = "player",
-        ["window.header.dividerColorMode"]      = "player",
         ["window.columnHeader.colorMode"]       = "player",
         ["window.columnHeader.bgColorMode"]     = "player",
         ["window.bars.colorMode"]               = "unit",
@@ -708,7 +716,7 @@ test("Schema: a tab that mixes kinds of control names each kind between them", f
         { "frame",  L["Quick style"],           { L["All surfaces"] } },
         { "frame",  L["Background and border"], { L["Background"], L["Border"] } },
         { "frame",  L["Rows"],                  { L["Grid"], L["Highlighting"] } },
-        { "header", L["Title bar"],             { L["Layout"], L["Background"], L["Divider"] } },
+        { "header", L["Title bar"],             { L["Layout"], L["Background"] } },
         { "header", L["Controls"],              { L["Shown"], L["Size"], L["Color"], L["Opacity"] } },
         { "bars",   L["Bar"],                   { L["Fill"], L["Background"], L["Border"] } },
         { "bars",   L["Text"],                  { L["Content"], L["Style"] } },
@@ -946,7 +954,7 @@ function()
             row.path .. " is on the Columns page but is not a column-header setting")
     end
     -- Nine: the eight that moved, and the face's "Use the skin's font" companion (skinning-§6).
-    assertEqual(onColumns, 9, "all nine are column-header rows")
+    assertEqual(onColumns, 12, "all twelve are column-header rows")
 
     for _, row in ipairs(NS.SchemaForPage("header")) do
         assertFalse(row.path:find("^window%.columnHeader%.") and true or false,
@@ -1326,14 +1334,18 @@ test("RestoreAllDefaults logs ONE line in total: the profile handler's, and no b
     --- Every line `fn` logs, as "[tag] text". Lua 5.1's `%s` raises on a table,
     --- so the arguments are tostring()ed first.
     local function logged(fn)
-        local lines, original = {}, NS.Debug
+        -- The first-run skin picker a reset profile shows is tests/test_skin_picker.lua's: since R6-PV
+        -- its preview enters test mode when no window is on screen, and that [Test] line is the
+        -- picker's, not the reset's, so the picker is kept out of this count.
+        local lines, original, picker = {}, NS.Debug, NS.MaybeShowSkinPicker
+        NS.MaybeShowSkinPicker = function() end
         NS.Debug = function(tag, fmt, ...)
             local a = { ... }
             for i = 1, select("#", ...) do a[i] = tostring(a[i]) end
             lines[#lines + 1] = "[" .. tag .. "] " .. tostring(fmt):format(a[1], a[2], a[3], a[4])
         end
         local ok, err = pcall(fn)
-        NS.Debug = original
+        NS.Debug, NS.MaybeShowSkinPicker = original, picker
         assertTrue(ok, tostring(err))
         return lines
     end

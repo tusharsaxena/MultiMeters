@@ -932,6 +932,135 @@ migrations[21] = function(db)
     end
 end
 
+--- Everything a window follows the skin through, as dotted paths into a window (FS-MM-FLIP, the owner's
+--- rulings of 2026-11-01). Every companion by name, then the five font flags, whose readers are on
+--- S.FontFlags (NS.SkinFontFlags), so `ResetToSkin` writes them From skin. Named, because a stored
+--- color or pick is the player's to come back to. Never listed: a size, a class, per-statistic or
+--- other mode, `skin.ignorePanel`, `skin.ignoreFonts`.
+Database.FOLLOW_ONCE_KEYS = {
+    "barTextureFromSkin", "fontFromSkin",
+    "header.fontFromSkin", "columnHeader.fontFromSkin", "text.fontFromSkin", "tooltip.fontFromSkin",
+    "bars.textureFromSkin", "tooltip.barTextureFromSkin",
+    "bars.borderStyleFromSkin", "tooltip.barBorderStyleFromSkin",
+    "header.bgColorFromSkin",
+    "text.colorFromSkin", "columnHeader.colorFromSkin", "tooltip.textColorFromSkin",
+    "bars.borderColorFromSkin", "tooltip.barBorderColorFromSkin", "tooltip.barBgColorFromSkin",
+    "header.shadowFromSkin", "columnHeader.shadowFromSkin", "text.shadowFromSkin",
+    "tooltip.fontShadowFromSkin",
+    "columnHeader.bgColorFromSkin", "icons.borderFromSkin",
+    "rows.highlightSelfFromSkin", "rows.alternatingBackgroundFromSkin",
+    "header.outline", "columnHeader.outline", "text.outline", "tooltip.fontOutline", "fontOutline",
+}
+
+--- The no-library arm of one window's move: the same writes by hand, creating no table.
+local function followByHand(w)
+    for _, path in ipairs(Database.FOLLOW_ONCE_KEYS) do
+        local group, leaf = path:match("^([^.]+)%.(.+)$")
+        local t = group and w[group] or (not group and w) or nil
+        leaf = leaf or path
+        if type(t) == "table" then
+            t[leaf] = leaf:match("FromSkin$") and true or "@skin"
+        end
+    end
+end
+
+--- `fn` on every window a stored profile holds, a junk entry skipped.
+local function eachWindow(profile, fn)
+    if type(profile.windows) ~= "table" then return end
+    for _, w in pairs(profile.windows) do
+        if type(w) == "table" then fn(w) end
+    end
+end
+
+--- One profile onto the skin, once (LibKa0s Options doc, Moving to this version, section 4).
+---
+--- `Skin.FollowOnce` is the gate and writes `skin.fullSkinReset`. It is handed NO keys, because a
+--- window is an entry of the numeric `windows` array and its dotted walk reads every segment as a
+--- string, so `windows.1.text.colorFromSkin` would be skipped without a word: the v20 step's reason
+--- too. Its true answer says this profile has not moved, and each window then takes
+--- `Skin.ResetToSkin`, its own table as the root, so the record lands on the profile and no window
+--- grows a `skin` table. Without the library the same writes by hand, and the record by hand.
+---
+--- @param profile table
+local function followSkinOnce(profile)
+    if type(profile) ~= "table" then return end
+    local Skin = LibStub and LibStub("LibKa0s-Skin-1.0", true)
+    if Skin and type(Skin.FollowOnce) == "function" and type(Skin.ResetToSkin) == "function" then
+        if Skin.FollowOnce(profile, {}) then
+            eachWindow(profile, function(w) Skin.ResetToSkin(w, Database.FOLLOW_ONCE_KEYS) end)
+        end
+        return
+    end
+    if type(profile.skin) == "table" and profile.skin.fullSkinReset == true then return end
+    eachWindow(profile, followByHand)
+    if type(profile.skin) ~= "table" then profile.skin = {} end
+    profile.skin.fullSkinReset = true
+end
+
+--- v22 -> v23: THE HUD'S COLORS, BORDERS AND SHADOWS ON THE SKIN, ONCE (the owner's rulings of
+--- 2026-11-01: existing profiles follow, not new ones only). Every profile, for the reason
+--- allProfiles gives. The record, not the stamp, is what makes it once per profile, and the runner
+--- below calls the same gate for the active profile on every pass, so a profile that arrives after
+--- the stamp (a new one, a copy, a reset) takes it too. Idempotent.
+migrations[22] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do followSkinOnce(profile) end
+end
+
+--- v23 -> v24: THE TITLE'S ALIGNMENT OFF THE SKIN, ONCE (SF-MM-1). The v23 step set
+--- `header.alignFromSkin` on every stored window, which kept titles centered. The skin's alignment is
+--- opt-in now, so a stored window is set off it and left-aligns. Every profile, a junk entry skipped.
+migrations[23] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        eachWindow(profile, function(w)
+            if type(w.header) == "table" then w.header.alignFromSkin = false end
+        end)
+    end
+end
+
+-- The shipped faces LibKa0s retired, each to its successor (R3-FRIZ; LibKa0s R3-L7).
+Database.RETIRED_FONTS = { ["Ka0s Friz Quadrata TT"] = "Ka0s Ubuntu" }
+
+--- Moves every string naming a retired face, at any depth of `t`, to its successor. Answers how many moved.
+function Database.RetireFonts(t)
+    local n = 0
+    for k, v in pairs(t) do
+        if type(v) == "table" then
+            n = n + Database.RetireFonts(v)
+        elseif Database.RETIRED_FONTS[v] then
+            t[k], n = Database.RETIRED_FONTS[v], n + 1
+        end
+    end
+    return n
+end
+
+--- v24 -> v25: THE DELETED FRIZ BECOMES KA0S UBUNTU (R3-FRIZ). LibKa0s v1.85.0 deleted Ka0s Friz
+--- Quadrata TT (R3-L7) and WoW Default draws Ka0s Ubuntu in its place (R3-L6). Every stored string
+--- naming the deleted face, at any depth (a window's fonts, the skin's Font override), moves to its
+--- successor, in every profile. Blizzard's own "Friz Quadrata TT" is another key and stays. Idempotent.
+migrations[24] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        if type(profile) == "table" then Database.RetireFonts(profile) end
+    end
+end
+
+-- The title bar divider's stored keys, pruned by the v25 -> v26 step (R4-SEP).
+Database.DIVIDER_KEYS = { "divider", "dividerThickness", "dividerColorMode", "dividerColor" }
+
+--- v25 -> v26: NO LINE UNDER THE TITLE (R4-SEP, the owner's 2026-11-03 sign-off: no window of any
+--- Ka0s addon draws a separator under its header, like the Ka0s Skin Tester's showroom). The
+--- divider and its four settings are gone, so a stored window's `header.divider`,
+--- `dividerThickness`, `dividerColorMode` and `dividerColor` are pruned, whatever they held: AceDB
+--- merges defaults in and never removes what they stopped naming. Every profile, a junk entry
+--- skipped. Idempotent.
+migrations[25] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        eachWindow(profile, function(w)
+            if type(w.header) ~= "table" then return end
+            for _, key in ipairs(Database.DIVIDER_KEYS) do w.header[key] = nil end
+        end)
+    end
+end
+
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every
 --- profile swap, and is a no-op once at the current version.
 function NS:RunMigrations()
@@ -965,6 +1094,10 @@ function NS:RunMigrations()
         end
         v = v + 1
     end
+
+    -- The stamp is per account and following the skin leaves no shape to read, so a profile made
+    -- after it is moved here, by its own record (Skin.FollowOnce).
+    followSkinOnce(db.profile)
 
     -- Shape normalization runs AFTER the version walk and unconditionally, so a
     -- profile that arrives from a copy or a hand edit is brought to the current

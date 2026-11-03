@@ -137,7 +137,6 @@ L["Statistic colors"] = "Statistic colors"
 -- "Background" and "Border" are not repeated here: they are already declared
 -- below, and one key is one string whichever surface asks for it. Since item 020
 -- they are subsection headings on Bars > Bar and Tooltip > Bar.
-L["Divider"] = "Divider"
 L["Layout"] = "Layout"
 L["Color"] = "Color"
 L["Icon"] = "Icon"
@@ -382,18 +381,6 @@ L["Title bar background"] = "Title bar background"
 L["Use the skin's background"] = "Use the skin's background"
 L["Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."] =
     "Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."
-L["Show divider"] = "Show divider"
-L["Draw the hairline between the title bar and the column labels."] =
-    "Draw the hairline between the title bar and the column labels."
-L["Divider thickness"] = "Divider thickness"
-L["Divider color mode"] = "Divider color mode"
-L["What colors the hairline. Ka0s skin leaves it to the shared collection skin, so a re-skin reaches this window along with the debug console and the perf panel; Class color is your own class."] =
-    "What colors the hairline. Ka0s skin leaves it to the shared collection skin, so a re-skin reaches this window along with the debug console and the perf panel; Class color is your own class."
-L["Divider color"] = "Divider color"
-L["Color of the hairline under the title bar, used when the mode above is Custom color."] =
-    "Color of the hairline under the title bar, used when the mode above is Custom color."
-L["How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."] =
-    "How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."
 L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header. Not read while Use the skin's background is on."] =
     "Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header. Not read while Use the skin's background is on."
 L["Text alignment"] = "Text alignment"
@@ -753,6 +740,11 @@ L["Which column's numbers decide the row order."] =
 L["Refresh interval"] = "Refresh interval"
 L["Seconds between refreshes. Lower is more responsive and costs more; the display updates at most this often no matter how fast the game reports numbers."] =
     "Seconds between refreshes. Lower is more responsive and costs more; the display updates at most this often no matter how fast the game reports numbers."
+-- The simulator's pace (R3-SIM-MM): the General page's Behavior tab, under its own heading.
+L["Simulator"] = "Simulator"
+L["Simulation step delay (seconds)"] = "Simulation step delay (seconds)"
+L["Paces /mm sim: how many seconds the simulator waits between steps as it plays. A change takes effect from the next step."] =
+    "Paces /mm sim: how many seconds the simulator waits between steps as it plays. A change takes effect from the next step."
 -- The confirmation the header's reset control opens. Its BUTTON label and
 -- tooltip went with the settings-page button that used to sit beside it: the
 -- one way to reach this now is the control on the window whose numbers you are
@@ -809,6 +801,47 @@ L["Reload your interface (/reload) to finish changing the skin."] =
 L["Use the skin's font"] = "Use the skin's font"
 L["Use the skin's texture"] = "Use the skin's texture"
 L["Use the skin's border"] = "Use the skin's border"
+-- The title alignment, icon border and header band companions (FS-MM-FIX).
+L["Use the skin's alignment"] = "Use the skin's alignment"
+L["Use the skin's icon border"] = "Use the skin's icon border"
+L["Place the title where the skin places a title. The alignment above is kept but not read while this is on."] =
+    "Place the title where the skin places a title. The alignment above is kept but not read while this is on."
+L["Draw the skin's icon border around the icon. Off, the icon has no border."] =
+    "Draw the skin's icon border around the icon. Off, the icon has no border."
+L["Draw the strip in the skin's list header color while the mode is Custom. The background color is kept but not read while this is on."] =
+    "Draw the strip in the skin's list header color while the mode is Custom. The background color is kept but not read while this is on."
+-- The row marker and stripe companions (cause D4).
+L["Use the skin's row marker"] = "Use the skin's row marker"
+L["Use the skin's row stripe"] = "Use the skin's row stripe"
+L["Mark your own row in a skin that draws a marker, even with Highlight yourself off. Ka0s Default draws none."] =
+    "Mark your own row in a skin that draws a marker, even with Highlight yourself off. Ka0s Default draws none."
+L["Shade every other row in a skin that draws a stripe, even with Alternating background off. Ka0s Default draws none."] =
+    "Shade every other row in a skin that draws a stripe, even with Alternating background off. Ka0s Default draws none."
+-- The colors' and shadows' companions (FS-MM-FLIP).
+L["Use the skin's color"] = "Use the skin's color"
+L["Use the skin's shadow"] = "Use the skin's shadow"
+L["Draw this border in the skin's border style and thickness. Both are kept but not read while this is on."] =
+    "Draw this border in the skin's border style and thickness. Both are kept but not read while this is on."
+L["Draw the title in the skin's text shadow. Draw shadow is kept but not read while this is on."] =
+    "Draw the title in the skin's text shadow. Draw shadow is kept but not read while this is on."
+L["Draw the outline in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."] =
+    "Draw the outline in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."
+L["Draw the numbers in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."] =
+    "Draw the numbers in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."
+L["Draw the numbers and names in the skin's text shadow. Draw shadow is kept but not read while this is on."] =
+    "Draw the numbers and names in the skin's text shadow. Draw shadow is kept but not read while this is on."
+L["Draw the unfilled part in the skin's bar background while the mode is Custom. The background color and opacity are kept but not read while this is on."] =
+    "Draw the unfilled part in the skin's bar background while the mode is Custom. The background color and opacity are kept but not read while this is on."
+L["Draw the border in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."] =
+    "Draw the border in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."
+L["Draw the tooltip's text in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."] =
+    "Draw the tooltip's text in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."
+L["Draw the tooltip's text in the skin's text shadow. Draw shadow is kept but not read while this is on."] =
+    "Draw the tooltip's text in the skin's text shadow. Draw shadow is kept but not read while this is on."
+L["Draw the column labels in the skin's HUD label color while the mode is Custom. The font color is kept but not read while this is on."] =
+    "Draw the column labels in the skin's HUD label color while the mode is Custom. The font color is kept but not read while this is on."
+L["Draw the column labels in the skin's text shadow. Draw shadow is kept but not read while this is on."] =
+    "Draw the column labels in the skin's text shadow. Draw shadow is kept but not read while this is on."
 L["Draw this text in the skin's font. The font picker is kept but not read while this is on, unless Ignore fonts is ticked on the Skin tab."] =
     "Draw this text in the skin's font. The font picker is kept but not read while this is on, unless Ignore fonts is ticked on the Skin tab."
 L["Draw these bars in the skin's texture. The texture picker is kept but not read while this is on."] =
@@ -856,6 +889,9 @@ L["Show this addon's button on the minimap. Left-click it to open these settings
 L["Test mode"] = "Test mode"
 L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."] =
     "Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."
+L["Sim mode"] = "Sim mode"
+L["Run the simulation, the same as /mm sim: ticking it opens the sim panel, which plays a scripted fight through every window, and unticking it stops the simulation. Nothing is saved. Combat, a group, an instance or a reload ends it."] =
+    "Run the simulation, the same as /mm sim: ticking it opens the sim panel, which plays a scripted fight through every window, and unticking it stops the simulation. Nothing is saved. Combat, a group, an instance or a reload ends it."
 L["Test mode off \226\128\148 combat started"] = "Test mode off \226\128\148 combat started"
 L["Cannot start test mode during combat"] = "Cannot start test mode during combat"
 L["Debug console"] = "Debug console"
@@ -1219,7 +1255,8 @@ L["Form a %d-player group"] = "Form a %d-player group"
 L["Form a %d-player raid"] = "Form a %d-player raid"
 L["Enter %s"] = "Enter %s"
 L["Leave to %s (open world)"] = "Leave to %s (open world)"
-L["Pull %s (%d ticks x %d s)"] = "Pull %s (%d ticks x %d s)"
+L["Pull %s (%d s)"] = "Pull %s (%d s)"
+L["%d meter ticks in %d s, a %d s fight"] = "%d meter ticks in %d s, a %d s fight"
 L["Reset meter data"] = "Reset meter data"
 L["Fires"] = "Fires"
 L["Ends with"] = "Ends with"

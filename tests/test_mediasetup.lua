@@ -104,6 +104,9 @@ test("MediaSetup: every icon this addon draws is declared and ships", function()
         "copy", "clear",                                          -- library-drawn, DebugLog
         "info",                                                   -- host-passed, TestStrip/IdList
         "eye",                                                    -- library-drawn, the skin picker's preview
+        -- What LibKa0s v1.85.0's library-drawn marks owe every consumer (kit revision 49), beyond
+        -- the names above that also draw here.
+        "chevron-up", "confirm", "move", "volume-high",
     }) do
         assertTrue(declared[name] == true,
             "this addon draws '" .. name .. "', which the CLAUDE.md `LibKa0s icons:` line omits")
@@ -123,7 +126,8 @@ test("MediaSetup: every name the declaration lists has a file in the vendored co
     local root = (T.root or ".") .. "/libs/LibKa0s/media/icons/"
     local missing = {}
     for _, name in ipairs(decl.names or {}) do
-        local fh = io.open(root .. name .. ".tga", "rb")
+        local path = name:gsub("^ph:", "phosphor/"):gsub("^gi:", "game-icons/")
+        local fh = io.open(root .. path .. ".tga", "rb")
         if fh then fh:close() else missing[#missing + 1] = name end
     end
     assertEqual(table.concat(missing, ", "), "")

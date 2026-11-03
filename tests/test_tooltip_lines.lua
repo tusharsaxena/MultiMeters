@@ -317,6 +317,7 @@ test("The bar's fill and its backdrop each take their own color and opacity", fu
         c.tooltip.barBgColorMode = "custom"
         c.tooltip.barBgColor     = { r = 0, g = 0, b = 1, a = 1 }
         c.tooltip.barBgAlpha     = 0.25
+        c.tooltip.barBgColorFromSkin = false   -- the player's own color, off the skin
     end }
     inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
 
@@ -411,6 +412,7 @@ test("The bar border answers a color mode, and its class is the HOVERED player's
         c.tooltip.barBorderSize      = 4
         c.tooltip.barBorderColor     = { r = 1, g = 0, b = 0, a = 0.6 }
         c.tooltip.barBorderColorMode = "class"
+        c.tooltip.barBorderColorFromSkin = false   -- the swatch's alpha is this case's subject
     end }
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
     local want = inst.mocks.RAID_CLASS_COLORS.MAGE
@@ -432,6 +434,7 @@ test("The bar border's shipped mode is Custom, so it still reads the swatch", fu
         c.tooltip.barBorderStyleFromSkin = false   -- the player's own pick, off the skin
         c.tooltip.barBorderSize  = 4
         c.tooltip.barBorderColor = { r = 1, g = 0, b = 0, a = 1 }
+        c.tooltip.barBorderColorFromSkin = false   -- the player's own color, off the skin
     end }
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
     inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
@@ -624,6 +627,7 @@ test("The tooltip text color is configurable, and reaches every slot", function(
     -- widget-creation time rather than on every draw.
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.textColor = { r = 1, g = 0, b = 0, a = 1 }
+        c.tooltip.textColorFromSkin = false   -- the player's own color, off the skin
     end }
     inst.NS.Tooltip:CellTooltip(makeRow{ classFilename = "MAGE" }, "DamageDone", anchor, cfg)
 
@@ -735,12 +739,80 @@ test("With the class color off, the tooltip keeps its configured text color", fu
     local inst, cfg, anchorFrame = bench{ configure = function(c)
         c.tooltip.colorMode = "custom"
         c.tooltip.textColor  = { r = 0.2, g = 0.4, b = 0.6, a = 1 }
+        c.tooltip.textColorFromSkin = false   -- the player's own color, off the skin
     end }
     inst.mocks.RAID_CLASS_COLORS.MAGE = { r = 0.41, g = 0.8, b = 0.94 }
 
     inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
     local lines = spellLines(inst)
     assertEqual(lines[1].amount.__textColor[1], 0.2)
+end)
+
+--- The tooltip's own string on spell line 1, once a hover has drawn it.
+local function spellNameLine(inst)
+    local first
+    for index in pairs(tooltipLines(inst)) do first = math.min(first or index, index) end
+    return inst.mocks["GameTooltipTextLeft" .. first]
+end
+
+test("The spell name keeps its color after the post-Show re-font", function()
+    -- S.HudFont ends in SetFontObject, and in the client that takes the object's color, which this
+    -- mock's does not model: the wrap below does, so the color has to be set AFTER the call.
+    -- red under: reapplyFonts with no SetTextColor, or one before NS.SkinHudFont.
+    local inst, cfg, anchorFrame = bench{ configure = function(c)
+        c.tooltip.textColor = { r = 0.2, g = 0.4, b = 0.6, a = 1 }
+        c.tooltip.textColorFromSkin = false
+    end }
+    local NS = inst.NS
+    local real = NS.Skin.HudFont
+    NS.Skin.HudFont = function(fs, o)
+        local answer = real(fs, o)
+        fs:SetTextColor(1, 1, 1)
+        return answer
+    end
+    NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
+    NS.Skin.HudFont = real
+    local r, g, b = spellNameLine(inst):GetTextColor()
+    assertEqual(string.format("%.1f,%.1f,%.1f", r, g, b), "0.2,0.4,0.6")
+end)
+
+test("The post-Show re-font goes through S.HudFont, so a shared line keeps its shadow", function()
+    -- A bare SetFont puts the face back and leaves the shadow to the client: on a shared line that
+    -- is whatever the show path left there.
+    -- red under: reapplyFonts calling SetFont rather than NS.SkinHudFont.
+    local inst, cfg, anchorFrame = bench{ configure = function(c)
+        c.tooltip.fontShadow = true
+        c.tooltip.fontShadowFromSkin = false
+    end }
+    local mocks = inst.mocks
+    mocks.GameTooltip:Hide()
+    mocks.GameTooltip:HookScript("OnShow", function()
+        local i = 1
+        while mocks["GameTooltipTextLeft" .. i] do
+            mocks["GameTooltipTextLeft" .. i]:SetShadowOffset(0, 0)
+            i = i + 1
+        end
+    end)
+    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
+    assertEqual(spellNameLine(inst).__shadow[1], 1)
+end)
+
+test("A spell bar takes the skin's gloss on its own companion, on the draw", function()
+    -- red under: no NS.Skin.BarGloss in the bar's draw, or the companion not handed to it.
+    local inst, cfg, anchorFrame = bench()
+    local NS = inst.NS
+    local seen = {}
+    local real = NS.Skin.BarGloss
+    NS.Skin.BarGloss = function(bar, fromSkin) seen[#seen + 1] = { bar = bar, fromSkin = fromSkin } end
+    NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
+    assertTrue(#seen > 0, "no spell bar took a gloss call")
+    assertEqual(seen[1].fromSkin, true)
+    seen = {}
+    cfg.tooltip.barTextureFromSkin = false
+    NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
+    NS.Skin.BarGloss = real
+    assertTrue(#seen > 0, "no spell bar took a gloss call")
+    assertEqual(seen[1].fromSkin, false, "a player's own texture stays plain")
 end)
 
 test("Tooltip shadow reaches the line, and survives the post-Show re-font", function()
@@ -750,6 +822,7 @@ test("Tooltip shadow reaches the line, and survives the post-Show re-font", func
     -- red under: recording the font in `fontedLines` without its shadow.
     local inst, cfg, anchorFrame = bench{ configure = function(c)
         c.tooltip.fontShadow = true
+        c.tooltip.fontShadowFromSkin = false   -- the player's own shadow, off the skin
     end }
     inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
 
@@ -767,6 +840,7 @@ test("The tooltip puts a SHARED line's shadow back when it lets go", function()
     -- red under: restoreFonts putting back SetFontObject alone.
     local inst, cfg, anchorFrame = bench{ configure = function(c)
         c.tooltip.fontShadow = true
+        c.tooltip.fontShadowFromSkin = false   -- the player's own shadow, off the skin
     end }
     inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchorFrame, cfg)
 

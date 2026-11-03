@@ -253,6 +253,18 @@ local ROWS = {
         desc = L["Seconds between refreshes. Lower is more responsive and costs more; the display updates at most this often no matter how fast the game reports numbers."],
         validate = isNumberIn(Const.THROTTLE_MIN, Const.THROTTLE_MAX),
     },
+    {
+        -- The simulator's pace (R3-SIM-MM): the Behavior tab's last heading, as the other sims
+        -- have it. The validator is modules/Sim.lua's, which loads before this file; the stepper
+        -- reads the stored value at each step, so a change lands on the next.
+        path = "sim.stepDelay", type = "number", default = NS.defaults.profile.sim.stepDelay,
+        min = NS.SimHost.STEP_DELAY_MIN, max = NS.SimHost.STEP_DELAY_MAX, step = NS.SimHost.STEP_DELAY_STEP,
+        fmt = "%.1fs",
+        page = "general", group = L["Behavior"], subgroup = L["Simulator"],
+        label = L["Simulation step delay (seconds)"],
+        desc = L["Paces /mm sim: how many seconds the simulator waits between steps as it plays. A change takes effect from the next step."],
+        validate = function(v) return NS.SimHost.ValidStepDelay(v) end,
+    },
 
     -- ── Export ──────────────────────────────────────────────
     --

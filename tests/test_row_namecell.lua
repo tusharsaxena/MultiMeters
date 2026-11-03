@@ -333,7 +333,9 @@ test("The slot falls back to the CLASS where no spec is known", function()
     local icons = row.nameCell.icons
     assertEqual(icons.unit:IsShown(), true, "a row with a class but no spec drew nothing")
     local c = inst.mocks.CLASS_ICON_TCOORDS.MAGE
-    assertEqual(select(1, icons.unit:GetTexCoord()), c[1], "the fallback is not the class icon")
+    -- The cell of the class sheet, cropped 0.07 of the cell per side (R4-ZOOM).
+    assertTrue(math.abs(select(1, icons.unit:GetTexCoord()) - (c[1] + (c[2] - c[1]) * 0.07)) < 1e-9,
+        "the fallback is not the class icon")
 end)
 
 test("A ROLE icon is never drawn, whatever the row carries", function()
@@ -371,6 +373,42 @@ test("A breakdown row draws the SPELL's icon, not a unit's", function()
 
     assertEqual(row.nameCell.icons.unit:GetTexture(), 135808,
         "a breakdown row drew a unit icon instead of its spell's")
+end)
+
+test("Every unit icon crops at least 0.07 of its art per side (R4-ZOOM)", function()
+    -- The owner's 2026-11-03 ruling: a HUD icon inside its black edge never shows Blizzard's
+    -- rounded native icon edge, so each art crops at least 0.07 per side (LibKa0s's own
+    -- S.IconBorder zoom). The spell and spec icons are whole files, cropped 0.07..0.93; the class
+    -- fallback is one cell of a sheet, so its crop is 0.07 of the CELL, inside its coords.
+    -- red under: any branch of drawUnitIcon handing SetTexCoord an uncropped edge.
+    local inst, window, row = bench()
+    row:ApplyLayout(window.layout)
+    local EPS = 1e-9
+
+    local function cropOf(tex, l0, r0, t0, b0)
+        local l, r, t, b = tex:GetTexCoord()
+        local w, h = r0 - l0, b0 - t0
+        return (l - l0) / w, (r0 - r) / w, (t - t0) / h, (b0 - b) / h
+    end
+    local function assertCropped(label, ...)
+        local sides = { ... }
+        for i = 1, 4 do
+            assertTrue(sides[i] >= 0.07 - EPS, ("%s: side %d crops %.4f"):format(label, i, sides[i]))
+        end
+    end
+
+    row:Update({ guid = "spell:101", name = "Fireball", isDrillDown = true, icon = 135808,
+                 maxAmount = 1, values = { DamageDone = { total = 1 } } }, 1)
+    assertCropped("the spell icon", cropOf(row.nameCell.icons.unit, 0, 1, 0, 1))
+
+    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
+        { classFilename = "MAGE", specIconID = 135771 }), 1)
+    assertCropped("the spec icon", cropOf(row.nameCell.icons.unit, 0, 1, 0, 1))
+
+    row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
+        { classFilename = "MAGE", specIconID = nil }), 1)
+    local c = inst.mocks.CLASS_ICON_TCOORDS.MAGE
+    assertCropped("the class icon", cropOf(row.nameCell.icons.unit, c[1], c[2], c[3], c[4]))
 end)
 
 test("Turning the icon off hides it rather than destroying it", function()

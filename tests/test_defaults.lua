@@ -275,13 +275,15 @@ test("Defaults: the profile itself is nearly empty — almost everything is per-
     -- (skinning-§2): which skin this addon wears, its Scope, its two overrides and
     -- the first-run picker's memory. A per-window skin would let two meters wear
     -- two skins, which the library's one owner per addon cannot draw.
+    -- `sim` is the sixth (R3-SIM-MM): the simulator's pace, `/mm sim` being addon-wide, as
+    -- the other sims' `sim.stepDelay` is.
     -- red under: promoting one of the three per-window rows here instead of adding
     -- the addon-wide setting beside it.
     local keys = {}
     for key in pairs(NS.defaults.profile) do keys[#keys + 1] = key end
     table.sort(keys)
     assertEqual(table.concat(keys, ","),
-        "data,enabled,export,master,nextWindowId,skin,statColors,windows")
+        "data,enabled,export,master,nextWindowId,sim,skin,statColors,windows")
 
     -- The per-window three are still on the window, untouched by the move.
     assertEqual(NS.WINDOW_TEMPLATE.frame.locked, false)

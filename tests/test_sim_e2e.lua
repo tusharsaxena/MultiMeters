@@ -475,3 +475,113 @@ test("Sim e2e: the panel's rows are the step labels, and a step waits while the 
     assertEqual(ns.Sim:Status().pos, 4)
     ns.Sim:Stop()
 end)
+
+-- ── R4-MM1: every fight step lasts about 10 s of wall time ────────────────────────────────────
+--
+-- Ka0sAddonsCommonTasks docs/2026-11-03-SMOKE_ROUND4 (lead's call 7): every fight step in every
+-- scenario plays for Host.FIGHT_SECONDS of wall time at the default step delay, with a meter tick
+-- every D.TICK. A playing step's wall time is max(sim.stepDelay, the fight's booked ticks), and the
+-- slider tops out at Host.FIGHT_SECONDS, so the fight is what sets it. The labels show it.
+
+local FIGHT_DEATHS = {
+    dungeonBoss = { 15 },
+    raidBoss = { 11, 16 },
+    wipeBoss = { 13, 16, 21 },
+}
+
+test("Sim e2e: every fight books 10 s of dense ticks, deaths rescaled to the same point (R4-MM1)", function()
+    local inst = T.load{ enable = true }
+    local Host = inst.NS.SimHost
+    local D = Host.Drivers
+    assertEqual(Host.FIGHT_SECONDS, 10)
+    assertEqual(D.TICK, 0.5, "a meter tick every half second")
+    assertTrue(Host.STEP_DELAY_MAX <= Host.FIGHT_SECONDS, "a step delay could outlast the fight")
+    local n = 0
+    for key, f in pairs(Host.FIGHTS) do
+        n = n + 1
+        assertEqual(f.ticks, 21, key .. ": ticks")
+        assertEqual((f.ticks - 1) * D.TICK, Host.FIGHT_SECONDS, key .. ": the fight's wall time")
+        local want = FIGHT_DEATHS[key] or {}
+        local deaths = f.deaths or {}
+        assertEqual(#deaths, #want, key .. ": death count")
+        for i, death in ipairs(deaths) do
+            assertEqual(death.tick, want[i], key .. ": death " .. i .. "'s tick")
+            assertTrue(death.tick <= f.ticks, key .. ": a death after the last tick")
+        end
+    end
+    assertEqual(n, 6, "the six fights")
+    assertTrue(Host.FIGHTS.wipeBoss.deaths[3].all, "the wipe's last death is everyone")
+end)
+
+test("Sim e2e: a fight step's label shows its wall duration, e.g. Pull Trash (10 s) (R4-MM1)", function()
+    local inst = T.load{ enable = true }
+    local SC = inst.NS.SimHost.SCENARIOS
+    local dungeon = SC.defs.dungeon.timeline(SC.defs.dungeon, {})
+    assertEqual(dungeon[3].label, "Pull Trash (10 s)")
+    assertEqual(dungeon[4].label, "Pull Speaker Shadowcrown (10 s)")
+    local fights = 0
+    for _, name in ipairs(NAMES) do
+        for _, step in ipairs(SC.defs[name].timeline(SC.defs[name], {})) do
+            if step.kind == "fight" then
+                fights = fights + 1
+                assertEqual(step.label, ("Pull %s (10 s)"):format(step.fight.name), name .. ": fight label")
+            end
+        end
+    end
+    assertEqual(fights, 7, "every scenario's fight steps")
+end)
+
+test("Sim e2e: in every scenario's auto-run each fight step lasts 10 s with 21 ticks (R4-MM1)", function()
+    for _, name in ipairs(NAMES) do
+        local inst = fresh()
+        local ns, m = inst.NS, inst.mocks
+        local Host = ns.SimHost
+        local clock = S.clock(m)
+        local real = Host.Play
+        local plays, fights = {}, {}
+        local open
+        local function drained()
+            local w = Host.world
+            if open and w and (w.pending or 0) == 0 then
+                open.drained, open.ticks = m.__now - open.at, w.tick
+                open = nil
+            end
+        end
+        Host.Play = function(step, session)
+            drained()   -- the gate opened in the same beat as the last tick: read it before the pull
+            plays[#plays + 1] = { kind = step.kind, at = m.__now }
+            local detail = real(step, session)
+            if step.kind == "fight" then
+                open = { at = m.__now, pos = #plays }
+                fights[#fights + 1] = open
+            end
+            return detail
+        end
+        assertTrue(ns.Sim:RunVerb("start " .. name), name .. ": the typed start was refused")
+        local total, guard = #ns.Sim:Steps(), 0
+        while (ns.Sim:Status().pos < total or (Host.world and Host.world.pending or 0) > 0) and guard < 400 do
+            clock.advance(0.25)
+            guard = guard + 1
+            local w = Host.world
+            if open and w and m.__now - open.at == 9.5 then
+                open.heldAt95 = not Host.Gate(ns.Sim:Session())
+            end
+            drained()
+        end
+        Host.Play = real
+        assertEqual(ns.Sim:Status().pos, total, name .. ": the auto-run did not finish")
+        assertTrue(#fights > 0, name .. ": no fight played")
+        for i, f in ipairs(fights) do
+            local tag = ("%s fight %d: "):format(name, i)
+            assertEqual(f.ticks, 21, tag .. "meter ticks")
+            assertTrue(f.heldAt95, tag .. "the gate was open 9.5 s into the fight")
+            assertTrue(f.drained and f.drained >= 10 and f.drained < 10.25, tag .. "drained after " .. tostring(f.drained))
+            local nextPlay = plays[f.pos + 1]
+            if nextPlay then
+                local wall = nextPlay.at - f.at
+                assertTrue(wall >= 10 and wall <= 10.25, tag .. "the next step followed after " .. wall .. " s")
+            end
+        end
+        ns.Sim:Stop()
+    end
+end)

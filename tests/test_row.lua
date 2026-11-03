@@ -554,6 +554,7 @@ test("With no class to read, cell text keeps its configured color", function()
     local _, _, row = bench(function(cfg)
         cfg.text.colorMode = "class"
         cfg.text.color = { r = 0.2, g = 0.4, b = 0.6, a = 1 }
+        cfg.text.colorFromSkin = false   -- the player's own color, off the skin
     end)
     -- A class this client has never heard of -- which is what a stored row from a
     -- future build, or a source the meter could not identify, looks like.
@@ -590,6 +591,7 @@ test("The bar border takes the player's thickness and color", function()
         cfg.bars.border          = true
         cfg.bars.borderThickness = 3
         cfg.bars.borderColor     = { r = 1, g = 0, b = 0, a = 1 }
+        cfg.bars.borderColorFromSkin, cfg.bars.borderStyleFromSkin = false, false   -- off the skin
     end)
 
     local edges = row.cells.DamageDone.border
@@ -612,6 +614,7 @@ test("The bar border answers a color mode, and its class is the ROW'S player", f
         cfg.bars.borderThickness = 2
         cfg.bars.borderColor     = { r = 1, g = 0, b = 0, a = 0.4 }
         cfg.bars.borderColorMode = "class"
+        cfg.bars.borderColorFromSkin = false   -- the swatch's alpha is this case's subject
     end)
     inst.mocks.RAID_CLASS_COLORS.PRIEST = { r = 0.11, g = 0.22, b = 0.33 }
 
@@ -631,6 +634,7 @@ test("The bar border's shipped mode is Custom, so an upgraded window looks the s
     local inst, _, row = bench(function(cfg)
         cfg.bars.border      = true
         cfg.bars.borderColor = { r = 1, g = 0, b = 0, a = 1 }
+        cfg.bars.borderColorFromSkin = false   -- the player's own color, off the skin
     end)
     inst.mocks.RAID_CLASS_COLORS.PRIEST = { r = 0.11, g = 0.22, b = 0.33 }
 
@@ -776,6 +780,7 @@ test("Each of the four sides is anchored to its own two corners", function()
     local _, _, row = bench(function(c)
         c.bars.border          = true
         c.bars.borderThickness = 3
+        c.bars.borderStyleFromSkin = false   -- the player's own thickness, off the skin
     end)
     local cell = row.cells.DamageDone
     local bar = cell.frame
@@ -872,6 +877,7 @@ test("The art path takes the edge FILE and the swatch's color", function()
     local inst, window, row = bench(function(c)
         c.bars.border      = true
         c.bars.borderColor = { r = 1, g = 0, b = 0, a = 0.5 }
+        c.bars.borderColorFromSkin = false   -- the player's own color, off the skin
     end)
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
     window.config.bars.borderStyle = "Ka0s Edge"
@@ -896,6 +902,7 @@ test("The art path answers the color mode too, and it is the ROW'S class", funct
         c.bars.border          = true
         c.bars.borderColor     = { r = 1, g = 0, b = 0, a = 0.4 }
         c.bars.borderColorMode = "class"
+        c.bars.borderColorFromSkin = false   -- the swatch's alpha is this case's subject
     end)
     inst.mocks.RAID_CLASS_COLORS.PRIEST = { r = 0.11, g = 0.22, b = 0.33 }
     inst.mocks.__media.border["Ka0s Edge"] = "Interface\\Test\\Edge"
@@ -1101,7 +1108,7 @@ test("The class tint is painted on the CELLS, not on the row", function()
     local bg = row.cells.DamageDone.bg
     assertEqual(bg:IsShown(), true)
     assertEqual(bg.__colorTexture[1], c.r)
-    assertEqual(bg.__colorTexture[4], 0.1, "a tint, not a second bar")
+    assertEqual(bg.__colorTexture[4], 0.15, "a tint, not a second bar")
 end)
 
 test("A row with no class falls back to the alternating stripe", function()

@@ -22,7 +22,7 @@
 -- it. It publishes NS.SurfaceColor, which modules/Window_Header.lua resolves at
 -- file scope, so it MUST load before that file.
 
-local _, NS = ...
+local addonName, NS = ...
 
 local Const = NS.Constants
 local L     = NS.L
@@ -161,6 +161,8 @@ end
 --- Split out of BuildFrame to keep it under the CCN gate; runs once, from there.
 function WindowProto:BuildBody(frame)
     self.body = CreateFrame("Frame", nil, frame)
+    -- SF-MM-4: the grid is laid out on release, so a drag draws the old width; clip it to the body.
+    if self.body.SetClipsChildren then self.body:SetClipsChildren(true) end
 
     -- ── SCROLLING ────────────────────────────────────────────────────────────
     --
@@ -216,6 +218,8 @@ function WindowProto:BuildStrips(frame)
         -- The skin owner (LibKa0s-Widgets-1.0 16, skinning-§1): the strip's legibility follows
         -- this addon's skin through its strip.* tokens; amber stays the meaning color.
         owner = NS.name,
+        -- SF-F1: the strip's right-click menu ends test mode (LibKa0s Widgets minor 21).
+        onEnd = function() NS.WindowManager:SetTestMode(false) end,
     }) or nil
 end
 
@@ -255,9 +259,21 @@ function WindowProto:BuildFrame()
     -- from its title bar in every other frame in the game, and it is the one
     -- horizontal band of this window that no cell occupies — so dragging and
     -- hovering a number stop competing for the same clicks.
+    --
+    -- THE TITLE BAND (R5-MM1, R5-WIN): an invisible frame that takes no mouse,
+    -- laid flush inside the window's edge by ApplyHeaderStrip, which the tinted
+    -- strip fills and every header child (the title, the session line, each
+    -- control, this drag strip) is anchored to by its middle. One frame is the
+    -- one answer to "where is the bar", so nothing on it can sit off its center.
+    local headerBand = CreateFrame("Frame", nil, frame)
+    headerBand:EnableMouse(false)
+    headerBand:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    headerBand:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+    self.headerBand = headerBand
+
     local dragBar = CreateFrame("Frame", nil, frame)
-    dragBar:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-    dragBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+    dragBar:SetPoint("TOPLEFT", headerBand, "TOPLEFT", 0, 0)
+    dragBar:SetPoint("TOPRIGHT", headerBand, "TOPRIGHT", 0, 0)
     dragBar:EnableMouse(true)
     dragBar:RegisterForDrag("LeftButton")
     dragBar:SetScript("OnDragStart", onDragStart)
@@ -278,10 +294,14 @@ function WindowProto:BuildFrame()
     -- Closing is therefore an explicit act: the X in the header, or `/mm toggle`.
     -- The frames are still NAMED, because a name is what `/framestack` and any
     -- other addon needs to talk about them.
-    -- The title and divider members are assigned BEFORE the skin so the Shell
-    -- can tint them. Their colors are deliberately never set here: the skin's
-    -- tokens are the contract, and a matching literal in this file is the copy
-    -- that goes stale one hex digit at a time (standalone-windows).
+    -- The title member is assigned BEFORE the skin so the Shell can tint it. Its
+    -- color is deliberately never set here: the skin's tokens are the contract,
+    -- and a matching literal in this file is the copy that goes stale one hex
+    -- digit at a time (standalone-windows).
+    --
+    -- NO `frame.divider`: no Ka0s window draws a line under its title (R4-SEP,
+    -- the owner's 2026-11-03 sign-off, like the Ka0s Skin Tester's showroom). The
+    -- title bar's own band is what separates it from the column labels.
     frame.title = frame:CreateFontString(nil, "OVERLAY")
     -- A font before the Shell paints it: the client gives a template-less FontString an invalid
     -- size until one is set, and the Shell scales the title's own size into the skin's font.
@@ -289,14 +309,10 @@ function WindowProto:BuildFrame()
     frame.title:SetFontObject("GameFontNormal")
     frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -5)
 
-    frame.divider = frame:CreateTexture(nil, "ARTWORK")
-    frame.divider:SetHeight(1)
-
-    -- The header strip's own background (`header.bgColor`). On the BORDER layer:
-    -- above the backdrop's bgFile, which is BACKGROUND, and below the divider,
-    -- which is ARTWORK — so the strip tints without swallowing the line under
-    -- it. Built here rather than on first use so moving the setting re-colors a
-    -- texture that already exists instead of creating one mid-frame.
+    -- The header strip's own background (`header.bgColor`). On the BORDER layer,
+    -- above the backdrop's bgFile, which is BACKGROUND. Built here rather than on
+    -- first use so moving the setting re-colors a texture that already exists
+    -- instead of creating one mid-frame.
     --
     -- Not a member of `frame`: the skin walks a fixed set of frame keys and an
     -- extra one is a key it has never heard of.
@@ -348,6 +364,8 @@ function WindowProto:BuildFrame()
     -- safely be measured — and still is not, for one rule rather than two.
     self.columnHeaders = {}
     self.headerFrame = CreateFrame("Frame", nil, frame)
+    -- SG-MM-1: the header strip is not a child of the body, so it needs its own clip for a resize drag.
+    if self.headerFrame.SetClipsChildren then self.headerFrame:SetClipsChildren(true) end
     -- The column-header strip's backdrop. A plain texture rather than a
     -- BackdropTemplate: it is a flat fill behind text, nothing measures it, and a
     -- texture is a leaf the way the row backgrounds are. Transparent by default,
@@ -372,6 +390,7 @@ function WindowProto:BuildFrame()
         text = L["SIMULATION: a scripted fight, not your data. /mm sim stop ends it."],
         icon = NS.Icon and NS.Icon("info"),
         owner = NS.name,
+        sim = NS.Sim,   -- SF-F1: the strip's right-click menu ends, steps and restarts the sim
     }) or nil
 
     -- ALWAYS BUILT, never gated on a setting. There used to be a `resizeGrip`
@@ -394,6 +413,7 @@ function WindowProto:BuildFrame()
         local layout = self.layout or self:BuildLayout()
         self.grip = NS.MakeResizable(anchor, {
             gripParent   = frame,
+            owner        = addonName,   -- `icon.grip`, under every skin that sets one (cause L8)
             minWidth     = layout.minWidth,
             minHeight    = layout.minHeight,
             canResize    = function() return not self.locked end,
@@ -407,6 +427,14 @@ end
 -- ---------------------------------------------------------------------------
 -- Applying config to the frames
 -- ---------------------------------------------------------------------------
+
+--- The unavailable notice's font: the title's face, the cells' size, the title's flags (cause L8).
+function WindowProto:ApplyNoticeFont(cfg)
+    local header = cfg.header or {}
+    self.notice:SetFont(fontPath(NS.SkinMediaKey(header, "font", "hud.font")),
+        NS.SkinHudFontSize((cfg.text or {}).size or 11, header.fontFromSkin),
+        NS.SkinFontFlags(header.outline) or "")
+end
 
 --- Push the whole config onto the widgets: geometry, chrome, header, column
 --- headers and every pooled row. Idempotent, and the ONE path a settings change
@@ -478,8 +506,7 @@ function WindowProto:ApplyConfig()
     self.notice:ClearAllPoints()
     self.notice:SetPoint("TOPLEFT", self.body, "TOPLEFT", 4, -8)
     self.notice:SetPoint("TOPRIGHT", self.body, "TOPRIGHT", -4, -8)
-    self.notice:SetFont(fontPath(NS.SkinMediaKey(cfg.header or {}, "font", "hud.font")),
-        NS.SkinHudFontSize((cfg.text or {}).size or 11, (cfg.header or {}).fontFromSkin), "")
+    self:ApplyNoticeFont(cfg)
     -- The notice's text in the skin's highlight (white under Ka0s Default, the
     -- stock FontString color it always drew); re-run on every skin switch.
     if NS.SkinColor then self.notice:SetTextColor(NS.SkinColor("text.highlight")) end
@@ -534,6 +561,7 @@ end
 
 --- The player's edge (`class` / `custom`), over the backdrop the Shell just wrote. Split out of
 --- ApplyBorder for the CCN gate.
+--- Answers how far in the player's edge reaches: its size with an edge drawn, else 0.
 local function applyOwnEdge(frame, frameCfg)
     local base = frame.GetBackdrop and frame:GetBackdrop() or nil
     base = type(base) == "table" and base or {}
@@ -553,6 +581,17 @@ local function applyOwnEdge(frame, frameCfg)
             nil, 0, 0, 0, 1)
         frame:SetBackdropBorderColor(er, eg, eb, ea)
     end
+    return inset
+end
+
+--- How far in S.Shell lays its bands under the live skin: a flat edge's
+--- `win.borderSize`, else 1 (LibKa0s SkinPaint's Shell, and S.Band's holder). Read
+--- on ApplyConfig, never on the refresh path (R2).
+local function shellInset()
+    local S = NS.Skin
+    local style = S and S.Token and S.Token("win.borderStyle") or "flat"
+    local size = S and S.Token and S.Token("win.borderSize")
+    return style == "flat" and type(size) == "number" and size or 1
 end
 
 --- @param frameCfg table  the window's `frame` config group
@@ -571,7 +610,14 @@ function WindowProto:ApplyBorder(frameCfg)
     local br, bg, bb, ba = surfaceColor(frameCfg.backdropColorMode, frameCfg.backdropColor,
         nil, 0, 0, 0, 0.75, looks.winBg)
 
-    if not skinEdge(frameCfg) then applyOwnEdge(frame, frameCfg) end
+    -- THE EDGE'S INSET, kept for the title band (ApplyHeaderStrip), which sits
+    -- flush inside whichever edge is drawn: the skin's at Shell's own inset, or
+    -- the player's at its size (R5-MM1, the skeptic's correction to `win.inset`).
+    if skinEdge(frameCfg) then
+        self.edgeInset = shellInset()
+    else
+        self.edgeInset = applyOwnEdge(frame, frameCfg)
+    end
     if frame.SetBackdropColor then frame:SetBackdropColor(br, bg, bb, ba) end
 end
 

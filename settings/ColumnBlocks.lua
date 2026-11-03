@@ -55,23 +55,39 @@ local H = NS.Helpers or {}
 NS.BLOCK_HEIGHT = 30
 NS.BLOCK_STRIDE = NS.BLOCK_HEIGHT + 4
 
--- The same two textures ConsumableMaster's priority list wears, so a player who
--- runs both reads one glyph vocabulary rather than two.
---
--- AND THE CATALOG DOES CARRY A PAIR. `circle-check` and `ban` are both in
--- LibKa0s-Media's ICONS, so this is a DEVIATION from library-stack-§8 -- the
--- rule that says a mark the addon needs comes from the catalog -- and not a gap
--- in the art. It is ratified as one: docs/ARCHITECTURE.md's deviation register
--- carries the row, with the color and degraded-install arguments written out
--- and a re-check trigger that names what ends it.
---
--- The short version is the parity line above, and it is the argument that binds.
--- Moving these two alone would not reduce the deviation; it would turn a shared
--- glyph vocabulary into a split one, which is worse than the state being
--- ratified. So they move when ConsumableMaster's do, and not before.
+-- The client's art, which the glyph wears while the owner ignores its settings panel, the panel
+-- being stock by default: the deviation docs/ARCHITECTURE.md's register carries. With the Scope
+-- cleared it is a Ka0s mark in the skin's tint (markGlyph, cause L6).
 local ENABLED_TEX  = "Interface\\RaidFrame\\ReadyCheck-Ready"
 local DISABLED_TEX = "Interface\\RaidFrame\\ReadyCheck-NotReady"
 local HANDLE_ICON  = "segment"
+
+-- A block's label is on the settings panel: given back while the owner ignores it (cause L4).
+local PANEL_TEXT = { panel = true }
+
+--- The glyph's mark, through S.Mark: replayed on a skin switch and given back to the client's art
+--- while the owner ignores its panel. The tick and the cross mean something, so `sem.*`, not a tint.
+local function markGlyph(tex, enabled)
+    if not (tex and NS.Skin and NS.Skin.Mark) then return end
+    local stock = enabled and ENABLED_TEX or DISABLED_TEX
+    NS.Skin.Mark(tex, {
+        art = NS.Icon and NS.Icon(enabled and "confirm" or "close"),
+        token = enabled and "sem.good" or "sem.bad",
+        panel = true,
+        stock = function(t) t:SetTexture(stock) end,
+    })
+end
+
+--- The glyph as the drag's carried copy draws it: the same mark in the same tint, the client's art
+--- while the panel is stock. The library's ghost takes a path and a color, so S.Mark cannot reach it.
+--- @return string path, table|nil color  nil leaves the ghost its own tint
+local function ghostGlyph(enabled)
+    local mark = not NS.SkinPanelStock() and NS.Icon and NS.Icon(enabled and "confirm" or "close")
+    if not mark then return enabled and ENABLED_TEX or DISABLED_TEX, nil end
+    return mark, { NS.SkinPanelColor(enabled and "sem.good" or "sem.bad") }
+end
+
+NS.ColumnBlocksInternals = { markGlyph = markGlyph, ghostGlyph = ghostGlyph }
 
 --- The library, or nil on an install without it.
 local function widgets()
@@ -183,8 +199,9 @@ local function applyBlock(block, index, item, spec)
     -- last render's promise.
     block.mmEnabled = item.enabled and true or false
 
-    block.mmGlyphTexture = item.enabled and ENABLED_TEX or DISABLED_TEX
-    block.mmGlyph:SetNormalTexture(block.mmGlyphTexture)
+    block.mmGlyphTexture, block.mmGlyphColor = ghostGlyph(block.mmEnabled)
+    block.mmGlyph:SetNormalTexture(item.enabled and ENABLED_TEX or DISABLED_TEX)
+    markGlyph(block.mmGlyph.GetNormalTexture and block.mmGlyph:GetNormalTexture(), block.mmEnabled)
 
     block.mmLabel:SetText(item.label or "")
     -- Grayed rather than hidden: a label you cannot read is a block you cannot
@@ -192,6 +209,10 @@ local function applyBlock(block, index, item, spec)
     -- The skin's accent and disabled text (Ka0s Default: the gold and the 0.5 gray this drew),
     -- read on every apply, so a skin switch's re-render repaints it; the stock pair while the
     -- owner ignores its settings panel (NS.SkinPanelColor, D-03), as the library's list beside it.
+    -- S.Text first, for the face (cause L4); it gives the string back while the panel is ignored.
+    if NS.Skin and NS.Skin.Text then
+        NS.Skin.Text(block.mmLabel, item.enabled and "text.accent" or "text.disabled", PANEL_TEXT)
+    end
     block.mmLabel:SetTextColor(NS.SkinPanelColor(item.enabled and "text.accent" or "text.disabled"))
 
     block:SetAlpha(1)
@@ -282,7 +303,7 @@ end
 --- Hand one block to the library as a row, and record its handle on the block.
 ---
 --- The ghost's furniture comes off the same item the block was applied from --
---- `block.mmGlyphTexture` is the value applyBlock just set, not a re-derivation,
+--- `block.mmGlyphTexture` and its color are what applyBlock just set, not a re-derivation,
 --- so the copy under the cursor says what the row says.
 local function registerRow(list, block, item)
     -- A HIDDEN COLUMN IS NOT DRAGGABLE. The order of the hidden group is real -- it is
@@ -300,6 +321,7 @@ local function registerRow(list, block, item)
         dimmed         = not item.enabled,
         ghostText      = item.label,
         ghostIcon      = block.mmGlyphTexture,
+        ghostIconColor = block.mmGlyphColor,
         ghostTextColor = { NS.SkinPanelColor(item.enabled and "text.accent" or "text.disabled") },
         height         = NS.BLOCK_HEIGHT,
     })

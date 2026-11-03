@@ -100,7 +100,6 @@ local function lineWidget(index)
     b:SetAllPoints(frame)
     local bg = b:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints(b)
-    bg:SetColorTexture(0, 0, 0, 0.35)
     b.bg = bg
 
     -- Right to left: the share is pinned to the line's right edge, and the amount
@@ -179,6 +178,10 @@ local ruler = nil
 --- The width of one PLAIN string at one font, or nil if unmeasurable.
 ---
 --- @param text string  a literal of ours — never a caption, never a meter value
+local function slotFont(fs, style)
+    NS.SkinHudFont(fs, style.fontPath, style.fontSize, style.fontFlags, style.shadow, style.shadowFromSkin)
+end
+
 local function measureText(text, path, size, flags)
     if not ruler then
         local host = CreateFrame("Frame")
@@ -259,7 +262,11 @@ local function applySlotLayout(frame, style, mode)
         or measureText(EVENT_TIME_WIDEST, path, size, flags) or 0) + SLOT_RIGHT_PAD
 
     frame.time:Show()
-    frame.time:SetFont(path, size, flags)
+    -- The recap's two extra slots wear what the label beside them wears (cause L8): nothing colored
+    -- them, so they stayed GameTooltipText's stock color and shadow under every skin.
+    local tc = style.textColor
+    slotFont(frame.time, style)
+    frame.time:SetTextColor(tc[1], tc[2], tc[3])
     frame.time:SetWidth(timeWidth)
     frame.time:ClearAllPoints()
     -- The same inset the share slot keeps on the right, so the row's two edges
@@ -275,7 +282,8 @@ local function applySlotLayout(frame, style, mode)
     label:SetPoint("LEFT", frame.time, "RIGHT", SLOT_GAP, 0)
 
     frame.caster:Show()
-    frame.caster:SetFont(path, size, flags)
+    slotFont(frame.caster, style)
+    frame.caster:SetTextColor(tc[1], tc[2], tc[3])
     frame.caster:SetWidth(style.eventCasterWidth
         or charSpan(EVENT_CASTER_CHARS, path, size, flags))
     frame.caster:ClearAllPoints()
@@ -447,6 +455,13 @@ local function lineStyle(config, color)
 
     local tr, tg, tb = rgba(config.textColor,
         SLOT_COLOR_DEFAULT[1], SLOT_COLOR_DEFAULT[2], SLOT_COLOR_DEFAULT[3], 1)
+    -- The HUD colors' companions (FS-MM-FLIP): the skin's, ahead of the swatch and behind every mode,
+    -- which modeColor below applies over them. A degraded facade answers nothing: the swatch stands.
+    local S = NS.Skin
+    if config.textColorFromSkin == true then
+        local r, g, b = S.HudTextColor()
+        if r then tr, tg, tb = r, g, b end
+    end
 
     -- CLASS IS THE HOVERED PLAYER'S, which the bars already wear -- `color` is
     -- that same table, resolved by the caller off `row.classFilename`. A tooltip
@@ -470,22 +485,32 @@ local function lineStyle(config, color)
     fr, fg, fb = modeColor(config.barColorMode, config.statKey, color, fr, fg, fb)
 
     local br, bg_, bb = rgba(config.barBgColor, 0, 0, 0, 1)
+    local bgAlpha = alphaOf(config.barBgAlpha, 0.1)
+    -- Under Custom only: `mm.tipBarBg` is a whole color, opacity included, so the stored opacity is
+    -- not read beside it, and a class or per-statistic backdrop keeps that opacity.
+    -- Live only: a degraded facade answers owner tokens from their defaults, over the stored color.
+    if config.barBgColorFromSkin == true and config.barBgColorMode == "custom" and NS.SKIN_LIVE then
+        local r, g, b, a = S.Color("mm.tipBarBg")
+        if r then br, bg_, bb, bgAlpha = r, g, b, a or 1 end
+    end
     br, bg_, bb = modeColor(config.barBgColorMode, config.statKey, color, br, bg_, bb)
 
     local ebr, ebg, ebb, eba = rgba(config.barBorderColor, 0, 0, 0, 1)
+    if config.barBorderColorFromSkin == true then
+        local r, g, b, a = S.Color("bar.border")
+        if r then ebr, ebg, ebb, eba = r, g, b, a or 1 end
+    end
     ebr, ebg, ebb = modeColor(config.barBorderColorMode, config.statKey, color, ebr, ebg, ebb)
-
-    local shadowX, shadowY = 0, 0
-    if config.fontShadow then shadowX, shadowY = 1, -1 end
 
     return {
         color      = color,
         textColor  = { tr, tg, tb },
         barColor   = { fr, fg, fb, alphaOf(config.barAlpha, 0.85) },
-        barBgColor = { br, bg_, bb, alphaOf(config.barBgAlpha, 0.1) },
-        shadowX    = shadowX,
-        shadowY    = shadowY,
+        barBgColor = { br, bg_, bb, bgAlpha },
+        shadow         = config.fontShadow,
+        shadowFromSkin = config.fontShadowFromSkin,
         texture    = mediaPath("statusbar", config.barTexture),
+        textureFromSkin = config.barTextureFromSkin,
         -- Size zero drops the FILE with it. A zero edgeSize with a texture still
         -- present is the combination WoW draws as a hard 1px line, which is the
         -- setting doing the opposite of what it says (modules/Window.lua says
@@ -569,15 +594,12 @@ local function drawLine(lineIndex, amount, share, value, max, style, label, mode
     -- The player's font, on OUR two slots and on the tooltip's own line. The
     -- line is shared and is restored by `restoreFonts`; the slots are ours and
     -- are simply re-set on every draw.
-    frame.amount:SetFont(style.fontPath, style.fontSize, style.fontFlags)
-    frame.share:SetFont(style.fontPath, style.fontSize, style.fontFlags)
-    frame.label:SetFont(style.fontPath, style.fontSize, style.fontFlags)
     -- OUR OWN carriers, so no restore is owed on them the way it is on a shared
-    -- GameTooltip line -- but they are POOLED, so the offset is restated every
+    -- GameTooltip line -- but they are POOLED, so the shadow is restated every
     -- draw for the same reason the face and the color are.
-    frame.amount:SetShadowOffset(style.shadowX, style.shadowY)
-    frame.share:SetShadowOffset(style.shadowX, style.shadowY)
-    frame.label:SetShadowOffset(style.shadowX, style.shadowY)
+    slotFont(frame.amount, style)
+    slotFont(frame.share, style)
+    slotFont(frame.label, style)
 
     -- Which slots exist on this line, and how wide they are. Re-stated here for
     -- the same reason the font above it is: the carrier is pooled.
@@ -597,7 +619,7 @@ local function drawLine(lineIndex, amount, share, value, max, style, label, mode
     frame.share:SetTextColor(tc[1], tc[2], tc[3])
     frame.label:SetTextColor(tc[1], tc[2], tc[3])
     applyLineFont(left, lineIndex, style.fontPath, style.fontSize, style.fontFlags,
-        style.shadowX, style.shadowY, tc)
+        style.shadow, style.shadowFromSkin, tc)
 
     applyLineBorder(frame, style)
 
@@ -649,6 +671,9 @@ local function drawLine(lineIndex, amount, share, value, max, style, label, mode
     -- re-stated every draw and not once at creation.
     local fill = b.GetStatusBarTexture and b:GetStatusBarTexture()
     if fill and fill.SetDrawLayer then fill:SetDrawLayer("BACKGROUND", 1) end
+    -- The skin's gloss (cause A3), every draw for the reason above: the fill is a new Texture. Its
+    -- companion is the texture's, so a player's own texture stays plain.
+    NS.Skin.BarGloss(b, style.textureFromSkin == true)
     if max == nil then
         b:SetMinMaxValues(0, 1)
     else
@@ -682,7 +707,7 @@ local function addSpellLine(spell, numberStyle, max, style, sourceTotal)
         caption = (spellID ~= nil) and string.format("#%s", spellID) or "#?"
     end
 
-    local label = string.format("|T%s:%d:%d:0:0|t %s",
+    local label = string.format("|T%s:%d:%d:0:0:64:64:5:59:5:59|t %s",
         iconID or FALLBACK_ICON,
         TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE,
         caption)

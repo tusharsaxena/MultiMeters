@@ -35,6 +35,7 @@ local function seenProfile()
     local inst = T.load{ enable = true }
     local NS = inst.NS
     NS.SetByPath("skin.pickerSeen", true)
+    NS.db.global.skinNotice = 99   -- the one-time notice (SG-L3) is the other route to a picker
     NS.HideSkinPicker()
     assertEqual(NS.MaybeShowSkinPicker(), nil, "the first-run picker is down")
     return inst, NS

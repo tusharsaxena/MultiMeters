@@ -19,19 +19,19 @@ secret-value rules the checks refer to.
 |---|---|---|
 | INSTALL-1 to INSTALL-18 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load, the one-time HUD and chrome skin resets |
 | SLASH-1 to SLASH-33 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding and the General page's Keybindings tab |
-| PANEL-1 to PANEL-57 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
+| PANEL-1 to PANEL-59 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-55 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
+| WIN-1 to WIN-58 | [Windows and the header](#win) | Header controls, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-34 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
-| TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
-| EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
+| TIP-1 to TIP-37 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
+| EXPORT-1 to EXPORT-56 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
-| SIM-1 to SIM-12 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
-| SKIN-1 to SKIN-27 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat |
+| SIM-1 to SIM-15 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run, the Master controls Sim mode checkbox |
+| SKIN-1 to SKIN-50 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat, a stored pick of the deleted Friz |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
 ## Before you start
@@ -133,7 +133,7 @@ secret-value rules the checks refer to.
 - **INSTALL-13. Upgrade from v17 (the 30px title bar).** On the first header-match build
   (`schemaVersion` 17), with two windows, leave the first window's Header → Title bar → Header height
   at the shipped 18 and set the second's to 24; log out, update and log in → the first window's
-  Header height reads 26 and its bar measures 30px from the frame's top edge to the divider (WIN-52);
+  Header height reads 26 and its bar measures 30px from the frame's top edge to the bar's bottom (WIN-52; no divider since R4-SEP);
   the second keeps 24; `/dump MultiMetersDB.global.schemaVersion` prints `21`. A first window still on
   the short bar means the v18 step did not reach it. (Amended by MM-05, 2026-10-29, the skinning rollout: the stamp is 20 since the v20 skin reset.)
   (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the stamp is 22 since the v22 font flags move.) Result: Owner reported pass, 2026-10-31
@@ -351,7 +351,7 @@ right. Open the panel with `/mm config`.
   on a fresh profile. **Bars**: Bar, Background, Border, Text content, Text style, Icons; none of the
   Row rows above appears on Bars (their paths are `window.rows.*`, and `/mm get window.rows.height`
   answers). **Header**: Title bar (Show title bar, Alignment, Header height, Header background, Use
-  the skin's background, then the divider rows), Title text (the face the window's name is drawn in: Font, Font size, Text color,
+  the skin's background; the divider rows are gone since R4-SEP), Title text (the face the window's name is drawn in: Font, Font size, Text color,
   Text color mode, Font outline, Text shadow; the name itself is typed on Windows → General), Controls,
   Button style (an *Icon* heading with Reveal controls on hover beside Control size; a *Color* heading
   with Control color and Control color mode on one line and Control hover color and Control hover
@@ -593,8 +593,8 @@ right. Open the panel with `/mm config`.
   style holds only the six "(all surfaces)" rows under *All surfaces*: the four broadcasts, then Use
   the skin's texture and Use the skin's font (amended by MM-05, 2026-10-29). Rows has *Grid* (Row height |
   Row spacing, Maximum rows | Growth direction, Always show yourself) and *Highlighting* (Highlight
-  yourself | Highlight on mouseover, Alternating background, whose tooltip points to Windows > Bars >
-  Bar). Result: pass (owner-marked 2026-10-30)
+  yourself, Use the skin's row marker | Highlight on mouseover, Alternating background, whose tooltip
+  points to Windows > Bars > Bar, Use the skin's row stripe). Result: pass (owner-marked 2026-10-30)
 - **PANEL-54. Header (item 020).** The strip reads Title bar, Title text, Controls. Title bar → *Layout*
   shows Show title bar | **Title bar height**, and *Background* shows **Title bar background**, then
   **Use the skin's background** on its own line, ticked (the swatch is not grayed). Title
@@ -606,7 +606,7 @@ right. Open the panel with `/mm config`.
   *Size* (Control size), *Color* (the two color pairs), *Opacity* (Reveal controls on hover alone, then
   Control opacity | Control hover opacity). Every control still does what it did. (Amended by MM-05, 2026-10-29, the skinning rollout: the
   companion under Title text.) (Amended by MM-A1, 2026-10-29, the skinning rollout: the title bar's companion; every color mode on the tab opens
-  on Skin, Class color, Custom color.) Result: pass (owner-marked 2026-10-30)
+  on Skin, Class color, Custom color.) (Amended by FS-MM-FLIP and FS-MM-FIX, 2026-11-01: Title text also carries **Use the skin's shadow** and, after Text alignment, **Use the skin's alignment**, which grays Text alignment while ticked.) Result: Passed (owner, 2026-11-02)
 - **PANEL-55. Bars (item 020).** The strip reads Bar, Text, Icons. Bar → *Fill* (the bar rows with
   **Use the skin's texture** after them, fill direction, Animate bar fills), *Background* (the three
   bar background rows) and *Border* (**Show border** leads, then style, thickness, color and its mode,
@@ -639,6 +639,13 @@ right. Open the panel with `/mm config`.
   border → **Border style** → the row's left edge is flush with the controls stacked with it, the
   pull-out wears the skin and every entry shows its border swatch. Pick a border, then **None** → the
   window's edge follows each pick. Third-party LibSharedMedia media still lists. No Lua error. Result:
+- **PANEL-59. A press outside an open picker closes it (R4-RV, LibKa0s R4-L1).** Open Frame → Quick
+  style → **Font (all surfaces)** so its pull-out is open, then left-click an empty part of the settings
+  page → the pull-out closes, and the press does nothing else. Open it again and click another dropdown on
+  the page → the first pull-out closes and the second opens. Open **Border style** and scroll its list
+  or click its scrollbar → it stays open; pick an entry → it closes on the pick as before. Repeat once
+  in combat → the same. Another addon's AceGUI dropdown outside a Ka0s window keeps its own behavior.
+  No Lua error. Result:
 
 ## PROFILE
 
@@ -757,7 +764,7 @@ right. Open the panel with `/mm config`.
   close, minimize, lock, settings, segment, reset, export, each a white glyph from this addon's art
   (close from `libs/LibKa0s/media/icons/close.tga`, export from `.../export.tga`) at the same size,
   weight, center line and color. A plain letter (`*`, `#`, `>`) means the art and the atlas both
-  failed; a thin gray multiplication sign at the close end is LibKa0s's own close button. Result: pass (owner-marked 2026-10-10)
+  failed; a thin gray multiplication sign at the close end is LibKa0s's own close button. (Amended by FS-MM-FIX, 2026-11-01: under the Skin modes close takes the skin's `close.rest` and `close.hot`, so it turns red under the pointer where its six siblings turn gold, like the library's own closes.) Result: Passed (owner, 2026-11-02)
 - **WIN-2. Icons sit inside their slots.** Each icon is drawn at 72% of **Control size**, with air
   between neighbors → icons touching means the inset was lost. Result: pass (owner-marked 2026-10-10)
 - **WIN-3. A hidden control closes the gap.** Header → Controls, hide the lock → everything to its left
@@ -765,7 +772,7 @@ right. Open the panel with `/mm config`.
 - **WIN-4. The title never runs under a control.** At every **Control size** from 10 to 32 and with
   any combination hidden → the title stays clear of the strip. Result: pass (owner-marked 2026-10-10)
 - **WIN-5. The strip is centered.** The strip, the window name and the session line sit on one line,
-  centered in the title bar, with equal gaps above the row and below it to the divider. Change Header
+  centered in the title bar, with equal gaps above the row and below it to the bar's bottom (no divider since R4-SEP). Change Header
   → Title bar → **Header height**, Header → Title text → **Font size** and Header → Button style →
   **Control size** → all three stay on the shared line. Result: pass (owner-marked 2026-10-10)
 - **WIN-6. Exactly one control reveals.** Sweep the pointer along the strip, on an unlocked and on a
@@ -810,7 +817,8 @@ right. Open the panel with `/mm config`.
   thickness** grows it downward. **Divider color mode** ships as Skin (the line as the shared
   skin painted it); switch to Class color → your class; to Custom color → the swatch. With a low
   swatch opacity, switching between Custom and Class leaves the opacity alone. There is no
-  per-statistic mode. Result: pass (owner-marked 2026-10-30)
+  per-statistic mode. (Amended by R4-SEP, 2026-11-03: the divider and its four rows are gone, so this
+  check no longer applies; WIN-56 replaces it.) Result: pass (owner-marked 2026-10-30)
 - **WIN-19. The header background stops at the title bar.** Header → Title bar → untick **Use the
   skin's background**, set Title bar background to something loud and Columns → Header background →
   Background color to something else → two distinct bands, the second starting where the first ends.
@@ -913,7 +921,7 @@ right. Open the panel with `/mm config`.
   Quadrata with a soft drop shadow, gold, once Header → Title text → **Use the skin's font** is
   unticked (it ships ticked, and the title then draws the skin's face, SKIN-1). Header → Title text
   shows Font outline *None* and Text shadow ticked. (Amended by MM-05, 2026-10-29, the skinning rollout: since the v20 reset the title follows
-  the skin's face, so the Friz Quadrata match needs the companion off.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the title's flags ship *From skin*, so the unoutlined Friz Quadrata match also needs the Skin tab's Font outline on *Off*, or Header → Title text → Font outline *None*; Header → Title text shows Font outline *From skin*.) Result: Owner reported pass, 2026-10-31
+  the skin's face, so the Friz Quadrata match needs the companion off.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the title's flags ship *From skin*, so the unoutlined Friz Quadrata match also needs the Skin tab's Font outline on *Off*, or Header → Title text → Font outline *None*; Header → Title text shows Font outline *From skin*.) (Amended by FS-MM-FLIP and FS-MM-FIX, 2026-11-01: the title now follows the skin's `title.align`, centered under every shipped skin, and its shadow is Ka0s Default's `mm.hudShadow`. For the DPS Race match untick Use the skin's alignment as well as the font companion.) Result: Passed (owner, 2026-11-02)
 - **WIN-50. The controls match DPS Race's color (2026-10-24).** Same profile, pointer away from the
   window → every header control is the light gray DPS Race's controls rest in, at full strength (none
   faded); point at one → only it turns gold, and back to gray on leaving. Header → Button style shows
@@ -925,10 +933,10 @@ right. Open the panel with `/mm config`.
   old shipped one) keeps it. Result: pass (owner-marked 2026-10-24)
 - **WIN-52. The title bar is DPS Race's height, the row on its midline (2026-10-24).** Same profile,
   a Multi Meters window beside Ka0s DPS Race's HUD (a window from before the update included: the v18
-  step moves it, INSTALL-13) → the two title bars are the same height, frame top to divider (30px);
+  step moves it, INSTALL-13) → the two title bars are the same height, frame top to the bar's bottom (30px; no divider since R4-SEP);
   the title, the session line (*Overall*) and every icon are centered on that bar's midline, with as
-  much room above as below; the drag strip answers anywhere in the bar down to the divider; the column
-  labels and rows start under the divider as before. Header → Title bar shows Header height 26. Set
+  much room above as below; the drag strip answers anywhere in the bar down to its bottom; the column
+  labels and rows start under the bar as before. Header → Title bar shows Header height 26. Set
   Header height to 8, 37 and 48 and Control size to 10 and 32 in turn → the row stays centered (a
   control taller than the bar hangs from the frame's top edge). The shipped 228px window shows ten
   rows, and dragging it down stops at 70px with the one row fully inside the frame. Result: pass (owner-marked 2026-10-24)
@@ -947,6 +955,37 @@ right. Open the panel with `/mm config`.
 - **WIN-55. The strips still sit under the title (FX-MM-PERF).** `PlaceTestStrip` lost a loop. With two windows, `/mm test` → the test strip
   sits under each title, inset by the padding on both sides. Change Header height while it shows → it moves with the title. `/mm test` off, `/mm sim` → the sim strip takes the same slot on
   every window, and the test strip is hidden. Result:
+- **WIN-56. No line under the title bar (R4-SEP).** Log in on a profile that had Header → Title bar →
+  Show divider on, with a Class or Custom divider color and a thickness of 4, then update → every meter
+  window draws no line between its title bar and the column labels, under every skin (pick Ka0s
+  Default, Obsidian, High Contrast and WoW Default in turn), and the title, the session line, the
+  controls and the column labels sit exactly where they did. Header → Title bar has no *Divider*
+  heading and no divider rows; `/mm list` names no `window.header.divider` path, and
+  `/dump MultiMetersDB.global.schemaVersion` prints `26`. Open the Export modal, `/mm debug` and its
+  copy window, and the first-run skin picker → none draws a line under its title. The Columns
+  editor's rule and the segment menu's divider above Current and Overall stay. Fail: a line under any
+  window title, a moved title row, or a Lua error. Result:
+- **WIN-57. The title bar looks like Loot History's, its row on the bar's middle (R5-MM1, R5-WIN).**
+  On Ka0s Default, `/mm test`, and open Loot History's window beside the meter → the meter's title bar
+  runs flush inside the window's edge on the top, left and right, with no dark strip between the edge
+  and the bar (round 4's "inner border", image 33), and it is the same dark gold gradient as Loot
+  History's, lighter at the top. The column labels and rows keep their 6px inset below it. The title,
+  the session line and every header control sit on the bar's vertical middle. Pick WoW Midnight (its
+  2px edge) → the bar sits inside that thicker edge, the row still on its middle; pick Obsidian → a flat
+  bar the same size. Header → Title bar → untick **Use the skin's background** and pick a color → the
+  bar keeps the same size, drawn flat in that color, with no gradient left over. Frame → set the border
+  color to Custom with a 3px edge → the bar sits inside that edge. Collapse the window (the minimize
+  control) → it is exactly the bar and its edge, with no strip of the body under it; expand → the rows
+  come back. Fail: a strip of body color around the bar, a header child high or low on the bar, a gap
+  under a collapsed bar, or a Lua error. Result:
+- **WIN-58. The export bubble is the size of the other header glyphs (R6-MM2, the owner's image 67).**
+  `/mm test` → in the meter's header the export control (the chat bubble) is the same visual size as
+  reset, the segment menu, the gear, the padlock, minimize and close: its bubble is as wide as the gear
+  is, and it no longer reads a size smaller than its neighbors. Pick each skin on General → Skin (Ka0s
+  Default, Obsidian, WoW Midnight and the rest) → the same in every one. Header → Controls → set Control size to
+  its smallest and largest → the bubble keeps its neighbors' size, its edges are not clipped, and it
+  stays on the bar's middle. Hover it → it takes the hover color like the rest. Fail: a smaller or
+  larger bubble, a clipped edge, or a Lua error. Result:
 
 ## VIS
 
@@ -1077,7 +1116,7 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
 - **GRID-25. The segment menu.** After two or three pulls, click the segment control → a menu of the
   stored fights with durations, a divider, then `Current` and `Overall`, anchored to the session line.
   The segment control is the only route: hovering the empty header left of "Overall" gives no glow and
-  clicking there opens nothing. Result: pass (owner-marked 2026-10-10)
+  clicking there opens nothing. (Amended by FS-MM-FIX, 2026-11-01: out of combat this is the skinned Ka0s menu, with the window's own entry marked. Under the Combat restriction it stays the client's menu, because a secret label cannot be measured.) (Amended by FS-MM-GATE, 2026-11-01: the Ka0s menu is the shared context menu and has the title `Segment` and the divider too, so the two menus have one shape.) Result: Passed (owner, 2026-11-02)
 - **GRID-26. Pinning a fight.** Pick a stored fight → the grid shows that fight's numbers and the header
   names it. Result: pass (owner-marked 2026-10-10)
 - **GRID-27. Tooltips follow the pin.** On a pinned window, hover a cell and drill into a row → both
@@ -1213,6 +1252,12 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
   first, led by the same three as at 3. Result: pass (owner-marked 2026-10-10)
 - **TIP-36. Targets off costs nothing.** Turn Show targets off → no Targets header, and a `/mm perf`
   capture while hovering shows no `targets` bucket activity. Result: pass (owner-marked 2026-10-10)
+- **TIP-37. Tooltip icons have no rough corners (R5-ICON).** After a real pull with a death, hover a
+  damage cell, a Deaths cell and a name with Show targets on → every spell icon, the skull on each death
+  line, the target icon and the question-mark fallback are cropped just inside the art's own bevel: no
+  gray or bevelled corner shows on any of them, and the icons still line up in one column with the
+  names beside them. They take no border (inline icons are cropped only). Fail: a native corner on any
+  tooltip icon, an icon column out of line, or a Lua error. Result:
 
 ## EXPORT
 
@@ -1354,6 +1399,12 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
 - **EXPORT-55. A window never drawn.** For a window that exists but has not been drawn this session
   (for example one a hide rule has kept hidden since login), `/mm export <its name>` → it exports (the
   verb hands over the config, not the live frame). Result: pass (owner-marked 2026-10-10)
+- **EXPORT-56. The Export modal's title bar sits on its band (R5-WIN).** On Ka0s Default, open the
+  Export modal (the export control on a meter's header) → its title bar runs flush inside the modal's
+  edge with no strip of body color between them, and the *Export* caption and the close button sit on
+  the bar's vertical middle. Pick WoW Midnight (its 2px edge) and WoW Default in turn → the same in
+  each, the bar inside each skin's edge. Fail: a caption or close high or low on the bar, a gap above
+  the bar, or a Lua error. Result:
 
 ## COMBAT
 
@@ -1678,7 +1729,7 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
   defaults to *From skin*, and without the library *From skin* draws OUTLINE, as the library's default
   mode, HUD text only, does for this text, so the title, the session line, the column labels, the cells and the tooltip lines
   are outlined where the pre-skin look drew the title, cells and tooltip plain; a flag set to *None*
-  still draws plain. Fail: From skin text drawn plain without the library, or a Lua error.) Result: Owner reported pass, 2026-10-31
+  still draws plain. Fail: From skin text drawn plain without the library, or a Lua error.) (Amended by FS-MM-FLIP, 2026-11-01: a new profile's stored picks are now Ka0s Prototype and Ka0s Default, each resolving to the client's fallback if the library's media did not register. A stored shadow does not draw with the library absent, an accepted loss. Existing profiles keep their stored picks.) Result: Passed (owner, 2026-11-02)
 - **DEGRADED-9. Restoring.** Rename the folder back, `/reload` → everything returns. Result: pass (owner-marked 2026-10-10)
 
 ## SIM
@@ -1723,6 +1774,26 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
   finishes its ticks first). Click a later step row → the run steps up to that row and stays paused.
   Resume → it plays on by itself. Restart → it plays again from the first step without a second
   click. Result: pass (owner-marked 2026-10-23)
+- **SIM-13. The Simulation step delay slider (R3-SIM-MM).** Settings → General → Behavior → under
+  *Simulator*, set **Simulation step delay (seconds)** to 4, then `/mm sim start dungeon` → about four
+  seconds pass between one step's row ticking and the next (a fight step still lasts its 10 s, SIM-14).
+  Mid-run, set it to 1 → the step after next follows about a second later. The slider runs 0.5 to 10 in 0.5 steps and ships at 1. Result: not run
+- **SIM-14. Every fight step lasts about 10 s (R4-MM1).** With the step delay at its default 1 s,
+  `/mm sim start dungeon` → the step panel's rows read *Pull Trash (10 s)* and *Pull Speaker Shadowcrown
+  (10 s)*; each fight runs about 10 seconds before the next row ticks, the bars and numbers grow about
+  twice a second throughout, and a damage dealer dies about two thirds of the way into the boss. Run
+  `raid`, `wipe` and `zone` too → every *Pull ...* row reads *(10 s)* and plays for about 10 seconds (the
+  wipe's everyone-dead lands on its last tick). Result:
+- **SIM-15. The Sim mode checkbox (R6-SIM; LibKa0s R6-SIM-L, OptionsCompose minor 19).** Settings → General →
+  Master controls → **Sim mode** sits on its own line straight under *Minimap button* | *Test mode*. Tick it
+  → the same as a bare `/mm sim`: the status line prints and the step panel opens; Start a scenario → the
+  box reads ticked. Untick it → the simulation stops with its stop line and the windows show live data.
+  With the page open, `/mm sim start dungeon` → the box ticks at once; `/mm sim stop` → it unticks. Close
+  the settings, start a sim with `/mm sim start dungeon`, then open Master controls → the box is ticked.
+  Click the launcher's right-click *Sim mode* entry → the same panel as the box. With a sim running, pull
+  a training dummy → the sim stops and the box unticks. Tick it in combat → it stays unticked. With a sim
+  running, Reset all settings → the sim stops. `/reload` → the box is unticked. Fail: the box out of step
+  with the sim, a sim started on Reset all settings, or a Lua error. Result:
 
 ## SKIN
 
@@ -1736,7 +1807,7 @@ also fails on a Lua error or a taint warning.
 What follows the skin, by surface family: the **meter window chrome** (its fill and its edge, the
 title bar background, the title and the session line, the header controls at rest and under the
 pointer, each while its color mode is *Skin* or, for the title bar, while **Use the skin's
-background** is ticked; the divider in its *Skin* mode, the notice and the empty state, the session
+background** is ticked; the notice and the empty state, the session
 line's dim notes, the TEST MODE word, the test and sim strips); the **HUD** (the faces of the title, the column labels, the cell text and the
 tooltip lines, and the bar texture and bar border style of the grid and the tooltip, each while its
 "Use the skin's ..." companion is ticked); the **tooltip lines** this addon writes (the GameTooltip
@@ -1787,7 +1858,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   columns, and the sim step panel's row, command and button labels. The column blocks' labels keep Friz Quadrata (the tooltip
   lines' face is the HUD's, SKIN-1). Fail: a color that changed, a modal change beyond D8's, or one of the surfaces above
   still in Friz Quadrata with Ignore fonts unticked. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the library's menus, strips and
-  tool-window labels draw Oxanium too, LibKa0s D-13.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: Ka0s Default's own face is **Ka0s Prototype**, one weight, where the surfaces above drew Ka0s Oxanium Bold and SemiBold, and the window text is outlined under the default Font outline, *All text*.) Result: Owner reported pass, 2026-10-31
+  tool-window labels draw Oxanium too, LibKa0s D-13.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: Ka0s Default's own face is **Ka0s Prototype**, one weight, where the surfaces above drew Ka0s Oxanium Bold and SemiBold, and the window text is outlined under the default Font outline, *All text*.) (Amended by FS-MM-FIX, 2026-11-01: with the Scope cleared the column blocks' labels take the skin's body face too.) Result: Passed (owner, 2026-11-02)
 - **SKIN-3. The Skin tab (MM-01).** Settings → General → the strip reads Master controls, Behavior,
   Statistic colors, **Skin**, Keybindings. **Skin** shows Skin source, the nine skins with their
   swatches under a **Look** heading, **Font and texture** (Font and Texture, both *Skin's default* on a
@@ -1803,7 +1874,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   pointer); its faces take the skin's own HUD face, every skin now having one (Obsidian Inter
   SemiBold, Azeroth Vollkorn Bold, Glass Nunito SemiBold, High Contrast Atkinson Bold, Ember Bitter
   Bold, WoW Midnight Philosopher Bold, WoW Forever Fira Sans SemiBold, WoW Default Friz Quadrata, Ka0s
-  Default Oxanium SemiBold), its bars the skin's texture, its divider the skin's line, the test
+  Default Oxanium SemiBold), its bars the skin's texture (and no divider, since R4-SEP), the test
   strip the skin's; the rows' hover wash, the alternating stripe (Rows → Alternating background), the
   gold "this row is you" edge and the white name of a classless row (a training dummy) take the
   skin's list hover, stripe, accent and highlight text; the bar colors and the column labels' colors
@@ -1818,7 +1889,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   moved. (Amended by MM-A1, 2026-10-29, the skinning rollout: the owner ruled the window chrome follows the skin, R-3, so the question this check
   put is answered and the chrome is now checked here.) (Amended by MM-02, 2026-10-30, the skin library follow-ups: every skin draws HUD text in a face
   of its own, where the eight non-Ka0s skins drew Friz Quadrata; the owner judges each face here,
-  LibKa0s R-4.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the HUD faces are now Obsidian **Expressway** (where it was Inter SemiBold), Ka0s Default **Prototype** (where it was Oxanium SemiBold) and WoW Forever Fira Sans SemiBold (titles and HUD; its body text is Fira Sans Medium), and in each skin the HUD text measures about as wide as under Ka0s Default, its size scaled by the skin, SKIN-27.) (Amended by MM-F01, 2026-10-31, the font pickers and skin faces run, LibKa0s v1.83.0: the HUD faces are now Azeroth **Open Sans Semibold**, Glass **Avant Garde**, High Contrast **Doris PP**, Ember **Emblem**, WoW Midnight **Segoe UI Semibold** and WoW Default **Ka0s Friz Quadrata TT**, which differs from Ka0s Default's Prototype whatever the client's own Friz file holds; Obsidian, WoW Forever and Ka0s Default keep theirs.) Result: Owner reported pass, 2026-10-31
+  LibKa0s R-4.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the HUD faces are now Obsidian **Expressway** (where it was Inter SemiBold), Ka0s Default **Prototype** (where it was Oxanium SemiBold) and WoW Forever Fira Sans SemiBold (titles and HUD; its body text is Fira Sans Medium), and in each skin the HUD text measures about as wide as under Ka0s Default, its size scaled by the skin, SKIN-27.) (Amended by MM-F01, 2026-10-31, the font pickers and skin faces run, LibKa0s v1.83.0: the HUD faces are now Azeroth **Open Sans Semibold**, Glass **Avant Garde**, High Contrast **Doris PP**, Ember **Emblem**, WoW Midnight **Segoe UI Semibold** and WoW Default **Ka0s Ubuntu** (R3-FRIZ, LibKa0s R3-L6; it was Ka0s Friz Quadrata TT), which differs from Ka0s Default's Prototype; Obsidian, WoW Forever and Ka0s Default keep theirs.) (Amended by FS-MM-FLIP and FS-MM-FIX, 2026-11-01: the column labels and numbers now follow the skin's HUD colors, and only the bar colors stay as set, these being class and meaning colors. The title takes the skin's alignment. SKIN-28 to SKIN-37 pin the detail.) Result: not run
 - **SKIN-5. The HUD companions (MM-03).** Under **Obsidian**, untick Bars → Text → **Use the skin's
   font** → the cell text goes back to the window's own Font pick at once, while the title, the column
   labels and the tooltip keep the skin's face; tick it → the skin's again. Do the same with Bars → Bar
@@ -1828,7 +1899,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   or bar), and the stored pick comes back when it is unticked; with Skin → **Ignore fonts** ticked a
   ticked font companion's grayed picker shows the stored pick instead, which is what the surface then
   draws (SKIN-8). Its tooltip says so. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the picker's two states; the old text said it
-  showed the stored pick, which the library never drew.) Result: pass (owner-marked 2026-10-30)
+  showed the stored pick, which the library never drew.) (Amended by FS-MM-FLIP, 2026-11-01: **Use the skin's border** now governs the thickness as well, which grays beside the style; the color has its own companion.) (Amended by FS-MM-GATE, 2026-11-01: under a skin whose border style is None, Obsidian among them, the style and thickness stay live and draw the stored picks with the companion on; only a skin with a real style, SKIN-40, grays them, Show border included.) Result: Passed (owner, 2026-11-02)
 - **SKIN-6. A new window follows the skin (MM-03, MM-A1; DECISIONS X3).** Windows → **New window** →
   every companion on the new window is ticked, its five chrome color modes read *Skin*, and it draws
   the skin's face, bar and window look; **Duplicate window** and **Copy settings from** carry the
@@ -1874,7 +1945,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
 - **SKIN-11. The export modal (MM-02).** Under each of three skins (Obsidian, Azeroth, Glass) open
   the export modal → its window, title band, buttons, selectors and their menus, the whisper row and
   the refusal line (Export to Whisper with an empty name) wear the skin; Export to CSV's copy window
-  too. Result: pass (owner-marked 2026-10-30)
+  too. (Amended by FS-MM-FIX, 2026-11-01: the title band is the skin's 30 px, every row 4 px lower, and the whisper name box is a skinned input with a focus edge.) Result: Passed (owner, 2026-11-02)
 - **SKIN-12. The tool windows (MM-04).** Under a non-default skin open the debug console (`/mm debug
   on`), the perf panel (`/mm perf`) and the sim step panel (`/mm sim`) → each wears the skin, live
   when the skin changes with it open; the sim strip on every window takes the skin's sim tint; under a
@@ -1907,7 +1978,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   that profile. Result: pass (owner-marked 2026-10-30)
 - **SKIN-18. The picker's eye (MM-04; DECISIONS X6).** With a preview pending, press the eye → every
   window goes into test mode (the test strip shows, sample rows in the previewed skin) and the picker
-  stays above the windows, its controls clickable. Result: pass (owner-marked 2026-10-30)
+  stays above the windows, its controls clickable. (Amended by R6-PV, 2026-11-04: the eye now toggles test mode and the picker enters it itself when no window is on screen; SKIN-50.) Result: pass (owner-marked 2026-10-30)
 - **SKIN-19. The picker's gear (MM-04).** On a new profile, preview **Obsidian** and press the gear →
   the settings panel opens on **General** with its **Skin** tab selected, showing Obsidian, and the
   picker closes; `/reload` → still Obsidian, no picker. Result: pass (owner-marked 2026-10-30)
@@ -1955,6 +2026,29 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   column. Untick Bars → Text → *Use the skin's font* → the cells draw the stored size again; tick
   **Ignore fonts** → every size is the stored one. `/mm get window.text.size` prints the same number
   throughout (the stored size is never rewritten). (Amended by MM-F01, 2026-10-31, the font pickers and skin faces run, LibKa0s v1.83.0: every new face is measured against Prototype too, so run this again; a font override with a Ka0s face also scales to Prototype's width, and a non-Ka0s media face stays unscaled. Report a clipped header control, name or number under any skin.) Result: Owner reported pass, 2026-10-31
+- **SKIN-28. Ka0s Default keeps its pixels (FS-MM-FLIP).** On a new profile on Ka0s Default, compare a window with the last build → white numbers, gold column labels, the title's and cells' drop shadow, and a tooltip bar's faint backdrop all look as they did. The changes that are meant: a faint band behind the column labels, a border around each unit icon, a centered title, and the Ka0s Prototype picks. Fail: any other pixel moved. Result: Passed (owner, 2026-11-02)
+- **SKIN-29. The colors follow the skin (D2, D4).** In test mode pick Obsidian, Azeroth and High Contrast in turn → with no reload the numbers and column labels change color with each skin, and a hovered cell's tooltip text does too. With Show border ticked the cell outline takes the skin's bar border color and thickness. Bar fills stay class colors. Every skin has its own `bar.bg` and `bar.border` now, so a tooltip bar's backdrop and edge change with each (amended by FS-MM-GATE, 2026-11-01). Back on Ka0s Default they return. Fail: a color that stays, or needs a `/reload`. Result: Passed (owner, 2026-11-02)
+- **SKIN-30. The shadow follows the skin (D6).** Under Azeroth the title, labels, cells and tooltip text show the skin's shadow, under High Contrast a heavier one, and under Ka0s Default the title and cells keep theirs while the labels and tooltip have none. Tick **Ignore fonts** under Azeroth → each surface's stored shadow decides. Hover a unit in the world after a cell tooltip → that tooltip's lines carry no leftover shadow. Fail: no visible shadow under a skin that sets one, which would mean the font object did not take. Result: Passed (owner, 2026-11-02)
+- **SKIN-31. The companions (D2, D4, D6).** Bars → Text shows **Use the skin's color** and **Use the skin's shadow**, as do Columns → Column header → Text and Tooltip → Text; Bars → Border, Tooltip → Bar → Background and Tooltip → Bar → Border show **Use the skin's color**. Untick one → the stored swatch draws at once; the swatch is never grayed. Set a color mode to Class or Per-statistic with the companion on → the class or statistic color wins, whatever the companion says. Fail: a swatch grayed, or a companion beating a mode. Result: Passed (owner, 2026-11-02)
+- **SKIN-32. The one step on an existing profile (v23).** Before updating, give a window its own colors, a shadow off and THICKOUTLINE flags. Update and log in → it follows the skin, flags From skin. Untick each companion → your color and shadow come back. `/reload`, swap profiles and back, and press every page's Defaults on another window → your unticked companions stay unticked. Class and per-statistic modes never moved. Fail: a stored color lost, or a companion turned back on. Result: Passed (owner, 2026-11-02)
+- **SKIN-33. Gloss (A3).** Pick Glass → grid bars and tooltip bars show a soft shine on their top half that ends where the fill ends, at any fill. Any other skin, and Glass with the bar's **Use the skin's texture** unticked → none. Mid-pull (cells holding secrets) the shine still tracks the fill and no Lua error appears. Fail: a shine past the fill, one that stays after a switch, or an error. Result: Passed (owner, 2026-11-02)
+- **SKIN-34. The header band and icon border (A1).** Each skin → the column strip wears the skin's list header band, and the unit icon its icon border; a row with no icon draws no empty border. Untick Columns → Background → **Use the skin's color** → the swatch, transparent as shipped. Untick Bars → Icons → **Use the skin's icon border** → no border. Untick Bars → Icons → **Show icons** → the border goes with the icon, with no empty box. Under **WoW Default**, whose icon border is art, run a real pull with a boss or a dummy and hover and resize the window mid-pull → no Lua error, because the border's holder takes a backdrop on a cell that holds a secret. Fail: an empty border on a follower, or a border mid-pull that errors. (Amended by R3-FIX, 2026-11-03, after R3-L3: the icon border is a flat 1 px outline in the skin's icon border color under every skin, WoW Default included, with no backdrop and no Blizzard tooltip edge, and a spec icon's own rim does not show inside it; the mid-pull run still applies, under any skin, since the outline's holder sits on a cell that holds a secret. Fail also: a 2 px or tooltip-art icon edge under any skin.) Result: Failed (owner, 2026-11-02): re-opened as R3-L3
+- **SKIN-35. The segment picker (A2).** Out of combat click the segment control under two skins → the menu wears the skin, opens under the title `Segment` with a divider above Current and Overall, and marks the window's own entry; a pick pins it and Current clears the pin. Pull a target and click it mid-pull → the client's menu opens and works, with no Lua error. Hide the window with the menu open (`/mm hide` or a visibility rule) → the menu goes too. Fail: an error, or an orphaned menu. Result: Passed (owner, 2026-11-02)
+- **SKIN-36. The small misses (L4, L6, L8).** With **Ignore settings panel** unticked, Columns → each block's tick and cross are Ka0s marks, green and red in the skin's own good and bad colors, and its label wears the skin's body face, and a block dragged carries the same mark in the same color; ticked → the client's art and GameFontNormal again, on the dragged copy too. Under a skin that tints the grip, the window's resize grip takes the tint. A sort arrow takes the skin's arrow color while its label follows the skin. The meter-unavailable notice follows Font outline. A death recap's time and caster columns take the tooltip's text color. Fail: any of those stock with the Scope cleared. Result: Passed (owner, 2026-11-02)
+- **SKIN-37. Title bars (L9).** Under each skin → the title sits where the skin puts it, with no overlap of the fight name on a window at its minimum width; untick **Use the skin's alignment** → Text alignment decides. The Export modal's title band is as tall as the debug console's. Fail: a title under the session line, or a band of another height. Result: Passed (owner, 2026-11-02)
+- **SKIN-38. The title's face (L8).** Under Azeroth and WoW Midnight the title and fight name wear the skin's bold title face, and the cells its HUD face. Untick Header → Title text → **Use the skin's font** → the picked face. Tick **Ignore fonts** on the Skin tab → the picked face under any skin. Fail: the HUD face on the title, or a skin's face under Ignore fonts. Result: Passed (owner, 2026-11-02)
+- **SKIN-40. A skin's border style (owner's ruling, 2026-11-01).** Tick Bars → Border → Show border, pick a Border style and thickness 3, keep **Use the skin's border** ticked. Under Ka0s Default and Obsidian (None) → your style and thickness draw, the rows stay live. Under Azeroth, High Contrast, WoW Default and WoW Midnight (a real style) → the skin's style and thickness draw, the rows gray with Show border, and with Show border unticked first the cells still wear that edge. (Amended by SF-MM-2, 2026-11-02: Show border alone decides, so with it unticked no skin draws a cell edge; the sentence above about a real style under Show border off no longer holds.) Each skin's bar background, bar border and icon border are its own, Ka0s Default's as they were. Tooltip → Bar → Border the same, it having no Show toggle. Fail: a real style lost to Show border, or None hiding your border. Result: Passed (owner, 2026-11-02)
+- **SKIN-41. The smoke feedback of 2026-11-02 (SF-MM-1 to SF-MM-5).** (1) A new window's title sits LEFT under every skin; tick **Use the skin's alignment** and it follows the skin. (2) With Show border unticked (the default) no skin draws a cell edge; the window, header, tooltip and icon borders stay. (3) A new profile's Bar background opacity reads 15%, and switching skins leaves it at 15%. (4) Drag the window's resize grip narrower and wider → the bars never draw past the window's edge during the drag. (5) The header's export button is the chat-text glyph. Fail: any of the five. Result: Passed (owner, 2026-11-02)
+- **SKIN-42. A stored window left-aligns (SF-FIX, not run).** On an account that kept titles centered by the skin, log in: every existing window's title sits LEFT; ticking **Use the skin's alignment** still follows the skin. Show border off draws no cell outline in any skin. Result: Passed (owner, 2026-11-02)
+- **SKIN-39. The row stripe and marker (D4).** On Ka0s Default with Alternating background and Highlight yourself off → no stripe and no marker, as the last build. Pick Obsidian with no reload → every other row wears the skin's stripe and your row its accent edge. Frame → Rows → untick **Use the skin's row marker** and **Use the skin's row stripe** → both go. Tick Alternating background and Highlight yourself → both are back. Fail: a stripe under Ka0s Default, or a look that stays after its boxes are off. Result: Passed (owner, 2026-11-02)
+- **SKIN-43. A stored pick of the deleted Friz lands on Ka0s Ubuntu (R3-FRIZ, schema v25).** Before updating, set a window's Text font (or the Skin tab's Font) to *Ka0s Friz Quadrata TT* in two profiles and log out. Update and fully restart the client (a new font file) → the rows draw in Ubuntu and the Font row reads *Ka0s Ubuntu*; switch to the other profile → the same. A font set to Blizzard's own *Friz Quadrata TT* keeps it. Fail: the rows on the game's default face, or a row still naming Ka0s Friz Quadrata TT. Result: not run
+- **SKIN-44. The dark gold title band, and no line under the console title (R4-RV2; LibKa0s R4-L2, R4-SEP; darker since R5-RV, LibKa0s R5-L1).** On Ka0s Default with Header → Title bar → **Use the skin's background** ticked, `/mm test` → the meter window's title strip is the dark olive-gold gradient, opaque, lighter at the top, darker than round 4, and never near-black (a gradient since R5-MM1, WIN-57). Open the Export modal and `/mm debug` → each title band is the dark gold gradient, lighter at the top, and the debug console and its copy window draw no line under the title. Pick Obsidian and back → the strip follows each skin. With LibKa0s absent (DEGRADED) the strip draws the stored swatch, the pre-skin look (DEGRADED-11). Fail: a near-black strip under Ka0s Default, a line under the console's title, or a Lua error. Result:
+- **SKIN-45. No native icon edge inside the unit icon's outline (R4-ZOOM).** With Bars → Icons → Show icons and **Use the skin's icon border** ticked, `/mm test`, then a real pull with a training dummy → every row's unit icon (a spec icon, and the class icon of a row whose spec is not known yet) fills its 1 px outline with no Blizzard rounded or beveled art edge showing inside it; open a breakdown (click a row) → each spell icon the same. The class icon is the client's round class art, now cropped 0.07 of its cell per side: report if its round shape still reads as a native edge. Fail: an art edge or a transparent corner between the art and the outline on a spec or spell icon, or a Lua error. Result:
+- **SKIN-46. The unit icon keeps its black HUD edge (R4-HUD; LibKa0s R4-L4).** On Ka0s Default with Bars → Icons → Show icons and **Use the skin's icon border** ticked, `/mm test` → every row's unit icon wears a black 1 px edge, as before round 4, not the gray #4D4D57 outline the windows' icons (DpsRace's Results, the Skin Tester's samples) draw. Pick Glass, Ember, WoW Midnight and WoW Forever in turn → the edge is each skin's HUD icon border, never its window outline; back to Ka0s Default → black again. Fail: a gray or lighter edge on a row icon under Ka0s Default, an edge that stays gray after a skin flip, or a Lua error. Result:
+- **SKIN-47. A press outside the open skin list closes it (R5-RV; LibKa0s R5-L4).** `/mm skin` (or Settings → Ka0s Multi Meters → Skin → the picker) and open the skin list, then press the picker window's empty body → the list closes. Open it again and press the game world → it closes. Open it again and press the **Font** dropdown → the list closes and the Font pull-out opens. Open it again and press the eye or the gear → the list closes and that button's own action still runs. A press on a row of the open list still picks that skin. Escape still closes the whole window. No Lua error. Result:
+- **SKIN-48. The library's own windows wear the band, their header centered on it (R5-RV; LibKa0s R5-L2, R5-L3).** On Ka0s Default, open `/mm debug` (and its copy window), `/mm perf` and its panel, `/mm sim` and the skin picker → each window's title band runs flush inside its edge, darker than round 4, with no strip of body color between the edge and the band, and its title, close button and every other header button sit on the band's vertical center. Pick WoW Midnight (the 2 px edge) and repeat → the same, the band 1 px lower to clear the edge. Fail: a header child sitting high or low on the band, a band missing, or a Lua error. Result:
+- **SKIN-49. The picker of LibKa0s v1.85.0's round 6 re-cut loads (R6-RV; LibKa0s R6-L1, OptionsSkinPicker minor 11).** With every Ka0s addon updated, `/reload`, then `/mm skin` → the picker opens over the meter windows with its eye and gear in the header, the skin list, Apply, Apply to all and the close control work as before, and the skin list still closes on an outside press (SKIN-47). The eye's own behavior is SKIN-50. Fail: a Lua error, a missing eye, or a close that leaves the window up. Result:
+- **SKIN-50. The picker's preview is test mode, toggled by the eye, put back at every close (R6-PV; LibKa0s R6-L1).** Out of combat, with no meter window on screen (close them with `/mm toggle`, and on a second run set General → Visibility to *Only in combat* instead) and test mode off, `/mm skin` → test mode turns on: every meter window shows the TEST MODE strip and sample rows, the picker sits above them, and the eye is lit. Press the eye → test mode turns off, the windows go away again and the eye dims; press it again → back on, lit. Its tooltip reads per state (test mode on / off). Close the picker by each route in turn, reopening with `/mm skin` between them (the close mark, Escape, Apply, Apply to all, the gear) → test mode turns off and no meter window stays on screen (the gear's settings panel opens as before). On the *Only in combat* run, after a close, change zone or tick any setting on the General page → the windows stay hidden (the close left no forced show). Now with the windows on screen (`/mm toggle`) and test mode off, `/mm skin` → test mode stays off and the eye is dimmed; press the eye → on; close → off, and the windows stay on screen. With test mode already on (`/mm test`), `/mm skin` → it stays on; press the eye → off; close → back on. With the windows on screen, start a pull at a training dummy and press the eye → *Cannot start test mode during combat* and test mode stays off; close → nothing changes. The General page's Test mode box and the launcher's Test mode entry follow every switch. Fail: test mode left on after a close the picker or eye turned it on, a window left on screen that was closed when the picker opened, a window closed that was on screen, a test mode the player had on left off, or a Lua error. Result:
 ## Non-English client
 
 - **LOC-1. The CSV header does not translate.** On a non-English client (German, for example), export
@@ -1989,3 +2083,15 @@ SKIN-1 to SKIN-4, SKIN-7, SKIN-8 and SKIN-24, each recorded on its `Result:` lin
 
 Pending from the findings remediation (`docs/2026-10-31-FINDINGS_REMEDIATION/`): new INSTALL-18,
 WIN-55 and DIAG-43, each with an empty `Result:`.
+
+Owed: SKIN-28 to SKIN-42 (FS-MM-FLIP, FS-MM-FIX, FS-MM-GATE, 2026-11-01), and re-opened WIN-1, WIN-49, PANEL-54, GRID-25, DEGRADED-11, SKIN-2, SKIN-4, SKIN-5 and SKIN-11, whose expected results moved.
+
+Owed: SKIN-43 (R3-FRIZ, 2026-11-02, the owner's third smoke round); the HUD faces row now names Ka0s Ubuntu for WoW Default and is still not run.
+
+On 2026-11-02 the owner reported that every check on the smoke lists of the full skinning run and its smoke feedback batch (Ka0sAddonsCommonTasks `docs/2026-11-01-FULL_SKINNING/` and `docs/2026-11-01-SMOKE_FEEDBACK/`) passed, apart from DpsRace's clock font, the skinned look of the AceGUI Dropdown and the Ka0sMedia_Font and Ka0sMedia_Statusbar pickers, FadeNineSlice and IconBorder (`docs/2026-11-02-SMOKE_ROUND3/`, R3-SMOKE). Passed, recorded on each `Result:` line as `Passed (owner, 2026-11-02)`: DEGRADED-11, GRID-25, PANEL-54, SKIN-2, SKIN-5, SKIN-11, SKIN-28, SKIN-29, SKIN-30, SKIN-31, SKIN-32, SKIN-33, SKIN-35, SKIN-36, SKIN-37, SKIN-38, SKIN-39, SKIN-40, SKIN-41, SKIN-42, WIN-1 and WIN-49. Failed, re-opened as R3-L3 (IconBorder's 1 px outline and zoom) and recorded as `Failed (owner, 2026-11-02): re-opened as R3-L3`: SKIN-34. Still owed: SKIN-4, whose expected result the third smoke round itself changed after the owner's run.
+
+Owed: PANEL-59 (R4-RV), SKIN-44 (R4-RV2), WIN-56 (R4-SEP), SKIN-45 (R4-ZOOM) and SKIN-46 (R4-HUD), the owner's fourth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND4/`), each with an empty `Result:`.
+
+Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-47 and SKIN-48 (R5-RV), WIN-57 (R5-MM1, R5-WIN), EXPORT-56 (R5-WIN), TIP-37 (R5-ICON), the owner's fifth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND5/`), each with an empty `Result:`.
+
+Owed: SKIN-49 (R6-RV), SKIN-50 (R6-PV), SIM-15 (R6-SIM) and WIN-58 (R6-MM2), the owner's sixth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND6/`), each with an empty `Result:`. SKIN-18 keeps its 2026-10-30 pass for what it checked then; its R6-PV amendment is checked by SKIN-50.

@@ -281,7 +281,7 @@ Total.
 - Database: the profile a swap lands on is migrated and normalized before anything reads it
 - Database: a profile RESET re-seeds rather than leaving an empty registry
 
-### test_database_migrations.lua (48)
+### test_database_migrations.lua (50)
 
 - Database: RunMigrations stamps and holds the current schema version
 - Database: the schema version is account-wide, not per-profile
@@ -331,6 +331,8 @@ Total.
 - Database: v13 -> v14 clears an unticked master lock and leaves the windows alone
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
+- Database: v23 -> v24 turns a stored window's title alignment off the skin, once
+- Database: v25 -> v26 prunes the title bar divider's four keys from every stored window
 
 ### test_migrations.lua (17)
 
@@ -693,7 +695,7 @@ Total.
 - SimDrivers: no driver reaches the mock's C_DamageMeter
 - SimDrivers: with no world, every driver changes and fires nothing
 
-### test_sim_session.lua (22)
+### test_sim_session.lua (26)
 
 - Sim session: stood down refuses the start with its own line and leaves no session
 - Sim session: test mode refuses the start with its own line and leaves no session
@@ -717,8 +719,12 @@ Total.
 - Sim session: test mode is refused while a session runs
 - Sim session: SavedVariables come back byte-identical after a session that pins and resets
 - Sim session: DropStaleSegment writes nothing while a session runs
+- Sim step delay: sim.stepDelay ships at 1 s and its row is the other sims' slider
+- Sim step delay: the validator takes the slider's values and refuses the rest
+- Sim step delay: Host.StepDelay reads the stored setting, else the default
+- Sim step delay: a playing run waits the sim.stepDelay setting between steps
 
-### test_sim_e2e.lua (10)
+### test_sim_e2e.lua (13)
 
 - Sim e2e: SimScenario lists the four #60 scenarios, each with labeled, tipped steps
 - Sim e2e: dungeon by step
@@ -730,6 +736,17 @@ Total.
 - Sim e2e: zone by step
 - Sim e2e: zone by run
 - Sim e2e: the panel's rows are the step labels, and a step waits while the gate is closed
+- Sim e2e: every fight books 10 s of dense ticks, deaths rescaled to the same point (R4-MM1)
+- Sim e2e: a fight step's label shows its wall duration, e.g. Pull Trash (10 s) (R4-MM1)
+- Sim e2e: in every scenario's auto-run each fight step lasts 10 s with 21 ticks (R4-MM1)
+
+### test_sim_checkbox.lua (5)
+
+- Sim checkbox: Master controls carries a composed, session-only Sim mode row after Test mode
+- Sim checkbox: the hooks are one NS pair, the launcher's own
+- Sim checkbox: ticking runs /mm sim's own act, unticking stops, a no-change write does nothing
+- Sim checkbox: the box reads the real session, and unticking it ends that session
+- Sim checkbox: a sim started or stopped elsewhere refreshes the open page
 
 ### test_launchersetup.lua (56)
 
@@ -789,6 +806,11 @@ Total.
 - Degraded: with LibKa0s absent the seam stubs every member the addon calls
 - Degraded: with LibKa0s absent the stub still answers from the STORE
 - Degraded: core/LauncherSetup.lua passes the silent flag to LibStub
+
+### test_launcher_skin_entry.lua (2)
+
+- launcher descriptor passes openSkinPicker, which runs the skin verb
+- mode strips pass sim or onEnd, so the right-click menu has something to end (SF-F1)
 
 ### test_lifecycle.lua (40)
 
@@ -1287,14 +1309,11 @@ Total.
 
 - modules/Window.lua reads geometry back off the anchor and nothing else
 
-### test_window_header.lua (62)
+### test_window_header.lua (60)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
-- The title-bar divider can be switched off, and does not move the title row
-- The divider's thickness is a setting
-- The divider's SKIN mode writes no color at all, so a re-skin still reaches it
-- The divider takes a custom color and a class color, keeping the configured alpha
+- No line under the title bar, and the title row sits where it did (R4-SEP)
 - The header folds its parts with `..`, and survives a secret piece
 - The header line says which fight, and stays out of the way otherwise
 - Show segment off leaves the header line blank again
@@ -1307,7 +1326,8 @@ Total.
 - The header line reads 'Test' while placeholder data is on screen
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
-- Segment menu: stored segments first, then a divider, then Current/Overall
+- Segment menu: a title, stored segments first, a divider, then Current/Overall
+- Segment menu: under the restriction the client's menu keeps its title and divider
 - Segment menu: an entry is labeled with its name AND its duration
 - Segment menu: picking a segment pins it and marks the window dirty
 - Segment menu: picking Current CLEARS the pin
@@ -1472,7 +1492,7 @@ Total.
 - HeaderControls: the strip is CENTERED in the title bar
 - HeaderControls: the shipped bar is DPS Race's 30px, centered on its midline
 - HeaderControls: the strip and the title share one center line
-- HeaderControls: every edge in the title row lands on a whole pixel
+- HeaderControls: a box is centered on the band's geometric middle, odd sizes included
 - HeaderControls: a custom header height still centers the whole row
 - HeaderControls: the shipped icon fills the title's own 12px box
 - HeaderControls: a control taller than its bar overflows DOWNWARD
@@ -1536,6 +1556,11 @@ Total.
 - HeaderControls: segment and export are opened ON the window, or not at all
 - HeaderControls: close hides the window AS a deliberate close
 - HeaderControls: only the two toggles write to the settings seam
+
+### test_header_glyph_size.lua (2)
+
+- Header glyphs: the export bubble is drawn the size of its neighbors in every skin and size
+- Header glyphs: a house icon keeps its full texture, so only the padded art is cropped
 
 ### test_row.lua (62)
 
@@ -1602,7 +1627,7 @@ Total.
 - Row: a cell with no displayText is completely unaffected
 - Row: a death row's bar draws FULL without comparing anything
 
-### test_row_namecell.lua (30)
+### test_row_namecell.lua (31)
 
 - The name cell is never handed a meter value at all
 - The name cell colors the NAME by class, now that no bar carries it
@@ -1624,6 +1649,7 @@ Total.
 - The slot falls back to the CLASS where no spec is known
 - A ROLE icon is never drawn, whatever the row carries
 - A breakdown row draws the SPELL's icon, not a unit's
+- Every unit icon crops at least 0.07 of its art per side (R4-ZOOM)
 - Turning the icon off hides it rather than destroying it
 - An icon turned off STAYS off across the next refresh
 - The name starts clear of the icon, with a gap you can see
@@ -1713,7 +1739,7 @@ Total.
 - The half-size gap survives the post-layout pass
 - The gap is restored with every other line it was applied alongside
 
-### test_tooltip_lines.lua (38)
+### test_tooltip_lines.lua (41)
 
 - A spell line carries a real class-colored BAR, not a run of characters
 - Bars are released between hovers, never stacked
@@ -1744,6 +1770,9 @@ Total.
 - The tooltip's own bar texture is used, not the grid's
 - Tooltip text takes the HOVERED player's class color when asked
 - With the class color off, the tooltip keeps its configured text color
+- The spell name keeps its color after the post-Show re-font
+- The post-Show re-font goes through S.HudFont, so a shared line keeps its shadow
+- A spell bar takes the skin's gloss on its own companion, on the draw
 - Tooltip shadow reaches the line, and survives the post-Show re-font
 - The tooltip puts a SHARED line's shadow back when it lets go
 - A bar border is applied when asked and cleared off the POOLED line when not
@@ -1780,7 +1809,7 @@ Total.
 - A tooltip resolves its window from row.windowId when it was not handed one
 - Tooltip:Hide is unconditional
 
-### test_tooltip_deaths.lua (57)
+### test_tooltip_deaths.lua (60)
 
 - Tooltip: hovering a death row lists its events, OLDEST first
 - Tooltip: a death row never reaches the client's spell tooltip
@@ -1808,6 +1837,7 @@ Total.
 - Tooltip: a cell for a player who has NOT died is unchanged
 - Tooltip: the death breakdown gets the same gap and caption every section has
 - Tooltip: an event's time, spell and caster are three separate slots
+- Tooltip: the caster slot takes the tooltip's text color
 - Tooltip: each slot has a reserved width, so a long name cannot push the numbers off
 - Tooltip: the amount slot carries the damage ALONE
 - Tooltip: a spell line gets its slots BACK after an event line used them
@@ -1815,6 +1845,8 @@ Total.
 - Tooltip: the death tooltip reserves a WIDER minimum than a spell breakdown
 - Tooltip: a Deaths cell's rows carry a FULL bar, not an empty one
 - Tooltip: every death line in a Deaths cell carries the skull icon
+- Tooltip: a death line's skull is cropped past the art's own bevel (R5-ICON)
+- Tooltip: every inline icon the tooltips write is cropped 5..59 of 64 (R5-ICON)
 - Tooltip: a Deaths cell's time sits at the right edge, where a share does
 - Tooltip: the caster column's CAP is narrower than the spell column's
 - Tooltip: both name columns refuse to wrap, so the engine clips them
@@ -2467,14 +2499,14 @@ Total.
 - Options: the descriptor tells the library the FOLDER name (LibKa0s#42)
 - Options: the help-mark and test-strip art, info, is declared and vendored
 - Options: every media row asks for a Ka0sMedia_* picker, the two broadcast rows included
-- Options: AceGUI-3.0-SharedMediaWidgets is gone from the load, the disk and the wiring
+- Options: AceGUI-3.0-SharedMediaWidgets is gone from the load and the disk
 
 ### test_options_tabs.lua (15)
 
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip
 - Panel: switching tabs re-renders without leaving the previous tab's widgets behind
-- Panel: the Master controls tab draws four pairs, Test mode beside Minimap button
+- Panel: the Master controls tab draws four pairs, Test mode beside Minimap button, then Sim mode
 - Panel: the Master controls tab closes with the composer's two reset buttons
 - Panel: the Statistic colors tab says where its colors are actually worn
 - Panel: every Windows entry sits under the Active window band, and General has no second picker
@@ -2554,7 +2586,70 @@ Total.
 - Skin HUD: the v20 reset runs once, so a pick made after it is kept
 - Skin HUD: the v20 step survives a junk window and leaves an absent group to the template
 
-### test_skin_fonts.lua (14)
+### test_skin_flip.lua (21)
+
+- Skin flip: the one step's list is every companion and flag a window has, and nothing else
+- Skin flip: every new companion ships on, in the template and as a row, and governs no swatch
+- Skin flip: the picks' defaults are the Ka0s picks, in the template and on the rows
+- Skin flip: the border groups put the thickness on the skin with the style
+- Skin flip: the two scope rows and their defaults do not move
+- Skin flip: under Ka0s Default every surface draws what it drew before the flip
+- Skin flip: under Ka0s Default the header and the cells keep their shadow, the others none
+- Skin flip: no flags means none, never From skin
+- Skin flip: a skin switch redraws each flipped color, on the setter
+- Skin flip: a companion off draws the stored color under every skin
+- Skin flip: a class color comes first and the companion never reaches it
+- Skin flip: the cell's outline takes the skin's color and thickness with the companions
+- Skin flip: Show border alone decides whether a cell has an outline, in every skin (SF-MM-2)
+- Skin flip: with no library a cell draws the stored border, through the stub's BarBorder
+- Skin flip: a probe skin's real style and size reach the cell and the tooltip's bar
+- Skin flip: a shadow reaches a font object, a skin's own and the stored one
+- Skin flip: the step puts every window of every profile on the skin and keeps every pick
+- Skin flip: a second run writes nothing, and a companion turned off stays off
+- Skin flip: the record has no schema row, so no Defaults button walks it
+- Skin flip: a new profile takes the step against a template that shows nothing new
+- Skin flip: without the library the step sets the companions by hand and writes the record
+
+### test_skin_fix.lua (36)
+
+- Gloss: a cell draws the skin's gloss while its texture follows the skin
+- Gloss: a bar with the player's own texture stays plain under Glass
+- Gloss: the tooltip's spell bars take it too, on their own companion
+- A1: the column header strip wears the skin's band, under Custom, with its companion
+- A1: the unit icon wears the skin's icon border, with its companion
+- R4-HUD: the unit icon's edge is the HUD's icon.border, black under Ka0s Default, never icon.outline
+- A2: the segment picker is the shared context menu, titled, the active entry marked
+- A2: a pinned segment is the marked row, and a window hidden closes the menu
+- A2: under the Combat restriction the client's menu stays, because a label may be secret
+- L6: the column glyph takes a Ka0s mark in the skin's tint, the stock art while the panel is ignored
+- L8: the sort arrow takes icon.arrow while the label follows the skin
+- L8: the close control takes the close tokens under the Skin mode
+- L8: the meter-unavailable notice draws the Font outline
+- L8: the window's resize grip names its skin owner
+- L8: the Export whisper box is a skinned input
+- SF-MM-1: a new window's title is LEFT, and the skin's alignment is opt-in
+- SF-MM-3: the bar background opacity is 15% and a skin does not move it
+- SF-MM-5: the export button is Phosphor's chat-text
+- SF-MM-4: the body clips its children so a drag never draws past the window
+- SG-MM-1: the column-header strip clips its children too, it sits outside the body
+- SG-MM-1: the strip's clip box is the window's width, not the columns' (anchored to both corners)
+- L9: the title takes the skin's alignment while its companion is on
+- L9: the Export modal's title bar is the skin's height
+- A1: turning Show icons off takes the border down through the settings path
+- A1: the companion off takes the border down with no new row drawn
+- D4: Ka0s Default draws no stripe and no self edge with both settings off
+- D4: a skin draws its stripe and self edge with both settings off
+- D4: each companion off gives its row back to its setting, under a skin
+- D4: without the library the companions draw nothing
+- L8: the header strip draws the skin's title face, and the player's without the companion
+- L8: the sort arrow draws its own look, not its label's
+- D4: a skin's border art takes the class tint with Show border on
+- D4: the tooltip's bar border thickness is the skin's real style's, the player's under None
+- D4: with no library the tooltip bar's backdrop is the player's color and opacity
+- L9: the Export modal's title bar places its own text
+- skin gate: every allow row names a cause of the run's SKIN_CAUSES.md, or MC
+
+### test_skin_fonts.lua (15)
 
 - Skin fonts: every font group carries size, color with a class option, flags and shadow
 - Skin fonts: every flags row leads with From skin and defaults to it, the template too
@@ -2570,6 +2665,7 @@ Total.
 - Skin fonts: the column labels draw the Font outline and the HUD size scale
 - Skin fonts: a capped name column sizes itself from the scaled HUD size
 - Skin fonts: the empty-state notice draws the HUD size scale with the HUD face
+- Skin fonts: the v25 step moves a stored Ka0s Friz Quadrata TT to Ka0s Ubuntu in every profile, Blizzard's Friz kept
 
 ### test_skin_window.lua (13)
 
@@ -2587,7 +2683,21 @@ Total.
 - Skin window: the v21 step survives a junk window and leaves an absent group to the template
 - Skin window: the title has a font before the Shell paints it
 
-### test_skin_picker.lua (12)
+### test_header_band.lua (11)
+
+- Header band: flush inside the edge at Shell's inset, TitleBandHeight high, in every skin
+- Header band: a 2 px flat edge puts the band 2 px in; a nine-slice edge keeps it 1 px in
+- Header band: under the player's own edge the band sits inside that edge
+- Header band: the band follows the player's header height and padding
+- Header band: the drag strip covers the band
+- Header band: the strip draws the skin's title gradient, and flat for a flat skin
+- Header band: a custom color uses the same geometry, drawn flat, after a gradient
+- Header band: the title, the session line and every control sit on the band's middle, every skin
+- Header band: the header keeps its left and right offsets off the frame's edges
+- Header band: a collapsed window is exactly the band plus its edges
+- Header band: the Export modal's bar takes its band's rect, its title and close on the middle
+
+### test_skin_picker.lua (21)
 
 - Skin picker: the spec names this owner, its seams, the General page's Skin tab and the eye
 - Skin picker: an unseen profile shows it; a seen one does not
@@ -2600,7 +2710,16 @@ Total.
 - Skin picker: the player's close marks it seen; this addon's own hide does not
 - Skin picker: a profile that has seen it takes a shown picker down, unmarked
 - Skin picker: the stand-down takes a shown picker down, unmarked
-- Skin picker: the eye puts the meter windows in test mode
+- Skin picker preview: shown with every window hidden, it enters test mode
+- Skin picker preview: the eye toggles test mode off and back on
+- Skin picker preview: every close puts the hidden windows back, out of test mode
+- Skin picker preview: the close leaves no forced show, so a later ladder re-run keeps them hidden
+- Skin picker preview: shown in combat with nothing on screen, the refused enter leaves no residue
+- Skin picker preview: windows the player closed with /mm toggle are closed again after it
+- Skin picker preview: the eye turned off and the close leaves it off
+- Skin picker preview: a window already on screen is left alone, the eye undone at the close
+- Skin picker preview: test mode the player had on stays on, and the eye's exit is undone
+- Skin picker preview: in combat the eye's start is refused and the close undoes nothing
 
 ### test_skin_settings.lua (5)
 
@@ -2622,7 +2741,7 @@ Total.
 
 - glyphs: display strings use only characters every shipped skin face draws
 
-### test_columnblocks.lua (36)
+### test_columnblocks.lua (38)
 
 - Blocks: one block per item, each carrying its index and its label
 - Blocks: the glyph says enabled or disabled, and clicking it toggles
@@ -2650,6 +2769,8 @@ Total.
 - Blocks: the label is gold when the column is shown and gray when it is not
 - Blocks: the carried copy says the same thing the row does
 - Blocks: the page's own colors stand down with Ignore settings panel, and follow the skin without it
+- Blocks: the carried copy wears the block's mark and tint with the Scope cleared, the art without
+- Blocks: a block's glyph and label go through S.Mark and S.Text on every apply
 - Blocks: every hidden row is registered, so the indices the library moves are the real ones
 - Blocks: the geometry handed to the library is the published pair, not a private copy
 - Blocks: the handle offers the localized drag tooltip, and the cataloged icon
@@ -2774,6 +2895,38 @@ Total.
 - lizard sighted: parity names every file whose counts differ, and only those
 - lizard sighted: lizard lists every function of a hazard fixture once it is sanitized
 
+### test_skin_values.lua (3)
+
+- skin values: every host row carries its file, substring, why and cause id
+- skin values: no typed value outside the kit's categories and the host's rows
+- skin values: the check is falsifiable, a planted value of each shape is reported
+
+### test_skin_switch.lua (23)
+
+- skin switch: the check is falsifiable, a surface that redraws a literal is reported
+- skin switch: the window's fill and edge changes
+- skin switch: the window's fill and edge changes with the Scope ignored
+- skin switch: the window's title changes
+- skin switch: the title bar's band changes
+- skin switch: the session line changes
+- skin switch: a column label changes
+- skin switch: the column header band changes
+- skin switch: the sort arrow changes
+- skin switch: the unavailable notice changes
+- skin switch: the unavailable notice changes with the Scope ignored
+- skin switch: a header control's tint changes
+- skin switch: a header control's tint changes with the Scope ignored
+- skin switch: a cell's number changes
+- skin switch: a cell's bar texture changes
+- skin switch: a cell's outline changes
+- skin switch: the row's mouseover wash changes
+- skin switch: the row's mouseover wash changes with the Scope ignored
+- skin switch: the row's self edge changes
+- skin switch: the unit icon's border changes
+- skin switch: the Export modal changes
+- skin switch: the Export modal changes with the Scope ignored
+- skin switch: a tooltip's spell bar changes
+
 ## Totals
 
 | Suite | Cases |
@@ -2793,7 +2946,7 @@ Total.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 28 |
-| test_database_migrations.lua | 48 |
+| test_database_migrations.lua | 50 |
 | test_migrations.lua | 17 |
 | test_diagnostics.lua | 35 |
 | test_diagnostics_deathrecap.lua | 31 |
@@ -2809,9 +2962,11 @@ Total.
 | test_sim_seam.lua | 10 |
 | test_sim_world.lua | 17 |
 | test_sim_drivers.lua | 9 |
-| test_sim_session.lua | 22 |
-| test_sim_e2e.lua | 10 |
+| test_sim_session.lua | 26 |
+| test_sim_e2e.lua | 13 |
+| test_sim_checkbox.lua | 5 |
 | test_launchersetup.lua | 56 |
+| test_launcher_skin_entry.lua | 2 |
 | test_lifecycle.lua | 40 |
 | test_dispatch.lua | 11 |
 | test_vendor_sync.lua | 3 |
@@ -2828,7 +2983,7 @@ Total.
 | test_window.lua | 49 |
 | test_window_layout.lua | 18 |
 | test_window_static.lua | 1 |
-| test_window_header.lua | 62 |
+| test_window_header.lua | 60 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 44 |
 | test_window_lifecycle.lua | 9 |
@@ -2836,15 +2991,16 @@ Total.
 | test_window_simstrip.lua | 4 |
 | test_layers.lua | 9 |
 | test_headercontrols.lua | 71 |
+| test_header_glyph_size.lua | 2 |
 | test_row.lua | 62 |
-| test_row_namecell.lua | 30 |
+| test_row_namecell.lua | 31 |
 | test_row_cells.lua | 1 |
 | test_row_mouse.lua | 17 |
 | test_targets.lua | 28 |
 | test_tooltip.lua | 20 |
-| test_tooltip_lines.lua | 38 |
+| test_tooltip_lines.lua | 41 |
 | test_tooltip_builders.lua | 23 |
-| test_tooltip_deaths.lua | 57 |
+| test_tooltip_deaths.lua | 60 |
 | test_drilldown.lua | 59 |
 | test_export.lua | 94 |
 | test_export_modal.lua | 32 |
@@ -2869,13 +3025,16 @@ Total.
 | test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
-| test_skin_fonts.lua | 14 |
+| test_skin_flip.lua | 21 |
+| test_skin_fix.lua | 36 |
+| test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
-| test_skin_picker.lua | 12 |
+| test_header_band.lua | 11 |
+| test_skin_picker.lua | 21 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
 | test_glyphs.lua | 1 |
-| test_columnblocks.lua | 36 |
+| test_columnblocks.lua | 38 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
 | test_degraded.lua | 38 |
@@ -2883,5 +3042,7 @@ Total.
 | test_eol.lua | 2 |
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
+| test_skin_values.lua | 3 |
+| test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2450** |
+| **Total** | **2579** |

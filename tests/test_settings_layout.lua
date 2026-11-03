@@ -115,8 +115,12 @@ test("Layout: the relabels of the pass", function()
     for _, r in ipairs(NS.SchemaForPage("header")) do
         if r.group == L["Title text"] then last = r end
     end
-    assertEqual(last.path, "window.header.align")
-    assertTrue(last.startsLine, "Text alignment does not open its own line")
+    assertEqual(last.path, "window.header.alignFromSkin", "its companion closes the tab, behind it")
+    local align
+    for _, r in ipairs(NS.SchemaForPage("header")) do
+        if r.path == "window.header.align" then align = r end
+    end
+    assertTrue(align.startsLine, "Text alignment does not open its own line")
     -- L07, L29: the tooltips that described the wrong surface or a removed click target.
     assertEqual(rowOf(NS, "window.header.font").desc, L["Font for the window's title and the fight name beside it."])
     assertTrue(rowOf(NS, "window.frame.showSegment").desc:find("turned on and off by Show fight name", 1, true) ~= nil)

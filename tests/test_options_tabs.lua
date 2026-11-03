@@ -125,7 +125,7 @@ function()
     assertFalse(labeled(L["Lock window"]), "the previous tab's widgets were left behind")
 end)
 
-test("Panel: the Master controls tab draws four pairs, Test mode beside Minimap button",
+test("Panel: the Master controls tab draws four pairs, Test mode beside Minimap button, then Sim mode",
 function()
     -- THE RENDERED LAYOUT, not the schema order the case in tests/test_schema.lua
     -- pins. The flow engine pairs rows two per line unless one opens a line, so
@@ -139,6 +139,8 @@ function()
     -- so the always-present row takes column 1. This addon drew the pair the other way round
     -- while its minimap row was hand-written.
     -- red under: giving Test mode `startsLine` back, or inserting a row between the two.
+    -- Sim mode (R6-SIM, compose minor 19) follows Test mode, which already fills the second
+    -- column, so it opens a line of its own.
     local inst = T.load()
     local L = inst.NS.L
     local ctx = showPage(inst, "general")
@@ -158,6 +160,7 @@ function()
         L["Master scale"] .. " | " .. L["Master opacity"],
         L["Lock frame"] .. " | " .. L["Debug console"],
         L["Minimap button"] .. " | " .. L["Test mode"],
+        L["Sim mode"],
         L["Reset position"] .. " | " .. L["Reset all settings"],
     }, "\n"))
 end)

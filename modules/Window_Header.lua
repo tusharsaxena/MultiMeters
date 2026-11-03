@@ -62,16 +62,20 @@ local RGBA = NS.RGBA or function(_, dr, dg, db, da)
     return dr, dg, db, da
 end
 
--- How far up from the bottom of the tinted title band the divider hairline is
--- drawn. Named because two things depend on it agreeing: the divider itself, and
--- `TitleBandHeight`, which the title row is centered in and the drag strip spans.
-local DIVIDER_INSET = 2
+-- How far up from the bottom of the tinted title band the title bar a player sees
+-- ends (where a hairline divider was drawn until R4-SEP; no Ka0s window draws a
+-- line under its title now). Named because `TitleBandHeight`, which the title row
+-- is centered in and the drag strip spans, and the shipped 30px bar depend on it.
+local BAR_INSET = 2
 
 -- How much of the header the session line is allowed to run across, right to
 -- left. A constant rather than a measurement of the text inside it: this file
 -- never measures a widget (rule R3), and the line is right-justified inside it,
 -- so the number only has to be wide enough for the longest string it can hold.
 local SESSION_LINE_WIDTH = 220
+
+-- The shared skinned menu (LibKa0s-Widgets-1.0), for the segment picker. Nil without the library.
+local W = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
 
 -- ---------------------------------------------------------------------------
 -- HEADER ART, AND THE TWO WAYS IT ALREADY FAILED
@@ -150,7 +154,8 @@ local function onColumnClick(button)
     if inst then inst:SortByColumn(button.mmKey) end
 end
 
---- The font every line of the header strip is drawn in: the player's face, its
+--- The font every line of the header strip is drawn in: the player's face or the
+--- skin's title face (NS.SkinTitleFontKey, cause L8), its
 --- size (the skin's HUD scale while the face follows it, D-09), and the outline flag
 --- WoW wants as nil rather than as the string "NONE" (From skin through the Font
 --- outline, D-07).
@@ -161,7 +166,7 @@ end
 --- @return string path, number size, string|nil flags
 local function headerFont(header)
     local flags = NS.SkinFontFlags(header.outline)
-    return fontPath(NS.SkinMediaKey(header, "font", "hud.font")),
+    return fontPath(NS.SkinTitleFontKey(header)),
         NS.SkinHudFontSize(header.size or 12, header.fontFromSkin), flags
 end
 
@@ -187,8 +192,8 @@ end
 --- CLASS DID NOT SURVIVE THE SAME ARGUMENT, and the note here used to say it had:
 --- that "class could only be the local player's, which the title bar is not about
 --- -- it names the window". What settled it the other way is that the rest of the
---- strip already wears it. The controls take a class color, and so does the
---- divider under them; a title that alone could not was the odd one out, and
+--- strip already wears it. The controls take a class color (and so did the
+--- divider under them, until R4-SEP removed it); a title that alone could not was the odd one out, and
 --- "the header is yours" is a perfectly good thing for a player to want a window
 --- to say. It is still the LOCAL player's class, because that is the only class a
 --- window-wide strip can mean.
@@ -223,19 +228,62 @@ local function titleBarColor(header, looks)
     return RGBA(header.bgColor, 0, 0, 0, 0.5)
 end
 
---- How far the text is offset to draw its drop shadow, or 0, 0 for none.
+--- The title band's two stops, bottom then top: the skin's `title.bgBottom` and
+--- `title.bgTop` while `header.bgColorFromSkin` is on and the skin draws its band
+--- as a gradient (Ka0s Default, WoW Midnight), else nil and the band is flat.
+local function titleBarStops(header, looks)
+    if header.bgColorFromSkin ~= true or not looks then return nil end
+    local top, bottom = looks.titleBgTop, looks.titleBgBottom
+    if top and bottom then return bottom, top end
+    return nil
+end
+
+--- `c`'s four channels into the kept Color object `into`, made once per window.
+local function intoColor(into, r, g, b, a)
+    into = into or CreateColor(r, g, b, a)
+    into.r, into.g, into.b, into.a = r, g, b, a
+    return into
+end
+
+--- The tinted strip's fill: the skin's title gradient (LootHistory's band, R5-MM1),
+--- or one color for a flat skin and for the player's swatch.
 ---
---- One reader for all four of this addon's text surfaces, which is the point:
---- `text`, `header`, `columnHeader` and the tooltip each carry the same four
---- controls now (face, outline, shadow, color), and four private opinions about
---- what "shadow" means in pixels is how two of them end up with different ones.
---- 1, -1 is the offset modules/Row.lua has always used.
----
---- @param on boolean|nil
---- @return number x, number y
-local function shadowOffset(on)
-    if not on then return 0, 0 end
-    return 1, -1
+--- ONE PATH FOR BOTH, ON A WHITE BASE: the strip is always a white texture under a
+--- vertical gradient, and a flat color is a gradient whose two stops agree. A
+--- texture drawn flat after a gradient would otherwise keep the gradient's tint
+--- unless it was reset, and that reset is state to track per texture (the skeptic's
+--- note against P.fill's copy). The two Color objects are kept on the window, so
+--- a repaint allocates nothing. Without CreateColor the swatch is drawn flat.
+function WindowProto:PaintHeaderStrip(header)
+    local tex, looks = self.headerBG, self.skinLooks
+    local br, bg, bb, ba = titleBarColor(header, looks)
+    local tr, tg, tb, ta = br, bg, bb, ba
+    local bottom, top = titleBarStops(header, looks)
+    if bottom then
+        br, bg, bb, ba = bottom[1], bottom[2], bottom[3], bottom[4] or 1
+        tr, tg, tb, ta = top[1], top[2], top[3], top[4] or 1
+    end
+    if type(CreateColor) ~= "function" or not tex.SetGradient then
+        tex:SetColorTexture(br, bg, bb, ba)
+        return
+    end
+    self.headerLow = intoColor(self.headerLow, br, bg, bb, ba)
+    self.headerHigh = intoColor(self.headerHigh, tr, tg, tb, ta)
+    tex:SetColorTexture(1, 1, 1, 1)
+    tex:SetGradient("VERTICAL", self.headerLow, self.headerHigh)
+end
+
+--- A cached look a column header surface follows: `field` of the window's skinLooks while the
+--- group's `modeKey` is Custom and its companion is on. A class or per-statistic mode keeps its color.
+local function customLook(group, modeKey, companion, window, field)
+    if group[modeKey] ~= "custom" or group[companion] ~= true then return nil end
+    return window.skinLooks and window.skinLooks[field]
+end
+
+--- `look`'s four channels, or the color handed in when there is no look.
+local function lookOver(look, r, g, b, a)
+    if not look then return r, g, b, a end
+    return look[1], look[2], look[3], look[4] or 1
 end
 
 --- The header's font and color, in the one shape modules/HeaderControls.lua
@@ -270,62 +318,60 @@ local function columnHeaderFont(colHeader)
         NS.SkinHudFontSize(colHeader.size or 11, colHeader.fontFromSkin), flags
 end
 
---- Where something `h` pixels tall sits so it is CENTERED in the title bar.
+--- Where something `h` pixels tall sits so it is CENTERED on the title band:
+--- the y offset to anchor its MIDDLE (LEFT, RIGHT or CENTER) at, relative to the
+--- band frame's own middle (`self.headerBand`, laid by ApplyHeaderStrip).
 ---
 --- WHY EVERY LINE OF THE TITLE BAR ASKS THIS. The title and the session line were
 --- pinned 5px below the frame's top edge — a constant that predates the title bar
 --- having a configurable height and had nothing to do with the band it draws in.
---- Nobody noticed until the header grew a strip of icons and the two disagreed.
 --- One center for the text, the session line and the controls means the row
 --- cannot drift again when the bar's height, the font size or the control size
 --- changes.
 ---
---- WHICH BAND IT CENTERS IN, AND WHY IT IS NOT THE TITLE BAR'S OWN. What a player
---- sees as the title bar runs from the frame's TOP EDGE down to the divider — the
---- padding above it is not a margin to anyone looking at the window, because the
---- backdrop is drawn behind it and there is no seam. Centering in the tinted band
---- alone (`padding` .. `padding + titleHeight`) is arithmetically centered and
---- optically wrong: it leaves the padding as dead space above the row and lands
---- the text hard against the divider, which is exactly what "everything is
---- anchored to the bottom" meant when it was reported.
----
---- ANCHORED BY ITS MIDDLE, the way Ka0s DPS Race places its title (CENTER) and
---- controls (RIGHT) at half its 30px bar. The row used to be placed by its TOP
---- edge at `(band - h) / 2`, which is the same line only while the widget is
---- exactly `h` tall; a FontString is as tall as its font's line, not its point
---- size, so a top-anchored title hung off a center it never had. A middle
---- anchor is centered whatever the box turns out to be.
----
---- WHOLE PIXELS. The gap above the box is floored, so a box of a whole-pixel
---- height has both edges on whole pixels: an even box lands exactly on the
---- band's midline, an odd one (or an odd band) half a pixel above it rather
---- than smeared across two.
+--- ON THE BAND, AT 0 (R5-MM1 and R5-WIN, the round 5 lead's call 6: every header
+--- child of every Ka0s window is anchored by its middle to the band at y 0). Until
+--- round 5 the row was centered on the frame's top edge down to BAR_INSET above
+--- the tinted strip's bottom, an offset off the frame while the strip itself hung
+--- at the padding; the two answered different middles. The band is now the strip
+--- and the drag handle and the row's middle, so there is one middle. No per-font
+--- nudge: a box is centered, a face's own baseline is the owner's smoke check.
 ---
 --- COMPUTED, NEVER MEASURED (rule R3): `h` is the caller's own configured size,
---- not something read back off a widget. Clamped at the frame's top edge so a
---- control larger than the bar it sits in overflows downward rather than off the
---- window.
+--- not something read back off a widget. A box taller than the band and its edges
+--- hangs from the frame's top edge instead, so it overflows downward rather than
+--- off the window.
 ---
 --- @param h number  the height of the thing being placed
---- @return number y  the offset to anchor its MIDDLE at, relative to the frame's top
+--- @return number y  the offset to anchor its MIDDLE at, relative to the band's middle
 function WindowProto:TitleRowMid(h)
     h = h or 0
-    local gap = math.floor((self:TitleBandHeight() - h) / 2)
-    if gap < 0 then gap = 0 end
-    return -(gap + h / 2)
+    local e = self:HeaderInset()
+    local over = e + (self:TitleBandHeight() - h) / 2
+    if over < 0 then return over end
+    return 0
 end
 
---- How tall the title bar a player sees is: the frame's top edge down to the
---- divider hairline, which sits DIVIDER_INSET up from the bottom of the tinted
---- band. 6 padding + 26 bar - 2 = 30 shipped, Ka0s DPS Race's `TITLE_BAR_H`.
---- One number for the row's center, the divider and the drag strip, so the
---- three cannot disagree about where the bar ends. 0 with the header hidden.
+--- How far in from the frame's edges the title band sits: flush inside the edge
+--- that is drawn (S.Shell's own inset under the skin's edge, the player's edge
+--- size under theirs; ApplyBorder records it), 1 before the first border pass.
+---
+--- @return number
+function WindowProto:HeaderInset()
+    return self.edgeInset or 1
+end
+
+--- How tall the title band is: the padding plus the header height, less
+--- BAR_INSET. 6 padding + 26 bar - 2 = 30 shipped, LootHistory's bar and Ka0s DPS
+--- Race's `TITLE_BAR_H` (only at the shipped settings: the player's Padding and
+--- Header height move it). One number for the band, the row's center and the drag
+--- strip, so none can disagree about where the bar ends. 0 with the header hidden.
 ---
 --- @return number
 function WindowProto:TitleBandHeight()
     local layout = self.layout
     if layout.titleHeight <= 0 then return 0 end
-    return layout.padding + layout.titleHeight - DIVIDER_INSET
+    return layout.padding + layout.titleHeight - BAR_INSET
 end
 
 --- Where the header's two text lines must stop on the right: the frame padding,
@@ -374,13 +420,18 @@ function WindowProto:ApplyTitle()
     -- the close button, and the session line keeps its own RIGHT anchor — the
     -- two halves of the strip are placed from opposite ends, so aligning one can
     -- never push the other off the frame.
-    local y = self:TitleRowMid(size)
+    -- On the band by its middle (TitleRowMid); the x offsets are the frame's, less
+    -- the band's inset, so the title keeps its place off the window's edges.
+    local y, e, band = self:TitleRowMid(size), self:HeaderInset(), self.headerBand
     frame.title:ClearAllPoints()
-    frame.title:SetPoint("LEFT", frame, "TOPLEFT", 8, y)
-    frame.title:SetPoint("RIGHT", frame, "TOPRIGHT", -self:HeaderRightInset(), y)
-    frame.title:SetJustifyH(header.align or "LEFT")
-    frame.title:SetFont(path, size, flags)
-    frame.title:SetShadowOffset(shadowOffset(header.shadow))
+    frame.title:SetPoint("LEFT", band, "LEFT", 8 - e, y)
+    frame.title:SetPoint("RIGHT", band, "RIGHT", e - self:HeaderRightInset(), y)
+    -- The skin's `title.align` while the companion is on (cause L9); the session line keeps its RIGHT
+    -- anchor, so the two never trade ends. Degraded, the token answers nothing.
+    frame.title:SetJustifyH(NS.Skin.Resolve("title.align", header.align or "LEFT", header.alignFromSkin == true)
+        or header.align or "LEFT")
+    NS.SkinHudFont(frame.title, path, size, flags, header.shadow, header.shadowFromSkin,
+        self.skinLooks and self.skinLooks.keptShadow)
     -- THE RED TEST MODE WORD marks test mode only where the strip does not: a
     -- minimized window (the strip goes with the body) or a load without the
     -- Widgets library (no strip is built). Test mode fills the grid with numbers
@@ -419,12 +470,11 @@ function WindowProto:ApplyTitle()
     frame.title:SetTextColor(headerColor(header, self.skinLooks))
 end
 
---- The tinted block behind the header and the hairline that closes it off.
+--- The tinted block behind the header, and the drag strip over it.
 function WindowProto:ApplyHeaderStrip()
     local header = self.config.header or {}
     local layout = self.layout
     local frame  = self.frame
-    local pad    = layout.padding
 
     -- THE TITLE BAR ONLY. It used to cover both header rows — the title bar and
     -- the column labels — on the reading that "the header" is the whole block a
@@ -440,72 +490,38 @@ function WindowProto:ApplyHeaderStrip()
     -- the skin's companion (MM-A1, DECISIONS D3): while `bgColorFromSkin` is on it
     -- draws `title.bg` (clear for a skin that draws no title band), cached in
     -- skinLooks; off, the swatch, which following the skin never rewrites.
-    local ar, ag, ab, aa = titleBarColor(header, self.skinLooks)
+    -- LIKE LOOTHISTORY'S BAR (R5-MM1, the owner's round 5 item 2, image 33): the
+    -- band sits flush inside the window's edge, at the edge's own inset, rather
+    -- than at the row padding, which left a 4-5 px strip of the window's fill
+    -- between the edge and the band (the "black inner border"). TitleBandHeight
+    -- high: 30 at the shipped settings, as LootHistory's. The rows, the column
+    -- strip and the body keep the padding, LootHistory's 6 px content inset.
+    local e, height = self:HeaderInset(), self:TitleBandHeight()
+    local band = self.headerBand
+    band:ClearAllPoints()
+    band:SetPoint("TOPLEFT", frame, "TOPLEFT", e, -e)
+    band:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -e, -e)
+    band:SetHeight(height > 0 and height or 1)
+
     self.headerBG:ClearAllPoints()
-    self.headerBG:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -pad)
-    self.headerBG:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, -pad)
-    self.headerBG:SetHeight(layout.titleHeight)
-    self.headerBG:SetColorTexture(ar, ag, ab, aa)
+    self.headerBG:SetAllPoints(band)
+    self:PaintHeaderStrip(header)
     self.headerBG:SetShown(layout.titleHeight > 0)
 
-    -- The drag strip covers exactly the title bar a player sees: the frame's top
-    -- edge down to the divider. It used to be `titleHeight` tall, which left the
-    -- bottom `padding - DIVIDER_INSET` pixels of the bar (4 shipped) dead to a
-    -- drag. Sized from the layout like every other coordinate — never measured
-    -- off the title FontString.
-    local band = self:TitleBandHeight()
-    self.dragBar:SetHeight(band > 0 and band or 1)
+    -- The drag strip covers exactly the band. It used to be `titleHeight` tall,
+    -- which left the bottom `padding - BAR_INSET` pixels of the bar (4 shipped)
+    -- dead to a drag. Sized from the layout like every other coordinate — never
+    -- measured off the title FontString.
+    self.dragBar:ClearAllPoints()
+    self.dragBar:SetPoint("TOPLEFT", band, "TOPLEFT", 0, 0)
+    self.dragBar:SetPoint("TOPRIGHT", band, "TOPRIGHT", 0, 0)
+    self.dragBar:SetHeight(height > 0 and height or 1)
     self.dragBar:SetShown(layout.titleHeight > 0)
 
-    -- THE HAIRLINE UNDER THE TITLE BAR, and the one piece of the window's chrome
-    -- a player can switch off. It separates the title strip from the column
-    -- labels under it, which is worth having when both are drawn and is a line
-    -- across the window for nothing when the title bar's own background already
-    -- separates them.
-    --
-    -- ITS COLOR IS THE SKIN'S UNTIL THE PLAYER SAYS OTHERWISE, and `skin` is the
-    -- shipped mode. That mode does not resolve a color and then write it -- it
-    -- writes NOTHING, leaving whatever `NS.ApplySkin` put on the texture a few
-    -- lines earlier in ApplyConfig. That is the whole of how standalone-windows
-    -- is honored here: the shared value is never copied into this file, never
-    -- stored in a profile and never migrated, so a re-skin lands on this window
-    -- along with the debug console and the perf panel exactly as before.
-    --
-    -- The two override modes follow `frame.title`'s precedent one screen up:
-    -- ApplySkin owns the accent, and a setting that claims to govern it writes
-    -- after the library rather than instead of it.
-    --
-    -- The TITLE ROW DOES NOT MOVE when it is switched off. `TitleRowMid` centers
-    -- the row in the space above DIVIDER_INSET, which is a constant and not a
-    -- measurement of this texture -- so hiding the line leaves every other thing
-    -- in the header exactly where it was, which is what a player toggling it
-    -- expects and the opposite of what a measured layout would have done.
-    if frame.divider then
-        frame.divider:ClearAllPoints()
-        local dy = -band
-        frame.divider:SetHeight(header.dividerThickness or 1)
-        frame.divider:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, dy)
-        frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, dy)
-
-        -- ONE read of the swatch, and the ALPHA comes off it in both override
-        -- modes. A class color has no alpha of its own, and inventing one here
-        -- would mean the opacity silently changed when the mode did -- the same
-        -- rule modules/Row.lua's text colors keep: the configured alpha survives
-        -- every mode.
-        local mode = header.dividerColorMode or "skin"
-        local dr, dg, db, da = RGBA(header.dividerColor, 0.5, 0.5, 0.5, 0.85)
-        if mode == "class" then
-            -- An unknown class is NOT a tenth color and not a guess: it leaves
-            -- the skin's tint standing, which is what `skin` mode does and the
-            -- only other answer this row has.
-            local cr, cg, cb = PlayerClassRGB()
-            if cr then frame.divider:SetColorTexture(cr, cg, cb, da) end
-        elseif mode == "custom" then
-            frame.divider:SetColorTexture(dr, dg, db, da)
-        end
-
-        frame.divider:SetShown(layout.titleHeight > 0 and header.divider ~= false)
-    end
+    -- NO LINE UNDER THE TITLE BAR (R4-SEP, the owner's 2026-11-03 sign-off: every
+    -- window of every Ka0s addon, like the Ka0s Skin Tester's showroom). The
+    -- hairline and its four settings (Show divider, thickness, color, color mode)
+    -- are gone; the v25 -> v26 migration prunes what a profile stored for them.
 end
 
 --- The right-hand line of the header strip. Only its widget is placed here —
@@ -537,13 +553,13 @@ function WindowProto:ApplySessionLine()
     -- time the group total ticks over a magnitude.
     self.sessionLine:ClearAllPoints()
     local height = math.max(size + 4, 12)
-    self.sessionLine:SetPoint("RIGHT", self.frame, "TOPRIGHT",
-        -self:HeaderRightInset(), self:TitleRowMid(height))
+    self.sessionLine:SetPoint("RIGHT", self.headerBand, "RIGHT",
+        self:HeaderInset() - self:HeaderRightInset(), self:TitleRowMid(height))
     self.sessionLine:SetSize(SESSION_LINE_WIDTH, height)
     self.sessionLine:SetShown(shown)
 
-    self.sessionText:SetFont(path, size, flags)
-    self.sessionText:SetShadowOffset(shadowOffset(header.shadow))
+    NS.SkinHudFont(self.sessionText, path, size, flags, header.shadow, header.shadowFromSkin,
+        self.skinLooks and self.skinLooks.keptShadow)
     self.sessionText:SetTextColor(headerColor(header, self.skinLooks))
     self.sessionText:SetShown(shown)
 end
@@ -622,6 +638,8 @@ local function dressSortArrow(button, d, tr, tg, tb, ta)
         -- No SetTexCoord: two assets, not one flipped. The atlas branch
         -- below flips because it has only one arrow to flip.
         button.arrowTex:SetTexCoord(0, 1, 0, 1)
+        local arrow = d.sortArrow
+        if arrow then tr, tg, tb = arrow[1], arrow[2], arrow[3] end
         button.arrowTex:SetVertexColor(tr, tg, tb)
         button.arrowTex:Show()
         button.arrow:Hide()
@@ -639,8 +657,7 @@ local function dressSortArrow(button, d, tr, tg, tb, ta)
         button.arrowTex:Show()
         button.arrow:Hide()
     else
-        button.arrow:SetFont(d.font, d.size, d.flags)
-        button.arrow:SetShadowOffset(d.shadowX, d.shadowY)
+        NS.SkinHudFont(button.arrow, d.font, d.size, d.flags, d.shadow, d.shadowFromSkin)
         button.arrow:SetTextColor(tr, tg, tb, ta)
         button.arrow:SetText(d.sortAscending and SORT_ASCII_UP or SORT_ASCII_DOWN)
         button.arrow:ClearAllPoints()
@@ -666,8 +683,7 @@ local function dressHeaderButton(button, key, label, width, d)
     -- belonged to them.
     button.text:SetWidth(width)
     button.text:SetHeight(d.headerHeight)
-    button.text:SetFont(d.font, d.size, d.flags)
-    button.text:SetShadowOffset(d.shadowX, d.shadowY)
+    NS.SkinHudFont(button.text, d.font, d.size, d.flags, d.shadow, d.shadowFromSkin)
     -- PER COLUMN, and only here. `stat` mode on every other surface resolves
     -- to one color for the whole surface; this strip is the one place where
     -- "per statistic" is literally per column, so each label takes the color
@@ -724,7 +740,6 @@ function WindowProto:ApplyColumnHeaders()
     local pad    = layout.padding
     local colHeader = cfg.columnHeader or {}
     local colFont, colSize, flags = columnHeaderFont(colHeader)
-    local shadowX, shadowY = shadowOffset(colHeader.shadow)
     -- The STRIP labels the grid rather than any row in it, so its class color is
     -- the local player's -- the same reading the title bar takes, and for the
     -- same reason. Its `stat` color is NOT the same, though, and that is the
@@ -734,14 +749,21 @@ function WindowProto:ApplyColumnHeaders()
     -- any unresolvable stat land on.
     local hr, hg, hb, ha = surfaceColor(colHeader.colorMode, colHeader.color,
         windowStat(self), 1, 0.82, 0, 1)
+    -- The skin's `hud.label` while the companion is on, under `custom` only: the other two modes are
+    -- a class and a statistic, which keep their color. Nil, degraded, leaves the swatch.
+    hr, hg, hb, ha = lookOver(customLook(colHeader, "colorMode", "colorFromSkin", self, "hudLabel"),
+        hr, hg, hb, ha)
 
     -- One FontString per drawn column plus the name column's, placed at the same
     -- x offsets the cells will use — from the SAME layout table, so a header can
     -- never drift from the column under it.
     local _, headerTop = self:ChromeOffsets()
     self.headerFrame:ClearAllPoints()
+    -- Both top corners are the window's, so the strip's clip box is the window's width and a
+    -- column header dragged past the edge is cut there; layout.rowWidth only places the labels.
     self.headerFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -headerTop)
-    self.headerFrame:SetSize(layout.rowWidth, layout.headerHeight)
+    self.headerFrame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -pad, -headerTop)
+    self.headerFrame:SetHeight(layout.headerHeight)
 
     -- PER STATISTIC IS PER COLUMN HERE, so `stat` mode paints each header button
     -- rather than the strip: one rectangle behind each label, in that column's
@@ -751,6 +773,9 @@ function WindowProto:ApplyColumnHeaders()
     local perColumnBG = (colHeader.bgColorMode == "stat")
     local bgr, bgg, bgb, bga = surfaceColor(perColumnBG and "custom" or colHeader.bgColorMode,
         colHeader.bgColor, windowStat(self), 0, 0, 0, 0)
+    -- The skin's band while the companion is on, under `custom` only (cause A1).
+    bgr, bgg, bgb, bga = lookOver(customLook(colHeader, "bgColorMode", "bgColorFromSkin", self, "headerBand"),
+        bgr, bgg, bgb, bga)
     self.headerBg:SetColorTexture(bgr, bgg, bgb, bga)
     self.headerBg:SetShown(not perColumnBG)
 
@@ -777,8 +802,10 @@ function WindowProto:ApplyColumnHeaders()
     local d = headerDress
     d.headerHeight = layout.headerHeight
     d.font, d.size, d.flags = colFont, colSize, flags
-    d.shadowX, d.shadowY = shadowX, shadowY
+    d.shadow, d.shadowFromSkin = colHeader.shadow, colHeader.shadowFromSkin
     d.colorMode, d.color = colHeader.colorMode, colHeader.color
+    -- `icon.arrow` while the label follows the skin (cause L8); otherwise the arrow wears the label's.
+    d.sortArrow = customLook(colHeader, "colorMode", "colorFromSkin", self, "sortArrow")
     d.hr, d.hg, d.hb, d.ha = hr, hg, hb, ha
     d.perColumnBG, d.bgColor = perColumnBG, colHeader.bgColor
     d.bgr, d.bgg, d.bgb, d.bga = bgr, bgg, bgb, bga
@@ -860,6 +887,7 @@ function WindowProto:ApplyTestStrip()
     local _, headerTop, bodyTop = self:ChromeOffsets()
     self.headerFrame:ClearAllPoints()
     self.headerFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -headerTop)
+    self.headerFrame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -pad, -headerTop)
     self.body:ClearAllPoints()
     self.body:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -bodyTop)
     self.body:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -pad, pad)
@@ -905,7 +933,15 @@ function WindowProto:ApplyMinimized()
         frame:ClearAllPoints()
         frame:SetPoint("TOPLEFT", self.anchor, "TOPLEFT", 0, 0)
         frame:SetPoint("TOPRIGHT", self.anchor, "TOPRIGHT", 0, 0)
-        frame:SetHeight(self.layout.padding * 2 + self.layout.titleHeight)
+        -- EXACTLY THE BAND AND ITS EDGES (R5-MM1): the band plus the edge above and
+        -- below it, so no strip of the window's fill shows under a collapsed bar.
+        -- With the header hidden, the padding's own collapsed state stands.
+        local band = self:TitleBandHeight()
+        if band > 0 then
+            frame:SetHeight(band + 2 * self:HeaderInset())
+        else
+            frame:SetHeight(self.layout.padding * 2 + self.layout.titleHeight)
+        end
     else
         frame:ClearAllPoints()
         frame:SetPoint("TOPLEFT", self.anchor, "TOPLEFT", 0, 0)
@@ -1140,18 +1176,87 @@ function WindowProto:SetSessionType(sessionType)
     self:MarkDirty()
 end
 
+-- The two synthetic entries' menu values; a stored segment's value is its session id.
+local SEGMENT_CURRENT, SEGMENT_OVERALL = "Current", "Overall"
+
+--- The menu's anchor for this window: built once, never shown, because the header's control is what
+--- the player clicks. It keeps the menu's old place below the session line. A window hidden by a route
+--- that is no click closes the menu with it.
+local function segmentAnchor(window)
+    local anchor = window.segmentAnchor
+    if anchor then return anchor end
+    anchor = CreateFrame("Frame", nil, window.frame)
+    anchor:SetSize(SESSION_LINE_WIDTH, 1)
+    anchor:SetPoint("TOPRIGHT", window.sessionLine, "BOTTOMRIGHT", 0, 0)
+    anchor:Hide()
+    if window.frame.HookScript then
+        window.frame:HookScript("OnHide", function() W.CloseMenu() end)
+    end
+    window.segmentAnchor = anchor
+    return anchor
+end
+
+--- A row's click: the choice its value names.
+local function pickSegment(window, value)
+    if value == SEGMENT_CURRENT then
+        window:SetSessionType(Const.SESSION_TYPE.Current)
+    elseif value == SEGMENT_OVERALL then
+        window:SetSessionType(Const.SESSION_TYPE.Overall)
+    else
+        window:SetSegment(value)
+    end
+end
+
+--- A title, the stored segments newest first, a divider, then the two synthetic entries, on the skinned
+--- menu, the entry the window shows marked. The same shape the client's menu draws below.
+function WindowProto:OpenSkinnedSegmentMenu(sessions)
+    local data = self.config.data or {}
+    local active = NS.Database.PinnedSegment(data)
+    if active == nil then
+        active = data.sessionType == Const.SESSION_TYPE.Overall and SEGMENT_OVERALL or SEGMENT_CURRENT
+    end
+
+    local rows = { { title = true, label = L["Segment"] } }
+    local function add(value, label)
+        rows[#rows + 1] = {
+            value = value, label = label,
+            isActive = function() return value == active end,
+            onClick = function() pickSegment(self, value) end,
+        }
+    end
+    for _, entry in ipairs(sessions) do
+        if type(entry) == "table" and entry.sessionID ~= nil then add(entry.sessionID, segmentLabel(entry)) end
+    end
+    rows[#rows + 1] = { divider = true }
+    add(SEGMENT_CURRENT, L["Current"])
+    add(SEGMENT_OVERALL, L["Overall"])
+
+    W.ContextMenu(segmentAnchor(self), rows, { owner = NS.name, width = SESSION_LINE_WIDTH })
+    return true
+end
+
 --- Open the header's segment dropdown.
 ---
 --- Stored segments first, newest first as the API returns them, then a divider,
 --- then the two synthetic entries. That order matches what the player is
 --- reaching for: the reason to open this menu at all is almost always to look
 --- back at a fight that just ended.
+---
+--- THE SKINNED MENU, EXCEPT WHILE A LABEL MAY BE SECRET (cause A2). A stored session's duration is
+--- secret under the Combat restriction and `..` keeps a secret, so segmentLabel's answer can be one.
+--- W.ContextMenu sizes itself by every row's GetStringWidth, in math.min and an addition, which raises
+--- on the secret that answers (Widgets minor 21's menuWidth, which `opts.width` does not skip). The
+--- client's menu draws a secret, so it stays for exactly that window. It also stays on an install
+--- without the library.
 function WindowProto:OpenSegmentMenu()
     local Provider = mod("Provider")
     if not (Provider and Provider.GetAvailableSessions) then return false end
 
     local sessions = Provider.GetAvailableSessions()
     local data = self.config.data or {}
+
+    local restricted = NS.Secrets and NS.Secrets.IsRestricted and NS.Secrets.IsRestricted()
+    if W and W.ContextMenu and not restricted then return self:OpenSkinnedSegmentMenu(sessions) end
 
     return NS.Compat.OpenContextMenu(self.sessionLine, function(_, root)
         root:CreateTitle(L["Segment"])

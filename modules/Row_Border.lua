@@ -60,10 +60,14 @@ local BORDER_ANCHOR = {
 --- @param bars table|nil   the window's `bars` config group
 --- @param entry table|nil  the aggregated row, when there is one
 --- @return number r, number g, number b, number a
-local function cellBorderColor(bars, entry)
+local function cellBorderColor(bars, entry, looks)
     local skin = NS.SKIN or {}
     local sr, sg, sb, sa = RGBA(skin.border, 0, 0, 0, 1)
     local r, g, b, a = RGBA(bars and bars.borderColor, sr, sg, sb, sa)
+    -- The skin's `bar.border` while the companion is on, out of the window's cached looks. The class
+    -- mode below comes first and overwrites it; nil looks, degraded, leave the swatch.
+    local follow = bars and bars.borderColorFromSkin == true and looks and looks.barBorder
+    if follow then r, g, b, a = follow[1], follow[2], follow[3], follow[4] end
     if (bars and bars.borderColorMode) == "class" then
         local cr, cg, cb = ClassRGB(entry and entry.classFilename)
         if cr then r, g, b = cr, cg, cb end
@@ -83,6 +87,7 @@ end
 --- @return number  a thickness of at least 1
 local function borderThickness(bars)
     local size = (bars and bars.borderThickness) or 1
+    if bars then size = NS.SkinBorderSize(size, bars.borderStyleFromSkin) end
     if type(size) ~= "number" or size < 1 then size = 1 end
     return size
 end
@@ -126,7 +131,7 @@ end
 local function applyArtBorder(cell, bars, edge)
     cell.frame:SetBackdrop({ edgeFile = edge, edgeSize = borderThickness(bars) })
     if cell.frame.SetBackdropBorderColor then
-        cell.frame:SetBackdropBorderColor(cellBorderColor(bars, cell.entry))
+        cell.frame:SetBackdropBorderColor(cellBorderColor(bars, cell.entry, cell.window.skinLooks))
     end
     hideFlatBorder(cell.border)
 end
@@ -147,7 +152,7 @@ end
 --- @param edges table      the cell's four-texture border table
 local function applyFlatBorder(cell, bars, edges)
     local bar = cell.frame
-    local r, g, b, a = cellBorderColor(bars, cell.entry)
+    local r, g, b, a = cellBorderColor(bars, cell.entry, cell.window.skinLooks)
     local size = borderThickness(bars)
 
     for _, side in ipairs(BORDER_SIDES) do
@@ -167,7 +172,8 @@ end
 --- anchored to this StatusBar would inherit its secretness the moment the bar is
 --- handed a value (rule R3), and would then be one more thing nobody may
 --- measure; a texture is a leaf, exactly like the cell's two FontStrings, and
---- nothing ever reads one back.
+--- nothing ever reads one back. The unit icon's border is the exception, on the child frame
+--- S.IconBorder makes for a Texture (ensureIconBorder in modules/Row_NameCell.lua).
 ---
 --- Built on FIRST USE and kept forever after, like every other widget in
 --- modules/Row.lua — a player toggling the setting off does not destroy them, because the
@@ -186,13 +192,16 @@ end
 --- THE BACKDROP GOES ON THE BAR, NOT ON A CHILD FRAME, and that distinction is
 --- rule R3's: a child frame anchored to a StatusBar that has been handed a secret
 --- inherits its secret anchoring, while a backdrop is textures the frame owns.
---- Nothing here reads anything back either way. It is still the one place this
---- addon decorates a frame that carries meter values, which is why it is opt-in
---- and why docs/smoke-tests.md asks for it to be checked mid-pull.
+--- Nothing here reads anything back either way. This and the icon's holder are
+--- the two places this addon decorates a frame on a cell that carries meter
+--- values, which is why docs/smoke-tests.md asks for both to be checked mid-pull.
 function Cell:ApplyBorder(bars)
-    local wanted = (bars and bars.border) and true or false
-    -- The skin's `bar.borderStyle` while `bars.borderStyleFromSkin` is on (core/SkinSetup.lua);
-    -- the thickness and the color stay the player's (DECISIONS X4).
+    -- Show border (NS.SkinBorderShown, SF-MM-2), in every skin. Recorded for the
+    -- per-row re-tint below, which must not read a setting ApplyBorder already decided.
+    local wanted = NS.SkinBorderShown(bars)
+    self.borderShown = wanted
+    -- The skin's `bar.borderStyle` while `bars.borderStyleFromSkin` is on (core/SkinSetup.lua), with
+    -- `bar.borderSize` (borderThickness); the color has its own companion (cellBorderColor).
     local edge = wanted and borderEdge(NS.SkinMediaKey(bars, "borderStyle", "bar.borderStyle")) or nil
     local edges = self.border
 
@@ -241,9 +250,9 @@ end
 function Cell:ApplyEntryBorderColor(entry)
     local bars = self.window.config.bars or {}
     if bars.borderColorMode ~= "class" then return end
-    if not bars.border then return end
+    if not self.borderShown then return end
 
-    local r, g, b, a = cellBorderColor(bars, entry)
+    local r, g, b, a = cellBorderColor(bars, entry, self.window.skinLooks)
 
     -- The ART path draws through the frame's backdrop; the flat path is four
     -- textures. Both are re-tinted, because either can be the one on screen and

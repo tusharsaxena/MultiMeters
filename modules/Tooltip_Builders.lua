@@ -231,7 +231,7 @@ local function eventColumns(event, secondsBefore)
 
     local timeText = eventTimeText(secondsBefore)
 
-    return string.format("|T%s:%d:%d:0:0|t", icon or FALLBACK_ICON,
+    return string.format("|T%s:%d:%d:0:0:64:64:5:59:5:59|t", icon or FALLBACK_ICON,
         TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE), timeText, name, caster or ""
 end
 
@@ -548,7 +548,7 @@ local function addDeathList(row, style, timeStyle, config)
         -- modules/DrillDown.lua builds the rows this indexes. A reader who hovers
         -- and then clicks must see the same list twice.
         --
-        GameTooltip:AddLine(string.format("|T%d:%d:%d:0:0|t %s", DEATH_ICON,
+        GameTooltip:AddLine(string.format("|T%d:%d:%d:0:0:64:64:5:59:5:59|t %s", DEATH_ICON,
             TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE,
             deathLineLabel(total - i + 1, caster, spell, config)), NS.SkinColor("gtip.value"))
         -- The time goes in the AMOUNT slot rather than the line, so the times
@@ -672,7 +672,7 @@ local function addTargetBreakdown(row, statKey, config, style, numberStyle, wind
         -- above it column for column. The NAME is drawn on the carrier's own
         -- label slot, which is the only way to start it where a spell NAME starts
         -- rather than where a spell ICON starts. See `lineWidget`.
-        GameTooltip:AddLine(string.format("|T%s:%d:%d:0:0|t",
+        GameTooltip:AddLine(string.format("|T%s:%d:%d:0:0:64:64:5:59:5:59|t",
             TARGET_ICON, TOOLTIP_ICON_SIZE, TOOLTIP_ICON_SIZE), NS.SkinColor("gtip.value"))
         drawLine(GameTooltip:NumLines(),
             formatNumber(entry.total, numberStyle),

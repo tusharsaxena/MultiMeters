@@ -292,7 +292,7 @@ test("Launcher menu: right-click opens the four entries ADDONS.md records, in or
 
     local menu = openMenu(inst)
     assertEqual(menu.titles[1], "Ka0s Multi Meters", "the menu is titled with the brand label")
-    assertEqual(table.concat(menu:Texts(), ","), "Enabled,Locked,Test mode,Show window")
+    assertEqual(table.concat(menu:Texts(), ","), "Enabled,Locked,Test mode,Sim mode,Show window")
     assertEqual(opens, 0, "a right click that found its menu does not also open the panel")
 end)
 
@@ -383,9 +383,9 @@ test("Launcher menu: while disabled, everything but Enabled is grayed and inert"
     local menu = openMenu(inst)
     assertEqual(table.concat(menu:Texts(), ","), "Enabled,"
         .. "Locked (enable the addon first),Test mode (enable the addon first),"
-        .. "Show window (enable the addon first)")
+        .. "Sim mode (enable the addon first),Show window (enable the addon first)")
     assertTrue(menu:Find("Enabled").enabled, "Enabled must stay live while disabled")
-    for _, prefix in ipairs({ "Locked", "Test mode", "Show window" }) do
+    for _, prefix in ipairs({ "Locked", "Test mode", "Sim mode", "Show window" }) do
         assertFalse(menu:Find(prefix).enabled, prefix .. " is not grayed while disabled")
         menu:ForceClick(prefix)
     end

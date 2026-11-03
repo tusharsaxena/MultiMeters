@@ -127,8 +127,12 @@ test("Segment: picking a stored segment writes the pin through the seam for ITS 
     local NS = inst.NS
     local seen = heardConfig(NS)
 
+    local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0", true)
+    local real, rows = W.ContextMenu, nil
+    W.ContextMenu = function(_, r) rows = r end
     window:OpenSegmentMenu()
-    inst.mocks.__lastMenu:Nth("button", 2).callback()
+    W.ContextMenu = real
+    rows[3].onClick(rows[3].value, rows[3])
 
     assertEqual(cfg.data.sessionID, 5)
     assertEqual(#seen, 1, "one change, announced once")

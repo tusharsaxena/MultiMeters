@@ -118,6 +118,44 @@ local function placeIcons(cell, slots, size, onRight, layout)
     end
 end
 
+--- The skin's icon border around the unit icon (cause A1), through S.IconBorder's Texture support: the
+--- library hangs the edge on its own child of the cell and shows it with the Texture it was handed.
+--- That Texture is a bare one on the icon, built once and only for a window that asks, and not the
+--- icon itself, because the edge has one more condition than the icon: the companion. With no icon
+--- shown it draws nothing. Its anchor is the icon, on a cell that may hold a secret: nothing reads it
+--- or the edge back (rule R3). A frame here is what modules/Row_Border.lua avoids, so
+--- docs/smoke-tests.md's SKIN-34 checks it mid-pull. The library draws a flat 1 px outline in every
+--- skin and never SetBackdrops it (LibKa0s R3-L3: `icon.borderStyle` is not read). Its 0.07 zoom
+--- lands on this bare Texture, not on the icon: drawUnitIcon crops a spec, spell or class icon to the same
+--- 0.07 itself. Without the library there is no border to draw and no Texture.
+--- The meter is the in-combat HUD, so the edge passes `hud = true` (LibKa0s R4-L4): it draws the HUD's
+--- `icon.border`, black under Ka0s Default, never R4-L3's window outline `icon.outline` (#4D4D57).
+---
+--- @param cell table  the name cell
+--- @param tex table   the unit icon's texture
+local function ensureIconBorder(cell, tex)
+    if cell.iconBorder or not NS.SKIN_LIVE then return end
+    local edge = cell.frame:CreateTexture(nil, "ARTWORK")
+    edge:SetAllPoints(tex)
+    edge:Hide()
+    NS.Skin.IconBorder(edge, { fromSkin = true, hud = true })
+    cell.iconBorder = edge
+end
+
+--- Show the edge's Texture exactly while its icon shows and the companion is on. Remembers the answer,
+--- so a refresh tick that changes nothing makes no call.
+function Cell:SyncIconBorder()
+    local holder = self.iconBorder
+    if not holder then return end
+    local tex = self.icons and self.icons.unit
+    local icons = self.window.config.icons or {}
+    local on = (tex and tex:IsShown() and icons.borderFromSkin == true) and true or false
+    if on ~= self.iconBorderShown then
+        self.iconBorderShown = on
+        holder:SetShown(on)
+    end
+end
+
 --- Hide any icon texture the config has just turned off.
 ---
 --- Kept rather than destroyed: the pool's whole point is that widget creation
@@ -208,11 +246,14 @@ function Cell:ApplyIcons(layout)
     -- setting and the picture came straight back on the next refresh. The
     -- textures are kept (pooling), so the answer is a flag rather than a nil.
     self.iconsShown = #slots > 0
+    self.iconBorderShown = nil
     self.icons = self.icons or {}
 
     local onRight = (icons.position == "RIGHT")
     placeIcons(self, slots, size, onRight, layout)
     hideUnusedIcons(self, slots)
+    -- SetPlayer returns early with the icons off, so this pass is the one that takes the border down.
+    self:SyncIconBorder()
 
     local consumed = iconsInset(slots, size)
     placeNameText(self, layout, consumed, onRight)
@@ -382,8 +423,12 @@ local function drawUnitIcon(tex, entry)
     local coords = _G.CLASS_ICON_TCOORDS
     local c = coords and entry.classFilename and coords[entry.classFilename]
     if c then
+        -- One cell of a sheet, so the 0.07 crop the spell and spec icons take is 0.07 of the
+        -- CELL, inside its coords (R4-ZOOM: no Blizzard art edge inside the black outline).
+        local w, h = c[2] - c[1], c[4] - c[3]
         tex:SetTexture(CLASS_TEXTURE)
-        tex:SetTexCoord(c[1], c[2], c[3], c[4])
+        tex:SetTexCoord(c[1] + w * ICON_TRIM_MIN, c[2] - w * ICON_TRIM_MIN,
+            c[3] + h * ICON_TRIM_MIN, c[4] - h * ICON_TRIM_MIN)
         tex:Show()
     else
         tex:Hide()
@@ -443,5 +488,9 @@ function Cell:SetPlayer(entry, _sortKey)
 
     local icons = self.icons
     if not (icons and self.iconsShown) then return end
-    if icons.unit then drawUnitIcon(icons.unit, entry) end
+    if icons.unit then
+        drawUnitIcon(icons.unit, entry)
+        ensureIconBorder(self, icons.unit)
+        self:SyncIconBorder()
+    end
 end

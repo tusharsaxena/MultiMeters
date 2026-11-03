@@ -86,6 +86,9 @@ local GAP = 4
 -- that already stored a size.
 local ART_SCALE = 0.72
 
+-- The texcoords of a control whose art reaches its own edges: all of it (see `crop` below).
+local FULL_TEXTURE = { 0, 1, 0, 1 }
+
 -- WHERE THE ART LIVES IS NOT THIS FILE'S BUSINESS ANY MORE. The 49 icons moved
 -- into the LibKa0s payload (v1.9.0, `LibKa0s-Media-1.0`) so that every Ka0s addon
 -- draws the same marks from one set of bytes, and core/MediaSetup.lua is the seam
@@ -140,7 +143,14 @@ local CONTROLS = {
       atlas = { "communities-icon-chat" },      ascii = "=" },
     { key = "reset",    setting = "showReset",     art = "reset",
       atlas = { "common-icon-undo" },           ascii = "@" },
-    { key = "export",   setting = "showExport",    art = "export",
+    -- THE ONE CROPPED ART (R6-MM2, the owner's image 67). The house icons reach their own 64px
+    -- edges; Phosphor's chat-text draws a 52 x 48 bubble inside a transparent margin (x 6..57, y
+    -- 12..59 top-down), so drawn across the same box it read a size smaller than every neighbor.
+    -- `crop` is the 52px square centered on that ink, as texcoords, so the bubble fills its box as
+    -- the others fill theirs. Measured, not eyeballed: tests/test_header_glyph_size.lua reads the
+    -- TGA and holds the drawn bubble to its neighbors' size in every skin.
+    { key = "export",   setting = "showExport",    art = "ph:chat-text",
+      crop = { 6 / 64, 58 / 64, 10 / 64, 62 / 64 },
       atlas = { "poi-scrollofresonance", "UI-HUD-MicroMenu-Questlog-Up" }, ascii = ">" },
 }
 
@@ -243,6 +253,10 @@ local function drawIcon(button, control, art, style, dimmed, ascii)
             -- multiply lands on whatever the header's text color is, and the
             -- icons obey the same setting the rest of the header does.
             button.tex:SetVertexColor(style.r, style.g, style.b)
+            -- Every draw names its texcoords, the full texture unless the control's art is
+            -- padded (`crop`): SetTexture keeps the coords an earlier draw left behind.
+            local c = control.crop or FULL_TEXTURE
+            button.tex:SetTexCoord(c[1], c[2], c[3], c[4])
             button.tex:SetAlpha(1)
             button.tex:Show()
             button.glyph:Hide()
@@ -492,8 +506,12 @@ function HeaderControls:Apply(window)
     -- title and the session line are placed against the same number: the strip
     -- used to be pinned a pixel under the frame padding, which put it 3px below
     -- the text beside it and read as the icons hanging off the bottom of the bar.
-    -- Anchored by the MIDDLE (RIGHT), as Ka0s DPS Race anchors its own controls.
-    local y = window.TitleRowMid and window:TitleRowMid(size) or -(layout.padding - 1 + size / 2)
+    -- Anchored by the MIDDLE (RIGHT) to the title band (R5-WIN, the round 5 lead's
+    -- call 6), at TitleRowMid's 0; the x offset is the frame's, less the band's
+    -- inset, so each control keeps its place off the window's right edge.
+    local y = window.TitleRowMid and window:TitleRowMid(size) or 0
+    local band = window.headerBand or window.frame
+    local e = (window.headerBand and window.HeaderInset) and window:HeaderInset() or 0
     local used = 0
 
     for i = 1, #CONTROLS do
@@ -514,9 +532,9 @@ function HeaderControls:Apply(window)
                 -- same width today, and this stays an accumulator anyway: it is
                 -- the shape that survived a control that was not, and it costs
                 -- one addition.
-                local dx = -(layout.padding + used)
+                local dx = e - (layout.padding + used)
                 button:ClearAllPoints()
-                button:SetPoint("RIGHT", window.frame, "TOPRIGHT", dx, y)
+                button:SetPoint("RIGHT", band, "RIGHT", dx, y)
                 button:SetSize(size, size)
                 -- The art, inset inside the slot. Floored rather than rounded so
                 -- a texture can never come out a pixel wider than the box it is
@@ -557,14 +575,16 @@ end
 ---
 --- `skin`, THE SHIPPED MODE ON BOTH (MM-A1, DECISIONS D4), is the skin's
 --- `icon.tint` at rest and `btn.hover` under the pointer, out of the window's
---- cached skinLooks (`looks`), so a hover reads no token. Not S.CloseButton for
---- the close control: its hover is `close.hot` red, beside six gold siblings.
+--- cached skinLooks (`looks`), so a hover reads no token. The close control takes
+--- `close.rest` and `close.hot` there (cause L8, which overrules MM-A1's D4), as the
+--- library's own closes do, so two closes on one screen answer one way.
 ---
 --- @param frameCfg table
 --- @param hovered boolean
 --- @param looks table|nil  the window's skinLooks
+--- @param isClose boolean|nil  this is the close control
 --- @return number r, number g, number b
-local function controlColor(frameCfg, hovered, looks)
+local function controlColor(frameCfg, hovered, looks, isClose)
     local r, g, b
     if hovered then
         r, g, b = color(frameCfg.controlHoverColor, 1, 0.82, 0)
@@ -583,7 +603,9 @@ local function controlColor(frameCfg, hovered, looks)
         mode = frameCfg.controlColorMode
     end
 
-    local skin = mode == "skin" and looks and looks[hovered and "controlHover" or "controlRest"]
+    local field = hovered and "controlHover" or "controlRest"
+    if isClose then field = hovered and "closeHot" or "closeRest" end
+    local skin = mode == "skin" and looks and looks[field]
     if skin then return skin[1], skin[2], skin[3] end
 
     if mode == "class" and NS.PlayerClassRGB then
@@ -684,7 +706,7 @@ end
 --- work nobody asked for.
 local function applyTint(button, control, window, frameCfg)
     local hovered = (window.hoveredControl == control.key)
-    local r, g, b = controlColor(frameCfg, hovered, window.skinLooks)
+    local r, g, b = controlColor(frameCfg, hovered, window.skinLooks, control.key == "close")
 
     -- FULL BRIGHTNESS IN EITHER STATE. This used to re-dim the "off" half of a
     -- two-state icon to 0.45 on every hover pass, which is the other half of the
