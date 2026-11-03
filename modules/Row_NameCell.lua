@@ -126,7 +126,7 @@ end
 --- or the edge back (rule R3). A frame here is what modules/Row_Border.lua avoids, so
 --- docs/smoke-tests.md's SKIN-34 checks it mid-pull. The library draws a flat 1 px outline in every
 --- skin and never SetBackdrops it (LibKa0s R3-L3: `icon.borderStyle` is not read). Its 0.07 zoom
---- lands on this bare Texture, not on the icon: drawUnitIcon crops a spec or spell icon to the same
+--- lands on this bare Texture, not on the icon: drawUnitIcon crops a spec, spell or class icon to the same
 --- 0.07 itself. Without the library there is no border to draw and no Texture.
 ---
 --- @param cell table  the name cell
@@ -421,8 +421,12 @@ local function drawUnitIcon(tex, entry)
     local coords = _G.CLASS_ICON_TCOORDS
     local c = coords and entry.classFilename and coords[entry.classFilename]
     if c then
+        -- One cell of a sheet, so the 0.07 crop the spell and spec icons take is 0.07 of the
+        -- CELL, inside its coords (R4-ZOOM: no Blizzard art edge inside the black outline).
+        local w, h = c[2] - c[1], c[4] - c[3]
         tex:SetTexture(CLASS_TEXTURE)
-        tex:SetTexCoord(c[1], c[2], c[3], c[4])
+        tex:SetTexCoord(c[1] + w * ICON_TRIM_MIN, c[2] - w * ICON_TRIM_MIN,
+            c[3] + h * ICON_TRIM_MIN, c[4] - h * ICON_TRIM_MIN)
         tex:Show()
     else
         tex:Hide()

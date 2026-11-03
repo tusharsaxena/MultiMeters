@@ -1614,7 +1614,7 @@ Total.
 - Row: a cell with no displayText is completely unaffected
 - Row: a death row's bar draws FULL without comparing anything
 
-### test_row_namecell.lua (30)
+### test_row_namecell.lua (31)
 
 - The name cell is never handed a meter value at all
 - The name cell colors the NAME by class, now that no bar carries it
@@ -1636,6 +1636,7 @@ Total.
 - The slot falls back to the CLASS where no spec is known
 - A ROLE icon is never drawn, whatever the row carries
 - A breakdown row draws the SPELL's icon, not a unit's
+- Every unit icon crops at least 0.07 of its art per side (R4-ZOOM)
 - Turning the icon off hides it rather than destroying it
 - An icon turned off STAYS off across the next refresh
 - The name starts clear of the icon, with a gap you can see
@@ -2951,7 +2952,7 @@ Total.
 | test_layers.lua | 9 |
 | test_headercontrols.lua | 71 |
 | test_row.lua | 62 |
-| test_row_namecell.lua | 30 |
+| test_row_namecell.lua | 31 |
 | test_row_cells.lua | 1 |
 | test_row_mouse.lua | 17 |
 | test_targets.lua | 28 |
@@ -3002,4 +3003,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2548** |
+| **Total** | **2549** |
