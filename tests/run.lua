@@ -337,6 +337,8 @@ local SUITES = {
     "test_window_simstrip",
     "test_layers",
     "test_headercontrols",
+    -- Every header glyph drawn at one visual size, the export bubble included (R6-MM2).
+    "test_header_glyph_size",
     "test_row",
     "test_row_namecell",
     "test_row_cells",

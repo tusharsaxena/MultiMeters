@@ -1557,6 +1557,11 @@ Total.
 - HeaderControls: close hides the window AS a deliberate close
 - HeaderControls: only the two toggles write to the settings seam
 
+### test_header_glyph_size.lua (2)
+
+- Header glyphs: the export bubble is drawn the size of its neighbors in every skin and size
+- Header glyphs: a house icon keeps its full texture, so only the padded art is cropped
+
 ### test_row.lua (62)
 
 - Row.OffsetFor is a pure function of the index and the row config
@@ -2986,6 +2991,7 @@ Total.
 | test_window_simstrip.lua | 4 |
 | test_layers.lua | 9 |
 | test_headercontrols.lua | 71 |
+| test_header_glyph_size.lua | 2 |
 | test_row.lua | 62 |
 | test_row_namecell.lua | 31 |
 | test_row_cells.lua | 1 |
@@ -3039,4 +3045,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2577** |
+| **Total** | **2579** |

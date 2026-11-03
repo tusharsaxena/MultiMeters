@@ -22,7 +22,7 @@ secret-value rules the checks refer to.
 | PANEL-1 to PANEL-59 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-57 | [Windows and the header](#win) | Header controls, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
+| WIN-1 to WIN-58 | [Windows and the header](#win) | Header controls, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-34 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-37 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
@@ -978,6 +978,14 @@ right. Open the panel with `/mm config`.
   control) → it is exactly the bar and its edge, with no strip of the body under it; expand → the rows
   come back. Fail: a strip of body color around the bar, a header child high or low on the bar, a gap
   under a collapsed bar, or a Lua error. Result:
+- **WIN-58. The export bubble is the size of the other header glyphs (R6-MM2, the owner's image 67).**
+  `/mm test` → in the meter's header the export control (the chat bubble) is the same visual size as
+  reset, the segment menu, the gear, the padlock, minimize and close: its bubble is as wide as the gear
+  is, and it no longer reads a size smaller than its neighbors. Pick each skin on General → Skin (Ka0s
+  Default, Obsidian, WoW Midnight and the rest) → the same in every one. Header → Controls → set Control size to
+  its smallest and largest → the bubble keeps its neighbors' size, its edges are not clipped, and it
+  stays on the bar's middle. Hover it → it takes the hover color like the rest. Fail: a smaller or
+  larger bubble, a clipped edge, or a Lua error. Result:
 
 ## VIS
 
@@ -2086,4 +2094,4 @@ Owed: PANEL-59 (R4-RV), SKIN-44 (R4-RV2), WIN-56 (R4-SEP), SKIN-45 (R4-ZOOM) and
 
 Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-47 and SKIN-48 (R5-RV), WIN-57 (R5-MM1, R5-WIN), EXPORT-56 (R5-WIN), TIP-37 (R5-ICON), the owner's fifth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND5/`), each with an empty `Result:`.
 
-Owed: SKIN-49 (R6-RV), SKIN-50 (R6-PV) and SIM-15 (R6-SIM), the owner's sixth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND6/`), each with an empty `Result:`. SKIN-18 keeps its 2026-10-30 pass for what it checked then; its R6-PV amendment is checked by SKIN-50.
+Owed: SKIN-49 (R6-RV), SKIN-50 (R6-PV), SIM-15 (R6-SIM) and WIN-58 (R6-MM2), the owner's sixth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND6/`), each with an empty `Result:`. SKIN-18 keeps its 2026-10-30 pass for what it checked then; its R6-PV amendment is checked by SKIN-50.

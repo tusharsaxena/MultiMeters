@@ -86,6 +86,9 @@ local GAP = 4
 -- that already stored a size.
 local ART_SCALE = 0.72
 
+-- The texcoords of a control whose art reaches its own edges: all of it (see `crop` below).
+local FULL_TEXTURE = { 0, 1, 0, 1 }
+
 -- WHERE THE ART LIVES IS NOT THIS FILE'S BUSINESS ANY MORE. The 49 icons moved
 -- into the LibKa0s payload (v1.9.0, `LibKa0s-Media-1.0`) so that every Ka0s addon
 -- draws the same marks from one set of bytes, and core/MediaSetup.lua is the seam
@@ -140,7 +143,14 @@ local CONTROLS = {
       atlas = { "communities-icon-chat" },      ascii = "=" },
     { key = "reset",    setting = "showReset",     art = "reset",
       atlas = { "common-icon-undo" },           ascii = "@" },
+    -- THE ONE CROPPED ART (R6-MM2, the owner's image 67). The house icons reach their own 64px
+    -- edges; Phosphor's chat-text draws a 52 x 48 bubble inside a transparent margin (x 6..57, y
+    -- 12..59 top-down), so drawn across the same box it read a size smaller than every neighbor.
+    -- `crop` is the 52px square centered on that ink, as texcoords, so the bubble fills its box as
+    -- the others fill theirs. Measured, not eyeballed: tests/test_header_glyph_size.lua reads the
+    -- TGA and holds the drawn bubble to its neighbors' size in every skin.
     { key = "export",   setting = "showExport",    art = "ph:chat-text",
+      crop = { 6 / 64, 58 / 64, 10 / 64, 62 / 64 },
       atlas = { "poi-scrollofresonance", "UI-HUD-MicroMenu-Questlog-Up" }, ascii = ">" },
 }
 
@@ -243,6 +253,10 @@ local function drawIcon(button, control, art, style, dimmed, ascii)
             -- multiply lands on whatever the header's text color is, and the
             -- icons obey the same setting the rest of the header does.
             button.tex:SetVertexColor(style.r, style.g, style.b)
+            -- Every draw names its texcoords, the full texture unless the control's art is
+            -- padded (`crop`): SetTexture keeps the coords an earlier draw left behind.
+            local c = control.crop or FULL_TEXTURE
+            button.tex:SetTexCoord(c[1], c[2], c[3], c[4])
             button.tex:SetAlpha(1)
             button.tex:Show()
             button.glyph:Hide()
