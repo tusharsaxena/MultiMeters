@@ -30,7 +30,7 @@ secret-value rules the checks refer to.
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
-| SIM-1 to SIM-13 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
+| SIM-1 to SIM-14 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
 | SKIN-1 to SKIN-43 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat, a stored pick of the deleted Friz |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
@@ -1725,8 +1725,14 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
   click. Result: pass (owner-marked 2026-10-23)
 - **SIM-13. The Simulation step delay slider (R3-SIM-MM).** Settings → General → Behavior → under
   *Simulator*, set **Simulation step delay (seconds)** to 4, then `/mm sim start dungeon` → about four
-  seconds pass between one step's row ticking and the next. Mid-run, set it to 1 → the step after next
-  follows about a second later. The slider runs 0.5 to 10 in 0.5 steps and ships at 1. Result: not run
+  seconds pass between one step's row ticking and the next (a fight step still lasts its 10 s, SIM-14).
+  Mid-run, set it to 1 → the step after next follows about a second later. The slider runs 0.5 to 10 in 0.5 steps and ships at 1. Result: not run
+- **SIM-14. Every fight step lasts about 10 s (R4-MM1).** With the step delay at its default 1 s,
+  `/mm sim start dungeon` → the step panel's rows read *Pull Trash (10 s)* and *Pull Speaker Shadowcrown
+  (10 s)*; each fight runs about 10 seconds before the next row ticks, the bars and numbers grow about
+  twice a second throughout, and a damage dealer dies about two thirds of the way into the boss. Run
+  `raid`, `wipe` and `zone` too → every *Pull ...* row reads *(10 s)* and plays for about 10 seconds (the
+  wipe's everyone-dead lands on its last tick). Result:
 
 ## SKIN
 

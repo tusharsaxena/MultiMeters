@@ -723,7 +723,7 @@ Total.
 - Sim step delay: Host.StepDelay reads the stored setting, else the default
 - Sim step delay: a playing run waits the sim.stepDelay setting between steps
 
-### test_sim_e2e.lua (10)
+### test_sim_e2e.lua (13)
 
 - Sim e2e: SimScenario lists the four #60 scenarios, each with labeled, tipped steps
 - Sim e2e: dungeon by step
@@ -735,6 +735,9 @@ Total.
 - Sim e2e: zone by step
 - Sim e2e: zone by run
 - Sim e2e: the panel's rows are the step labels, and a step waits while the gate is closed
+- Sim e2e: every fight books 10 s of dense ticks, deaths rescaled to the same point (R4-MM1)
+- Sim e2e: a fight step's label shows its wall duration, e.g. Pull Trash (10 s) (R4-MM1)
+- Sim e2e: in every scenario's auto-run each fight step lasts 10 s with 21 ticks (R4-MM1)
 
 ### test_launchersetup.lua (56)
 
@@ -2922,7 +2925,7 @@ Total.
 | test_sim_world.lua | 17 |
 | test_sim_drivers.lua | 9 |
 | test_sim_session.lua | 26 |
-| test_sim_e2e.lua | 10 |
+| test_sim_e2e.lua | 13 |
 | test_launchersetup.lua | 56 |
 | test_launcher_skin_entry.lua | 2 |
 | test_lifecycle.lua | 40 |
@@ -3001,4 +3004,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2547** |
+| **Total** | **2550** |
