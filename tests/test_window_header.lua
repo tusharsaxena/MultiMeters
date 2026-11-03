@@ -206,11 +206,12 @@ test("The divider's SKIN mode writes no color at all, so a re-skin still reaches
     local inst, window, cfg = scene()
     local skin = inst.mocks.LibStub("LibKa0s-Core-1.0", true).SKIN
 
+    -- Since LibKa0s v1.85.0's round 4 second re-cut (R4-SEP) ApplySkin no longer tints the
+    -- divider at all (it hides it), so skin mode leaves the texture with no color written.
     cfg.header.dividerColorMode = "skin"
     window:ApplyConfig()
-    local drawn = window.frame.divider.__colorTexture
-    assertEqual(drawn[1], skin.divider[1], "skin mode did not leave the library's tint standing")
-    assertEqual(drawn[4], skin.divider[4], "the divider's alpha was dropped")
+    assertEqual(window.frame.divider.__colorTexture, nil,
+        "skin mode wrote a color of its own over the library's")
 
     -- And the profile holds no copy of it, which is the half that would rot.
     assertFalse(inst.NS.GetSetting("window.header.dividerColor").r == skin.divider[1],
