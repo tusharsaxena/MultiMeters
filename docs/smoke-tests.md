@@ -19,7 +19,7 @@ secret-value rules the checks refer to.
 |---|---|---|
 | INSTALL-1 to INSTALL-18 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load, the one-time HUD and chrome skin resets |
 | SLASH-1 to SLASH-33 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding and the General page's Keybindings tab |
-| PANEL-1 to PANEL-57 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
+| PANEL-1 to PANEL-59 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
 | WIN-1 to WIN-55 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
@@ -639,6 +639,13 @@ right. Open the panel with `/mm config`.
   border → **Border style** → the row's left edge is flush with the controls stacked with it, the
   pull-out wears the skin and every entry shows its border swatch. Pick a border, then **None** → the
   window's edge follows each pick. Third-party LibSharedMedia media still lists. No Lua error. Result:
+- **PANEL-59. A press outside an open picker closes it (R4-RV, LibKa0s R4-L1).** Open Frame → Quick
+  style → **Font (all surfaces)** so its pull-out is open, then left-click an empty part of the settings
+  page → the pull-out closes, and the press does nothing else. Open it again and click another dropdown on
+  the page → the first pull-out closes and the second opens. Open **Border style** and scroll its list
+  or click its scrollbar → it stays open; pick an entry → it closes on the pick as before. Repeat once
+  in combat → the same. Another addon's AceGUI dropdown outside a Ka0s window keeps its own behavior.
+  No Lua error. Result:
 
 ## PROFILE
 
