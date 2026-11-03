@@ -26,7 +26,7 @@ secret-value rules the checks refer to.
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-34 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
-| EXPORT-1 to EXPORT-55 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
+| EXPORT-1 to EXPORT-56 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
@@ -1385,6 +1385,12 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
 - **EXPORT-55. A window never drawn.** For a window that exists but has not been drawn this session
   (for example one a hide rule has kept hidden since login), `/mm export <its name>` → it exports (the
   verb hands over the config, not the live frame). Result: pass (owner-marked 2026-10-10)
+- **EXPORT-56. The Export modal's title bar sits on its band (R5-WIN).** On Ka0s Default, open the
+  Export modal (the export control on a meter's header) → its title bar runs flush inside the modal's
+  edge with no strip of body color between them, and the *Export* caption and the close button sit on
+  the bar's vertical middle. Pick WoW Midnight (its 2px edge) and WoW Default in turn → the same in
+  each, the bar inside each skin's edge. Fail: a caption or close high or low on the bar, a gap above
+  the bar, or a Lua error. Result:
 
 ## COMBAT
 
@@ -2060,4 +2066,4 @@ On 2026-11-02 the owner reported that every check on the smoke lists of the full
 
 Owed: PANEL-59 (R4-RV), SKIN-44 (R4-RV2), WIN-56 (R4-SEP), SKIN-45 (R4-ZOOM) and SKIN-46 (R4-HUD), the owner's fourth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND4/`), each with an empty `Result:`.
 
-Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-47 and SKIN-48 (R5-RV), WIN-57 (R5-MM1, R5-WIN), the owner's fifth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND5/`), each with an empty `Result:`.
+Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-47 and SKIN-48 (R5-RV), WIN-57 (R5-MM1, R5-WIN), EXPORT-56 (R5-WIN), the owner's fifth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND5/`), each with an empty `Result:`.

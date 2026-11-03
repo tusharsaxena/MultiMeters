@@ -2668,7 +2668,7 @@ Total.
 - Skin window: the v21 step survives a junk window and leaves an absent group to the template
 - Skin window: the title has a font before the Shell paints it
 
-### test_header_band.lua (10)
+### test_header_band.lua (11)
 
 - Header band: flush inside the edge at Shell's inset, TitleBandHeight high, in every skin
 - Header band: a 2 px flat edge puts the band 2 px in; a nine-slice edge keeps it 1 px in
@@ -2680,6 +2680,7 @@ Total.
 - Header band: the title, the session line and every control sit on the band's middle, every skin
 - Header band: the header keeps its left and right offsets off the frame's edges
 - Header band: a collapsed window is exactly the band plus its edges
+- Header band: the Export modal's bar takes its band's rect, its title and close on the middle
 
 ### test_skin_picker.lua (12)
 
@@ -3002,7 +3003,7 @@ Total.
 | test_skin_fix.lua | 36 |
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
-| test_header_band.lua | 10 |
+| test_header_band.lua | 11 |
 | test_skin_picker.lua | 12 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
@@ -3018,4 +3019,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2560** |
+| **Total** | **2561** |

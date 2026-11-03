@@ -231,3 +231,30 @@ test("Header band: a collapsed window is exactly the band plus its edges", funct
     Skin:SetChoice(OWNER, "ka0s", "midnight")
     assertEqual(window.frame.__h, 34, "WoW Midnight's collapsed height (a 2 px edge)")
 end)
+
+-- ── the Export modal ──────────────────────────────────────────────────────────────────────────
+
+test("Header band: the Export modal's bar takes its band's rect, its title and close on the middle", function()
+    -- R5-WIN (the round 5 hosts-owe, R5-L3): under noTopBar a child TitleBar takes S.Band's rect, so
+    -- the bar, its centered caption and its close sit on the band Shell lays, at its inset in every
+    -- skin. red under: the bar's own TOPLEFT (1, -1) anchor, 1 px high under a 2 px edge.
+    local inst, NS, _, _, Skin = scene()
+    local modal = inst.NS.Export.Open({})
+    assertTrue(modal ~= nil, "the modal did not open")
+    for _, key in ipairs({ "default", "midnight", "wow" }) do
+        Skin:SetChoice(OWNER, "ka0s", key)
+        local band = NS.Skin.Band(modal)
+        assertTrue(band ~= nil, key .. ": the modal has no band")
+        assertEqual(modal.titleBar.__allPoints, band, key .. ": the bar does not take the band's rect")
+        local _, rel, _, _, y = modal.closeButton:GetPoint(1)
+        assertEqual(rel, modal.titleBar, key .. ": the close is not on the bar")
+        assertEqual(y, 0, key .. ": the close is off the bar's middle")
+        for i = 1, modal.title:GetNumPoints() do
+            local point, trel, _, _, ty = modal.title:GetPoint(i)
+            assertTrue(point == "LEFT" or point == "RIGHT" or point == "CENTER",
+                key .. ": the caption is anchored " .. tostring(point))
+            assertEqual(trel, modal.titleBar, key .. ": the caption is not on the bar")
+            assertEqual(ty or 0, 0, key .. ": the caption is off the bar's middle")
+        end
+    end
+end)

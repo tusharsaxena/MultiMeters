@@ -786,11 +786,16 @@ local function EnsureFrame()
     modal.csvButton  = csvButton
     modal.chatButton = chatButton
 
-    -- The skin, once every piece exists: the window (no top band; its own 26px
-    -- bar takes S.TitleBar), the bar, the row, its caption, its box's face and
-    -- the refusal line.
+    -- The skin, once every piece exists: the window (no top band; its own bar
+    -- takes S.TitleBar), the bar, the row, its caption, its box's face and the
+    -- refusal line. THE BAR TAKES THE BAND'S RECT (R5-WIN, LibKa0s R5-L3):
+    -- S.Header lays it over S.Band, flush inside the edge at Shell's own inset in
+    -- every skin, so its centered caption and its close (RIGHT at y 0) sit on the
+    -- band's middle; recorded, so a switch lays it again. Degraded, Header is a
+    -- no-op and the bar keeps its (1, -1) anchor.
     if NS.Skin then
         NS.Skin.Shell(modal, { noTopBar = true })
+        NS.Skin.Header(modal, { bars = { modal.titleBar } })
         NS.Skin.TitleBar(modal.titleBar, { text = modal.title, place = true })
         NS.Skin.Inset(whisperRow)
         NS.Skin.Text(whisperCaption, "accent")
