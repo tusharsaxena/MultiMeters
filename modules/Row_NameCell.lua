@@ -121,12 +121,13 @@ end
 --- The skin's icon border around the unit icon (cause A1), through S.IconBorder's Texture support: the
 --- library hangs the edge on its own child of the cell and shows it with the Texture it was handed.
 --- That Texture is a bare one on the icon, built once and only for a window that asks, and not the
---- icon itself, because the edge has one more condition than the icon: the companion. With no art it
---- draws nothing. Its anchor is the icon, on a cell that may hold a secret: nothing reads it or the
---- edge back (rule R3). A frame here is what modules/Row_Border.lua avoids. The library draws a flat
---- 1 px outline in every skin and never SetBackdrops it (LibKa0s R3-L3: `icon.borderStyle` is not
---- read), so docs/smoke-tests.md's SKIN-34 checks it mid-pull. Without the library there is no border
---- to draw and no Texture.
+--- icon itself, because the edge has one more condition than the icon: the companion. With no icon
+--- shown it draws nothing. Its anchor is the icon, on a cell that may hold a secret: nothing reads it
+--- or the edge back (rule R3). A frame here is what modules/Row_Border.lua avoids, so
+--- docs/smoke-tests.md's SKIN-34 checks it mid-pull. The library draws a flat 1 px outline in every
+--- skin and never SetBackdrops it (LibKa0s R3-L3: `icon.borderStyle` is not read). Its 0.07 zoom
+--- lands on this bare Texture, not on the icon: drawUnitIcon crops a spec or spell icon to the same
+--- 0.07 itself. Without the library there is no border to draw and no Texture.
 ---
 --- @param cell table  the name cell
 --- @param tex table   the unit icon's texture
