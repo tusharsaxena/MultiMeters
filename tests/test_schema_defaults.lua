@@ -223,9 +223,10 @@ test("Schema defaults: session-only rows are exempt and carry their own storage"
                 row.path .. " is declared session-only but resolves in the defaults tree")
         end
     end
-    -- Three: the debug console, Test mode, and Lock frame -- whose value is derived
-    -- from every window's own `frame.locked`, so it has nothing of its own to store.
-    assertEqual(session, 3, "the schema declares three session-only rows")
+    -- Four: the debug console, Test mode, Sim mode (R6-SIM, whose state is the sim
+    -- session itself), and Lock frame -- whose value is derived from every window's
+    -- own `frame.locked`, so it has nothing of its own to store.
+    assertEqual(session, 4, "the schema declares four session-only rows")
 end)
 
 -- ---------------------------------------------------------------------------

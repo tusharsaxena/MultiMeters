@@ -889,6 +889,9 @@ L["Show this addon's button on the minimap. Left-click it to open these settings
 L["Test mode"] = "Test mode"
 L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."] =
     "Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."
+L["Sim mode"] = "Sim mode"
+L["Run the simulation, the same as /mm sim: ticking it opens the sim panel, which plays a scripted fight through every window, and unticking it stops the simulation. Nothing is saved. Combat, a group, an instance or a reload ends it."] =
+    "Run the simulation, the same as /mm sim: ticking it opens the sim panel, which plays a scripted fight through every window, and unticking it stops the simulation. Nothing is saved. Combat, a group, an instance or a reload ends it."
 L["Test mode off \226\128\148 combat started"] = "Test mode off \226\128\148 combat started"
 L["Cannot start test mode during combat"] = "Cannot start test mode during combat"
 L["Debug console"] = "Debug console"

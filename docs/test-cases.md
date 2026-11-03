@@ -740,6 +740,14 @@ Total.
 - Sim e2e: a fight step's label shows its wall duration, e.g. Pull Trash (10 s) (R4-MM1)
 - Sim e2e: in every scenario's auto-run each fight step lasts 10 s with 21 ticks (R4-MM1)
 
+### test_sim_checkbox.lua (5)
+
+- Sim checkbox: Master controls carries a composed, session-only Sim mode row after Test mode
+- Sim checkbox: the hooks are one NS pair, the launcher's own
+- Sim checkbox: ticking runs /mm sim's own act, unticking stops, a no-change write does nothing
+- Sim checkbox: the box reads the real session, and unticking it ends that session
+- Sim checkbox: a sim started or stopped elsewhere refreshes the open page
+
 ### test_launchersetup.lua (56)
 
 - Launcher: Register creates ONE object and registers it against the global table
@@ -2493,7 +2501,7 @@ Total.
 - Panel: every tabbed page opens on its first tab and draws a strip
 - Panel: Profiles draws no strip
 - Panel: switching tabs re-renders without leaving the previous tab's widgets behind
-- Panel: the Master controls tab draws four pairs, Test mode beside Minimap button
+- Panel: the Master controls tab draws four pairs, Test mode beside Minimap button, then Sim mode
 - Panel: the Master controls tab closes with the composer's two reset buttons
 - Panel: the Statistic colors tab says where its colors are actually worn
 - Panel: every Windows entry sits under the Active window band, and General has no second picker
@@ -2951,6 +2959,7 @@ Total.
 | test_sim_drivers.lua | 9 |
 | test_sim_session.lua | 26 |
 | test_sim_e2e.lua | 13 |
+| test_sim_checkbox.lua | 5 |
 | test_launchersetup.lua | 56 |
 | test_launcher_skin_entry.lua | 2 |
 | test_lifecycle.lua | 40 |
@@ -3030,4 +3039,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2572** |
+| **Total** | **2577** |

@@ -30,7 +30,7 @@ secret-value rules the checks refer to.
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
-| SIM-1 to SIM-14 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run |
+| SIM-1 to SIM-15 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run, the Master controls Sim mode checkbox |
 | SKIN-1 to SKIN-50 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat, a stored pick of the deleted Friz |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
@@ -1776,6 +1776,16 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
   twice a second throughout, and a damage dealer dies about two thirds of the way into the boss. Run
   `raid`, `wipe` and `zone` too → every *Pull ...* row reads *(10 s)* and plays for about 10 seconds (the
   wipe's everyone-dead lands on its last tick). Result:
+- **SIM-15. The Sim mode checkbox (R6-SIM; LibKa0s R6-SIM-L, OptionsCompose minor 19).** Settings → General →
+  Master controls → **Sim mode** sits on its own line straight under *Minimap button* | *Test mode*. Tick it
+  → the same as a bare `/mm sim`: the status line prints and the step panel opens; Start a scenario → the
+  box reads ticked. Untick it → the simulation stops with its stop line and the windows show live data.
+  With the page open, `/mm sim start dungeon` → the box ticks at once; `/mm sim stop` → it unticks. Close
+  the settings, start a sim with `/mm sim start dungeon`, then open Master controls → the box is ticked.
+  Click the launcher's right-click *Sim mode* entry → the same panel as the box. With a sim running, pull
+  a training dummy → the sim stops and the box unticks. Tick it in combat → it stays unticked. With a sim
+  running, Reset all settings → the sim stops. `/reload` → the box is unticked. Fail: the box out of step
+  with the sim, a sim started on Reset all settings, or a Lua error. Result:
 
 ## SKIN
 
@@ -2076,4 +2086,4 @@ Owed: PANEL-59 (R4-RV), SKIN-44 (R4-RV2), WIN-56 (R4-SEP), SKIN-45 (R4-ZOOM) and
 
 Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-47 and SKIN-48 (R5-RV), WIN-57 (R5-MM1, R5-WIN), EXPORT-56 (R5-WIN), TIP-37 (R5-ICON), the owner's fifth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND5/`), each with an empty `Result:`.
 
-Owed: SKIN-49 (R6-RV) and SKIN-50 (R6-PV), the owner's sixth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND6/`), each with an empty `Result:`. SKIN-18 keeps its 2026-10-30 pass for what it checked then; its R6-PV amendment is checked by SKIN-50.
+Owed: SKIN-49 (R6-RV), SKIN-50 (R6-PV) and SIM-15 (R6-SIM), the owner's sixth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND6/`), each with an empty `Result:`. SKIN-18 keeps its 2026-10-30 pass for what it checked then; its R6-PV amendment is checked by SKIN-50.

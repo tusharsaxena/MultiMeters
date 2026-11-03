@@ -578,6 +578,16 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     -- all settings has always closed the console -- it used to by writing nil.
     testModePath     = "state.testMode",
     defaults         = { testMode = false, debugConsole = false },
+    -- Sim mode (R6-SIM, LibKa0s compose minor 19, options-ui-§15): the composer's own session-only
+    -- row, straight after Test mode, at its default path `state.sim`. The hooks are the SAME two
+    -- functions the launcher's Sim mode entry carries (core/LauncherSetup.lua, which loads before
+    -- this file), so ticking runs `/mm sim`'s own act -- the bare verb's status and step panel, from
+    -- which the fight starts -- and unticking stops a running sim. The row's get / set are the
+    -- composer's, built from the pair: it stores nothing, and its set toggles only when the value
+    -- differs from the live state, so Reset all settings (default false) stops a running sim and
+    -- never starts one. modules/Sim.lua's listener repaints the box when the sim moves elsewhere.
+    isSimMode        = NS.IsSimMode,
+    toggleSim        = NS.ToggleSim,
     -- The four new addon-wide settings live under `master.` rather than at the
     -- profile root, which is where every other grouped answer in this addon lives
     -- (`data.`, `minimap.`, `export.`) and what keeps `master.scale` from reading
@@ -597,6 +607,7 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
         debugConsole = L["Debug console"],
         testMode     = L["Test mode"],
         minimap      = L["Minimap button"],
+        simMode      = L["Sim mode"],
     },
     -- Resolved at CALL time, both of them. The popup is declared by
     -- settings/General.lua, which loads after this file. The registry is
@@ -725,6 +736,11 @@ dress(MASTER_ROWS, {
     -- and the combat ending call, and it repaints the panel so this box follows
     -- them -- and through the state writer otherwise, which is the sole sender of
     -- TEST_MODE_CHANGED either way.
+    -- Sim mode's box: the words only. Its get / set are the composer's, over the launcher's own
+    -- sim pair, and are left alone here.
+    ["state.sim"] = {
+        desc = L["Run the simulation, the same as /mm sim: ticking it opens the sim panel, which plays a scripted fight through every window, and unticking it stops the simulation. Nothing is saved. Combat, a group, an instance or a reload ends it."],
+    },
     ["state.testMode"] = {
         desc = L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."],
         get = function() return NS.State ~= nil and NS.State.testMode == true end,

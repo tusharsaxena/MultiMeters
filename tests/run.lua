@@ -307,6 +307,8 @@ local SUITES = {
     "test_sim_session",
     -- The four #60 scenarios end to end, stepped and auto-run (modules/SimScenario.lua, MM-16).
     "test_sim_e2e",
+    -- The Sim mode checkbox on Master controls (R6-SIM, LibKa0s compose minor 19).
+    "test_sim_checkbox",
     "test_launchersetup",
     "test_launcher_skin_entry",
     "test_lifecycle",

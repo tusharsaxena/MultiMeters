@@ -277,10 +277,11 @@ local PARTITION = {
     -- composed; the other three follow the set. §15 forbids reordering, renaming
     -- or splitting the canonical set; it does not forbid an addon's own rows after
     -- it, and the case below pins that the seven come FIRST and contiguous.
+    -- Master controls is nine since R6-SIM: the composer's Sim mode row (compose minor 19).
     -- Appearance is the eight skip-render skin rows (settings/Schema_Skin.lua): the group whose
     -- place the library's Skin tab takes, keyed "Appearance" because that is the key
     -- O.AppearanceTab answers.
-    general    = { { "Master controls", 8 }, { "Behavior", 3 }, { "Statistic colors", 8 },
+    general    = { { "Master controls", 9 }, { "Behavior", 3 }, { "Statistic colors", 8 },
                    { "Appearance", 8 } },
     -- The Windows rail's strips after item 020 (the settings-layout pass): Size and position
     -- leads Frame, the broadcasts are Quick style, one Bar tab per styled surface on Bars and
@@ -355,6 +356,8 @@ local MASTER_ROWS = {
     -- launcher-§3 puts LibDBIcon's table in the global one.
     { "global.minimap.shown", "Minimap button"     },
     { "state.testMode",     "Test mode"           },
+    -- R6-SIM (compose minor 19): Sim mode follows Test mode and opens the next line.
+    { "state.sim",          "Sim mode"            },
 }
 
 test("Schema: the General page opens on Master controls, holding exactly the canonical set",

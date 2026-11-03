@@ -1309,12 +1309,12 @@ The runtime's `resolveRoot` resolves that prefix against the window id a caller 
 none, against the session's **active window** — `NS.State.activeWindowId`, which the settings
 panel's window picker moves. Global rows keep absolute paths and resolve against `db.profile` — all
 but one: `global.minimap.shown` names its store because `launcher-§3` puts LibDBIcon's table in the
-global one, and its own get/set pair reaches it. There are thirty-one of them:
+global one, and its own get/set pair reaches it. There are thirty-two of them:
 `enabled`, `global.minimap.shown`, the four `master.*` controls (`options-ui-§15`'s addon-wide visibility, scale and alpha, and Lock frame,
 the session-only view over every window's own `frame.locked`), `data.mergePets`, `data.throttle`,
 `sim.stepDelay`, the four `export.*` preferences, the eight `statColors.*` swatches, the eight `skin.*` rows, and
-the two composed `sessionOnly` rows `state.testMode` and `state.debugConsole`. Those two and
-`master.locked` are the three session rows, whose own `get`/`set` are the whole of their storage. The
+the three composed `sessionOnly` rows `state.testMode`, `state.sim` and `state.debugConsole`. Those three and
+`master.locked` are the four session rows, whose own `get`/`set` are the whole of their storage. The
 other 158 rows are window rows.
 
 ```lua
@@ -1491,7 +1491,8 @@ there is no second inverted row to find.
 ### `sessionOnly` — exempt from validation, still rows
 
 `state.testMode` and `state.debugConsole`, both emitted by the `MasterControls` composer and dressed
-with their accessors in `settings/Schema_Compose.lua`, are never persisted, so they have no home in the defaults
+with their accessors in `settings/Schema_Compose.lua`, and `state.sim` (Sim mode, R6-SIM), whose accessors
+the composer builds from the launcher's own sim pair, are never persisted, so they have no home in the defaults
 tree and `NS.ValidateSchema` skips them. They are rows anyway because they belong on the page and in
 `/mm list` beside the settings they sit next to — a toggle that exists only in the panel is a toggle
 the CLI cannot reach. Their own `get` / `set` **are** the whole storage; the runtime's `Get` returns

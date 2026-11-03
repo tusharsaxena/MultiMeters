@@ -347,3 +347,14 @@ end
 -- Library absent: NS.Sim stays core/SimSetup.lua's inert stub, whose OnStop does nothing.
 
 for _, step in ipairs(STOP_STEPS) do NS.Sim:OnStop(step) end
+
+-- THE SIM MODE CHECKBOX FOLLOWS THE SESSION (R6-SIM, LibKa0s compose minor 19). The library tells its
+-- listeners whenever the session starts, gets ready, steps or stops, whoever started or stopped it:
+-- `/mm sim`, the step panel, the launcher's entry, the box itself or an auto-stop (combat, a group,
+-- an instance). An in-place scalar refresh re-reads the box on an open page; a hidden page re-reads
+-- it on its next show. Resolved at call time: settings/OptionsSetup.lua publishes NS.Helpers after
+-- this file loads. The stub's AddListener does nothing.
+NS.Sim:AddListener(function()
+    local H = NS.Helpers
+    if H and H.RefreshScalars then H.RefreshScalars() end
+end)

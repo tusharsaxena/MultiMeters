@@ -174,6 +174,26 @@ NS.BINDINGS = {
     { command = TOGGLE_COMMAND, tooltip = L["Shows or hides every meter window, as /mm toggle does."] },
 }
 
+-- THE SIM PAIR, ONE FOR EVERY SURFACE (R6-SIM, LibKa0s compose minor 19). The launcher's Sim mode
+-- entry below and the Sim mode checkbox on General > Master controls (settings/Schema_Compose.lua)
+-- take these SAME two functions, so the box, the menu entry and `/mm sim` are one act. Both read
+-- NS.Sim at CALL time: modules/Sim.lua replaces core/SimSetup.lua's stub long after this file
+-- loads. Declared ahead of the library-absent fork, because the checkbox wants them either way.
+
+--- Whether the simulation runs.
+--- @return boolean
+function NS.IsSimMode()
+    local s = NS.Sim
+    return type(s) == "table" and type(s.IsActive) == "function" and s:IsActive() == true
+end
+
+--- The typed verb's own acts: stop a running sim, otherwise the bare verb (status and the sim panel).
+function NS.ToggleSim()
+    local s = NS.Sim
+    if type(s) ~= "table" or type(s.RunVerb) ~= "function" then return end
+    s:RunVerb(s:IsActive() and "stop" or "")
+end
+
 if not Launcher then
     -- A missing vendored library must degrade, not error at load. The stub answers every member
     -- the addon reaches — `Register` from OnInitialize and `SetShown` from the write seam — plus
@@ -348,14 +368,11 @@ NS.Launcher = Launcher:New({
     isWindowShown  = isWindowShown,
     toggleWindow   = toggleWindows,
 
+    -- The sim pair the Master controls checkbox shares (see THE SIM PAIR above).
+    isSimMode      = NS.IsSimMode,
+    toggleSim      = NS.ToggleSim,
+
     -- The tooltip's title. The rest of the status block reads the accessors above.
-    isSimMode = function() local s = NS.Sim; return type(s) == "table" and type(s.IsActive) == "function" and s:IsActive() == true end,
-    toggleSim = function()
-        local s = NS.Sim
-        if type(s) ~= "table" or type(s.RunVerb) ~= "function" then return end
-        -- The typed verb's own acts: stop a running sim, otherwise the bare verb (status and the sim panel).
-        s:RunVerb(s:IsActive() and "stop" or "")
-    end,
     version        = version,
 
     -- Both resolved at CALL time rather than captured, so this file's correctness does not depend

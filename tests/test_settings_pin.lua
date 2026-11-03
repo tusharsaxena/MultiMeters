@@ -65,6 +65,8 @@ end
 -- meta pair, each default on (DECISIONS X3).
 -- sim.stepDelay (R3-SIM-MM, the owner's 2026-11-02 ruling) is a new setting too: the Simulation
 -- step delay slider the other sims have, 0.5 to 10 s in 0.5 s steps, 1 s out of the box.
+-- state.sim (R6-SIM, LibKa0s compose minor 19) is a new session row: the Sim mode checkbox beside
+-- Test mode, stored nowhere, its get / set the launcher's own sim pair.
 -- path|type|default|min|max|step|value keys|sessionOnly|hidden|invert
 local PIN = {
     "data.mergePets|bool|false|nil|nil|nil|-|false|false|false",
@@ -97,6 +99,7 @@ local PIN = {
     "statColors.HealingDone|color|{a=1,b=0.35,g=0.7,r=0.25}|nil|nil|nil|-|false|false|false",
     "statColors.Interrupts|color|{a=1,b=0.2,g=0.65,r=0.85}|nil|nil|nil|-|false|false|false",
     "state.debugConsole|bool|false|nil|nil|nil|-|true|false|false",
+    "state.sim|bool|false|nil|nil|nil|-|true|false|false",
     "state.testMode|bool|false|nil|nil|nil|-|true|false|false",
     "window.barTextureFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.barTexture|string|Ka0s Default|nil|nil|nil|Ka0s Classic,Ka0s Default,Ka0s Forge,Ka0s Glass Bar,Ka0s Gradient,Ka0s Matte,Ka0s Overline 1,Ka0s Overline 2,Ka0s Overline 4,Ka0s Parchment,Ka0s Satin,Ka0s Solid,Ka0s Underline 1,Ka0s Underline 2,Ka0s Underline 4|false|false|false",
