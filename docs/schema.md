@@ -1315,7 +1315,7 @@ the session-only view over every window's own `frame.locked`), `data.mergePets`,
 `sim.stepDelay`, the four `export.*` preferences, the eight `statColors.*` swatches, the eight `skin.*` rows, and
 the three composed `sessionOnly` rows `state.testMode`, `state.sim` and `state.debugConsole`. Those three and
 `master.locked` are the four session rows, whose own `get`/`set` are the whole of their storage. The
-other 158 rows are window rows.
+other 170 rows are window rows.
 
 ```lua
 -- settings/Schema_Paths.lua (abridged)

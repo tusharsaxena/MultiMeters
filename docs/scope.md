@@ -48,7 +48,7 @@ Retail only · English only.
 - **Cell drill-down** into a player's per-spell breakdown, rendered through the same row path as the
   grid, plus a hand-off to Blizzard's own death recap from the Deaths column.
 - **Pet folding** into owners, best-effort — see the caveat below.
-- **A three-page settings panel** (General, Windows, Profiles) driven by one 200-row schema, with
+- **A three-page settings panel** (General, Windows, Profiles) driven by one 202-row schema, with
   full `/mm` CLI parity for every schema-shaped operation.
 - **Visibility rules** per window — **show everywhere, hide nowhere** out of the box. Seven contexts
   (dungeon, raid, arena, battleground, delve, scenario, open world), all on by default; ten hide
@@ -57,7 +57,7 @@ Retail only · English only.
 - **AceDB profiles**, all characters starting on the shared `"Default"` profile.
 - **Test mode** (the General page's Master controls box, or `/mm test`; combat ends it) and an
   unlock/drag cycle, so a window can be laid out anywhere between pulls.
-- **A simulator** (`/mm sim`, LibKa0s-Sim-1.0, [issue #60](https://github.com/tusharsaxena/MultiMeters/issues/60)):
+- **A simulator** (`/mm sim`, the Master controls **Sim mode** box or the launcher's Sim mode entry, LibKa0s-Sim-1.0, [issue #60](https://github.com/tusharsaxena/MultiMeters/issues/60)):
   a scripted fight through the real meter engine, solo and outside an instance, in four scenarios
   (`dungeon`, `raid`, `wipe`, `zone`) with a step panel and a sim strip on every window. The group,
   the zones and the numbers are invented; nothing is saved or sent. Its design is
@@ -65,8 +65,8 @@ Retail only · English only.
   [data-flow.md](data-flow.md#10-the-simulator-path).
 - **A launcher** — one LibDataBroker object drawn as a minimap button and in any broker display,
   from `LibKa0s-Launcher-1.0`. Left-click opens the settings; right-click opens an options menu
-  with Enabled, Locked, Test mode and Show window, each running its slash verb (`launcher-§2`,
-  v2.67.0). Hovering it shows the library's status tooltip (version, Enabled, Locked, Test mode,
+  with Enabled, Locked, Test mode, Sim mode and Show window, each running its slash verb (`launcher-§2`,
+  v2.67.0; Sim mode since Launcher minor 7), then Open settings and Open skin selector. Hovering it shows the library's status tooltip (version, Enabled, Locked, Test mode,
   both click hints), disabled or not. Its visibility is the Master-controls **Minimap button** row, stored in the
   global store so a profile switch does not move it.
 - **A perf harness** (`/mm perf`) and an on-screen debug console (`/mm debug`), both LibKa0s's.
