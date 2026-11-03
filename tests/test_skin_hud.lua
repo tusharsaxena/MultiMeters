@@ -243,8 +243,8 @@ test("Skin HUD: the v20 step puts every window of every profile on the skin, kee
     -- The walk goes on to v21 (MM-A1's chrome reset, tests/test_skin_window.lua) and v22 (the font
     -- flags onto From skin, tests/test_skin_fonts.lua), which touch
     -- no companion this case reads.
-    assertEqual(NS.SCHEMA_VERSION, 25)
-    assertEqual(NS.db.global.schemaVersion, 25)
+    assertEqual(NS.SCHEMA_VERSION, 26)
+    assertEqual(NS.db.global.schemaVersion, 26)
     for _, name in ipairs({ "Default", "Raid" }) do
         for i, w in ipairs(NS.db.sv.profiles[name].windows) do
             local where = name .. " window " .. i
@@ -279,7 +279,7 @@ test("Skin HUD: the v20 reset runs once, so a pick made after it is kept", funct
     -- And across a reload: the stamp the first load wrote holds the step off.
     local saved = _G.MultiMetersDB
     local again = initWith(saved)
-    assertEqual(again.NS.db.global.schemaVersion, 25)
+    assertEqual(again.NS.db.global.schemaVersion, 26)
     assertEqual(again.NS.Database.FindWindow(1).bars.textureFromSkin, false, "a reload re-ran the reset")
     assertEqual(again.NS.Database.FindWindow(1).text.fontFromSkin, true)
 end)

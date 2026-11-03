@@ -88,8 +88,6 @@ local CHROMECOLOR_SORT     = SC.CHROMECOLOR_SORT
 local CHROMECOLOR_VALUES   = SC.CHROMECOLOR_VALUES
 local DEATHTIME_SORT       = SC.DEATHTIME_SORT
 local DEATHTIME_VALUES     = SC.DEATHTIME_VALUES
-local DIVIDERCOLOR_SORT    = SC.DIVIDERCOLOR_SORT
-local DIVIDERCOLOR_VALUES  = SC.DIVIDERCOLOR_VALUES
 local FRAME_BG_ROWS        = SC.FRAME_BG_ROWS
 local FRAME_BORDER_ROWS    = SC.FRAME_BORDER_ROWS
 local GROWTH_SORT          = SC.GROWTH_SORT
@@ -520,58 +518,9 @@ NS.Schema = {
         page = "header", group = L["Title bar"], subgroup = L["Background"],
         label = L["Use the skin's background"], desc = L["Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."],
     },
-    -- THE HAIRLINE BETWEEN THE TITLE BAR AND THE COLUMN LABELS, and the one piece
-    -- of the window's chrome that is a setting. It earns its keep when both
-    -- strips are drawn plainly and is a line across the window for nothing once
-    -- the title bar's own background is doing the separating -- which is a look,
-    -- so it is the player's call rather than a rule.
-    --
-    -- ON by default: it is what the window has always drawn, and a chrome
-    -- element that disappears on upgrade is a bug report.
-    --
-    -- THREE ROWS, NOT ONE, and the color mode below is where the interesting
-    -- part is. `NS.ApplySkin` tints `frame.divider` from LibKa0s-Core-1.0's shared
-    -- SKIN; the mode's shipped value, `skin`, does not read that table and write
-    -- it -- it writes NOTHING, leaving the library's tint standing. That is what
-    -- keeps standalone-windows intact through a per-window picker: the rule is
-    -- "never restate SKIN's values", and nothing here restates them.
-    {
-        path = "window.header.divider", type = "bool", default = true,
-        page = "header", group = L["Title bar"], subgroup = L["Divider"],
-        label = L["Show divider"],
-        desc = L["Draw the hairline between the title bar and the column labels."],
-    },
-    {
-        path = "window.header.dividerThickness", type = "number", default = 1,
-        min = 1, max = 8, step = 1, fmt = "%d px",
-        page = "header", group = L["Title bar"], subgroup = L["Divider"],
-        label = L["Divider thickness"],
-        desc = L["How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."],
-        validate = isNumberIn(1, 8),
-    },
-    {
-        -- A MID GRAY, and deliberately not the skin's own values. Seeding this
-        -- with SKIN.divider would be the copy standalone-windows forbids -- the
-        -- one that drifts a hex digit at a time and then has to be migrated -- and
-        -- it would also be a lie about what the row is: this is the color the
-        -- player CHOSE, and it is read only under `custom`, where the skin has
-        -- already been declined.
-        path = "window.header.dividerColor", type = "color",
-        default = { r = 0.5, g = 0.5, b = 0.5, a = 0.85 },
-        page = "header", group = L["Title bar"], subgroup = L["Divider"],
-        startsLine = true,
-        label = L["Divider color"],
-        desc = L["Color of the hairline under the title bar, used when the mode beside it is Custom color."],
-        classColorSource = "player",
-    },
-    {
-        path = "window.header.dividerColorMode", type = "string", default = "skin",
-        values = DIVIDERCOLOR_VALUES, sorting = DIVIDERCOLOR_SORT,
-        page = "header", group = L["Title bar"], subgroup = L["Divider"],
-        label = L["Divider color mode"],
-        classColorSource = "player",
-        desc = L["What colors the hairline. Ka0s skin leaves it to the shared collection skin, so a re-skin reaches this window along with the debug console and the perf panel; Class color is your own class."],
-    },
+    -- NO DIVIDER ROWS (R4-SEP, the owner's 2026-11-03 sign-off): no Ka0s window draws a line
+    -- under its title, so Show divider, its thickness, color and color mode are gone, and the
+    -- v25 -> v26 migration prunes what a profile stored for them.
     -- ── Title text ──────────────────────────────────────────────
     -- TWO MODES, NOT THREE, and the half that is missing is the interesting half.
     --

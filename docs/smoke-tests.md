@@ -22,7 +22,7 @@ secret-value rules the checks refer to.
 | PANEL-1 to PANEL-59 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-55 | [Windows and the header](#win) | Header controls, minimize, reset, divider, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
+| WIN-1 to WIN-56 | [Windows and the header](#win) | Header controls, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-34 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-36 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
@@ -133,7 +133,7 @@ secret-value rules the checks refer to.
 - **INSTALL-13. Upgrade from v17 (the 30px title bar).** On the first header-match build
   (`schemaVersion` 17), with two windows, leave the first window's Header → Title bar → Header height
   at the shipped 18 and set the second's to 24; log out, update and log in → the first window's
-  Header height reads 26 and its bar measures 30px from the frame's top edge to the divider (WIN-52);
+  Header height reads 26 and its bar measures 30px from the frame's top edge to the bar's bottom (WIN-52; no divider since R4-SEP);
   the second keeps 24; `/dump MultiMetersDB.global.schemaVersion` prints `21`. A first window still on
   the short bar means the v18 step did not reach it. (Amended by MM-05, 2026-10-29, the skinning rollout: the stamp is 20 since the v20 skin reset.)
   (Amended by MM-A1, 2026-10-29, the skinning rollout: the stamp is 21 since the v21 chrome reset.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: the stamp is 22 since the v22 font flags move.) Result: Owner reported pass, 2026-10-31
@@ -351,7 +351,7 @@ right. Open the panel with `/mm config`.
   on a fresh profile. **Bars**: Bar, Background, Border, Text content, Text style, Icons; none of the
   Row rows above appears on Bars (their paths are `window.rows.*`, and `/mm get window.rows.height`
   answers). **Header**: Title bar (Show title bar, Alignment, Header height, Header background, Use
-  the skin's background, then the divider rows), Title text (the face the window's name is drawn in: Font, Font size, Text color,
+  the skin's background; the divider rows are gone since R4-SEP), Title text (the face the window's name is drawn in: Font, Font size, Text color,
   Text color mode, Font outline, Text shadow; the name itself is typed on Windows → General), Controls,
   Button style (an *Icon* heading with Reveal controls on hover beside Control size; a *Color* heading
   with Control color and Control color mode on one line and Control hover color and Control hover
@@ -772,7 +772,7 @@ right. Open the panel with `/mm config`.
 - **WIN-4. The title never runs under a control.** At every **Control size** from 10 to 32 and with
   any combination hidden → the title stays clear of the strip. Result: pass (owner-marked 2026-10-10)
 - **WIN-5. The strip is centered.** The strip, the window name and the session line sit on one line,
-  centered in the title bar, with equal gaps above the row and below it to the divider. Change Header
+  centered in the title bar, with equal gaps above the row and below it to the bar's bottom (no divider since R4-SEP). Change Header
   → Title bar → **Header height**, Header → Title text → **Font size** and Header → Button style →
   **Control size** → all three stay on the shared line. Result: pass (owner-marked 2026-10-10)
 - **WIN-6. Exactly one control reveals.** Sweep the pointer along the strip, on an unlocked and on a
@@ -817,7 +817,8 @@ right. Open the panel with `/mm config`.
   thickness** grows it downward. **Divider color mode** ships as Skin (the line as the shared
   skin painted it); switch to Class color → your class; to Custom color → the swatch. With a low
   swatch opacity, switching between Custom and Class leaves the opacity alone. There is no
-  per-statistic mode. Result: pass (owner-marked 2026-10-30)
+  per-statistic mode. (Amended by R4-SEP, 2026-11-03: the divider and its four rows are gone, so this
+  check no longer applies; WIN-56 replaces it.) Result: pass (owner-marked 2026-10-30)
 - **WIN-19. The header background stops at the title bar.** Header → Title bar → untick **Use the
   skin's background**, set Title bar background to something loud and Columns → Header background →
   Background color to something else → two distinct bands, the second starting where the first ends.
@@ -932,10 +933,10 @@ right. Open the panel with `/mm config`.
   old shipped one) keeps it. Result: pass (owner-marked 2026-10-24)
 - **WIN-52. The title bar is DPS Race's height, the row on its midline (2026-10-24).** Same profile,
   a Multi Meters window beside Ka0s DPS Race's HUD (a window from before the update included: the v18
-  step moves it, INSTALL-13) → the two title bars are the same height, frame top to divider (30px);
+  step moves it, INSTALL-13) → the two title bars are the same height, frame top to the bar's bottom (30px; no divider since R4-SEP);
   the title, the session line (*Overall*) and every icon are centered on that bar's midline, with as
-  much room above as below; the drag strip answers anywhere in the bar down to the divider; the column
-  labels and rows start under the divider as before. Header → Title bar shows Header height 26. Set
+  much room above as below; the drag strip answers anywhere in the bar down to its bottom; the column
+  labels and rows start under the bar as before. Header → Title bar shows Header height 26. Set
   Header height to 8, 37 and 48 and Control size to 10 and 32 in turn → the row stays centered (a
   control taller than the bar hangs from the frame's top edge). The shipped 228px window shows ten
   rows, and dragging it down stops at 70px with the one row fully inside the frame. Result: pass (owner-marked 2026-10-24)
@@ -954,6 +955,16 @@ right. Open the panel with `/mm config`.
 - **WIN-55. The strips still sit under the title (FX-MM-PERF).** `PlaceTestStrip` lost a loop. With two windows, `/mm test` → the test strip
   sits under each title, inset by the padding on both sides. Change Header height while it shows → it moves with the title. `/mm test` off, `/mm sim` → the sim strip takes the same slot on
   every window, and the test strip is hidden. Result:
+- **WIN-56. No line under the title bar (R4-SEP).** Log in on a profile that had Header → Title bar →
+  Show divider on, with a Class or Custom divider color and a thickness of 4, then update → every meter
+  window draws no line between its title bar and the column labels, under every skin (pick Ka0s
+  Default, Obsidian, High Contrast and WoW Default in turn), and the title, the session line, the
+  controls and the column labels sit exactly where they did. Header → Title bar has no *Divider*
+  heading and no divider rows; `/mm list` names no `window.header.divider` path, and
+  `/dump MultiMetersDB.global.schemaVersion` prints `26`. Open the Export modal, `/mm debug` and its
+  copy window, and the first-run skin picker → none draws a line under its title. The Columns
+  editor's rule and the segment menu's divider above Current and Overall stay. Fail: a line under any
+  window title, a moved title row, or a Lua error. Result:
 
 ## VIS
 
@@ -1753,7 +1764,7 @@ also fails on a Lua error or a taint warning.
 What follows the skin, by surface family: the **meter window chrome** (its fill and its edge, the
 title bar background, the title and the session line, the header controls at rest and under the
 pointer, each while its color mode is *Skin* or, for the title bar, while **Use the skin's
-background** is ticked; the divider in its *Skin* mode, the notice and the empty state, the session
+background** is ticked; the notice and the empty state, the session
 line's dim notes, the TEST MODE word, the test and sim strips); the **HUD** (the faces of the title, the column labels, the cell text and the
 tooltip lines, and the bar texture and bar border style of the grid and the tooltip, each while its
 "Use the skin's ..." companion is ticked); the **tooltip lines** this addon writes (the GameTooltip
@@ -1820,7 +1831,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   pointer); its faces take the skin's own HUD face, every skin now having one (Obsidian Inter
   SemiBold, Azeroth Vollkorn Bold, Glass Nunito SemiBold, High Contrast Atkinson Bold, Ember Bitter
   Bold, WoW Midnight Philosopher Bold, WoW Forever Fira Sans SemiBold, WoW Default Friz Quadrata, Ka0s
-  Default Oxanium SemiBold), its bars the skin's texture, its divider the skin's line, the test
+  Default Oxanium SemiBold), its bars the skin's texture (and no divider, since R4-SEP), the test
   strip the skin's; the rows' hover wash, the alternating stripe (Rows → Alternating background), the
   gold "this row is you" edge and the white name of a classless row (a training dummy) take the
   skin's list hover, stripe, accent and highlight text; the bar colors and the column labels' colors
@@ -2030,4 +2041,4 @@ Owed: SKIN-43 (R3-FRIZ, 2026-11-02, the owner's third smoke round); the HUD face
 
 On 2026-11-02 the owner reported that every check on the smoke lists of the full skinning run and its smoke feedback batch (Ka0sAddonsCommonTasks `docs/2026-11-01-FULL_SKINNING/` and `docs/2026-11-01-SMOKE_FEEDBACK/`) passed, apart from DpsRace's clock font, the skinned look of the AceGUI Dropdown and the Ka0sMedia_Font and Ka0sMedia_Statusbar pickers, FadeNineSlice and IconBorder (`docs/2026-11-02-SMOKE_ROUND3/`, R3-SMOKE). Passed, recorded on each `Result:` line as `Passed (owner, 2026-11-02)`: DEGRADED-11, GRID-25, PANEL-54, SKIN-2, SKIN-5, SKIN-11, SKIN-28, SKIN-29, SKIN-30, SKIN-31, SKIN-32, SKIN-33, SKIN-35, SKIN-36, SKIN-37, SKIN-38, SKIN-39, SKIN-40, SKIN-41, SKIN-42, WIN-1 and WIN-49. Failed, re-opened as R3-L3 (IconBorder's 1 px outline and zoom) and recorded as `Failed (owner, 2026-11-02): re-opened as R3-L3`: SKIN-34. Still owed: SKIN-4, whose expected result the third smoke round itself changed after the owner's run.
 
-Owed: PANEL-59 (R4-RV) and SKIN-44 (R4-RV2), the owner's fourth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND4/`), each with an empty `Result:`.
+Owed: PANEL-59 (R4-RV), SKIN-44 (R4-RV2) and WIN-56 (R4-SEP), the owner's fourth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND4/`), each with an empty `Result:`.

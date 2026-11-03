@@ -62,10 +62,11 @@ local RGBA = NS.RGBA or function(_, dr, dg, db, da)
     return dr, dg, db, da
 end
 
--- How far up from the bottom of the tinted title band the divider hairline is
--- drawn. Named because two things depend on it agreeing: the divider itself, and
--- `TitleBandHeight`, which the title row is centered in and the drag strip spans.
-local DIVIDER_INSET = 2
+-- How far up from the bottom of the tinted title band the title bar a player sees
+-- ends (where a hairline divider was drawn until R4-SEP; no Ka0s window draws a
+-- line under its title now). Named because `TitleBandHeight`, which the title row
+-- is centered in and the drag strip spans, and the shipped 30px bar depend on it.
+local BAR_INSET = 2
 
 -- How much of the header the session line is allowed to run across, right to
 -- left. A constant rather than a measurement of the text inside it: this file
@@ -191,8 +192,8 @@ end
 --- CLASS DID NOT SURVIVE THE SAME ARGUMENT, and the note here used to say it had:
 --- that "class could only be the local player's, which the title bar is not about
 --- -- it names the window". What settled it the other way is that the rest of the
---- strip already wears it. The controls take a class color, and so does the
---- divider under them; a title that alone could not was the odd one out, and
+--- strip already wears it. The controls take a class color (and so did the
+--- divider under them, until R4-SEP removed it); a title that alone could not was the odd one out, and
 --- "the header is yours" is a perfectly good thing for a player to want a window
 --- to say. It is still the LOCAL player's class, because that is the only class a
 --- window-wide strip can mean.
@@ -283,12 +284,13 @@ end
 --- changes.
 ---
 --- WHICH BAND IT CENTERS IN, AND WHY IT IS NOT THE TITLE BAR'S OWN. What a player
---- sees as the title bar runs from the frame's TOP EDGE down to the divider — the
+--- sees as the title bar runs from the frame's TOP EDGE down to BAR_INSET above the
+--- band's bottom — the
 --- padding above it is not a margin to anyone looking at the window, because the
 --- backdrop is drawn behind it and there is no seam. Centering in the tinted band
 --- alone (`padding` .. `padding + titleHeight`) is arithmetically centered and
 --- optically wrong: it leaves the padding as dead space above the row and lands
---- the text hard against the divider, which is exactly what "everything is
+--- the text hard against the bar's bottom, which is exactly what "everything is
 --- anchored to the bottom" meant when it was reported.
 ---
 --- ANCHORED BY ITS MIDDLE, the way Ka0s DPS Race places its title (CENTER) and
@@ -317,17 +319,17 @@ function WindowProto:TitleRowMid(h)
     return -(gap + h / 2)
 end
 
---- How tall the title bar a player sees is: the frame's top edge down to the
---- divider hairline, which sits DIVIDER_INSET up from the bottom of the tinted
---- band. 6 padding + 26 bar - 2 = 30 shipped, Ka0s DPS Race's `TITLE_BAR_H`.
---- One number for the row's center, the divider and the drag strip, so the
---- three cannot disagree about where the bar ends. 0 with the header hidden.
+--- How tall the title bar a player sees is: the frame's top edge down to
+--- BAR_INSET up from the bottom of the tinted band. 6 padding + 26 bar - 2 = 30
+--- shipped, Ka0s DPS Race's `TITLE_BAR_H`. One number for the row's center and
+--- the drag strip, so the two cannot disagree about where the bar ends. 0 with
+--- the header hidden.
 ---
 --- @return number
 function WindowProto:TitleBandHeight()
     local layout = self.layout
     if layout.titleHeight <= 0 then return 0 end
-    return layout.padding + layout.titleHeight - DIVIDER_INSET
+    return layout.padding + layout.titleHeight - BAR_INSET
 end
 
 --- Where the header's two text lines must stop on the right: the frame padding,
@@ -424,7 +426,7 @@ function WindowProto:ApplyTitle()
     frame.title:SetTextColor(headerColor(header, self.skinLooks))
 end
 
---- The tinted block behind the header and the hairline that closes it off.
+--- The tinted block behind the header, and the drag strip over it.
 function WindowProto:ApplyHeaderStrip()
     local header = self.config.header or {}
     local layout = self.layout
@@ -454,63 +456,18 @@ function WindowProto:ApplyHeaderStrip()
     self.headerBG:SetShown(layout.titleHeight > 0)
 
     -- The drag strip covers exactly the title bar a player sees: the frame's top
-    -- edge down to the divider. It used to be `titleHeight` tall, which left the
-    -- bottom `padding - DIVIDER_INSET` pixels of the bar (4 shipped) dead to a
+    -- edge down to TitleBandHeight. It used to be `titleHeight` tall, which left the
+    -- bottom `padding - BAR_INSET` pixels of the bar (4 shipped) dead to a
     -- drag. Sized from the layout like every other coordinate — never measured
     -- off the title FontString.
     local band = self:TitleBandHeight()
     self.dragBar:SetHeight(band > 0 and band or 1)
     self.dragBar:SetShown(layout.titleHeight > 0)
 
-    -- THE HAIRLINE UNDER THE TITLE BAR, and the one piece of the window's chrome
-    -- a player can switch off. It separates the title strip from the column
-    -- labels under it, which is worth having when both are drawn and is a line
-    -- across the window for nothing when the title bar's own background already
-    -- separates them.
-    --
-    -- ITS COLOR IS THE SKIN'S UNTIL THE PLAYER SAYS OTHERWISE, and `skin` is the
-    -- shipped mode. That mode does not resolve a color and then write it -- it
-    -- writes NOTHING, leaving whatever `NS.ApplySkin` put on the texture a few
-    -- lines earlier in ApplyConfig. That is the whole of how standalone-windows
-    -- is honored here: the shared value is never copied into this file, never
-    -- stored in a profile and never migrated, so a re-skin lands on this window
-    -- along with the debug console and the perf panel exactly as before.
-    --
-    -- The two override modes follow `frame.title`'s precedent one screen up:
-    -- ApplySkin owns the accent, and a setting that claims to govern it writes
-    -- after the library rather than instead of it.
-    --
-    -- The TITLE ROW DOES NOT MOVE when it is switched off. `TitleRowMid` centers
-    -- the row in the space above DIVIDER_INSET, which is a constant and not a
-    -- measurement of this texture -- so hiding the line leaves every other thing
-    -- in the header exactly where it was, which is what a player toggling it
-    -- expects and the opposite of what a measured layout would have done.
-    if frame.divider then
-        frame.divider:ClearAllPoints()
-        local dy = -band
-        frame.divider:SetHeight(header.dividerThickness or 1)
-        frame.divider:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, dy)
-        frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, dy)
-
-        -- ONE read of the swatch, and the ALPHA comes off it in both override
-        -- modes. A class color has no alpha of its own, and inventing one here
-        -- would mean the opacity silently changed when the mode did -- the same
-        -- rule modules/Row.lua's text colors keep: the configured alpha survives
-        -- every mode.
-        local mode = header.dividerColorMode or "skin"
-        local dr, dg, db, da = RGBA(header.dividerColor, 0.5, 0.5, 0.5, 0.85)
-        if mode == "class" then
-            -- An unknown class is NOT a tenth color and not a guess: it leaves
-            -- the skin's tint standing, which is what `skin` mode does and the
-            -- only other answer this row has.
-            local cr, cg, cb = PlayerClassRGB()
-            if cr then frame.divider:SetColorTexture(cr, cg, cb, da) end
-        elseif mode == "custom" then
-            frame.divider:SetColorTexture(dr, dg, db, da)
-        end
-
-        frame.divider:SetShown(layout.titleHeight > 0 and header.divider ~= false)
-    end
+    -- NO LINE UNDER THE TITLE BAR (R4-SEP, the owner's 2026-11-03 sign-off: every
+    -- window of every Ka0s addon, like the Ka0s Skin Tester's showroom). The
+    -- hairline and its four settings (Show divider, thickness, color, color mode)
+    -- are gone; the v25 -> v26 migration prunes what a profile stored for them.
 end
 
 --- The right-hand line of the header strip. Only its widget is placed here —

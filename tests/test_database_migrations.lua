@@ -1013,3 +1013,30 @@ test("Database: v23 -> v24 turns a stored window's title alignment off the skin,
     assertEqual(inst.NS.Database.FindWindow(1).header.alignFromSkin, false)
     assertEqual(inst.NS.db.sv.profiles.Raid.windows[2].header.alignFromSkin, false)
 end)
+
+test("Database: v25 -> v26 prunes the title bar divider's four keys from every stored window", function()
+    -- R4-SEP: no window draws a line under its title, so the divider's settings are gone and what a
+    -- profile stored for them is pruned, whatever it held (AceDB never removes what defaults stopped
+    -- naming). red under: no v25 -> v26 step, one that walks only the active profile, one that
+    -- trips on a junk window or a header that is not a table, or one that takes a neighbor key.
+    local inst = preSeeded({
+        profiles = {
+            Default = { windows = { { id = 1, name = "A", header = { divider = true, dividerThickness = 4,
+                dividerColorMode = "class", dividerColor = { r = 1, g = 0, b = 0, a = 1 }, height = 26 } } } },
+            Raid    = { windows = { "junk", { id = 7, name = "R", header = "junk" },
+                { id = 8, name = "S", header = { divider = false, dividerColorMode = "custom" } } } },
+        },
+        global = { schemaVersion = 25 },
+    })
+    local ns = inst.NS
+    assertEqual(ns.SCHEMA_VERSION, 26)
+    assertEqual(ns.db.global.schemaVersion, 26)
+    local a = ns.Database.FindWindow(1).header
+    local s = ns.db.sv.profiles.Raid.windows[3].header
+    for _, key in ipairs(ns.Database.DIVIDER_KEYS) do
+        assertNil(a[key], "Default: header." .. key .. " survived")
+        assertNil(s[key], "Raid: header." .. key .. " survived")
+    end
+    assertEqual(a.height, 26, "a neighbor key was taken with them")
+    assertEqual(#ns.Database.DIVIDER_KEYS, 4)
+end)

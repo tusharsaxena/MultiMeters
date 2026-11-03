@@ -1043,6 +1043,24 @@ migrations[24] = function(db)
     end
 end
 
+-- The title bar divider's stored keys, pruned by the v25 -> v26 step (R4-SEP).
+Database.DIVIDER_KEYS = { "divider", "dividerThickness", "dividerColorMode", "dividerColor" }
+
+--- v25 -> v26: NO LINE UNDER THE TITLE (R4-SEP, the owner's 2026-11-03 sign-off: no window of any
+--- Ka0s addon draws a separator under its header, like the Ka0s Skin Tester's showroom). The
+--- divider and its four settings are gone, so a stored window's `header.divider`,
+--- `dividerThickness`, `dividerColorMode` and `dividerColor` are pruned, whatever they held: AceDB
+--- merges defaults in and never removes what they stopped naming. Every profile, a junk entry
+--- skipped. Idempotent.
+migrations[25] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        eachWindow(profile, function(w)
+            if type(w.header) ~= "table" then return end
+            for _, key in ipairs(Database.DIVIDER_KEYS) do w.header[key] = nil end
+        end)
+    end
+end
+
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every
 --- profile swap, and is a no-op once at the current version.
 function NS:RunMigrations()

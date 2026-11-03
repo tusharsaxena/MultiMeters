@@ -281,7 +281,7 @@ Total.
 - Database: the profile a swap lands on is migrated and normalized before anything reads it
 - Database: a profile RESET re-seeds rather than leaving an empty registry
 
-### test_database_migrations.lua (49)
+### test_database_migrations.lua (50)
 
 - Database: RunMigrations stamps and holds the current schema version
 - Database: the schema version is account-wide, not per-profile
@@ -332,6 +332,7 @@ Total.
 - Database: v13 -> v14 walks every saved profile, not just the active one
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 - Database: v23 -> v24 turns a stored window's title alignment off the skin, once
+- Database: v25 -> v26 prunes the title bar divider's four keys from every stored window
 
 ### test_migrations.lua (17)
 
@@ -1300,14 +1301,11 @@ Total.
 
 - modules/Window.lua reads geometry back off the anchor and nothing else
 
-### test_window_header.lua (63)
+### test_window_header.lua (60)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
-- The title-bar divider can be switched off, and does not move the title row
-- The divider's thickness is a setting
-- The divider's SKIN mode writes no color at all, so a re-skin still reaches it
-- The divider takes a custom color and a class color, keeping the configured alpha
+- No line under the title bar, and the title row sits where it did (R4-SEP)
 - The header folds its parts with `..`, and survives a secret piece
 - The header line says which fight, and stays out of the way otherwise
 - Show segment off leaves the header line blank again
@@ -2908,7 +2906,7 @@ Total.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 28 |
-| test_database_migrations.lua | 49 |
+| test_database_migrations.lua | 50 |
 | test_migrations.lua | 17 |
 | test_diagnostics.lua | 35 |
 | test_diagnostics_deathrecap.lua | 31 |
@@ -2944,7 +2942,7 @@ Total.
 | test_window.lua | 49 |
 | test_window_layout.lua | 18 |
 | test_window_static.lua | 1 |
-| test_window_header.lua | 63 |
+| test_window_header.lua | 60 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 44 |
 | test_window_lifecycle.lua | 9 |
@@ -3004,4 +3002,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2550** |
+| **Total** | **2548** |

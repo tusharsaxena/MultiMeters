@@ -282,10 +282,14 @@ function WindowProto:BuildFrame()
     -- Closing is therefore an explicit act: the X in the header, or `/mm toggle`.
     -- The frames are still NAMED, because a name is what `/framestack` and any
     -- other addon needs to talk about them.
-    -- The title and divider members are assigned BEFORE the skin so the Shell
-    -- can tint them. Their colors are deliberately never set here: the skin's
-    -- tokens are the contract, and a matching literal in this file is the copy
-    -- that goes stale one hex digit at a time (standalone-windows).
+    -- The title member is assigned BEFORE the skin so the Shell can tint it. Its
+    -- color is deliberately never set here: the skin's tokens are the contract,
+    -- and a matching literal in this file is the copy that goes stale one hex
+    -- digit at a time (standalone-windows).
+    --
+    -- NO `frame.divider`: no Ka0s window draws a line under its title (R4-SEP,
+    -- the owner's 2026-11-03 sign-off, like the Ka0s Skin Tester's showroom). The
+    -- title bar's own band is what separates it from the column labels.
     frame.title = frame:CreateFontString(nil, "OVERLAY")
     -- A font before the Shell paints it: the client gives a template-less FontString an invalid
     -- size until one is set, and the Shell scales the title's own size into the skin's font.
@@ -293,14 +297,10 @@ function WindowProto:BuildFrame()
     frame.title:SetFontObject("GameFontNormal")
     frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -5)
 
-    frame.divider = frame:CreateTexture(nil, "ARTWORK")
-    frame.divider:SetHeight(1)
-
-    -- The header strip's own background (`header.bgColor`). On the BORDER layer:
-    -- above the backdrop's bgFile, which is BACKGROUND, and below the divider,
-    -- which is ARTWORK — so the strip tints without swallowing the line under
-    -- it. Built here rather than on first use so moving the setting re-colors a
-    -- texture that already exists instead of creating one mid-frame.
+    -- The header strip's own background (`header.bgColor`). On the BORDER layer,
+    -- above the backdrop's bgFile, which is BACKGROUND. Built here rather than on
+    -- first use so moving the setting re-colors a texture that already exists
+    -- instead of creating one mid-frame.
     --
     -- Not a member of `frame`: the skin walks a fixed set of frame keys and an
     -- extra one is a key it has never heard of.

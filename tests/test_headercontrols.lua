@@ -141,24 +141,25 @@ end)
 
 test("HeaderControls: the strip is CENTERED in the title bar", function()
     -- Centered in what a player SEES as the title bar -- the frame's top edge down
-    -- to the divider -- rather than in the tinted band alone. Centering in the
+    -- to the bar's bottom -- rather than in the tinted band alone. Centering in the
     -- band leaves the padding above as dead space and lands the row against the
-    -- divider, which is what "everything is anchored to the bottom" meant.
+    -- bar's bottom, which is what "everything is anchored to the bottom" meant.
     -- red under: y = -(padding - 1), and again under -(padding + (title - h)/2).
     local _, window = scene(function(cfg)
         cfg.frame.padding = 6
         cfg.header.height = 26
         cfg.frame.controlSize = 16
     end)
-    -- 6 padding + 26 bar - 2 to the divider = 30 visible; a 16px slot 7 down.
+    -- 6 padding + 26 bar - 2 to the bar's bottom = 30 visible; a 16px slot 7 down.
     assertEqual(midOf(window.controls.settings), -15)
 end)
 
 test("HeaderControls: the shipped bar is DPS Race's 30px, centered on its midline", function()
-    -- Ka0s DPS Race: a 30px title bar (Style.TITLE_BAR_H), the divider at -30,
-    -- the title anchored CENTER and the controls RIGHT at -30 / 2. Shipped here:
-    -- 6 padding + 26 header.height - 2 = 30, so the title, the session line and
-    -- every control share the midline -15 and the divider sits at -30.
+    -- Ka0s DPS Race: a 30px title bar (Style.TITLE_BAR_H), the title anchored
+    -- CENTER and the controls RIGHT at -30 / 2. Shipped here: 6 padding + 26
+    -- header.height - 2 = 30, so the title, the session line and every control
+    -- share the midline -15 and the drag strip covers the 30px. No line under it
+    -- (R4-SEP).
     -- red under: header.height = 18 in defaults/Profile.lua (a 22px bar, -11).
     local _, window, cfg = scene()
     assertEqual(cfg.header.height, 26)
@@ -170,8 +171,7 @@ test("HeaderControls: the shipped bar is DPS Race's 30px, centered on its midlin
     for _, key in ipairs({ "close", "minimize", "lock", "settings" }) do
         assertEqual(midOf(window.controls[key]), -15, key .. " is off the midline")
     end
-    local _, _, _, _, dy = window.frame.divider:GetPoint(1)
-    assertEqual(dy, -30, "the divider is not at the bottom of the 30px bar")
+    assertEqual(window.frame.divider, nil, "a line under the title bar (R4-SEP)")
     assertEqual(window.dragBar:GetHeight(), 30, "the drag strip stops short of the bar")
 end)
 

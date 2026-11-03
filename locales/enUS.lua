@@ -137,7 +137,6 @@ L["Statistic colors"] = "Statistic colors"
 -- "Background" and "Border" are not repeated here: they are already declared
 -- below, and one key is one string whichever surface asks for it. Since item 020
 -- they are subsection headings on Bars > Bar and Tooltip > Bar.
-L["Divider"] = "Divider"
 L["Layout"] = "Layout"
 L["Color"] = "Color"
 L["Icon"] = "Icon"
@@ -382,18 +381,6 @@ L["Title bar background"] = "Title bar background"
 L["Use the skin's background"] = "Use the skin's background"
 L["Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."] =
     "Draw the title bar in the skin's title bar color. The color above is kept but not read while this is on."
-L["Show divider"] = "Show divider"
-L["Draw the hairline between the title bar and the column labels."] =
-    "Draw the hairline between the title bar and the column labels."
-L["Divider thickness"] = "Divider thickness"
-L["Divider color mode"] = "Divider color mode"
-L["What colors the hairline. Ka0s skin leaves it to the shared collection skin, so a re-skin reaches this window along with the debug console and the perf panel; Class color is your own class."] =
-    "What colors the hairline. Ka0s skin leaves it to the shared collection skin, so a re-skin reaches this window along with the debug console and the perf panel; Class color is your own class."
-L["Divider color"] = "Divider color"
-L["Color of the hairline under the title bar, used when the mode above is Custom color."] =
-    "Color of the hairline under the title bar, used when the mode above is Custom color."
-L["How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."] =
-    "How thick the hairline under the title bar is, in pixels. It grows downward, into the gap above the column labels."
 L["Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header. Not read while Use the skin's background is on."] =
     "Color drawn behind the title bar. The column-header strip has its own, under Windows > Columns > Column header. Not read while Use the skin's background is on."
 L["Text alignment"] = "Text alignment"

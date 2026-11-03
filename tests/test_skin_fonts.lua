@@ -185,8 +185,8 @@ test("Skin fonts: the v22 step moves every stored old-default flag onto From ski
         global   = { schemaVersion = 21 },
     })
     local NS = inst.NS
-    assertEqual(NS.SCHEMA_VERSION, 25)
-    assertEqual(NS.db.global.schemaVersion, 25)
+    assertEqual(NS.SCHEMA_VERSION, 26)
+    assertEqual(NS.db.global.schemaVersion, 26)
     for _, name in ipairs({ "Default", "Raid" }) do
         local w = NS.db.sv.profiles[name].windows[1]
         for _, d in ipairs(OLD_DEFAULTS) do
@@ -335,7 +335,7 @@ test("Skin fonts: the v25 step moves a stored Ka0s Friz Quadrata TT to Ka0s Ubun
         global   = { schemaVersion = 24 },
     })
     local NS = inst.NS
-    assertEqual(NS.db.global.schemaVersion, 25)
+    assertEqual(NS.db.global.schemaVersion, 26)
     local d, r = NS.db.sv.profiles.Default, NS.db.sv.profiles.Raid
     assertEqual(d.windows[1].font, "Ka0s Ubuntu", "a window's font")
     assertEqual(d.windows[1].text.font, "Ka0s Ubuntu", "a nested font")

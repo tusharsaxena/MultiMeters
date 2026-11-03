@@ -90,12 +90,13 @@ the shipped v1 shape to v25. Each is one line of the header block at the top of
 | v22 → v23 | the HUD's colors, borders and shadows onto the skin (FS-MM-FLIP, the owner's rulings of 2026-11-01): every window of every profile has every companion in `Database.FOLLOW_ONCE_KEYS` set and its five font flags From skin, once per profile, recorded in `skin.fullSkinReset`. `Skin.FollowOnce` is the gate, handed no keys, and each window takes `Skin.ResetToSkin` itself, because the dotted walk cannot enter the numeric `windows` array. The runner calls the gate for the active profile on every pass, so a profile made after the stamp takes it too. Stored picks and colors stay, for a player who turns a companion off. |
 | v23 → v24 | the title's alignment off the skin (SF-MM-1): every stored window's `header.alignFromSkin` is set false, so titles left-align. |
 | v24 → v25 | the deleted Friz becomes Ka0s Ubuntu (R3-FRIZ): LibKa0s v1.85.0 deleted `Ka0s Friz Quadrata TT` (R3-L7) and WoW Default draws `Ka0s Ubuntu` in its place (R3-L6). `Database.RetireFonts` moves every stored string naming the deleted face, at any depth (a window's fonts, the skin's Font override), to `Ka0s Ubuntu` in every profile. Blizzard's own `Friz Quadrata TT` stays. |
+| v25 → v26 | no line under the title (R4-SEP, the owner's 2026-11-03 sign-off): the title bar divider and its four settings are gone, so every stored window of every profile has `header.divider`, `dividerThickness`, `dividerColorMode` and `dividerColor` (`Database.DIVIDER_KEYS`) pruned, whatever they held. |
 
-Adding a v26 is two edits and no bootstrap change:
+Adding a v27 is two edits and no bootstrap change:
 
 ```lua
-migrations[25] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
-local CURRENT_DB_VERSION = 26               -- core/Database.lua
+migrations[26] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
+local CURRENT_DB_VERSION = 27               -- core/Database.lua
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -619,8 +620,8 @@ either alone. `text.shadow` keeps its long-standing `true`.
 | `position` | `{ point="CENTER", relativePoint="CENTER", x=0, y=0 }` | **not a schema row** — named non-setting state, see below |
 
 The chrome itself is the skin's: `LibKa0s-Core-1.0`'s `ApplySkin` builds it and, since the
-2026-10-29 skinning rollout, the owner's `S.Shell` (no top bar) paints it in this addon's skin,
-tinting `frame.divider` on its own. With `borderColorMode = "skin"` the Shell also draws the edge; under
+2026-10-29 skinning rollout, the owner's `S.Shell` (no top bar) paints it in this addon's skin. No
+line is drawn under the title (R4-SEP): the window builds no `frame.divider`. With `borderColorMode = "skin"` the Shell also draws the edge; under
 `class` or `custom` it draws none and `ApplyBorder` lays the player's LSM edge over it, the inner rule
 shown with that edge taking the skin's `win.inner`. Either way the fill is set last, from its own
 mode, and the whole is laid again after every skin change (`WindowManager:Reskin`).
@@ -669,7 +670,7 @@ cannot be told apart from a deliberate choice of it; the step takes it for the s
 player who had picked exactly those values sets them again on the Header tab.
 
 **`height = 26` makes the bar Ka0s DPS Race's 30px.** What a player sees as the title bar runs from the
-frame's top edge to the divider: `padding` (6) + `height` (26) − `DIVIDER_INSET` (2) = 30, DPS Race's
+frame's top edge to the bar's bottom: `padding` (6) + `height` (26) − `BAR_INSET` (2) = 30, DPS Race's
 `Style.TITLE_BAR_H`. It shipped 18 (a 22px bar) until 2026-10-24. `migrations[17]` (v17 → v18) moves a
 stored 18 to 26 in every window of every profile, by the same rule as v17: a stored old default is
 taken for the default, and any other height is the player's. The taller bar comes out of the rows, not
@@ -863,37 +864,17 @@ Each is anchored by its **middle** — the title `LEFT`/`RIGHT`, the session lin
 `RIGHT` at half its bar; a FontString is as tall as its font's line rather than its point size, so a
 top anchor centered a box the text never filled. The gap above each box is floored, so every edge
 lands on a whole pixel and an odd box sits half a pixel above the midline. `Window:TitleBandHeight`
-(padding + height − 2, 30 shipped) is the one number the midline, the divider and the drag strip are
-all placed from.
-The band it centers in runs from the frame's **top edge** down to the divider, not the tinted band
+(padding + height − 2, 30 shipped) is the one number the midline and the drag strip are both placed
+from.
+The band it centers in runs from the frame's **top edge** down to the bar's bottom, not the tinted band
 alone: the padding above is not a margin to anyone looking at the window, so centering in the band
-leaves it as dead space above the row and lands the text against the divider. Nothing in the title
+leaves it as dead space above the row and lands the text against the bar's bottom. Nothing in the title
 bar is anchored to a hand-picked offset any more.
 
-`divider = true` · `dividerThickness = 1` · `dividerColorMode = "skin"` ·
-`dividerColor = { r=0.5, g=0.5, b=0.5, a=0.85 }` — the hairline between the title bar and the column
-labels, and the one piece of the window's chrome a player can switch off outright. Hiding it moves
-nothing else: `TitleRowMid` centers the title row against the `DIVIDER_INSET` constant rather than
-against the texture.
-
-**`skin` is the shipped mode, and it writes nothing.** It does not resolve `SKIN.divider` and apply
-it — it leaves the texture exactly as the skin painted it (`NS.ApplySkin`, then the owner's `S.Shell`).
-That is how a per-window color picker coexists with `standalone-windows`: the shared value is never
-copied into this repo, never stored in a profile, and never has to be migrated when it changes, so a
-re-skin still reaches this window along with the debug console and the perf panel. The two override
-modes — `class` (yours) and `custom` — follow `frame.title`'s precedent one screen up: `ApplySkin`
-owns the accent, and a setting that claims to govern it writes *after* the library rather than
-instead of it. An unknown class leaves the skin's tint standing rather than inventing a color.
-
-The **custom swatch is a mid gray, deliberately not `SKIN.divider`'s values** — seeding it from there
-would be exactly the copy the rule forbids, and it would misdescribe the row besides: it is only ever
-read under `custom`, where the skin has already been declined. The configured **alpha survives the
-mode**, the same rule the cell text keeps: a class color carries none of its own and takes the
-swatch's, so changing the mode never silently changes the opacity.
-
-There is deliberately **no `stat` mode**, for the reason the header's other surfaces have none: the
-divider is one line across the whole window, so "per statistic" could only paint it the sort column's
-color — a fact already on screen twice over.
+**No divider.** The hairline between the title bar and the column labels, and its four keys
+(`divider`, `dividerThickness`, `dividerColorMode`, `dividerColor`), are gone (R4-SEP, the owner's
+2026-11-03 sign-off: no window of any Ka0s addon draws a line under its header, like the Ka0s Skin
+Tester's showroom). `migrations[25]` (v25 → v26) prunes them from every stored window.
 
 `showMinimize` · `showLock` · `showSettings` · `showSegment` · `showReset` · `showExport` — all
 `true`. Six of the seven controls; `closeButton` is the seventh and deliberately keeps its older
@@ -1417,7 +1398,7 @@ group        section heading inside the page, AND the tab label on a tabbed page
              `rowsForPage` drops hidden rows before grouping runs.
 subgroup     a heading drawn INSIDE a tab, whenever the value CHANGES within a
              group (options-ui-§7). It names the KIND of control a mixed tab is
-             holding -- Background, Border, Divider, Layout, Icon, Color, Opacity,
+             holding -- Background, Border, Layout, Icon, Color, Opacity,
              All surfaces -- never a repeat of its own tab's name, and never a
              second tab level. Like a group it must be CONTIGUOUS, or its heading
              prints twice. Four tabs carry them; the rest hold one kind of control

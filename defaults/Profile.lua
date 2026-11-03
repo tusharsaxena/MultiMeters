@@ -103,12 +103,11 @@ local WINDOW_TEMPLATE = {
     -- library owns the backdrop and its border. What IS configurable is the
     -- geometry, the backdrop fill, and the border the player picks from LSM.
     --
-    -- The two SKIN ACCENTS are a different case and both are configurable, under
-    -- `header` below: `frame.title` takes the header text color, and
-    -- `frame.divider` takes `header.dividerColorMode`, whose shipped value leaves
-    -- the library's tint alone entirely. The rule they honor is "never RESTATE
-    -- SKIN's values" -- not "never let a player choose" -- and neither of them
-    -- copies a value out of that table.
+    -- The SKIN ACCENT is a different case and is configurable, under `header`
+    -- below: `frame.title` takes the header text color. The rule it honors is
+    -- "never RESTATE SKIN's values" -- not "never let a player choose" -- and it
+    -- copies no value out of that table. (The second accent, `frame.divider`, is
+    -- gone: no Ka0s window draws a line under its title, R4-SEP.)
     frame = {
         -- Derived from the grid rather than chosen: the name column, six default
         -- stat columns at Const.COLUMN_WIDTH, the seams between them and the
@@ -252,7 +251,7 @@ local WINDOW_TEMPLATE = {
         color           = { r = 1, g = 0.82, b = 0, a = 1 },  -- Blizzard gold
         align           = "LEFT",      -- LEFT | CENTER | RIGHT
         alignFromSkin   = false,       -- the skin's `title.align` (cause L9); OFF: the title sits LEFT (SF-MM-1)
-        -- 26, so the bar a player sees -- frame top to divider, 6 padding + 26
+        -- 26, so the bar a player sees -- frame top to the bar's bottom, 6 padding + 26
         -- - 2 -- is Ka0s DPS Race's 30px title bar (`Style.TITLE_BAR_H`). It
         -- shipped 18 (a 22px bar) until 2026-10-24.
         height          = 26,
@@ -260,24 +259,10 @@ local WINDOW_TEMPLATE = {
         -- "Use the skin's background" (MM-A1, DECISIONS D3): `title.bg` while on,
         -- the swatch above kept but not read.
         bgColorFromSkin = true,
-        -- The hairline between the title bar and the column labels. ON, because
-        -- it is what the window has always drawn and a chrome element that
-        -- vanishes on upgrade is a bug report.
-        --
-        divider          = true,
-        dividerThickness = 1,
-        -- SKIN, not a color. `skin` means *leave the texture alone*, so whatever
-        -- LibKa0s-Core-1.0's ApplySkin wrote stands -- which is how a re-skin
-        -- still reaches this window along with the debug console and the perf
-        -- panel (standalone-windows). The shared value is never copied here,
-        -- never stored in a profile, and never needs migrating when it changes.
-        dividerColorMode = "skin",       -- skin | class | custom
-        -- A MID GRAY, and deliberately NOT SKIN.divider's values: seeding it from
-        -- there would be exactly the copy the rule above exists to prevent. It is
-        -- read only under `custom`, where the skin has already been declined, so
-        -- it is a starting point for a picker rather than a claim about the
-        -- collection's look.
-        dividerColor     = { r = 0.5, g = 0.5, b = 0.5, a = 0.85 },
+        -- No divider keys: the hairline between the title bar and the column
+        -- labels is gone (R4-SEP, the owner's 2026-11-03 sign-off), and the
+        -- v25 -> v26 migration prunes `divider`, `dividerThickness`,
+        -- `dividerColorMode` and `dividerColor` from stored windows.
     },
 
     -- -----------------------------------------------------------------------

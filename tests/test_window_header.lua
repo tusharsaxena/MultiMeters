@@ -5,7 +5,7 @@
 -- Peeled out of tests/test_window.lua alongside the module it mirrors. This is
 -- the band across the top of a window and everything the player clicks in it:
 -- the padlock and the gear, the title text and its two color modes, the
--- hairline divider, the header LINE that says which fight is on screen, the
+-- absence of any line under the title (R4-SEP), the header LINE that says which fight is on screen, the
 -- per-column header buttons (the arrow that marks the sort is proved in the
 -- sort file), the segment picker, the notice text, and the minimize collapse
 -- that takes the whole body away and leaves this strip behind.
@@ -152,91 +152,29 @@ test("The padlock toggles THIS window only", function()
     assertEqual(other.frame.locked, true, "the other window did not move")
 end)
 
-test("The title-bar divider can be switched off, and does not move the title row", function()
-    -- The one piece of the window's chrome a player can hide. What matters as much
-    -- as the hiding is that NOTHING ELSE MOVES: TitleRowMid centers the title row
-    -- against the DIVIDER_INSET constant, not against this texture, so a hidden
-    -- line leaves the title, the session line and the control strip exactly where
-    -- they were. A layout that measured the divider would shift all three.
-    -- It reads the anchors ApplyConfig actually SET, not TitleRowMid: that pure
-    -- function never sees the divider, so comparing it with itself proved nothing.
-    -- red under: gating the title row on the divider, or hiding it by height 0,
-    -- or any placement (title, session line, controls) offset by the divider.
-    local _, window, cfg = scene()
+test("No line under the title bar, and the title row sits where it did (R4-SEP)", function()
+    -- The owner's 2026-11-03 sign-off: no window of any Ka0s addon draws a separator under its
+    -- header, like the Ka0s Skin Tester's showroom. The window builds no `frame.divider` (which
+    -- LibKa0s's ApplySkin would hide anyway) and the schema carries none of its four rows. The
+    -- title, the session line and the control strip keep the shipped 30px bar's midline, because
+    -- TitleRowMid centers against the BAR_INSET constant, never against a texture.
+    -- red under: re-creating frame.divider, or a schema row on window.header.divider*.
+    local inst, window = scene()
+    window:ApplyConfig()
+    assertNil(window.frame.divider, "the window built a line under its title")
+    if inst.NS.ApplySkin then inst.NS.ApplySkin(window.frame) end
+    window:ApplyConfig()
+    assertNil(window.frame.divider, "a re-skin brought a line under the title back")
 
-    local function placed()
-        local _, _, _, _, titleY = window.frame.title:GetPoint(1)
-        local _, _, _, _, lineY  = window.sessionLine:GetPoint(1)
-        local gearY
-        for _, p in ipairs(window.controls.settings.__points or {}) do
-            if p.point == "RIGHT" then gearY = p.y end
-        end
-        return titleY, lineY, gearY
+    local _, _, _, _, titleY = window.frame.title:GetPoint(1)
+    local _, _, _, _, lineY  = window.sessionLine:GetPoint(1)
+    assertEqual(titleY, -15, "the title left the 30px bar's midline")
+    assertEqual(lineY, -15, "the session line left the 30px bar's midline")
+
+    for _, key in ipairs({ "divider", "dividerThickness", "dividerColor", "dividerColorMode" }) do
+        assertNil(inst.NS.FindSchemaRow("window.header." .. key), "window.header." .. key .. " is still a row")
+        assertNil(inst.NS.Database.GetWindows()[1].header[key], "a new window stored header." .. key)
     end
-
-    window:ApplyConfig()
-    local titleY, lineY, gearY = placed()
-    assertTrue(window.frame.divider:IsShown(), "the divider ships drawn")
-    assertTrue(gearY ~= nil, "the gear was not anchored by its RIGHT point")
-
-    cfg.header.divider = false
-    window:ApplyConfig()
-    assertFalse(window.frame.divider:IsShown(), "the divider ignored its setting")
-    local titleY2, lineY2, gearY2 = placed()
-    assertEqual(titleY2, titleY, "hiding the divider moved the title")
-    assertEqual(lineY2, lineY, "hiding the divider moved the session line")
-    assertEqual(gearY2, gearY, "hiding the divider moved the control strip")
-end)
-
-test("The divider's thickness is a setting", function()
-    local _, window, cfg = scene()
-    cfg.header.dividerThickness = 4
-    window:ApplyConfig()
-    assertEqual(window.frame.divider:GetHeight(), 4)
-end)
-
-test("The divider's SKIN mode writes no color at all, so a re-skin still reaches it", function()
-    -- The shipped mode, and the reason it is a mode rather than a stored color.
-    -- `skin` does not resolve SKIN.divider and write it -- it writes NOTHING, so
-    -- whatever ApplySkin put on the texture stands. That is how standalone-windows
-    -- survives a per-window color picker: the shared value is never copied into
-    -- this repo and never into a profile, so changing it upstream still lands here.
-    -- red under: seeding the swatch from SKIN.divider, or "skin" resolving to a
-    -- literal — either one freezes today's skin into every saved profile.
-    local inst, window, cfg = scene()
-    local skin = inst.mocks.LibStub("LibKa0s-Core-1.0", true).SKIN
-
-    -- Since LibKa0s v1.85.0's round 4 second re-cut (R4-SEP) ApplySkin no longer tints the
-    -- divider at all (it hides it), so skin mode leaves the texture with no color written.
-    cfg.header.dividerColorMode = "skin"
-    window:ApplyConfig()
-    assertEqual(window.frame.divider.__colorTexture, nil,
-        "skin mode wrote a color of its own over the library's")
-
-    -- And the profile holds no copy of it, which is the half that would rot.
-    assertFalse(inst.NS.GetSetting("window.header.dividerColor").r == skin.divider[1],
-        "the custom swatch was seeded from the skin")
-end)
-
-test("The divider takes a custom color and a class color, keeping the configured alpha", function()
-    -- A class color has no alpha of its own, so it takes the swatch's — the same
-    -- rule the cell text keeps, where the configured alpha survives every mode.
-    -- red under: a class divider drawn at 1.0 while the swatch says 0.4.
-    local inst, window, cfg = scene()
-
-    cfg.header.dividerColor     = { r = 0.1, g = 0.2, b = 0.3, a = 0.4 }
-    cfg.header.dividerColorMode = "custom"
-    window:ApplyConfig()
-    local c = window.frame.divider.__colorTexture
-    assertEqual(c[1], 0.1)
-    assertEqual(c[4], 0.4)
-
-    cfg.header.dividerColorMode = "class"
-    window:ApplyConfig()
-    local k = window.frame.divider.__colorTexture
-    local cr = inst.NS.PlayerClassRGB()
-    assertEqual(k[1], cr, "the divider ignored the class color")
-    assertEqual(k[4], 0.4, "the configured alpha did not survive the mode change")
 end)
 
 -- ---------------------------------------------------------------------------
