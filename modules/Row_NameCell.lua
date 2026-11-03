@@ -123,9 +123,10 @@ end
 --- That Texture is a bare one on the icon, built once and only for a window that asks, and not the
 --- icon itself, because the edge has one more condition than the icon: the companion. With no art it
 --- draws nothing. Its anchor is the icon, on a cell that may hold a secret: nothing reads it or the
---- edge back (rule R3). A frame here is what modules/Row_Border.lua avoids, and under a skin whose
---- `icon.borderStyle` is art the library calls SetBackdrop on it, so docs/smoke-tests.md's SKIN-34
---- checks it mid-pull. Without the library there is no border to draw and no Texture.
+--- edge back (rule R3). A frame here is what modules/Row_Border.lua avoids. The library draws a flat
+--- 1 px outline in every skin and never SetBackdrops it (LibKa0s R3-L3: `icon.borderStyle` is not
+--- read), so docs/smoke-tests.md's SKIN-34 checks it mid-pull. Without the library there is no border
+--- to draw and no Texture.
 ---
 --- @param cell table  the name cell
 --- @param tex table   the unit icon's texture
