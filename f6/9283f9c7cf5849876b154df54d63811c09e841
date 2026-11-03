@@ -1,0 +1,1 @@
+R6-NAME review (independent, 2026-11-04): PASS. Only README.md line 1 changed; prose already says Multi Meters; the in-game path 'Options -> Keybindings -> Ka0s Multi Meters' stays accurate (BINDING_HEADER keeps Ka0s), Settings -> AddOns path unchanged, Standard badge and Ka0s skin names kept. No test pins the README title. R6-PF1 has no commit here (PartyFrameEnhanced only).
