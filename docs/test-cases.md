@@ -2684,7 +2684,7 @@ Total.
 - Header band: a collapsed window is exactly the band plus its edges
 - Header band: the Export modal's bar takes its band's rect, its title and close on the middle
 
-### test_skin_picker.lua (19)
+### test_skin_picker.lua (21)
 
 - Skin picker: the spec names this owner, its seams, the General page's Skin tab and the eye
 - Skin picker: an unseen profile shows it; a seen one does not
@@ -2700,6 +2700,8 @@ Total.
 - Skin picker preview: shown with every window hidden, it enters test mode
 - Skin picker preview: the eye toggles test mode off and back on
 - Skin picker preview: every close puts the hidden windows back, out of test mode
+- Skin picker preview: the close leaves no forced show, so a later ladder re-run keeps them hidden
+- Skin picker preview: shown in combat with nothing on screen, the refused enter leaves no residue
 - Skin picker preview: windows the player closed with /mm toggle are closed again after it
 - Skin picker preview: the eye turned off and the close leaves it off
 - Skin picker preview: a window already on screen is left alone, the eye undone at the close
@@ -3013,7 +3015,7 @@ Total.
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
 | test_header_band.lua | 11 |
-| test_skin_picker.lua | 19 |
+| test_skin_picker.lua | 21 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
 | test_glyphs.lua | 1 |
@@ -3028,4 +3030,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2570** |
+| **Total** | **2572** |

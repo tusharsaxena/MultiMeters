@@ -293,8 +293,8 @@ local CLOSES = {
 }
 
 test("Skin picker preview: every close puts the hidden windows back, out of test mode", function()
-    -- red under: no restore (test mode stays on after the close), or a restore through the
-    -- manual turn-off's Show, which leaves every window the player had hidden on screen.
+    -- red under: no restore (test mode stays on after the close). The manual turn-off's Show is
+    -- pinned by the forced-show case below: the close's re-hide masks it here.
     for _, route in ipairs(CLOSES) do
         local NS, mocks, M = hiddenScene()
         quietly(mocks, function()
@@ -306,6 +306,44 @@ test("Skin picker preview: every close puts the hidden windows back, out of test
             assertFalse(M:AnyShown(), route[1] .. ": a window stayed on screen after the close")
         end)
     end
+end)
+
+test("Skin picker preview: the close leaves no forced show, so a later ladder re-run keeps them hidden", function()
+    -- The re-hide at the close covers what is on screen at that moment; a turn-off through the
+    -- manual Show also marks every window forcedShow, which the next ladder re-run (a zone change,
+    -- a settings write) obeys, putting the windows back over a rule that hides them.
+    -- red under: previewExit's SetTestMode(false) without { keepShown = false }.
+    for _, route in ipairs(CLOSES) do
+        local NS, mocks, M = hiddenScene()
+        quietly(mocks, function()
+            local f = openPicker(NS)
+            f.preview:__fire("OnClick")
+            f.preview:__fire("OnClick")
+            route[2](f, NS)
+            for _, inst in ipairs(M.All()) do inst:RefreshVisibility() end
+            assertFalse(M:IsTest(), route[1] .. ": test mode stayed on")
+            assertFalse(M:AnyShown(), route[1] .. ": a ladder re-run after the close showed a window")
+        end)
+    end
+end)
+
+test("Skin picker preview: shown in combat with nothing on screen, the refused enter leaves no residue", function()
+    -- The picker's own enter at show is refused in combat (the window manager's line); the
+    -- recorded state stays "off", so the close enters nothing. (The close's pickerSeen write still
+    -- re-runs the ladder, which brings back a window `/mm toggle` hid, as any settings write does.)
+    local _, NS, mocks = scene(true)
+    local M = NS.WindowManager
+    quietly(mocks, function()
+        NS.SetByPath(PATH, true)
+        if M:AnyShown() then assertTrue(M:Toggle()) end
+        assertFalse(M:AnyShown(), "the scene hides every window by hand")
+        mocks.setInCombat(true)
+        local f = openPicker(NS)
+        assertFalse(M:IsTest(), "the picker started test mode in combat")
+        f.close:__fire("OnClick")
+        assertFalse(M:IsTest(), "the close entered test mode")
+        mocks.setInCombat(false)
+    end)
 end)
 
 test("Skin picker preview: windows the player closed with /mm toggle are closed again after it", function()
