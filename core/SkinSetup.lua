@@ -164,7 +164,7 @@ NS.SKIN_FALLBACK = {
     ["win.border"] = { 0, 0, 0, 1 },
     ["win.inner"]  = { 0.24, 0.24, 0.27, 0.85 },
     ["title.text"] = { 1, 0.82, 0, 1 },
-    ["title.bg"]   = { 0x2c / 255, 0x24 / 255, 0x08 / 255, 1 },
+    ["title.bg"]   = { 0x1d / 255, 0x18 / 255, 0x05 / 255, 1 },
     ["icon.tint"]  = { 0.7, 0.7, 0.72, 1 },
     ["btn.hover"]  = { 1, 0.82, 0, 1 },
     ["divider"]    = { 0.24, 0.24, 0.27, 0.85 },
@@ -657,6 +657,8 @@ if not Skin then
         -- the stored color draws; HudShadow's nil is "the stored shadow stands". BarGloss: no skin,
         -- no gloss.
         "HudTextColor", "HudLabelColor", "BarFillColor", "HudShadow", "BarGloss", "HoverArt",
+        -- LibKa0s v1.85.0 (round 5): no skin, no band. Band answers nil and Header places nothing.
+        "Band", "Header",
     }) do S[name] = noop end
 
     S.Token = function(name)
