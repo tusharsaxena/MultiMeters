@@ -190,7 +190,7 @@ how do I make it smaller, how do I put it back — is in the same place under th
 | Master scale (`master.scale`) | Master opacity (`master.alpha`) |
 | Lock frame (`master.locked`, session-only: every window's own lock) | Debug console (`state.debugConsole`, session-only) |
 | Minimap button (`global.minimap.shown`, the GLOBAL store, [inverted](schema.md#the-minimap-row--exactly-one-inverted-row)) | Test mode (`state.testMode`, session-only) |
-| Sim mode (`state.sim`, session-only: the sim session itself) | |
+| Sim mode (`state.sim`, session-only: the sim window shown or a sim running) | |
 | Reset position | Reset all settings |
 
 **This tab is now EXACTLY the canonical set, and this addon has no rows of its own on it.** All
