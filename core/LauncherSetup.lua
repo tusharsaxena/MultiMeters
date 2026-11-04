@@ -179,19 +179,32 @@ NS.BINDINGS = {
 -- take these SAME two functions, so the box, the menu entry and `/mm sim` are one act. Both read
 -- NS.Sim at CALL time: modules/Sim.lua replaces core/SimSetup.lua's stub long after this file
 -- loads. Declared ahead of the library-absent fork, because the checkbox wants them either way.
+--
+-- THE WINDOW RULE (R7-SIM, the owner's round 7 call): "Sim mode" means the sim window (the step
+-- panel) is shown OR a sim runs. The bare `/mm sim` opens the window idle, so a tick reads ticked
+-- at once; from either state the toggle stops a running sim and closes the window, so one untick
+-- reads unticked. modules/Sim.lua refreshes an open page on the window's own show and hide.
 
---- Whether the simulation runs.
+--- Whether the sim window is shown or a simulation runs.
 --- @return boolean
 function NS.IsSimMode()
     local s = NS.Sim
-    return type(s) == "table" and type(s.IsActive) == "function" and s:IsActive() == true
+    if type(s) ~= "table" then return false end
+    if type(s.IsActive) == "function" and s:IsActive() == true then return true end
+    return type(s.IsPanelShown) == "function" and s:IsPanelShown() == true
 end
 
---- The typed verb's own acts: stop a running sim, otherwise the bare verb (status and the sim panel).
+--- Off: the bare verb (its status line and the sim window). On: stop a running sim, then close the
+--- window.
 function NS.ToggleSim()
     local s = NS.Sim
     if type(s) ~= "table" or type(s.RunVerb) ~= "function" then return end
-    s:RunVerb(s:IsActive() and "stop" or "")
+    if not NS.IsSimMode() then
+        s:RunVerb("")
+        return
+    end
+    if s:IsActive() then s:RunVerb("stop") end
+    if type(s.HidePanel) == "function" then s:HidePanel() end
 end
 
 if not Launcher then

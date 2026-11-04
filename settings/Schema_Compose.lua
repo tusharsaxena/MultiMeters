@@ -582,10 +582,12 @@ local MASTER_ROWS, MASTER_TAIL = compose("MasterControls", {
     -- row, straight after Test mode, at its default path `state.sim`. The hooks are the SAME two
     -- functions the launcher's Sim mode entry carries (core/LauncherSetup.lua, which loads before
     -- this file), so ticking runs `/mm sim`'s own act -- the bare verb's status and step panel, from
-    -- which the fight starts -- and unticking stops a running sim. The row's get / set are the
-    -- composer's, built from the pair: it stores nothing, and its set toggles only when the value
-    -- differs from the live state, so Reset all settings (default false) stops a running sim and
-    -- never starts one. modules/Sim.lua's listener repaints the box when the sim moves elsewhere.
+    -- which the fight starts. The box reads ticked while the step panel is shown or a sim runs
+    -- (R7-SIM), so the tick stays, and unticking stops a running sim and closes the panel. The row's
+    -- get / set are the composer's, built from the pair: it stores nothing, and its set toggles only
+    -- when the value differs from the live state, so Reset all settings (default false) stops a
+    -- running sim, closes the panel and never starts one. modules/Sim.lua's listener and its hooks
+    -- on the panel's OnShow / OnHide repaint the box when the sim or the panel moves elsewhere.
     isSimMode        = NS.IsSimMode,
     toggleSim        = NS.ToggleSim,
     -- The four new addon-wide settings live under `master.` rather than at the
@@ -739,7 +741,7 @@ dress(MASTER_ROWS, {
     -- Sim mode's box: the words only. Its get / set are the composer's, over the launcher's own
     -- sim pair, and are left alone here.
     ["state.sim"] = {
-        desc = L["Run the simulation, the same as /mm sim: ticking it opens the sim panel, which plays a scripted fight through every window, and unticking it stops the simulation. Nothing is saved. Combat, a group, an instance or a reload ends it."],
+        desc = L["Run the simulation, the same as /mm sim: ticking it opens the sim panel, which plays a scripted fight through every window. The box stays ticked while the panel is open or a fight runs, and unticking it stops the fight and closes the panel. Nothing is saved. Combat, a group, an instance or a reload ends a fight."],
     },
     ["state.testMode"] = {
         desc = L["Fill every window with placeholder data so you can lay out columns without being in combat. Combat ends it. The same as /mm test."],

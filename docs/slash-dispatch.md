@@ -45,7 +45,7 @@ that a load-time cycle between two majors.
 | `window` | `list` · `new <name>` · `delete <name>` · `copy <source/id> <target>` |
 | `reset-positions` | Move every window back to the center of the screen |
 | `export` | Open the export modal for one window's segment: `/mm export [window]` |
-| `sim` | The simulator (MultiMeters#60): a scripted fight through the real meter. The grammar (`start`, `stop`, `step`, `run`, `pause`, `resume`, `restart`, `panel`, and the bare verb's status) is LibKa0s-Sim-1.0's `RunVerb`; the host is `modules/Sim.lua`. A feature verb, so refused while disabled. The launcher's *Sim mode* entry and General → Master controls' **Sim mode** box run it too, through the one pair `NS.IsSimMode` / `NS.ToggleSim` (`core/LauncherSetup.lua`, R6-SIM): the bare verb when idle, `stop` while a session runs. No key binding |
+| `sim` | The simulator (MultiMeters#60): a scripted fight through the real meter. The grammar (`start`, `stop`, `step`, `run`, `pause`, `resume`, `restart`, `panel`, and the bare verb's status) is LibKa0s-Sim-1.0's `RunVerb`; the host is `modules/Sim.lua`. A feature verb, so refused while disabled. The launcher's *Sim mode* entry and General → Master controls' **Sim mode** box run it too, through the one pair `NS.IsSimMode` / `NS.ToggleSim` (`core/LauncherSetup.lua`, R6-SIM): both read on while the step panel is shown or a session runs (R7-SIM); from off they run the bare verb, which opens the panel, and from on they run `stop` if a session runs and close the panel. No key binding |
 
 ## The host verbs
 

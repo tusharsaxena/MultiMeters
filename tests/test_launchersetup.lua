@@ -1072,3 +1072,19 @@ test("Degraded: core/LauncherSetup.lua passes the silent flag to LibStub", funct
     fh:close()
     assertEqual(table.concat(offenders, "\n"), "")
 end)
+
+test("Launcher menu: Sim mode is ticked while the sim window is open, and a click closes it (R7-SIM)",
+function()
+    -- red under: NS.IsSimMode answering "running" alone (the open, idle window reads unticked), or a
+    -- NS.ToggleSim that re-runs the bare verb from "window open, idle" (the click re-opens it).
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    NS.Launcher:Register()
+    assertFalse(openMenu(inst):Checked("Sim mode"), "nothing open or running: unticked")
+    openMenu(inst):Click("Sim mode")
+    assertTrue(NS.Sim:IsPanelShown(), "the entry did not open the sim window")
+    assertTrue(openMenu(inst):Checked("Sim mode"), "window open, idle: ticked")
+    openMenu(inst):Click("Sim mode")
+    assertFalse(NS.Sim:IsPanelShown(), "the entry did not close the sim window")
+    assertFalse(openMenu(inst):Checked("Sim mode"), "window closed: unticked")
+end)

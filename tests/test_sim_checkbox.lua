@@ -127,3 +127,105 @@ test("Sim checkbox: a sim started or stopped elsewhere refreshes the open page",
     H.RefreshScalars = real
     undo()
 end)
+
+-- ── the window rule (R7-SIM) ──────────────────────────────────────────────────────────────────
+--
+-- The owner's round 7 rule (Ka0sAddonsCommonTasks docs/2026-11-04-SMOKE_ROUND7, call 2): the box,
+-- and the launcher's Sim mode entry, which reads the same NS.IsSimMode, is ticked exactly while the
+-- sim window (the library's step panel) is shown OR a sim runs, and unticked when neither. Ticking is
+-- the bare `/mm sim`, which opens the window, so the box stays ticked; unticking stops a running sim
+-- and closes the window. LibKa0s needs no change for it (R7-L1): the row's get is NS.IsSimMode
+-- verbatim and its set calls NS.ToggleSim only on a difference.
+
+--- The step panel's frame, `<name>SimPanel` (the Sim major's documented frame name).
+local function panelFrame(inst) return inst.mocks.__frameByName["MultiMetersSimPanel"] end
+
+test("Sim checkbox: an open, idle sim window reads ticked, and closing it unticks (R7-SIM)", function()
+    -- red under: NS.IsSimMode answering "running" alone, so `/mm sim`'s idle window reads unticked.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    local row = simRow(NS)
+    assertTrue(row ~= nil, "no state.sim row")
+    assertFalse(row.get())
+
+    NS.Sim:RunVerb("")
+    assertTrue(NS.Sim:IsPanelShown(), "the bare verb did not open the sim window")
+    assertFalse(NS.Sim:IsActive(), "the bare verb started a sim")
+    assertTrue(row.get(), "window open, idle: the box must read ticked")
+    assertTrue(NS.IsSimMode(), "the launcher's entry reads the same function")
+
+    panelFrame(inst):Hide()                 -- the window's close mark, or Escape
+    assertFalse(row.get(), "window closed, nothing running: the box must read unticked")
+end)
+
+test("Sim checkbox: ticking opens the sim window and stays ticked; unticking closes it (R7-SIM)", function()
+    -- red under: a toggle that re-runs the bare verb from "window open, idle", so an untick
+    -- re-opens the window and the box snaps back to ticked.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    assertTrue(NS.SetByPath("state.sim", true), "the write seam refused the tick")
+    assertTrue(NS.Sim:IsPanelShown(), "ticking did not open the sim window")
+    assertFalse(NS.Sim:IsActive(), "ticking started a sim: it is the bare verb, which only opens the window")
+    assertTrue(simRow(NS).get(), "the box snapped back to unticked after the tick")
+
+    assertTrue(NS.SetByPath("state.sim", false), "the write seam refused the untick")
+    assertFalse(NS.Sim:IsPanelShown(), "unticking left the sim window open")
+    assertFalse(simRow(NS).get())
+end)
+
+test("Sim checkbox: a sim running with its window hidden reads ticked; unticking stops it (R7-SIM)",
+function()
+    -- red under: an untick that only hides the window, or a box that reads the window alone.
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    local undo = S.inject(inst, { { kind = "noop", label = "One", run = function() end } })
+    assertTrue(NS.Sim:Start{ scenario = "case", seed = 3 })
+    NS.Sim:HidePanel()
+    assertTrue(NS.Sim:IsActive())
+    assertFalse(NS.Sim:IsPanelShown())
+    assertTrue(simRow(NS).get(), "running, window hidden: the box must read ticked")
+
+    assertTrue(NS.SetByPath("state.sim", false), "the write seam refused the untick")
+    assertFalse(NS.Sim:IsActive(), "unticking did not stop the sim")
+    assertFalse(NS.Sim:IsPanelShown(), "unticking opened the window")
+    assertFalse(simRow(NS).get())
+    undo()
+end)
+
+test("Sim checkbox: unticking a running sim with its window open stops it and closes the window (R7-SIM)",
+function()
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    local undo = S.inject(inst, { { kind = "noop", label = "One", run = function() end } })
+    assertTrue(NS.Sim:Start{ scenario = "case", seed = 3 })
+    assertTrue(NS.Sim:IsPanelShown(), "the start did not open the step panel")
+    assertTrue(NS.SetByPath("state.sim", false), "the write seam refused the untick")
+    assertFalse(NS.Sim:IsActive(), "unticking did not stop the sim")
+    assertFalse(NS.Sim:IsPanelShown(), "unticking left the window open")
+    assertFalse(simRow(NS).get(), "a stopped sim whose window stayed up would still read ticked")
+    undo()
+end)
+
+test("Sim checkbox: the sim window's own show and hide refresh an open page (R7-SIM)", function()
+    -- red under: no OnShow / OnHide hook on the step panel, so `/mm sim`, the window's close mark or
+    -- Escape leaves an open page's box stale (the sim's listener fires on start and stop only).
+    local inst = T.load{ enable = true }
+    local NS = inst.NS
+    local refreshes = 0
+    local H = NS.Helpers
+    local real = H.RefreshScalars
+    H.RefreshScalars = function(...) refreshes = refreshes + 1; return real(...) end
+
+    NS.Sim:RunVerb("")
+    assertTrue(refreshes > 0, "opening the sim window did not refresh the page")
+    local frame = panelFrame(inst)
+    assertTrue(frame ~= nil, "no MultiMetersSimPanel frame")
+    local before = refreshes
+    frame:Hide()
+    assertTrue(refreshes > before, "the window's own hide did not refresh the page")
+    before = refreshes
+    frame:Show()
+    assertTrue(refreshes > before, "the window's own show did not refresh the page")
+
+    H.RefreshScalars = real
+end)
