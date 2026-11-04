@@ -1,0 +1,7 @@
+R7-SIM review (independent, smoke round 7, 2026-11-04): PASS, no defects.
+- Matches 00_PLAN.md call 2: NS.IsSimMode = IsActive() or IsPanelShown(); ToggleSim from off runs the bare verb (SimTimeline runVerb calls sim:ShowPanel, so the tick stays), from on stops a running sim then HidePanel. Box and launcher share the pair.
+- Refresh paths checked against vendored LibKa0s: sim start/stop/auto-stop (combat, group, instance) via the existing AddListener; window X, Escape (CloseSpecialWindows hides the frame directly) and HidePanel via the OnShow/OnHide hooks on MultiMetersSimPanel (SimPanelRender build: CreateFrame("Frame", d.name) with d.name = "MultiMeters".."SimPanel"). Wrapping the instance's ShowPanel catches the bare verb and TogglePanel (both method calls on the instance); the first OnShow before the hook is covered by the one refresh. Launcher menu reads isSimMode on open.
+- Test/sim exclusivity and combat refusals untouched (they live in the sim's start). Nothing persisted; the row is sessionOnly, no write-seam bypass.
+- Red check (scratch copy, LauncherSetup.lua and Sim.lua reverted to 83a9759~1): the 4 new R7-SIM checkbox cases bar the hidden-window one, plus the launcher menu case, fail; the rest of the red set is no-git scratch noise.
+- Gate fresh at 924e99d: 2585 passed, 0 failed, 1 skipped; luacheck 0/0 in 190 files; index LF; no Lua file over 1500 lines.
+- Smoke SIM-15 rewritten, SIM-16 added with a blank Result.
