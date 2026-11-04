@@ -354,7 +354,39 @@ for _, step in ipairs(STOP_STEPS) do NS.Sim:OnStop(step) end
 -- an instance). An in-place scalar refresh re-reads the box on an open page; a hidden page re-reads
 -- it on its next show. Resolved at call time: settings/OptionsSetup.lua publishes NS.Helpers after
 -- this file loads. The stub's AddListener does nothing.
-NS.Sim:AddListener(function()
+local function refreshPage()
     local H = NS.Helpers
     if H and H.RefreshScalars then H.RefreshScalars() end
-end)
+end
+NS.Sim:AddListener(refreshPage)
+
+-- THE BOX ALSO FOLLOWS THE SIM WINDOW (R7-SIM, the owner's round 7 call). NS.IsSimMode reads the step
+-- panel too, so an open page re-reads the box when the window shows or hides: `/mm sim`, the
+-- launcher, the box itself, the window's close mark or Escape, none of which tells a sim listener.
+-- The library builds the frame on the first ShowPanel and hands the host no handle to it, so the
+-- host finds it by its documented name, `<name>SimPanel`, and hooks it once. Every show goes through
+-- the instance's ShowPanel (the library's own bare verb calls sim:ShowPanel), so wrapping it reaches
+-- the first build whoever asked for it; the first OnShow ran before the hook, hence the one refresh.
+-- Library absent: the stub's ShowPanel answers false and builds nothing.
+Host.PANEL_FRAME = "MultiMetersSimPanel"
+local panelHooked = false
+
+--- Hook the step panel's OnShow and OnHide to refresh the page, once; true when this call hooked.
+function Host.HookPanel()
+    if panelHooked then return false end
+    local frame = _G[Host.PANEL_FRAME]
+    if type(frame) ~= "table" or type(frame.HookScript) ~= "function" then return false end
+    panelHooked = true
+    frame:HookScript("OnShow", refreshPage)
+    frame:HookScript("OnHide", refreshPage)
+    return true
+end
+
+if Lib then
+    local showPanel = NS.Sim.ShowPanel
+    NS.Sim.ShowPanel = function(...)
+        local shown = showPanel(...)
+        if Host.HookPanel() then refreshPage() end
+        return shown
+    end
+end

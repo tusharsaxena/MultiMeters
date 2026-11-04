@@ -1174,7 +1174,12 @@ local function build()
         local f = makeFrame(objectType or "Frame", parent, name)
         f.__template = template
         M.__frames[#M.__frames + 1] = f
-        if name then M.__frameByName[name] = f end
+        if name then
+            M.__frameByName[name] = f
+            -- The client publishes a named frame as a global of that name. A name the mock
+            -- already answers keeps its value, so no fixture is shadowed.
+            if M[name] == nil then M[name] = f end
+        end
         return f
     end
 

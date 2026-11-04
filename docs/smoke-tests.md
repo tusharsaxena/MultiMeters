@@ -30,7 +30,7 @@ secret-value rules the checks refer to.
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
-| SIM-1 to SIM-15 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run, the Master controls Sim mode checkbox |
+| SIM-1 to SIM-16 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run, the Master controls Sim mode checkbox and its window rule |
 | SKIN-1 to SKIN-50 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat, a stored pick of the deleted Friz |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
@@ -1786,14 +1786,25 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
   wipe's everyone-dead lands on its last tick). Result:
 - **SIM-15. The Sim mode checkbox (R6-SIM; LibKa0s R6-SIM-L, OptionsCompose minor 19).** Settings → General →
   Master controls → **Sim mode** sits on its own line straight under *Minimap button* | *Test mode*. Tick it
-  → the same as a bare `/mm sim`: the status line prints and the step panel opens; Start a scenario → the
-  box reads ticked. Untick it → the simulation stops with its stop line and the windows show live data.
-  With the page open, `/mm sim start dungeon` → the box ticks at once; `/mm sim stop` → it unticks. Close
-  the settings, start a sim with `/mm sim start dungeon`, then open Master controls → the box is ticked.
-  Click the launcher's right-click *Sim mode* entry → the same panel as the box. With a sim running, pull
-  a training dummy → the sim stops and the box unticks. Tick it in combat → it stays unticked. With a sim
-  running, Reset all settings → the sim stops. `/reload` → the box is unticked. Fail: the box out of step
-  with the sim, a sim started on Reset all settings, or a Lua error. Result:
+  → the same as a bare `/mm sim`: the status line prints, the step panel opens and the box stays ticked
+  (R7-SIM); Start a scenario → still ticked. Untick it → the simulation stops with its stop line, the step
+  panel closes, the box is unticked and the windows show live data. With the page open, `/mm sim start
+  dungeon` → the box ticks at once; `/mm sim stop` → it stays ticked while the step panel is open; close
+  the panel → it unticks. Close the settings, start a sim with `/mm sim start dungeon`, then open Master
+  controls → the box is ticked. Click the launcher's right-click *Sim mode* entry → the same panel as the
+  box. With a sim running, pull a training dummy → the sim stops; the box stays ticked until you close the
+  step panel. In combat, tick it → the step panel opens as `/mm sim` opens it there, and its Start refuses
+  with *A simulation cannot start in combat.* With a sim running, Reset all settings → the sim stops and
+  the step panel closes. `/reload` → the box is unticked. Fail: the box out of step with the step panel
+  and the sim, a sim started on Reset all settings, or a Lua error. Result:
+- **SIM-16. Sim mode follows the sim window (R7-SIM; LibKa0s R7-L1).** Open Settings → General → Master
+  controls. `/mm sim` → the step panel opens idle and the box is ticked. Untick it → the panel closes and
+  the box is unticked. Tick it → the panel opens and the box stays ticked. Close the panel with its close
+  mark → the box unticks; `/mm sim` again, then Escape → it unticks. Start a run from the panel, then close
+  the panel while it runs → the box stays ticked until the run ends (`/mm sim stop`). With the panel open
+  and idle, the minimap button's right-click menu shows *Sim mode* ticked; click it → the panel closes, and
+  the next right-click shows it unticked. Fail: the box or the menu entry out of step with the panel, a
+  tick that snaps back to unticked, or a Lua error. Result:
 
 ## SKIN
 

@@ -740,15 +740,20 @@ Total.
 - Sim e2e: a fight step's label shows its wall duration, e.g. Pull Trash (10 s) (R4-MM1)
 - Sim e2e: in every scenario's auto-run each fight step lasts 10 s with 21 ticks (R4-MM1)
 
-### test_sim_checkbox.lua (5)
+### test_sim_checkbox.lua (10)
 
 - Sim checkbox: Master controls carries a composed, session-only Sim mode row after Test mode
 - Sim checkbox: the hooks are one NS pair, the launcher's own
 - Sim checkbox: ticking runs /mm sim's own act, unticking stops, a no-change write does nothing
 - Sim checkbox: the box reads the real session, and unticking it ends that session
 - Sim checkbox: a sim started or stopped elsewhere refreshes the open page
+- Sim checkbox: an open, idle sim window reads ticked, and closing it unticks (R7-SIM)
+- Sim checkbox: ticking opens the sim window and stays ticked; unticking closes it (R7-SIM)
+- Sim checkbox: a sim running with its window hidden reads ticked; unticking stops it (R7-SIM)
+- Sim checkbox: unticking a running sim with its window open stops it and closes the window (R7-SIM)
+- Sim checkbox: the sim window's own show and hide refresh an open page (R7-SIM)
 
-### test_launchersetup.lua (56)
+### test_launchersetup.lua (57)
 
 - Launcher: Register creates ONE object and registers it against the global table
 - Launcher: the object wears this addon's OWN logo, not a borrowed icon
@@ -806,6 +811,7 @@ Total.
 - Degraded: with LibKa0s absent the seam stubs every member the addon calls
 - Degraded: with LibKa0s absent the stub still answers from the STORE
 - Degraded: core/LauncherSetup.lua passes the silent flag to LibStub
+- Launcher menu: Sim mode is ticked while the sim window is open, and a click closes it (R7-SIM)
 
 ### test_launcher_skin_entry.lua (2)
 
@@ -2964,8 +2970,8 @@ Total.
 | test_sim_drivers.lua | 9 |
 | test_sim_session.lua | 26 |
 | test_sim_e2e.lua | 13 |
-| test_sim_checkbox.lua | 5 |
-| test_launchersetup.lua | 56 |
+| test_sim_checkbox.lua | 10 |
+| test_launchersetup.lua | 57 |
 | test_launcher_skin_entry.lua | 2 |
 | test_lifecycle.lua | 40 |
 | test_dispatch.lua | 11 |
@@ -3045,4 +3051,4 @@ Total.
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
 | Skipped | 1 |
-| **Total** | **2579** |
+| **Total** | **2585** |
