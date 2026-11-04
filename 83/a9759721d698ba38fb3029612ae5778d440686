@@ -5,3 +5,5 @@ R7-SIM review (independent, smoke round 7, 2026-11-04): PASS, no defects.
 - Red check (scratch copy, LauncherSetup.lua and Sim.lua reverted to 83a9759~1): the 4 new R7-SIM checkbox cases bar the hidden-window one, plus the launcher menu case, fail; the rest of the red set is no-git scratch noise.
 - Gate fresh at 924e99d: 2585 passed, 0 failed, 1 skipped; luacheck 0/0 in 190 files; index LF; no Lua file over 1500 lines.
 - Smoke SIM-15 rewritten, SIM-16 added with a blank Result.
+
+R7-SIM re-review (independent adversarial, 2026-11-04): PASS, no defects. Red verified in a scratch copy with core/LauncherSetup.lua and modules/Sim.lua at 83a9759~1: the five window-rule cases (4 in test_sim_checkbox.lua, 1 in test_launchersetup.lua) fail; the running-window-hidden case passes there as a guard. Stood-down is disable/perf only (NS.IsStoodDown = lifecycle:IsDown), so a combat stop leaves the panel up and the box ticked, as SIM-15 says; a stand-down hides the panel through HidePanel, whose OnHide hook refreshes. Fresh gate at 924e99d: 2585 passed, 0 failed, 1 skipped; luacheck 0/0 in 190 files.
