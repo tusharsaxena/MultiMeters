@@ -1804,7 +1804,7 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
   the panel while it runs → the box stays ticked until the run ends (`/mm sim stop`). With the panel open
   and idle, the minimap button's right-click menu shows *Sim mode* ticked; click it → the panel closes, and
   the next right-click shows it unticked. Fail: the box or the menu entry out of step with the panel, a
-  tick that snaps back to unticked, or a Lua error. Result:
+  tick that snaps back to unticked, or a Lua error. Result: pass (owner-marked 2026-11-04)
 
 ## SKIN
 
