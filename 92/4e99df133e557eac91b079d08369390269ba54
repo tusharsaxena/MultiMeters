@@ -2,3 +2,5 @@ R7-RD review (independent, smoke round 7, 2026-11-04): PASS, no defects.
 - Usage names /mm skin and now says hover/select previews, Apply keeps it, the eye toggles test mode. True to core/SkinSetup.lua: PREVIEW.mode = "test", enter/exit via WindowManager:SetTestMode, the library enters on show only with no window on screen and test mode off, and every close puts the opening state back.
 - One sentence pair in the README's voice; no command table; the "Multi Meters" display name from R6-NAME unchanged.
 - Gate fresh: 2585 passed, 0 failed, 1 skipped; luacheck 0/0.
+
+R7-RD re-review (independent adversarial, 2026-11-04): PASS, no change needed. README sentence checked against core/SkinSetup.lua PREVIEW (mode test, isShown = WindowManager:AnyShown) and the pickerClosed restore.
