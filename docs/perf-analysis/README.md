@@ -140,16 +140,16 @@ addon now passes it:
 
 | Bucket | Declared within | Call sites | Parent passed |
 |---|---|---|---|
-| `meterEvent` | — | `core/MultiMeters.lua:571`, `:581`, `:589` | — |
-| `spellEvent` | — | `core/MultiMeters.lua:534` | — |
-| `systemEvent` | — | `core/MultiMeters.lua:525` | — |
-| `refresh` | — | `modules/Window_Render.lua:320`, `:330`, `:353`, `:360` | — |
-| `providerRead` | — (more than one real parent) | `modules/Provider.lua:375` | Its caller's: `"aggregate"` from `modules/Aggregator.lua:1012` and `modules/Aggregator_Identity.lua:215`, `"targets"` from `modules/Targets.lua:347`, none from `core/Diagnostics.lua` or `core/Diagnostics_DeathRecap.lua` |
-| `aggregate` | `refresh` | `modules/Aggregator.lua:1264`, `modules/DrillDown.lua:710`, `:722` | Its caller's at `modules/Aggregator.lua:1264`; `"refresh"` at both `DrillDown` sites |
-| `render` | `refresh` | `modules/Window_Render.lua:530` | `"refresh"` |
-| `renderRow` | `render` | `modules/Row.lua:1215` | `"render"` |
-| `tooltip` | — | `modules/Tooltip_Builders.lua:796`, `:938`, `:956`, `:1018`, `:1032`, `:1046` | — |
-| `targets` | `tooltip` | `modules/Targets.lua:443` | `"tooltip"` |
+| `meterEvent` | — | `core/MultiMeters.lua`: `NS:OnMeterUpdated`, `NS:OnMeterSession`, `NS:OnMeterReset` | — |
+| `spellEvent` | — | `core/MultiMeters.lua`, `NS:OnSpellSucceeded` | — |
+| `systemEvent` | — | `core/MultiMeters.lua`, `NS:OnSystemMessage` | — |
+| `refresh` | — | `modules/Window_Render.lua`, `WindowProto:Refresh` (every exit) | — |
+| `providerRead` | — (more than one real parent) | `modules/Provider.lua`, `Provider.GetColumn` | Its caller's: `"aggregate"` from `modules/Aggregator.lua`'s `scanColumn` and `modules/Aggregator_Identity.lua`'s `takeColumn`, `"targets"` from `modules/Targets.lua`'s `buildMap`, none from `core/Diagnostics.lua` or `core/Diagnostics_DeathRecap.lua` |
+| `aggregate` | `refresh` | `modules/Aggregator.lua`, `Aggregator.Build`; `modules/DrillDown.lua`, `DrillDown:BuildRows` (both exits) | Its caller's in `Aggregator.Build`; `"refresh"` at both `DrillDown` sites |
+| `render` | `refresh` | `modules/Window_Render.lua`, `WindowProto:Render` | `"refresh"` |
+| `renderRow` | `render` | `modules/Row.lua`, `RowProto:Update` | `"render"` |
+| `tooltip` | — | `modules/Tooltip_Builders.lua`: `Tooltip:CellTooltip`, `Tooltip:NameTooltip` (two exits), `Tooltip:SpellTooltip` (three exits) | — |
+| `targets` | `tooltip` | `modules/Targets.lua`, `Targets.ForPlayer` | `"tooltip"` |
 
 So `observedWithin` is populated for every nested bucket, and a capture from a current build reports
 the declared tree as observed containment. `providerRead` declares no `within` because it has more

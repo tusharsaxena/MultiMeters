@@ -82,16 +82,16 @@ overlap, and **a parent must never be summed with its children**.
 
 | Bucket | Inside | What it brackets | Call sites |
 |---|---|---|---|
-| `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua:571`, `:581`, `:589` |
-| `spellEvent` | — | one `UNIT_SPELLCAST_SUCCEEDED` handler — the Feign Death check, early returns included | `core/MultiMeters.lua:534` |
-| `systemEvent` | — | one `CHAT_MSG_SYSTEM` handler — the whisper-to-nobody check offered to `modules/Export.lua` | `core/MultiMeters.lua:525` |
-| `refresh` | — | one coalesced window refresh pass | `modules/Window_Render.lua:320`, `:330`, `:353`, `:360` (every exit) |
-| `providerRead` | — (observed: `aggregate`, `targets`) | one `C_DamageMeter` column read | `modules/Provider.lua:375` |
-| `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua:1264`, `modules/DrillDown.lua:710`, `:722` |
-| `render` | `refresh` | the window's draw | `modules/Window_Render.lua:530` |
-| `renderRow` | `render` | one row's cells | `modules/Row.lua:1214` |
-| `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua:796`, `:938`, `:956`, `:1018`, `:1032`, `:1046` |
-| `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua:443` (opened only once a player was asked about) |
+| `meterEvent` | — | one `DAMAGE_METER_*` handler, i.e. the bus fan-out to every window | `core/MultiMeters.lua`: `NS:OnMeterUpdated`, `NS:OnMeterSession`, `NS:OnMeterReset` |
+| `spellEvent` | — | one `UNIT_SPELLCAST_SUCCEEDED` handler — the Feign Death check, early returns included | `core/MultiMeters.lua`, `NS:OnSpellSucceeded` |
+| `systemEvent` | — | one `CHAT_MSG_SYSTEM` handler — the whisper-to-nobody check offered to `modules/Export.lua` | `core/MultiMeters.lua`, `NS:OnSystemMessage` |
+| `refresh` | — | one coalesced window refresh pass | `modules/Window_Render.lua`, `WindowProto:Refresh` (every exit) |
+| `providerRead` | — (observed: `aggregate`, `targets`) | one `C_DamageMeter` column read | `modules/Provider.lua`, `Provider.GetColumn` |
+| `aggregate` | `refresh` | the GUID join and the ordering pass | `modules/Aggregator.lua`, `Aggregator.Build`; `modules/DrillDown.lua`, `DrillDown:BuildRows` (both exits) |
+| `render` | `refresh` | the window's draw | `modules/Window_Render.lua`, `WindowProto:Render` |
+| `renderRow` | `render` | one row's cells | `modules/Row.lua`, `RowProto:Update` |
+| `tooltip` | — | one tooltip build | `modules/Tooltip_Builders.lua`: `Tooltip:CellTooltip`, `Tooltip:NameTooltip` (two exits), `Tooltip:SpellTooltip` (three exits) |
+| `targets` | `tooltip` | the enemy cross-reference behind the Targets section | `modules/Targets.lua`, `Targets.ForPlayer` (opened only once a player was asked about) |
 
 `spellEvent` and `systemEvent` are **measurement only** (MultiMeters-R-17). Both events stay
 registered for the whole session for one narrow use apiece, and `UNIT_SPELLCAST_SUCCEEDED` fires for
