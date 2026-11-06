@@ -1208,7 +1208,9 @@ local function pickSegment(window, value)
 end
 
 --- A title, the stored segments newest first, a divider, then the two synthetic entries, on the skinned
---- menu, the entry the window shows marked. The same shape the client's menu draws below.
+--- menu, the entry the window shows marked: `isActive` and Widgets 23's `radio`/`selected` read one
+--- predicate, so every segment row keeps a tick column and the shown one draws the menu's tick (the
+--- owned menu's Ka0s `confirm`). The same shape the client's menu draws below, which has no tick.
 function WindowProto:OpenSkinnedSegmentMenu(sessions)
     local data = self.config.data or {}
     local active = NS.Database.PinnedSegment(data)
@@ -1218,9 +1220,9 @@ function WindowProto:OpenSkinnedSegmentMenu(sessions)
 
     local rows = { { title = true, label = L["Segment"] } }
     local function add(value, label)
+        local function shown() return value == active end
         rows[#rows + 1] = {
-            value = value, label = label,
-            isActive = function() return value == active end,
+            value = value, label = label, radio = true, selected = shown, isActive = shown,
             onClick = function() pickSegment(self, value) end,
         }
     end
@@ -1253,7 +1255,6 @@ function WindowProto:OpenSegmentMenu()
     if not (Provider and Provider.GetAvailableSessions) then return false end
 
     local sessions = Provider.GetAvailableSessions()
-    local data = self.config.data or {}
 
     local restricted = NS.Secrets and NS.Secrets.IsRestricted and NS.Secrets.IsRestricted()
     if W and W.ContextMenu and not restricted then return self:OpenSkinnedSegmentMenu(sessions) end
@@ -1277,10 +1278,8 @@ function WindowProto:OpenSegmentMenu()
         root:CreateButton(L["Overall"], function()
             self:SetSessionType(Const.SESSION_TYPE.Overall)
         end)
-        -- `data` is captured so a future radio-style menu can mark the active
-        -- entry; MenuUtil's CreateRadio needs an is-selected predicate and this
-        -- is the state it would ask about.
-        return data
+        -- Plain buttons, no mark: the shown segment's tick is the skinned menu's alone. This menu
+        -- serves only the Combat restriction and an install without the library, and stays as it is.
     end)
 end
 

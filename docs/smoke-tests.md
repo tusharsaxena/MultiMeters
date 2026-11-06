@@ -24,7 +24,7 @@ secret-value rules the checks refer to.
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
 | WIN-1 to WIN-58 | [Windows and the header](#win) | Header controls, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
-| GRID-1 to GRID-34 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
+| GRID-1 to GRID-35 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-37 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-56 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
@@ -1143,6 +1143,12 @@ Every rule ships **off**, so each hide rule has to be switched on for its check.
   fill and showed only through the empty part). Point at any row → the faint white wash covers every
   cell of it, fill and text included. Hovering a cell still opens its tooltip, a click still drills
   down, and the edge covers at most the first pixel of a left class icon or name. Result: pass (owner-marked 2026-10-24)
+- **GRID-35. The segment menu ticks the shown segment (V89A-MM, LibKa0s v1.89.0, Widgets 23).** Out of
+  combat, click a window's segment control → the stored segments, Current and Overall each keep a tick
+  column, and the entry the window shows (a pinned fight, or Current or Overall) carries the Ka0s tick in
+  it; the title and the divider carry none. Pick another entry, reopen → the tick has moved to it. In
+  combat the client's menu still opens with plain entries and no tick. Fail: no tick, two ticks, or a
+  tick that stays on the old entry. Result: not run
 
 ## TIP
 
