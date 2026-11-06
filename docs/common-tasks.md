@@ -759,12 +759,16 @@ which is why bumping one without the other fails the suite. **Bump the line and 
 commit.**
 
 **3. Check the load list.** `tests/run.lua` derives `LIB_FILES` from `libs/LibKa0s/LibKa0s.xml` and
-then asserts the sixteen expected files are present by name:
+then asserts the 34 expected files are present by name (its `EXPECTED` list; a re-vendor that peels a
+new file off a shell the addon reaches adds it there, in `LibKa0s.xml` order):
 
 ```
 Core.lua  DebugLog.lua  Slash.lua  Options.lua  OptionsWidgets.lua  OptionsCompose.lua
-OptionsScroll.lua  OptionsTabs.lua  OptionsRegistry.lua  OptionsCombat.lua  OptionsNav.lua
-Launcher.lua  Perf.lua  PerfPanel.lua  Lifecycle.lua  Schema.lua
+OptionsScroll.lua  OptionsFlow.lua  OptionsTabbed.lua  OptionsSkinPickerRows.lua  SkinDefsOthers.lua
+SkinOwnerTokens.lua  SimPanelRender.lua  OptionsTabs.lua  OptionsMedia.lua  OptionsRegistry.lua
+OptionsCombat.lua  OptionsNav.lua  Launcher.lua  Perf.lua  PerfPanel.lua  SlashParse.lua
+PerfSampler.lua  PerfCommands.lua  WidgetsReorder.lua  Lifecycle.lua  Schema.lua  Sim.lua
+SimTimeline.lua  SimPanel.lua  CorePixel.lua  SkinPaintHud.lua  SkinAceConfirm.lua  WidgetsDropdown.lua
 ```
 
 That assertion is not decoration. A short load list does not raise — it leaves the dependent major

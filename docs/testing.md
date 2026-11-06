@@ -60,9 +60,14 @@ dependent major unregistered, the host's setup file falls back to its degradatio
 suite happily measures the stub — green, and testing nothing. Five seams in this addon degrade that
 way (`core/CoreSetup.lua`, `core/PerfSetup.lua`, `core/DebugLogSetup.lua`, `settings/Slash.lua`,
 `settings/OptionsSetup.lua`), so `tests/run.lua` also asserts by name that
-`Core.lua`, `DebugLog.lua`, `Slash.lua`, `Options.lua`, `OptionsWidgets.lua`, `OptionsCompose.lua`,
-`OptionsScroll.lua`, `OptionsTabs.lua`, `OptionsRegistry.lua`, `OptionsCombat.lua`, `OptionsNav.lua`,
-`Launcher.lua`, `Perf.lua`, `PerfPanel.lua`, `Lifecycle.lua` and `Schema.lua` are all present. A re-vendor that drops one
+34 library files are all present: `Core.lua`, `DebugLog.lua`, `Slash.lua`, `Options.lua`,
+`OptionsWidgets.lua`, `OptionsCompose.lua`, `OptionsScroll.lua`, the v1.84.0 peels (`OptionsFlow.lua`,
+`OptionsTabbed.lua`, `OptionsSkinPickerRows.lua`, `SkinDefsOthers.lua`, `SkinOwnerTokens.lua`,
+`SimPanelRender.lua`), `OptionsTabs.lua`, `OptionsMedia.lua`, `OptionsRegistry.lua`, `OptionsCombat.lua`,
+`OptionsNav.lua`, `Launcher.lua`, `Perf.lua`, `PerfPanel.lua`, the v1.66.0 peels (`SlashParse.lua`,
+`PerfSampler.lua`, `PerfCommands.lua`, `WidgetsReorder.lua`), `Lifecycle.lua`, `Schema.lua`, `Sim.lua`,
+`SimTimeline.lua`, `SimPanel.lua`, and the v1.91.0 peels (`CorePixel.lua`, `SkinPaintHud.lua`,
+`SkinAceConfirm.lua`, `WidgetsDropdown.lua`). A re-vendor that drops one
 fails there, with a name. `OptionsCompose.lua` is on that list for a reason the runner argues in
 place rather than leaving to the reader: `settings/Schema.lua` **composes** the master controls tab
 and every font, border and bar group out of it, so a re-vendor that dropped it would take fifty-odd
