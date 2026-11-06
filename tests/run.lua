@@ -112,6 +112,13 @@ do
         -- and the two attachment files are loaded only when present, so a payload missing one raises
         -- nothing.
         "Sim.lua", "SimTimeline.lua", "SimPanel.lua",
+        -- v1.91.0 peeled four files off their shells, in LibKa0s.xml order, each loaded only when
+        -- present, so a payload missing one raises nothing: without CorePixel.lua every Widgets edge and
+        -- line draws in UI units instead of one physical pixel; without SkinPaintHud.lua the skin has no
+        -- BarGloss or HudFont; without SkinAceConfirm.lua the profile delete box stays stock; and
+        -- without WidgetsDropdown.lua there is no W.Dropdown, W.ContextMenu or shared menu, which the
+        -- Export modal and the segment menu draw.
+        "CorePixel.lua", "SkinPaintHud.lua", "SkinAceConfirm.lua", "WidgetsDropdown.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do

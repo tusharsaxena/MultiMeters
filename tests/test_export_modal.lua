@@ -241,9 +241,9 @@ end)
 -- modal that owned it already gone. modules/Export.lua's EnsureFrame wires
 -- modal:SetScript("OnHide", function() W.CloseMenu() end) to close it.
 --
--- The shared menu is a file-local inside Widgets.lua with no getter, so the only
--- way to observe it is the way LibKa0s's own test_widgets.lua does: capture the
--- first frame CreateFrame makes once a dropdown's OnClick lazily builds it.
+-- The shared menu is a file-local inside WidgetsDropdown.lua (Widgets.lua until
+-- Widgets minor 26) with no getter, so the only way to observe it is the way
+-- LibKa0s's own test_widgets.lua does: capture the first frame CreateFrame makes once a dropdown's OnClick lazily builds it.
 test("Hiding the export modal closes an open dropdown menu (LibKa0s-Widgets-1.0)", function()
     local inst = T.load()
     local modal = inst.NS.Export.Open({})
@@ -297,7 +297,7 @@ end)
 -- THE HOLE THIS FILLS. Every other case in this file drives the collapsed
 -- button — the half modules/Export.lua wrote. None of them reached the half it
 -- did not: the pooled row buttons LibKa0s-Widgets-1.0 builds on the first click
--- (`makeMenuRow`, Widgets.lua). That is the exact shape of hole that let
+-- (`makeMenuRow`, WidgetsDropdown.lua). That is the exact shape of hole that let
 -- v1.11.0 and v1.11.1 ship a first-click crash (`FontString:SetText(): Font not
 -- set`, on a row's glyph FontString) past 553 green library cases: every one of
 -- them seeded a stand-in row and none reached the constructor. A case that
@@ -312,7 +312,7 @@ end)
 -- because the field exists. This case is what proves a glyphless row survives
 -- being built and painted with no face named.
 --
--- HOW THE FRAMES ARE OBSERVED. The shared menu is a file-local in Widgets.lua
+-- HOW THE FRAMES ARE OBSERVED. The shared menu is a file-local in WidgetsDropdown.lua
 -- with no getter, so this does what LibKa0s's own test_widgets.lua does: it
 -- watches CreateFrame. What it records is the ARGUMENTS of each call — the
 -- frame type, the name and the parent, as they were passed — never anything
