@@ -37,10 +37,10 @@ cannot answer for, so the narrative and the tally were measured with different h
 same defect the cluster was filed for, one layer down: the scope was written out and the *pattern*
 was not.
 
-Dropping the quote widens the match to **13** lines (17 on 2026-10-02, 19 on 2026-09-16), and the four it adds are prose, not paths:
-`core/Compat.lua:593` and `modules/Window_Header.lua:78` both quote `UI-SortArrow-Up` while explaining that
-it does not exist, `core/MediaSetup.lua:27` names the `Interface\AddOns\` prefix in the argument for
-taking the folder name from the vararg, and `core/Namespace.lua:137` does the same. A comment naming
+Dropping the quote widens the match to **13** lines as measured on 2026-11-06 (17 on 2026-10-02, 19 on 2026-09-16), and the four it adds are prose, not paths:
+comments in `core/Compat.lua` and `modules/Window_Header.lua` both quote `UI-SortArrow-Up` while explaining that
+it does not exist, a comment in `core/MediaSetup.lua` names the `Interface\AddOns\` prefix in the argument for
+taking the folder name from the vararg, and one in `core/Namespace.lua` does the same. A comment naming
 a texture is not a texture, so they are named here rather than given rows — and naming them is what
 makes the subtraction from 13 checkable by a reader who runs the looser form.
 
@@ -54,7 +54,7 @@ makes the subtraction from 13 checkable by a reader who runs the looser form.
 | `modules/Row.lua` | `Interface\TargetingFrame\UI-StatusBar` | Last-resort bar fill after an LSM fetch answers nothing. The catalog **does** ship bar textures (`library-stack-§8`), and they reach LSM through `core/MediaSetup.lua`'s `RegisterLSM` — so the only load that reaches this line is one where the payload is absent, and on that load the catalog's textures never reached LSM either. A fallback that needs the thing that is missing is not a fallback. |
 | `modules/Tooltip.lua` | `Interface\ICONS\INV_Misc_QuestionMark` | The client's canonical unknown-item mark, standing in for a spellID it cannot resolve. `library-stack-§8` has no equivalent and could not sensibly grow one: the whole point of this texture is that every WoW player already reads it as "missing", which is a meaning the client owns and a Ka0s glyph cannot borrow. |
 | `modules/Tooltip.lua` | `Interface\ICONS\Ability_Hunter_FocusedAim` | **Register row** in the hub's [Documented deviations](ARCHITECTURE.md#documented-deviations) — `library-stack-§8`, ratified 2026-09-23. The icon every TARGET line wears, and a site where the catalog **does** have a candidate — `target`. This slot sits in a column of colored Blizzard spell icons, and `library-stack-§8` requires catalog art to be white with its shape in the alpha channel, so the one line drawing a Ka0s glyph would be the one line that looked foreign. |
-| `modules/Tooltip.lua` | `Interface\Buttons\WHITE8X8` | The fill `standalone-windows` mandates, here as the bar fallback for a window with no texture configured — a `StatusBar` with no texture draws nothing, so a tint alone is not a fallback. The casing is the client's either way; `LibKa0s` spells it both ways too (`Core.lua:91` / `Widgets.lua:44`), WoW paths are case-insensitive, and it is recorded here so nobody spends a commit "fixing" it. |
+| `modules/Tooltip.lua` | `Interface\Buttons\WHITE8X8` | The fill `standalone-windows` mandates, here as the bar fallback for a window with no texture configured — a `StatusBar` with no texture draws nothing, so a tint alone is not a fallback. The casing is the client's either way; `LibKa0s` spells it both ways too (`Core.lua`'s `lib.SKIN` / `Widgets.lua`'s `WHITE`), WoW paths are case-insensitive, and it is recorded here so nobody spends a commit "fixing" it. |
 | `settings/ColumnBlocks.lua` | `Interface\RaidFrame\ReadyCheck-Ready` | **Register row** in the hub's [Documented deviations](ARCHITECTURE.md#documented-deviations) — `library-stack-§8`, ratified 2026-09-08 on parity with ConsumableMaster's priority list. |
 | `settings/ColumnBlocks.lua` | `Interface\RaidFrame\ReadyCheck-NotReady` | **Register row** — the other half of the same pair and the same row. |
 

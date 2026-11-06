@@ -459,7 +459,7 @@ deviation-register rows in [ARCHITECTURE.md](ARCHITECTURE.md#documented-deviatio
 arguing in place: the pair in `settings/ColumnBlocks.lua`, the tooltip's TARGET glyph and the
 window's size-grabber pair. Three further cases hold those pointers honest: a fourth asserting the
 ColumnBlocks register row is still there, so *"register row"* cannot quietly become a phrase, a fifth
-asserting that row's `settings/ColumnBlocks.lua:72-73` citation still names the lines the two
+asserting that row's `settings/ColumnBlocks.lua:<from>-<to>` citation still names the lines the two
 declarations are on, and a sixth asserting the same of the `modules/Tooltip.lua` and
 `modules/Window.lua` rows, each with a Decided date and a re-check trigger.
 
