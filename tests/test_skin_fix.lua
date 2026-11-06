@@ -214,6 +214,34 @@ test("A2: a pinned segment is the marked row, and a window hidden closes the men
     assertFalse(got.menu:IsShown(), "the menu outlived its window")
 end)
 
+test("V89A-MM: every segment row is a radio, and the shown one draws the menu's tick", function()
+    -- red under: rows with isActive and no radio/selected (Widgets 22's shape), which draw no tick
+    -- column at all, or a tick on the title or the divider.
+    local inst, _, window = scene()
+    inst.mocks.setAvailableSessions{ { sessionID = 4, name = "Guard", durationSeconds = 22 } }
+    window:SetSegment(4)
+    local got = openPicker(inst, window)
+    local rows, buttons = got.rows, got.menu.buttons
+    assertTrue(rows[1].radio == nil and rows[1].selected == nil, "the title is no radio")
+    assertTrue(rows[3].radio == nil and rows[3].selected == nil, "the divider is no radio")
+    for _, i in ipairs({ 2, 4, 5 }) do
+        assertEqual(rows[i].radio, true, "row " .. i .. " keeps a tick column")
+        assertEqual(type(rows[i].selected), "function", "row " .. i .. " is read on every paint")
+        assertEqual(rows[i].selected(rows[i]), rows[i].isActive(), "row " .. i .. ": one predicate")
+        assertTrue(buttons[i].__tick ~= nil and buttons[i].__tick:IsShown(), "row " .. i .. ": no tick column")
+    end
+    assertTrue(buttons[2].__tick:GetText() ~= "", "the pinned segment carries the tick")
+    assertEqual(buttons[4].__tick:GetText(), "", "Current is not what the window shows")
+    assertEqual(buttons[5].__tick:GetText(), "", "Overall is not what the window shows")
+    assertTrue(buttons[1].__tick == nil or not buttons[1].__tick:IsShown(), "a tick column on the title")
+    window.frame:Hide()
+
+    window:SetSessionType(inst.NS.Constants.SESSION_TYPE.Overall)
+    got = openPicker(inst, window)
+    assertEqual(got.menu.buttons[2].__tick:GetText(), "", "the tick followed the pick off the segment")
+    assertTrue(got.menu.buttons[5].__tick:GetText() ~= "", "and onto Overall")
+end)
+
 test("A2: under the Combat restriction the client's menu stays, because a label may be secret", function()
     -- red under: W.Dropdown handed a secret label, whose menu measures and concatenates each row,
     -- which raises in tainted code.
