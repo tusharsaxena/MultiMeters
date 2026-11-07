@@ -987,9 +987,9 @@ L["TEST MODE"] = "TEST MODE"
 L["TEST MODE: placeholder numbers, not your fight. Combat ends it."] =
     "TEST MODE: placeholder numbers, not your fight. Combat ends it."
 -- The simulation strip in the same slot (W.TestStrip kind "sim", MultiMeters#60),
--- shown while a /mm sim session runs. There is no SIMULATION title word.
-L["SIMULATION: a scripted fight, not your data. /mm sim stop ends it."] =
-    "SIMULATION: a scripted fight, not your data. /mm sim stop ends it."
+-- shown while a /mm sim session runs. There is no SIM title word.
+L["SIM: a scripted fight, not your data. /mm sim stop ends it."] =
+    "SIM: a scripted fight, not your data. /mm sim stop ends it."
 
 -- ---------------------------------------------------------------------------
 -- Export window
@@ -1222,7 +1222,7 @@ L["A simulation cannot start while General visibility hides every window."] =
 L["A simulation cannot start while the addon is disabled."] = "A simulation cannot start while the addon is disabled."
 L["Ends"] = "Ends"
 L["Leave your group before starting a simulation."] = "Leave your group before starting a simulation."
-L["Multi Meters - Simulation"] = "Multi Meters - Simulation"
+L["Multi Meters - SIM"] = "Multi Meters - SIM"
 L["Plays"] = "Plays"
 L["Restores"] = "Restores"
 L["Saves"] = "Saves"

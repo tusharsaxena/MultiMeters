@@ -2,7 +2,7 @@
 --
 -- While a /mm sim session runs, every window shows the LibKa0s sim-flavored strip
 -- (W.TestStrip(parent, { kind = "sim", ... }), LibKa0s Widgets minor 14) in the test strip's slot
--- under the title, and NO window's title carries a SIMULATION word (OWNER_SCOPE A). The strip is
+-- under the title, and NO window's title carries a SIM word (OWNER_SCOPE A). The strip is
 -- not part of the header, so a window with its header hidden is still marked; a minimized window
 -- shows no marker during a simulation (docs/scope.md#known-limitations: the step panel marks the run).
 -- The reserve comes from the session state and the library's HEIGHT constant, never off a frame,
@@ -13,7 +13,7 @@ local test, assertEqual, assertTrue, assertFalse, assertNil =
     T.test, T.assertEqual, T.assertTrue, T.assertFalse, T.assertNil
 local S = dofile((T.root or ".") .. "/tests/sim_support.lua")
 
-local SIM_LINE = "SIMULATION: a scripted fight, not your data. /mm sim stop ends it."
+local SIM_LINE = "SIM: a scripted fight, not your data. /mm sim stop ends it."
 
 --- A fresh enabled instance with the "case" scenario listed and a second window created, so
 --- "every window" means more than one.
@@ -38,7 +38,7 @@ end
 
 local function titleHasWord(window)
     local text = window.frame.title:GetText() or ""
-    return text:find("SIMULATION", 1, true) ~= nil or text:find("TEST MODE", 1, true) ~= nil
+    return text:find("SIM", 1, true) ~= nil or text:find("TEST MODE", 1, true) ~= nil
 end
 
 test("Sim strip: built hidden on every window, sim-flavored, with the localized line", function()
@@ -99,7 +99,7 @@ test("Sim strip: minimized hides it with no title word; a hidden header keeps it
     a.config.frame.minimized = true
     a:ApplyMinimized()
     assertFalse(a.simStrip:IsShown(), "the strip goes with the body")
-    assertFalse(titleHasWord(a), "a minimized window shows no SIMULATION word")
+    assertFalse(titleHasWord(a), "a minimized window shows no SIM word")
 
     a.config.frame.minimized = false
     a:ApplyMinimized()

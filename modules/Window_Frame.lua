@@ -382,12 +382,12 @@ function WindowProto:BuildFrame()
     self.notice:Hide()
 
     self:BuildStrips(frame)
-    -- THE SIMULATION STRIP (MultiMeters#60): the same strip in its sim flavor (its
+    -- THE SIM STRIP (MultiMeters#60): the same strip in its sim flavor (its
     -- own tint), in the same slot, shown while a /mm sim session runs. It replaces
     -- any title word for the simulation: there is none (OWNER_SCOPE A).
     self.simStrip = W and W.TestStrip and W.TestStrip(frame, {
         kind = "sim",
-        text = L["SIMULATION: a scripted fight, not your data. /mm sim stop ends it."],
+        text = L["SIM: a scripted fight, not your data. /mm sim stop ends it."],
         icon = NS.Icon and NS.Icon("info"),
         owner = NS.name,
         sim = NS.Sim,   -- SF-F1: the strip's right-click menu ends, steps and restarts the sim

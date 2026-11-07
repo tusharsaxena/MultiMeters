@@ -308,7 +308,7 @@ function Host.PanelAnchor()
 end
 
 local P = Host.PANEL
-P.title = L["Multi Meters - Simulation"]
+P.title = L["Multi Meters - SIM"]
 P.anchorTo = function() return Host.PanelAnchor() end
 P.check = NS.Icon("confirm")
 P.startTip = {

@@ -131,6 +131,8 @@ end)
 local COMPAT_READERS = {
     "GetSpellInfo", "GetSpellName", "GetSpellTexture", "GetSpellCooldown",
     "GetSpecialization", "GetSpecializationInfo",
+    -- LibKa0s v1.92.0 (Compat minor 2) added these four client helpers. No caller here until the Forever port.
+    "IsForever", "IsRetail", "ClientKey", "ForClient",
 }
 
 --- What NS.Compat deliberately does not carry: the guard trio (it lives on NS.Secrets) and the two
@@ -140,6 +142,8 @@ local COMPAT_READERS = {
 local COMPAT_NOT_ON_NS_COMPAT = {
     "IsSecret", "CanAccess", "IsSafeKey",
     "GetSpellName", "GetSpellCooldown",
+    -- LibKa0s v1.92.0 (Compat minor 2) added these four client helpers. No caller here until the Forever port.
+    "IsForever", "IsRetail", "ClientKey", "ForClient",
 }
 
 test("parity: NS.Compat and NS.Secrets carry every LibKa0s-Compat-1.0 member between them", function()

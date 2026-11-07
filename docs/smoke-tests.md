@@ -1746,7 +1746,7 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
 
 - **SIM-1. The simulator opens and plays (SM-MM-25).** `/mm sim` → the step panel opens docked to a
   meter window. Start → the run plays at once, with no Run all button, and every Multi Meters window
-  shows the SIMULATION strip. Result: pass (owner-marked 2026-10-23)
+  shows the SIM strip. Result: pass (owner-marked 2026-10-23)
 - **SIM-2. The simulator refuses where it cannot run (SM-MM-26).** `/mm sim start dungeon` in a real
   group, inside an instance, in combat and with `/mm test` on → each refuses with its own line and no
   simulation starts. Result: pass (owner-marked 2026-10-23)
@@ -1769,8 +1769,8 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
 - **SIM-9. An export during a simulation (SM-MM-33).** Mid-simulation, Export to Raid → `[sim]` lines
   print in chat and nothing is sent to the group. Result: pass (owner-marked 2026-10-23)
 - **SIM-10. The sim strip on every window (SM-MM-34).** During a simulation every window shows the
-  SIMULATION strip under its title, in its own tint and distinct from the test strip, including a
-  window with its header hidden; no title carries a SIMULATION word; the strip goes at the stop.
+  SIM strip under its title, in its own tint and distinct from the test strip, including a
+  window with its header hidden; no title carries a SIM word; the strip goes at the stop.
   Result: pass (owner-marked 2026-10-23)
 - **SIM-11. The diagnostics sim section (SM-MM-36).** Mid-simulation, `/mm diagnostics` → the report
   has a `-- sim --` section reading `active: yes scenario=<name>` and the current `step: N/M`; after

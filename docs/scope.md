@@ -421,7 +421,7 @@ default to total and rate.
   it. Nothing else a session touches persists.
 - **A minimized window shows no simulation marker.** While a `/mm sim` session runs, the sim strip
   under the title is the window's only marker, and it goes with the body when the window is
-  collapsed; there is no SIMULATION title word to stand in for it (MultiMeters#60, by the owner's
+  collapsed; there is no SIM title word to stand in for it (MultiMeters#60, by the owner's
   call). The step panel marks the run, so a simulation is never unannounced. With no
   `LibKa0s-Widgets-1.0` no strip is built at all, and the step panel is the only marker.
 - Debug logging is session-only (`NS.State.debug`) and resets on every `/reload`.
