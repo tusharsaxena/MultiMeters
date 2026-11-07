@@ -987,9 +987,9 @@ L["TEST MODE"] = "TEST MODE"
 L["TEST MODE: placeholder numbers, not your fight. Combat ends it."] =
     "TEST MODE: placeholder numbers, not your fight. Combat ends it."
 -- The simulation strip in the same slot (W.TestStrip kind "sim", MultiMeters#60),
--- shown while a /mm sim session runs. There is no SIMULATION title word.
-L["SIMULATION: a scripted fight, not your data. /mm sim stop ends it."] =
-    "SIMULATION: a scripted fight, not your data. /mm sim stop ends it."
+-- shown while a /mm sim session runs. There is no SIM title word.
+L["SIM: a scripted fight, not your data. /mm sim stop ends it."] =
+    "SIM: a scripted fight, not your data. /mm sim stop ends it."
 
 -- ---------------------------------------------------------------------------
 -- Export window
