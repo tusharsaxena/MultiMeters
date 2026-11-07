@@ -6,7 +6,7 @@
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
 ![Tests](https://img.shields.io/badge/Tests-2586%2F2586_passing-green)
 
-Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
+Retail only for now; WoW Forever support is planned. Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
 The numbers are Blizzard's. Multi Meters asks the built-in meter for them and arranges them. It never touches the combat log, so it adds no work on top of what the game is already doing.
 

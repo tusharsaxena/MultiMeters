@@ -25,6 +25,7 @@ such rather than listed as a requirement.
 - **Nothing else.** Every library is vendored under `libs/` and committed (library-stack), so the
   player installs no separate library addon. `## OptionalDeps:` names the vendored libs for load
   ordering, not as things to download.
+  Ace3: WoWUIDev/Ace3@ac3d1225 (untagged master; LibKa0s#76).
 
 ## Development — the contributor toolchain
 
