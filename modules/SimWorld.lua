@@ -566,6 +566,12 @@ local ANSWERS = {
     end,
     UnitGUID = unitField("guid"),
     UnitName = unitField("name"),
+    -- LibKa0s-Compat minor 4's reader: a simulated unit's name, and no realm (Retail, no regional
+    -- names, and the world invents no realm).
+    UnitCharacterName = function(w, token)
+        local m = World.Unit(w, token)
+        return m and m.name or nil, nil
+    end,
     UnitExists = function(w, token) return World.Unit(w, token) ~= nil end,
     UnitClass = function(w, token)
         local m = World.Unit(w, token)

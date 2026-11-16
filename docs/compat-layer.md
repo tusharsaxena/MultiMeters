@@ -22,6 +22,7 @@ without one of its members.
 |---|---|---|
 | Spell | `GetSpellInfo`, `GetSpellTexture` (bound to `LibKa0s-Compat-1.0`) | `nil`, which is also the reader arm's answer when the library is absent |
 | Specialization | `GetSpecialization`, `GetSpecializationInfo` (bound to `LibKa0s-Compat-1.0`) | `nil`, which is also the reader arm's answer when the library is absent |
+| Identity | `RegionalNames`, `UnitCharacterName`, `CharacterKey`, `RealmKey` (bound to `LibKa0s-Compat-1.0` minor 4; no caller yet) | `false`, `nil, nil`, `nil` and `nil`, the absent table's answers, when the library is absent |
 | `C_DamageMeter` | `IsDamageMeterAvailable`, `GetCombatSessionFromType`, `GetCombatSessionFromID`, `GetCombatSessionSourceFromType`, `GetCombatSessionSourceFromID`, `GetAvailableCombatSessions`, `GetSessionDurationSeconds`, `ResetAllCombatSessions` | `nil`, except as noted below |
 | `C_DeathRecap` | `HasDeathRecap`, `HasRecapEvents`, `GetRecapEvents`, `GetRecapMaxHealth` | `false` / `nil` |
 | Recap discovery | `RecapMembers`, `RecapAPIs`, `CallRecap` | an empty finding, never an error |
@@ -65,8 +66,9 @@ provider first; idle, it calls straight through, at the cost of one field test. 
 reading `NS.Compat.X(...)` at call time and never captures a member (`local x = NS.Compat.X` would
 hold the live function and escape the seam, H1). The seam sorts the members three ways:
 
-- **Pure, never wrapped** (seventeen): `GetSpellInfo`, `GetSpellTexture`, `GetSpecialization`,
-  `GetSpecializationInfo`, `GetSpecializationRole` (the real player and real spells), `RecapMembers`,
+- **Pure, never wrapped** (twenty): `GetSpellInfo`, `GetSpellTexture`, `GetSpecialization`,
+  `GetSpecializationInfo`, `GetSpecializationRole` (the real player and real spells), `RegionalNames`,
+  `CharacterKey`, `RealmKey` (the real character's identity keys), `RecapMembers`,
   `RecapAPIs`, `CallRecap` (the diagnostics probes of the real recap API), the three number
   formatters, `OpenContextMenu`, `FirstTexture`, `FirstAtlas`, `BarInterpolation`, `IsSkyriding` and
   `IsInHousing` (the real player's travel state).

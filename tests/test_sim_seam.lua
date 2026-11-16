@@ -20,10 +20,11 @@ local test, assertEqual, assertTrue = T.test, T.assertEqual, T.assertTrue
 -- The members that answer for nobody: the real player, real spells, text and texture helpers and
 -- the diagnostics probes. Kept in step with core/SimSetup.lua's PURE by the cases below.
 local PURE = {
-    "BarInterpolation", "CallRecap", "CreateAbbreviatedNumberFormatter", "CreateNumericRuleFormatter",
-    "FirstAtlas", "FirstTexture", "GetDefaultAbbreviationBreakpoints", "GetSpecialization",
-    "GetSpecializationInfo", "GetSpecializationRole", "GetSpellInfo", "GetSpellTexture",
-    "IsInHousing", "IsSkyriding", "OpenContextMenu", "RecapAPIs", "RecapMembers",
+    "BarInterpolation", "CallRecap", "CharacterKey", "CreateAbbreviatedNumberFormatter",
+    "CreateNumericRuleFormatter", "FirstAtlas", "FirstTexture", "GetDefaultAbbreviationBreakpoints",
+    "GetSpecialization", "GetSpecializationInfo", "GetSpecializationRole", "GetSpellInfo",
+    "GetSpellTexture", "IsInHousing", "IsSkyriding", "OpenContextMenu", "RealmKey", "RecapAPIs",
+    "RecapMembers", "RegionalNames",
 }
 local GUARDED = { "ChatSender", "OpenDeathRecap", "ResetAllCombatSessions" }
 

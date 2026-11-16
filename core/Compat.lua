@@ -80,6 +80,16 @@ Compat.GetSpellTexture       = CompatLib and CompatLib.GetSpellTexture       or 
 Compat.GetSpecialization     = CompatLib and CompatLib.GetSpecialization     or absent
 Compat.GetSpecializationInfo = CompatLib and CompatLib.GetSpecializationInfo or absent
 
+-- The identity readers (LibKa0s-Compat-1.0 minor 4, LibKa0s v1.94.0): whether names are unique
+-- per region, a unit's character name and realm, and AceDB's character and realm keys. Nothing in
+-- this Retail-only tree calls them yet; they are wired so the degraded surface matches the live
+-- one, and so a future SavedVariables key reads them here. With the library ABSENT each answers
+-- the absent table's value (version-4-docs.md, "The absent table"): false, (nil, nil), nil, nil.
+Compat.RegionalNames     = CompatLib and CompatLib.RegionalNames     or function() return false end
+Compat.UnitCharacterName = CompatLib and CompatLib.UnitCharacterName or function() return nil, nil end
+Compat.CharacterKey      = CompatLib and CompatLib.CharacterKey      or absent
+Compat.RealmKey          = CompatLib and CompatLib.RealmKey          or absent
+
 -- ---------------------------------------------------------------------------
 -- C_DamageMeter — the addon's entire data source
 -- ---------------------------------------------------------------------------
