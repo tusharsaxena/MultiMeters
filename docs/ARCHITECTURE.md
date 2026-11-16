@@ -332,8 +332,9 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   whole edge, which the Shell draws on its edge holder in `win.borderStyle`, `win.borderSize`,
   `win.border` and `win.inner`); the title and session line (`header.colorMode`, `title.text`); and
   the header controls at rest and under the pointer (`frame.controlColorMode`, `icon.tint`;
-  `frame.controlHoverColorMode`, `btn.hover`, not `S.CloseButton`, whose `close.hot` red would sit
-  beside six gold siblings). The title bar background has a companion instead,
+  `frame.controlHoverColorMode`, `text.link` since smoke round 1's SR-MM, `btn.hover` before it;
+  the close takes `close.rest`, which follows `icon.tint`, and `close.hot`). Every control carries a
+  one-line tooltip above it (`LibKa0s-Tooltip-1.0`'s `AttachTitleTip`, in `gtip.title`). The title bar background has a companion instead,
   `header.bgColorFromSkin` (`title.bg`, clear for a skin with no title band). The v21 step put every
   stored window on all six once. Under `class` or `custom` the Shell draws no edge and `ApplyBorder`
   lays the player's LSM edge and fill over it, tinting Core's inner rule from `win.inner`; the stored

@@ -2690,6 +2690,13 @@ Total.
 - Skin window: the v21 step survives a junk window and leaves an absent group to the template
 - Skin window: the title has a font before the Shell paints it
 
+### test_titlebar.lua (4)
+
+- Title bar: every meter-window header control shows a tooltip in gtip.title, and hides it on leave
+- Title bar: the two state controls say what a click does, and change their words with the state
+- Title bar: meter-window controls rest in icon.tint and light in text.link; the close lights in close.hot
+- Title bar: the Export modal's close says Close above it and paints icon.tint, then close.hot
+
 ### test_header_band.lua (11)
 
 - Header band: flush inside the edge at Shell's inset, TitleBandHeight high, in every skin
@@ -2934,6 +2941,12 @@ Total.
 - skin switch: the Export modal changes with the Scope ignored
 - skin switch: a tooltip's spell bar changes
 
+### test_client_globals.lua (3)
+
+- client globals: no call of a global a client lacks
+- client globals: every allowlist row has a reason and a finding to excuse
+- client globals: the check is falsifiable, a planted bare call is flagged for both clients
+
 ## Totals
 
 | Suite | Cases |
@@ -3036,6 +3049,7 @@ Total.
 | test_skin_fix.lua | 37 |
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
+| test_titlebar.lua | 4 |
 | test_header_band.lua | 11 |
 | test_skin_picker.lua | 21 |
 | test_skin_settings.lua | 5 |
@@ -3051,5 +3065,6 @@ Total.
 | test_lizard_sighted.lua | 8 |
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 23 |
+| test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2586** |
+| **Total** | **2593** |

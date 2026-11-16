@@ -58,7 +58,7 @@
 --
 -- TOC POSITION: after modules/Window.lua, which owns the frames these attach to.
 
-local _, NS = ...
+local addonName, NS = ...
 
 local HeaderControls = {}
 NS.HeaderControls = HeaderControls
@@ -435,6 +435,49 @@ end
 -- Build
 -- ---------------------------------------------------------------------------
 
+-- ---------------------------------------------------------------------------
+-- Tooltips (smoke round 1, SR-MM; the owner's ruling 3)
+-- ---------------------------------------------------------------------------
+--
+-- EVERY CONTROL SAYS WHAT A CLICK DOES, in one line above it: LibKa0s-Tooltip-1.0's
+-- AttachTitleTip, which places it with PlaceAttached (above, flipped below only without room)
+-- in this owner's `gtip.title`, exactly as the library's own title-bar marks do. The words are a
+-- function, read on each hover, so the two state controls name the click they will make now
+-- rather than the one they made when the strip was built. The close says what every library
+-- close says (Tooltip.CloseTip), so two closes on one screen read alike.
+--
+-- HOOKED, never set: AttachTitleTip appends to OnEnter / OnLeave, so HookHover's reveal below
+-- runs beside it in either order. A degraded install without the major draws no tooltip.
+
+local TIP_WORDS = {
+    settings = "Open settings",
+    segment  = "Choose a segment",
+    reset    = "Reset meter data",
+    export   = "Export a segment to CSV or to chat",
+}
+
+--- What the control `key` on `window` says right now.
+local function tipWords(window, key, Tip)
+    local frameCfg = (window.config or {}).frame or {}
+    local L = NS.L or {}
+    if key == "close" then return Tip.CloseTip(addonName) end
+    if key == "lock" then
+        return frameCfg.locked and L["Unlock window"] or L["Lock window"]
+    end
+    if key == "minimize" then
+        return frameCfg.minimized and L["Expand window"] or L["Minimize window"]
+    end
+    local words = TIP_WORDS[key]
+    return words and L[words] or nil
+end
+
+--- Give one control its title-bar tooltip.
+local function attachTip(button, window, key)
+    local Tip = LibStub and LibStub("LibKa0s-Tooltip-1.0", true)
+    if not (Tip and Tip.AttachTitleTip and Tip.CloseTip) then return end
+    Tip.AttachTitleTip(button, function() return tipWords(window, key, Tip) end, addonName)
+end
+
 --- Create every control on a window. Called once, from Window:Build.
 function HeaderControls:Attach(window)
     local frame = window.frame
@@ -459,6 +502,7 @@ function HeaderControls:Attach(window)
         button.mmWindow = window
         button.mmControl = control.key
         button:SetScript("OnClick", onClick)
+        attachTip(button, window, control.key)
 
         window.controls[control.key] = button
     end
@@ -574,7 +618,8 @@ end
 --- configured color, which is the honest answer rather than a fallback hue.
 ---
 --- `skin`, THE SHIPPED MODE ON BOTH (MM-A1, DECISIONS D4), is the skin's
---- `icon.tint` at rest and `btn.hover` under the pointer, out of the window's
+--- `icon.tint` at rest and `text.link` under the pointer (smoke round 1, SR-MM: the
+--- library's own title-bar marks light in it; `btn.hover` until then), out of the window's
 --- cached skinLooks (`looks`), so a hover reads no token. The close control takes
 --- `close.rest` and `close.hot` there (cause L8, which overrules MM-A1's D4), as the
 --- library's own closes do, so two closes on one screen answer one way.

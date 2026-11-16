@@ -166,7 +166,7 @@ NS.SKIN_FALLBACK = {
     ["title.text"] = { 1, 0.82, 0, 1 },
     ["title.bg"]   = { 0x1d / 255, 0x18 / 255, 0x05 / 255, 1 },
     ["icon.tint"]  = { 0.7, 0.7, 0.72, 1 },
-    ["btn.hover"]  = { 1, 0.82, 0, 1 },
+    ["text.link"]  = { 1, 0.5, 0, 1 },
     ["divider"]    = { 0.24, 0.24, 0.27, 0.85 },
     ["text.highlight"] = { 1, 1, 1, 1 },
     ["text.heading"]   = { 1, 0.82, 0, 1 },
@@ -236,7 +236,7 @@ local WINDOW_LOOKS = {
     titleBgTop   = "title.bgTop",  -- its gradient's stops (R5-MM1): nil for a skin whose band is flat
     titleBgBottom = "title.bgBottom",
     controlRest  = "icon.tint",    -- frame.controlColorMode
-    controlHover = "btn.hover",    -- frame.controlHoverColorMode
+    controlHover = "text.link",    -- frame.controlHoverColorMode (SR-MM: the library marks' hover)
     -- The HUD colors' companions (FS-MM-FLIP): a nil look is the stored swatch.
     hudText      = "hud.text",     -- text.colorFromSkin
     hudLabel     = "hud.label",    -- columnHeader.colorFromSkin

@@ -409,6 +409,9 @@ local SUITES = {
     -- The meter window's chrome on the skin: the five `skin` modes and the title bar companion,
     -- following live under two skins, the player's own picks, and the one-time v21 reset.
     "test_skin_window",
+    -- Every title-bar control this addon draws itself (smoke round 1, SR-MM): the meter window's
+    -- seven and the Export modal's close, a tooltip on each and the skin's rest and hover colors.
+    "test_titlebar",
     -- The meter window's title band (R5-MM1, R5-WIN): flush inside the edge at the edge's own inset,
     -- the title gradient, every header child on its middle, a collapsed window the band alone.
     "test_header_band",

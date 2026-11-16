@@ -717,6 +717,10 @@ test("Column headers have their own color and background", function()
         c.columnHeader.color = { r = 1, g = 0, b = 0, a = 1 }
         c.columnHeader.colorFromSkin = false   -- the player's own color, off the skin
         c.columnHeader.bgColor = { r = 0, g = 0, b = 1, a = 0.5 }
+        -- The player's own band, off the skin. Until smoke round 1 (SR-L4) this case passed on Ka0s
+        -- Default's white `list.header.bg` by coincidence, its blue channel being 1 as well; the band
+        -- is black .35 now, so the swatch is only drawn with the companion off.
+        c.columnHeader.bgColorFromSkin = false
     end }
     window:ApplyColumnHeaders()
 
