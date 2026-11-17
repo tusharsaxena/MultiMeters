@@ -40,6 +40,15 @@ local function shellInset(NS)
     return style == "flat" and type(size) == "number" and size or 1
 end
 
+--- Registers and wears a test-local skin whose flat window edge is `size` px (SR2-MM: since the re-cut
+--- v1.105.0 no shipped skin draws a flat edge wider than 1 px, so the 2 px branch is built here).
+local function wearFlatEdge(Skin, size)
+    local key = "probe_edge" .. size
+    Skin:RegisterSkin({ key = key, tokens = { ["win.borderStyle"] = "flat", ["win.borderSize"] = size } })
+    Skin:SetChoice(OWNER, "ka0s", key)
+    return key
+end
+
 local function pointNamed(region, name)
     for i = 1, region:GetNumPoints() do
         local point, rel, relPoint, x, y = region:GetPoint(i)
@@ -114,16 +123,31 @@ test("Header band: flush inside the edge at Shell's inset, TitleBandHeight high,
 end)
 
 test("Header band: a 2 px flat edge puts the band 2 px in; a nine-slice edge keeps it 1 px in", function()
-    -- The skeptic's correction: Shell insets by `win.borderSize` only for a flat edge (WoW Midnight's
-    -- 2 px gold), never by `win.inset`; WoW Default's 32 px dialog art and Glass keep 1.
+    -- The skeptic's correction: Shell insets by `win.borderSize` only for a flat edge, never by
+    -- `win.inset`; WoW Default's 32 px dialog art and Glass keep 1. Since the re-cut v1.105.0 (SR2-L2)
+    -- no shipped skin draws a 2 px flat edge (WoW Midnight's is 1 px now), so a test-local skin with a
+    -- 2 px flat edge keeps the branch covered.
     -- red under: a band at win.inset, or at 1 in every skin.
     local _, _, window, _, Skin = scene()
+    wearFlatEdge(Skin, 2)
+    assertBandAt(window, 2, "a 2 px flat edge")
     Skin:SetChoice(OWNER, "ka0s", "midnight")
-    assertBandAt(window, 2, "WoW Midnight")
+    assertBandAt(window, 1, "WoW Midnight (1 px since SR2-L2)")
     Skin:SetChoice(OWNER, "ka0s", "wow")
     assertBandAt(window, 1, "WoW Default")
     Skin:SetChoice(OWNER, "ka0s", "glass")
     assertBandAt(window, 1, "Glass")
+end)
+
+test("Header band: every shipped skin's own edge is 1 px, so the band sits 1 px in under each", function()
+    -- SR2-L2 (the re-cut v1.105.0): every flat window edge is 1 px with no inner rule, and the art
+    -- edges (Glass, WoW Default) keep Shell's 1. red under: a shipped skin back on a 2 px flat edge.
+    local _, NS, window, _, Skin = scene()
+    for _, key in ipairs(SKINS) do
+        Skin:SetChoice(OWNER, "ka0s", key)
+        assertEqual(shellInset(NS), 1, key .. ": Shell's inset")
+        assertBandAt(window, 1, key)
+    end
 end)
 
 test("Header band: under the player's own edge the band sits inside that edge", function()
@@ -209,14 +233,19 @@ end)
 
 test("Header band: the header keeps its left and right offsets off the frame's edges", function()
     -- The title starts 8 px in from the frame's left edge and the controls chain in from its right
-    -- by the padding, as before, whatever the band's inset.
+    -- by the padding, as before, whatever the band's inset: a 2 px flat edge (a test-local skin, since
+    -- SR2-L2 left no shipped skin with one) and WoW Midnight's 1 px edge.
     local _, _, window, _, Skin = scene()
+    local function offsets(e, what)
+        local _, _, x = pointNamed(window.frame.title, "LEFT")
+        assertEqual(x + e, 8, what .. ": the title's left offset off the frame")
+        local _, _, cx = pointNamed(window.controls.close, "RIGHT")
+        assertEqual(cx - e, -window.layout.padding, what .. ": the close control's right offset off the frame")
+    end
+    wearFlatEdge(Skin, 2)
+    offsets(2, "a 2 px flat edge")
     Skin:SetChoice(OWNER, "ka0s", "midnight")
-    local e = 2
-    local _, _, x = pointNamed(window.frame.title, "LEFT")
-    assertEqual(x + e, 8, "the title's left offset off the frame")
-    local _, _, cx = pointNamed(window.controls.close, "RIGHT")
-    assertEqual(cx - e, -window.layout.padding, "the close control's right offset off the frame")
+    offsets(1, "WoW Midnight")
 end)
 
 -- ── collapsed ─────────────────────────────────────────────────────────────────────────────────
@@ -228,8 +257,10 @@ test("Header band: a collapsed window is exactly the band plus its edges", funct
     cfg.frame.minimized = true
     window:ApplyConfig()
     assertEqual(window.frame.__h, 32, "Ka0s Default's collapsed height")
+    wearFlatEdge(Skin, 2)
+    assertEqual(window.frame.__h, 34, "a 2 px flat edge's collapsed height")
     Skin:SetChoice(OWNER, "ka0s", "midnight")
-    assertEqual(window.frame.__h, 34, "WoW Midnight's collapsed height (a 2 px edge)")
+    assertEqual(window.frame.__h, 32, "WoW Midnight's collapsed height (a 1 px edge since SR2-L2)")
 end)
 
 -- ── the Export modal ──────────────────────────────────────────────────────────────────────────

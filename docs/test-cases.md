@@ -2697,10 +2697,11 @@ Total.
 - Title bar: meter-window controls rest in icon.tint and light in text.link; the close lights in close.hot
 - Title bar: the Export modal's close says Close above it and paints icon.tint, then close.hot
 
-### test_header_band.lua (11)
+### test_header_band.lua (12)
 
 - Header band: flush inside the edge at Shell's inset, TitleBandHeight high, in every skin
 - Header band: a 2 px flat edge puts the band 2 px in; a nine-slice edge keeps it 1 px in
+- Header band: every shipped skin's own edge is 1 px, so the band sits 1 px in under each
 - Header band: under the player's own edge the band sits inside that edge
 - Header band: the band follows the player's header height and padding
 - Header band: the drag strip covers the band
@@ -3050,7 +3051,7 @@ Total.
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
 | test_titlebar.lua | 4 |
-| test_header_band.lua | 11 |
+| test_header_band.lua | 12 |
 | test_skin_picker.lua | 21 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
@@ -3067,4 +3068,4 @@ Total.
 | test_skin_switch.lua | 23 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2593** |
+| **Total** | **2594** |
