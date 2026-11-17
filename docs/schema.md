@@ -60,8 +60,8 @@ safe because every step is idempotent against a fresh default profile. A step ne
 the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
-**Twenty-four steps are wired today**, `migrations[1]` through `migrations[24]`, walking an account from
-the shipped v1 shape to v25. Each is one line of the header block at the top of
+**Twenty-six steps are wired today**, `migrations[1]` through `migrations[26]`, walking an account from
+the shipped v1 shape to v27. Each is one line of the header block at the top of
 `core/Database.lua`, the version's home, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -91,12 +91,13 @@ the shipped v1 shape to v25. Each is one line of the header block at the top of
 | v23 → v24 | the title's alignment off the skin (SF-MM-1): every stored window's `header.alignFromSkin` is set false, so titles left-align. |
 | v24 → v25 | the deleted Friz becomes Ka0s Ubuntu (R3-FRIZ): LibKa0s v1.85.0 deleted `Ka0s Friz Quadrata TT` (R3-L7) and WoW Default draws `Ka0s Ubuntu` in its place (R3-L6). `Database.RetireFonts` moves every stored string naming the deleted face, at any depth (a window's fonts, the skin's Font override), to `Ka0s Ubuntu` in every profile. Blizzard's own `Friz Quadrata TT` stays. |
 | v25 → v26 | no line under the title (R4-SEP, the owner's 2026-11-03 sign-off): the title bar divider and its four settings are gone, so every stored window of every profile has `header.divider`, `dividerThickness`, `dividerColorMode` and `dividerColor` (`Database.DIVIDER_KEYS`) pruned, whatever they held. |
+| v26 → v27 | the tooltip opens beside the window (AD-92-MM, the owner's ruling of 2026-11-17, option A): `tooltip.anchor` offers only `BESIDE` and `BESIDE_LEFT`, so every stored window of every profile has its anchor, whatever it held (the eight 3×3 boxes, a `CURSOR` that escaped v10, junk), set to `BESIDE`. The offsets are kept. See [`tooltip`](#tooltip) |
 
-Adding a v27 is two edits and no bootstrap change:
+Adding a v28 is two edits and no bootstrap change:
 
 ```lua
-migrations[26] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
-local CURRENT_DB_VERSION = 27               -- core/Database.lua
+migrations[27] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
+local CURRENT_DB_VERSION = 28               -- core/Database.lua
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -1034,7 +1035,7 @@ every number to its right is opaque.
 
 ### `tooltip`
 
-`anchor = "TOP"` · `offsetX = 0` · `offsetY = 0` · `showSpells = true` · `maxSpells = 10` ·
+`anchor = "BESIDE"` · `offsetX = 0` · `offsetY = 0` · `showSpells = true` · `maxSpells = 10` ·
 `showAllStatsOnName = true` · `hideInCombat = false`.
 
 Its own appearance, kept separate from `bars` and `text` on purpose — a 14px spell line and a 90px
@@ -1074,36 +1075,27 @@ does), and a restricted pull can hand either back **secret**. Everything leaves
 `modules/Tooltip_Lines.lua`'s `killingBlowOf` through `plainWord`, so what cannot be read plainly is simply
 not drawn: the label is built with `..` and every piece of it is a plain string by construction.
 
-`anchor` takes eight values — the four edges and the four corners — and each names **a box of a 3×3
-drawn around the hovered cell**. "Top left" is the box above and
-to the LEFT; "Left" is the box beside it, growing left. Each therefore names a direction the tooltip
-grows in as well as a corner it touches, which is what a player means by picking one.
+`anchor` takes two values, and both open the tooltip **beside the window**, outside its outer edge,
+never over its rows (WowAddonStandards standalone-windows, *Tooltip placement*; AD-92-MM). A meter
+row is a body element, and a tooltip beside the hovered cell covers the very rows the player is
+comparing it with. `BESIDE` ("Beside the window", the default) tries the right first and flips left
+when there is no room; `BESIDE_LEFT` ("Beside, prefer left") tries the left first. The choice is
+`LibKa0s-Tooltip-1.0`'s `prefer`. The owner kept a choice of two over a fixed rule on 2026-11-17
+(option A). `schemaVersion` 27 moves every stored value to `BESIDE`, and an unrecognized value is
+placed like `BESIDE` for the same reason.
 
-**There is no "at cursor".** It was the shipped default and it is what every other tooltip in the
-game does, which is exactly what was wrong with it here: over a *grid* it lands wherever the pointer
-happens to be inside a cell, so the same hover puts the tooltip somewhere different every time and
-reads as jitter rather than as a choice. `TOP` is the deliberate version of the same thing, and is
-the default. `schemaVersion` 10 rewrites a stored `CURSOR`, and an unrecognized anchor falls back to
-`TOP` for the same reason — it is where a new window puts it.
+**The eight 3×3 boxes and "at cursor" are gone.** "At cursor" landed wherever the pointer was inside
+a cell, and the boxes, which replaced it in v10, sat over the cell's neighbors.
 
-**Blizzard's tokens cannot say that**: `ANCHOR_TOPLEFT` and `ANCHOR_TOPRIGHT` are both directly above
-the owner, aligned to one edge or the other, so both grow *across* the thing being hovered — and
-there is no token at all for the four diagonals. So `SetOwner` is called with the closest token first,
-which gives the tooltip a valid position and keeps it on screen, and `placeTooltip` then lays the
-exact box over it with a `SetPoint`.
-
-**The placement is applied AFTER `GameTooltip:Show()`**, and that is not a detail. The show path
-**re-anchors** the tooltip to its owner — the same pass that re-fonts its lines, which is why
-`reapplyFonts` already runs from exactly there. A point set before the lines were added is silently
-thrown away, so the player got the token's placement instead: "Top left" sat directly above the cell
-growing right, and no anchor produced the box beside it at all.
-
-**That `SetPoint` is the one place this addon positions anything against a frame that has held a
-meter value.** A cell handed a secret has secret anchoring data (rule R3), so this is the one call in
-the file that could raise inside Blizzard's own code while tainted by us. It is `pcall`'d, and a
-failure leaves the token's placement standing — the tooltip opens in roughly the right place rather
-than not at all. `ANCHOR_NONE` and `ANCHOR_PRESERVE` are still absent, and now for a simpler reason:
-both mean "the owner places this", which with our own placement gone would be no placement at all.
+**The placement is applied after `GameTooltip:Show()`**, because the placer needs the tooltip's real
+size. The tooltip is owned at `ANCHOR_NONE` (`Tip.Own`), filled and shown, and `applyPlacement` calls
+`PlaceBeside` with the window's clean `anchor` frame as the group and the hovered cell's row as the
+element. Its top is level with the row's top. The point is one absolute point on UIParent, so nothing
+is anchored to a cell that has held a meter value (rule R3). `offsetX` and `offsetY` nudge it: the
+measured rects move by the pair before the point is computed, so the result is still clamped on
+screen and nothing reads a point back off the tooltip. When the placer cannot read the screen, or
+the library is absent, the tooltip attaches centered above the row (`BOTTOM` on its `TOP`, 2 px),
+`pcall`'d. It never follows the cursor.
 
 `maxSpells = 0` means "every spell the breakdown collected", which is the collector's own ceiling of
 64 rather than literally unbounded — the "and N more" line stays honest about anything past it.

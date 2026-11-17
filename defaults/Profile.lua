@@ -480,20 +480,19 @@ local WINDOW_TEMPLATE = {
     -- tooltip — the cell spell breakdown
     -- -----------------------------------------------------------------------
     tooltip = {
-        -- CURSOR | TOP | BOTTOM | LEFT | RIGHT
-        --        | TOPLEFT | TOPRIGHT | BOTTOMLEFT | BOTTOMRIGHT
-        -- Above the cell, in ONE place. "At cursor" was the default and is gone:
-        -- over a grid it lands wherever the pointer happens to be inside a cell,
-        -- so the same hover puts the tooltip somewhere different every time.
-        anchor             = "TOP",
+        -- BESIDE | BESIDE_LEFT: beside the window, never over its rows
+        -- (AD-92-MM, standalone-windows *Tooltip placement*). BESIDE tries the
+        -- right first, BESIDE_LEFT the left; the v26 -> v27 step moved every
+        -- older value (the 3x3 boxes, CURSOR before them) to BESIDE.
+        anchor             = "BESIDE",
         -- The TOOLTIP's scale, not the window's: a player who wants a bigger grid
         -- and a small tooltip is asking two questions. Put back to 1 when the
         -- tooltip closes, because GameTooltip is Blizzard's and shared.
         scale              = 1.0,
-        -- Nudge applied on top of whichever anchor is chosen, in pixels. Passed
-        -- to GameTooltip:SetOwner, which takes the pair natively — so the client
-        -- still does the placing and nothing here reads geometry back off a
-        -- frame (rule R3).
+        -- Nudge applied on top of the placement beside the window, in pixels.
+        -- modules/Tooltip.lua moves the measured rects by the pair before the
+        -- placer computes the point, so nothing reads a point back off the
+        -- tooltip and the result is still clamped on screen.
         offsetX            = 0,
         offsetY            = 0,
         showSpells         = true,

@@ -445,58 +445,33 @@ end
 -- Anchoring
 -- ---------------------------------------------------------------------------
 --
--- WHERE THE TOOLTIP GOES, as the cell of a 3x3 grid drawn around the thing being
--- hovered. "Top left" is the box above and to the LEFT of the cell; "Left" is the
--- box beside it, vertically centered; and so on around the eight. Every one of
--- them therefore names a direction the tooltip grows in as well as a corner it
--- touches, which is what a player means by picking one.
+-- WHERE THE TOOLTIP GOES: BESIDE THE WINDOW (AD-92-MM, LibKa0s#92). A meter row is
+-- a BODY element (WowAddonStandards standalone-windows, *Tooltip placement*), so
+-- its tooltip opens outside the window's outer edge, on the right when it fits and
+-- on the left otherwise, its top level with the hovered row's. It covers none of
+-- the rows the player is reading or comparing, which is what the eight boxes of a
+-- 3x3 around the cell (and "At cursor" before them) never managed: a tooltip
+-- beside the hovered cell sits on its neighbors.
 --
--- BLIZZARD'S TOKENS CANNOT SAY THIS. ANCHOR_TOPLEFT and ANCHOR_TOPRIGHT put the
--- tooltip directly ABOVE the owner, aligned to one edge or the other, so both of
--- them grow across the thing you are hovering rather than away from it; there is
--- no token at all for the four diagonal boxes. So the token is the FALLBACK and
--- the pair below is the placement.
+-- `LibKa0s-Tooltip-1.0` does the placing. `PlaceBeside` measures the window group,
+-- chooses the side, clamps the top on screen and writes ONE absolute point on
+-- UIParent's BOTTOMLEFT, so nothing is anchored to a frame that has held a meter
+-- value. The setting keeps a player choice of two (the owner's ruling of
+-- 2026-11-17, option A): BESIDE tries the right first, BESIDE_LEFT the left.
 --
--- `tip` is the tooltip's own corner and `owner` is the corner of the hovered
--- frame it is put against. Reading one row: TOPLEFT puts the tooltip's
--- BOTTOMRIGHT on the cell's TOPLEFT, so it sits up and to the left, growing that
--- way.
-local ANCHOR_POINTS = {
-    TOPLEFT     = { tip = "BOTTOMRIGHT", owner = "TOPLEFT" },
-    TOP         = { tip = "BOTTOM",      owner = "TOP" },
-    TOPRIGHT    = { tip = "BOTTOMLEFT",  owner = "TOPRIGHT" },
-    LEFT        = { tip = "RIGHT",       owner = "LEFT" },
-    RIGHT       = { tip = "LEFT",        owner = "RIGHT" },
-    BOTTOMLEFT  = { tip = "TOPRIGHT",    owner = "BOTTOMLEFT" },
-    BOTTOM      = { tip = "TOP",         owner = "BOTTOM" },
-    BOTTOMRIGHT = { tip = "TOPLEFT",     owner = "BOTTOMRIGHT" },
-}
+-- THE GEOMETRY IS READ OFF TWO CLEAN FRAMES, never the cell. The group is the
+-- window's `anchor` (modules/Window_Frame.lua), the empty frame the visible window
+-- is pinned to and the one frame of it that never receives a value; the element
+-- is the hovered cell's ROW, whose top is the cell's and which is anchored to the
+-- body, not to a cell. A cell handed a secret has secret anchoring data (rule R3),
+-- and the placer, which guards every read, would only answer "unreadable" off it.
+local PREFER = { BESIDE = "right", BESIDE_LEFT = "left" }
 
--- GameTooltip's own anchor tokens, keyed by the setting's value, and now the
--- FALLBACK rather than the placement: SetOwner is called with one of these first
--- so the tooltip always has a valid position, and the exact placement above is
--- then laid over it.
---
--- THE ORDER MATTERS AND IS THE SAFETY NET. Anchoring GameTooltip to a cell that
--- has been handed a meter value gives the tooltip secret anchoring data (rule
--- R3), and this addon's execution is tainted -- so the SetPoint below is the one
--- call in this file that could raise inside Blizzard's own code, at the worst
--- possible moment. It is pcall'd, and a failure leaves the token's placement
--- standing: the tooltip opens in roughly the right place rather than not at all.
---
--- ANCHOR_NONE and ANCHOR_PRESERVE are still absent, and for the same reason as
--- before: both mean "the owner places this", which with no placement of our own
--- would be no placement at all.
-local ANCHOR_TOKENS = {
-    TOP         = "ANCHOR_TOP",
-    BOTTOM      = "ANCHOR_BOTTOM",
-    LEFT        = "ANCHOR_LEFT",
-    RIGHT       = "ANCHOR_RIGHT",
-    TOPLEFT     = "ANCHOR_TOPLEFT",
-    TOPRIGHT    = "ANCHOR_TOPRIGHT",
-    BOTTOMLEFT  = "ANCHOR_BOTTOMLEFT",
-    BOTTOMRIGHT = "ANCHOR_BOTTOMRIGHT",
-}
+--- The library's gap, read at call time: the placers' own 2 screen units.
+local function tipGap(Tip)
+    local gap = Tip and Tip.TIP_GAP
+    return type(gap) == "number" and gap or 2
+end
 
 --- A scale that is safe to hand to SetScale: a real number, bounded to the range
 --- the schema offers. Zero or a negative would make the tooltip invisible or
@@ -510,10 +485,9 @@ local function tooltipScale(v)
     return v
 end
 
---- An offset that is safe to hand to SetOwner: a real number, bounded to the
+--- An offset that is safe to add to a placement: a real number, bounded to the
 --- range the schema offers. A saved profile carrying a string here would
---- otherwise raise inside Blizzard's own code, where the traceback names
---- neither this file nor the setting.
+--- otherwise raise inside the arithmetic below.
 local function offset(v)
     if type(v) ~= "number" then return 0 end
     if v < -400 then return -400 end
@@ -521,53 +495,110 @@ local function offset(v)
     return v
 end
 
+--- The row and the window group a hover is measured against. A grid cell carries
+--- `mmCell` (its row and window); a breakdown row is hovered as the row frame
+--- itself, which carries `mmRow`. Anything else is its own element with no group,
+--- and the placer's GroupOf finds one.
+---
+--- @param anchorFrame table  the hovered cell or row frame
+--- @return table element, table|nil group
+local function hoverGeometry(anchorFrame)
+    local cell = anchorFrame.mmCell
+    local row = (cell and cell.row) or anchorFrame.mmRow
+    local window = (cell and cell.window) or (row and row.window)
+    local element = (row and row.frame) or anchorFrame
+    local group = window and (window.anchor or window.frame) or nil
+    return element, group
+end
+
+--- One coordinate read for the nudged rect, or nil when it is not a plain number.
+--- NS.Secrets is the one file that inspects a value: a geometry read off a frame
+--- with secret anchoring data is a secret, and arithmetic on it raises.
+local function plainNumber(v)
+    if type(v) ~= "number" then return nil end
+    local Secrets = NS.Secrets
+    if Secrets and Secrets.CanAccess and not Secrets.CanAccess(v) then return nil end
+    return v
+end
+
+--- The placer's `rect` option for a NUDGED placement: every frame's rect in
+--- screen units, moved by the player's offsets. Moving the group and the element
+--- together moves the tooltip by exactly the offsets, and the library still
+--- clamps the result on screen, so the nudge is applied where the point is
+--- computed rather than read back off the tooltip afterwards.
+---
+--- @param dx number  screen units, positive right
+--- @param dy number  screen units, positive up
+local function nudgedRect(dx, dy)
+    return function(frame)
+        if type(frame) ~= "table" then return nil end
+        local reads = { "GetLeft", "GetBottom", "GetRight", "GetTop", "GetEffectiveScale" }
+        local v = {}
+        for i, method in ipairs(reads) do
+            local fn = frame[method]
+            if type(fn) ~= "function" then return nil end
+            v[i] = plainNumber(fn(frame))
+            if v[i] == nil then return nil end
+        end
+        local s = v[5]
+        return v[1] * s + dx, v[2] * s + dy, v[3] * s + dx, v[4] * s + dy
+    end
+end
+
 -- WHAT THIS HOVER ASKED FOR, kept between openTooltip and the Show that ends the
 -- build. Cleared by releaseLines with everything else.
 local pendingPlacement
 
---- Put the tooltip in the box the setting names, or leave the token's placement
---- alone.
+--- The fallback when the placer cannot read the screen (an unplaced frame, a
+--- secret, an install without LibKa0s-Tooltip-1.0): the chrome rule's attach,
+--- centered above the hovered row, never the cursor. pcall'd: it is a relative
+--- anchor, and a row that turned out to hold secret anchoring data would raise
+--- inside the client's own code.
+local function attachAbove(at, Tip)
+    pcall(function()
+        GameTooltip:ClearAllPoints()
+        GameTooltip:SetPoint("BOTTOM", at.element, "TOP", at.x, tipGap(Tip) + at.y)
+    end)
+end
+
+--- Place the tooltip beside the window group, or attach it above the row.
 ---
---- CALLED AGAIN AFTER GameTooltip:Show(), AND THAT IS THE WHOLE TRICK. The show
---- path RE-ANCHORS the tooltip to its owner -- the same way it re-fonts the
---- tooltip's lines, which is why `reapplyFonts` exists three lines below every
---- Show in this file. Placing only before the lines were added meant every point
---- set here was silently thrown away and the token's placement was what the
---- player actually got: "Top left" sat directly above the cell growing right,
---- because that is what ANCHOR_TOPLEFT does, and no anchor produced the box
---- beside the cell at all.
----
---- THE OFFSETS ARE APPLIED HERE rather than through SetOwner, so they mean the
---- same thing whichever path placed the tooltip: positive x moves it right and
---- positive y moves it up, from wherever the anchor put it.
+--- CALLED AFTER GameTooltip:Show(), because the placer needs the tooltip's real
+--- size, which only the Show computes, and every builder calls it from there.
+--- The offsets nudge the placement in the tooltip's own units, positive x right
+--- and positive y up.
 local function applyPlacement()
     local at = pendingPlacement
     if not at then return end
     if not (GameTooltip.SetPoint and GameTooltip.ClearAllPoints) then return end
 
-    -- pcall'd: see the note on ANCHOR_TOKENS above. A raise here means the
-    -- tooltip keeps the placement SetOwner already gave it.
-    pcall(function()
-        GameTooltip:ClearAllPoints()
-        GameTooltip:SetPoint(at.tip, at.frame, at.owner, at.x, at.y)
-    end)
+    local Tip = LibStub and LibStub("LibKa0s-Tooltip-1.0", true)
+    local placed
+    if Tip and Tip.PlaceBeside then
+        local opts = { prefer = at.prefer }
+        if at.x ~= 0 or at.y ~= 0 then
+            local s = plainNumber(GameTooltip.GetEffectiveScale and GameTooltip:GetEffectiveScale()) or 1
+            opts.rect = nudgedRect(at.x * s, at.y * s)
+        end
+        placed = Tip.PlaceBeside(GameTooltip, at.element, at.group, opts)
+    end
+    if not placed then attachAbove(at, Tip) end
 end
 
---- Remember where this hover wants the tooltip, and make the first attempt.
+--- Remember where this hover wants the tooltip. Placed by applyPlacement once the
+--- builder has shown it.
 ---
 --- @param anchorFrame table
 --- @param config table
 local function placeTooltip(anchorFrame, config)
-    local at = ANCHOR_POINTS[config.anchor] or ANCHOR_POINTS.TOP
-    if not (at and anchorFrame) then
-        pendingPlacement = nil
-        return
-    end
+    local element, group = hoverGeometry(anchorFrame)
     pendingPlacement = {
-        frame = anchorFrame, tip = at.tip, owner = at.owner,
+        element = element, group = group,
+        -- An anchor this build does not offer (a profile that escaped the v26 -> v27
+        -- step still carrying "TOP", say) is placed like the default.
+        prefer = PREFER[config.anchor] or PREFER.BESIDE,
         x = offset(config.offsetX), y = offset(config.offsetY),
     }
-    applyPlacement()
 end
 
 --- Claim GameTooltip for this hover, or answer false if it must not open.
@@ -587,14 +618,8 @@ local function openTooltip(anchorFrame, config)
         return false
     end
 
-    -- The offsets are passed to SetOwner rather than applied afterwards with a
-    -- SetPoint of our own: the client still does the placing, and it still keeps
-    -- the tooltip on screen. Nudging it ourselves would mean reading a point back
-    -- off a frame that has held a secret (rule R3).
-    -- SCALE BEFORE SetOwner, so the client places a tooltip of the size it is
-    -- actually going to be. Set afterwards, the placement is computed against the
-    -- old size and a scaled-up tooltip runs off the edge of the screen it was
-    -- just fitted to.
+    -- SCALE BEFORE THE PLACEMENT, so the placer measures a tooltip of the size it
+    -- is actually going to be.
     --
     -- RESTORED ON HIDE like the fonts are (see ensureTooltipHook): GameTooltip is
     -- Blizzard's and is shared with every other addon, so leaving it at 1.4
@@ -603,12 +628,15 @@ local function openTooltip(anchorFrame, config)
         GameTooltip:SetScale(tooltipScale(config.scale))
     end
 
-    -- TOP is the fallback for a stored anchor this build does not offer -- a
-    -- profile that escaped the v9 -> v10 step still carrying "CURSOR", say. It is
-    -- the shipped default, so an unrecognized value lands on the same place a new
-    -- window does rather than somewhere nothing else uses.
-    GameTooltip:SetOwner(anchorFrame, ANCHOR_TOKENS[config.anchor] or "ANCHOR_TOP",
-        offset(config.offsetX), offset(config.offsetY))
+    -- Owned at ANCHOR_NONE: the client places nothing, and applyPlacement puts it
+    -- beside the window after the Show. The library's Own when it is there, the
+    -- same call by hand on an install without it.
+    local Tip = LibStub and LibStub("LibKa0s-Tooltip-1.0", true)
+    if Tip and Tip.Own then
+        Tip.Own(GameTooltip, anchorFrame)
+    else
+        GameTooltip:SetOwner(anchorFrame, "ANCHOR_NONE")
+    end
     placeTooltip(anchorFrame, config)
     GameTooltip:ClearLines()
 

@@ -149,20 +149,24 @@ test("CellTooltip opens on the hovered cell and heads with the player and the st
 end)
 
 test("CellTooltip honors the anchor setting and falls back to the default", function()
+    -- Re-pinned by AD-92-MM (standalone-windows, *Tooltip placement*): every value is owned at
+    -- ANCHOR_NONE and placed by LibKa0s-Tooltip-1.0, so no setting reaches a client token. Where
+    -- it lands on a real screen is tests/test_tooltip_place.lua's.
     local inst, cfg, anchor = bench()
-    cfg.tooltip.anchor = "BOTTOMRIGHT"
+    cfg.tooltip.anchor = "BESIDE_LEFT"
     inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
-    assertEqual(inst.mocks.GameTooltip.__anchor, "ANCHOR_BOTTOMRIGHT")
+    assertEqual(inst.mocks.GameTooltip.__anchor, "ANCHOR_NONE")
 
-    -- TOP, because it is the shipped default: an anchor this build does not
-    -- offer -- a typo, or a profile that escaped the v9 -> v10 step still
-    -- carrying "CURSOR" -- lands where a new window does rather than somewhere
-    -- nothing else uses.
+    -- An anchor this build does not offer -- a typo, or a profile that escaped
+    -- the v26 -> v27 step still carrying "TOP" -- is placed like the default
+    -- rather than handed to the client as a token.
     cfg.tooltip.anchor = "SOMETHINGWRONG"
     inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
-    assertEqual(inst.mocks.GameTooltip.__anchor, "ANCHOR_TOP",
-        "a typo'd token must not silently become a broken anchor")
+    assertEqual(inst.mocks.GameTooltip.__anchor, "ANCHOR_NONE",
+        "a typo'd value must not silently become a client anchor")
 
+    -- This bench's anchor is a bare frame with no geometry, so the placer writes nothing and the
+    -- fallback attaches the tooltip above it: the chrome rule, never the cursor.
     local tip, _, rel = inst.mocks.GameTooltip:GetPoint(1)
     assertEqual(tip, "BOTTOM", "the fallback must be PLACED as well as owned")
     assertEqual(rel, "TOP")

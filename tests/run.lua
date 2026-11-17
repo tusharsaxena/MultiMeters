@@ -360,6 +360,7 @@ local SUITES = {
     "test_tooltip_lines",
     "test_tooltip_builders",
     "test_tooltip_deaths",
+    "test_tooltip_place",
     "test_drilldown",
     "test_export",
     "test_export_modal",

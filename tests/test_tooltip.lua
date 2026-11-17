@@ -14,8 +14,8 @@
 -- trusting a flag.
 --
 -- WHAT THIS FILE KEEPS. The primitives that modules/Tooltip.lua kept when it was
--- peeled for layout-§1 (issue #28): the static guarantees, placement and the
--- anchor offsets, line spacing, the font that has to be put back after the
+-- peeled for layout-§1 (issue #28): the static guarantees, the anchor setting
+-- (where the tooltip lands is tests/test_tooltip_place.lua's), line spacing, the font that has to be put back after the
 -- client hands one back, and the `maxSpells = 0` cap. Three siblings took the
 -- rest, each mirroring the module file it covers —
 -- tests/test_tooltip_lines.lua, tests/test_tooltip_builders.lua and
@@ -156,138 +156,44 @@ end)
 -- ---------------------------------------------------------------------------
 -- Anchoring and offsets
 -- ---------------------------------------------------------------------------
+--
+-- WHERE the tooltip opens is tests/test_tooltip_place.lua's, on the kit's fake screen (AD-92-MM,
+-- standalone-windows *Tooltip placement*), and so are the offsets, which nudge the placed tooltip.
+-- What stays here is the setting itself.
 
-test("Every anchor the schema offers resolves to a real GameTooltip token", function()
-    -- The token is the FALLBACK now, not the placement: SetOwner is called with
-    -- one so the tooltip always has a valid position, and placeTooltip lays the
-    -- exact box over it. A missing token would leave a tooltip with nothing to
-    -- fall back to if our own SetPoint raises.
-    -- red under: dropping any entry from ANCHOR_TOKENS.
-    local expected = {
-        TOP         = "ANCHOR_TOP",
-        BOTTOM      = "ANCHOR_BOTTOM",
-        LEFT        = "ANCHOR_LEFT",
-        RIGHT       = "ANCHOR_RIGHT",
-        TOPLEFT     = "ANCHOR_TOPLEFT",
-        TOPRIGHT    = "ANCHOR_TOPRIGHT",
-        BOTTOMLEFT  = "ANCHOR_BOTTOMLEFT",
-        BOTTOMRIGHT = "ANCHOR_BOTTOMRIGHT",
-    }
-
-    for value, token in pairs(expected) do
-        local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.anchor = value end }
-        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
-        assertEqual(inst.mocks.GameTooltip.__anchor, token,
-            "anchor " .. value .. " did not reach the client")
-    end
-end)
-
-test("Each anchor puts the tooltip in the box of a 3x3 around the cell", function()
-    -- "Top left" is the box ABOVE AND TO THE LEFT of the cell, not the box above
-    -- it aligned to its left edge -- so it grows away from the thing you are
-    -- hovering rather than across it. Blizzard's tokens cannot say that: their
-    -- TOPLEFT and TOPRIGHT are both directly above, and there is no token at all
-    -- for the four diagonals.
-    -- red under: going back to SetOwner's placement.
-    local EXPECTED = {
-        TOPLEFT     = { "BOTTOMRIGHT", "TOPLEFT" },
-        TOP         = { "BOTTOM",      "TOP" },
-        TOPRIGHT    = { "BOTTOMLEFT",  "TOPRIGHT" },
-        LEFT        = { "RIGHT",       "LEFT" },
-        RIGHT       = { "LEFT",        "RIGHT" },
-        BOTTOMLEFT  = { "TOPRIGHT",    "BOTTOMLEFT" },
-        BOTTOM      = { "TOP",         "BOTTOM" },
-        BOTTOMRIGHT = { "TOPLEFT",     "BOTTOMRIGHT" },
-    }
-
-    for value, want in pairs(EXPECTED) do
-        local inst, cfg, anchor = bench{ configure = function(c) c.tooltip.anchor = value end }
-        inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
-
-        local tip, relTo, rel = inst.mocks.GameTooltip:GetPoint(1)
-        assertTrue(tip ~= nil, value .. ": the tooltip was never placed")
-        assertEqual(tip, want[1], value .. ": the tooltip's own corner")
-        assertEqual(rel, want[2], value .. ": the corner of the cell it is put against")
-        assertTrue(relTo == anchor, value .. ": anchored to something other than the cell")
-    end
-end)
-
-test("There is no \"At cursor\" anchor, and TOP is what shipped instead", function()
-    -- It was the default and it is what every other tooltip in the game does,
-    -- which is exactly the trouble: over a grid it lands wherever the pointer
-    -- happens to be inside a cell, so the same hover puts the tooltip somewhere
-    -- different every time and reads as jitter rather than as a choice. TOP is
-    -- the deliberate version of the same thing.
-    -- red under: putting the entry back without deciding what it means.
+test("The anchor setting offers two beside-the-window choices, and Beside is the default", function()
+    -- The owner's ruling of 2026-11-17 (option A): a meter row is a body element, so its tooltip
+    -- opens beside the window group. The eight boxes of a 3x3 around the cell are gone, and so is
+    -- "At cursor", which they had replaced.
+    -- red under: an old value still offered, the default anywhere but BESIDE, or the sort order and
+    -- the value list disagreeing.
     local inst = T.load()
     local row = inst.NS.FindSchemaRow("window.tooltip.anchor")
-    assertTrue(row ~= nil)
-    assertEqual(row.default, "TOP")
-    assertNil(row.values.CURSOR, "the dropdown still offers the cursor")
+    assertTrue(row ~= nil, "the anchor row left the schema")
+    assertEqual(row.default, "BESIDE")
+    local keys = {}
+    for key in pairs(row.values) do keys[#keys + 1] = key end
+    table.sort(keys)
+    assertEqual(table.concat(keys, ","), "BESIDE,BESIDE_LEFT")
+    assertEqual(table.concat(row.sorting, ","), "BESIDE,BESIDE_LEFT")
+    assertEqual(row.values.BESIDE, inst.NS.L["Beside the window"])
+    assertEqual(row.values.BESIDE_LEFT, inst.NS.L["Beside, prefer left"])
+    assertNil(row.values.CURSOR, "the dropdown offers the cursor")
 end)
 
-test("The anchor dropdown offers nothing the token table cannot resolve", function()
-    -- Two independent statements of one list is exactly what a test can check. A
-    -- value offered by the dropdown with no token behind it does not error — it
-    -- falls back to the cursor, which reads as "the setting does nothing".
-    -- red under: adding a value to ANCHOR_VALUES without adding its token.
+test("Every value the dropdown offers owns the tooltip at ANCHOR_NONE and places it", function()
+    -- The placer owns the position: no value may reach a client anchor token, the cursor least of
+    -- all. Re-pinned by AD-92-MM: these cases asserted each value's ANCHOR_* token and 3x3 box.
+    -- red under: a value with a token behind it, or one left owned and never placed.
     local probe = T.load()
-    local anchorRow
-    for _, r in ipairs(probe.NS.Schema) do
-        if r.path == "window.tooltip.anchor" then anchorRow = r end
-    end
-    assertTrue(anchorRow ~= nil, "the anchor row left the schema")
-
+    local anchorRow = probe.NS.FindSchemaRow("window.tooltip.anchor")
     for value in pairs(anchorRow.values) do
         local inst, cfg, frame = bench{ configure = function(c) c.tooltip.anchor = value end }
         inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", frame, cfg)
-        local token = inst.mocks.GameTooltip.__anchor
-        if value == "CURSOR" then
-            assertEqual(token, "ANCHOR_CURSOR")
-        else
-            assertTrue(token ~= "ANCHOR_CURSOR",
-                "anchor " .. value .. " silently fell back to the cursor")
-        end
-        assertTrue(anchorRow.values[value] ~= nil)
+        assertEqual(inst.mocks.GameTooltip.__anchor, "ANCHOR_NONE", value .. " reached a client token")
+        assertTrue(inst.mocks.GameTooltip:GetPoint(1) ~= nil, value .. ": the tooltip was never placed")
     end
-
-    -- Sorting and values must agree, or the dropdown lists an option it cannot order.
-    for _, key in ipairs(anchorRow.sorting) do
-        assertTrue(anchorRow.values[key] ~= nil, "sorted anchor " .. key .. " has no label")
-    end
-    local sorted = 0
-    for _ in pairs(anchorRow.values) do sorted = sorted + 1 end
-    assertEqual(#anchorRow.sorting, sorted, "the sort order and the value list disagree")
 end)
-
-test("The x/y offset reaches SetOwner rather than a SetPoint of our own", function()
-    -- The offsets go to the CLIENT, as SetOwner's third and fourth arguments, so
-    -- the client still does the placing and still keeps the tooltip on screen.
-    -- Nudging it ourselves would mean reading a point back off a frame that has
-    -- held a secret value, which is rule R3 exactly.
-    -- red under: dropping the offsets from the SetOwner call.
-    local inst, cfg, anchor = bench{ configure = function(c)
-        c.tooltip.offsetX, c.tooltip.offsetY = 25, -40
-    end }
-    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
-
-    assertEqual(inst.mocks.GameTooltip.__ownerX, 25, "the horizontal offset never arrived")
-    assertEqual(inst.mocks.GameTooltip.__ownerY, -40, "the vertical offset never arrived")
-end)
-
-test("A junk offset off an old profile is clamped, never handed to the client", function()
-    -- A string here raises inside Blizzard's own code, where the traceback names
-    -- neither this addon nor the setting that caused it.
-    -- red under: passing config.offsetX straight through.
-    local inst, cfg, anchor = bench{ configure = function(c)
-        c.tooltip.offsetX, c.tooltip.offsetY = "left a bit", 99999
-    end }
-    inst.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", anchor, cfg)
-
-    assertEqual(inst.mocks.GameTooltip.__ownerX, 0, "a non-number offset was not neutralized")
-    assertEqual(inst.mocks.GameTooltip.__ownerY, 400, "an out-of-range offset was not clamped")
-end)
-
 
 -- ---------------------------------------------------------------------------
 -- Line spacing

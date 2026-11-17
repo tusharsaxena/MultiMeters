@@ -281,7 +281,7 @@ Total.
 - Database: the profile a swap lands on is migrated and normalized before anything reads it
 - Database: a profile RESET re-seeds rather than leaving an empty registry
 
-### test_database_migrations.lua (50)
+### test_database_migrations.lua (51)
 
 - Database: RunMigrations stamps and holds the current schema version
 - Database: the schema version is account-wide, not per-profile
@@ -333,6 +333,7 @@ Total.
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 - Database: v23 -> v24 turns a stored window's title alignment off the skin, once
 - Database: v25 -> v26 prunes the title bar divider's four keys from every stored window
+- Database: v26 -> v27 moves every stored tooltip anchor to BESIDE, in every profile
 
 ### test_migrations.lua (17)
 
@@ -1726,15 +1727,11 @@ Total.
 - Targets: a zero total is not listed, and a player with only zeros gets nil
 - Targets: the walk stops at ENEMY_LIMIT (64) answered enemies
 
-### test_tooltip.lua (20)
+### test_tooltip.lua (16)
 
 - modules/Tooltip.lua never applies `#` to a meter array
-- Every anchor the schema offers resolves to a real GameTooltip token
-- Each anchor puts the tooltip in the box of a 3x3 around the cell
-- There is no "At cursor" anchor, and TOP is what shipped instead
-- The anchor dropdown offers nothing the token table cannot resolve
-- The x/y offset reaches SetOwner rather than a SetPoint of our own
-- A junk offset off an old profile is clamped, never handed to the client
+- The anchor setting offers two beside-the-window choices, and Beside is the default
+- Every value the dropdown offers owns the tooltip at ANCHOR_NONE and places it
 - Bar spacing is applied to the tooltip, and taken back off when it hides
 - The configured font reaches both number slots and the spell name
 - NONE is an absent outline flag, not the literal string
@@ -1881,6 +1878,18 @@ Total.
 - modules/Tooltip.lua never applies `#` to a recap's event array
 - Tooltip: a stat key the catalog does not know heads with the key itself
 - Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block
+
+### test_tooltip_place.lua (9)
+
+- Tooltip place: a cell tooltip opens beside the window, on the right when it fits
+- Tooltip place: with no room on the right, it opens on the window's left
+- Tooltip place: the name tooltip and a breakdown row's spell tooltip follow the same rule
+- Tooltip place: "Beside, prefer left" opens on the left when both sides fit
+- Tooltip place: a stored value this build does not offer opens beside, on the right
+- Tooltip place: the X/Y offsets nudge the placed tooltip by exactly that much
+- Tooltip place: a junk offset off an old profile is clamped, never handed to the placer
+- Tooltip place: unreadable geometry attaches the tooltip above the row, never the cursor
+- Tooltip place: no meter tooltip is ever owned at a client anchor token
 
 ### test_drilldown.lua (59)
 
@@ -2774,11 +2783,12 @@ Total.
 
 - glyphs: display strings use only characters every shipped skin face draws
 
-### test_columnblocks.lua (38)
+### test_columnblocks.lua (39)
 
 - Blocks: one block per item, each carrying its index and its label
 - Blocks: the glyph says enabled or disabled, and clicking it toggles
 - Blocks: the glyph's tooltip says what the CLICK will do
+- Blocks: the glyph's tooltip is placed beside its group, like the drag handle's, never at a corner
 - Blocks: a repaint gives every block back before it takes any out
 - Blocks: a released block is off its AceGUI frame, not merely hidden
 - Blocks: a reused block reports the index it now carries, not the one it was built with
@@ -2985,7 +2995,7 @@ Total.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 28 |
-| test_database_migrations.lua | 50 |
+| test_database_migrations.lua | 51 |
 | test_migrations.lua | 17 |
 | test_diagnostics.lua | 35 |
 | test_diagnostics_deathrecap.lua | 31 |
@@ -3036,10 +3046,11 @@ Total.
 | test_row_cells.lua | 1 |
 | test_row_mouse.lua | 17 |
 | test_targets.lua | 28 |
-| test_tooltip.lua | 20 |
+| test_tooltip.lua | 16 |
 | test_tooltip_lines.lua | 41 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 60 |
+| test_tooltip_place.lua | 9 |
 | test_drilldown.lua | 59 |
 | test_export.lua | 94 |
 | test_export_modal.lua | 32 |
@@ -3075,7 +3086,7 @@ Total.
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
 | test_glyphs.lua | 1 |
-| test_columnblocks.lua | 38 |
+| test_columnblocks.lua | 39 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
 | test_degraded.lua | 38 |
@@ -3087,4 +3098,4 @@ Total.
 | test_skin_switch.lua | 23 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2609** |
+| **Total** | **2616** |

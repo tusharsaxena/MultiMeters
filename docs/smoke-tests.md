@@ -25,7 +25,7 @@ secret-value rules the checks refer to.
 | WIN-1 to WIN-60 | [Windows and the header](#win) | Header controls, the strip's extras · settings · close order, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-35 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
-| TIP-1 to TIP-37 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
+| TIP-1 to TIP-41 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips opening beside the window, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-57 | [Export](#export) | The modal, its settings mark, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
@@ -356,7 +356,7 @@ right. Open the panel with `/mm config`.
   Button style (an *Icon* heading with Reveal controls on hover beside Control size; a *Color* heading
   with Control color and Control color mode on one line and Control hover color and Control hover
   color mode on the next; an *Opacity* heading with Control opacity beside Control hover opacity).
-  **Tooltip**: General (Tooltip anchor, Tooltip scale, Horizontal offset, Vertical offset, Hide
+  **Tooltip**: General (Tooltip side, formerly Tooltip anchor, whose choices TIP-23 checks (AD-92-MM), Tooltip scale, Horizontal offset, Vertical offset, Hide
   tooltips in combat), Bar, Bar background, Bar border, Text, Contents (Show spell breakdown, Maximum
   spells, Show targets, Maximum targets, Name the killer, Name the killing blow, Summarize on the name).
   **Visibility**: Where to show this window (the seven contexts: Dungeons, Raids, Arenas,
@@ -520,7 +520,10 @@ right. Open the panel with `/mm config`.
   new one. The blocks and handles released always equal the rows and draggable handles the repaint
   before it painted. Result: pass (owner-marked 2026-10-10)
 - **PANEL-41. Columns: glyph tooltips.** Hover a tick and a cross → each says what a click will do:
-  *Click to hide this column* / *Click to show this column*. Result: pass (owner-marked 2026-10-10)
+  *Click to hide this column* / *Click to show this column*. (Amended by AD-92-MM, 2026-11-18: the
+  tooltip opens where the drag handle's *Drag to reorder* opens, beside the settings panel with its
+  top level with the block, no longer at the glyph's top-right corner; the page is on the Settings
+  canvas, which the placement rule does not bind, so this matches the library's handle.) Result:
 - **PANEL-42. Columns: tabs and leaving mid-drag.** The strip reads Columns, Header text, Header
   background, and the page opens on Columns; Header text shows only the header-font rows and Header
   background only its color pair, with no section heading of their own. Drag a block, drop it, and
@@ -1253,10 +1256,15 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
   **Melee**; neither takes the numbered line with it. Result: pass (owner-marked 2026-10-10)
 - **TIP-22. Hide tooltips in combat.** Tooltip → General → **Hide tooltips in combat**, pull, hover a
   cell → no tooltip; leave combat → one appears as soon as the player is out of combat. Result: pass (owner-marked 2026-10-10)
-- **TIP-23. Anchors.** Tooltip → General → **Tooltip anchor**, walk all eight → each is a box of a 3×3
-  around the cell ("Top left" above and to the left, "Left" beside and growing left, and so on), each
-  opens away from the cell rather than across it, and each lands somewhere different. There is no "At
-  cursor"; **Top** is the default. Result: pass (owner-marked 2026-10-10)
+- **TIP-23. Beside the window (rewritten by AD-92-MM, 2026-11-18; standalone-windows, *Tooltip
+  placement*).** Tooltip → General → **Tooltip side** offers exactly two choices, **Beside the window**
+  (the default) and **Beside, prefer left**. With the window in the middle of the screen and Beside the
+  window, hover a Damage cell, a name cell and, after a click into a breakdown, a breakdown row → each
+  tooltip opens outside the window's right edge, 2 px from it, its top level with the hovered row's top,
+  covering no row of the window. Move the pointer along the row and down the rows → the tooltip moves
+  only to follow the row's top, never the pointer. Drag the window against the screen's right edge →
+  the same hovers open outside its left edge. Fail: a tooltip over the window's rows, one at the
+  pointer, one at a corner of the cell, or a Lua error. Result:
 - **TIP-24. Tooltip appearance.** Hover cells → every Targets line carries an icon in the spell icon
   column; the player's name is class-colored wherever a tooltip names one; the text color mode reaches
   the spell name as well as the numbers; the bar fill and the backdrop each take their own color, mode
@@ -1276,7 +1284,10 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
   hover the same cell → no border at all (a lingering border is the pooled line not being cleared).
   (Amended by MM-05, 2026-10-29, the skinning rollout: the companion.) Result: pass (owner-marked 2026-10-30)
 - **TIP-29. Offsets.** Tooltip → General → Horizontal offset 60, Vertical offset -60 → the tooltip
-  moves and still stays on screen near the edges. Result: pass (owner-marked 2026-10-10)
+  moves and still stays on screen near the edges. (Amended by AD-92-MM, 2026-11-18: the offsets nudge
+  the beside-the-window placement, so with the window mid-screen the tooltip sits 60 px further right
+  and 60 px lower than in TIP-23; set both back to 0 → it returns to 2 px off the window's edge.)
+  Result:
 - **TIP-30. Maximum spells 0.** Tooltip → Contents → **Maximum spells** 0, hover someone with a long
   list → every spell, up to 64, with *and N more* past that; 0 does not act like 10. Result: pass (owner-marked 2026-10-10)
 - **TIP-31. Other tooltips are untouched.** After TIP-23 to TIP-30, hover a bag item, a party member's
@@ -1299,6 +1310,27 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
   gray or bevelled corner shows on any of them, and the icons still line up in one column with the
   names beside them. They take no border (inline icons are cropped only). Fail: a native corner on any
   tooltip icon, an icon column out of line, or a Lua error. Result:
+- **TIP-38. Beside, prefer left (AD-92-MM).** Tooltip → General → **Tooltip side** → **Beside, prefer
+  left**, the window mid-screen → a cell tooltip opens outside the window's LEFT edge, top level with
+  the row. Drag the window against the screen's left edge → it flips to the right edge. Switch back
+  to Beside the window → right again. Fail: the choice changes nothing, or a Lua error. Result:
+- **TIP-39. An old profile's anchor moves to Beside (AD-92-MM, v26 to v27).** On a profile saved
+  before this build with Tooltip anchor set to anything (Top, Bottom right, ...), log in → Tooltip →
+  General → **Tooltip side** reads **Beside the window**, the X and Y offsets are what they were, and
+  the tooltip opens beside the window as in TIP-23. Fail: an empty dropdown, a reset offset, or a
+  tooltip still at a corner of the cell. Result:
+- **TIP-40. Window near the screen's edges, and a scaled window (AD-92-MM).** Set Frame → Scale to
+  0.8, then 1.3, and Tooltip → General → Tooltip scale to 1.4; park the window against the top edge,
+  then the bottom → every cell tooltip still opens beside the window, 2 px from its edge, slid up or
+  down only as far as it must to stay on screen, never over the window. Fail: a gap that grows with
+  the scale, a tooltip off screen, one over the rows, or a Lua error. Result:
+- **TIP-41. Beside the window mid-pull (AD-92-MM).** In a real restricted pull (the Combat addon
+  restriction active), hover a Damage cell and a name cell → each tooltip opens beside the window as in
+  TIP-23. A tooltip that shows a secret amount may answer a secret size to this addon; the placer then
+  writes nothing and the tooltip attaches centered above the hovered row, 2 px off it, by design of the
+  library's fallback. Record which one you see: beside passes; above the row is a finding to report
+  against LibKa0s-Tooltip-1.0 (a size-free beside fallback), not a Lua error. Fail: a tooltip at the
+  pointer, at a corner of the cell, or a Lua error. Result:
 
 ## EXPORT
 
@@ -2158,3 +2190,5 @@ Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-
 Owed: SKIN-49 (R6-RV), SKIN-50 (R6-PV), SIM-15 (R6-SIM) and WIN-58 (R6-MM2), the owner's sixth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND6/`), each with an empty `Result:`. SKIN-18 keeps its 2026-10-30 pass for what it checked then; its R6-PV amendment is checked by SKIN-50.
 
 Owed: SKIN-51 (AD-DS-MM), WIN-59 (AD-88-MM) and WIN-40 (re-opened by the AD-88-MM review), the LibKa0s v1.105.0 adoption wave A (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.
+
+Owed: TIP-23 (rewritten), TIP-29 and PANEL-41 (re-opened, their expected results moved), TIP-38 to TIP-41 (AD-92-MM, LibKa0s#92, tooltip placement), the LibKa0s v1.105.0 adoption wave C (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.

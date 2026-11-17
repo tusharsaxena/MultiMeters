@@ -297,6 +297,35 @@ on open, beside the library's DIALOG tool windows; the library's copy window, me
 tiers above. Tooltip spell lines share GameTooltip's level, re-stated per draw. In-client checks:
 [smoke-tests.md](smoke-tests.md) WIN-53, WIN-54, GRID-34 and PANEL-49.
 
+## Tooltip placement
+
+A meter row is a body element (standalone-windows, *Tooltip placement*; AD-92-MM, LibKa0s#92), so
+the cell, name and breakdown-row tooltips (`modules/Tooltip.lua`'s
+`openTooltip` and `applyPlacement`) are owned at `ANCHOR_NONE` and, after the Show, placed by
+`LibKa0s-Tooltip-1.0`'s `PlaceBeside`: beside the window, right then left (`tooltip.anchor` BESIDE,
+the default) or left then right (BESIDE_LEFT, the owner's option A of 2026-11-17), top level with the
+hovered row, one absolute point on UIParent. The group is the window's clean `anchor` frame and the
+element the hovered cell's row, so no geometry is read off a cell that may hold a secret (rule R3).
+The X/Y offsets nudge the measured rects before the point is computed, and the result is still clamped
+on screen. When the placer cannot read the screen (or the library is absent) the tooltip attaches
+centered above the row, `pcall`'d, never on the cursor. The v26 to v27 step moved every stored anchor
+to BESIDE. The title-bar controls are chrome, on `AttachTitleTip` (above, AD-86-MM).
+
+**Tooltips this addon does not place, and why** (the rule's *What it does not bind* list, or the
+library's own placement):
+
+| Tooltip | Placed by | Why it stays |
+|---|---|---|
+| The Columns editor's show/hide glyph (`settings/ColumnBlocks.lua`) | `PlaceBeside` by this addon, attached above without the library | The page is on the Settings canvas, which the rule does not bind. It is placed like the `ReorderList` handle beside it, so a row's two tooltips open in one place, and no longer at `ANCHOR_RIGHT`. |
+| Every other Settings-canvas tooltip (rail entries, row descriptions, Defaults) | LibKa0s Options | Settings canvas pages are options-ui's, not this rule's. |
+| The minimap button's status tooltip | LibKa0s Launcher (`PlaceLauncher`) | The library's site. No host tooltip lines. |
+| The launcher's right-click options menu | The client's `MenuUtil` | A menu the client's menu system draws places its own entries' tooltips. |
+| A LibDataBroker display's bar (Titan Panel and the like) | The display | The display draws the frame and places the tooltip. |
+| Title-bar marks, the Export modal's marks, the debug console, the sim panel, the copy window | LibKa0s (`AttachTitleTip`, `W.HeaderButtons`, the library windows) | The library's own sites follow the rule in its code. |
+| Blizzard's death recap frame, the fallback for a Deaths click | Blizzard | Blizzard's own frame; this addon writes no line on it. |
+
+In-client checks: [smoke-tests.md](smoke-tests.md) TIP-23, TIP-29 and TIP-38 to TIP-41, and PANEL-41.
+
 ## Skins
 
 Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 2026-10-29 skinning rollout
@@ -473,9 +502,9 @@ thing is in it before opening it:
   unregistered at their one listener, so little is ever sent to them. The same install has already
   lost the options toolkit, the slash dispatcher and the latch, and says so in chat.
 
-**The tooltip is the one thing this addon positions itself**, and that one `SetPoint` onto a cell
-with secret geometry is the only call in the addon that could raise inside Blizzard's own code while
-tainted by us. It is `pcall`'d; a failure leaves the `SetOwner` token's placement standing.
+**A meter tooltip can fall back to above the row mid-pull.** A tooltip showing a secret amount can
+answer this addon a secret size, and the placer then writes nothing, so the tooltip attaches above the
+hovered row instead of beside the window ([Tooltip placement](#tooltip-placement); smoke TIP-41).
 
 ## Documentation map
 
