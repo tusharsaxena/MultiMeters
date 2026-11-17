@@ -2704,11 +2704,13 @@ Total.
 - Title bar: meter-window controls rest in icon.tint and light in text.link; the close lights in close.hot
 - Title bar: the Export modal's close says Close above it and paints icon.tint, then close.hot
 
-### test_header_buttons.lua (6)
+### test_header_buttons.lua (8)
 
 - Header buttons: the meter window's seven marks are HeaderButtons', extras · settings · close
 - Header buttons: the meter strip sits HEADER.PAD in from the band's corner, HEADER.GAP apart
 - Header buttons: the meter window's settings mark opens the settings on its own window
+- Header buttons: a Custom control color survives a skin switch on all seven marks
+- Header buttons: on the ASCII rung a skin switch keeps the glyphs' header font and Custom color
 - Header buttons: the Export modal's title bar reads settings · close, HeaderButtons'
 - Header buttons: the Export modal's settings mark hides the modal, then opens this addon's settings
 - Header buttons: the Export modal's settings mark says Open settings, icon.tint at rest, text.link hovered
@@ -3067,7 +3069,7 @@ Total.
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
 | test_titlebar.lua | 4 |
-| test_header_buttons.lua | 6 |
+| test_header_buttons.lua | 8 |
 | test_header_band.lua | 12 |
 | test_skin_picker.lua | 21 |
 | test_skin_settings.lua | 5 |
@@ -3085,4 +3087,4 @@ Total.
 | test_skin_switch.lua | 23 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2607** |
+| **Total** | **2609** |

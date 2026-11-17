@@ -1015,8 +1015,12 @@ right. Open the panel with `/mm config`.
   link color, the close in red. Header → Controls, hide minimize → the padlock and everything left of
   it move right by one slot, and the gear and the close do not move; set Control size to 10 and to 32 →
   the gaps stay even and the title never runs under the strip. Pick Obsidian and WoW Midnight → the
-  same. Fail: the gear anywhere but beside the close, uneven gaps, a control with no tooltip, a title
-  under a control, or a Lua error. Result:
+  same. Then Header → Button style, set the control color mode to **Custom** and pick a color (a
+  blue, say) → all seven controls take it; pick another skin on the Skin tab → all seven keep the
+  blue without hovering the strip (amended by the AD-86-MM review: a skin switch used to put six of
+  them back to the skin's gray until the next hover). Fail: the gear anywhere but beside the close,
+  uneven gaps, a control with no tooltip, a title under a control, a control that drops the Custom
+  color on a skin switch, or a Lua error. Result:
 
 ## VIS
 

@@ -552,6 +552,13 @@ local function dress(button)
     end
     button.tex:Hide()
     button.glyph = button.glyph or button.label
+    -- A word the library built was skin-fonted (Widgets' __skinFont records it with the skin),
+    -- and a skin's replay would lay the skin's body face over the header font drawIcon sets.
+    -- The glyph is this file's to font, so the record is dropped (AD-86-MM review).
+    if button.label and button.glyph == button.label then
+        local Skin = LibStub and LibStub("LibKa0s-Skin-1.0", true)
+        if Skin and type(Skin.Untrack) == "function" then Skin:Untrack(button.label) end
+    end
     if not button.glyph then
         button.glyph = button:CreateFontString(nil, "OVERLAY")
         button.glyph:SetAllPoints(button)
@@ -588,6 +595,30 @@ local function buildWithLibrary(window, frame)
     })
 end
 
+--- THE STRIP IS RE-LAID AFTER THE LIBRARY'S OWN REPAINT (AD-86-MM review). Every HeaderButton
+--- records a rest paint with Widgets (`icon.tint` on its art, the same for a word), re-run on each
+--- of this owner's skin changes by ONE listener the library registers when the first mark is
+--- built. WindowManager's Reskin listener is registered at file load, before it, and the skin
+--- fires its listeners in registration order, so on a switch Reskin laid the player's Custom or
+--- Class color and the library's paint then put `icon.tint` back over six of the seven marks.
+--- This listener is registered once, after the first HeaderButtons call, so it runs after the
+--- library's and re-lays every window's strip from its config. Without the library it is never
+--- registered: no HeaderButton, no repaint to answer.
+local relayHooked = false
+local function hookRelay()
+    if relayHooked then return end
+    local S, WM = NS.Skin, NS.WindowManager
+    if not (S and type(S.OnLooksChanged) == "function" and WM and type(WM.All) == "function") then
+        return
+    end
+    relayHooked = true
+    S.OnLooksChanged(function()
+        for _, inst in ipairs(WM.All()) do
+            if inst.controls then HeaderControls:Apply(inst) end
+        end
+    end)
+end
+
 --- Create every control on a window. Called once, from Window:Build.
 function HeaderControls:Attach(window)
     local frame = window.frame
@@ -595,6 +626,7 @@ function HeaderControls:Attach(window)
 
     local hb = buildWithLibrary(window, frame)
     window.headerButtons = hb
+    if hb then hookRelay() end
     window.controls = {}
     for i = 1, #CONTROLS do
         local control = CONTROLS[i]

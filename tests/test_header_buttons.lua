@@ -114,6 +114,68 @@ test("Header buttons: the meter window's settings mark opens the settings on its
     assertEqual(activeAtOpen, window.id, "the panel opened on another window")
 end)
 
+-- ── a skin switch keeps the player's control colors (AD-86-MM review) ─────────────────────────
+--
+-- Every HeaderButton records a repaint with the library (Widgets' __onSkin), and that listener is
+-- registered when the window is built, after WindowManager's file-load Reskin listener. So on a
+-- switch the library's rest paint (icon.tint) ran LAST, over the Custom or Class color Reskin had
+-- just laid. HeaderControls re-lays the strip from a listener of its own, registered after the
+-- library's.
+
+local CUSTOM = { 0.2, 0.4, 0.6 }
+
+local function customScene(configure)
+    local inst = T.load{}
+    local NS = inst.NS
+    if configure then configure(inst) end
+    local cfg = NS.Database.GetWindows()[1]
+    cfg.frame.controlColorMode = "custom"
+    cfg.frame.controlColor = { r = CUSTOM[1], g = CUSTOM[2], b = CUSTOM[3], a = 1 }
+    NS.WindowManager:Init()
+    local window = NS.WindowManager.Get(cfg.id)
+    assertTrue(window ~= nil, "the manager built no window for the first config")
+    window:ApplyConfig()
+    return inst, NS, window
+end
+
+test("Header buttons: a Custom control color survives a skin switch on all seven marks", function()
+    -- red under: the library's per-mark repaint running after Reskin (six marks back at icon.tint).
+    local inst, _, window = customScene()
+    for _, key in ipairs(METER_ORDER) do
+        sameColor(window.controls[key].tex.__vertexColor or {}, CUSTOM, key .. " before the switch")
+    end
+    inst.mocks.LibStub("LibKa0s-Skin-1.0"):SetChoice(OWNER, "ka0s", "obsidian")
+    for _, key in ipairs(METER_ORDER) do
+        sameColor(window.controls[key].tex.__vertexColor or {}, CUSTOM, key .. " after the switch")
+    end
+end)
+
+test("Header buttons: on the ASCII rung a skin switch keeps the glyphs' header font and Custom color", function()
+    -- With no art at build the library hands each extra a skin-fonted word, which this file adopts as
+    -- its glyph. red under: the skin's font record or the library's repaint replaying over drawIcon's.
+    local inst, NS, window = customScene(function(i)
+        i.mocks.LibStub("LibKa0s-Media-1.0").Icon = function() return nil end
+        i.mocks.setAtlases({})
+    end)
+    local style = NS.HeaderControls.Style(window)
+    local function check(when)
+        for _, key in ipairs(METER_ORDER) do
+            local b = window.controls[key]
+            assertEqual(b.mmRung, "ascii", key .. " " .. when .. ": the rung")
+            if key ~= "close" then
+                sameColor({ b.glyph:GetTextColor() }, CUSTOM, key .. " " .. when .. ": the glyph color")
+            end
+            local path, size = b.glyph:GetFont()
+            assertEqual(path, style.path, key .. " " .. when .. ": the glyph face")
+            assertEqual(size, style.size, key .. " " .. when .. ": the glyph size")
+        end
+    end
+    check("before the switch")
+    inst.mocks.LibStub("LibKa0s-Skin-1.0"):SetChoice(OWNER, "ka0s", "obsidian")
+    style = NS.HeaderControls.Style(window)
+    check("after the switch")
+end)
+
 -- ── the Export modal ─────────────────────────────────────────────────────────────────────────
 
 local function modalScene(skin)
