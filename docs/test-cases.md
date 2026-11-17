@@ -1316,7 +1316,7 @@ Total.
 
 - modules/Window.lua reads geometry back off the anchor and nothing else
 
-### test_window_header.lua (60)
+### test_window_header.lua (63)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -1330,7 +1330,7 @@ Total.
 - The header says the grid was built the restricted way
 - The header names AMBIGUITY when two rows cannot be told apart
 - Once a quarter of the rows are blanked, the notice says BLANK in plain words (#22)
-- The header line reads 'Test' while placeholder data is on screen
+- The header line carries no 'Test' while the strip shows (the strip is the marker)
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
 - Segment menu: a title, stored segments first, a divider, then Current/Overall
@@ -1378,6 +1378,9 @@ Total.
 - Test mode: strip docked under the title band, column headers and body pushed down by 18
 - Header hidden plus test mode: the strip is at the top of the window and shown
 - Minimized: the strip hides and comes back on expand
+- A player edge wider than 2 px: the column headers sit flush under the strip, uncovered
+- The headers and the body follow the strip's own show and hide (onOffset)
+- Expanding a test-mode window through ApplyConfig lays the headers under the strip
 
 ### test_window_header_sort.lua (17)
 
@@ -3008,7 +3011,7 @@ Total.
 | test_window.lua | 50 |
 | test_window_layout.lua | 18 |
 | test_window_static.lua | 1 |
-| test_window_header.lua | 60 |
+| test_window_header.lua | 63 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 44 |
 | test_window_lifecycle.lua | 9 |
@@ -3072,4 +3075,4 @@ Total.
 | test_skin_switch.lua | 23 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2598** |
+| **Total** | **2601** |

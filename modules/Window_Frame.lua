@@ -213,11 +213,13 @@ function WindowProto:BuildStrips(frame)
     -- (`dock = "title"`, Widgets minor 27, preview-mode's *Where the strip sits*,
     -- AD-88-MM) and ApplyTestStrip shows it and moves the body down by its height.
     -- With the header hidden the band stays 1 px tall inside the edge, so the strip
-    -- sits at the window's top edge. No tooltip. The red title word shows only when
-    -- the strip cannot (a minimized window, or no Widgets library); the session-line
-    -- `Test` stays.
+    -- sits at the window's top edge. No tooltip. The red title word and the
+    -- session-line `Test` show only when the strip cannot (a minimized window, or no
+    -- Widgets library). The dock's onOffset relays the headers and the body on each
+    -- show and hide of the strip, by its own BodyOffset (RelayChrome).
     self.testStrip = W and W.TestStrip and W.TestStrip(frame, {
         dock = "title", titleBar = self.headerBand, window = frame,
+        onOffset = function() self:RelayChrome() end,
         text = L["TEST MODE: placeholder numbers, not your fight. Combat ends it."],
         icon = NS.Icon and NS.Icon("info"),
         -- The skin owner (LibKa0s-Widgets-1.0 16, skinning-§1): the strip's legibility follows
@@ -393,6 +395,7 @@ function WindowProto:BuildFrame()
     self.simStrip = W and W.TestStrip and W.TestStrip(frame, {
         kind = "sim",
         dock = "title", titleBar = self.headerBand, window = frame,   -- AD-88-MM, as the test strip
+        onOffset = function() self:RelayChrome() end,
         text = L["SIM: a scripted fight, not your data. /mm sim stop ends it."],
         icon = NS.Icon and NS.Icon("info"),
         owner = NS.name,
@@ -499,6 +502,10 @@ function WindowProto:ApplyConfig()
     paintShell(frame, frameCfg)
     self:ApplyBorder(frameCfg)
 
+    -- The strip in force shown BEFORE the chrome is laid: ChromeOffsets asks the strip's
+    -- own BodyOffset, so an expand through this path must not lay the headers and the
+    -- body for a strip that is about to show (the dock's onOffset relays them as well).
+    self:PlaceTestStrip()
     self:ApplyHeader()
 
     -- The body is placed from config, and everything below it hangs off the body
@@ -516,8 +523,6 @@ function WindowProto:ApplyConfig()
     -- The notice's text in the skin's highlight (white under Ka0s Default, the
     -- stock FontString color it always drew); re-run on every skin switch.
     if NS.SkinColor then self.notice:SetTextColor(NS.SkinColor("text.highlight")) end
-
-    self:PlaceTestStrip()
 
     for _, row in ipairs(self.pool.all) do
         row:ApplyLayout(layout)

@@ -893,10 +893,12 @@ right. Open the panel with `/mm config`.
   → rows replace it. Result: pass (owner-marked 2026-10-23)
 - **WIN-40. The test-mode strip, header shown.** `/mm test` with the header shown → a yellow strip
   (*TEST MODE: placeholder numbers, not your fight. Combat ends it.*) sits under the title. The column
-  headers sit under it, no row overlaps it, and the session-line *Test* is still there. (The red
-  TEST MODE title word left the title on 2026-10-23 while the strip shows: WIN-47 and WIN-48.)
-  (Amended by AD-88-MM, 2026-11-17: the strip sits directly under the title bar, full width inside
-  the window's edge, with no gap above it; WIN-59.) Result: pass (owner-marked 2026-10-23)
+  headers sit under it, no row overlaps it, and the session line carries no *Test* while the strip
+  shows. (The red TEST MODE title word left the title on 2026-10-23 while the strip shows: WIN-47 and
+  WIN-48.) (Amended by AD-88-MM, 2026-11-17: the strip sits directly under the title bar, full width
+  inside the window's edge, with no gap above it; WIN-59. Amended again by the AD-88-MM review,
+  2026-11-17: the session-line *Test* goes while the strip shows, preview-mode's *Where the strip
+  sits*, MUST v2.110.0; it passed 2026-10-23 with the word still there.) Result:
 - **WIN-41. The strip with the header hidden.** Hide the header (Settings → Header), then `/mm test` →
   the strip is at the very top of the window, so the window is still marked as test data. (Amended by AD-88-MM, 2026-11-17: flush inside the window's top edge; WIN-59.) Result: pass (owner-marked 2026-10-23)
 - **WIN-42. A narrow window.** Make a window narrow → the strip text truncates with *...* inside the
@@ -991,8 +993,10 @@ right. Open the panel with `/mm config`.
   sits*, LibKa0s Widgets `dock = "title"`).** With two windows, `/mm test` → on each window the amber
   TEST MODE strip sits directly under the title bar with no gap, spanning the window's full width
   inside its edge (as wide as the title bar, no longer inset by the padding), and the column headers
-  and rows sit right under it, none covered; the title carries no TEST MODE word. Change Header height
-  and the window's border size (Frame → Border) while it shows → the strip stays glued under the bar.
+  and rows sit flush under it, none covered; neither the title nor the session line carries a mode
+  word (no TEST MODE, no *Test*). Change Header height, and set Frame → Border to a custom edge of
+  4 px and back to the skin's, while it shows → the strip stays glued under the bar and the column
+  headers stay flush under the strip, with no gap and no covered header (AD-88-MM review).
   Resize the window narrower and wider → the strip follows the width. Hide the header → the strip sits
   flush at the window's top edge. Minimize → the strip goes and the red title word shows; expand → back.
   `/mm test` off, `/mm sim` → the cyan SIM strip takes the same place on every window, and its
@@ -2127,4 +2131,4 @@ Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-
 
 Owed: SKIN-49 (R6-RV), SKIN-50 (R6-PV), SIM-15 (R6-SIM) and WIN-58 (R6-MM2), the owner's sixth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND6/`), each with an empty `Result:`. SKIN-18 keeps its 2026-10-30 pass for what it checked then; its R6-PV amendment is checked by SKIN-50.
 
-Owed: SKIN-51 (AD-DS-MM) and WIN-59 (AD-88-MM), the LibKa0s v1.105.0 adoption wave A (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.
+Owed: SKIN-51 (AD-DS-MM), WIN-59 (AD-88-MM) and WIN-40 (re-opened by the AD-88-MM review), the LibKa0s v1.105.0 adoption wave A (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.

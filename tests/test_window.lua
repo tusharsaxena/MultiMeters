@@ -1089,7 +1089,11 @@ test("BuildLayout reserves the test strip only in test mode", function()
     -- everything below the title bar down by exactly TEST_STRIP.HEIGHT, its BodyOffset, with no
     -- host gap (the old pin was 2 + 18 + 2 = 22).
     assertEqual(on.stripHeight, 18, "TEST_STRIP.HEIGHT, the docked strip's BodyOffset")
-    local body = 220 - on.padding * 2 - on.titleHeight - on.headerHeight - 18
+    -- The rows fit under the headers where they are drawn: flush under the strip, which hangs off
+    -- the title band's bottom edge (the band's inset plus its height), not padding + titleHeight
+    -- (AD-88-MM review; the old pin counted from padding + titleHeight + 18).
+    local headerTop = window:HeaderInset() + window:TitleBandHeight(on) + 18
+    local body = 220 - on.padding - headerTop - on.headerHeight
     assertEqual(on.maxRows, math.floor((body + on.rowSpacing) / (on.rowHeight + on.rowSpacing)))
     assertTrue(on.maxRows < off.maxRows, "the strip takes rows, not the window's size")
     assertEqual(on.minHeight, off.minHeight, "the resize floor never moves under the player")
@@ -1159,4 +1163,8 @@ test("With no Widgets library the window builds and reserves nothing", function(
     assertEqual(window.layout.stripHeight, 0)
     assertTrue(window.frame.title:GetText():find("TEST MODE", 1, true) ~= nil,
         "the title marker still says it")
+    -- And the session line keeps its `Test`: the word goes only while a strip shows (AD-88-MM).
+    window:UpdateHeaderText(true)
+    assertTrue((window.sessionText:GetText() or ""):find("Test", 1, true) ~= nil,
+        "no strip on screen, so the session line keeps its word")
 end)

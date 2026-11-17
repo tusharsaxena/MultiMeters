@@ -349,11 +349,18 @@ test("Once a quarter of the rows are blanked, the notice says BLANK in plain wor
     assertTrue(many:find("3 of 9 blank: duplicate specs", 1, true) ~= nil, "got: " .. many)
 end)
 
-test("The header line reads 'Test' while placeholder data is on screen", function()
+test("The header line carries no 'Test' while the strip shows (the strip is the marker)", function()
+    -- preview-mode's *Where the strip sits* (MUST, v2.110.0): the title bar carries no mode word
+    -- while the strip shows. This case pinned the session-line `Test` beside the strip (owner-marked
+    -- 2026-10-23, under v2.87.0's SHOULD NOT); it now pins the v2.110.0 rule (AD-88-MM review).
+    -- red under: UpdateHeaderText adding L["Test"] without asking whether the strip shows.
     local inst, window = scene()
     inst.NS.State.SetTestMode(true)
     window:Refresh()
-    assertTrue(window.sessionText:GetText():find("Test", 1, true) ~= nil)
+    assertTrue(window.testStrip:IsShown(), "the strip is the marker")
+    local line = window.sessionText:GetText() or ""
+    assertTrue(line:find("Test", 1, true) == nil, "the session line repeated the strip: " .. line)
+    -- Where no strip can show the line keeps its word: tests/test_window.lua, no Widgets library.
 end)
 
 test("Test data never reaches the provider", function()
@@ -1258,8 +1265,11 @@ test("Test mode: strip docked under the title band, column headers and body push
     assertEqual(relPoint, "BOTTOMLEFT")
     assertEqual(y, 0)
     assertEqual(window.testStrip:BodyOffset(), 18)
-    assertEqual(pointY(window.headerFrame), -(top + 18))
-    assertEqual(pointY(window.body), -(top + 18 + layout.headerHeight))
+    -- Flush under the strip: the band's bottom edge (its inset plus its height) plus the strip's
+    -- BodyOffset. The old pin was top + 18, which left a gap or an overlap of (2 - inset) px.
+    local stripBottom = window:HeaderInset() + window:TitleBandHeight() + window.testStrip:BodyOffset()
+    assertEqual(pointY(window.headerFrame), -stripBottom)
+    assertEqual(pointY(window.body), -(stripBottom + layout.headerHeight))
 
     inst.NS.State.SetTestMode(false)
     assertFalse(window.testStrip:IsShown())
@@ -1279,7 +1289,8 @@ test("Header hidden plus test mode: the strip is at the top of the window and sh
     local _, rel, _, _, y = window.testStrip:GetPoint(1)
     assertTrue(rel == window.headerBand, "docked to the title band")
     assertEqual(y, 0)
-    assertEqual(pointY(window.headerFrame), -(window.layout.padding + 18))
+    -- Flush under the strip, which hangs off the 1 px band (was padding + 18, a gap of 5 - inset px).
+    assertEqual(pointY(window.headerFrame), -(window:HeaderInset() + 1 + 18))
 end)
 
 test("Minimized: the strip hides and comes back on expand", function()
@@ -1298,4 +1309,62 @@ test("Minimized: the strip hides and comes back on expand", function()
     cfg.frame.minimized = false
     window:ApplyMinimized()
     assertTrue(window.testStrip:IsShown())
+end)
+
+test("A player edge wider than 2 px: the column headers sit flush under the strip, uncovered", function()
+    -- AD-88-MM review: the docked strip hangs off the band's bottom edge (inset + band height), and
+    -- the headers used to sit at padding + titleHeight + 18, so a 4 px edge let the strip cover their
+    -- top 2 px and the skin's 1 px edge left a 1 px gap. red under: headerTop from padding +
+    -- titleHeight + the reserve instead of from the band's bottom plus the strip's BodyOffset.
+    local inst, window, cfg = scene()
+    inst.mocks.__media.border["Grid Edge"] = [[Interface\GridEdge]]
+    cfg.frame.borderColorMode = "custom"
+    cfg.frame.borderStyle, cfg.frame.borderSize = "Grid Edge", 4
+    window:ApplyConfig()
+    assertEqual(window:HeaderInset(), 4, "the band sits inside the player's 4 px edge")
+    inst.NS.State.SetTestMode(true)
+    local stripBottom = 4 + window:TitleBandHeight() + window.testStrip:BodyOffset()
+    assertEqual(pointY(window.headerFrame), -stripBottom, "flush under the strip, none of it covered")
+    assertEqual(pointY(window.body), -(stripBottom + window.layout.headerHeight))
+    inst.NS.State.SetTestMode(false)
+end)
+
+test("The headers and the body follow the strip's own show and hide (onOffset)", function()
+    -- Widgets 27's documented seam: the host moves its body by strip:BodyOffset(), told on each show
+    -- and hide through `onOffset`. red under: a dock with no onOffset, or a relay that reads the
+    -- layout's reserve instead of the strip's BodyOffset.
+    local inst, window = scene()
+    local layout = window.layout
+    local top = layout.padding + layout.titleHeight
+    inst.NS.State.SetTestMode(true)
+    local docked = pointY(window.headerFrame)
+    assertTrue(docked < -top, "the headers moved down for the strip")
+
+    window.testStrip:Hide()
+    window.testStrip:__fire("OnHide")
+    assertEqual(pointY(window.headerFrame), -top, "the strip hid, so its room comes back")
+    assertEqual(pointY(window.body), -(top + layout.headerHeight))
+
+    window.testStrip:Show()
+    window.testStrip:__fire("OnShow")
+    assertEqual(pointY(window.headerFrame), docked, "the strip showed, so the headers move down again")
+    inst.NS.State.SetTestMode(false)
+end)
+
+test("Expanding a test-mode window through ApplyConfig lays the headers under the strip", function()
+    -- The player's route (the minimize control, then CONFIG_CHANGED's ApplyConfig): the strip must be
+    -- shown before ApplyConfig lays the headers and the body, or they sit where the strip draws.
+    -- red under: ApplyConfig placing the chrome before PlaceTestStrip.
+    local inst, window, cfg = scene()
+    inst.NS.State.SetTestMode(true)
+    local docked = pointY(window.headerFrame)
+    window.controls.minimize:_run("OnClick")
+    window:ApplyConfig()
+    assertFalse(window.testStrip:IsShown())
+    window.controls.minimize:_run("OnClick")
+    assertEqual(cfg.frame.minimized, false)
+    window:ApplyConfig()
+    assertTrue(window.testStrip:IsShown())
+    assertEqual(pointY(window.headerFrame), docked)
+    inst.NS.State.SetTestMode(false)
 end)

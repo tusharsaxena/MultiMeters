@@ -368,8 +368,8 @@ end
 --- strip, so none can disagree about where the bar ends. 0 with the header hidden.
 ---
 --- @return number
-function WindowProto:TitleBandHeight()
-    local layout = self.layout
+function WindowProto:TitleBandHeight(layout)
+    layout = layout or self.layout
     if layout.titleHeight <= 0 then return 0 end
     return layout.padding + layout.titleHeight - BAR_INSET
 end
@@ -872,15 +872,7 @@ function WindowProto:ApplyTestStrip()
     if not self.frame then return end
     self:RefreshUpvalues()
     self:PlaceTestStrip()
-
-    local pad = self.layout.padding
-    local _, headerTop, bodyTop = self:ChromeOffsets()
-    self.headerFrame:ClearAllPoints()
-    self.headerFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -headerTop)
-    self.headerFrame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -pad, -headerTop)
-    self.body:ClearAllPoints()
-    self.body:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -bodyTop)
-    self.body:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -pad, pad)
+    self:RelayChrome()
 
     self:ApplyTitle()
     self:ApplyResizeBounds()
@@ -1420,8 +1412,10 @@ function WindowProto:UpdateHeaderText(preview, isDrill, drillTitle)
     --
     -- `preview` still reaches the line, because "TEST" over a grid full of
     -- placeholder numbers is the one label that stops a player reading invented
-    -- data as their own.
-    add(preview and L["Test"] or nil)
+    -- data as their own -- but only where the strip cannot say it: while the strip
+    -- shows, the title bar carries no mode word (preview-mode's *Where the strip
+    -- sits*, MUST v2.110.0), the same rule as the red title word in ApplyTitle.
+    add((preview and not stripShown(self)) and L["Test"] or nil)
     add(self:RestrictedNotice(preview))
 
     -- WHICH FIGHT THIS IS. It was dropped from the header on the argument that it

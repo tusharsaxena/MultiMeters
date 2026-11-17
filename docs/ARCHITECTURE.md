@@ -261,7 +261,7 @@ Three design rules follow, and they are enforced in one place each rather than r
   discovers an illegal comparison halfway through has already raised.
 - **R3 — layout is computed from config and test-mode state, never read back off a frame.** The
   strip slot's room (`layout.stripHeight`, `TEST_STRIP.HEIGHT`, 18 px, while test mode is on or a simulation runs: the docked strip's `BodyOffset`, AD-88-MM) is the one
-  input that is not config, and it too is arithmetic over state rather than a measurement. `SetValue(secret)` marks a
+  input that is not config, and it too is arithmetic over state rather than a measurement. It sizes the row capacity; the column headers and the body are placed by the strip's own `strip:BodyOffset()` (Widgets minor 27, relayed through the dock's `onOffset` on each show and hide), flush under the strip, which hangs off the title band's bottom edge (`WindowProto:BandBottom`); the strips never take a meter value, so asking them reads no secret frame. While a strip shows, neither the title nor the session line carries a mode word. `SetValue(secret)` marks a
   frame `HasSecretValues`, which makes its position data secret and propagates that to anything
   anchored to it. There is not one `GetPoint` / `GetWidth` / `GetLeft` in `modules/Row.lua`, in
   `modules/Row_NameCell.lua`, the name cell peeled out of it, in `modules/Row_Border.lua` or in `modules/Row_Cells.lua`; a window keeps drag and resize on a
