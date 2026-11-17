@@ -57,6 +57,9 @@ local PURE = {
     OpenContextMenu = true, FirstTexture = true, FirstAtlas = true, BarInterpolation = true,
     -- the real player's travel state
     IsSkyriding = true, IsInHousing = true,
+    -- the real player's identity keys and the client's naming rule (LibKa0s-Compat minor 4): a
+    -- SavedVariables key is the real character's, never a simulated one
+    RegionalNames = true, CharacterKey = true, RealmKey = true,
 }
 
 -- ── the guarded answers ───────────────────────────────────────────────────────────────────────

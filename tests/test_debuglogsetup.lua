@@ -217,6 +217,9 @@ test("DebugLogSetup degraded: the stub carries the WHOLE live surface", function
     T.assertSurfaceParity(live, degraded, "NS.DebugLog", {
         -- Library-internal test seams, not part of the contract the addon calls.
         "_toggleClickForTest", "_frameForTest",
+        -- The shell's private view of each line's colored message (DebugLog
+        -- minor 23). `__`-private: its API document says no stub carries it.
+        "__view",
     })
 end)
 

@@ -1003,6 +1003,15 @@ L["SIM: a scripted fight, not your data. /mm sim stop ends it."] =
 -- The tooltip on the header glyph that opens the modal, left of the lock.
 L["Export a segment to CSV or to chat"] = "Export a segment to CSV or to chat"
 
+-- The other header controls' tooltips (smoke round 1, SR-MM; modules/HeaderControls.lua). The
+-- lock and the minimize name the click they make now, so each has two lines. "Lock window" and
+-- "Reset meter data" are declared with their settings rows; the close says LibKa0s' own "Close".
+L["Unlock window"] = "Unlock window"
+L["Minimize window"] = "Minimize window"
+L["Expand window"] = "Expand window"
+L["Open settings"] = "Open settings"
+L["Choose a segment"] = "Choose a segment"
+
 -- SPEC §10. Printed instead of opening the modal when LibKa0s-Widgets-1.0 is
 -- absent: the modal's three selectors need it to draw at all, and a modal with
 -- three labels that open nothing reads as a broken addon rather than as a

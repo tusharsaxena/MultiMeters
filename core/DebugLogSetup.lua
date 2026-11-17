@@ -343,6 +343,24 @@ if not lib then
             return { lines = {}, dropped = 0, capped = false, capsHit = false }
         end,
         DebugVerb       = function() return false end,
+        -- The report seam and its serializer (LibKa0s-DebugLog 23,
+        -- DebugLogDiagnostics.lua minor 11), both methods. With no console the
+        -- report the player asked for streams to chat, with no pointer line, and
+        -- a serialize answers one line: the library-absent arm the API document
+        -- prescribes (docs/api/DebugLog/version-23.11.1.5-docs.md).
+        Report          = function(_, _, _, fn)
+            local n = 0
+            if type(fn) == "function" then
+                fn(function(line)
+                    n = n + 1
+                    if NS.Print then NS.Print(NS.SafeToString(line)) end
+                end)
+            end
+            return n
+        end,
+        Serialize       = function(_, v)
+            return { NS.SafeToString(type(v) == "table" and "<table>" or v) }
+        end,
         -- The change gates and the at-enable queue (LibKa0s-DebugLog 18,
         -- DebugLogGates.lua). With no console nothing is written, so each answers
         -- false ("did not write"), exactly as the live members do with logging off.

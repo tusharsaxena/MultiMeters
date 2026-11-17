@@ -181,7 +181,7 @@ local WINDOW_TEMPLATE = {
         -- `Style.REST` -- rather than the white it shipped as until 2026-10-24,
         -- so this strip and DPS Race's title bar draw their controls alike.
         -- One color MODE each, and both ship "skin" (MM-A1: `icon.tint` at rest,
-        -- `btn.hover` under the pointer, the swatches read under `custom`). Two rather than one
+        -- `text.link` under the pointer since SR-MM, the swatches read under `custom`). Two rather than one
         -- because hover and rest are two independent answers: sharing a mode would make the pointer's color
         -- identical to the resting one for anybody who chose class, which is the
         -- one thing a hover color must never be. The LOCAL player's class, like
@@ -296,7 +296,7 @@ local WINDOW_TEMPLATE = {
         -- would change every existing window's appearance to introduce a setting.
         bgColorMode = "custom",
         bgColor  = { r = 0, g = 0, b = 0, a = 0 },
-        -- The skin's `list.header.bg`, under `custom` (cause A1): a faint band under Ka0s Default, on
+        -- The skin's `list.header.bg`, under `custom` (cause A1): a dark band under Ka0s Default, on
         -- purpose, where the transparent swatch above draws none.
         bgColorFromSkin = true,
     },

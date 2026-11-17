@@ -93,7 +93,7 @@ local CONTROLCOLOR_VALUES = {
 local CONTROLCOLOR_SORT = { "class", "custom" }
 
 -- The window chrome's three (MM-A1, DECISIONS D16), where `skin` is the skin's own color
--- (`win.bg`, `title.text`, `icon.tint`, `btn.hover`) and, for the edge, the skin's whole edge.
+-- (`win.bg`, `title.text`, `icon.tint`, `text.link`) and, for the edge, the skin's whole edge.
 -- The fill, the edge and the title here; the controls in settings/Schema.lua. They were the title
 -- bar divider's three until R4-SEP removed the divider.
 --

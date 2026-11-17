@@ -301,8 +301,10 @@ test("HeaderControls: a control at rest takes the control color", function()
 end)
 
 test("HeaderControls: the shipped strip is DPS Race's: gray at rest, full strength", function()
-    -- DPS Race's controls sit at `Style.REST` (0.7, 0.7, 0.72) at full alpha and
-    -- turn gold under the pointer. The reveal ships off, so no control is faded.
+    -- DPS Race's controls sit at `Style.REST` (0.7, 0.7, 0.72) at full alpha. Under the
+    -- pointer they take Ka0s Default's `text.link` orange since smoke round 1 (SR-MM, the
+    -- owner's ruling 4: every title-bar control in every window lights in the link color; it was
+    -- `btn.hover` gold). The reveal ships off, so no control is faded.
     -- red under: hoverReveal = true or a white controlColor in the defaults.
     local _, window = scene()
     for _, key in ipairs({ "close", "minimize", "lock", "settings", "segment", "reset", "export" }) do
@@ -313,7 +315,7 @@ test("HeaderControls: the shipped strip is DPS Race's: gray at rest, full streng
     end
     window.controls.lock:_run("OnEnter")
     local r, g, b = tintOf(window.controls.lock)
-    assertEqual(r .. "," .. g .. "," .. b, "1,0.82,0", "the gold hover is gone")
+    assertEqual(r .. "," .. g .. "," .. b, "1,0.5,0", "the text.link hover is gone")
 end)
 
 test("HeaderControls: the control under the pointer takes the HOVER color", function()
@@ -323,8 +325,9 @@ test("HeaderControls: the control under the pointer takes the HOVER color", func
     local _, window = scene()
     window.controls.settings:_run("OnEnter")
 
+    -- Ka0s Default's `text.link`, the shipped `skin` mode's hover since SR-MM.
     local r, g, b = tintOf(window.controls.settings)
-    assertEqual(r .. "," .. g .. "," .. b, "1,0.82,0")
+    assertEqual(r .. "," .. g .. "," .. b, "1,0.5,0")
     local nr, ng, nb = tintOf(window.controls.lock)
     assertEqual(nr .. "," .. ng .. "," .. nb, "0.7,0.7,0.72",
         "a control the pointer is not on changed color")
@@ -684,7 +687,7 @@ test("HeaderControls: with the reveal off, hover is color alone", function()
     assertEqual(window.controls.export:GetAlpha(), 1, "the reveal-off strip moved")
     assertEqual(window.controls.lock:GetAlpha(), 1, "a control faded with the reveal off")
     local c = window.controls.export.tex.__vertexColor
-    assertEqual(c[1] .. "," .. c[2] .. "," .. c[3], "1,0.82,0")
+    assertEqual(c[1] .. "," .. c[2] .. "," .. c[3], "1,0.5,0")   -- Ka0s Default's text.link (SR-MM)
 end)
 
 test("HeaderControls: both ends of the reveal are settings, and default to what was hardcoded", function()

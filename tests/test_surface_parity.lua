@@ -133,6 +133,8 @@ local COMPAT_READERS = {
     "GetSpecialization", "GetSpecializationInfo",
     -- LibKa0s v1.92.0 (Compat minor 2) added these four client helpers. No caller here until the Forever port.
     "IsForever", "IsRetail", "ClientKey", "ForClient",
+    -- LibKa0s v1.94.0 (Compat minor 4) added these four identity readers, wired on NS.Compat.
+    "RegionalNames", "UnitCharacterName", "CharacterKey", "RealmKey",
 }
 
 --- What NS.Compat deliberately does not carry: the guard trio (it lives on NS.Secrets) and the two

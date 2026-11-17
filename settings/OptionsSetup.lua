@@ -402,6 +402,9 @@ if not lib then
         -- entry and the rows it draws, reached only from a page builder, which never runs here.
         -- KeybindRows answers nil when degraded on the live path too.
         "KeybindingsTab", "KeybindRows",
+        -- SideTabs, new at LibKa0s v1.100.0 (OptionsNav minor 7): the rail's look over a tab
+        -- group, reached only from a page builder, which never runs here.
+        "SideTabs",
         -- The Windows page's own members (MultiMeters#55), decorated onto the live
         -- instance below the fork. settings/Windows.lua's builder is their only caller,
         -- and it never runs here; the degraded scan and the parity case read them anyway.

@@ -906,8 +906,8 @@ exactly. `controlColor = { r=0.7, g=0.7, b=0.72, a=1 }` (white until 2026-10-24;
 control gray — LibKa0s-Core's close control at rest and Ka0s DPS Race's `Style.REST`) and `controlHoverColor = { r=1, g=0.82, b=0, a=1 }` — two
 colors, because hover is the only feedback a control gives, each now paired with its own
 **`controlColorMode`** / **`controlHoverColorMode`** dropdown (`skin` / `class` / `custom`, both default
-`"skin"` since MM-A1: the skin's `icon.tint` at rest and `btn.hover` under the pointer, the same gray
-and gold under Ka0s Default; v21 moved every stored window onto them) rather than the `controlClassColor` / `controlHoverClassColor` booleans they replaced at
+`"skin"` since MM-A1: the skin's `icon.tint` at rest and `text.link` under the pointer since SR-MM
+(`btn.hover` before it), gray and orange under Ka0s Default; v21 moved every stored window onto them) rather than the `controlClassColor` / `controlHoverClassColor` booleans they replaced at
 `schemaVersion` 12 → 13. Two modes rather than one, because rest and hover are two independent
 answers: a player who wants their class color under the pointer has not asked for the whole strip in
 it, and a shared mode would make hover and rest the same color for anyone who chose class — the one

@@ -5,7 +5,8 @@
 -- fill (`frame.backdropColorMode`, `win.bg`), the window edge (`frame.borderColorMode`: the Shell
 -- draws the skin's own edge, its style, size, color and inner rule), the title text
 -- (`header.colorMode`, `title.text`) and the two header-control colors (`frame.controlColorMode`,
--- `icon.tint`; `frame.controlHoverColorMode`, `btn.hover`). The title bar background has no mode and
+-- `icon.tint`; `frame.controlHoverColorMode`, `text.link` since SR-MM, `btn.hover` before it). The
+-- title bar background has no mode and
 -- takes a companion instead, `header.bgColorFromSkin` (`title.bg`). The v21 step puts every stored
 -- window on all six once; a pick made after it is kept.
 --
@@ -124,11 +125,11 @@ local function assertFollows(NS, window, Skin, label)
     skinStrip(NS, window, label .. ": the title bar is the skin's title band")
     local tt = token(NS, "title.text")
     sameColor({ f.title:GetTextColor() }, { tt[1], tt[2], tt[3] }, label .. ": the title is title.text")
-    local rest, hover = token(NS, "icon.tint"), token(NS, "btn.hover")
+    local rest, hover = token(NS, "icon.tint"), token(NS, "text.link")
     local button = window.controls.settings
     sameColor(tint(button), { rest[1], rest[2], rest[3] }, label .. ": a control at rest is icon.tint")
     button:_run("OnEnter")
-    sameColor(tint(button), { hover[1], hover[2], hover[3] }, label .. ": a hovered control is btn.hover")
+    sameColor(tint(button), { hover[1], hover[2], hover[3] }, label .. ": a hovered control is text.link")
     button:_run("OnLeave")
 end
 
