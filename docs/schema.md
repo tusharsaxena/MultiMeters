@@ -1093,9 +1093,12 @@ size. The tooltip is owned at `ANCHOR_NONE` (`Tip.Own`), filled and shown, and `
 element. Its top is level with the row's top. The point is one absolute point on UIParent, so nothing
 is anchored to a cell that has held a meter value (rule R3). `offsetX` and `offsetY` nudge it: the
 measured rects move by the pair before the point is computed, so the result is still clamped on
-screen and nothing reads a point back off the tooltip. When the placer cannot read the screen, or
-the library is absent, the tooltip attaches centered above the row (`BOTTOM` on its `TOP`, 2 px),
-`pcall`'d. It never follows the cursor.
+screen and nothing reads a point back off the tooltip. `offsetX` widens the group on the side it
+points to instead of moving it, so it can push the tooltip further out on that side but never back
+over the window. When only the tooltip's own size is unreadable (secret mid-pull), it is still placed
+beside the window, on the side with more room. When the window or the row cannot be read either, or
+the library is absent, the tooltip attaches centered above the row (`BOTTOM` on its `TOP`, 2 px, a
+negative `offsetY` not applied), `pcall`'d. It never follows the cursor.
 
 `maxSpells = 0` means "every spell the breakdown collected", which is the collector's own ceiling of
 64 rather than literally unbounded — the "and N more" line stays honest about anything past it.

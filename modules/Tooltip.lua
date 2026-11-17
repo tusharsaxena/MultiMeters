@@ -521,15 +521,24 @@ local function plainNumber(v)
     return v
 end
 
---- The placer's `rect` option for a NUDGED placement: every frame's rect in
---- screen units, moved by the player's offsets. Moving the group and the element
---- together moves the tooltip by exactly the offsets, and the library still
---- clamps the result on screen, so the nudge is applied where the point is
---- computed rather than read back off the tooltip afterwards.
+--- The placer's `rect` option for a NUDGED placement, in screen units.
 ---
+--- THE NUDGE NEVER CARRIES THE TOOLTIP OVER THE WINDOW (body rule 3). The
+--- horizontal part widens the group on the one side it points to instead of
+--- moving it: a positive X pushes the group's right edge out, a negative X its
+--- left edge, so a tooltip on the side the nudge points away from goes further
+--- out, and one on the other side stays 2 px off the window's edge, where a
+--- translated rect would have slid it back over the rows. The vertical part
+--- moves every rect, so the tooltip's top stays level with the row's, nudged.
+--- The hovered element is translated whole, which keeps the above-the-row
+--- fallback's horizontal nudge as it was. The library still clamps the result.
+---
+--- @param element table  the hovered row, translated rather than widened
 --- @param dx number  screen units, positive right
 --- @param dy number  screen units, positive up
-local function nudgedRect(dx, dy)
+local function nudgedRect(element, dx, dy)
+    local growLeft = dx < 0 and -dx or 0
+    local growRight = dx > 0 and dx or 0
     return function(frame)
         if type(frame) ~= "table" then return nil end
         local reads = { "GetLeft", "GetBottom", "GetRight", "GetTop", "GetEffectiveScale" }
@@ -541,8 +550,22 @@ local function nudgedRect(dx, dy)
             if v[i] == nil then return nil end
         end
         local s = v[5]
-        return v[1] * s + dx, v[2] * s + dy, v[3] * s + dx, v[4] * s + dy
+        if frame == element then
+            return v[1] * s + dx, v[2] * s + dy, v[3] * s + dx, v[4] * s + dy
+        end
+        return v[1] * s - growLeft, v[2] * s + dy, v[3] * s + growRight, v[4] * s + dy
     end
+end
+
+--- GameTooltip's effective scale as a plain number. Read off the tooltip when it
+--- answers one; otherwise worked out from what openTooltip set (the Tooltip scale
+--- setting) on UIParent's, since UIParent is the tooltip's parent.
+local function tipScale(at)
+    local s = plainNumber(GameTooltip.GetEffectiveScale and GameTooltip:GetEffectiveScale())
+    if s and s > 0 then return s end
+    local ui = _G.UIParent
+    local uiScale = ui and ui.GetEffectiveScale and plainNumber(ui:GetEffectiveScale()) or 1
+    return (at.scale or 1) * uiScale
 end
 
 -- WHAT THIS HOVER ASKED FOR, kept between openTooltip and the Show that ends the
@@ -553,12 +576,63 @@ local pendingPlacement
 --- secret, an install without LibKa0s-Tooltip-1.0): the chrome rule's attach,
 --- centered above the hovered row, never the cursor. pcall'd: it is a relative
 --- anchor, and a row that turned out to hold secret anchoring data would raise
---- inside the client's own code.
+--- inside the client's own code. A negative Y nudge is not applied here, since it
+--- would pull the tooltip down over the row it describes.
 local function attachAbove(at, Tip)
+    local y = at.y > 0 and at.y or 0
     pcall(function()
         GameTooltip:ClearAllPoints()
-        GameTooltip:SetPoint("BOTTOM", at.element, "TOP", at.x, tipGap(Tip) + at.y)
+        GameTooltip:SetPoint("BOTTOM", at.element, "TOP", at.x, tipGap(Tip) + y)
     end)
+end
+
+--- Beside the window WITHOUT the tooltip's size: the case the placer refuses
+--- when only GameTooltip's own GetWidth / GetHeight are unreadable. Tainted code
+--- measuring inside Blizzard's shared tooltip can be answered a secret mid-pull
+--- (tests/mock_frame.lua's GameTooltip note), which is exactly when a meter
+--- tooltip is used, and attaching above the row there would cover the rows.
+---
+--- The window's rect, the row's top and the screen are still this addon's to
+--- read, so the tooltip hangs from TOPLEFT at the group's right edge + the gap,
+--- or from TOPRIGHT at its left edge - the gap. With no width to test for a fit,
+--- the side is the one with more room, which is the screen-half method the client
+--- bags use; on a tie the player's side wins. The top is kept on screen; the
+--- bottom cannot be checked without a height. No SetAnchorType for comparison
+--- tooltips, unlike the placer: a meter tooltip never shows an item comparison.
+---
+--- @return boolean  whether a point was written
+local function besideBlind(at, Tip, rect)
+    local group = at.group
+    if type(group) ~= "table" then return false end
+    local ui = _G.UIParent
+    if not (ui and ui.GetWidth and ui.GetHeight) then return false end
+    local uiScale = ui.GetEffectiveScale and plainNumber(ui:GetEffectiveScale()) or 1
+    local sw, sh = plainNumber(ui:GetWidth()), plainNumber(ui:GetHeight())
+    if not (sw and sh) then return false end
+    sw, sh = sw * uiScale, sh * uiScale
+
+    local gl, _, gr = rect(group)
+    local _, _, _, et = rect(at.element)
+    if not (gl and gr and et) then return false end
+
+    local gap = tipGap(Tip)
+    local roomLeft, roomRight = gl, sw - gr
+    local side
+    if at.prefer == "left" then
+        side = (roomLeft >= roomRight) and "left" or "right"
+    else
+        side = (roomRight >= roomLeft) and "right" or "left"
+    end
+    local top = et > sh and sh or et
+    local s = tipScale(at)
+    return pcall(function()
+        GameTooltip:ClearAllPoints()
+        if side == "right" then
+            GameTooltip:SetPoint("TOPLEFT", ui, "BOTTOMLEFT", (gr + gap) / s, top / s)
+        else
+            GameTooltip:SetPoint("TOPRIGHT", ui, "BOTTOMLEFT", (gl - gap) / s, top / s)
+        end
+    end) == true
 end
 
 --- Place the tooltip beside the window group, or attach it above the row.
@@ -566,23 +640,28 @@ end
 --- CALLED AFTER GameTooltip:Show(), because the placer needs the tooltip's real
 --- size, which only the Show computes, and every builder calls it from there.
 --- The offsets nudge the placement in the tooltip's own units, positive x right
---- and positive y up.
+--- and positive y up, never over the window (nudgedRect). When the placer writes
+--- nothing, besideBlind still puts the tooltip beside the window if only the
+--- tooltip's own size is unreadable; attachAbove is the last resort.
 local function applyPlacement()
     local at = pendingPlacement
     if not at then return end
     if not (GameTooltip.SetPoint and GameTooltip.ClearAllPoints) then return end
 
     local Tip = LibStub and LibStub("LibKa0s-Tooltip-1.0", true)
+    local s = tipScale(at)
+    local rect = nudgedRect(at.element, at.x * s, at.y * s)
     local placed
     if Tip and Tip.PlaceBeside then
         local opts = { prefer = at.prefer }
-        if at.x ~= 0 or at.y ~= 0 then
-            local s = plainNumber(GameTooltip.GetEffectiveScale and GameTooltip:GetEffectiveScale()) or 1
-            opts.rect = nudgedRect(at.x * s, at.y * s)
-        end
+        if at.x ~= 0 or at.y ~= 0 then opts.rect = rect end
         placed = Tip.PlaceBeside(GameTooltip, at.element, at.group, opts)
     end
-    if not placed then attachAbove(at, Tip) end
+    if placed then return end
+    -- The placer wrote nothing. A secret tooltip size is the likely reason mid-pull,
+    -- and the window can still be read, so beside the window comes before above the row.
+    if besideBlind(at, Tip, rect) then return end
+    attachAbove(at, Tip)
 end
 
 --- Remember where this hover wants the tooltip. Placed by applyPlacement once the
@@ -598,6 +677,8 @@ local function placeTooltip(anchorFrame, config)
         -- step still carrying "TOP", say) is placed like the default.
         prefer = PREFER[config.anchor] or PREFER.BESIDE,
         x = offset(config.offsetX), y = offset(config.offsetY),
+        -- What openTooltip set, for a tooltip whose own scale reads back secret.
+        scale = tooltipScale(config.scale),
     }
 end
 

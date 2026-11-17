@@ -1286,7 +1286,11 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
 - **TIP-29. Offsets.** Tooltip → General → Horizontal offset 60, Vertical offset -60 → the tooltip
   moves and still stays on screen near the edges. (Amended by AD-92-MM, 2026-11-18: the offsets nudge
   the beside-the-window placement, so with the window mid-screen the tooltip sits 60 px further right
-  and 60 px lower than in TIP-23; set both back to 0 → it returns to 2 px off the window's edge.)
+  and 60 px lower than in TIP-23; set both back to 0 → it returns to 2 px off the window's edge. Amended again by AD-92-MM review
+  fixes: Horizontal offset -60 with the tooltip on the window's right → it stays 2 px off the right
+  edge, never over the rows; drag the window against the screen's right edge so it opens on the left →
+  -60 moves it 60 px further left, +60 leaves it 2 px off the left edge. Fail: any offset putting the
+  tooltip over the window.)
   Result:
 - **TIP-30. Maximum spells 0.** Tooltip → Contents → **Maximum spells** 0, hover someone with a long
   list → every spell, up to 64, with *and N more* past that; 0 does not act like 10. Result: pass (owner-marked 2026-10-10)
@@ -1317,8 +1321,10 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
 - **TIP-39. An old profile's anchor moves to Beside (AD-92-MM, v26 to v27).** On a profile saved
   before this build with Tooltip anchor set to anything (Top, Bottom right, ...), log in → Tooltip →
   General → **Tooltip side** reads **Beside the window**, the X and Y offsets are what they were, and
-  the tooltip opens beside the window as in TIP-23. Fail: an empty dropdown, a reset offset, or a
-  tooltip still at a corner of the cell. Result:
+  the tooltip opens beside the window as in TIP-23. An X offset kept from the old boxes may point back
+  toward the window; it then does nothing on that side (TIP-29) and the tooltip stays 2 px off the
+  edge. Fail: an empty dropdown, a reset offset, a tooltip over the rows, or a tooltip still at a
+  corner of the cell. Result:
 - **TIP-40. Window near the screen's edges, and a scaled window (AD-92-MM).** Set Frame → Scale to
   0.8, then 1.3, and Tooltip → General → Tooltip scale to 1.4; park the window against the top edge,
   then the bottom → every cell tooltip still opens beside the window, 2 px from its edge, slid up or
@@ -1326,11 +1332,10 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
   the scale, a tooltip off screen, one over the rows, or a Lua error. Result:
 - **TIP-41. Beside the window mid-pull (AD-92-MM).** In a real restricted pull (the Combat addon
   restriction active), hover a Damage cell and a name cell → each tooltip opens beside the window as in
-  TIP-23. A tooltip that shows a secret amount may answer a secret size to this addon; the placer then
-  writes nothing and the tooltip attaches centered above the hovered row, 2 px off it, by design of the
-  library's fallback. Record which one you see: beside passes; above the row is a finding to report
-  against LibKa0s-Tooltip-1.0 (a size-free beside fallback), not a Lua error. Fail: a tooltip at the
-  pointer, at a corner of the cell, or a Lua error. Result:
+  TIP-23. A tooltip that shows a secret amount may answer a secret size to this addon; the library's
+  placer then writes nothing and the addon places it beside the window without its size, on the side
+  with more room (amended by AD-92-MM review fixes). Fail: a tooltip over the rows (above the hovered
+  row), at the pointer, at a corner of the cell, or a Lua error. Result:
 
 ## EXPORT
 

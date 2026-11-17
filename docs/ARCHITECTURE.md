@@ -307,8 +307,15 @@ the default) or left then right (BESIDE_LEFT, the owner's option A of 2026-11-17
 hovered row, one absolute point on UIParent. The group is the window's clean `anchor` frame and the
 element the hovered cell's row, so no geometry is read off a cell that may hold a secret (rule R3).
 The X/Y offsets nudge the measured rects before the point is computed, and the result is still clamped
-on screen. When the placer cannot read the screen (or the library is absent) the tooltip attaches
-centered above the row, `pcall`'d, never on the cursor. The v26 to v27 step moved every stored anchor
+on screen. The X nudge widens the group on the side it points to rather than moving it, so it pushes a
+tooltip on that side further out and leaves one on the other side 2 px off the window: it never carries
+the tooltip over the rows (body rule 3). When the placer writes nothing because only GameTooltip's own
+size reads back secret (tainted code measuring inside Blizzard's shared tooltip mid-pull),
+`besideBlind` still places it beside the window from the window's rect and the row's top, hanging from
+TOPLEFT at the right edge + 2 px or TOPRIGHT at the left edge - 2 px, on the side with more room (the
+screen-half method the client bags use; the player's side wins a tie). Only when the window or the
+row cannot be read either (or the library is absent) does the tooltip attach centered above the row,
+`pcall`'d, never on the cursor. The v26 to v27 step moved every stored anchor
 to BESIDE. The title-bar controls are chrome, on `AttachTitleTip` (above, AD-86-MM).
 
 **Tooltips this addon does not place, and why** (the rule's *What it does not bind* list, or the
@@ -502,9 +509,10 @@ thing is in it before opening it:
   unregistered at their one listener, so little is ever sent to them. The same install has already
   lost the options toolkit, the slash dispatcher and the latch, and says so in chat.
 
-**A meter tooltip can fall back to above the row mid-pull.** A tooltip showing a secret amount can
-answer this addon a secret size, and the placer then writes nothing, so the tooltip attaches above the
-hovered row instead of beside the window ([Tooltip placement](#tooltip-placement); smoke TIP-41).
+**A meter tooltip's bottom is not kept on screen mid-pull.** A tooltip showing a secret amount can
+answer this addon a secret size. It still opens beside the window (`besideBlind`,
+[Tooltip placement](#tooltip-placement); smoke TIP-41), but with no height to measure only its top is
+kept on screen, so a tall tooltip off a row near the screen's bottom can run past the edge.
 
 ## Documentation map
 

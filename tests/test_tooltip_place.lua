@@ -162,6 +162,82 @@ test("Tooltip place: a junk offset off an old profile is clamped, never handed t
     finish(s)
 end)
 
+test("Tooltip place: a negative X never pulls a right-side tooltip back over the window", function()
+    -- Body rule 3: the tooltip never covers the window group. A stored -60 tuned for an old Top-left
+    -- box would have slid a right-side tooltip 58 px over the rows.
+    -- red under: translating the group's rect by the X offset.
+    local s = scene(100, function(t) t.offsetX = -60 end); s.left = 100
+    s.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", s.cell, s.cfg)
+    assertBeside(s, "right", "negative X, tooltip on the right")
+    finish(s)
+end)
+
+test("Tooltip place: on the left, a positive X stays off the window and a negative X moves it out", function()
+    -- red under: the same translation once the tooltip flips to the window's left.
+    local s = scene(1500, function(t) t.offsetX = 60 end); s.left = 1500
+    s.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", s.cell, s.cfg)
+    assertBeside(s, "left", "positive X, tooltip on the left")
+    finish(s)
+
+    s = scene(1500, function(t) t.offsetX = -60 end); s.left = 1500
+    s.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", s.cell, s.cfg)
+    local p, _, _, x = pointOf(s.tip)
+    assertEqual(p, "TOPRIGHT")
+    assertEqual(x, 1500 - GAP - 60, "a negative X on the left side did not move the tooltip further out")
+    finish(s)
+end)
+
+-- ── a secret tooltip size (mid-pull) ─────────────────────────────────────────────────────────
+
+--- GameTooltip answering a SECRET width and height, as it can to this tainted addon mid-pull
+--- (tests/mock_frame.lua's GameTooltip note). The library's placer then writes nothing.
+local function secretSize(s)
+    local secret = s.inst.mocks.secret
+    rawset(s.tip, "GetWidth", function() return secret(TIP_W) end)
+    rawset(s.tip, "GetHeight", function() return secret(TIP_H) end)
+end
+
+test("Tooltip place: a secret tooltip size still opens beside the window, never over the rows", function()
+    -- red under: falling straight back to the attach above the hovered row when the placer
+    -- answers nil, which covers the rows above it exactly when a meter tooltip is used.
+    local s = scene(100); s.left = 100
+    secretSize(s)
+    s.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", s.cell, s.cfg)
+    assertBeside(s, "right", "secret size, window on the screen's left half")
+    finish(s)
+
+    -- The side with more room, with no width to test a fit against.
+    s = scene(1500); s.left = 1500
+    secretSize(s)
+    s.NS.Tooltip:NameTooltip(makeRow(), s.cell, s.cfg)
+    assertBeside(s, "left", "secret size, window on the screen's right half")
+    finish(s)
+end)
+
+test("Tooltip place: with a secret size, \"prefer left\" wins only a tie, and the nudge still applies", function()
+    -- 810 + 300 = 1110: 810 px of room on each side of a 1920 screen.
+    local s = scene(810, function(t) t.anchor = "BESIDE_LEFT" end); s.left = 810
+    secretSize(s)
+    s.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", s.cell, s.cfg)
+    assertBeside(s, "left", "secret size, tie, prefer left")
+    finish(s)
+
+    s = scene(810); s.left = 810
+    secretSize(s)
+    s.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", s.cell, s.cfg)
+    assertBeside(s, "right", "secret size, tie, default side")
+    finish(s)
+
+    s = scene(100, function(t) t.offsetX, t.offsetY = 25, -40 end); s.left = 100
+    secretSize(s)
+    s.NS.Tooltip:CellTooltip(makeRow(), "DamageDone", s.cell, s.cfg)
+    local p, _, _, x, y = pointOf(s.tip)
+    assertEqual(p, "TOPLEFT")
+    assertEqual(x, 100 + 300 + GAP + 25, "secret size: the horizontal nudge never arrived")
+    assertEqual(y, 600 - 40, "secret size: the vertical nudge never arrived")
+    finish(s)
+end)
+
 -- ── never the cursor ─────────────────────────────────────────────────────────────────────────
 
 test("Tooltip place: unreadable geometry attaches the tooltip above the row, never the cursor", function()

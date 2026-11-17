@@ -1879,7 +1879,7 @@ Total.
 - Tooltip: a stat key the catalog does not know heads with the key itself
 - Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block
 
-### test_tooltip_place.lua (9)
+### test_tooltip_place.lua (13)
 
 - Tooltip place: a cell tooltip opens beside the window, on the right when it fits
 - Tooltip place: with no room on the right, it opens on the window's left
@@ -1888,6 +1888,10 @@ Total.
 - Tooltip place: a stored value this build does not offer opens beside, on the right
 - Tooltip place: the X/Y offsets nudge the placed tooltip by exactly that much
 - Tooltip place: a junk offset off an old profile is clamped, never handed to the placer
+- Tooltip place: a negative X never pulls a right-side tooltip back over the window
+- Tooltip place: on the left, a positive X stays off the window and a negative X moves it out
+- Tooltip place: a secret tooltip size still opens beside the window, never over the rows
+- Tooltip place: with a secret size, "prefer left" wins only a tie, and the nudge still applies
 - Tooltip place: unreadable geometry attaches the tooltip above the row, never the cursor
 - Tooltip place: no meter tooltip is ever owned at a client anchor token
 
@@ -3050,7 +3054,7 @@ Total.
 | test_tooltip_lines.lua | 41 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 60 |
-| test_tooltip_place.lua | 9 |
+| test_tooltip_place.lua | 13 |
 | test_drilldown.lua | 59 |
 | test_export.lua | 94 |
 | test_export_modal.lua | 32 |
@@ -3098,4 +3102,4 @@ Total.
 | test_skin_switch.lua | 23 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2616** |
+| **Total** | **2620** |

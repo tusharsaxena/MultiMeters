@@ -930,7 +930,7 @@ NS.Schema = {
         min = -400, max = 400, step = 1, fmt = "%d px",
         page = "tooltip", group = L["General"],
         label = L["X offset"],
-        desc = L["Nudge the tooltip sideways from where it opens beside the window. Positive moves it right."],
+        desc = L["Nudge the tooltip sideways from where it opens beside the window. Positive moves it right, negative left. It never moves over the window: the nudge only pushes a tooltip further out on the side it points to."],
         validate = isNumberIn(-400, 400),
     },
     {

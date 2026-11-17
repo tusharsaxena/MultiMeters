@@ -790,7 +790,8 @@ function Tooltip:CellTooltip(row, statKey, anchorFrame, window)
     -- AFTER Show, not before, and for two reasons: the show path re-fonts the
     -- tooltip's lines (`reapplyFonts`), and the placer needs the tooltip's real
     -- size, which only the Show computes (`applyPlacement`, beside the window).
-    -- Fonts first, so the size the placer measures is the final one.
+    -- The order of these two makes no difference to that size: Show is not called
+    -- again, so the re-font does not resize the tooltip the placer measures.
     reapplyFonts()
     applyPlacement()
 

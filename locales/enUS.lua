@@ -548,8 +548,8 @@ L["Show spell breakdown"] = "Show spell breakdown"
 L["List the individual spells behind a cell's number when you hover it."] =
     "List the individual spells behind a cell's number when you hover it."
 L["X offset"] = "X offset"
-L["Nudge the tooltip sideways from where it opens beside the window. Positive moves it right."] =
-    "Nudge the tooltip sideways from where it opens beside the window. Positive moves it right."
+L["Nudge the tooltip sideways from where it opens beside the window. Positive moves it right, negative left. It never moves over the window: the nudge only pushes a tooltip further out on the side it points to."] =
+    "Nudge the tooltip sideways from where it opens beside the window. Positive moves it right, negative left. It never moves over the window: the nudge only pushes a tooltip further out on the side it points to."
 L["Y offset"] = "Y offset"
 L["Nudge the tooltip up or down from where it opens beside the window. Positive moves it up."] =
     "Nudge the tooltip up or down from where it opens beside the window. Positive moves it up."
