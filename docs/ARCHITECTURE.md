@@ -314,7 +314,9 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   the library's.
 - **The choice** is eight addon-wide profile keys under `skin` (`source`, `skin`, the Scope's
   `ignorePanel` and `ignoreFonts`, the overrides `font` and `texture`, the Font outline `outline`, and `pickerSeen`), skip-render
-  rows in `settings/Schema_Skin.lua` written only through `NS.SetByPath` ([schema.md](schema.md)). The
+  rows in `settings/Schema_Skin.lua` written only through `NS.SetByPath` ([schema.md](schema.md)). A new
+  profile's skin is `NS.DEFAULT_SKIN`, `Skin:DefaultSkin()` read once at file load (skinning-§2: Ka0s
+  Default on Retail, `ka0s` without the library), and so is the read before the store exists. The
   library's Skin tab (key `Appearance`, `O.AppearanceTab`) draws every one but `pickerSeen` on the General page,
   after Statistic colors and before Keybindings ([settings-panel.md](settings-panel.md)).
 - **Repaint flow.** `NS.ApplySkinChoice` runs right after `NS:InitDB` and on every profile event
@@ -426,7 +428,7 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
 - **What stays.** Chat output (X7), inline help markup (X9), StaticPopups, the class and spell art,
   the statistic palette (D14) and the diagnostics report's escapes (D15).
 
-In-client checks: [smoke-tests.md](smoke-tests.md) SKIN-1 to SKIN-24, SKIN-50, INSTALL-15 and DEGRADED-11.
+In-client checks: [smoke-tests.md](smoke-tests.md) SKIN-1 to SKIN-24, SKIN-50, SKIN-51, INSTALL-15 and DEGRADED-11.
 
 ## Known limitations
 

@@ -11,8 +11,11 @@ local addonName, NS = ...
 --                           the colors it draws under Ka0s Default that no library token holds
 --                           exactly, each with its Ka0s Default pixel and the library ROLE token
 --                           every other skin draws it from (DECISIONS X1, X2, X12).
+--   NS.DEFAULT_SKIN         the skin a new profile wears, `Skin:DefaultSkin()` read once at file
+--                           load (skinning-§2): Ka0s Default on Retail, WoW Forever on the Forever
+--                           client, "ka0s" without the library. defaults/Profile.lua names it.
 --   NS.SkinChoice()         the stored (source, skin) pair, read through NS.GetSetting; "ka0s",
---                           "ka0s" before NS:InitDB has built the profile store.
+--                           NS.DEFAULT_SKIN before NS:InitDB has built the profile store.
 --   NS.WriteSkinChoice(s,k,i,m) the write seam: every half through NS.SetByPath, the one seam
 --                           `/mm set` and the panel already write through (options-ui-§1); `i`, the
 --                           Scope's `{ panel, fonts }`, writes the two exceptions, and `m`, the Font
@@ -116,7 +119,12 @@ local SOURCE_PATH, SKIN_PATH = "skin.source", "skin.skin"
 local PANEL_PATH, FONTS_PATH = "skin.ignorePanel", "skin.ignoreFonts"
 local FONT_PATH, TEXTURE_PATH = "skin.font", "skin.texture"
 local OUTLINE_PATH = "skin.outline"
-local DEFAULT = "ka0s"
+-- The source is the Ka0s skins on both clients; the skin a new profile wears is the client's
+-- (skinning-§2): Skin:DefaultSkin(), Ka0s Default on Retail and WoW Forever on the Forever client,
+-- read once here. Without the library, Ka0s Default, the only look the degraded facade can draw.
+local SOURCE_DEFAULT = "ka0s"
+NS.DEFAULT_SKIN = Skin and type(Skin.DefaultSkin) == "function" and Skin:DefaultSkin() or "ka0s"
+local DEFAULT = NS.DEFAULT_SKIN
 
 NS.SKIN_TAB = "Appearance"
 
@@ -438,7 +446,7 @@ end
 
 --- The stored pair, lazily and nil-safely: Ka0s Default until the profile store exists.
 function NS.SkinChoice()
-    return stored(SOURCE_PATH) or DEFAULT, stored(SKIN_PATH) or DEFAULT
+    return stored(SOURCE_PATH) or SOURCE_DEFAULT, stored(SKIN_PATH) or DEFAULT
 end
 
 --- A stored override as the profile keeps it: the LSM key, or "" for the skin's own (false, nil, "").

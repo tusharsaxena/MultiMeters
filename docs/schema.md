@@ -145,7 +145,7 @@ db.profile = {
     },
     skin         = {                   -- the skin this addon wears (skinning-§2), per profile
         source      = "ka0s",          -- ka0s (the Ka0s skins) | eui (EllesmereUI's)
-        skin        = "ka0s",          -- which Ka0s skin; "ka0s" is Ka0s Default
+        skin        = NS.DEFAULT_SKIN, -- which Ka0s skin: Skin:DefaultSkin(), "ka0s" (Ka0s Default) on Retail
         ignorePanel = true,            -- the Scope: leave the settings panel the client's
         ignoreFonts = false,           -- the Scope: leave every font the client's (the HUD: each window's pick)
         font        = "",              -- an LSM font key overriding the skin's face; "" = the skin's default

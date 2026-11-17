@@ -161,6 +161,10 @@ end
 ---              a load-time read happens (the enum fallbacks in
 ---              core/Constants.lua and core/Secrets.lua are resolved at LOAD,
 ---              so `Enum` has to be wrong before the file runs, not after)
+---   afterLibs = function(mocks), applied once the libraries have loaded and BEFORE
+---              the addon's first file: for a suite that must change what a library
+---              answers at the addon's file load (Skin:DefaultSkin, read once into
+---              NS.DEFAULT_SKIN by core/SkinSetup.lua, skinning-§2)
 ---   libFiles = table,     overrides LIB_FILES. Pass `{}` to load the addon with
 ---              LibKa0s ABSENT — the degraded scenario testing-§8 requires to be
 ---              exercised by a real load rather than by hand-stubbing the member
@@ -199,6 +203,7 @@ local function loadInstance(opts)
 
     local NS = {}
     Loader.loadAll(opts.libFiles or LIB_FILES, NS, mocks)
+    if opts.afterLibs then opts.afterLibs(mocks) end
     Loader.loadAll(rooted(ADDON_FILES), NS, mocks)
 
     -- ── the lifecycle kick, in the client's own order ──────────────────────
