@@ -22,11 +22,11 @@ secret-value rules the checks refer to.
 | PANEL-1 to PANEL-59 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-59 | [Windows and the header](#win) | Header controls, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
+| WIN-1 to WIN-60 | [Windows and the header](#win) | Header controls, the strip's extras · settings · close order, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-35 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-37 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
-| EXPORT-1 to EXPORT-56 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
+| EXPORT-1 to EXPORT-57 | [Export](#export) | The modal, its settings mark, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
 | DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
@@ -761,7 +761,8 @@ right. Open the panel with `/mm config`.
 ## WIN
 
 - **WIN-1. Seven header controls, our own art.** Hover the title bar → seven controls, right to left:
-  close, minimize, lock, settings, segment, reset, export, each a white glyph from this addon's art
+  close, settings, minimize, lock, segment, reset, export (the settings gear beside the close since
+  AD-86-MM, WIN-60), each a white glyph from this addon's art
   (close from `libs/LibKa0s/media/icons/close.tga`, export from `.../export.tga`) at the same size,
   weight, center line and color. A plain letter (`*`, `#`, `>`) means the art and the atlas both
   failed; a thin gray multiplication sign at the close end is LibKa0s's own close button. (Amended by FS-MM-FIX, 2026-11-01: under the Skin modes close takes the skin's `close.rest` and `close.hot`, so it turns red under the pointer where its six siblings turn gold, like the library's own closes.) Result: Passed (owner, 2026-11-02)
@@ -931,7 +932,7 @@ right. Open the panel with `/mm config`.
   Reveal controls on hover unticked and Control color at 70/70/72% gray. Result: pass (owner-marked 2026-10-24)
 - **WIN-51. The controls sit on the title's line (2026-10-24).** Same profile → each icon is 12px in an
   18px slot, its top and bottom level with the title's, and the strip's spacing matches DPS Race's
-  (22px pitch). With Header height and Control size changed, the row stays centered as before. A
+  (22px pitch; 24px, HEADER's 6px gap, since AD-86-MM, WIN-60). With Header height and Control size changed, the row stays centered as before. A
   profile that had set its own control color, size, reveal or header outline (any value other than the
   old shipped one) keeps it. Result: pass (owner-marked 2026-10-24)
 - **WIN-52. The title bar is DPS Race's height, the row on its midline (2026-10-24).** Same profile,
@@ -1003,6 +1004,19 @@ right. Open the panel with `/mm config`.
   right-click menu still ends, steps and restarts the run; the test strip's right-click still ends test
   mode. Fail: a gap or overlap between the bar and the strip, a strip inset from the edge, a covered
   column header, or a Lua error. Result:
+- **WIN-60. The header reads extras · settings · close (AD-86-MM; standalone-windows, *Title-bar
+  controls*, LibKa0s `W.HeaderButtons`).** On a meter window with every control shown, read the strip
+  left to right → export, reset, segment, lock, minimize, **settings**, close: the gear now sits
+  directly left of the close (it sat between the segment menu and the padlock), the close is 6 px in
+  from the title bar's right corner, and every gap between two controls is the same 6 px (it was 4).
+  Click the gear on the second window → the settings panel opens on that window. Hover each control →
+  its one-line tooltip opens above it (the gear says *Open settings*; lock and minimize still name the
+  click they will make now, changing with the state); each rests in the skin's gray and lights in its
+  link color, the close in red. Header → Controls, hide minimize → the padlock and everything left of
+  it move right by one slot, and the gear and the close do not move; set Control size to 10 and to 32 →
+  the gaps stay even and the title never runs under the strip. Pick Obsidian and WoW Midnight → the
+  same. Fail: the gear anywhere but beside the close, uneven gaps, a control with no tooltip, a title
+  under a control, or a Lua error. Result:
 
 ## VIS
 
@@ -1428,6 +1442,14 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
   the bar's vertical middle. Pick WoW Midnight (its 2px edge) and WoW Default in turn → the same in
   each, the bar inside each skin's edge. Fail: a caption or close high or low on the bar, a gap above
   the bar, or a Lua error. Result:
+- **EXPORT-57. The Export modal's title bar reads settings · close (AD-86-MM; LibKa0s
+  `W.HeaderButtons`).** Open the Export modal → its title bar ends in two marks, a gear directly left
+  of the close, 6 px apart and the close 6 px in from the corner, both on the bar's middle. Hover the
+  gear → *Open settings* above it, the gear lighting in the skin's link color; hover the close →
+  *Close*, the X red. Click the gear → the modal closes first and this addon's settings panel opens,
+  not hidden under the modal. Reopen the modal, close it with the X → it closes. Pick Obsidian → the
+  same. Fail: no gear, the panel opening under the modal, a mark with no tooltip, or a Lua error.
+  Result:
 
 ## COMBAT
 

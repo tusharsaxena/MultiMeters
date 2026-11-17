@@ -417,6 +417,9 @@ local SUITES = {
     -- Every title-bar control this addon draws itself (smoke round 1, SR-MM): the meter window's
     -- seven and the Export modal's close, a tooltip on each and the skin's rest and hover colors.
     "test_titlebar",
+    -- The same two title bars on LibKa0s-Widgets-1.0's HeaderButtons (AD-86-MM, LibKa0s#86):
+    -- extras · settings · close, the library's pitch, and each settings mark opening the settings.
+    "test_header_buttons",
     -- The meter window's title band (R5-MM1, R5-WIN): flush inside the edge at the edge's own inset,
     -- the title gradient, every header child on its middle, a collapsed window the band alone.
     "test_header_band",

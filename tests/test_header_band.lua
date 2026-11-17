@@ -232,15 +232,18 @@ test("Header band: the title, the session line and every control sit on the band
 end)
 
 test("Header band: the header keeps its left and right offsets off the frame's edges", function()
-    -- The title starts 8 px in from the frame's left edge and the controls chain in from its right
-    -- by the padding, as before, whatever the band's inset: a 2 px flat edge (a test-local skin, since
-    -- SR2-L2 left no shipped skin with one) and WoW Midnight's 1 px edge.
+    -- The title starts 8 px in from the frame's left edge, whatever the band's inset, and the
+    -- controls chain in from the BAND's right corner by the library's HEADER.PAD (6), as every Ka0s
+    -- title bar's marks do: re-pinned at AD-86-MM from "the padding off the frame's edge" to the
+    -- title-bar rule's corner. A 2 px flat edge (a test-local skin, since SR2-L2 left no shipped
+    -- skin with one) and WoW Midnight's 1 px edge.
     local _, _, window, _, Skin = scene()
     local function offsets(e, what)
         local _, _, x = pointNamed(window.frame.title, "LEFT")
         assertEqual(x + e, 8, what .. ": the title's left offset off the frame")
-        local _, _, cx = pointNamed(window.controls.close, "RIGHT")
-        assertEqual(cx - e, -window.layout.padding, what .. ": the close control's right offset off the frame")
+        local rel, _, cx = pointNamed(window.controls.close, "RIGHT")
+        assertTrue(rel == window.headerBand, what .. ": the close control is not on the band")
+        assertEqual(cx, -6, what .. ": the close control's right offset off the band's corner")
     end
     wearFlatEdge(Skin, 2)
     offsets(2, "a 2 px flat edge")

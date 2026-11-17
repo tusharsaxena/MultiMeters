@@ -126,16 +126,21 @@ test("HeaderControls: a hidden control YIELDS its slot", function()
     -- control off left a hole. Everything past the hidden one must move left by
     -- exactly one step, and everything before it must not move at all.
     -- red under: placing from a fixed per-control offset.
+    -- Re-pinned at AD-86-MM to the rule's order and pitch: the gear now sits right of minimize
+    -- (extras · settings · close), so it is the padlock that steps across, and one step is the
+    -- shipped 18px slot plus HEADER.GAP's 6 (it was a 4px gap, a 22px pitch).
     local _, before = scene()
     local settingsAt = offsetOf(before.controls.settings)
+    local lockAt     = offsetOf(before.controls.lock)
     local exportAt   = offsetOf(before.controls.export)
 
     local _, after = scene(function(cfg) cfg.frame.showMinimize = false end)
-    -- One step is the shipped 18px slot plus the 4px gap: DPS Race's 22px pitch.
-    assertEqual(offsetOf(after.controls.settings), settingsAt + 22,
-        "settings sits one slot further right once minimize goes")
-    assertEqual(offsetOf(after.controls.export), exportAt + 22,
+    assertEqual(offsetOf(after.controls.lock), lockAt + 24,
+        "the padlock sits one slot further right once minimize goes")
+    assertEqual(offsetOf(after.controls.export), exportAt + 24,
         "and so does everything past it")
+    assertEqual(offsetOf(after.controls.settings), settingsAt,
+        "the gear, right of the hidden control, moved")
 end)
 
 test("HeaderControls: hiding the LAST control moves nothing", function()
@@ -911,7 +916,8 @@ test("HeaderControls: the strip fits at every size the schema allows", function(
     for _, size in ipairs({ 10, 14, 18, 24, 32 }) do
         local inst, window = scene(function(cfg) cfg.frame.controlSize = size end)
         local placed = {}
-        for _, key in ipairs({ "close", "minimize", "lock", "settings",
+        -- Right to left, the strip's order since AD-86-MM (extras · settings · close).
+        for _, key in ipairs({ "close", "settings", "minimize", "lock",
                                "segment", "reset", "export" }) do
             local b = window.controls[key]
             if b and b:IsShown() then
@@ -921,9 +927,10 @@ test("HeaderControls: the strip fits at every size the schema allows", function(
         for i = 2, #placed do
             local right, left = placed[i - 1], placed[i]
             -- Right-to-left: each control's own right edge must clear the
-            -- previous one's left edge, with the gap intact.
+            -- previous one's left edge, with the gap intact: HEADER.GAP's 6 since
+            -- AD-86-MM (re-pinned from 4).
             local gap = (-left.x) - ((-right.x) + right.w)
-            assertEqual(gap, 4,
+            assertEqual(gap, 6,
                 ("size %d: %s to %s gap was %d"):format(size, right.key, left.key, gap))
         end
         assertTrue(inst ~= nil)
@@ -941,8 +948,8 @@ test("HeaderControls: a degraded install still gets its close button", function(
     local window = inst.NS.Window.New(inst.NS.Database.GetWindows()[1])
 
     assertTrue(window.controls.close ~= nil, "the header lost its close button")
-    -- Seven controls at the shipped 18, six gaps of 4.
-    assertEqual(inst.NS.HeaderControls.WidthUsed(window), 7 * 18 + 6 * 4)
+    -- Seven controls at the shipped 18, six gaps of HEADER.GAP's 6 (re-pinned from 4, AD-86-MM).
+    assertEqual(inst.NS.HeaderControls.WidthUsed(window), 7 * 18 + 6 * 6)
 end)
 
 test("HeaderControls: the close button closes the window", function()

@@ -922,7 +922,9 @@ the complaint that produced them. (The tint had never run at all before: `Header
 while carrying their own colors.)
 
 `controlSize = 18` is the *slot* each control occupies — its click target and the strip's layout
-pitch (18 + the 4px gap = Ka0s DPS Race's 22px `CONTROL_PITCH`). The art is drawn centered inside that
+pitch (18 + the library's 6px `HEADER.GAP` = 24 since AD-86-MM, every Ka0s title bar's pitch; it was the
+4px gap, Ka0s DPS Race's 22px `CONTROL_PITCH`, before). The strip sits `HEADER.PAD` (6) in from the title
+band's right corner and reads, left to right, export, reset, segment, lock, minimize, settings, close. The art is drawn centered inside that
 slot at 72% of it, floored, so a 64px icon lands at 12px — DPS Race's icon size and the title's own
 height — on a whole-pixel inset of 3, one 12px box with the title on one midline (both are placed by
 `TitleRowMid`). It shipped 16 until 2026-10-24, which drew an 11px icon 2.5px into its slot, half a

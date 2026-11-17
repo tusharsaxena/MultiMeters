@@ -388,7 +388,12 @@ function WindowProto:HeaderRightInset()
     -- room the title reserves is derived from the same config the placement
     -- reads, so the two cannot disagree.
     local used = NS.HeaderControls and NS.HeaderControls.WidthUsed(self) or 0
-    if used > 0 then used = used + self.layout.padding end
+    -- The strip's reach from the frame's edge (AD-86-MM): the band's inset, the library's
+    -- corner pad (HEADER.PAD) and the strip itself, then the padding as the title's gap.
+    if used > 0 then
+        local pad = NS.HeaderControls.CornerPad and NS.HeaderControls.CornerPad() or self.layout.padding
+        used = used + self:HeaderInset() + pad
+    end
     return self.layout.padding + used
 end
 

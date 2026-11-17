@@ -179,9 +179,9 @@ end
 -- them with no listener of this file's; the copy window is the library's and
 -- follows the owner its `addonName` names. No color is typed here (#107).
 
---- The dragging title bar both frames wear. Identical construction in both, so
---- it is one function: a strip across the top that moves the frame, a centered
---- caption, and the shared close button on the right.
+--- The modal's dragging title bar: a strip across the top that moves the frame,
+--- a centered caption, and on the right the marks every Ka0s title bar reads,
+--- settings · close (standalone-windows, *Title-bar controls*; AD-86-MM).
 ---
 --- The caption is stored as `frame.title` because that is the key the Shell
 --- tints, and the bar as `frame.titleBar`, which EnsureFrame hands to S.TitleBar
@@ -206,10 +206,24 @@ local function makeTitleBar(frame, text)
     caption:SetText(text)
     frame.title = caption
 
-    -- Two guards, not one: the helper may be absent on a degraded install, and
-    -- it answers nil on a client with no CreateFrame. Anchoring is ours because
-    -- the library hands the button back unanchored on purpose.
-    if NS.MakeCloseButton then
+    -- THE MARKS ARE LibKa0s-Widgets-1.0's HeaderButtons (LibKa0s#86): the close in
+    -- the corner (MakeCloseButton with this addon's folder) and the settings mark
+    -- beside it, laid on the bar at the library's pitch. The settings mark opens
+    -- the opener the launcher registered for this folder (core/LauncherSetup.lua's
+    -- `name` is `addonName`), and hides the modal FIRST: it sits at DIALOG, above
+    -- the settings panel, which would otherwise open underneath it.
+    local hb = W and type(W.HeaderButtons) == "function" and W.HeaderButtons(bar, {
+        owner = addonName, frame = frame, hideOnSettings = frame,
+        close = function() frame:Hide() end,
+        settingsTip = L["Open settings"],
+    }) or nil
+    if hb then
+        frame.closeButton, frame.settingsButton = hb.close, hb.settings
+    elseif NS.MakeCloseButton then
+        -- Without HeaderButtons (an older Widgets): the close alone, through the
+        -- one wrapper. Two guards, not one: the helper may be absent on a degraded
+        -- install, and it answers nil on a client with no CreateFrame. Anchoring is
+        -- ours because the library hands the button back unanchored on purpose.
         local close = NS.MakeCloseButton(bar, function() frame:Hide() end)
         if close then close:SetPoint("RIGHT", bar, "RIGHT", -6, 0) end
         frame.closeButton = close

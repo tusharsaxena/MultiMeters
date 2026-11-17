@@ -56,6 +56,30 @@
 -- first rung of it. Do not delete the rungs behind it as dead code. They are
 -- the record of what has already gone wrong twice.
 --
+-- ---------------------------------------------------------------------------
+-- WHY THE LIBRARY BUILDS THE MARKS AND THIS FILE STILL PLACES THEM
+-- ---------------------------------------------------------------------------
+--
+-- standalone-windows, *Title-bar controls* (v2.113.0, LibKa0s#86, AD-86-MM): every
+-- window's marks read, left to right, its extras · settings · close, built by
+-- LibKa0s-Widgets-1.0's `HeaderButtons`, the settings mark beside the close and
+-- opening this addon's settings. So the library builds all seven: the five extras
+-- in their order, the settings mark and the close (MakeCloseButton with this
+-- addon's folder, the one-wrapper rule's sanctioned route). The answer is kept as
+-- `window.headerButtons` and its buttons are `window.controls`.
+--
+-- It is built with `place = false`, and this file places the strip at the
+-- library's own pitch (HEADER.PAD from the band's corner, HEADER.GAP apart),
+-- because three player options re-lay it on every ApplyHeader and HeaderButtons
+-- lays once: a mark switched off yields its slot, Control size sizes every slot,
+-- and the row is centered on a title band whose height the player sets. The
+-- colors, the reveal and the art ladder below are this file's too, painted over
+-- the library's own paint by hooks that run after it. Recorded in
+-- docs/ARCHITECTURE.md's deviation register.
+--
+-- Without the Widgets library (a degraded install) the same seven are plain
+-- Buttons, in the same order, so the window can still be closed from its header.
+--
 -- TOC POSITION: after modules/Window.lua, which owns the frames these attach to.
 
 local addonName, NS = ...
@@ -67,10 +91,29 @@ NS.HeaderControls = HeaderControls
 -- Geometry
 -- ---------------------------------------------------------------------------
 
--- The gap between two controls. One number rather than the hand-matched 2px and
--- 4px seams the previous placement carried, which is what an index-based layout
--- buys: spacing is derived, so it cannot drift per button.
-local GAP = 4
+-- The strip's pitch: the corner inset and the gap between two controls. The
+-- library's HEADER (LibKa0s-Widgets-1.0, WidgetsHeader 1): 6 and 6, every Ka0s
+-- title bar's (standalone-windows, *Title-bar controls*), read at call time, with
+-- the same numbers for a load without the library. One gap rather than the
+-- hand-matched seams an earlier placement carried, which is what an index-based
+-- layout buys: spacing is derived, so it cannot drift per button. (It was 4 until
+-- AD-86-MM moved the strip onto the library's pitch.)
+local PAD_FALLBACK, GAP_FALLBACK = 6, 6
+
+--- The Widgets major, or nil on a degraded install. Resolved at call time.
+local function widgets()
+    return LibStub and LibStub("LibKa0s-Widgets-1.0", true) or nil
+end
+
+--- The corner inset and the gap, from the library's HEADER.
+local function pitch()
+    local W = widgets()
+    local H = W and W.HEADER
+    if type(H) == "table" and type(H.PAD) == "number" and type(H.GAP) == "number" then
+        return H.PAD, H.GAP
+    end
+    return PAD_FALLBACK, GAP_FALLBACK
+end
 
 -- How much of a control's slot the art actually fills. The slot is the click
 -- target and the layout pitch; the icon is drawn centered inside it.
@@ -102,9 +145,13 @@ local FULL_TEXTURE = { 0, 1, 0, 1 }
 -- The controls
 -- ---------------------------------------------------------------------------
 --
--- ORDER IS THE LAYOUT. Index 0 sits hard against the frame's right edge and
--- every one after it steps left by one slot, so this table read top to bottom is
--- the strip read right to left.
+-- ORDER IS THE LAYOUT. Index 1 sits in the band's corner and every one after it
+-- steps left by one slot, so this table read top to bottom is the strip read
+-- right to left: close, settings, then the window's own extras. Read the other
+-- way it is the rule's extras · settings · close, which is the order
+-- HeaderButtons is handed (and answers as `order`, pinned by
+-- tests/test_header_buttons.lua). The gear sat between the padlock and the
+-- segment menu until AD-86-MM moved it beside the close.
 --
 -- `setting` is the config key under `window.frame` that shows or hides it.
 -- `closeButton` is the odd one out and deliberately so: it predates the others
@@ -114,15 +161,17 @@ local FULL_TEXTURE = { 0, 1, 0, 1 }
 -- `art` / `atlas` / `ascii` are the three rungs. `state` marks a control whose
 -- icon IS its state, resolved per draw rather than at attach.
 local CONTROLS = {
-    -- OURS, AND IT DID NOT USE TO BE. This was LibKa0s' close button for as long
-    -- as the window has had one, which meant one control in the strip ignored
-    -- our art, ignored `controlSize` and drew a font-string multiplication sign
-    -- while its six neighbors drew shipped icons -- visibly the odd one out the
-    -- moment the other six became art. It is a plain control now, on the same
-    -- three-rung ladder as the rest. LibKa0s still closes the Export modal
-    -- (modules/Export.lua); this is about a strip that has to look like a set.
+    -- THE LIBRARY'S CLOSE AGAIN, AND STILL ONE OF THE SET. It was LibKa0s' close
+    -- once, which ignored our art and `controlSize` and drew a multiplication sign
+    -- while its six neighbors drew shipped icons, so it became a plain control on
+    -- the ladder. Since AD-86-MM HeaderButtons builds it through MakeCloseButton
+    -- (the one-wrapper rule's sanctioned route), and this file sizes it and walks
+    -- the same ladder over it as over the other six, so the strip is still a set.
     { key = "close",    setting = "closeButton",   art = "close",
       atlas = { "common-icon-redx" },           ascii = "X" },
+    -- Beside the close, as the rule puts it (AD-86-MM): HeaderButtons' settings mark.
+    { key = "settings", setting = "showSettings",  art = "settings",
+      atlas = { "GM-icon-settings", "common-icon-settings" }, ascii = "*" },
     -- TWO STATES, TWO CHARACTERS. The atlas rung distinguishes a two-state icon
     -- by desaturating it, but the ASCII rung has no such trick -- so a control
     -- whose icon IS its state needs a second character or the bottom rung draws
@@ -137,8 +186,6 @@ local CONTROLS = {
     -- states apart by desaturating, and the ASCII rung has no such trick.
     { key = "lock",     setting = "showLock",      art = "lock",     state = true,
       atlas = { "Garr_LockedBuilding" },        ascii = "#", asciiAlt = "-" },
-    { key = "settings", setting = "showSettings",  art = "settings",
-      atlas = { "GM-icon-settings", "common-icon-settings" }, ascii = "*" },
     { key = "segment",  setting = "showSegment",   art = "segment",
       atlas = { "communities-icon-chat" },      ascii = "=" },
     { key = "reset",    setting = "showReset",     art = "reset",
@@ -208,6 +255,7 @@ function HeaderControls.WidthUsed(window)
     -- window has been built, because a strip that reserves room for a button
     -- that is not there clips the title by that much for the life of a session.
     local size, shown = controlSize(frameCfg), 0
+    local _, gap = pitch()
     local built = window.controls
     for i = 1, #CONTROLS do
         local control = CONTROLS[i]
@@ -216,7 +264,18 @@ function HeaderControls.WidthUsed(window)
         end
     end
     if shown == 0 then return 0 end
-    return shown * size + (shown - 1) * GAP
+    return shown * size + (shown - 1) * gap
+end
+
+--- The strip's corner inset off the title band's right edge (HEADER.PAD).
+---
+--- Published for modules/Window_Header.lua's HeaderRightInset, which reserves the
+--- strip's reach from the frame's edge: the band's inset, this, and WidthUsed.
+---
+--- @return number
+function HeaderControls.CornerPad()
+    local pad = pitch()
+    return pad
 end
 
 -- ---------------------------------------------------------------------------
@@ -478,31 +537,85 @@ local function attachTip(button, window, key)
     Tip.AttachTitleTip(button, function() return tipWords(window, key, Tip) end, addonName)
 end
 
+--- Give a mark the two regions the ladder draws on: `tex` for the art and the
+--- atlas, `glyph` for the character. A mark the library built brings one of
+--- them (its art texture, or its word / its close's multiplication sign), which
+--- is taken over rather than doubled; the other is made here.
+local function dress(button)
+    button.tex = button.tex or button.icon
+    if not button.tex then
+        button.tex = button:CreateTexture(nil, "OVERLAY")
+        -- CENTERED, NOT SetAllPoints. The art is inset inside its slot
+        -- (ART_SCALE) and the size that inset produces is only known at layout
+        -- time, so the texture is anchored once here and sized in Apply.
+        button.tex:SetPoint("CENTER")
+    end
+    button.tex:Hide()
+    button.glyph = button.glyph or button.label
+    if not button.glyph then
+        button.glyph = button:CreateFontString(nil, "OVERLAY")
+        button.glyph:SetAllPoints(button)
+        button.glyph:SetJustifyH("CENTER")
+    end
+end
+
+--- Build the seven marks with LibKa0s-Widgets-1.0's HeaderButtons, or nil
+--- without it. `place = false`: this file places them (see the header).
+local function buildWithLibrary(window, frame)
+    local W = widgets()
+    if not (W and type(W.HeaderButtons) == "function") then return nil end
+    local extras = {}
+    for i = #CONTROLS, 3, -1 do
+        local control = CONTROLS[i]
+        extras[#extras + 1] = { key = control.key, icon = control.art, glyph = control.ascii,
+            onClick = onClick }
+    end
+    local L = NS.L or {}
+    return W.HeaderButtons(frame, {
+        owner = addonName, frame = window, place = false, extras = extras,
+        -- The click dispatch itself, so the close's OnClick IS `onClick` (MakeCloseButton sets the
+        -- function it is handed): the mark it fires on carries the window and the control name.
+        close = onClick,
+        -- This addon's own opener (a function, standalone-windows' "a window whose settings are its
+        -- own page passes its own opener"): the dispatch's settings arm, which points the panel at
+        -- THIS window before it opens. The meter is HUD furniture at MEDIUM and covers no panel,
+        -- so nothing is hidden first.
+        settings = function()
+            local button = window.controls and window.controls.settings
+            if button then onClick(button) end
+        end,
+        settingsTip = L["Open settings"] or "Open settings",
+    })
+end
+
 --- Create every control on a window. Called once, from Window:Build.
 function HeaderControls:Attach(window)
     local frame = window.frame
     if not frame then return end
 
+    local hb = buildWithLibrary(window, frame)
+    window.headerButtons = hb
     window.controls = {}
     for i = 1, #CONTROLS do
         local control = CONTROLS[i]
-        local button = CreateFrame("Button", nil, frame)
-
-        -- CENTERED, NOT SetAllPoints. The art is inset inside its slot (ART_SCALE)
-        -- and the size that inset produces is only known at layout time, so the
-        -- texture is anchored once here and sized in Apply.
-        button.tex = button:CreateTexture(nil, "OVERLAY")
-        button.tex:SetPoint("CENTER")
-        button.tex:Hide()
-
-        button.glyph = button:CreateFontString(nil, "OVERLAY")
-        button.glyph:SetAllPoints(button)
-        button.glyph:SetJustifyH("CENTER")
+        local button
+        if hb then
+            if control.key == "close" then button = hb.close
+            elseif control.key == "settings" then button = hb.settings
+            else button = hb.extras[control.key] end
+        end
+        -- HeaderButtons' settings mark shows its own tooltip (`settingsTip`); every other mark
+        -- takes this file's, whose words follow the state.
+        local libraryTip = (button ~= nil) and control.key == "settings"
+        if not button then
+            button = CreateFrame("Button", nil, frame)
+            button:SetScript("OnClick", onClick)
+        end
+        dress(button)
 
         button.mmWindow = window
         button.mmControl = control.key
-        button:SetScript("OnClick", onClick)
-        attachTip(button, window, control.key)
+        if not libraryTip then attachTip(button, window, control.key) end
 
         window.controls[control.key] = button
     end
@@ -539,7 +652,6 @@ function HeaderControls:Apply(window)
 
     local cfg      = window.config
     local frameCfg = cfg.frame or {}
-    local layout   = window.layout
     local size     = controlSize(frameCfg)
     local visible  = ((cfg.header or {}).show ~= false)
 
@@ -551,11 +663,14 @@ function HeaderControls:Apply(window)
     -- used to be pinned a pixel under the frame padding, which put it 3px below
     -- the text beside it and read as the icons hanging off the bottom of the bar.
     -- Anchored by the MIDDLE (RIGHT) to the title band (R5-WIN, the round 5 lead's
-    -- call 6), at TitleRowMid's 0; the x offset is the frame's, less the band's
-    -- inset, so each control keeps its place off the window's right edge.
+    -- call 6), at TitleRowMid's 0.
     local y = window.TitleRowMid and window:TitleRowMid(size) or 0
     local band = window.headerBand or window.frame
-    local e = (window.headerBand and window.HeaderInset) and window:HeaderInset() or 0
+    -- Off the BAND's corner at the library's pitch (AD-86-MM): HEADER.PAD in, HEADER.GAP
+    -- apart, as HeaderButtons lays every other Ka0s title bar. Without the band (a frame
+    -- built before it), the frame's edge inset stands in for the band's.
+    local pad, gap = pitch()
+    local e = ((not window.headerBand) and window.HeaderInset) and window:HeaderInset() or 0
     local used = 0
 
     for i = 1, #CONTROLS do
@@ -576,7 +691,7 @@ function HeaderControls:Apply(window)
                 -- same width today, and this stays an accumulator anyway: it is
                 -- the shape that survived a control that was not, and it costs
                 -- one addition.
-                local dx = e - (layout.padding + used)
+                local dx = -(e + pad + used)
                 button:ClearAllPoints()
                 button:SetPoint("RIGHT", band, "RIGHT", dx, y)
                 button:SetSize(size, size)
@@ -585,7 +700,7 @@ function HeaderControls:Apply(window)
                 -- centered in.
                 local art = math.floor(size * ART_SCALE)
                 button.tex:SetSize(art, art)
-                used = used + size + GAP
+                used = used + size + gap
                 -- The hit rect is grown past the art: 18px is a small target and
                 -- the only thing behind these is a drag handle.
                 if button.SetHitRectInsets then button:SetHitRectInsets(-3, -3, -3, -3) end
