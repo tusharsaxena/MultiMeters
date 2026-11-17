@@ -1085,8 +1085,11 @@ test("BuildLayout reserves the test strip only in test mode", function()
     inst.NS.State.testMode = false
 
     assertEqual(off.stripHeight, 0)
-    assertEqual(on.stripHeight, 22, "2 + TEST_STRIP.HEIGHT (18) + 2")
-    local body = 220 - on.padding * 2 - on.titleHeight - on.headerHeight - 22
+    -- AD-88-MM (preview-mode's *Where the strip sits*, Widgets minor 27): the docked strip moves
+    -- everything below the title bar down by exactly TEST_STRIP.HEIGHT, its BodyOffset, with no
+    -- host gap (the old pin was 2 + 18 + 2 = 22).
+    assertEqual(on.stripHeight, 18, "TEST_STRIP.HEIGHT, the docked strip's BodyOffset")
+    local body = 220 - on.padding * 2 - on.titleHeight - on.headerHeight - 18
     assertEqual(on.maxRows, math.floor((body + on.rowSpacing) / (on.rowHeight + on.rowSpacing)))
     assertTrue(on.maxRows < off.maxRows, "the strip takes rows, not the window's size")
     assertEqual(on.minHeight, off.minHeight, "the resize floor never moves under the player")
@@ -1117,6 +1120,30 @@ test("The strip is born hidden, with the localized line and the info art", funct
     assertTrue(strip:IsMouseEnabled(), "onEnd gives the strip its right-click End test menu")
     assertTrue(strip.__icon ~= nil and strip.__icon:GetTexture() == inst.NS.Icon("info"),
         "the host passes its info icon")
+end)
+
+test("Both strips are docked by the library under the title band (AD-88-MM)", function()
+    -- preview-mode's *Where the strip sits* (MUST, v2.110.0): `dock = "title"` (Widgets minor 27),
+    -- under the title band, never anchored by hand. red under: an undocked strip (no Place or
+    -- BodyOffset), or a strip a host anchors to the frame itself.
+    local inst, window = scene()
+    for _, key in ipairs({ "testStrip", "simStrip" }) do
+        local strip = window[key]
+        assertTrue(strip ~= nil, key .. " is built")
+        assertTrue(type(strip.Place) == "function", key .. " is docked (strip:Place)")
+        assertTrue(type(strip.BodyOffset) == "function", key .. " is docked (strip:BodyOffset)")
+        assertEqual(strip:BodyOffset(), 0, key .. ": no offset while hidden")
+    end
+    inst.NS.State.SetTestMode(true)
+    local point, rel, relPoint, x, y = window.testStrip:GetPoint(1)
+    assertEqual(point, "TOPLEFT")
+    assertTrue(rel == window.headerBand, "the strip hangs off the title band, not the frame")
+    assertEqual(relPoint, "BOTTOMLEFT")
+    assertEqual(x, 0)
+    assertEqual(y, 0)
+    assertEqual(window.testStrip:BodyOffset(), window.layout.stripHeight,
+        "the layout's reserve is the strip's own BodyOffset")
+    inst.NS.State.SetTestMode(false)
 end)
 
 test("With no Widgets library the window builds and reserves nothing", function()

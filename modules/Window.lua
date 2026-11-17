@@ -72,21 +72,19 @@ local Const = NS.Constants
 -- instead (modules/Window_Header.lua); a simulation then has no window marker.
 local W = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
 
--- The window's own gap above and below the strip. The library publishes the strip's
--- HEIGHT and no reserve: the gap is host layout (MultiMeters#59, LibKa0s#48).
-local STRIP_GAP = 2
-
---- The room the strip slot takes under the title: its height plus a gap above
---- and below while test mode is on OR a simulation runs (22 at HEIGHT 18), and 0
---- otherwise or with no Widgets library. The test strip and the sim strip share
---- the one slot. From mode state and a library constant, never from a strip's
---- own geometry.
+--- The room the strip slot takes under the title: TEST_STRIP.HEIGHT while test mode
+--- is on OR a simulation runs, and 0 otherwise or with no Widgets library. The test
+--- strip and the sim strip share the one slot. The library docks both directly under
+--- the title band (`dock = "title"`, Widgets minor 27, preview-mode's *Where the strip
+--- sits*, AD-88-MM), and a docked strip's BodyOffset is its own height while it shows,
+--- with no gap: this is that number, from mode state and a library constant, so the
+--- layout stays computed and never read back off a frame (rule R3).
 local function stripReserve()
     if not (W and W.TestStrip) then return 0 end
     local test = NS.State and NS.State.testMode
     local sim = NS.Sim and NS.Sim:IsActive()
     if not (test or sim) then return 0 end
-    return STRIP_GAP + W.TEST_STRIP.HEIGHT + STRIP_GAP
+    return W.TEST_STRIP.HEIGHT
 end
 
 local Window = {}
@@ -355,10 +353,11 @@ function WindowProto:BuildLayout()
     return layout
 end
 
---- Where the chrome below the title sits, from the layout alone: the strip's top,
---- the column headers' top and the body's top, each as a distance down from the
+--- Where the chrome below the title sits, from the layout alone: the strip slot's
+--- top, the column headers' top and the body's top, each as a distance down from the
 --- frame's top edge. With no strip (stripHeight 0) the headers sit straight under
---- the title, exactly where they always did.
+--- the title, exactly where they always did. The strip itself is placed by the
+--- library's docking under the title band, not from `stripTop` (AD-88-MM).
 ---
 --- @return number stripTop
 --- @return number headerTop
@@ -367,7 +366,7 @@ function WindowProto:ChromeOffsets()
     local layout = self.layout
     local below = layout.padding + layout.titleHeight
     local headerTop = below + layout.stripHeight
-    return below + STRIP_GAP, headerTop, headerTop + layout.headerHeight
+    return below, headerTop, headerTop + layout.headerHeight
 end
 
 -- ---------------------------------------------------------------------------

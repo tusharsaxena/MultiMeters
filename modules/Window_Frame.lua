@@ -209,10 +209,15 @@ function WindowProto:BuildStrips(frame)
     -- THE TEST-MODE STRIP (MultiMeters#59, LibKa0s#48): a yellow band between the
     -- title and the column headers saying the numbers under it are placeholders.
     -- It is NOT part of the header, so a window with its header hidden is still
-    -- marked. Born hidden; ApplyTestStrip places and shows it. No tooltip, so the
-    -- mouse stays off. The red title word shows only when the strip cannot (a
-    -- minimized window, or no Widgets library); the session-line `Test` stays.
+    -- marked. Born hidden; the library docks it directly under the title band
+    -- (`dock = "title"`, Widgets minor 27, preview-mode's *Where the strip sits*,
+    -- AD-88-MM) and ApplyTestStrip shows it and moves the body down by its height.
+    -- With the header hidden the band stays 1 px tall inside the edge, so the strip
+    -- sits at the window's top edge. No tooltip. The red title word shows only when
+    -- the strip cannot (a minimized window, or no Widgets library); the session-line
+    -- `Test` stays.
     self.testStrip = W and W.TestStrip and W.TestStrip(frame, {
+        dock = "title", titleBar = self.headerBand, window = frame,
         text = L["TEST MODE: placeholder numbers, not your fight. Combat ends it."],
         icon = NS.Icon and NS.Icon("info"),
         -- The skin owner (LibKa0s-Widgets-1.0 16, skinning-§1): the strip's legibility follows
@@ -387,6 +392,7 @@ function WindowProto:BuildFrame()
     -- any title word for the simulation: there is none (OWNER_SCOPE A).
     self.simStrip = W and W.TestStrip and W.TestStrip(frame, {
         kind = "sim",
+        dock = "title", titleBar = self.headerBand, window = frame,   -- AD-88-MM, as the test strip
         text = L["SIM: a scripted fight, not your data. /mm sim stop ends it."],
         icon = NS.Icon and NS.Icon("info"),
         owner = NS.name,

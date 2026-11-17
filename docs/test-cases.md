@@ -1238,7 +1238,7 @@ Total.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (49)
+### test_window.lua (50)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - The throttle coalesces N events into ONE refresh
@@ -1288,6 +1288,7 @@ Total.
 - BuildLayout reserves the test strip only in test mode
 - At minimum height the strip takes the row and the bounds do not move
 - The strip is born hidden, with the localized line and the info art
+- Both strips are docked by the library under the title band (AD-88-MM)
 - With no Widgets library the window builds and reserves nothing
 
 ### test_window_layout.lua (18)
@@ -1374,7 +1375,7 @@ Total.
 - Every header sits exactly over the column it labels, from the same layout
 - The Player header is a Button like every other, not a label with a gap beside it
 - The strip background and the per-column ones are mutually exclusive, both ways
-- Test mode: strip under the title, column headers and body pushed down by 22
+- Test mode: strip docked under the title band, column headers and body pushed down by 18
 - Header hidden plus test mode: the strip is at the top of the window and shown
 - Minimized: the strip hides and comes back on expand
 
@@ -2525,10 +2526,13 @@ Total.
 - Keybindings: the tab refuses to bind a key in combat
 - Keybindings: the General page's Defaults tooltip ends with the library's keys-unchanged sentence
 
-### test_skinsetup.lua (20)
+### test_skinsetup.lua (23)
 
 - Skin seam: the owner is the folder name, and NS.Skin is its facade
 - Skin seam: the read answers Ka0s Default before the profile store exists
+- Skin seam: the default skin is the library's DefaultSkin, read once at file load
+- Skin seam: the read before the store exists answers the client's default skin
+- Skin seam: without the library the default skin is Ka0s Default
 - Skin seam: every owner token is registered, namespaced mm., and keeps its pixel on Ka0s Default
 - Skin seam: another skin draws each owner token from its follow token
 - Skin seam: the skin keys default to Ka0s Default, the panel ignored and the picker unseen
@@ -3001,7 +3005,7 @@ Total.
 | test_aggregator_identity.lua | 32 |
 | test_aggregator_preview.lua | 8 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 49 |
+| test_window.lua | 50 |
 | test_window_layout.lua | 18 |
 | test_window_static.lua | 1 |
 | test_window_header.lua | 60 |
@@ -3041,7 +3045,7 @@ Total.
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 37 |
 | test_options_tabs.lua | 15 |
-| test_skinsetup.lua | 20 |
+| test_skinsetup.lua | 23 |
 | test_skin_outline.lua | 9 |
 | test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
@@ -3068,4 +3072,4 @@ Total.
 | test_skin_switch.lua | 23 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2594** |
+| **Total** | **2598** |

@@ -22,7 +22,7 @@ secret-value rules the checks refer to.
 | PANEL-1 to PANEL-59 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-58 | [Windows and the header](#win) | Header controls, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
+| WIN-1 to WIN-59 | [Windows and the header](#win) | Header controls, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-35 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-37 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
@@ -895,9 +895,10 @@ right. Open the panel with `/mm config`.
   (*TEST MODE: placeholder numbers, not your fight. Combat ends it.*) sits under the title. The column
   headers sit under it, no row overlaps it, and the session-line *Test* is still there. (The red
   TEST MODE title word left the title on 2026-10-23 while the strip shows: WIN-47 and WIN-48.)
-  Result: pass (owner-marked 2026-10-23)
+  (Amended by AD-88-MM, 2026-11-17: the strip sits directly under the title bar, full width inside
+  the window's edge, with no gap above it; WIN-59.) Result: pass (owner-marked 2026-10-23)
 - **WIN-41. The strip with the header hidden.** Hide the header (Settings → Header), then `/mm test` →
-  the strip is at the very top of the window, so the window is still marked as test data. Result: pass (owner-marked 2026-10-23)
+  the strip is at the very top of the window, so the window is still marked as test data. (Amended by AD-88-MM, 2026-11-17: flush inside the window's top edge; WIN-59.) Result: pass (owner-marked 2026-10-23)
 - **WIN-42. A narrow window.** Make a window narrow → the strip text truncates with *...* inside the
   frame and never spills past the window edge. Result: pass (owner-marked 2026-10-23)
 - **WIN-43. Test mode off.** `/mm test off` → the strip goes, the column headers and rows move back up,
@@ -953,7 +954,7 @@ right. Open the panel with `/mm config`.
   open, open Export → it comes up over the console; click the console → the console comes forward.
   Result: pass (owner-marked 2026-10-24)
 - **WIN-55. The strips still sit under the title (FX-MM-PERF).** `PlaceTestStrip` lost a loop. With two windows, `/mm test` → the test strip
-  sits under each title, inset by the padding on both sides. Change Header height while it shows → it moves with the title. `/mm test` off, `/mm sim` → the sim strip takes the same slot on
+  sits under each title, inset by the padding on both sides. (Amended by AD-88-MM, 2026-11-17: full width inside the window's edge, directly under the title bar; WIN-59.) Change Header height while it shows → it moves with the title. `/mm test` off, `/mm sim` → the sim strip takes the same slot on
   every window, and the test strip is hidden. Result:
 - **WIN-56. No line under the title bar (R4-SEP).** Log in on a profile that had Header → Title bar →
   Show divider on, with a Class or Custom divider color and a thickness of 4, then update → every meter
@@ -986,6 +987,18 @@ right. Open the panel with `/mm config`.
   its smallest and largest → the bubble keeps its neighbors' size, its edges are not clipped, and it
   stays on the bar's middle. Hover it → it takes the hover color like the rest. Fail: a smaller or
   larger bubble, a clipped edge, or a Lua error. Result:
+- **WIN-59. The strips dock directly under the title bar (AD-88-MM; preview-mode's *Where the strip
+  sits*, LibKa0s Widgets `dock = "title"`).** With two windows, `/mm test` → on each window the amber
+  TEST MODE strip sits directly under the title bar with no gap, spanning the window's full width
+  inside its edge (as wide as the title bar, no longer inset by the padding), and the column headers
+  and rows sit right under it, none covered; the title carries no TEST MODE word. Change Header height
+  and the window's border size (Frame → Border) while it shows → the strip stays glued under the bar.
+  Resize the window narrower and wider → the strip follows the width. Hide the header → the strip sits
+  flush at the window's top edge. Minimize → the strip goes and the red title word shows; expand → back.
+  `/mm test` off, `/mm sim` → the cyan SIM strip takes the same place on every window, and its
+  right-click menu still ends, steps and restarts the run; the test strip's right-click still ends test
+  mode. Fail: a gap or overlap between the bar and the strip, a strip inset from the edge, a covered
+  column header, or a Lua error. Result:
 
 ## VIS
 
@@ -2114,4 +2127,4 @@ Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-
 
 Owed: SKIN-49 (R6-RV), SKIN-50 (R6-PV), SIM-15 (R6-SIM) and WIN-58 (R6-MM2), the owner's sixth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND6/`), each with an empty `Result:`. SKIN-18 keeps its 2026-10-30 pass for what it checked then; its R6-PV amendment is checked by SKIN-50.
 
-Owed: SKIN-51 (AD-DS-MM), the LibKa0s v1.105.0 adoption wave A (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), with an empty `Result:`.
+Owed: SKIN-51 (AD-DS-MM) and WIN-59 (AD-88-MM), the LibKa0s v1.105.0 adoption wave A (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.

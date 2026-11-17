@@ -70,7 +70,10 @@ test("Sim strip: shown on every window while a session runs, the reserve re-anch
     for i, w in ipairs(windows(inst)) do
         assertTrue(w.simStrip:IsShown(), "window " .. i .. ": the sim strip is the marker")
         assertFalse(w.testStrip:IsShown(), "window " .. i .. ": the test strip stays hidden")
-        assertEqual(w.layout.stripHeight, 22, "2 + TEST_STRIP.HEIGHT (18) + 2")
+        -- AD-88-MM: the docked strip's BodyOffset, TEST_STRIP.HEIGHT (was 2 + 18 + 2 = 22).
+        assertEqual(w.layout.stripHeight, 18, "TEST_STRIP.HEIGHT")
+        assertEqual(w.simStrip:BodyOffset(), w.layout.stripHeight, "the reserve is the strip's BodyOffset")
+        assertTrue(select(2, w.simStrip:GetPoint(1)) == w.headerBand, "docked under the title band")
         local _, headerTop, bodyTop = w:ChromeOffsets()
         assertEqual(headerTop, before[i].headerTop + w.layout.stripHeight, "the headers moved down")
         assertEqual(bodyTop, before[i].bodyTop + w.layout.stripHeight, "the body moved down")

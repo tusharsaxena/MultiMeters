@@ -260,7 +260,7 @@ Three design rules follow, and they are enforced in one place each rather than r
   proves comparability in a separate pass *before* `table.sort` is entered, because a comparator that
   discovers an illegal comparison halfway through has already raised.
 - **R3 — layout is computed from config and test-mode state, never read back off a frame.** The
-  strip slot's room (`layout.stripHeight`, 22 px while test mode is on or a simulation runs) is the one
+  strip slot's room (`layout.stripHeight`, `TEST_STRIP.HEIGHT`, 18 px, while test mode is on or a simulation runs: the docked strip's `BodyOffset`, AD-88-MM) is the one
   input that is not config, and it too is arithmetic over state rather than a measurement. `SetValue(secret)` marks a
   frame `HasSecretValues`, which makes its position data secret and propagates that to anything
   anchored to it. There is not one `GetPoint` / `GetWidth` / `GetLeft` in `modules/Row.lua`, in
@@ -453,9 +453,9 @@ thing is in it before opening it:
 - **A new delve companion stays off the grid** until its creature id is added to
   `Constants.COMPANION_CREATURE_IDS`, because a class alone no longer admits a `None` source
   ([#56](https://github.com/tusharsaxena/MultiMeters/issues/56)).
-- **Test mode at the minimum height.** The test-mode strip takes its 22 px out of the rows and never
+- **Test mode at the minimum height.** The test-mode strip takes its 18 px out of the rows and never
   out of the window, so the resize floor does not move. At the minimum height the one row it leaves is
-  pushed 22 px down, partly past the window's bottom edge (22 px less the padding), until test mode
+  pushed 18 px down, partly past the window's bottom edge (18 px less the padding), until test mode
   ends or the window is made taller ([#59](https://github.com/tusharsaxena/MultiMeters/issues/59)).
 - **What `/mm sim` does not simulate** ([#60](https://github.com/tusharsaxena/MultiMeters/issues/60)).
   No secret value and no `Combat` restriction: its numbers are plain, so a session runs the

@@ -1242,17 +1242,24 @@ local function pointY(region)
     return y
 end
 
-test("Test mode: strip under the title, column headers and body pushed down by 22", function()
+test("Test mode: strip docked under the title band, column headers and body pushed down by 18", function()
     -- red under: anchoring the headerFrame or the body from padding + titleHeight alone.
+    -- AD-88-MM (preview-mode's *Where the strip sits*, Widgets minor 27): the library docks the
+    -- strip directly under the title band (it was the host's, at top + 2 with a 22 reserve), and
+    -- everything below moves down by TEST_STRIP.HEIGHT, the strip's BodyOffset.
     local inst, window = scene()
     local layout = window.layout
     local top = layout.padding + layout.titleHeight
 
     inst.NS.State.SetTestMode(true)
     assertTrue(window.testStrip:IsShown())
-    assertEqual(pointY(window.testStrip), -(top + 2))
-    assertEqual(pointY(window.headerFrame), -(top + 22))
-    assertEqual(pointY(window.body), -(top + 22 + layout.headerHeight))
+    local _, rel, relPoint, _, y = window.testStrip:GetPoint(1)
+    assertTrue(rel == window.headerBand, "docked to the title band")
+    assertEqual(relPoint, "BOTTOMLEFT")
+    assertEqual(y, 0)
+    assertEqual(window.testStrip:BodyOffset(), 18)
+    assertEqual(pointY(window.headerFrame), -(top + 18))
+    assertEqual(pointY(window.body), -(top + 18 + layout.headerHeight))
 
     inst.NS.State.SetTestMode(false)
     assertFalse(window.testStrip:IsShown())
@@ -1267,7 +1274,12 @@ test("Header hidden plus test mode: the strip is at the top of the window and sh
     inst.NS.State.SetTestMode(true)
     assertEqual(window.layout.titleHeight, 0)
     assertTrue(window.testStrip:IsShown())
-    assertEqual(pointY(window.testStrip), -(window.layout.padding + 2))
+    -- AD-88-MM: still docked under the title band, which a hidden header keeps 1 px tall flush
+    -- inside the window's edge, so the strip sits at the window's top edge (was padding + 2).
+    local _, rel, _, _, y = window.testStrip:GetPoint(1)
+    assertTrue(rel == window.headerBand, "docked to the title band")
+    assertEqual(y, 0)
+    assertEqual(pointY(window.headerFrame), -(window.layout.padding + 18))
 end)
 
 test("Minimized: the strip hides and comes back on expand", function()

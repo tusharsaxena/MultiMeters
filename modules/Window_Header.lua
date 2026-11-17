@@ -848,26 +848,16 @@ end
 -- The test-mode and simulation strips (MultiMeters#59, #60, LibKa0s#48)
 -- ---------------------------------------------------------------------------
 
-local function placeStrip(strip, frame, pad, stripTop, show)
-    if not strip then return end
-    strip:ClearAllPoints()
-    strip:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -stripTop)
-    strip:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, -stripTop)
-    strip:SetShown(show)
-end
-
---- The anchoring half of ApplyTestStrip: place both strips in the one slot under
---- the title, inset by the padding on both sides, and show the one the slot is
---- reserved for -- the sim strip while a simulation runs, the test strip
---- otherwise. ApplyConfig runs this too, so a settings change that moves the
---- title moves the strips with it. Positions come from ChromeOffsets, i.e. from
---- the layout, never off a frame.
+--- The showing half of ApplyTestStrip: show the strip the slot is reserved for --
+--- the sim strip while a simulation runs, the test strip otherwise -- and hide the
+--- other. Neither is anchored here: the library docks both directly under the title
+--- band (`dock = "title"`, Widgets minor 27, preview-mode's *Where the strip sits*,
+--- AD-88-MM) and places them again on every show, hide and resize of the band, so a
+--- settings change that moves the title moves the strips with it.
 function WindowProto:PlaceTestStrip()
-    local pad = self.layout.padding
-    local stripTop = self:ChromeOffsets()
     local shown, sim = stripShown(self), simRunning()
-    placeStrip(self.testStrip, self.frame, pad, stripTop, shown and not sim)
-    placeStrip(self.simStrip, self.frame, pad, stripTop, shown and sim)
+    if self.testStrip then self.testStrip:SetShown(shown and not sim) end
+    if self.simStrip then self.simStrip:SetShown(shown and sim) end
 end
 
 --- The test-mode toggle's whole effect on a window, and NARROW on purpose: the
