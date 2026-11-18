@@ -721,11 +721,16 @@ test("Slash: a bare `window delete` says nothing is selected, not a blank name",
     assertEqual(#inst.NS.Database.GetWindows(), 1, "and nothing was deleted")
 end)
 
-test("Slash: `window list` prints one line per window", function()
+test("Slash: `window list` writes one line per window to the console", function()
+    -- RE-PINNED (AD-79-MM, debug-logging-§15): the listing is a report, so its lines are in the
+    -- debug console and chat carries the one pointer. tests/test_reports.lua holds the shape.
     local inst = T.load()
     say(inst, "window new Second")
+    local buffer = inst.NS.DebugLog.buffer
+    local bufN = #buffer
     local lines = say(inst, "window list")
-    assertTrue(#lines >= 2, "two windows, at least two lines; got " .. #lines)
+    assertEqual(#lines, 1, "one chat pointer; got " .. #lines)
+    assertTrue(#buffer - bufN >= 3, "a header and two windows, at least three lines; got " .. (#buffer - bufN))
 end)
 
 test("Slash: `window` with an unknown sub-verb prints the usage", function()

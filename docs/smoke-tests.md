@@ -28,8 +28,8 @@ secret-value rules the checks refer to.
 | TIP-1 to TIP-41 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips opening beside the window, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-57 | [Export](#export) | The modal, its settings mark, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
-| DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
-| DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
+| DIAG-1 to DIAG-46 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, the report verbs in the console with one chat pointer, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
+| DEGRADED-1 to DEGRADED-12 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look, a report in chat |
 | SIM-1 to SIM-16 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run, the Master controls Sim mode checkbox and its window rule |
 | SKIN-1 to SKIN-51 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat, a stored pick of the deleted Friz |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
@@ -229,13 +229,13 @@ secret-value rules the checks refer to.
   spaces kept. Result: pass (owner-marked 2026-10-10)
 - **SLASH-10. `/mm lock`.** `/mm lock` twice → it toggles; `/mm lock off` → it sets, printing
   *Windows are unlocked — drag them into place.*; `/mm lock on` prints *Windows are locked.* Result: pass (owner-marked 2026-10-10)
-- **SLASH-11. `/mm window`.** `/mm window list` → one line per window: its name, *Enabled* when it
+- **SLASH-11. `/mm window`.** `/mm window list` → in the debug console (DIAG-44), one line per window: its name, *Enabled* when it
   is on screen or *Disabled* when hidden, and a count of every column in its list, shown or not
   (`8 Columns` on a fresh window). `/mm window new Raid` → *Window 'Raid' created.*; `/mm window new
   Solo`, then `/mm window copy Raid Solo` → *Copied everything from 'Raid'.* and Solo takes Raid's
   settings (the source is the first word, so a source whose name has a space is copied from Windows
   → General instead); `/mm window delete Solo` → *Window 'Solo' deleted.* with no confirmation (the
-  panel's **Delete window** asks first, WIN-34); `/mm window delete Raid` the same. Result: pass (owner-marked 2026-10-10)
+  panel's **Delete window** asks first, WIN-34); `/mm window delete Raid` the same. Result:
 - **SLASH-12. `/mm config` in combat.** Enter combat (a dummy is fine), type `/mm config`, then a bare
   `/mm` → each refuses with one gray notice; leaving combat does not open the panel (nothing was
   queued). Result: pass (owner-marked 2026-10-10)
@@ -1778,6 +1778,25 @@ stayed empty; "no errors" from a dummy is not evidence here.
 - **DIAG-43. The diagnostics header names Charts.** `/mm diagnostics` → the library identity lines
   name `Charts` between `Toast` and `Media`, with a version, though this addon draws no chart. The
   rest of the report reads as before. No Lua error (LibKa0s v1.84.0, DebugLogDiagnostics minor 6). Result:
+- **DIAG-44. `/mm window list` is a report (AD-79-MM; debug-logging-§15, LibKa0s#79).** `/reload`, so
+  logging is off and the console is closed, then `/mm window list` → the console opens on its own and
+  ends with a `/mm window list` header and one line per window (SLASH-11's columns); chat shows exactly
+  one line, `window list: N lines written to the debug console. Use Copy to share it.`, N counting the
+  header; logging is still off (`/mm debug` → the title bar reads Debug Off). A bare `/mm window` does the
+  same. **Copy** → the lines paste with no color codes. Fail: the window lines in chat, more than one
+  chat line, the console left closed, logging turned on, or a Lua error. Result:
+- **DIAG-45. The three probes are reports (AD-79-MM).** `/reload` (logging off, console closed), then in
+  turn `/mm debug recap`, `/mm debug identity` and `/mm debug feign` → each opens the console and writes
+  a `/mm debug recap` (`identity`, `feign`) header then its probe, the same content DIAG-22, DIAG-24 and
+  DIAG-25 read, and chat shows exactly one `debug recap: N lines written to the debug console. Use Copy
+  to share it.` line (`debug identity: …`, `debug feign: …`) per run; logging stays off. Fail: probe lines
+  in chat, a run that writes nothing to the console, a second chat line, or a Lua error. Result:
+- **DIAG-46. A refusal inside a report verb stays in chat (AD-79-MM).** With the console closed,
+  `/mm window explode` → the usage line in chat (`Usage: /mm window list, …`) and nothing else, the
+  console stays closed; `/mm debug feign of` → DIAG-23's one refusal line, the console stays closed.
+  `/mm debug feign on`, `/mm debug tooltip`, `/mm window new Raid`, `/mm version` and `/mm list` → each
+  still answers in chat only. Fail: a usage or refusal written to the console, a pointer line, or a Lua
+  error. Result:
 
 ## DEGRADED
 
@@ -1793,6 +1812,9 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
   name the missing library; `/mm perf` says performance measurement is unavailable. Result: pass (owner-marked 2026-10-10)
 - **DEGRADED-4. The host verbs work.** `/mm lock`, `/mm test`, `/mm toggle`, `/mm window list`,
   `/mm reset-positions` → each works. Result: pass (owner-marked 2026-10-10)
+- **DEGRADED-12. A report streams to chat without the library (AD-79-MM; debug-logging-§15).** With
+  LibKa0s absent, `/mm window list` and `/mm debug recap` → each prints its whole report in chat, with
+  no header line and no `lines written to the debug console` pointer. Fail: nothing printed, a pointer at a console that is not there, or a Lua error. Result:
 - **DEGRADED-5. Enable and disable work.** `/mm disable` → `enabled = false` and the windows go;
   `/mm enable` → `enabled = true` and they return; neither says anything is unavailable. Result: pass (owner-marked 2026-10-10)
 - **DEGRADED-6. `/mm resetall` works.** → the same popup; accepting resets the profile. Result: pass (owner-marked 2026-10-10)
@@ -2197,3 +2219,5 @@ Owed: SKIN-49 (R6-RV), SKIN-50 (R6-PV), SIM-15 (R6-SIM) and WIN-58 (R6-MM2), the
 Owed: SKIN-51 (AD-DS-MM), WIN-59 (AD-88-MM) and WIN-40 (re-opened by the AD-88-MM review), the LibKa0s v1.105.0 adoption wave A (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.
 
 Owed: TIP-23 (rewritten), TIP-29 and PANEL-41 (re-opened, their expected results moved), TIP-38 to TIP-41 (AD-92-MM, LibKa0s#92, tooltip placement), the LibKa0s v1.105.0 adoption wave C (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.
+
+Owed: DIAG-44 to DIAG-46 and DEGRADED-12 (AD-79-MM, LibKa0s#79, the report verbs on `D:Report`), and SLASH-11 (re-opened, its listing now in the console), the LibKa0s v1.105.0 adoption wave D (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.

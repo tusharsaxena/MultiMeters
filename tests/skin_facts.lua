@@ -158,7 +158,7 @@ return {
             { file = "core/Namespace.lua", substring = 'NS.GRAY = "|cff9d9d9d"',
               why = "the opener of a chat notice line, and the degraded arm of mm.dim", cause = "L13" },
             { file = "modules/WindowManager.lua", substring = "|cFFFFFF00%s|r  %s  %s%d %s|r",
-              why = "the /mm window list line, printed to chat", cause = "L13" },
+              why = "the /mm window list line, a report written to the debug console", cause = "L13" },
             { file = "modules/Row_NameCell.lua", substring = "SetStatusBarColor(0, 0, 0, 0)",
               why = "the name column's bar drawn clear: no color reaches the screen", cause = "A7" },
             { file = "modules/Tooltip.lua", substring = "fontString:SetTextColor(1, 1, 1)",

@@ -15,10 +15,37 @@ this addon's own surface on top of it.
 | `/mm debug on` / `off` | Set the session logging flag. Works with the window closed. |
 | `/mm debug tooltip` | Toggle the tooltip log channel. Off by default; prints the state it landed in. |
 | `/mm diagnostics`, `/mm debug diagnostics` | Write the diagnostics report into the console, after whatever is already there (`debug-logging-§14`), turning logging on for the session first if it is off. Both forms run the same report; `diag`, its old name, is an unknown word now. |
-| `/mm debug recap` | Print the death-recap probe alone (issue #1). |
-| `/mm debug identity` | Print the mid-pull correlation capture (issue #22). |
-| `/mm debug feign on` / `off` | Arm and disarm the feign-death recording (issue #25). |
-| `/mm debug feign` | Print the recording. |
+| `/mm debug recap` | Write the death-recap probe alone to the console, a report (issue #1). |
+| `/mm debug identity` | Write the mid-pull correlation capture to the console, a report (issue #22). |
+| `/mm debug feign on` / `off` | Arm and disarm the feign-death recording (issue #25). One chat line. |
+| `/mm debug feign` | Write the recording to the console, a report. |
+
+## Reports go to the console, with one chat pointer
+
+The owner's ruling of 2026-11-08 (`debug-logging-§15`, LibKa0s#79). A **report** is a multi-line
+read-out a player asks for by name. This addon has four report verbs besides the diagnostics report:
+
+| Verb | Title (header and pointer) | Written by |
+|---|---|---|
+| `/mm window list`, and a bare `/mm window` | `window list` | `WINDOW_VERBS.list`, `settings/Slash.lua` |
+| `/mm debug recap` | `debug recap` | `Diagnostics.RunTopic`, `core/Diagnostics.lua` |
+| `/mm debug identity` | `debug identity` | the same |
+| `/mm debug feign` | `debug feign` | the same |
+
+Each goes through `LibKa0s-DebugLog-1.0`'s `D:Report(tag, title, fn)`: a `/mm <title>` header,
+then the body, through the **ungated** append, so it lands with logging off and leaves logging off.
+The console opens if it is hidden, and chat gets exactly **one** line, `<title>: N lines written to
+the debug console. Use Copy to share it.` A usage or refusal line inside a report verb (`/mm window
+explode`, `/mm debug feign of`) stays in chat and writes nothing. A probe that raises keeps its own
+`section failed:` line inside the report, which is still pointed at. Without the library the stub's
+`Report` streams the report to chat with no pointer; a console built without the report seam, or no
+console at all, falls back to chat the same way. `tests/test_reports.lua` holds all of it.
+
+What stays in chat, by the same ruling: `/mm list` (reserved), the help index, `/mm version`,
+`/mm profile` (the library's `CliProfile`), every acknowledgment (`debug on`, `debug tooltip`,
+`debug feign on`, `lock`, `test`, `toggle`, `window new`, `delete`, `copy`, `reset-positions`),
+refusals and errors. `/mm export` opens a copy window and is not a report. `/mm diagnostics` keeps
+`debug-logging-§14`'s own helper and pointer line.
 
 **Logging and the window are separate on purpose.** Logging runs with the console closed, so a bug
 can be reproduced first and the log read afterwards.
@@ -27,9 +54,9 @@ can be reproduced first and the log read afterwards.
 right of the Debug On/Off label with a small gap, drawn as plain text like that label. A click runs
 the same report as `/mm diagnostics`, `NS.DebugLog:RunDiagnostics()`.
 
-**The four read verbs run without the console seam at all.** They are what a player is asked to type
-when something looks wrong, and requiring them to open a window first is one more step between a bug
-and its report. `feign` is the only one that reads an argument, because it is the only one that is
+**The four read verbs run without the console being open first.** They are what a player is asked
+to type when something looks wrong, and requiring them to open a window first is one more step between
+a bug and its report: each report opens the console itself. `feign` is the only one that reads an argument, because it is the only one that is
 not a read: a feign is over before a player finishes typing, so the trace is armed before the run and
 printed after it. A word `feign` does not recognize is named and refused rather than falling through
 to the report — `/mm debug feign of`, typed by somebody who meant `off`, used to print an empty
@@ -260,9 +287,9 @@ as any unknown word does and `/mm diag` answers `unknown command`. No other name
 Each answers to one issue and is self-contained so it can be deleted with that issue. They were
 peeled out of `core/Diagnostics.lua` on 2026-09-09 for `layout-§1`, one file apiece.
 
-| File | Verb | Issue | Prints |
+| File | Verb | Issue | Writes |
 |---|---|---|---|
-| `core/Diagnostics.lua` | `diagnostics` | — | the sections of the diagnostics report, and the `out` seam the siblings share |
+| `core/Diagnostics.lua` | `diagnostics` | — | the sections of the diagnostics report, the `out` seam the siblings share, and `RunTopic`, which writes each probe as a report |
 | `core/Diagnostics_DeathRecap.lua` | `recap` | #1 | whether this client can read a death recap, searched two ways |
 | `core/Diagnostics_Identity.lua` | `identity` | #22 | the correlation rectangle, the seat probe, the secret-GUID lookup verdict and the source-field audit |
 | `core/Diagnostics_Feign.lua` | `feign` | #25 | the armed feign-death recording |

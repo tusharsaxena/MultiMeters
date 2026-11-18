@@ -2376,7 +2376,7 @@ Total.
 - Slash: `lock` moves the lock and NOTHING else
 - Slash: `window new` and `window delete` act on the registry
 - Slash: a bare `window delete` says nothing is selected, not a blank name
-- Slash: `window list` prints one line per window
+- Slash: `window list` writes one line per window to the console
 - Slash: `window` with an unknown sub-verb prints the usage
 - Slash: `toggle` reaches the registry and reports its refusal
 - Slash: `reset-positions` moves every window and says how many
@@ -2411,6 +2411,26 @@ Total.
 - Slash: a word the ladder does not know toggles the console, as a bare `debug` does
 - Slash: with core/Diagnostics.lua absent the debug verbs go quiet, not through
 - Slash: a Diagnostics too old to arm a trace reports off rather than promising one
+
+### test_reports.lua (17)
+
+- Reports: `/mm window list` lands in the console with logging off, and leaves it off
+- Reports: `/mm window list` reveals the console and points at it with exactly one chat line
+- Reports: without the library `/mm window list` streams to chat with no pointer
+- Reports: `/mm debug recap` lands in the console with logging off, and leaves it off
+- Reports: `/mm debug recap` reveals the console and points at it with exactly one chat line
+- Reports: without the library `/mm debug recap` streams to chat with no pointer
+- Reports: `/mm debug identity` lands in the console with logging off, and leaves it off
+- Reports: `/mm debug identity` reveals the console and points at it with exactly one chat line
+- Reports: without the library `/mm debug identity` streams to chat with no pointer
+- Reports: `/mm debug feign` lands in the console with logging off, and leaves it off
+- Reports: `/mm debug feign` reveals the console and points at it with exactly one chat line
+- Reports: without the library `/mm debug feign` streams to chat with no pointer
+- Reports: `/mm window list` carries one line per window
+- Reports: a bare `/mm window` is the same report
+- Reports: a `window` usage line stays in chat and writes no report
+- Reports: a `debug feign` refusal stays in chat and writes no report
+- Reports: a topic probe that raises keeps its section-failed line and still points
 
 ### test_slash_refusal.lua (11)
 
@@ -3068,6 +3088,7 @@ Total.
 | test_settings_layout.lua | 5 |
 | test_slash.lua | 52 |
 | test_slash_diagnostics.lua | 20 |
+| test_reports.lua | 17 |
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
 | test_disabled.lua | 27 |
@@ -3102,4 +3123,4 @@ Total.
 | test_skin_switch.lua | 23 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2620** |
+| **Total** | **2637** |

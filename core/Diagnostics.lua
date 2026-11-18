@@ -108,7 +108,8 @@ local NUMBER_PROBES = {
 
 --- Where the current report's lines go. Pointed at the library's section writer
 --- for the length of one section of the full report (see `hosted` below), and at
---- the console by the three topic probes' own entry points; nil otherwise.
+--- `D:Report`'s collector by the three topic probes (Diagnostics.RunTopic); nil
+--- otherwise.
 ---
 --- The console is the right home: a diagnostic is forty lines that a player has
 --- to hand back verbatim, and the console already has the buffer, the scrollback
@@ -120,10 +121,11 @@ local emit = nil
 --- Print one line, to the current sink when there is one and to chat otherwise.
 ---
 --- The fallback is not decoration, for the topic probes (`recap`, `identity`,
---- `feign`). With LibKa0s absent, `NS.DebugLog` is a stub whose `Add` is a NO-OP —
---- so routing there unconditionally would make the one command a player runs when
---- something is wrong print absolutely nothing, on exactly the broken install
---- where they need it most.
+--- `feign`). With no DebugLog at all, or a console built without the report seam,
+--- routing to the console unconditionally would make the one command a player runs
+--- when something is wrong print absolutely nothing, on exactly the broken install
+--- where they need it most. (With LibKa0s absent the stub's own `Report` streams to
+--- chat, debug-logging-§15.)
 local function out(line)
     if emit then emit(line) return end
     if NS.Print then NS.Print(line) else print(line) end
@@ -206,6 +208,39 @@ Diagnostics.probe  = probe
 --- @param fn function|nil
 function Diagnostics.SetEmit(fn)
     emit = fn
+end
+
+--- One topic probe (`/mm debug recap`, `identity`, `feign`) as a REPORT
+--- (debug-logging-§15, the owner's ruling of 2026-11-08, LibKa0s#79).
+---
+--- LibKa0s-DebugLog-1.0's `D:Report` owns the shape: a `/mm <title>` header, the
+--- body through the UNGATED append (it lands with logging off and leaves it off),
+--- the console revealed, and exactly one chat pointer naming the line count. The
+--- stub's `Report` streams the body to chat with no pointer. A console with no
+--- `Report` (DebugLogDiagnostics.lua missing from the payload) and a namespace with
+--- no DebugLog at all fall back to `out`'s chat arm, so the probe is never silent.
+---
+--- A probe that raises keeps its own `section failed:` line, inside the report, so
+--- the report is still written, still pointed at, and the sink is always cleared.
+---
+--- @param title string the report's name, its header after `/mm` and its pointer's
+--- @param body function the probe, which writes through `out`
+function Diagnostics.RunTopic(title, body)
+    local function guarded()
+        local ok, err = pcall(body)
+        if not ok then out("  |cffff2020section failed:|r " .. tostring(err)) end
+    end
+    local D = NS.DebugLog
+    if not (D and type(D.Report) == "function") then
+        emit = nil
+        return guarded()
+    end
+    D:Report("Diag", title, function(collect)
+        emit = collect
+        local ok, err = pcall(guarded)
+        emit = nil
+        if not ok then error(err, 0) end
+    end)
 end
 
 -- ---------------------------------------------------------------------------

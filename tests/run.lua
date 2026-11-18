@@ -375,6 +375,8 @@ local SUITES = {
     "test_settings_layout",
     "test_slash",
     "test_slash_diagnostics",
+    -- debug-logging-§15: the report verbs on D:Report (LibKa0s#79).
+    "test_reports",
     "test_slash_refusal",
     "test_slash_profile",
     -- slash-commands-§7's conformance suite: the disabled state is TOTAL. It asserts on
