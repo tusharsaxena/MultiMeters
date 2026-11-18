@@ -396,7 +396,10 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   empty state, the session line's dim notes (`mm.dim`) and the TEST MODE word (`mm.testWord`) read
   tokens, and both mode strips are handed the owner. The rows' hover wash (`mm.rowHover`), their
   alternating stripe (`mm.rowStripe`), the self edge (`text.accent`) and a classless name
-  (`text.highlight`) follow the skin too, each Ka0s Default's old pixel. With both settings off a skin
+  (`text.highlight`) follow the skin too, each Ka0s Default's old pixel, except the hover wash and
+  the stripe: AD-82-MM raised them to white .15 and .08 (were .10 and .05) to clear LibKa0s#82 and
+  #84's row floors in CIE L* (a stripe 6 off the window, a hover 12 off it and 3 off a striped row),
+  which `tests/test_skinsetup.lua` holds on Ka0s Default's window. With both settings off a skin
   still draws its stripe and edge through `rows.alternatingBackgroundFromSkin` and
   `rows.highlightSelfFromSkin` (`mm.skinStripe`, `mm.skinSelfEdge`), which are clear under Ka0s Default. `RefreshUpvalues` resolves
   them, the chrome's five `skin` colors and the session line's two escapes, once into the window's `skinLooks`
@@ -469,7 +472,7 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
 - **What stays.** Chat output (X7), inline help markup (X9), StaticPopups, the class and spell art,
   the statistic palette (D14) and the diagnostics report's escapes (D15).
 
-In-client checks: [smoke-tests.md](smoke-tests.md) SKIN-1 to SKIN-24, SKIN-50, SKIN-51, INSTALL-15 and DEGRADED-11.
+In-client checks: [smoke-tests.md](smoke-tests.md) SKIN-1 to SKIN-24, SKIN-50 to SKIN-52, INSTALL-15 and DEGRADED-11.
 
 ## Known limitations
 

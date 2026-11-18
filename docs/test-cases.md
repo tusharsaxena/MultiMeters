@@ -2566,7 +2566,7 @@ Total.
 - Keybindings: the tab refuses to bind a key in combat
 - Keybindings: the General page's Defaults tooltip ends with the library's keys-unchanged sentence
 
-### test_skinsetup.lua (23)
+### test_skinsetup.lua (24)
 
 - Skin seam: the owner is the folder name, and NS.Skin is its facade
 - Skin seam: the read answers Ka0s Default before the profile store exists
@@ -2591,6 +2591,7 @@ Total.
 - Skin seam: the seam publishes the same NS members on both paths
 - Skin seam: each host-copy skin token is the live library's Ka0s Default value
 - Skin seam: degraded, the facade answers today's colors and the seam never raises
+- Skin seam: the rows' own washes clear the library's row floors on Ka0s Default
 
 ### test_skin_outline.lua (9)
 
@@ -3099,7 +3100,7 @@ Total.
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 37 |
 | test_options_tabs.lua | 15 |
-| test_skinsetup.lua | 23 |
+| test_skinsetup.lua | 24 |
 | test_skin_outline.lua | 9 |
 | test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
@@ -3127,4 +3128,4 @@ Total.
 | test_skin_switch.lua | 23 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2641** |
+| **Total** | **2642** |

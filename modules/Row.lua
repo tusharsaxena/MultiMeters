@@ -85,8 +85,8 @@ NS.Row = Row
 --- pixel when the window has none yet.
 local LOOK_DEFAULT = {
     -- skinStripe and skinSelfEdge have none: no look is no skin to draw them.
-    rowHover  = { 1, 1, 1, 0.10 },
-    rowStripe = { 1, 1, 1, 0.05 },
+    rowHover  = { 1, 1, 1, 0.15 },
+    rowStripe = { 1, 1, 1, 0.08 },
     selfEdge  = { 1, 0.82, 0, 1 },
     nameText  = { 1, 1, 1, 1 },
 }

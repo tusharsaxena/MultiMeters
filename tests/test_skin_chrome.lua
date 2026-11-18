@@ -171,10 +171,12 @@ end
 
 test("Skin chrome: the rows keep their Ka0s Default pixels through the owner tokens", function()
     -- red under: the row looks not painted at all (a nil color), or a token whose default moved.
+    -- Re-pinned by AD-82-MM: the wash and the stripe were white .10 and .05, under LibKa0s#82 and
+    -- #84's row floors; they are white .15 and .08 (tests/test_skinsetup.lua holds the floors).
     local _, _, _, _, row = rowScene()
     local wash, stripe, edge, name = rowLooks(row)
-    sameColor(wash, { 1, 1, 1, 0.10 }, "the hover wash")
-    sameColor(stripe, { 1, 1, 1, 0.05 }, "the stripe")
+    sameColor(wash, { 1, 1, 1, 0.15 }, "the hover wash")
+    sameColor(stripe, { 1, 1, 1, 0.08 }, "the stripe")
     sameColor(edge, { 1, 0.82, 0, 1 }, "the self edge")
     sameColor(name, { 1, 1, 1 }, "a classless name")
 end)

@@ -134,10 +134,14 @@ NS.SKIN_TAB = "Appearance"
 -- own palette (X2). The names are this addon's namespace, `mm.`, never a library family (X12).
 local DIM = 0x9d / 255
 NS.SKIN_TOKENS = {
-    -- The meter row's mouseover wash (modules/Row.lua): white at 0.10 where `list.hover` is gold.
-    ["mm.rowHover"]  = { default = { 1, 1, 1, 0.10 }, follow = "list.hover" },
-    -- The meter row's alternating stripe (modules/Row.lua): white at 0.05 where `list.stripe` is 0.03.
-    ["mm.rowStripe"] = { default = { 1, 1, 1, 0.05 }, follow = "list.stripe" },
+    -- The meter row's mouseover wash (modules/Row.lua): white at 0.15 where `list.hover` is gold.
+    -- The meter row's alternating stripe (modules/Row.lua): white at 0.08, `list.stripe`'s own alpha.
+    -- Both were white .10 and .05 until AD-82-MM: LibKa0s#82 and #84 hold a stripe 6 L* off the
+    -- window and a hover 12 off it and 3 off a striped row (Skin version 18.1.28.10.19.19.1.1.18.4.9),
+    -- and these stood 5.4 and 11.3 off Ka0s Default's window. White .15 is the other skins' hover
+    -- alpha: 16.9 off the window and 8.0 off the stripe (tests/test_skinsetup.lua holds the floors).
+    ["mm.rowHover"]  = { default = { 1, 1, 1, 0.15 }, follow = "list.hover" },
+    ["mm.rowStripe"] = { default = { 1, 1, 1, 0.08 }, follow = "list.stripe" },
     -- The tooltip hint and overflow lines ("and N more", "Click for details", "No data yet"):
     -- 0.6 gray, between `gtip.muted` 0.5 and `gtip.subtle` 0.7.
     ["mm.tipHint"]   = { default = { 0.6, 0.6, 0.6, 1 }, follow = "gtip.muted" },

@@ -396,8 +396,41 @@ test("Skin seam: degraded, the facade answers today's colors and the seam never 
     local NS = degraded.NS
     assertEqual(NS.SkinEscape("mm.dim"), "|cff9d9d9d", "the dim gray keeps its bytes")
     local r, g, b, a = NS.SkinColor("mm.rowHover")
-    assertEqual(r, 1); assertEqual(g, 1); assertEqual(b, 1); assertEqual(a, 0.10)
+    -- Re-pinned by AD-82-MM: the hover's default is white .15 (was .10), the row floors below.
+    assertEqual(r, 1); assertEqual(g, 1); assertEqual(b, 1); assertEqual(a, 0.15)
     assertEqual(select("#", NS.SkinColor("win.border")), 3, "an opaque token answers three components")
     assertTrue(pcall(NS.ApplySkinChoice), "ApplySkinChoice raised degraded")
     assertTrue(pcall(NS.WriteSkinChoice, "ka0s", "ka0s"), "WriteSkinChoice raised degraded")
+end)
+
+-- LibKa0s#82 and #84's row floors (LibKa0s docs/api/Skin, version 18.1.28.10.19.19.1.1.18.4.9), in
+-- CIE L*, each wash composited over Ka0s Default's window over black: a stripe 6 off the window, a
+-- hover 12 off it and 3 off a striped row. The library's own list.stripe and list.hover are held
+-- there; this addon's mm.rowStripe and mm.rowHover keep defaults of their own, which the library
+-- names as staying faint "until the host raises it", so the host holds them.
+local function lstar(c)
+    local function ch(v) if v <= 0.03928 then return v / 12.92 end return ((v + 0.055) / 1.055) ^ 2.4 end
+    local y = 0.2126 * ch(c[1]) + 0.7152 * ch(c[2]) + 0.0722 * ch(c[3])
+    if y > 216 / 24389 then return 116 * y ^ (1 / 3) - 16 end
+    return y * 24389 / 27
+end
+local function over(top, under)
+    local a = top[4] or 1
+    return { top[1] * a + under[1] * (1 - a), top[2] * a + under[2] * (1 - a), top[3] * a + under[3] * (1 - a) }
+end
+
+test("Skin seam: the rows' own washes clear the library's row floors on Ka0s Default", function()
+    -- AD-82-MM. red under: mm.rowStripe white .05 (5.4 L* off the window) and mm.rowHover white .10
+    -- (11.3 off it), the pixels the rows drew before Ka0s Default's own rows were raised.
+    local inst = T.load{}
+    local live = inst.mocks.LibStub("LibKa0s-Skin-1.0"):ResolveSkin("ka0s")
+    local win = over(live["win.bg"], { 0, 0, 0 })
+    local stripe = over(inst.NS.SKIN_TOKENS["mm.rowStripe"].default, win)
+    local hover = over(inst.NS.SKIN_TOKENS["mm.rowHover"].default, win)
+    local d = lstar(stripe) - lstar(win)
+    assertTrue(d >= 6, ("the stripe stands %.1f L* off the window, want >= 6"):format(d))
+    d = lstar(hover) - lstar(win)
+    assertTrue(d >= 12, ("the hover stands %.1f L* off the window, want >= 12"):format(d))
+    d = lstar(hover) - lstar(stripe)
+    assertTrue(d >= 3, ("a hovered row stands %.1f L* off a striped one, want >= 3"):format(d))
 end)
