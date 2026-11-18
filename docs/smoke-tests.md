@@ -1426,9 +1426,9 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
   and with no notice line before them, and a group member sees nothing (anything seen is a hard fail).
   Result: pass (owner-marked 2026-10-10)
 - **EXPORT-34. The dump's shape.** A header line `Multi Meters — Damage — Current (2:14)` then ranked
-  lines such as `1. Kaosz 4.8M (84.2K, 31.2%)`, abbreviated. Result: pass (owner-marked 2026-10-10)
+  lines such as `1. Mockflame 4.8M (84.2K, 31.2%)`, abbreviated. Result: pass (owner-marked 2026-10-10)
 - **EXPORT-35. Only meaningful parentheses.** Metric Deaths or Interrupts → no per-second figure
-  (`1. Kaosz 3 (12.5%)`); never an empty `( )`. Result: pass (owner-marked 2026-10-10)
+  (`1. Mockflame 3 (12.5%)`); never an empty `( )`. Result: pass (owner-marked 2026-10-10)
 - **EXPORT-36. The ranking follows the metric.** Metric Healing → the top healers, not the damage
   ranking with healing beside it. Result: pass (owner-marked 2026-10-10)
 - **EXPORT-37. The line cap.** Walk all five Lines choices; Lines 3 → four lines (header plus three);

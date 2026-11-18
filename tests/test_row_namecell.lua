@@ -148,8 +148,8 @@ end)
 test("A cross-realm PLAYER name loses its realm", function()
     local _, _, row = bench()
     row:Update(entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { guid = "Player-1-0000000A", name = "Stabby-Aerie Peak" }), 1)
-    assertEqual(row.nameCell.left:GetText(), "Stabby",
+        { guid = "Player-1-0000000A", name = "Samplehunter-Mock Hollow" }), 1)
+    assertEqual(row.nameCell.left:GetText(), "Samplehunter",
         "the realm is most of the column and never what anyone is scanning for")
 end)
 
@@ -275,7 +275,7 @@ test("Neither the realm strip nor the cap is applied to a SECRET name", function
     local inst, _, row = bench(function(c) c.text.maxNameLength = 4 end)
     inst.mocks.setRestricted(true)
     local ok = pcall(row.Update, row, entry({ DamageDone = { total = 1, maxAmount = 1 } },
-        { name = inst.mocks.secret("Stabby-Aerie Peak") }), 1)
+        { name = inst.mocks.secret("Samplehunter-Samplerealm") }), 1)
     assertTrue(ok, "inspecting a secret name raised")
 end)
 
