@@ -1205,7 +1205,7 @@ Total.
 - Identity mode does not refuse an Ally pet with an unlisted creature id
 - A refused None NPC takes no identity key, so it cannot collide with a player
 
-### test_aggregator_preview.lua (8)
+### test_aggregator_preview.lua (12)
 
 - Test mode substitutes the DATA, and the render path stays one path
 - A test row's tooltip finds a breakdown, because it goes to the provider
@@ -1215,6 +1215,10 @@ Total.
 - Preview: a breakdown spell carries a RATE, not just a total
 - Preview: the breakdown's rate uses the same clock as the preview grid
 - Preview: a COUNTING stat's breakdown carries a rate too, and Row hides it
+- Preview: test mode's first five are LibKa0s-Sim's shared sample characters, in order
+- Preview: every test-mode name follows the sample convention
+- Preview: the test column draws the same people as the test group
+- Preview: without the library test mode draws the same people from its own copy
 
 ### test_aggregator_sort.lua (20)
 
@@ -3051,7 +3055,7 @@ Total.
 | test_feign.lua | 27 |
 | test_aggregator.lua | 70 |
 | test_aggregator_identity.lua | 32 |
-| test_aggregator_preview.lua | 8 |
+| test_aggregator_preview.lua | 12 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 50 |
 | test_window_layout.lua | 18 |
@@ -3123,4 +3127,4 @@ Total.
 | test_skin_switch.lua | 23 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2637** |
+| **Total** | **2641** |

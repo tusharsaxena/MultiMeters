@@ -36,21 +36,59 @@ local Aggregator = NS.Aggregator
 -- position, never randomized. Test data that jitters every refresh is unusable
 -- for the exact job it exists to do, which is judging column widths.
 
+-- THE PEOPLE (AD-87-MM, LibKa0s#87, preview-mode's naming convention). The first
+-- five are the collection's shared sample characters, LibKa0s-Sim-1.0's
+-- `Sample("retail")`, in its order: the same protagonists every Ka0s test mode and
+-- sim draws. This addon ships Retail only, so the Retail set, and the client is
+-- named rather than asked. Without the library, the copy below, which
+-- tests/test_aggregator_preview.lua holds to the library's rows. Five more of this
+-- addon's own follow, on the same convention (one capitalized word of 2 to 12
+-- letters starting `Sample` or `Mock`), so the grid still has ten rows and ten
+-- classes to lay columns out against. Names are data and never pass through `L`.
+--
 -- `spec` is a real specialization icon file id, so the spec-icon slot has
 -- something to draw. Test mode is used to judge how a row LOOKS, and a row
--- missing one of its three icons is not the row the player is laying out.
-local PREVIEW_MEMBERS = {
-    { name = "Ka0stank",   class = "WARRIOR",     role = "TANK",    spec = 132342 },
-    { name = "Ka0sheals",  class = "PRIEST",      role = "HEALER",  spec = 135940 },
-    { name = "Ka0smage",   class = "MAGE",        role = "DAMAGER", spec = 135846 },
-    { name = "Ka0srogue",  class = "ROGUE",       role = "DAMAGER", spec = 132320 },
-    { name = "Ka0shunter", class = "HUNTER",      role = "DAMAGER", spec = 461112 },
-    { name = "Ka0slock",   class = "WARLOCK",     role = "DAMAGER", spec = 136186 },
-    { name = "Ka0smonk",   class = "MONK",        role = "DAMAGER", spec = 608951 },
-    { name = "Ka0sdruid",  class = "DRUID",       role = "DAMAGER", spec = 625336 },
-    { name = "Ka0spal",    class = "PALADIN",     role = "DAMAGER", spec = 135873 },
-    { name = "Ka0sdk",     class = "DEATHKNIGHT", role = "DAMAGER", spec = 135771 },
+-- missing one of its three icons is not the row the player is laying out. Keyed
+-- by class: the icon is a look, not a claim about the sample's spec.
+local SPEC_ICON = {
+    WARRIOR = 132342, PRIEST = 135940, MAGE = 135846, ROGUE = 132320, HUNTER = 461112,
+    WARLOCK = 136186, MONK = 608951, DRUID = 625336, PALADIN = 135873, DEATHKNIGHT = 135771,
 }
+
+-- LibKa0s-Sim-1.0's Retail `SAMPLE` rows, the fields read here, for an install without it.
+local SAMPLE_COPY = {
+    { name = "Samplehunter", classFile = "HUNTER",  role = "DAMAGER" },
+    { name = "Sampleblade",  classFile = "PALADIN", role = "DAMAGER" },
+    { name = "Mockflame",    classFile = "MAGE",    role = "DAMAGER" },
+    { name = "Samplemender", classFile = "PRIEST",  role = "HEALER"  },
+    { name = "Mockshield",   classFile = "WARRIOR", role = "TANK"    },
+}
+
+-- This addon's own five, after the shared ones.
+local HOST_MEMBERS = {
+    { name = "Mockshade",   class = "ROGUE",       role = "DAMAGER" },
+    { name = "Samplehex",   class = "WARLOCK",     role = "DAMAGER" },
+    { name = "Mockbrew",    class = "MONK",        role = "DAMAGER" },
+    { name = "Samplegrove", class = "DRUID",       role = "DAMAGER" },
+    { name = "Mockfrost",   class = "DEATHKNIGHT", role = "DAMAGER" },
+}
+
+local function previewMembers()
+    local Sim = LibStub and LibStub("LibKa0s-Sim-1.0", true)
+    local ok, shared = false, nil
+    if Sim and type(Sim.Sample) == "function" then ok, shared = pcall(Sim.Sample, "retail") end
+    if not (ok and type(shared) == "table" and #shared > 0) then shared = SAMPLE_COPY end
+    local members = {}
+    for _, row in ipairs(shared) do
+        members[#members + 1] = { name = row.name, class = row.classFile, role = row.role,
+            spec = SPEC_ICON[row.classFile] }
+    end
+    for _, m in ipairs(HOST_MEMBERS) do
+        members[#members + 1] = { name = m.name, class = m.class, role = m.role, spec = SPEC_ICON[m.class] }
+    end
+    return members
+end
+local PREVIEW_MEMBERS = previewMembers()
 
 -- HOW MUCH OF EACH STAT A ROLE ACTUALLY PRODUCES.
 --

@@ -751,7 +751,8 @@ test("Test mode replaces the pet map and writes nothing to SavedVariables", func
 
     NS.State.SetTestMode(true)
     local group = NS.Roster.GetGroup()
-    assertEqual(group[1].name, "Ka0stank", "the invented group is what the map describes")
+    -- Re-pinned (AD-87-MM): the invented group opens on the shared sample characters.
+    assertEqual(group[1].name, "Samplehunter", "the invented group is what the map describes")
     assertTrue(NS.Roster.IsGroupMember(group[1].guid))
     assertNil(NS.db.global.roster.byGuid[group[1].guid],
         "an invented member must not reach SavedVariables")

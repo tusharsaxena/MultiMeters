@@ -543,7 +543,7 @@ test("A pet gets its OWN row by default, with its own name", function()
     local inst = withPet()
     install(inst, {
         src(ALPHA, 100, { rate = 10 }),
-        src(PET, 40, { rate = 4, name = "Bheemyn" }),
+        src(PET, 40, { rate = 4, name = "Mockfang" }),
     }, { maxAmount = 100, totalAmount = 140 })
 
     local result = inst.NS.Aggregator.Build(makeWindow())
@@ -553,7 +553,7 @@ test("A pet gets its OWN row by default, with its own name", function()
     for _, row in ipairs(result) do byGuid[row.guid] = row end
     assertEqual(byGuid[ALPHA].values.DamageDone.total, 100, "the owner keeps HER OWN number")
     assertEqual(byGuid[PET].values.DamageDone.total, 40)
-    assertEqual(byGuid[PET].name, "Bheemyn", "the pet reads as the pet, not as a second owner row")
+    assertEqual(byGuid[PET].name, "Mockfang", "the pet reads as the pet, not as a second owner row")
     assertEqual(byGuid[PET].isPet, true)
     assertEqual(byGuid[PET].ownerGuid, ALPHA, "and still knows whose it is")
 end)

@@ -431,7 +431,7 @@ end)
 --- A grid row for somebody who died three times.
 local function deadGridRow()
     return {
-        guid = "Player-1-0000000A", name = "Yllarie", classFilename = "PRIEST",
+        guid = "Player-1-0000000A", name = "Samplemender", classFilename = "PRIEST",
         deaths = { 29, 28, 27 }, deathRecapID = 29,
         values = { Deaths = { total = 3, maxAmount = 3 } },
     }

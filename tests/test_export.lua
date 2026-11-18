@@ -229,7 +229,7 @@ end)
 
 test("Export.CsvField leaves an ordinary field alone", function()
     local CsvField = T.NS.Export.CsvField
-    assertEqual(CsvField("Kaosz"), "Kaosz")
+    assertEqual(CsvField("Mockflame"), "Mockflame")
     assertEqual(CsvField("WARLOCK"), "WARLOCK")
     assertEqual(CsvField(4821993), "4821993")
     assertEqual(CsvField(0), "0")
@@ -260,7 +260,7 @@ test("Export.CsvField leaves the two names from the issue unquoted", function()
     -- These are the two shapes that motivated the quoting rule in the first
     -- place, so they are asserted by name.
     local CsvField = T.NS.Export.CsvField
-    assertEqual(CsvField("Kaosz-Draenor"), "Kaosz-Draenor")
+    assertEqual(CsvField("Mockflame-Mockrealm"), "Mockflame-Mockrealm")
     assertEqual(CsvField("Crenna Earth-Daughter"), "Crenna Earth-Daughter")
 end)
 
@@ -442,7 +442,7 @@ end)
 --- @return table
 local function csvFixture()
     return built({
-        row("Kaosz", {
+        row("Mockflame", {
             DamageDone  = cell(4821993, { rate = 84210, percent = 31.2 }),
             HealingDone = cell(0, { rate = 0, percent = 0 }),
         }, { class = "WARLOCK", spec = 265, role = "DAMAGER" }),
@@ -485,10 +485,10 @@ end)
 test("Export.CSV rounds a fractional duration to whole seconds", function()
     -- red under: `tostring(seconds)`, which writes 134.6 into a column the header
     -- calls "duration" in seconds and every other row reports as an integer.
-    local text = T.NS.Export.CSV(built({ { name = "Kaosz", values = {} } }, 134.6), "Ulgrax")
+    local text = T.NS.Export.CSV(built({ { name = "Mockflame", values = {} } }, 134.6), "Ulgrax")
     assertEqual(fields(csvLines(text)[2])[2], "135")
     -- Rounded, not truncated: 134.4 is nearer 134.
-    text = T.NS.Export.CSV(built({ { name = "Kaosz", values = {} } }, 134.4), "Ulgrax")
+    text = T.NS.Export.CSV(built({ { name = "Mockflame", values = {} } }, 134.4), "Ulgrax")
     assertEqual(fields(csvLines(text)[2])[2], "134")
 end)
 
@@ -497,7 +497,7 @@ test("Export.CSV leaves the duration blank rather than reading a secret one", fu
     -- A blank column in a race beats a serializer that raises mid-write.
     local inst = T.load()
     local text = inst.NS.Export.CSV(
-        built({ { name = "Kaosz", values = {} } }, inst.mocks.secret(134)), "Ulgrax")
+        built({ { name = "Mockflame", values = {} } }, inst.mocks.secret(134)), "Ulgrax")
     assertEqual(fields(csvLines(text)[2])[2], "")
     -- and the row is still written, session column and all.
     assertEqual(fields(csvLines(text)[2])[1], "Ulgrax")
@@ -514,7 +514,7 @@ test("Export.CSV writes raw values and a two-decimal share", function()
     local index = {}
     for i, name in ipairs(header) do index[name] = i end
 
-    assertEqual(cells[index.name], "Kaosz")
+    assertEqual(cells[index.name], "Mockflame")
     assertEqual(cells[index.class], "WARLOCK")
     assertEqual(cells[index.spec], "265")
     assertEqual(cells[index.role], "DAMAGER")
@@ -565,7 +565,7 @@ test("Export.CSV reads the degenerate build's separate rows array", function()
     -- Aggregator.Build with no config answers `{ rows = {}, columns = {} }`,
     -- where `rows` is a DIFFERENT table rather than the result itself. Reading
     -- the field first is correct for both shapes.
-    local result = { rows = { row("Kaosz", { DamageDone = cell(10) }) }, columns = {} }
+    local result = { rows = { row("Mockflame", { DamageDone = cell(10) }) }, columns = {} }
     assertEqual(#csvLines(T.NS.Export.CSV(result, "Ulgrax")), 2)
 end)
 
@@ -595,8 +595,8 @@ end)
 --- @return table
 local function chatFixture()
     return built({
-        row("Kaosz", { DamageDone = cell(4821993, { rate = 84210, percent = 31.2 }) }),
-        row("Brewz", { DamageDone = cell(4100000, { rate = 71900, percent = 26.6 }) }),
+        row("Mockflame", { DamageDone = cell(4821993, { rate = 84210, percent = 31.2 }) }),
+        row("Sampleblade", { DamageDone = cell(4100000, { rate = 71900, percent = 26.6 }) }),
         row("Zippy", { DamageDone = cell(900000,  { rate = 15000, percent = 5.8  }) }),
     }, 134)
 end
@@ -634,7 +634,7 @@ test("Export.ChatLines abbreviates the amount and carries rate then share", func
     -- Chat wants "4.8M": nobody reads a nine-digit figure out of a scrolling
     -- frame. This is the one place the module goes through NS.Format.
     local lines = T.NS.Export.ChatLines(chatFixture(), "DamageDone", 1, "Ulgrax")
-    assertEqual(lines[2], "1. Kaosz 4.8M (84.2K, 31.2%)")
+    assertEqual(lines[2], "1. Mockflame 4.8M (84.2K, 31.2%)")
 end)
 
 test("Export.ChatLines drops the rate parenthetical for a counted stat", function()
@@ -643,26 +643,26 @@ test("Export.ChatLines drops the rate parenthetical for a counted stat", functio
     -- than about the fixture happening to be short.
     -- red under: printing cell.rate without consulting stat.isRate.
     local result = built({
-        row("Kaosz", { Interrupts = cell(3, { rate = 99999, percent = 42.5 }) }),
+        row("Mockflame", { Interrupts = cell(3, { rate = 99999, percent = 42.5 }) }),
     }, 60)
     local lines = T.NS.Export.ChatLines(result, "Interrupts", 5, "Ulgrax")
-    assertEqual(lines[2], "1. Kaosz 3 (42.5%)")
+    assertEqual(lines[2], "1. Mockflame 3 (42.5%)")
 end)
 
 test("Export.ChatLines drops the share when the aggregator could not compute one", function()
     -- `percent` is nil for "cannot be known right now", never for "zero percent",
     -- and an empty "( )" would be noise on every line of a Deaths dump.
     local result = built({
-        row("Kaosz", { Deaths = cell(2) }),
+        row("Mockflame", { Deaths = cell(2) }),
     }, 60)
     local lines = T.NS.Export.ChatLines(result, "Deaths", 5, "Ulgrax")
-    assertEqual(lines[2], "1. Kaosz 2", "no parenthetical at all when there is nothing in it")
+    assertEqual(lines[2], "1. Mockflame 2", "no parenthetical at all when there is nothing in it")
 end)
 
 test("Export.ChatLines names an unreadable row rather than dropping it", function()
     local inst = T.load()
     local result = built({
-        row(inst.mocks.secret("Kaosz"), { DamageDone = cell(100) }),
+        row(inst.mocks.secret("Mockflame"), { DamageDone = cell(100) }),
     }, 60)
     local lines = inst.NS.Export.ChatLines(result, "DamageDone", 5, "Ulgrax")
     assertTrue(lines[2]:find("^1%. Unknown ") ~= nil, lines[2])
@@ -763,7 +763,7 @@ test("Export.ChatLines takes the duration from the result and never from the for
     -- and asking whether THAT is empty is a comparison on a value the meter may
     -- be hiding. The retired DurationText made the same distinction.
     -- red under: `if F.Duration(seconds) ~= "" then`.
-    local result = built({ row("Kaosz", { DamageDone = cell(100) }) }, nil)
+    local result = built({ row("Mockflame", { DamageDone = cell(100) }) }, nil)
     local lines = T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
     assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage" .. EM_DASH .. "Ulgrax",
         "no duration at all when the result carries none")
@@ -783,7 +783,7 @@ test("Export.ChatLines asks the formatter for the amount, the rate and the share
     inst.NS.NumberFormat = inst.NS.Format
 
     local result = built({
-        row("Kaosz", { DamageDone = cell(100, { rate = 5, percent = 3 }) }),
+        row("Mockflame", { DamageDone = cell(100, { rate = 5, percent = 3 }) }),
     }, 134)
     local lines = inst.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
 
@@ -792,16 +792,16 @@ test("Export.ChatLines asks the formatter for the amount, the rate and the share
     -- optional, and a degraded one must cost a line its parenthetical rather than
     -- raising inside a click.
     assertEqual(lines[1], "Multi Meters" .. EM_DASH .. "Damage" .. EM_DASH .. "Ulgrax")
-    assertEqual(lines[2], "1. Kaosz N:100 (R:5, P:3)")
+    assertEqual(lines[2], "1. Mockflame N:100 (R:5, P:3)")
 
     -- Each formatter member is independently optional, and losing one must lose
     -- only its own half of the parenthetical.
     inst.NS.Format.Rate = nil
     assertEqual(inst.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2],
-        "1. Kaosz N:100 (P:3)")
+        "1. Mockflame N:100 (P:3)")
     inst.NS.Format.Percent = nil
     assertEqual(inst.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2],
-        "1. Kaosz N:100")
+        "1. Mockflame N:100")
 end)
 
 test("Export.ChatLines carries the rate alone when the aggregator computed no share", function()
@@ -811,10 +811,10 @@ test("Export.ChatLines carries the rate alone when the aggregator computed no sh
     -- is what proves the boolean tracks the first arm on its own.
     -- red under: `if extra ~= "" then line = line .. ...`.
     local result = built({
-        row("Kaosz", { DamageDone = cell(100000, { rate = 5000 }) }),
+        row("Mockflame", { DamageDone = cell(100000, { rate = 5000 }) }),
     }, 60)
     local lines = T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
-    assertEqual(lines[2], "1. Kaosz 100.0K (5.0K)", "no comma, and nothing after it")
+    assertEqual(lines[2], "1. Mockflame 100.0K (5.0K)", "no comma, and nothing after it")
 end)
 
 test("Export.ChatLines drops a share the aggregator did not answer as a number", function()
@@ -823,19 +823,19 @@ test("Export.ChatLines drops a share the aggregator did not answer as a number",
     -- produce and will not print — the `type(cell.percent) == "number"` test is
     -- what keeps a string or a handle out of the `..` behind it.
     local result = built({
-        row("Kaosz", { DamageDone = cell(100000, { rate = 5000, percent = "31.2" }) }),
+        row("Mockflame", { DamageDone = cell(100000, { rate = 5000, percent = "31.2" }) }),
     }, 60)
     local lines = T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")
-    assertEqual(lines[2], "1. Kaosz 100.0K (5.0K)")
+    assertEqual(lines[2], "1. Mockflame 100.0K (5.0K)")
 end)
 
 test("Export.ChatLines prints a zero share rather than reading it as absent", function()
     -- nil is "cannot be known right now"; zero is an answer, and a player who
     -- contributed nothing to a fight is entitled to read that they did.
     -- red under: `if cell.percent and ...`, which is the same bug for `false` too.
-    local result = built({ row("Kaosz", { DamageDone = cell(100, { percent = 0 }) }) }, 60)
+    local result = built({ row("Mockflame", { DamageDone = cell(100, { percent = 0 }) }) }, 60)
     assertEqual(T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2],
-        "1. Kaosz 100 (0.0%)")
+        "1. Mockflame 100 (0.0%)")
 end)
 
 test("Export.ChatLines names a row that has no cell for the metric anyway", function()
@@ -843,8 +843,8 @@ test("Export.ChatLines names a row that has no cell for the metric anyway", func
     -- that never scored on this metric. It is still a row, and the formatter's
     -- answer for nil is what fills the amount — dropping the row instead would
     -- renumber every rank under it.
-    local result = built({ row("Kaosz", { Deaths = cell(2) }) }, 60)
-    assertEqual(T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2], "1. Kaosz ")
+    local result = built({ row("Mockflame", { Deaths = cell(2) }) }, 60)
+    assertEqual(T.NS.Export.ChatLines(result, "DamageDone", 1, "Ulgrax")[2], "1. Mockflame ")
 end)
 
 test("Export.ChatLines reads the rows off result.rows when it is not the result itself", function()
@@ -905,9 +905,9 @@ end)
 
 test("Export.ResolveChannel trims a whisper target and refuses an empty one", function()
     local ResolveChannel = T.NS.Export.ResolveChannel
-    local chatType, target = ResolveChannel("WHISPER", "  Kaosz-Draenor  ")
+    local chatType, target = ResolveChannel("WHISPER", "  Mockflame-Mockrealm  ")
     assertEqual(chatType, "WHISPER")
-    assertEqual(target, "Kaosz-Draenor")
+    assertEqual(target, "Mockflame-Mockrealm")
 
     -- A whisper with nobody to whisper to is not an error to raise at the send
     -- site; it is the same "keep it to yourself" SELF means.
@@ -921,17 +921,17 @@ test("The TARGET channel whispers whoever the player has targeted", function()
     local inst = T.load()
     local ResolveChannel = inst.NS.Export.ResolveChannel
 
-    inst.mocks.setUnit("target", { guid = "Player-1-00000001", name = "Kaosz" })
+    inst.mocks.setUnit("target", { guid = "Player-1-00000001", name = "Mockflame" })
     local chatType, target = ResolveChannel("TARGET")
     assertEqual(chatType, "WHISPER")
-    assertEqual(target, "Kaosz")
+    assertEqual(target, "Mockflame")
 
     -- The stored whisper name is NOT consulted: these are two channels, not one
     -- channel with a mode, and reading the box here would send a target whisper
     -- to whoever was last typed.
     -- red under: falling through to the WHISPER branch.
     local _, ignored = ResolveChannel("TARGET", "Somebodyelse")
-    assertEqual(ignored, "Kaosz")
+    assertEqual(ignored, "Mockflame")
 end)
 
 test("A cross-realm target keeps its realm, because a whisper needs it", function()
@@ -940,8 +940,8 @@ test("A cross-realm target keeps its realm, because a whisper needs it", functio
     -- red under: reading UnitName instead of GetUnitName(unit, true).
     local inst = T.load()
     inst.mocks.setUnit("target",
-        { guid = "Player-2-00000001", name = "Kaosz", realm = "Draenor" })
-    assertEqual(inst.NS.Export.TargetName(), "Kaosz-Draenor")
+        { guid = "Player-2-00000001", name = "Mockflame", realm = "Mockrealm" })
+    assertEqual(inst.NS.Export.TargetName(), "Mockflame-Mockrealm")
 end)
 
 test("TargetName refuses no target and a target that is not a player, separately", function()
@@ -1008,7 +1008,7 @@ test("Export.Send hands one message per line to the client", function()
         sent[#sent + 1] = { text = text, chatType = chatType, target = target }
     end
 
-    assertTrue(inst.NS.Export.Send({ "one", "two", "three" }, "WHISPER", "Kaosz"))
+    assertTrue(inst.NS.Export.Send({ "one", "two", "three" }, "WHISPER", "Mockflame"))
 
     -- THE FIRST LINE GOES IMMEDIATELY and the rest are staggered onto timers. A
     -- button that appears to do nothing for a third of a second is a button
@@ -1017,7 +1017,7 @@ test("Export.Send hands one message per line to the client", function()
     assertEqual(#sent, 1, "only the first line may leave in the calling frame")
     assertEqual(sent[1].text, "one")
     assertEqual(sent[1].chatType, "WHISPER")
-    assertEqual(sent[1].target, "Kaosz")
+    assertEqual(sent[1].target, "Mockflame")
 
     inst.mocks.__fireTimers()
     assertEqual(#sent, 3, "the queued lines must all arrive")
@@ -1025,7 +1025,7 @@ test("Export.Send hands one message per line to the client", function()
     assertEqual(sent[3].text, "three")
     -- ORDER IS THE WHOLE POINT of a ranking, so the stagger must not reorder it.
     assertEqual(sent[3].chatType, "WHISPER")
-    assertEqual(sent[3].target, "Kaosz")
+    assertEqual(sent[3].target, "Mockflame")
 end)
 
 test("Export.Send sends every line at once on a client with no C_Timer", function()
@@ -1215,8 +1215,8 @@ test("An unrelated system message leaves a whisper dump alone", function()
     local sent = 0
     inst.mocks.SendChatMessage = function() sent = sent + 1 end
 
-    inst.NS.Export.Send({ "head", "one", "two" }, "WHISPER", "Kaosz")
-    assertFalse(inst.NS.Export.NoteSystemMessage("Kaosz has come online."))
+    inst.NS.Export.Send({ "head", "one", "two" }, "WHISPER", "Mockflame")
+    assertFalse(inst.NS.Export.NoteSystemMessage("Mockflame has come online."))
     inst.mocks.__fireTimers()
     assertEqual(sent, 3, "the dump must finish")
 end)
@@ -1301,12 +1301,12 @@ test("Export.Build goes through the aggregator and nowhere near the meter API", 
     -- touches Provider or C_DamageMeter, and rule R1 allows exactly one caller.
     local inst = T.load()
     inst.mocks.setGroup({
-        { name = "Kaosz", class = "WARLOCK", role = "DAMAGER" },
-        { name = "Brewz", class = "MONK",    role = "TANK"    },
+        { name = "Mockflame", class = "WARLOCK", role = "DAMAGER" },
+        { name = "Sampleblade", class = "MONK",    role = "TANK"    },
     })
     inst.NS.Roster.Refresh()
     inst.mocks.setSession(Const.SESSION_TYPE.Current, "*", inst.mocks.buildSession({
-        count = 2, names = { "Kaosz", "Brewz" }, durationSeconds = 134,
+        count = 2, names = { "Mockflame", "Sampleblade" }, durationSeconds = 134,
     }))
 
     local result = inst.NS.Export.Build({ data = { sessionType = Const.SESSION_TYPE.Current } })
@@ -1316,7 +1316,7 @@ test("Export.Build goes through the aggregator and nowhere near the meter API", 
     local text = inst.NS.Export.CSV(result, inst.NS.Export.SessionLabel(nil))
     local lines = csvLines(text)
     assertEqual(#lines, 3, "a header line and one row per group member")
-    assertTrue(lines[2]:find("Kaosz", 1, true) ~= nil, lines[2])
+    assertTrue(lines[2]:find("Mockflame", 1, true) ~= nil, lines[2])
 end)
 
 test("Export.Build answers nil when there is no aggregator to ask", function()

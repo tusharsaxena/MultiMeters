@@ -684,7 +684,7 @@ end)
 
 test("Slash: `lock` moves the lock and NOTHING else", function()
     -- One verb, one effect. `/mm lock off` used to switch placeholder data on as
-    -- a side effect, which is how a player ends up with a window full of Ka0stank
+    -- a side effect, which is how a player ends up with a window full of sample characters
     -- and no idea which control put it there.
     -- red under: restoring the SetTestMode call in WindowManager:SetLocked.
     local inst = T.load()

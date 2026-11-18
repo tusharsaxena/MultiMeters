@@ -749,8 +749,11 @@ right. Open the panel with `/mm config`.
 - **STATE-8. The Test mode box follows the verb.** With General → Master controls open, `/mm test` on
   and off → the Test mode box ticks and unticks without a click. Result: pass (owner-marked 2026-10-10)
 - **STATE-9. Test mode rows.** `/mm test` → chat prints *test mode on — showing placeholder rows*
-  and ten Ka0s-named placeholder members appear, with plausible numbers that do not change between
-  refreshes; `/mm test` again → *test mode off*. Result: pass (owner-marked 2026-10-10)
+  and ten placeholder members appear, with plausible numbers that do not change between refreshes:
+  first the collection's five shared sample characters, *Samplehunter* (Hunter), *Sampleblade*
+  (Paladin), *Mockflame* (Mage, marked as you), *Samplemender* (Priest) and *Mockshield* (Warrior), then
+  *Mockshade*, *Samplehex*, *Mockbrew*, *Samplegrove* and *Mockfrost*, each in its class color with no
+  realm (AD-87-MM, LibKa0s#87); no name reads `Ka0s…`. `/mm test` again → *test mode off*. Result:
 - **STATE-10. Combat ends Test mode.** Test mode on, pull a dummy → one line *Test mode off — combat
   started*; the placeholders give way to the real (possibly empty) grid and the box unticks; the window
   stays up, or hides if its Visibility → Combat → hide in combat is ticked. Leaving combat does not turn
@@ -2221,3 +2224,5 @@ Owed: SKIN-51 (AD-DS-MM), WIN-59 (AD-88-MM) and WIN-40 (re-opened by the AD-88-M
 Owed: TIP-23 (rewritten), TIP-29 and PANEL-41 (re-opened, their expected results moved), TIP-38 to TIP-41 (AD-92-MM, LibKa0s#92, tooltip placement), the LibKa0s v1.105.0 adoption wave C (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.
 
 Owed: DIAG-44 to DIAG-46 and DEGRADED-12 (AD-79-MM, LibKa0s#79, the report verbs on `D:Report`), and SLASH-11 (re-opened, its listing now in the console), the LibKa0s v1.105.0 adoption wave D (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.
+
+Owed: STATE-9 (re-opened by AD-87-MM, test mode's people are the shared sample characters), the LibKa0s v1.105.0 adoption wave D, with an empty `Result:`.

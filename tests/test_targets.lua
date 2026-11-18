@@ -377,12 +377,12 @@ test("Targets: a cross-realm caster still matches the row it belongs to", functi
     -- red under: comparing the two names as they arrive.
     local inst, cfg = bench{
         { name = "Gulkat", hits = {
-            { caster = "Juanaveli-Sargeras", amount = 500 },
+            { caster = "Samplehunter-Samplerealm", amount = 500 },
             { caster = "Helya",              amount = 200 },
         } },
     }
 
-    local cross = inst.NS.Targets.ForPlayer(cfg, "Juanaveli", 5)
+    local cross = inst.NS.Targets.ForPlayer(cfg, "Samplehunter", 5)
     assertTrue(cross ~= nil, "a cross-realm player got no targets at all")
     assertEqual(cross[1].total, 500, "the cross-realm caster's damage went missing")
 
