@@ -172,12 +172,24 @@ local function acquireBlock(parent)
     -- question a player has over a control is what happens if they press it.
     -- Read off the block at HOVER time, like every other script here, so a
     -- re-pointed block never offers last render's promise.
+    --
+    -- PLACED LIKE THE DRAG HANDLE BESIDE IT (AD-92-MM). This page is on the Settings
+    -- canvas, which standalone-windows *Tooltip placement* does not bind, but the
+    -- glyph shares its row with LibKa0s' ReorderList handle, whose tooltip
+    -- LibKa0s-Tooltip-1.0 places beside the group; a corner offset off the glyph
+    -- would make one row open its two tooltips in two places. Without the library,
+    -- or with geometry it cannot read, the tooltip attaches above the glyph.
     glyph:SetScript("OnEnter", function(self)
         if not GameTooltip then return end
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        local Tip = LibStub and LibStub("LibKa0s-Tooltip-1.0", true)
+        if Tip and Tip.Own then Tip.Own(GameTooltip, self) else GameTooltip:SetOwner(self, "ANCHOR_NONE") end
         GameTooltip:AddLine(block.mmEnabled and L["Click to hide this column"]
             or L["Click to show this column"], NS.SkinPanelColor("gtip.value"))
         GameTooltip:Show()
+        if not (Tip and Tip.PlaceBeside and Tip.PlaceBeside(GameTooltip, self)) then
+            GameTooltip:ClearAllPoints()
+            GameTooltip:SetPoint("BOTTOM", self, "TOP", 0, (Tip and Tip.TIP_GAP) or 2)
+        end
     end)
     glyph:SetScript("OnLeave", function()
         if GameTooltip then GameTooltip:Hide() end

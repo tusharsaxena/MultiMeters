@@ -486,7 +486,7 @@ local function chatHeader(result, stat, session, F)
     return head
 end
 
---- One ranked line: "3. Kaosz 4.8M (240.1K, 31.2%)".
+--- One ranked line: "3. Mockflame 4.8M (240.1K, 31.2%)".
 ---
 --- A row with no cell for this stat is still named and still ranked — the amount
 --- is whatever F.Number makes of nil — because a dump that silently skips a rank
@@ -598,7 +598,7 @@ end
 --- THE POINT OF THE "Whisper my target" CHANNEL. It is not a mode of the Whisper
 --- row: the two differ in where the name comes from — a box the player types
 --- into, or the game — and that is the whole feature. Clicking a name in the
---- grid and pressing the glyph beats typing "Kaosz-Draenor" correctly.
+--- grid and pressing the glyph beats typing "Mockflame-Mockrealm" correctly.
 ---
 --- READ AT SEND TIME, never stored. A remembered target is a name that was true
 --- when the modal was opened and is a stranger by the time the button is pressed.

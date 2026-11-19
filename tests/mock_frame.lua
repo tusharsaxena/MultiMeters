@@ -649,10 +649,10 @@ local function installTooltip(M)
     -- widget and every carrier we park inside it, which is the real rule: layout
     -- in here is computed from config and never read back (rule R3).
     tooltip.__hasSecretValues = true
-    -- The OFFSET PAIR is recorded, not dropped. `tooltip.offsetX/offsetY` reach
-    -- the client only through these two arguments — the addon deliberately never
-    -- places the tooltip itself — so a SetOwner that ignored them would make the
-    -- entire setting untestable while looking implemented.
+    -- The OFFSET PAIR is recorded, not dropped, so a case can see that nothing
+    -- reaches the client through it: since AD-92-MM the addon owns the tooltip at
+    -- ANCHOR_NONE and LibKa0s-Tooltip-1.0 places it, the offsets nudging that
+    -- placement (tests/test_tooltip_place.lua).
     function tooltip:SetOwner(owner, anchor, x, y)
         self.__owner, self.__anchor = owner, anchor
         self.__ownerX, self.__ownerY = x, y

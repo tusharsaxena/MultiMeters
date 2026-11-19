@@ -440,14 +440,13 @@ default to total and rate.
   dispatcher and the latch, and it announces that in chat. `tests/test_degraded.lua` pins the stub.
 - Published on CurseForge (`X-Curse-Project-ID: 1690082`). `X-Wago-ID` remains absent.
 
-**The tooltip is the one thing this addon positions itself.** Everything else is laid out from config
-and never anchored to a frame that has held a meter value (rule R3) — but the eight tooltip anchors
-name boxes of a 3×3 around the hovered cell, and Blizzard's `SetOwner` tokens cannot express the four
-diagonals at all. So `modules/Tooltip.lua` calls `SetOwner` with the closest token first and then lays
-a `SetPoint` over it. That `SetPoint` anchors GameTooltip to a cell with secret geometry, which is
-the one call in the addon that could raise inside Blizzard's own code while tainted by us. It is
-`pcall`'d, and a failure leaves the token's placement standing: the tooltip opens in roughly the
-right place rather than not at all.
+**The tooltip opens beside the window (AD-92-MM).** Everything else is laid out from config and never
+anchored to a frame that has held a meter value (rule R3). The tooltip is placed by
+`LibKa0s-Tooltip-1.0`'s `PlaceBeside` as one absolute point on UIParent, measured off the window's
+clean `anchor` frame and the hovered row, never off a cell. Only when the placer cannot read the
+screen does `modules/Tooltip.lua` attach the tooltip above the row, a relative `SetPoint` that is
+`pcall`'d because the row could in principle carry secret anchoring data. It never follows the cursor.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the tooltips the rule leaves alone.
 
 ## The unverified assumption
 

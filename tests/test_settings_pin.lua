@@ -217,7 +217,7 @@ local PIN = {
     "window.text.shadowFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.text.shadow|bool|true|nil|nil|nil|-|false|false|false",
     "window.text.size|number|11|6|32|1|-|false|false|false",
-    "window.tooltip.anchor|string|TOP|nil|nil|nil|BOTTOM,BOTTOMLEFT,BOTTOMRIGHT,LEFT,RIGHT,TOP,TOPLEFT,TOPRIGHT|false|false|false",
+    "window.tooltip.anchor|string|BESIDE|nil|nil|nil|BESIDE,BESIDE_LEFT|false|false|false",
     "window.tooltip.barAlpha|number|0.85|0|1|0.01|-|false|false|false",
     "window.tooltip.barBgAlpha|number|0.1|0|1|0.01|-|false|false|false",
     "window.tooltip.barBgColorFromSkin|bool|true|nil|nil|nil|-|false|false|false",

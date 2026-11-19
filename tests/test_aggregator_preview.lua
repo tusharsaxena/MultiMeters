@@ -197,3 +197,63 @@ test("Preview: a COUNTING stat's breakdown carries a rate too, and Row hides it"
     local detail = inst.NS.Aggregator.TestSourceDetail("Player-9999-TEST0001", "Interrupts")
     assertTrue(detail.combatSpells[1].amountPerSecond ~= nil)
 end)
+
+-- ---------------------------------------------------------------------------
+-- The sample characters (AD-87-MM, LibKa0s#87, preview-mode's naming convention)
+-- ---------------------------------------------------------------------------
+--
+-- Test mode's people are the collection's shared sample characters, LibKa0s-Sim-1.0's
+-- `Sample("retail")`, first and in their order, then five of this addon's own that follow the same
+-- convention: one capitalized word of 2 to 12 letters starting `Sample` or `Mock`. They used to be
+-- `Ka0stank`, `Ka0smage` and the rest, names that read as the author's own characters.
+
+local function names(group)
+    local out = {}
+    for i, m in ipairs(group) do out[i] = m.name .. "/" .. m.classFilename .. "/" .. m.role end
+    return out
+end
+
+test("Preview: test mode's first five are LibKa0s-Sim's shared sample characters, in order", function()
+    -- red under: the old Ka0s-named roster, or a host copy that drifted from the library's rows.
+    local inst = T.load()
+    local Sim = inst.mocks.LibStub("LibKa0s-Sim-1.0", true)
+    assertTrue(Sim and type(Sim.Sample) == "function", "the premise: the library ships Sample")
+    local shared = Sim.Sample("retail")
+    local group = inst.NS.Aggregator.TestGroup()
+    for i, row in ipairs(shared) do
+        assertEqual(group[i].name, row.name, "member " .. i .. "'s name")
+        assertEqual(group[i].classFilename, row.classFile, "member " .. i .. "'s class")
+        assertEqual(group[i].role, row.role, "member " .. i .. "'s role")
+    end
+end)
+
+test("Preview: every test-mode name follows the sample convention", function()
+    local inst = T.load()
+    local group = inst.NS.Aggregator.TestGroup()
+    assertEqual(#group, 10, "ten rows, so a column can be laid out against a full grid")
+    local seen = {}
+    for _, m in ipairs(group) do
+        assertTrue(m.name:match("^Sample%l*$") or m.name:match("^Mock%l*$"),
+            "starts Sample or Mock, one word: " .. m.name)
+        assertTrue(#m.name >= 2 and #m.name <= 12, "2 to 12 letters: " .. m.name)
+        assertTrue(not seen[m.name], "names are unique: " .. m.name)
+        seen[m.name] = true
+    end
+end)
+
+test("Preview: the test column draws the same people as the test group", function()
+    local inst = T.load()
+    local column = inst.NS.Aggregator.TestColumn(1, "DamageDone")
+    local group = inst.NS.Aggregator.TestGroup()
+    for i, src in ipairs(column.sources) do
+        assertEqual(src.name, group[i].name, "source " .. i)
+    end
+end)
+
+test("Preview: without the library test mode draws the same people from its own copy", function()
+    -- red under: a copy that drifted from the library's rows, which would show a degraded install
+    -- different people from a full one.
+    local full = names(T.load().NS.Aggregator.TestGroup())
+    local degraded = names(T.load{ libFiles = {} }.NS.Aggregator.TestGroup())
+    assertEqual(table.concat(degraded, ","), table.concat(full, ","))
+end)

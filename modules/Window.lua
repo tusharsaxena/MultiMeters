@@ -72,21 +72,20 @@ local Const = NS.Constants
 -- instead (modules/Window_Header.lua); a simulation then has no window marker.
 local W = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
 
--- The window's own gap above and below the strip. The library publishes the strip's
--- HEIGHT and no reserve: the gap is host layout (MultiMeters#59, LibKa0s#48).
-local STRIP_GAP = 2
-
---- The room the strip slot takes under the title: its height plus a gap above
---- and below while test mode is on OR a simulation runs (22 at HEIGHT 18), and 0
---- otherwise or with no Widgets library. The test strip and the sim strip share
---- the one slot. From mode state and a library constant, never from a strip's
---- own geometry.
+--- The room the strip slot takes under the title: TEST_STRIP.HEIGHT while test mode
+--- is on OR a simulation runs, and 0 otherwise or with no Widgets library. The test
+--- strip and the sim strip share the one slot. The library docks both directly under
+--- the title band (`dock = "title"`, Widgets minor 27, preview-mode's *Where the strip
+--- sits*, AD-88-MM), and a docked strip's BodyOffset is its own height while it shows,
+--- with no gap: this is that number, from mode state and a library constant, for the
+--- row capacity BuildLayout computes before a strip is shown. The chrome itself is
+--- placed by the strip's own BodyOffset (ChromeOffsets, StripBodyOffset).
 local function stripReserve()
     if not (W and W.TestStrip) then return 0 end
     local test = NS.State and NS.State.testMode
     local sim = NS.Sim and NS.Sim:IsActive()
     if not (test or sim) then return 0 end
-    return STRIP_GAP + W.TEST_STRIP.HEIGHT + STRIP_GAP
+    return W.TEST_STRIP.HEIGHT
 end
 
 local Window = {}
@@ -292,9 +291,8 @@ end
 --- @param layout table  the layout so far: padding, titleHeight, headerHeight,
 ---        rowHeight and rowSpacing are all already resolved on it
 --- @return number
-local function rowCapacity(frame, rows, layout)
-    local bodyHeight = (frame.height or 228) - layout.padding * 2
-        - layout.titleHeight - layout.stripHeight - layout.headerHeight
+local function rowCapacity(frame, rows, layout, headerTop)
+    local bodyHeight = (frame.height or 228) - layout.padding - headerTop - layout.headerHeight
     local fits = math.floor((bodyHeight + layout.rowSpacing)
         / (layout.rowHeight + layout.rowSpacing))
     if fits < 1 then fits = 1 end
@@ -350,15 +348,47 @@ function WindowProto:BuildLayout()
     -- minimum height the strip takes the room of the one row (rowCapacity's floor).
     layout.stripHeight = stripReserve()
     layout.minHeight = pad * 2 + layout.titleHeight + layout.headerHeight + rowHeight
-    layout.maxRows = rowCapacity(frame, rows, layout)
+    -- The rows fit under the headers where ChromeOffsets puts them: flush under the strip while
+    -- the slot is reserved (the band's bottom plus the reserve, the strip's BodyOffset).
+    local headerTop = layout.stripHeight > 0 and (self:BandBottom(layout) + layout.stripHeight)
+        or (pad + layout.titleHeight)
+    layout.maxRows = rowCapacity(frame, rows, layout, headerTop)
 
     return layout
 end
 
---- Where the chrome below the title sits, from the layout alone: the strip's top,
---- the column headers' top and the body's top, each as a distance down from the
---- frame's top edge. With no strip (stripHeight 0) the headers sit straight under
---- the title, exactly where they always did.
+--- Where a docked strip's top edge sits, down from the frame's top: the title band's
+--- bottom edge, its inset (HeaderInset) plus its height (TitleBandHeight, 1 px with the
+--- header hidden, as ApplyHeaderStrip lays it). From config, never read off the band.
+---
+--- @param layout table|nil  the layout to measure (the window's own by default)
+--- @return number
+function WindowProto:BandBottom(layout)
+    local band = self:TitleBandHeight(layout)
+    return self:HeaderInset() + (band > 0 and band or 1)
+end
+
+--- The room the strip in force takes under the title bar: the library's own answer,
+--- `strip:BodyOffset()` (Widgets minor 27: its height while a title-docked strip shows,
+--- else 0), the larger of the two strips, 0 with neither showing or no Widgets library.
+--- The strips take no meter value, so asking them is not reading layout back off a
+--- frame that holds a secret (rule R3).
+---
+--- @return number
+function WindowProto:StripBodyOffset()
+    local test, sim = self.testStrip, self.simStrip
+    local a = test and test.BodyOffset and test:BodyOffset() or 0
+    local b = sim and sim.BodyOffset and sim:BodyOffset() or 0
+    return math.max(a, b)
+end
+
+--- Where the chrome below the title sits: the strip slot's top, the column headers'
+--- top and the body's top, each as a distance down from the frame's top edge. With no
+--- strip showing the headers sit straight under the title, exactly where they always
+--- did. While one shows they sit flush under it: the band's bottom edge plus the
+--- strip's BodyOffset (AD-88-MM review), so the strip neither leaves a gap above them
+--- under a 1 px edge nor covers them under an edge wider than BAR_INSET. The strip
+--- itself is placed by the library's docking under the title band, not from `stripTop`.
 ---
 --- @return number stripTop
 --- @return number headerTop
@@ -366,8 +396,25 @@ end
 function WindowProto:ChromeOffsets()
     local layout = self.layout
     local below = layout.padding + layout.titleHeight
-    local headerTop = below + layout.stripHeight
-    return below + STRIP_GAP, headerTop, headerTop + layout.headerHeight
+    local offset = self:StripBodyOffset()
+    local headerTop = offset > 0 and (self:BandBottom() + offset) or below
+    return below, headerTop, headerTop + layout.headerHeight
+end
+
+--- Lay the column headers and the body from ChromeOffsets: on the test-mode toggle
+--- (ApplyTestStrip) and on each show and hide of a strip, which the library tells
+--- through the dock's `onOffset` (Widgets minor 27). A no-op before BuildFrame.
+function WindowProto:RelayChrome()
+    local frame, headerFrame, body = self.frame, self.headerFrame, self.body
+    if not (self.layout and frame and headerFrame and body) then return end
+    local pad = self.layout.padding
+    local _, headerTop, bodyTop = self:ChromeOffsets()
+    headerFrame:ClearAllPoints()
+    headerFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -headerTop)
+    headerFrame:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, -headerTop)
+    body:ClearAllPoints()
+    body:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -bodyTop)
+    body:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -pad, pad)
 end
 
 -- ---------------------------------------------------------------------------

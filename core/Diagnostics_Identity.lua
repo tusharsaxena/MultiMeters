@@ -479,15 +479,5 @@ end
 --- something looks wrong and is read once; this one is a MEASUREMENT, taken
 --- twice in one pull and compared, and it says nothing at all outside a pull.
 function Diagnostics.ReportIdentity()
-    local D = NS.DebugLog
-    if D and D.Add and D.Show and D.IsShown then
-        pcall(function() D:Show() end)
-        if D:IsShown() then
-            Diagnostics.SetEmit(function(line) D:Add("Diag", line) end)
-        end
-    end
-
-    local ok, err = pcall(reportIdentity)
-    if not ok then out("  |cffff2020section failed:|r " .. tostring(err)) end
-    Diagnostics.SetEmit(nil)
+    Diagnostics.RunTopic("debug identity", reportIdentity)
 end

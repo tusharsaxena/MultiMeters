@@ -224,6 +224,9 @@ refusal cases (`slash-commands-§2`) joined the schema-seam refusals in
 `resetall` and registration. Case bodies and names moved unchanged, so the suite total did not move.
 `tests/test_slash_profile.lua` (2026-09-29, SP-MM-02) is a fourth sibling, new rather than peeled: the
 `profile` verb's cases, driven through the real dispatcher and the real AceDB switch.
+`tests/test_reports.lua` (2026-11-18, AD-79-MM) is new too: the report verbs on `D:Report`
+(`debug-logging-§15`), each landing ungated in a revealed console with one chat pointer, a refusal
+staying in chat, and the stub streaming to chat.
 
 ## What the mock models, and what it admits it cannot
 

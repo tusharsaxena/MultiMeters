@@ -292,15 +292,5 @@ end
 --- Not part of `/mm diagnostics`, for the reason `identity` is not: this says
 --- nothing at all unless it was armed before the run it describes.
 function Diagnostics.ReportFeign()
-    local D = NS.DebugLog
-    if D and D.Add and D.Show and D.IsShown then
-        pcall(function() D:Show() end)
-        if D:IsShown() then
-            Diagnostics.SetEmit(function(line) D:Add("Diag", line) end)
-        end
-    end
-
-    local ok, err = pcall(reportFeign)
-    if not ok then out("  |cffff2020section failed:|r " .. tostring(err)) end
-    Diagnostics.SetEmit(nil)
+    Diagnostics.RunTopic("debug feign", reportFeign)
 end

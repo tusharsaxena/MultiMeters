@@ -281,7 +281,7 @@ Total.
 - Database: the profile a swap lands on is migrated and normalized before anything reads it
 - Database: a profile RESET re-seeds rather than leaving an empty registry
 
-### test_database_migrations.lua (50)
+### test_database_migrations.lua (51)
 
 - Database: RunMigrations stamps and holds the current schema version
 - Database: the schema version is account-wide, not per-profile
@@ -333,6 +333,7 @@ Total.
 - Database: v13 -> v14 survives a profile with no master block and a junk window
 - Database: v23 -> v24 turns a stored window's title alignment off the skin, once
 - Database: v25 -> v26 prunes the title bar divider's four keys from every stored window
+- Database: v26 -> v27 moves every stored tooltip anchor to BESIDE, in every profile
 
 ### test_migrations.lua (17)
 
@@ -1204,7 +1205,7 @@ Total.
 - Identity mode does not refuse an Ally pet with an unlisted creature id
 - A refused None NPC takes no identity key, so it cannot collide with a player
 
-### test_aggregator_preview.lua (8)
+### test_aggregator_preview.lua (12)
 
 - Test mode substitutes the DATA, and the render path stays one path
 - A test row's tooltip finds a breakdown, because it goes to the provider
@@ -1214,6 +1215,10 @@ Total.
 - Preview: a breakdown spell carries a RATE, not just a total
 - Preview: the breakdown's rate uses the same clock as the preview grid
 - Preview: a COUNTING stat's breakdown carries a rate too, and Row hides it
+- Preview: test mode's first five are LibKa0s-Sim's shared sample characters, in order
+- Preview: every test-mode name follows the sample convention
+- Preview: the test column draws the same people as the test group
+- Preview: without the library test mode draws the same people from its own copy
 
 ### test_aggregator_sort.lua (20)
 
@@ -1238,7 +1243,7 @@ Total.
 - the build PUBLISHES which order actually took effect
 - `provider` mode honors the direction OUT of combat too
 
-### test_window.lua (49)
+### test_window.lua (50)
 
 - Window builds a bare anchor plus the visible frame, and names both
 - The throttle coalesces N events into ONE refresh
@@ -1288,6 +1293,7 @@ Total.
 - BuildLayout reserves the test strip only in test mode
 - At minimum height the strip takes the row and the bounds do not move
 - The strip is born hidden, with the localized line and the info art
+- Both strips are docked by the library under the title band (AD-88-MM)
 - With no Widgets library the window builds and reserves nothing
 
 ### test_window_layout.lua (18)
@@ -1315,7 +1321,7 @@ Total.
 
 - modules/Window.lua reads geometry back off the anchor and nothing else
 
-### test_window_header.lua (60)
+### test_window_header.lua (63)
 
 - The header carries a lock and a gear, and the padlock shows the state
 - The padlock toggles THIS window only
@@ -1329,7 +1335,7 @@ Total.
 - The header says the grid was built the restricted way
 - The header names AMBIGUITY when two rows cannot be told apart
 - Once a quarter of the rows are blanked, the notice says BLANK in plain words (#22)
-- The header line reads 'Test' while placeholder data is on screen
+- The header line carries no 'Test' while the strip shows (the strip is the marker)
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
 - Segment menu: a title, stored segments first, a divider, then Current/Overall
@@ -1374,9 +1380,12 @@ Total.
 - Every header sits exactly over the column it labels, from the same layout
 - The Player header is a Button like every other, not a label with a gap beside it
 - The strip background and the per-column ones are mutually exclusive, both ways
-- Test mode: strip under the title, column headers and body pushed down by 22
+- Test mode: strip docked under the title band, column headers and body pushed down by 18
 - Header hidden plus test mode: the strip is at the top of the window and shown
 - Minimized: the strip hides and comes back on expand
+- A player edge wider than 2 px: the column headers sit flush under the strip, uncovered
+- The headers and the body follow the strip's own show and hide (onOffset)
+- Expanding a test-mode window through ApplyConfig lays the headers under the strip
 
 ### test_window_header_sort.lua (17)
 
@@ -1722,15 +1731,11 @@ Total.
 - Targets: a zero total is not listed, and a player with only zeros gets nil
 - Targets: the walk stops at ENEMY_LIMIT (64) answered enemies
 
-### test_tooltip.lua (20)
+### test_tooltip.lua (16)
 
 - modules/Tooltip.lua never applies `#` to a meter array
-- Every anchor the schema offers resolves to a real GameTooltip token
-- Each anchor puts the tooltip in the box of a 3x3 around the cell
-- There is no "At cursor" anchor, and TOP is what shipped instead
-- The anchor dropdown offers nothing the token table cannot resolve
-- The x/y offset reaches SetOwner rather than a SetPoint of our own
-- A junk offset off an old profile is clamped, never handed to the client
+- The anchor setting offers two beside-the-window choices, and Beside is the default
+- Every value the dropdown offers owns the tooltip at ANCHOR_NONE and places it
 - Bar spacing is applied to the tooltip, and taken back off when it hides
 - The configured font reaches both number slots and the spell name
 - NONE is an absent outline flag, not the literal string
@@ -1877,6 +1882,22 @@ Total.
 - modules/Tooltip.lua never applies `#` to a recap's event array
 - Tooltip: a stat key the catalog does not know heads with the key itself
 - Tooltip: a Deaths cell reads deathTimeFormat off the WINDOW's text block
+
+### test_tooltip_place.lua (13)
+
+- Tooltip place: a cell tooltip opens beside the window, on the right when it fits
+- Tooltip place: with no room on the right, it opens on the window's left
+- Tooltip place: the name tooltip and a breakdown row's spell tooltip follow the same rule
+- Tooltip place: "Beside, prefer left" opens on the left when both sides fit
+- Tooltip place: a stored value this build does not offer opens beside, on the right
+- Tooltip place: the X/Y offsets nudge the placed tooltip by exactly that much
+- Tooltip place: a junk offset off an old profile is clamped, never handed to the placer
+- Tooltip place: a negative X never pulls a right-side tooltip back over the window
+- Tooltip place: on the left, a positive X stays off the window and a negative X moves it out
+- Tooltip place: a secret tooltip size still opens beside the window, never over the rows
+- Tooltip place: with a secret size, "prefer left" wins only a tie, and the nudge still applies
+- Tooltip place: unreadable geometry attaches the tooltip above the row, never the cursor
+- Tooltip place: no meter tooltip is ever owned at a client anchor token
 
 ### test_drilldown.lua (59)
 
@@ -2359,7 +2380,7 @@ Total.
 - Slash: `lock` moves the lock and NOTHING else
 - Slash: `window new` and `window delete` act on the registry
 - Slash: a bare `window delete` says nothing is selected, not a blank name
-- Slash: `window list` prints one line per window
+- Slash: `window list` writes one line per window to the console
 - Slash: `window` with an unknown sub-verb prints the usage
 - Slash: `toggle` reaches the registry and reports its refusal
 - Slash: `reset-positions` moves every window and says how many
@@ -2394,6 +2415,26 @@ Total.
 - Slash: a word the ladder does not know toggles the console, as a bare `debug` does
 - Slash: with core/Diagnostics.lua absent the debug verbs go quiet, not through
 - Slash: a Diagnostics too old to arm a trace reports off rather than promising one
+
+### test_reports.lua (17)
+
+- Reports: `/mm window list` lands in the console with logging off, and leaves it off
+- Reports: `/mm window list` reveals the console and points at it with exactly one chat line
+- Reports: without the library `/mm window list` streams to chat with no pointer
+- Reports: `/mm debug recap` lands in the console with logging off, and leaves it off
+- Reports: `/mm debug recap` reveals the console and points at it with exactly one chat line
+- Reports: without the library `/mm debug recap` streams to chat with no pointer
+- Reports: `/mm debug identity` lands in the console with logging off, and leaves it off
+- Reports: `/mm debug identity` reveals the console and points at it with exactly one chat line
+- Reports: without the library `/mm debug identity` streams to chat with no pointer
+- Reports: `/mm debug feign` lands in the console with logging off, and leaves it off
+- Reports: `/mm debug feign` reveals the console and points at it with exactly one chat line
+- Reports: without the library `/mm debug feign` streams to chat with no pointer
+- Reports: `/mm window list` carries one line per window
+- Reports: a bare `/mm window` is the same report
+- Reports: a `window` usage line stays in chat and writes no report
+- Reports: a `debug feign` refusal stays in chat and writes no report
+- Reports: a topic probe that raises keeps its section-failed line and still points
 
 ### test_slash_refusal.lua (11)
 
@@ -2525,10 +2566,13 @@ Total.
 - Keybindings: the tab refuses to bind a key in combat
 - Keybindings: the General page's Defaults tooltip ends with the library's keys-unchanged sentence
 
-### test_skinsetup.lua (20)
+### test_skinsetup.lua (24)
 
 - Skin seam: the owner is the folder name, and NS.Skin is its facade
 - Skin seam: the read answers Ka0s Default before the profile store exists
+- Skin seam: the default skin is the library's DefaultSkin, read once at file load
+- Skin seam: the read before the store exists answers the client's default skin
+- Skin seam: without the library the default skin is Ka0s Default
 - Skin seam: every owner token is registered, namespaced mm., and keeps its pixel on Ka0s Default
 - Skin seam: another skin draws each owner token from its follow token
 - Skin seam: the skin keys default to Ka0s Default, the panel ignored and the picker unseen
@@ -2547,6 +2591,7 @@ Total.
 - Skin seam: the seam publishes the same NS members on both paths
 - Skin seam: each host-copy skin token is the live library's Ka0s Default value
 - Skin seam: degraded, the facade answers today's colors and the seam never raises
+- Skin seam: the rows' own washes clear the library's row floors on Ka0s Default
 
 ### test_skin_outline.lua (9)
 
@@ -2697,6 +2742,17 @@ Total.
 - Title bar: meter-window controls rest in icon.tint and light in text.link; the close lights in close.hot
 - Title bar: the Export modal's close says Close above it and paints icon.tint, then close.hot
 
+### test_header_buttons.lua (8)
+
+- Header buttons: the meter window's seven marks are HeaderButtons', extras · settings · close
+- Header buttons: the meter strip sits HEADER.PAD in from the band's corner, HEADER.GAP apart
+- Header buttons: the meter window's settings mark opens the settings on its own window
+- Header buttons: a Custom control color survives a skin switch on all seven marks
+- Header buttons: on the ASCII rung a skin switch keeps the glyphs' header font and Custom color
+- Header buttons: the Export modal's title bar reads settings · close, HeaderButtons'
+- Header buttons: the Export modal's settings mark hides the modal, then opens this addon's settings
+- Header buttons: the Export modal's settings mark says Open settings, icon.tint at rest, text.link hovered
+
 ### test_header_band.lua (12)
 
 - Header band: flush inside the edge at Shell's inset, TitleBandHeight high, in every skin
@@ -2756,11 +2812,12 @@ Total.
 
 - glyphs: display strings use only characters every shipped skin face draws
 
-### test_columnblocks.lua (38)
+### test_columnblocks.lua (39)
 
 - Blocks: one block per item, each carrying its index and its label
 - Blocks: the glyph says enabled or disabled, and clicking it toggles
 - Blocks: the glyph's tooltip says what the CLICK will do
+- Blocks: the glyph's tooltip is placed beside its group, like the drag handle's, never at a corner
 - Blocks: a repaint gives every block back before it takes any out
 - Blocks: a released block is off its AceGUI frame, not merely hidden
 - Blocks: a reused block reports the index it now carries, not the one it was built with
@@ -2967,7 +3024,7 @@ Total.
 | test_state.lua | 17 |
 | test_locale.lua | 11 |
 | test_database.lua | 28 |
-| test_database_migrations.lua | 50 |
+| test_database_migrations.lua | 51 |
 | test_migrations.lua | 17 |
 | test_diagnostics.lua | 35 |
 | test_diagnostics_deathrecap.lua | 31 |
@@ -2999,12 +3056,12 @@ Total.
 | test_feign.lua | 27 |
 | test_aggregator.lua | 70 |
 | test_aggregator_identity.lua | 32 |
-| test_aggregator_preview.lua | 8 |
+| test_aggregator_preview.lua | 12 |
 | test_aggregator_sort.lua | 20 |
-| test_window.lua | 49 |
+| test_window.lua | 50 |
 | test_window_layout.lua | 18 |
 | test_window_static.lua | 1 |
-| test_window_header.lua | 60 |
+| test_window_header.lua | 63 |
 | test_window_header_sort.lua | 17 |
 | test_window_placement.lua | 44 |
 | test_window_lifecycle.lua | 9 |
@@ -3018,10 +3075,11 @@ Total.
 | test_row_cells.lua | 1 |
 | test_row_mouse.lua | 17 |
 | test_targets.lua | 28 |
-| test_tooltip.lua | 20 |
+| test_tooltip.lua | 16 |
 | test_tooltip_lines.lua | 41 |
 | test_tooltip_builders.lua | 23 |
 | test_tooltip_deaths.lua | 60 |
+| test_tooltip_place.lua | 13 |
 | test_drilldown.lua | 59 |
 | test_export.lua | 94 |
 | test_export_modal.lua | 32 |
@@ -3035,13 +3093,14 @@ Total.
 | test_settings_layout.lua | 5 |
 | test_slash.lua | 52 |
 | test_slash_diagnostics.lua | 20 |
+| test_reports.lua | 17 |
 | test_slash_refusal.lua | 11 |
 | test_slash_profile.lua | 11 |
 | test_disabled.lua | 27 |
 | test_library_lines.lua | 11 |
 | test_options_panel.lua | 37 |
 | test_options_tabs.lua | 15 |
-| test_skinsetup.lua | 20 |
+| test_skinsetup.lua | 24 |
 | test_skin_outline.lua | 9 |
 | test_skin_verb.lua | 6 |
 | test_skin_chrome.lua | 8 |
@@ -3051,12 +3110,13 @@ Total.
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
 | test_titlebar.lua | 4 |
+| test_header_buttons.lua | 8 |
 | test_header_band.lua | 12 |
 | test_skin_picker.lua | 21 |
 | test_skin_settings.lua | 5 |
 | test_skin_tools.lua | 5 |
 | test_glyphs.lua | 1 |
-| test_columnblocks.lua | 38 |
+| test_columnblocks.lua | 39 |
 | test_columns.lua | 14 |
 | test_windows_rail.lua | 16 |
 | test_degraded.lua | 38 |
@@ -3068,4 +3128,4 @@ Total.
 | test_skin_switch.lua | 23 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2594** |
+| **Total** | **2642** |

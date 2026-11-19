@@ -368,8 +368,8 @@ end
 --- strip, so none can disagree about where the bar ends. 0 with the header hidden.
 ---
 --- @return number
-function WindowProto:TitleBandHeight()
-    local layout = self.layout
+function WindowProto:TitleBandHeight(layout)
+    layout = layout or self.layout
     if layout.titleHeight <= 0 then return 0 end
     return layout.padding + layout.titleHeight - BAR_INSET
 end
@@ -388,7 +388,12 @@ function WindowProto:HeaderRightInset()
     -- room the title reserves is derived from the same config the placement
     -- reads, so the two cannot disagree.
     local used = NS.HeaderControls and NS.HeaderControls.WidthUsed(self) or 0
-    if used > 0 then used = used + self.layout.padding end
+    -- The strip's reach from the frame's edge (AD-86-MM): the band's inset, the library's
+    -- corner pad (HEADER.PAD) and the strip itself, then the padding as the title's gap.
+    if used > 0 then
+        local pad = NS.HeaderControls.CornerPad and NS.HeaderControls.CornerPad() or self.layout.padding
+        used = used + self:HeaderInset() + pad
+    end
     return self.layout.padding + used
 end
 
@@ -848,26 +853,16 @@ end
 -- The test-mode and simulation strips (MultiMeters#59, #60, LibKa0s#48)
 -- ---------------------------------------------------------------------------
 
-local function placeStrip(strip, frame, pad, stripTop, show)
-    if not strip then return end
-    strip:ClearAllPoints()
-    strip:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -stripTop)
-    strip:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -pad, -stripTop)
-    strip:SetShown(show)
-end
-
---- The anchoring half of ApplyTestStrip: place both strips in the one slot under
---- the title, inset by the padding on both sides, and show the one the slot is
---- reserved for -- the sim strip while a simulation runs, the test strip
---- otherwise. ApplyConfig runs this too, so a settings change that moves the
---- title moves the strips with it. Positions come from ChromeOffsets, i.e. from
---- the layout, never off a frame.
+--- The showing half of ApplyTestStrip: show the strip the slot is reserved for --
+--- the sim strip while a simulation runs, the test strip otherwise -- and hide the
+--- other. Neither is anchored here: the library docks both directly under the title
+--- band (`dock = "title"`, Widgets minor 27, preview-mode's *Where the strip sits*,
+--- AD-88-MM) and places them again on every show, hide and resize of the band, so a
+--- settings change that moves the title moves the strips with it.
 function WindowProto:PlaceTestStrip()
-    local pad = self.layout.padding
-    local stripTop = self:ChromeOffsets()
     local shown, sim = stripShown(self), simRunning()
-    placeStrip(self.testStrip, self.frame, pad, stripTop, shown and not sim)
-    placeStrip(self.simStrip, self.frame, pad, stripTop, shown and sim)
+    if self.testStrip then self.testStrip:SetShown(shown and not sim) end
+    if self.simStrip then self.simStrip:SetShown(shown and sim) end
 end
 
 --- The test-mode toggle's whole effect on a window, and NARROW on purpose: the
@@ -882,15 +877,7 @@ function WindowProto:ApplyTestStrip()
     if not self.frame then return end
     self:RefreshUpvalues()
     self:PlaceTestStrip()
-
-    local pad = self.layout.padding
-    local _, headerTop, bodyTop = self:ChromeOffsets()
-    self.headerFrame:ClearAllPoints()
-    self.headerFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -headerTop)
-    self.headerFrame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -pad, -headerTop)
-    self.body:ClearAllPoints()
-    self.body:SetPoint("TOPLEFT", self.frame, "TOPLEFT", pad, -bodyTop)
-    self.body:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -pad, pad)
+    self:RelayChrome()
 
     self:ApplyTitle()
     self:ApplyResizeBounds()
@@ -1430,8 +1417,10 @@ function WindowProto:UpdateHeaderText(preview, isDrill, drillTitle)
     --
     -- `preview` still reaches the line, because "TEST" over a grid full of
     -- placeholder numbers is the one label that stops a player reading invented
-    -- data as their own.
-    add(preview and L["Test"] or nil)
+    -- data as their own -- but only where the strip cannot say it: while the strip
+    -- shows, the title bar carries no mode word (preview-mode's *Where the strip
+    -- sits*, MUST v2.110.0), the same rule as the red title word in ApplyTitle.
+    add((preview and not stripShown(self)) and L["Test"] or nil)
     add(self:RestrictedNotice(preview))
 
     -- WHICH FIGHT THIS IS. It was dropped from the header on the argument that it

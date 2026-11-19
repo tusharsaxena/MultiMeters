@@ -377,17 +377,17 @@ test("Targets: a cross-realm caster still matches the row it belongs to", functi
     -- red under: comparing the two names as they arrive.
     local inst, cfg = bench{
         { name = "Gulkat", hits = {
-            { caster = "Juanaveli-Sargeras", amount = 500 },
-            { caster = "Helya",              amount = 200 },
+            { caster = "Samplehunter-Samplerealm", amount = 500 },
+            { caster = "Mockshade",                amount = 200 },
         } },
     }
 
-    local cross = inst.NS.Targets.ForPlayer(cfg, "Juanaveli", 5)
+    local cross = inst.NS.Targets.ForPlayer(cfg, "Samplehunter", 5)
     assertTrue(cross ~= nil, "a cross-realm player got no targets at all")
     assertEqual(cross[1].total, 500, "the cross-realm caster's damage went missing")
 
     -- The same-realm case must not regress on the way.
-    local same = inst.NS.Targets.ForPlayer(cfg, "Helya", 5)
+    local same = inst.NS.Targets.ForPlayer(cfg, "Mockshade", 5)
     assertEqual(same[1].total, 200, "the same-realm caster stopped matching")
 end)
 
@@ -397,9 +397,9 @@ test("Targets: a realm-qualified ROW name matches a bare caster", function()
     -- controls or should depend on.
     -- red under: stripping only the caster side.
     local inst, cfg = bench{
-        { name = "Gulkat", hits = { { caster = "Oruuta", amount = 700 } } },
+        { name = "Gulkat", hits = { { caster = "Mockshield", amount = 700 } } },
     }
-    local list = inst.NS.Targets.ForPlayer(cfg, "Oruuta-Zul'jin", 5)
+    local list = inst.NS.Targets.ForPlayer(cfg, "Mockshield-Mockrealm", 5)
     assertTrue(list ~= nil, "a realm-qualified row name matched nothing")
     assertEqual(list[1].total, 700)
 end)
@@ -412,11 +412,11 @@ test("Targets: two casters differing only by realm are still told apart by name"
     -- red under: nothing. This pins current behavior.
     local inst, cfg = bench{
         { name = "Gulkat", hits = {
-            { caster = "Helya-RealmA", amount = 100 },
-            { caster = "Helya-RealmB", amount = 300 },
+            { caster = "Mockshade-Samplerealm", amount = 100 },
+            { caster = "Mockshade-Mockrealm", amount = 300 },
         } },
     }
-    local list = inst.NS.Targets.ForPlayer(cfg, "Helya", 5)
+    local list = inst.NS.Targets.ForPlayer(cfg, "Mockshade", 5)
     assertEqual(list[1].total, 400, "same-name cross-realm casters are merged, as documented")
 end)
 

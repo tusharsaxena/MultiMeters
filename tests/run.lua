@@ -161,6 +161,10 @@ end
 ---              a load-time read happens (the enum fallbacks in
 ---              core/Constants.lua and core/Secrets.lua are resolved at LOAD,
 ---              so `Enum` has to be wrong before the file runs, not after)
+---   afterLibs = function(mocks), applied once the libraries have loaded and BEFORE
+---              the addon's first file: for a suite that must change what a library
+---              answers at the addon's file load (Skin:DefaultSkin, read once into
+---              NS.DEFAULT_SKIN by core/SkinSetup.lua, skinning-§2)
 ---   libFiles = table,     overrides LIB_FILES. Pass `{}` to load the addon with
 ---              LibKa0s ABSENT — the degraded scenario testing-§8 requires to be
 ---              exercised by a real load rather than by hand-stubbing the member
@@ -199,6 +203,7 @@ local function loadInstance(opts)
 
     local NS = {}
     Loader.loadAll(opts.libFiles or LIB_FILES, NS, mocks)
+    if opts.afterLibs then opts.afterLibs(mocks) end
     Loader.loadAll(rooted(ADDON_FILES), NS, mocks)
 
     -- ── the lifecycle kick, in the client's own order ──────────────────────
@@ -355,6 +360,7 @@ local SUITES = {
     "test_tooltip_lines",
     "test_tooltip_builders",
     "test_tooltip_deaths",
+    "test_tooltip_place",
     "test_drilldown",
     "test_export",
     "test_export_modal",
@@ -369,6 +375,8 @@ local SUITES = {
     "test_settings_layout",
     "test_slash",
     "test_slash_diagnostics",
+    -- debug-logging-§15: the report verbs on D:Report (LibKa0s#79).
+    "test_reports",
     "test_slash_refusal",
     "test_slash_profile",
     -- slash-commands-§7's conformance suite: the disabled state is TOTAL. It asserts on
@@ -412,6 +420,9 @@ local SUITES = {
     -- Every title-bar control this addon draws itself (smoke round 1, SR-MM): the meter window's
     -- seven and the Export modal's close, a tooltip on each and the skin's rest and hover colors.
     "test_titlebar",
+    -- The same two title bars on LibKa0s-Widgets-1.0's HeaderButtons (AD-86-MM, LibKa0s#86):
+    -- extras · settings · close, the library's pitch, and each settings mark opening the settings.
+    "test_header_buttons",
     -- The meter window's title band (R5-MM1, R5-WIN): flush inside the edge at the edge's own inset,
     -- the title gradient, every header child on its middle, a collapsed window the band alone.
     "test_header_band",

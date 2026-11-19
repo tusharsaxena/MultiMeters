@@ -1085,8 +1085,15 @@ test("BuildLayout reserves the test strip only in test mode", function()
     inst.NS.State.testMode = false
 
     assertEqual(off.stripHeight, 0)
-    assertEqual(on.stripHeight, 22, "2 + TEST_STRIP.HEIGHT (18) + 2")
-    local body = 220 - on.padding * 2 - on.titleHeight - on.headerHeight - 22
+    -- AD-88-MM (preview-mode's *Where the strip sits*, Widgets minor 27): the docked strip moves
+    -- everything below the title bar down by exactly TEST_STRIP.HEIGHT, its BodyOffset, with no
+    -- host gap (the old pin was 2 + 18 + 2 = 22).
+    assertEqual(on.stripHeight, 18, "TEST_STRIP.HEIGHT, the docked strip's BodyOffset")
+    -- The rows fit under the headers where they are drawn: flush under the strip, which hangs off
+    -- the title band's bottom edge (the band's inset plus its height), not padding + titleHeight
+    -- (AD-88-MM review; the old pin counted from padding + titleHeight + 18).
+    local headerTop = window:HeaderInset() + window:TitleBandHeight(on) + 18
+    local body = 220 - on.padding - headerTop - on.headerHeight
     assertEqual(on.maxRows, math.floor((body + on.rowSpacing) / (on.rowHeight + on.rowSpacing)))
     assertTrue(on.maxRows < off.maxRows, "the strip takes rows, not the window's size")
     assertEqual(on.minHeight, off.minHeight, "the resize floor never moves under the player")
@@ -1119,6 +1126,30 @@ test("The strip is born hidden, with the localized line and the info art", funct
         "the host passes its info icon")
 end)
 
+test("Both strips are docked by the library under the title band (AD-88-MM)", function()
+    -- preview-mode's *Where the strip sits* (MUST, v2.110.0): `dock = "title"` (Widgets minor 27),
+    -- under the title band, never anchored by hand. red under: an undocked strip (no Place or
+    -- BodyOffset), or a strip a host anchors to the frame itself.
+    local inst, window = scene()
+    for _, key in ipairs({ "testStrip", "simStrip" }) do
+        local strip = window[key]
+        assertTrue(strip ~= nil, key .. " is built")
+        assertTrue(type(strip.Place) == "function", key .. " is docked (strip:Place)")
+        assertTrue(type(strip.BodyOffset) == "function", key .. " is docked (strip:BodyOffset)")
+        assertEqual(strip:BodyOffset(), 0, key .. ": no offset while hidden")
+    end
+    inst.NS.State.SetTestMode(true)
+    local point, rel, relPoint, x, y = window.testStrip:GetPoint(1)
+    assertEqual(point, "TOPLEFT")
+    assertTrue(rel == window.headerBand, "the strip hangs off the title band, not the frame")
+    assertEqual(relPoint, "BOTTOMLEFT")
+    assertEqual(x, 0)
+    assertEqual(y, 0)
+    assertEqual(window.testStrip:BodyOffset(), window.layout.stripHeight,
+        "the layout's reserve is the strip's own BodyOffset")
+    inst.NS.State.SetTestMode(false)
+end)
+
 test("With no Widgets library the window builds and reserves nothing", function()
     -- red under: an unguarded W.TestStrip / W.TEST_STRIP read in BuildFrame or BuildLayout.
     local libs = {}
@@ -1132,4 +1163,8 @@ test("With no Widgets library the window builds and reserves nothing", function(
     assertEqual(window.layout.stripHeight, 0)
     assertTrue(window.frame.title:GetText():find("TEST MODE", 1, true) ~= nil,
         "the title marker still says it")
+    -- And the session line keeps its `Test`: the word goes only while a strip shows (AD-88-MM).
+    window:UpdateHeaderText(true)
+    assertTrue((window.sessionText:GetText() or ""):find("Test", 1, true) ~= nil,
+        "no strip on screen, so the session line keeps its word")
 end)

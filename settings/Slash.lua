@@ -601,9 +601,23 @@ local WINDOW_VERBS = {}
 
 --- `/mm window list`, and a bare `/mm window` — the registry renders its own
 --- listing, because the columns belong with the data.
+---
+--- A REPORT (debug-logging-§15, the owner's ruling of 2026-11-08, LibKa0s#79): a
+--- verb's own `… list`, so it goes to the debug console through `D:Report`, ungated,
+--- revealing the console, with one chat pointer line. The stub's `Report` streams it
+--- to chat with no pointer; a console with no report seam falls back to chat here. A
+--- registry too old to list is a refusal, and stays in chat through doWindow.
 function WINDOW_VERBS.list(M)
     if not M.BuildListLines then return false, WINDOW_USAGE end
-    for _, line in ipairs(M:BuildListLines()) do out(line) end
+    local lines = M:BuildListLines()
+    local D = NS.DebugLog
+    if D and type(D.Report) == "function" then
+        D:Report("Window", "window list", function(write)
+            for _, line in ipairs(lines) do write(line) end
+        end)
+    else
+        for _, line in ipairs(lines) do out(line) end
+    end
     return true
 end
 

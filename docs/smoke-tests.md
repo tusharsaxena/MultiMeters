@@ -22,16 +22,16 @@ secret-value rules the checks refer to.
 | PANEL-1 to PANEL-59 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
 | STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
-| WIN-1 to WIN-58 | [Windows and the header](#win) | Header controls, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
+| WIN-1 to WIN-60 | [Windows and the header](#win) | Header controls, the strip's extras · settings · close order, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-35 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
-| TIP-1 to TIP-37 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips, breakdowns, death list and recap, tooltip styling, Targets |
-| EXPORT-1 to EXPORT-56 | [Export](#export) | The modal, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
+| TIP-1 to TIP-41 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips opening beside the window, breakdowns, death list and recap, tooltip styling, Targets |
+| EXPORT-1 to EXPORT-57 | [Export](#export) | The modal, its settings mark, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
-| DIAG-1 to DIAG-43 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
-| DEGRADED-1 to DEGRADED-11 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look |
+| DIAG-1 to DIAG-46 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, the report verbs in the console with one chat pointer, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
+| DEGRADED-1 to DEGRADED-12 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look, a report in chat |
 | SIM-1 to SIM-16 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run, the Master controls Sim mode checkbox and its window rule |
-| SKIN-1 to SKIN-50 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat, a stored pick of the deleted Friz |
+| SKIN-1 to SKIN-52 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat, a stored pick of the deleted Friz |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
 ## Before you start
@@ -229,13 +229,13 @@ secret-value rules the checks refer to.
   spaces kept. Result: pass (owner-marked 2026-10-10)
 - **SLASH-10. `/mm lock`.** `/mm lock` twice → it toggles; `/mm lock off` → it sets, printing
   *Windows are unlocked — drag them into place.*; `/mm lock on` prints *Windows are locked.* Result: pass (owner-marked 2026-10-10)
-- **SLASH-11. `/mm window`.** `/mm window list` → one line per window: its name, *Enabled* when it
+- **SLASH-11. `/mm window`.** `/mm window list` → in the debug console (DIAG-44), one line per window: its name, *Enabled* when it
   is on screen or *Disabled* when hidden, and a count of every column in its list, shown or not
   (`8 Columns` on a fresh window). `/mm window new Raid` → *Window 'Raid' created.*; `/mm window new
   Solo`, then `/mm window copy Raid Solo` → *Copied everything from 'Raid'.* and Solo takes Raid's
   settings (the source is the first word, so a source whose name has a space is copied from Windows
   → General instead); `/mm window delete Solo` → *Window 'Solo' deleted.* with no confirmation (the
-  panel's **Delete window** asks first, WIN-34); `/mm window delete Raid` the same. Result: pass (owner-marked 2026-10-10)
+  panel's **Delete window** asks first, WIN-34); `/mm window delete Raid` the same. Result:
 - **SLASH-12. `/mm config` in combat.** Enter combat (a dummy is fine), type `/mm config`, then a bare
   `/mm` → each refuses with one gray notice; leaving combat does not open the panel (nothing was
   queued). Result: pass (owner-marked 2026-10-10)
@@ -356,7 +356,7 @@ right. Open the panel with `/mm config`.
   Button style (an *Icon* heading with Reveal controls on hover beside Control size; a *Color* heading
   with Control color and Control color mode on one line and Control hover color and Control hover
   color mode on the next; an *Opacity* heading with Control opacity beside Control hover opacity).
-  **Tooltip**: General (Tooltip anchor, Tooltip scale, Horizontal offset, Vertical offset, Hide
+  **Tooltip**: General (Tooltip side, formerly Tooltip anchor, whose choices TIP-23 checks (AD-92-MM), Tooltip scale, Horizontal offset, Vertical offset, Hide
   tooltips in combat), Bar, Bar background, Bar border, Text, Contents (Show spell breakdown, Maximum
   spells, Show targets, Maximum targets, Name the killer, Name the killing blow, Summarize on the name).
   **Visibility**: Where to show this window (the seven contexts: Dungeons, Raids, Arenas,
@@ -520,7 +520,10 @@ right. Open the panel with `/mm config`.
   new one. The blocks and handles released always equal the rows and draggable handles the repaint
   before it painted. Result: pass (owner-marked 2026-10-10)
 - **PANEL-41. Columns: glyph tooltips.** Hover a tick and a cross → each says what a click will do:
-  *Click to hide this column* / *Click to show this column*. Result: pass (owner-marked 2026-10-10)
+  *Click to hide this column* / *Click to show this column*. (Amended by AD-92-MM, 2026-11-18: the
+  tooltip opens where the drag handle's *Drag to reorder* opens, beside the settings panel with its
+  top level with the block, no longer at the glyph's top-right corner; the page is on the Settings
+  canvas, which the placement rule does not bind, so this matches the library's handle.) Result:
 - **PANEL-42. Columns: tabs and leaving mid-drag.** The strip reads Columns, Header text, Header
   background, and the page opens on Columns; Header text shows only the header-font rows and Header
   background only its color pair, with no section heading of their own. Drag a block, drop it, and
@@ -746,8 +749,11 @@ right. Open the panel with `/mm config`.
 - **STATE-8. The Test mode box follows the verb.** With General → Master controls open, `/mm test` on
   and off → the Test mode box ticks and unticks without a click. Result: pass (owner-marked 2026-10-10)
 - **STATE-9. Test mode rows.** `/mm test` → chat prints *test mode on — showing placeholder rows*
-  and ten Ka0s-named placeholder members appear, with plausible numbers that do not change between
-  refreshes; `/mm test` again → *test mode off*. Result: pass (owner-marked 2026-10-10)
+  and ten placeholder members appear, with plausible numbers that do not change between refreshes:
+  first the collection's five shared sample characters, *Samplehunter* (Hunter), *Sampleblade*
+  (Paladin), *Mockflame* (Mage, marked as you), *Samplemender* (Priest) and *Mockshield* (Warrior), then
+  *Mockshade*, *Samplehex*, *Mockbrew*, *Samplegrove* and *Mockfrost*, each in its class color with no
+  realm (AD-87-MM, LibKa0s#87); no name reads `Ka0s…`. `/mm test` again → *test mode off*. Result:
 - **STATE-10. Combat ends Test mode.** Test mode on, pull a dummy → one line *Test mode off — combat
   started*; the placeholders give way to the real (possibly empty) grid and the box unticks; the window
   stays up, or hides if its Visibility → Combat → hide in combat is ticked. Leaving combat does not turn
@@ -761,7 +767,8 @@ right. Open the panel with `/mm config`.
 ## WIN
 
 - **WIN-1. Seven header controls, our own art.** Hover the title bar → seven controls, right to left:
-  close, minimize, lock, settings, segment, reset, export, each a white glyph from this addon's art
+  close, settings, minimize, lock, segment, reset, export (the settings gear beside the close since
+  AD-86-MM, WIN-60), each a white glyph from this addon's art
   (close from `libs/LibKa0s/media/icons/close.tga`, export from `.../export.tga`) at the same size,
   weight, center line and color. A plain letter (`*`, `#`, `>`) means the art and the atlas both
   failed; a thin gray multiplication sign at the close end is LibKa0s's own close button. (Amended by FS-MM-FIX, 2026-11-01: under the Skin modes close takes the skin's `close.rest` and `close.hot`, so it turns red under the pointer where its six siblings turn gold, like the library's own closes.) Result: Passed (owner, 2026-11-02)
@@ -893,11 +900,14 @@ right. Open the panel with `/mm config`.
   → rows replace it. Result: pass (owner-marked 2026-10-23)
 - **WIN-40. The test-mode strip, header shown.** `/mm test` with the header shown → a yellow strip
   (*TEST MODE: placeholder numbers, not your fight. Combat ends it.*) sits under the title. The column
-  headers sit under it, no row overlaps it, and the session-line *Test* is still there. (The red
-  TEST MODE title word left the title on 2026-10-23 while the strip shows: WIN-47 and WIN-48.)
-  Result: pass (owner-marked 2026-10-23)
+  headers sit under it, no row overlaps it, and the session line carries no *Test* while the strip
+  shows. (The red TEST MODE title word left the title on 2026-10-23 while the strip shows: WIN-47 and
+  WIN-48.) (Amended by AD-88-MM, 2026-11-17: the strip sits directly under the title bar, full width
+  inside the window's edge, with no gap above it; WIN-59. Amended again by the AD-88-MM review,
+  2026-11-17: the session-line *Test* goes while the strip shows, preview-mode's *Where the strip
+  sits*, MUST v2.110.0; it passed 2026-10-23 with the word still there.) Result:
 - **WIN-41. The strip with the header hidden.** Hide the header (Settings → Header), then `/mm test` →
-  the strip is at the very top of the window, so the window is still marked as test data. Result: pass (owner-marked 2026-10-23)
+  the strip is at the very top of the window, so the window is still marked as test data. (Amended by AD-88-MM, 2026-11-17: flush inside the window's top edge; WIN-59.) Result: pass (owner-marked 2026-10-23)
 - **WIN-42. A narrow window.** Make a window narrow → the strip text truncates with *...* inside the
   frame and never spills past the window edge. Result: pass (owner-marked 2026-10-23)
 - **WIN-43. Test mode off.** `/mm test off` → the strip goes, the column headers and rows move back up,
@@ -928,7 +938,7 @@ right. Open the panel with `/mm config`.
   Reveal controls on hover unticked and Control color at 70/70/72% gray. Result: pass (owner-marked 2026-10-24)
 - **WIN-51. The controls sit on the title's line (2026-10-24).** Same profile → each icon is 12px in an
   18px slot, its top and bottom level with the title's, and the strip's spacing matches DPS Race's
-  (22px pitch). With Header height and Control size changed, the row stays centered as before. A
+  (22px pitch; 24px, HEADER's 6px gap, since AD-86-MM, WIN-60). With Header height and Control size changed, the row stays centered as before. A
   profile that had set its own control color, size, reveal or header outline (any value other than the
   old shipped one) keeps it. Result: pass (owner-marked 2026-10-24)
 - **WIN-52. The title bar is DPS Race's height, the row on its midline (2026-10-24).** Same profile,
@@ -953,7 +963,7 @@ right. Open the panel with `/mm config`.
   open, open Export → it comes up over the console; click the console → the console comes forward.
   Result: pass (owner-marked 2026-10-24)
 - **WIN-55. The strips still sit under the title (FX-MM-PERF).** `PlaceTestStrip` lost a loop. With two windows, `/mm test` → the test strip
-  sits under each title, inset by the padding on both sides. Change Header height while it shows → it moves with the title. `/mm test` off, `/mm sim` → the sim strip takes the same slot on
+  sits under each title, inset by the padding on both sides. (Amended by AD-88-MM, 2026-11-17: full width inside the window's edge, directly under the title bar; WIN-59.) Change Header height while it shows → it moves with the title. `/mm test` off, `/mm sim` → the sim strip takes the same slot on
   every window, and the test strip is hidden. Result:
 - **WIN-56. No line under the title bar (R4-SEP).** Log in on a profile that had Header → Title bar →
   Show divider on, with a Class or Custom divider color and a thickness of 4, then update → every meter
@@ -986,6 +996,37 @@ right. Open the panel with `/mm config`.
   its smallest and largest → the bubble keeps its neighbors' size, its edges are not clipped, and it
   stays on the bar's middle. Hover it → it takes the hover color like the rest. Fail: a smaller or
   larger bubble, a clipped edge, or a Lua error. Result:
+- **WIN-59. The strips dock directly under the title bar (AD-88-MM; preview-mode's *Where the strip
+  sits*, LibKa0s Widgets `dock = "title"`).** With two windows, `/mm test` → on each window the amber
+  TEST MODE strip sits directly under the title bar with no gap, spanning the window's full width
+  inside its edge (as wide as the title bar, no longer inset by the padding), and the column headers
+  and rows sit flush under it, none covered; neither the title nor the session line carries a mode
+  word (no TEST MODE, no *Test*). Change Header height, and set Frame → Border to a custom edge of
+  4 px and back to the skin's, while it shows → the strip stays glued under the bar and the column
+  headers stay flush under the strip, with no gap and no covered header (AD-88-MM review).
+  Resize the window narrower and wider → the strip follows the width. Hide the header → the strip sits
+  flush at the window's top edge. Minimize → the strip goes and the red title word shows; expand → back.
+  `/mm test` off, `/mm sim` → the cyan SIM strip takes the same place on every window, and its
+  right-click menu still ends, steps and restarts the run; the test strip's right-click still ends test
+  mode. Fail: a gap or overlap between the bar and the strip, a strip inset from the edge, a covered
+  column header, or a Lua error. Result:
+- **WIN-60. The header reads extras · settings · close (AD-86-MM; standalone-windows, *Title-bar
+  controls*, LibKa0s `W.HeaderButtons`).** On a meter window with every control shown, read the strip
+  left to right → export, reset, segment, lock, minimize, **settings**, close: the gear now sits
+  directly left of the close (it sat between the segment menu and the padlock), the close is 6 px in
+  from the title bar's right corner, and every gap between two controls is the same 6 px (it was 4).
+  Click the gear on the second window → the settings panel opens on that window. Hover each control →
+  its one-line tooltip opens above it (the gear says *Open settings*; lock and minimize still name the
+  click they will make now, changing with the state); each rests in the skin's gray and lights in its
+  link color, the close in red. Header → Controls, hide minimize → the padlock and everything left of
+  it move right by one slot, and the gear and the close do not move; set Control size to 10 and to 32 →
+  the gaps stay even and the title never runs under the strip. Pick Obsidian and WoW Midnight → the
+  same. Then Header → Button style, set the control color mode to **Custom** and pick a color (a
+  blue, say) → all seven controls take it; pick another skin on the Skin tab → all seven keep the
+  blue without hovering the strip (amended by the AD-86-MM review: a skin switch used to put six of
+  them back to the skin's gray until the next hover). Fail: the gear anywhere but beside the close,
+  uneven gaps, a control with no tooltip, a title under a control, a control that drops the Custom
+  color on a skin switch, or a Lua error. Result:
 
 ## VIS
 
@@ -1218,10 +1259,15 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
   **Melee**; neither takes the numbered line with it. Result: pass (owner-marked 2026-10-10)
 - **TIP-22. Hide tooltips in combat.** Tooltip → General → **Hide tooltips in combat**, pull, hover a
   cell → no tooltip; leave combat → one appears as soon as the player is out of combat. Result: pass (owner-marked 2026-10-10)
-- **TIP-23. Anchors.** Tooltip → General → **Tooltip anchor**, walk all eight → each is a box of a 3×3
-  around the cell ("Top left" above and to the left, "Left" beside and growing left, and so on), each
-  opens away from the cell rather than across it, and each lands somewhere different. There is no "At
-  cursor"; **Top** is the default. Result: pass (owner-marked 2026-10-10)
+- **TIP-23. Beside the window (rewritten by AD-92-MM, 2026-11-18; standalone-windows, *Tooltip
+  placement*).** Tooltip → General → **Tooltip side** offers exactly two choices, **Beside the window**
+  (the default) and **Beside, prefer left**. With the window in the middle of the screen and Beside the
+  window, hover a Damage cell, a name cell and, after a click into a breakdown, a breakdown row → each
+  tooltip opens outside the window's right edge, 2 px from it, its top level with the hovered row's top,
+  covering no row of the window. Move the pointer along the row and down the rows → the tooltip moves
+  only to follow the row's top, never the pointer. Drag the window against the screen's right edge →
+  the same hovers open outside its left edge. Fail: a tooltip over the window's rows, one at the
+  pointer, one at a corner of the cell, or a Lua error. Result:
 - **TIP-24. Tooltip appearance.** Hover cells → every Targets line carries an icon in the spell icon
   column; the player's name is class-colored wherever a tooltip names one; the text color mode reaches
   the spell name as well as the numbers; the bar fill and the backdrop each take their own color, mode
@@ -1241,7 +1287,14 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
   hover the same cell → no border at all (a lingering border is the pooled line not being cleared).
   (Amended by MM-05, 2026-10-29, the skinning rollout: the companion.) Result: pass (owner-marked 2026-10-30)
 - **TIP-29. Offsets.** Tooltip → General → Horizontal offset 60, Vertical offset -60 → the tooltip
-  moves and still stays on screen near the edges. Result: pass (owner-marked 2026-10-10)
+  moves and still stays on screen near the edges. (Amended by AD-92-MM, 2026-11-18: the offsets nudge
+  the beside-the-window placement, so with the window mid-screen the tooltip sits 60 px further right
+  and 60 px lower than in TIP-23; set both back to 0 → it returns to 2 px off the window's edge. Amended again by AD-92-MM review
+  fixes: Horizontal offset -60 with the tooltip on the window's right → it stays 2 px off the right
+  edge, never over the rows; drag the window against the screen's right edge so it opens on the left →
+  -60 moves it 60 px further left, +60 leaves it 2 px off the left edge. Fail: any offset putting the
+  tooltip over the window.)
+  Result:
 - **TIP-30. Maximum spells 0.** Tooltip → Contents → **Maximum spells** 0, hover someone with a long
   list → every spell, up to 64, with *and N more* past that; 0 does not act like 10. Result: pass (owner-marked 2026-10-10)
 - **TIP-31. Other tooltips are untouched.** After TIP-23 to TIP-30, hover a bag item, a party member's
@@ -1264,6 +1317,28 @@ among them (TIP-1, TIP-4 to TIP-9, TIP-12 to TIP-17 and TIP-20) mid-pull, where 
   gray or bevelled corner shows on any of them, and the icons still line up in one column with the
   names beside them. They take no border (inline icons are cropped only). Fail: a native corner on any
   tooltip icon, an icon column out of line, or a Lua error. Result:
+- **TIP-38. Beside, prefer left (AD-92-MM).** Tooltip → General → **Tooltip side** → **Beside, prefer
+  left**, the window mid-screen → a cell tooltip opens outside the window's LEFT edge, top level with
+  the row. Drag the window against the screen's left edge → it flips to the right edge. Switch back
+  to Beside the window → right again. Fail: the choice changes nothing, or a Lua error. Result:
+- **TIP-39. An old profile's anchor moves to Beside (AD-92-MM, v26 to v27).** On a profile saved
+  before this build with Tooltip anchor set to anything (Top, Bottom right, ...), log in → Tooltip →
+  General → **Tooltip side** reads **Beside the window**, the X and Y offsets are what they were, and
+  the tooltip opens beside the window as in TIP-23. An X offset kept from the old boxes may point back
+  toward the window; it then does nothing on that side (TIP-29) and the tooltip stays 2 px off the
+  edge. Fail: an empty dropdown, a reset offset, a tooltip over the rows, or a tooltip still at a
+  corner of the cell. Result:
+- **TIP-40. Window near the screen's edges, and a scaled window (AD-92-MM).** Set Frame → Scale to
+  0.8, then 1.3, and Tooltip → General → Tooltip scale to 1.4; park the window against the top edge,
+  then the bottom → every cell tooltip still opens beside the window, 2 px from its edge, slid up or
+  down only as far as it must to stay on screen, never over the window. Fail: a gap that grows with
+  the scale, a tooltip off screen, one over the rows, or a Lua error. Result:
+- **TIP-41. Beside the window mid-pull (AD-92-MM).** In a real restricted pull (the Combat addon
+  restriction active), hover a Damage cell and a name cell → each tooltip opens beside the window as in
+  TIP-23. A tooltip that shows a secret amount may answer a secret size to this addon; the library's
+  placer then writes nothing and the addon places it beside the window without its size, on the side
+  with more room (amended by AD-92-MM review fixes). Fail: a tooltip over the rows (above the hovered
+  row), at the pointer, at a corner of the cell, or a Lua error. Result:
 
 ## EXPORT
 
@@ -1351,9 +1426,9 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
   and with no notice line before them, and a group member sees nothing (anything seen is a hard fail).
   Result: pass (owner-marked 2026-10-10)
 - **EXPORT-34. The dump's shape.** A header line `Multi Meters — Damage — Current (2:14)` then ranked
-  lines such as `1. Kaosz 4.8M (84.2K, 31.2%)`, abbreviated. Result: pass (owner-marked 2026-10-10)
+  lines such as `1. Mockflame 4.8M (84.2K, 31.2%)`, abbreviated. Result: pass (owner-marked 2026-10-10)
 - **EXPORT-35. Only meaningful parentheses.** Metric Deaths or Interrupts → no per-second figure
-  (`1. Kaosz 3 (12.5%)`); never an empty `( )`. Result: pass (owner-marked 2026-10-10)
+  (`1. Mockflame 3 (12.5%)`); never an empty `( )`. Result: pass (owner-marked 2026-10-10)
 - **EXPORT-36. The ranking follows the metric.** Metric Healing → the top healers, not the damage
   ranking with healing beside it. Result: pass (owner-marked 2026-10-10)
 - **EXPORT-37. The line cap.** Walk all five Lines choices; Lines 3 → four lines (header plus three);
@@ -1411,6 +1486,14 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
   the bar's vertical middle. Pick WoW Midnight (its 2px edge) and WoW Default in turn → the same in
   each, the bar inside each skin's edge. Fail: a caption or close high or low on the bar, a gap above
   the bar, or a Lua error. Result:
+- **EXPORT-57. The Export modal's title bar reads settings · close (AD-86-MM; LibKa0s
+  `W.HeaderButtons`).** Open the Export modal → its title bar ends in two marks, a gear directly left
+  of the close, 6 px apart and the close 6 px in from the corner, both on the bar's middle. Hover the
+  gear → *Open settings* above it, the gear lighting in the skin's link color; hover the close →
+  *Close*, the X red. Click the gear → the modal closes first and this addon's settings panel opens,
+  not hidden under the modal. Reopen the modal, close it with the X → it closes. Pick Obsidian → the
+  same. Fail: no gear, the panel opening under the modal, a mark with no tooltip, or a Lua error.
+  Result:
 
 ## COMBAT
 
@@ -1698,6 +1781,25 @@ stayed empty; "no errors" from a dummy is not evidence here.
 - **DIAG-43. The diagnostics header names Charts.** `/mm diagnostics` → the library identity lines
   name `Charts` between `Toast` and `Media`, with a version, though this addon draws no chart. The
   rest of the report reads as before. No Lua error (LibKa0s v1.84.0, DebugLogDiagnostics minor 6). Result:
+- **DIAG-44. `/mm window list` is a report (AD-79-MM; debug-logging-§15, LibKa0s#79).** `/reload`, so
+  logging is off and the console is closed, then `/mm window list` → the console opens on its own and
+  ends with a `/mm window list` header and one line per window (SLASH-11's columns); chat shows exactly
+  one line, `window list: N lines written to the debug console. Use Copy to share it.`, N counting the
+  header; logging is still off (`/mm debug` → the title bar reads Debug Off). A bare `/mm window` does the
+  same. **Copy** → the lines paste with no color codes. Fail: the window lines in chat, more than one
+  chat line, the console left closed, logging turned on, or a Lua error. Result:
+- **DIAG-45. The three probes are reports (AD-79-MM).** `/reload` (logging off, console closed), then in
+  turn `/mm debug recap`, `/mm debug identity` and `/mm debug feign` → each opens the console and writes
+  a `/mm debug recap` (`identity`, `feign`) header then its probe, the same content DIAG-22, DIAG-24 and
+  DIAG-25 read, and chat shows exactly one `debug recap: N lines written to the debug console. Use Copy
+  to share it.` line (`debug identity: …`, `debug feign: …`) per run; logging stays off. Fail: probe lines
+  in chat, a run that writes nothing to the console, a second chat line, or a Lua error. Result:
+- **DIAG-46. A refusal inside a report verb stays in chat (AD-79-MM).** With the console closed,
+  `/mm window explode` → the usage line in chat (`Usage: /mm window list, …`) and nothing else, the
+  console stays closed; `/mm debug feign of` → DIAG-23's one refusal line, the console stays closed.
+  `/mm debug feign on`, `/mm debug tooltip`, `/mm window new Raid`, `/mm version` and `/mm list` → each
+  still answers in chat only. Fail: a usage or refusal written to the console, a pointer line, or a Lua
+  error. Result:
 
 ## DEGRADED
 
@@ -1713,6 +1815,9 @@ Rename `libs/LibKa0s` to `libs/LibKa0s_off` (or delete it from a copy of the ins
   name the missing library; `/mm perf` says performance measurement is unavailable. Result: pass (owner-marked 2026-10-10)
 - **DEGRADED-4. The host verbs work.** `/mm lock`, `/mm test`, `/mm toggle`, `/mm window list`,
   `/mm reset-positions` → each works. Result: pass (owner-marked 2026-10-10)
+- **DEGRADED-12. A report streams to chat without the library (AD-79-MM; debug-logging-§15).** With
+  LibKa0s absent, `/mm window list` and `/mm debug recap` → each prints its whole report in chat, with
+  no header line and no `lines written to the debug console` pointer. Fail: nothing printed, a pointer at a console that is not there, or a Lua error. Result:
 - **DEGRADED-5. Enable and disable work.** `/mm disable` → `enabled = false` and the windows go;
   `/mm enable` → `enabled = true` and they return; neither says anything is unavailable. Result: pass (owner-marked 2026-10-10)
 - **DEGRADED-6. `/mm resetall` works.** → the same popup; accepting resets the profile. Result: pass (owner-marked 2026-10-10)
@@ -1875,7 +1980,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
   columns, and the sim step panel's row, command and button labels. The column blocks' labels keep Friz Quadrata (the tooltip
   lines' face is the HUD's, SKIN-1). Fail: a color that changed, a modal change beyond D8's, or one of the surfaces above
   still in Friz Quadrata with Ignore fonts unticked. (Amended by MM-02, 2026-10-30, the skin library follow-ups: the library's menus, strips and
-  tool-window labels draw Oxanium too, LibKa0s D-13.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: Ka0s Default's own face is **Ka0s Prototype**, one weight, where the surfaces above drew Ka0s Oxanium Bold and SemiBold, and the window text is outlined under the default Font outline, *All text*.) (Amended by FS-MM-FIX, 2026-11-01: with the Scope cleared the column blocks' labels take the skin's body face too.) Result: Passed (owner, 2026-11-02)
+  tool-window labels draw Oxanium too, LibKa0s D-13.) (Amended by MM-01, 2026-10-30, the skin fonts run, LibKa0s v1.82.0: Ka0s Default's own face is **Ka0s Prototype**, one weight, where the surfaces above drew Ka0s Oxanium Bold and SemiBold, and the window text is outlined under the default Font outline, *All text*.) (Amended by FS-MM-FIX, 2026-11-01: with the Scope cleared the column blocks' labels take the skin's body face too.) (Amended by AD-82-MM, 2026-11-18, LibKa0s#82 and #84's row floors: the rows' hover wash and stripe are brighter, white .15 and .08 where they were .10 and .05, SKIN-52; the rest of this check stands.) Result: Passed (owner, 2026-11-02)
 - **SKIN-3. The Skin tab (MM-01).** Settings → General → the strip reads Master controls, Behavior,
   Statistic colors, **Skin**, Keybindings. **Skin** shows Skin source, the nine skins with their
   swatches under a **Look** heading, **Font and texture** (Font and Texture, both *Skin's default* on a
@@ -2066,6 +2171,8 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
 - **SKIN-48. The library's own windows wear the band, their header centered on it (R5-RV; LibKa0s R5-L2, R5-L3).** On Ka0s Default, open `/mm debug` (and its copy window), `/mm perf` and its panel, `/mm sim` and the skin picker → each window's title band runs flush inside its edge, darker than round 4, with no strip of body color between the edge and the band, and its title, close button and every other header button sit on the band's vertical center. Pick WoW Midnight (the 2 px edge) and repeat → the same, the band 1 px lower to clear the edge. Fail: a header child sitting high or low on the band, a band missing, or a Lua error. Result:
 - **SKIN-49. The picker of LibKa0s v1.85.0's round 6 re-cut loads (R6-RV; LibKa0s R6-L1, OptionsSkinPicker minor 11).** With every Ka0s addon updated, `/reload`, then `/mm skin` → the picker opens over the meter windows with its eye and gear in the header, the skin list, Apply, Apply to all and the close control work as before, and the skin list still closes on an outside press (SKIN-47). The eye's own behavior is SKIN-50. Fail: a Lua error, a missing eye, or a close that leaves the window up. Result:
 - **SKIN-50. The picker's preview is test mode, toggled by the eye, put back at every close (R6-PV; LibKa0s R6-L1).** Out of combat, with no meter window on screen (close them with `/mm toggle`, and on a second run set General → Visibility to *Only in combat* instead) and test mode off, `/mm skin` → test mode turns on: every meter window shows the TEST MODE strip and sample rows, the picker sits above them, and the eye is lit. Press the eye → test mode turns off, the windows go away again and the eye dims; press it again → back on, lit. Its tooltip reads per state (test mode on / off). Close the picker by each route in turn, reopening with `/mm skin` between them (the close mark, Escape, Apply, Apply to all, the gear) → test mode turns off and no meter window stays on screen (the gear's settings panel opens as before). On the *Only in combat* run, after a close, change zone or tick any setting on the General page → the windows stay hidden (the close left no forced show). Now with the windows on screen (`/mm toggle`) and test mode off, `/mm skin` → test mode stays off and the eye is dimmed; press the eye → on; close → off, and the windows stay on screen. With test mode already on (`/mm test`), `/mm skin` → it stays on; press the eye → off; close → back on. With the windows on screen, start a pull at a training dummy and press the eye → *Cannot start test mode during combat* and test mode stays off; close → nothing changes. The General page's Test mode box and the launcher's Test mode entry follow every switch. Fail: test mode left on after a close the picker or eye turned it on, a window left on screen that was closed when the picker opened, a window closed that was on screen, a test mode the player had on left off, or a Lua error. Result:
+- **SKIN-51. A new profile wears the client's default skin (AD-DS-MM; skinning-§2, LibKa0s Skin `DefaultSkin()`).** On Retail, Settings → Profiles → create a new profile, or Settings → General → **Reset all settings** → the windows and the settings pages draw Ka0s Default, `/mm get skin.skin` prints `ka0s` and the Skin tab marks Ka0s Default. A profile that stored another skin keeps it after `/reload`. Fail: a new profile on another skin, a stored skin rewritten, or a Lua error. Result:
+- **SKIN-52. The rows' hover and stripe show on Ka0s Default (AD-82-MM; LibKa0s#82 and #84, the row floors).** On Ka0s Default, Frame → Rows → tick **Alternating background** and **Highlight on mouseover**, `/mm test` → every other row wears a white stripe plainly visible against the window (white .08, was .05), and the row under the pointer a white wash (.15, was .10) that stands out from a striped and a plain row alike. Pick Obsidian with no reload → both take the skin's own list stripe and hover, as before. Fail: a stripe that runs into the window, a hover that reads as one more stripe, a gold wash on Ka0s Default, or a Lua error. Result:
 ## Non-English client
 
 - **LOC-1. The CSV header does not translate.** On a non-English client (German, for example), export
@@ -2112,3 +2219,13 @@ Owed: PANEL-59 (R4-RV), SKIN-44 (R4-RV2), WIN-56 (R4-SEP), SKIN-45 (R4-ZOOM) and
 Owed: SKIN-44 (re-opened, darker since R5-RV and a gradient since R5-MM1), SKIN-47 and SKIN-48 (R5-RV), WIN-57 (R5-MM1, R5-WIN), EXPORT-56 (R5-WIN), TIP-37 (R5-ICON), the owner's fifth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND5/`), each with an empty `Result:`.
 
 Owed: SKIN-49 (R6-RV), SKIN-50 (R6-PV), SIM-15 (R6-SIM) and WIN-58 (R6-MM2), the owner's sixth smoke round (Ka0sAddonsCommonTasks `docs/2026-11-03-SMOKE_ROUND6/`), each with an empty `Result:`. SKIN-18 keeps its 2026-10-30 pass for what it checked then; its R6-PV amendment is checked by SKIN-50.
+
+Owed: SKIN-51 (AD-DS-MM), WIN-59 (AD-88-MM) and WIN-40 (re-opened by the AD-88-MM review), the LibKa0s v1.105.0 adoption wave A (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.
+
+Owed: TIP-23 (rewritten), TIP-29 and PANEL-41 (re-opened, their expected results moved), TIP-38 to TIP-41 (AD-92-MM, LibKa0s#92, tooltip placement), the LibKa0s v1.105.0 adoption wave C (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.
+
+Owed: DIAG-44 to DIAG-46 and DEGRADED-12 (AD-79-MM, LibKa0s#79, the report verbs on `D:Report`), and SLASH-11 (re-opened, its listing now in the console), the LibKa0s v1.105.0 adoption wave D (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`), each with an empty `Result:`.
+
+Owed: STATE-9 (re-opened by AD-87-MM, test mode's people are the shared sample characters), the LibKa0s v1.105.0 adoption wave D, with an empty `Result:`.
+
+Owed: SKIN-52 (AD-82-MM, the rows' hover wash and stripe raised to LibKa0s#82 and #84's row floors), the LibKa0s v1.105.0 adoption wave D, with an empty `Result:`.

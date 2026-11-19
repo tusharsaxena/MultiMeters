@@ -903,15 +903,15 @@ NS.Schema = {
     -- face it is drawn in (Text). What the tooltip shows comes before how it
     -- looks, and the bar's three composed blocks share one tab rather than one
     -- each.
-    -- No "At cursor" anchor: over a grid it lands wherever the pointer
-    -- happens to be inside a cell, so the same hover puts the tooltip somewhere
-    -- different every time. TOP is the deliberate version of the same thing --
-    -- above the cell, in one place -- and is the default now.
+    -- Beside the window, never over it (AD-92-MM, standalone-windows *Tooltip
+    -- placement*): the player picks only which side is tried first. See
+    -- settings/Schema_Vocab.lua's ANCHOR_VALUES.
     {
-        path = "window.tooltip.anchor", type = "string", default = "TOP",
+        path = "window.tooltip.anchor", type = "string", default = "BESIDE",
         values = ANCHOR_VALUES, sorting = ANCHOR_SORT,
         page = "tooltip", group = L["General"],
-        label = L["Tooltip anchor"], desc = L["Where the tooltip appears relative to the cursor or the window."],
+        label = L["Tooltip side"],
+        desc = L["The tooltip opens beside the window, so it never covers the rows. Choose which side it tries first; with no room there it opens on the other side."],
     },
     {
         -- The tooltip's own, not the window's: a player who wants a bigger grid
@@ -930,7 +930,7 @@ NS.Schema = {
         min = -400, max = 400, step = 1, fmt = "%d px",
         page = "tooltip", group = L["General"],
         label = L["X offset"],
-        desc = L["Nudge the tooltip sideways from wherever the anchor puts it. Positive moves it right."],
+        desc = L["Nudge the tooltip sideways from where it opens beside the window. Positive moves it right, negative left. It never moves over the window: the nudge only pushes a tooltip further out on the side it points to."],
         validate = isNumberIn(-400, 400),
     },
     {
@@ -938,7 +938,7 @@ NS.Schema = {
         min = -400, max = 400, step = 1, fmt = "%d px",
         page = "tooltip", group = L["General"],
         label = L["Y offset"],
-        desc = L["Nudge the tooltip up or down from wherever the anchor puts it. Positive moves it up."],
+        desc = L["Nudge the tooltip up or down from where it opens beside the window. Positive moves it up."],
         validate = isNumberIn(-400, 400),
     },
     -- Off by default. Nothing about a tooltip is unsafe in combat -- its numbers go

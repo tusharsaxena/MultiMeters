@@ -532,15 +532,5 @@ Diagnostics.reportDeathRecap = reportDeathRecap
 --- because the answer wanted here is specific enough to ask for on its own, and
 --- forty lines of atlas and font output around it makes it harder to read.
 function Diagnostics.ReportDeathRecap()
-    local D = NS.DebugLog
-    if D and D.Add and D.Show and D.IsShown then
-        pcall(function() D:Show() end)
-        if D:IsShown() then
-            Diagnostics.SetEmit(function(line) D:Add("Diag", line) end)
-        end
-    end
-
-    local ok, err = pcall(reportDeathRecap)
-    if not ok then out("  |cffff2020section failed:|r " .. tostring(err)) end
-    Diagnostics.SetEmit(nil)
+    Diagnostics.RunTopic("debug recap", reportDeathRecap)
 end

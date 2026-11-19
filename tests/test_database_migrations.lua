@@ -34,6 +34,17 @@ local function holdChromeReset(inst)
     inst.NS.Database.__migrations[20] = function() end
 end
 
+--- preSeeded with the steps at `held` (migrations indexes) replaced by no-ops, so a case about an
+--- earlier step reads that step's answer rather than a later one's.
+local function preSeededHolding(held, saved)
+    local inst = T.load{ initDB = false, options = false }
+    for _, i in ipairs(held) do inst.NS.Database.__migrations[i] = function() end end
+    _G.MultiMetersDB = saved
+    inst.NS:InitDB()
+    inst.NS:RunMigrations()
+    return inst
+end
+
 --- preSeeded with the v21 chrome reset held off (holdChromeReset).
 local function preSeededBeforeChrome(saved)
     local inst = T.load{ initDB = false, options = false }
@@ -578,7 +589,9 @@ test("Database v10: a stored cursor anchor becomes TOP, and other anchors are le
     -- The value in the profile should be the value the dropdown shows, rather
     -- than something only the reader's fallback knows how to interpret.
     -- red under: relying on the fallback and leaving "CURSOR" stored.
-    local inst = preSeeded({
+    -- The v26 -> v27 step (AD-92-MM) moves every stored anchor to BESIDE, so it is held off here
+    -- and this case still reads the v9 -> v10 step's own answer (re-pinned, not weakened).
+    local inst = preSeededHolding({ 26 }, {
         profiles = {
             Default = {
                 nextWindowId = 3,
@@ -1029,8 +1042,8 @@ test("Database: v25 -> v26 prunes the title bar divider's four keys from every s
         global = { schemaVersion = 25 },
     })
     local ns = inst.NS
-    assertEqual(ns.SCHEMA_VERSION, 26)
-    assertEqual(ns.db.global.schemaVersion, 26)
+    -- Re-pinned by AD-92-MM: the walk now ends at v27, past this step.
+    assertEqual(ns.db.global.schemaVersion, ns.SCHEMA_VERSION)
     local a = ns.Database.FindWindow(1).header
     local s = ns.db.sv.profiles.Raid.windows[3].header
     for _, key in ipairs(ns.Database.DIVIDER_KEYS) do
@@ -1039,4 +1052,37 @@ test("Database: v25 -> v26 prunes the title bar divider's four keys from every s
     end
     assertEqual(a.height, 26, "a neighbor key was taken with them")
     assertEqual(#ns.Database.DIVIDER_KEYS, 4)
+end)
+
+test("Database: v26 -> v27 moves every stored tooltip anchor to BESIDE, in every profile", function()
+    -- AD-92-MM, the owner's ruling of 2026-11-17 (option A): a meter row's tooltip opens beside the
+    -- window group, and the eight boxes of a 3x3 around the cell are gone. Every stored value, the
+    -- retired CURSOR and a junk one included, becomes the default, so the profile holds what the
+    -- dropdown shows. The offsets stay as the player set them.
+    -- red under: no v26 -> v27 step, one that walks only the active profile, one that trips on a
+    -- junk window or a tooltip block that is not a table, or one that resets the offsets.
+    local inst = preSeeded({
+        profiles = {
+            Default = { windows = {
+                { id = 1, name = "A", tooltip = { anchor = "TOP", offsetX = 25, offsetY = -40 } },
+                { id = 2, name = "B", tooltip = { anchor = "BOTTOMRIGHT" } },
+            } },
+            Raid    = { windows = { "junk", { id = 7, name = "R", tooltip = "junk" },
+                { id = 8, name = "S", tooltip = { anchor = "CURSOR" } },
+                { id = 9, name = "T", tooltip = { anchor = 7 } } } },
+        },
+        global = { schemaVersion = 26 },
+    })
+    local ns = inst.NS
+    assertEqual(ns.SCHEMA_VERSION, 27)
+    assertEqual(ns.db.global.schemaVersion, 27)
+    local a = ns.Database.FindWindow(1).tooltip
+    assertEqual(a.anchor, "BESIDE")
+    assertEqual(a.offsetX, 25, "the horizontal nudge was not kept")
+    assertEqual(a.offsetY, -40, "the vertical nudge was not kept")
+    assertEqual(ns.Database.FindWindow(2).tooltip.anchor, "BESIDE")
+    local raid = ns.db.sv.profiles.Raid.windows
+    assertEqual(raid[3].tooltip.anchor, "BESIDE", "Raid: a stored CURSOR survived")
+    assertEqual(raid[4].tooltip.anchor, "BESIDE", "Raid: a junk anchor survived")
+    assertEqual(raid[2].tooltip, "junk", "a tooltip block that is not a table was touched")
 end)

@@ -535,11 +535,12 @@ L["Color of the unfilled part, when the mode above is Custom."] =
 L["Opacity of the unfilled part of each tooltip bar."] =
     "Opacity of the unfilled part of each tooltip bar."
 
-L["Tooltip anchor"] = "Tooltip anchor"
-L["Where the tooltip appears relative to the cursor or the window."] =
-    "Where the tooltip appears relative to the cursor or the window."
--- No "At cursor": over a grid it lands wherever the pointer happens to be inside
--- a cell, so the same hover puts the tooltip somewhere different every time.
+L["Tooltip side"] = "Tooltip side"
+L["The tooltip opens beside the window, so it never covers the rows. Choose which side it tries first; with no room there it opens on the other side."] =
+    "The tooltip opens beside the window, so it never covers the rows. Choose which side it tries first; with no room there it opens on the other side."
+-- The two choices (AD-92-MM): the rule's own order, right then left, and its mirror.
+L["Beside the window"] = "Beside the window"
+L["Beside, prefer left"] = "Beside, prefer left"
 L["Contents"] = "Contents"
 L["Breakdown"] = "Breakdown"
 L["Player name"] = "Player name"
@@ -547,11 +548,11 @@ L["Show spell breakdown"] = "Show spell breakdown"
 L["List the individual spells behind a cell's number when you hover it."] =
     "List the individual spells behind a cell's number when you hover it."
 L["X offset"] = "X offset"
-L["Nudge the tooltip sideways from wherever the anchor puts it. Positive moves it right."] =
-    "Nudge the tooltip sideways from wherever the anchor puts it. Positive moves it right."
+L["Nudge the tooltip sideways from where it opens beside the window. Positive moves it right, negative left. It never moves over the window: the nudge only pushes a tooltip further out on the side it points to."] =
+    "Nudge the tooltip sideways from where it opens beside the window. Positive moves it right, negative left. It never moves over the window: the nudge only pushes a tooltip further out on the side it points to."
 L["Y offset"] = "Y offset"
-L["Nudge the tooltip up or down from wherever the anchor puts it. Positive moves it up."] =
-    "Nudge the tooltip up or down from wherever the anchor puts it. Positive moves it up."
+L["Nudge the tooltip up or down from where it opens beside the window. Positive moves it up."] =
+    "Nudge the tooltip up or down from where it opens beside the window. Positive moves it up."
 L["Maximum spells"] = "Maximum spells"
 L["How many spells to list in the breakdown before stopping. 0 lists every spell the breakdown found."] =
     "How many spells to list in the breakdown before stopping. 0 lists every spell the breakdown found."
@@ -1177,14 +1178,8 @@ L["unknown command '%s'"] = "unknown command '%s'"
 L["Left"] = "Left"
 L["Right"] = "Right"
 L["Center"] = "Center"
-L["Top"] = "Top"
-L["Bottom"] = "Bottom"
 L["Up"] = "Up"
 L["Down"] = "Down"
-L["Top left"] = "Top left"
-L["Top right"] = "Top right"
-L["Bottom left"] = "Bottom left"
-L["Bottom right"] = "Bottom right"
 
 L["None"] = "None"
 -- A font flags row's From skin ("@skin", LibKa0s v1.82.0): the Skin tab's Font outline decides.

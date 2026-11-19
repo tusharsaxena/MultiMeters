@@ -308,7 +308,7 @@ test("A pet's own row survives the restriction, where a merged one would not", f
     inst.mocks.setRestricted(true)
     install(inst, {
         src(ALPHA, inst.mocks.secret(100)),
-        src(PET, inst.mocks.secret(40), { name = "Bheemyn" }),
+        src(PET, inst.mocks.secret(40), { name = "Mockfang" }),
     }, { maxAmount = inst.mocks.secret(100) })
 
     -- No sum is attempted, so there is nothing for the restriction to forbid.

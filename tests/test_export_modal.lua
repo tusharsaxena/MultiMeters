@@ -563,9 +563,9 @@ end
 --- @return table
 local function printFixture()
     return built({
-        row("Kaosz", { DamageDone = cell(4821993, { rate = 84210, percent = 31.2 }),
+        row("Mockflame", { DamageDone = cell(4821993, { rate = 84210, percent = 31.2 }),
                        Deaths     = cell(1) }),
-        row("Brewz", { DamageDone = cell(4100000, { rate = 71900, percent = 26.6 }),
+        row("Sampleblade", { DamageDone = cell(4100000, { rate = 71900, percent = 26.6 }),
                        Deaths     = cell(2) }),
     }, 134)
 end
@@ -632,11 +632,11 @@ test("Print to Chat whispers the player currently targeted", function()
     -- them, which is the whole point of the "Whisper my target" channel.
     local ctx = printer(printFixture())
     choose(ctx, "channel", "TARGET")
-    ctx.inst.mocks.setUnit("target", { guid = "Player-1-0000000B", name = "Brewz", isPlayer = true })
+    ctx.inst.mocks.setUnit("target", { guid = "Player-1-0000000B", name = "Sampleblade", isPlayer = true })
     click(ctx)
 
     assertEqual(ctx.sent[1].chatType, "WHISPER")
-    assertEqual(ctx.sent[1].target, "Brewz")
+    assertEqual(ctx.sent[1].target, "Sampleblade")
 end)
 
 test("Print to Chat says so rather than swallowing a click with nothing to export", function()
@@ -661,7 +661,7 @@ test("Print to Chat builds with the chosen metric as the SORT COLUMN", function(
 
     assertEqual(ctx.sortColumn, "Deaths")
     assertEqual(ctx.said[1], "Multi Meters" .. EM_DASH .. "Deaths" .. EM_DASH .. "Current (2:14)")
-    assertEqual(ctx.said[2], "1. Kaosz 1")
+    assertEqual(ctx.said[2], "1. Mockflame 1")
 end)
 
 test("Print to Chat leaves the lines themselves as the confirmation on SELF", function()
@@ -674,7 +674,7 @@ test("Print to Chat leaves the lines themselves as the confirmation on SELF", fu
     click(ctx)
 
     assertEqual(#ctx.said, 3, "a header and two ranked lines, and nothing else")
-    assertEqual(ctx.said[3], "2. Brewz 4.1M (71.9K, 26.6%)")
+    assertEqual(ctx.said[3], "2. Sampleblade 4.1M (71.9K, 26.6%)")
     assertEqual(#ctx.sent, 0, "SELF never reaches the server")
 end)
 

@@ -128,6 +128,29 @@ test("Blocks: the glyph's tooltip says what the CLICK will do", function()
         "a hidden column's glyph must offer to show it")
 end)
 
+test("Blocks: the glyph's tooltip is placed beside its group, like the drag handle's, never at a corner", function()
+    -- AD-92-MM. The page sits on the Settings canvas, which standalone-windows *Tooltip placement*
+    -- does not bind, but the glyph shares its row with LibKa0s' ReorderList handle, whose tooltip
+    -- LibKa0s-Tooltip-1.0's PlaceBeside places (the library's own sites); the glyph now matches it
+    -- instead of hanging off its own top-right corner. red under: SetOwner(glyph, "ANCHOR_RIGHT"),
+    -- or a tooltip owned at ANCHOR_NONE and never placed.
+    local inst = T.load()
+    local blocks = render(inst)
+    local tip = inst.mocks.GameTooltip
+    local glyph = blocks[1].mmGlyph
+    glyph:_run("OnEnter")
+    assertTrue(tip:GetOwner() == glyph, "the glyph does not own its tooltip")
+    assertEqual(tip.__anchor, "ANCHOR_NONE", "the glyph's tooltip is still at a client anchor token")
+    -- The suite's frames carry no geometry, so the placers write nothing and the fallback attaches
+    -- the tooltip above the glyph.
+    local p, rel, relP, x, y = tip:GetPoint(1)
+    assertEqual(p, "BOTTOM")
+    assertTrue(rel == glyph, "the fallback is not attached to the glyph")
+    assertEqual(relP, "TOP")
+    assertEqual(x, 0)
+    assertEqual(y, 2)
+end)
+
 test("Blocks: a repaint gives every block back before it takes any out", function()
     -- THE GHOST LABEL OVER ROW ONE. The blocks are CreateFrame children, not AceGUI widgets, so
     -- ClearScroll's ReleaseChildren neither hides them nor knows they exist -- they ride a released

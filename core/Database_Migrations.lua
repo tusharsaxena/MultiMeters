@@ -1061,6 +1061,21 @@ migrations[25] = function(db)
     end
 end
 
+--- v26 -> v27: THE TOOLTIP OPENS BESIDE THE WINDOW (AD-92-MM, LibKa0s#92; the owner's ruling of
+--- 2026-11-17, option A). A meter row is a body element under WowAddonStandards standalone-windows,
+--- *Tooltip placement*, so its tooltip opens outside the window, and `tooltip.anchor` offers only
+--- BESIDE (right first, the default) and BESIDE_LEFT. Every stored value, whatever it held (the eight
+--- boxes of a 3x3, a CURSOR that escaped v10, junk), becomes BESIDE, so the profile holds what the
+--- dropdown shows. The offsets are kept: they nudge the new placement. Every profile, a junk window or
+--- tooltip block skipped. Idempotent.
+migrations[26] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do
+        eachWindow(profile, function(w)
+            if type(w.tooltip) == "table" and w.tooltip.anchor ~= nil then w.tooltip.anchor = "BESIDE" end
+        end)
+    end
+end
+
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every
 --- profile swap, and is a no-op once at the current version.
 function NS:RunMigrations()

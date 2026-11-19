@@ -160,31 +160,22 @@ local DEATHTIME_VALUES = {
 }
 local DEATHTIME_SORT = { "clock", "ago" }
 
--- Every ANCHOR_* token GameTooltip:SetOwner accepts, minus ANCHOR_NONE and
--- ANCHOR_PRESERVE — both of which mean "the caller places it itself", which is
--- the one thing this addon may not do: a cell handed a secret value has secret
--- geometry, so there is no legal way to compute a point from it (rule R3).
--- Ordered cursor first, then the four edges, then the four corners.
--- NO "At cursor". It was the shipped default and it is what every other tooltip
--- in the game does, which is exactly the trouble: over a grid it lands wherever
--- the pointer happens to be inside a cell, so the same hover puts the tooltip in
--- a different place every time and reads as jitter rather than as a choice. TOP
--- is the deliberate version of the same thing -- above the cell, in one place --
--- and is the default now.
+-- WHERE A METER TOOLTIP OPENS: beside the window, never over it (AD-92-MM; the
+-- owner's ruling of 2026-11-17, option A). A meter row is a body element under
+-- WowAddonStandards standalone-windows, *Tooltip placement*, so its tooltip opens
+-- outside the window's outer edge, and the only choice left to the player is which
+-- side to try first. BESIDE is the rule's own order (right, then left) and the
+-- default; BESIDE_LEFT tries the left first. modules/Tooltip.lua's PREFER maps each
+-- to LibKa0s-Tooltip-1.0's `prefer`.
+--
+-- The eight boxes of a 3x3 around the cell are gone, and "At cursor" before them:
+-- both put the tooltip over the rows beside the one hovered. The v26 -> v27 step
+-- moves every stored value to BESIDE.
 local ANCHOR_VALUES  = {
-    TOP         = L["Top"],
-    BOTTOM      = L["Bottom"],
-    LEFT        = L["Left"],
-    RIGHT       = L["Right"],
-    TOPLEFT     = L["Top left"],
-    TOPRIGHT    = L["Top right"],
-    BOTTOMLEFT  = L["Bottom left"],
-    BOTTOMRIGHT = L["Bottom right"],
+    BESIDE      = L["Beside the window"],
+    BESIDE_LEFT = L["Beside, prefer left"],
 }
-local ANCHOR_SORT    = {
-    "TOP", "BOTTOM", "LEFT", "RIGHT",
-    "TOPLEFT", "TOPRIGHT", "BOTTOMLEFT", "BOTTOMRIGHT",
-}
+local ANCHOR_SORT    = { "BESIDE", "BESIDE_LEFT" }
 
 -- THE SORT AND SESSION LISTS ARE GONE with the rows that used them. `sortMode`,
 -- `sortColumn`, `sortAscending` and `sessionType` are written by the window's own

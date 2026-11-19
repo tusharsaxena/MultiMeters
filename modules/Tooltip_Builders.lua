@@ -787,9 +787,11 @@ function Tooltip:CellTooltip(row, statKey, anchorFrame, window)
     applyMinimumWidth(style)
 
     GameTooltip:Show()
-    -- AFTER Show, not before, and for the same reason twice over: the show path
-    -- re-fonts the tooltip's lines AND re-anchors it to its owner. See
-    -- `reapplyFonts` and `applyPlacement`.
+    -- AFTER Show, not before, and for two reasons: the show path re-fonts the
+    -- tooltip's lines (`reapplyFonts`), and the placer needs the tooltip's real
+    -- size, which only the Show computes (`applyPlacement`, beside the window).
+    -- The order of these two makes no difference to that size: Show is not called
+    -- again, so the re-font does not resize the tooltip the placer measures.
     reapplyFonts()
     applyPlacement()
 
@@ -932,8 +934,8 @@ function Tooltip:NameTooltip(row, anchorFrame, window)
 
     if not config.showAllStatsOnName then
         GameTooltip:Show()
-        -- AFTER Show: the show path re-anchors the tooltip to its owner, so a
-        -- point set before the lines were added is silently thrown away.
+        -- AFTER Show: the placer needs the tooltip's real size, which only the
+        -- Show computes (beside the window, AD-92-MM).
         applyPlacement()
         if t0 then Perf.Note("tooltip", debugprofilestop() - t0) end
         return
@@ -949,8 +951,8 @@ function Tooltip:NameTooltip(row, anchorFrame, window)
     end
 
     GameTooltip:Show()
-    -- AFTER Show: the show path re-anchors the tooltip to its owner, so a
-    -- point set before the lines were added is silently thrown away.
+    -- AFTER Show: the placer needs the tooltip's real size, which only the
+    -- Show computes (beside the window, AD-92-MM).
     applyPlacement()
 
     if t0 then Perf.Note("tooltip", debugprofilestop() - t0) end
@@ -1011,10 +1013,10 @@ function Tooltip:SpellTooltip(row, anchorFrame, window)
         local color = classes and row.classFilename and classes[row.classFilename] or nil
         addDeathBreakdown(row, lineStyle(config, color), numberStyleOf(window))
         GameTooltip:Show()
-        -- AFTER Show: the show path re-anchors the tooltip to its owner, so a
-        -- point set before the lines were added is silently thrown away.
-        applyPlacement()
+        -- AFTER Show: the placer needs the tooltip's real size, which only the
+        -- Show computes (beside the window, AD-92-MM).
         reapplyFonts()
+        applyPlacement()
         if t0 then Perf.Note("tooltip", debugprofilestop() - t0) end
         return
     end
@@ -1026,8 +1028,8 @@ function Tooltip:SpellTooltip(row, anchorFrame, window)
         local ok = pcall(GameTooltip.SetSpellByID, GameTooltip, spellID)
         if ok then
             GameTooltip:Show()
-            -- AFTER Show: the show path re-anchors the tooltip to its owner, so a
-            -- point set before the lines were added is silently thrown away.
+            -- AFTER Show: the placer needs the tooltip's real size, which only the
+            -- Show computes (beside the window, AD-92-MM).
             applyPlacement()
             if t0 then Perf.Note("tooltip", debugprofilestop() - t0) end
             return
@@ -1038,10 +1040,10 @@ function Tooltip:SpellTooltip(row, anchorFrame, window)
     -- the row is still telling the player which spell it is.
     GameTooltip:AddLine(displayName(row), NS.SkinColor("gtip.value"))
     GameTooltip:Show()
-    -- AFTER Show: the show path re-anchors the tooltip to its owner, so a
-    -- point set before the lines were added is silently thrown away.
-    applyPlacement()
+    -- AFTER Show: the placer needs the tooltip's real size, which only the
+    -- Show computes (beside the window, AD-92-MM).
     reapplyFonts()
+    applyPlacement()
 
     if t0 then Perf.Note("tooltip", debugprofilestop() - t0) end
 end

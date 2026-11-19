@@ -94,6 +94,46 @@ test("Skin seam: the read answers Ka0s Default before the profile store exists",
     assertEqual(texture, false)
 end)
 
+--- A fresh instance whose library answers `key` as the client's default skin (Skin:DefaultSkin),
+--- set after the libraries load and before the addon's first file, as the Forever client would.
+local function loadWithDefault(key, opts)
+    opts = opts or {}
+    opts.afterLibs = function(mocks)
+        mocks.LibStub("LibKa0s-Skin-1.0").DefaultSkin = function() return key end
+    end
+    return T.load(opts)
+end
+
+test("Skin seam: the default skin is the library's DefaultSkin, read once at file load", function()
+    -- skinning-§2 (MUST, LibKa0s v1.94.0): the profile default names Skin:DefaultSkin()'s answer,
+    -- Ka0s Default on Retail and WoW Forever on the Forever client. red under: a hard-coded "ka0s"
+    -- default, or a default read from somewhere other than Skin:DefaultSkin().
+    local inst = T.load{}
+    local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0")
+    assertEqual(inst.NS.DEFAULT_SKIN, Skin:DefaultSkin(), "NS.DEFAULT_SKIN is Skin:DefaultSkin()")
+    assertEqual(inst.NS.defaults.profile.skin.skin, inst.NS.DEFAULT_SKIN, "the profile default")
+
+    local other = loadWithDefault("obsidian")
+    assertEqual(other.NS.DEFAULT_SKIN, "obsidian", "NS.DEFAULT_SKIN follows the library's answer")
+    assertEqual(other.NS.defaults.profile.skin.skin, "obsidian", "the profile default follows it")
+    assertEqual(other.NS.defaults.profile.skin.source, "ka0s", "the source stays the Ka0s skins")
+    assertEqual(other.NS.db.profile.skin.skin, "obsidian", "a new profile wears the client's default")
+end)
+
+test("Skin seam: the read before the store exists answers the client's default skin", function()
+    -- The fallback that stands in for a stored skin names the same answer (skinning-§2).
+    local inst = loadWithDefault("obsidian", { initDB = false, options = false })
+    local source, skin = inst.NS.SkinChoice()
+    assertEqual(source, "ka0s")
+    assertEqual(skin, "obsidian")
+end)
+
+test("Skin seam: without the library the default skin is Ka0s Default", function()
+    -- skinning-§2: the only look the degraded facade can draw.
+    local inst = T.load{ libFiles = {}, initDB = false, options = false }
+    assertEqual(inst.NS.DEFAULT_SKIN, "ka0s")
+end)
+
 -- ── the owner tokens (DECISIONS X1, X2, X12) ─────────────────────────────────────────────────
 
 test("Skin seam: every owner token is registered, namespaced mm., and keeps its pixel on Ka0s Default", function()
@@ -356,8 +396,41 @@ test("Skin seam: degraded, the facade answers today's colors and the seam never 
     local NS = degraded.NS
     assertEqual(NS.SkinEscape("mm.dim"), "|cff9d9d9d", "the dim gray keeps its bytes")
     local r, g, b, a = NS.SkinColor("mm.rowHover")
-    assertEqual(r, 1); assertEqual(g, 1); assertEqual(b, 1); assertEqual(a, 0.10)
+    -- Re-pinned by AD-82-MM: the hover's default is white .15 (was .10), the row floors below.
+    assertEqual(r, 1); assertEqual(g, 1); assertEqual(b, 1); assertEqual(a, 0.15)
     assertEqual(select("#", NS.SkinColor("win.border")), 3, "an opaque token answers three components")
     assertTrue(pcall(NS.ApplySkinChoice), "ApplySkinChoice raised degraded")
     assertTrue(pcall(NS.WriteSkinChoice, "ka0s", "ka0s"), "WriteSkinChoice raised degraded")
+end)
+
+-- LibKa0s#82 and #84's row floors (LibKa0s docs/api/Skin, version 18.1.28.10.19.19.1.1.18.4.9), in
+-- CIE L*, each wash composited over Ka0s Default's window over black: a stripe 6 off the window, a
+-- hover 12 off it and 3 off a striped row. The library's own list.stripe and list.hover are held
+-- there; this addon's mm.rowStripe and mm.rowHover keep defaults of their own, which the library
+-- names as staying faint "until the host raises it", so the host holds them.
+local function lstar(c)
+    local function ch(v) if v <= 0.03928 then return v / 12.92 end return ((v + 0.055) / 1.055) ^ 2.4 end
+    local y = 0.2126 * ch(c[1]) + 0.7152 * ch(c[2]) + 0.0722 * ch(c[3])
+    if y > 216 / 24389 then return 116 * y ^ (1 / 3) - 16 end
+    return y * 24389 / 27
+end
+local function over(top, under)
+    local a = top[4] or 1
+    return { top[1] * a + under[1] * (1 - a), top[2] * a + under[2] * (1 - a), top[3] * a + under[3] * (1 - a) }
+end
+
+test("Skin seam: the rows' own washes clear the library's row floors on Ka0s Default", function()
+    -- AD-82-MM. red under: mm.rowStripe white .05 (5.4 L* off the window) and mm.rowHover white .10
+    -- (11.3 off it), the pixels the rows drew before Ka0s Default's own rows were raised.
+    local inst = T.load{}
+    local live = inst.mocks.LibStub("LibKa0s-Skin-1.0"):ResolveSkin("ka0s")
+    local win = over(live["win.bg"], { 0, 0, 0 })
+    local stripe = over(inst.NS.SKIN_TOKENS["mm.rowStripe"].default, win)
+    local hover = over(inst.NS.SKIN_TOKENS["mm.rowHover"].default, win)
+    local d = lstar(stripe) - lstar(win)
+    assertTrue(d >= 6, ("the stripe stands %.1f L* off the window, want >= 6"):format(d))
+    d = lstar(hover) - lstar(win)
+    assertTrue(d >= 12, ("the hover stands %.1f L* off the window, want >= 12"):format(d))
+    d = lstar(hover) - lstar(stripe)
+    assertTrue(d >= 3, ("a hovered row stands %.1f L* off a striped one, want >= 3"):format(d))
 end)

@@ -56,7 +56,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | `core/` runtime | `MultiMeters.lua`, `Database.lua`, `Database_Migrations.lua` | The single game-event listener and the show ladder; AceDB and migrations. |
 | `core/` diagnostics | `Diagnostics.lua` + `Diagnostics_Runtime`, `Diagnostics_DeathRecap`, `_Identity`, `_Feign` | `/mm diagnostics`, its addon-state sections (`_Runtime`), and the three per-issue probes hung off it. Each probe is self-contained so it can be deleted with the issue it answers. |
 | `defaults/` | `Profile.lua` | The window template. The only place a profile default is hardcoded. |
-| `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`, `_Order`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret; `Aggregator_Order` holds the orderings and the row cap. |
+| `modules/` data | `Provider`, `Roster`, `Feign`, `Aggregator` (+ `_Identity`, `_Preview`, `_Order`), `Format` | Read → join → order → render as text. `Feign` is the one source row the addon deliberately discards; `Aggregator_Identity` is the grid drawn while the GUID is secret; `Aggregator_Preview` is test mode's invented meter, whose first five people are LibKa0s-Sim-1.0's shared sample characters (`Sample("retail")`, LibKa0s#87; a copy without the library) and whose other five follow the same `Sample`/`Mock` naming convention (preview-mode); `Aggregator_Order` holds the orderings and the row cap. |
 | `modules/` display | `WindowManager`, `Window` (+ `_Frame`, `_Render`, `_Lifecycle`, `_Header`, `_Placement`), `HeaderControls`, `Row` (+ `_Border`, `_Cells`, `_NameCell`), `Targets`, `Tooltip` (+ `_Lines`, `_Builders`), `DrillDown`, `Visibility` | The registry, one window (with its test-mode strip, `LibKa0s-Widgets-1.0`'s `TestStrip` under the title, placed by `Window_Header`'s narrow `ApplyTestStrip` on the toggle; the red TEST MODE title word is written only while the strip is not shown — a minimized window, or a load without the Widgets library — and never while a simulation runs; and its simulation strip, the same `TestStrip` in its `kind = "sim"` flavor, in the same slot and on the same narrow path on `SIM_CHANGED`, shown while a `/mm sim` session runs, with no title word at all), one row, the enemy cross-reference, the two hover surfaces, the breakdown and the context predicate. The launcher left this block when it was adopted from `LibKa0s-Launcher-1.0`: it is `core/LauncherSetup.lua` now, a seam like the other six rather than a module of its own. |
 | `modules/` simulator | `Sim`, `SimWorld`, `SimDrivers`, `SimScenario` | `/mm sim`'s session host (`modules/Sim.lua`: `NS.Sim` on LibKa0s-Sim-1.0, the refusals, the real-event classifier, the session-only stores and the stop's resync) and its invented world (MultiMeters#60): the real player plus seeded mates, zones, segments, deaths and recaps, and the providers `core/SimSetup.lua`'s seam answers from while a session runs. Plain invented numbers; it never reads a client meter value. The drivers edit that world and fire the client's events through `NS.Sim:Fire`, in the client's order; a fight's ticks are booked on the session's timer. The four #60 scenarios (`dungeon`, `raid`, `wipe`, `zone`) are timelines of labeled, tipped steps that `NS.SimHost.Play` plays through the drivers; `tests/test_sim_e2e.lua` runs each one stepped and auto-run through the real engine. |
 | `modules/` output | `Export`, `Export_Modal` | The segment a window is pointed at, as CSV or as ranked chat lines — the pure half and the dialog that drives it. Calls no meter API: it asks the aggregator, exactly as a window does. |
@@ -150,6 +150,11 @@ also the one sanctioned second sender of `ENTERING_WORLD`, `METER_SESSION` and `
 is `sim`, the simulator (MultiMeters#60), whose whole grammar is LibKa0s-Sim-1.0's `RunVerb`. A bare `/mm`
 opens the settings panel. The verb table, the sub-tree, the `debug` words, the degraded behavior and
 every refusal line: **[slash-dispatch.md](slash-dispatch.md)**.
+
+The report verbs (`window list` and the three `debug` probes) write to the debug console through
+LibKa0s-DebugLog-1.0's `D:Report`, ungated, with one chat pointer line; acknowledgments, refusals,
+usage, `list` and the help index stay in chat (`debug-logging-§15`, the owner's ruling of 2026-11-08,
+LibKa0s#79). The list and the shape: [debug.md](debug.md#reports-go-to-the-console-with-one-chat-pointer).
 
 ### Disabled — total, and the slash surface is not
 
@@ -260,8 +265,8 @@ Three design rules follow, and they are enforced in one place each rather than r
   proves comparability in a separate pass *before* `table.sort` is entered, because a comparator that
   discovers an illegal comparison halfway through has already raised.
 - **R3 — layout is computed from config and test-mode state, never read back off a frame.** The
-  strip slot's room (`layout.stripHeight`, 22 px while test mode is on or a simulation runs) is the one
-  input that is not config, and it too is arithmetic over state rather than a measurement. `SetValue(secret)` marks a
+  strip slot's room (`layout.stripHeight`, `TEST_STRIP.HEIGHT`, 18 px, while test mode is on or a simulation runs: the docked strip's `BodyOffset`, AD-88-MM) is the one
+  input that is not config, and it too is arithmetic over state rather than a measurement. It sizes the row capacity; the column headers and the body are placed by the strip's own `strip:BodyOffset()` (Widgets minor 27, relayed through the dock's `onOffset` on each show and hide), flush under the strip, which hangs off the title band's bottom edge (`WindowProto:BandBottom`); the strips never take a meter value, so asking them reads no secret frame. While a strip shows, neither the title nor the session line carries a mode word. `SetValue(secret)` marks a
   frame `HasSecretValues`, which makes its position data secret and propagates that to anything
   anchored to it. There is not one `GetPoint` / `GetWidth` / `GetLeft` in `modules/Row.lua`, in
   `modules/Row_NameCell.lua`, the name cell peeled out of it, in `modules/Row_Border.lua` or in `modules/Row_Cells.lua`; a window keeps drag and resize on a
@@ -297,6 +302,42 @@ on open, beside the library's DIALOG tool windows; the library's copy window, me
 tiers above. Tooltip spell lines share GameTooltip's level, re-stated per draw. In-client checks:
 [smoke-tests.md](smoke-tests.md) WIN-53, WIN-54, GRID-34 and PANEL-49.
 
+## Tooltip placement
+
+A meter row is a body element (standalone-windows, *Tooltip placement*; AD-92-MM, LibKa0s#92), so
+the cell, name and breakdown-row tooltips (`modules/Tooltip.lua`'s
+`openTooltip` and `applyPlacement`) are owned at `ANCHOR_NONE` and, after the Show, placed by
+`LibKa0s-Tooltip-1.0`'s `PlaceBeside`: beside the window, right then left (`tooltip.anchor` BESIDE,
+the default) or left then right (BESIDE_LEFT, the owner's option A of 2026-11-17), top level with the
+hovered row, one absolute point on UIParent. The group is the window's clean `anchor` frame and the
+element the hovered cell's row, so no geometry is read off a cell that may hold a secret (rule R3).
+The X/Y offsets nudge the measured rects before the point is computed, and the result is still clamped
+on screen. The X nudge widens the group on the side it points to rather than moving it, so it pushes a
+tooltip on that side further out and leaves one on the other side 2 px off the window: it never carries
+the tooltip over the rows (body rule 3). When the placer writes nothing because only GameTooltip's own
+size reads back secret (tainted code measuring inside Blizzard's shared tooltip mid-pull),
+`besideBlind` still places it beside the window from the window's rect and the row's top, hanging from
+TOPLEFT at the right edge + 2 px or TOPRIGHT at the left edge - 2 px, on the side with more room (the
+screen-half method the client bags use; the player's side wins a tie). Only when the window or the
+row cannot be read either (or the library is absent) does the tooltip attach centered above the row,
+`pcall`'d, never on the cursor. The v26 to v27 step moved every stored anchor
+to BESIDE. The title-bar controls are chrome, on `AttachTitleTip` (above, AD-86-MM).
+
+**Tooltips this addon does not place, and why** (the rule's *What it does not bind* list, or the
+library's own placement):
+
+| Tooltip | Placed by | Why it stays |
+|---|---|---|
+| The Columns editor's show/hide glyph (`settings/ColumnBlocks.lua`) | `PlaceBeside` by this addon, attached above without the library | The page is on the Settings canvas, which the rule does not bind. It is placed like the `ReorderList` handle beside it, so a row's two tooltips open in one place, and no longer at `ANCHOR_RIGHT`. |
+| Every other Settings-canvas tooltip (rail entries, row descriptions, Defaults) | LibKa0s Options | Settings canvas pages are options-ui's, not this rule's. |
+| The minimap button's status tooltip | LibKa0s Launcher (`PlaceLauncher`) | The library's site. No host tooltip lines. |
+| The launcher's right-click options menu | The client's `MenuUtil` | A menu the client's menu system draws places its own entries' tooltips. |
+| A LibDataBroker display's bar (Titan Panel and the like) | The display | The display draws the frame and places the tooltip. |
+| Title-bar marks, the Export modal's marks, the debug console, the sim panel, the copy window | LibKa0s (`AttachTitleTip`, `W.HeaderButtons`, the library windows) | The library's own sites follow the rule in its code. |
+| Blizzard's death recap frame, the fallback for a Deaths click | Blizzard | Blizzard's own frame; this addon writes no line on it. |
+
+In-client checks: [smoke-tests.md](smoke-tests.md) TIP-23, TIP-29 and TIP-38 to TIP-41, and PANEL-41.
+
 ## Skins
 
 Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 2026-10-29 skinning rollout
@@ -314,7 +355,9 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   the library's.
 - **The choice** is eight addon-wide profile keys under `skin` (`source`, `skin`, the Scope's
   `ignorePanel` and `ignoreFonts`, the overrides `font` and `texture`, the Font outline `outline`, and `pickerSeen`), skip-render
-  rows in `settings/Schema_Skin.lua` written only through `NS.SetByPath` ([schema.md](schema.md)). The
+  rows in `settings/Schema_Skin.lua` written only through `NS.SetByPath` ([schema.md](schema.md)). A new
+  profile's skin is `NS.DEFAULT_SKIN`, `Skin:DefaultSkin()` read once at file load (skinning-§2: Ka0s
+  Default on Retail, `ka0s` without the library), and so is the read before the store exists. The
   library's Skin tab (key `Appearance`, `O.AppearanceTab`) draws every one but `pickerSeen` on the General page,
   after Statistic colors and before Keybindings ([settings-panel.md](settings-panel.md)).
 - **Repaint flow.** `NS.ApplySkinChoice` runs right after `NS:InitDB` and on every profile event
@@ -334,7 +377,7 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   the header controls at rest and under the pointer (`frame.controlColorMode`, `icon.tint`;
   `frame.controlHoverColorMode`, `text.link` since smoke round 1's SR-MM, `btn.hover` before it;
   the close takes `close.rest`, which follows `icon.tint`, and `close.hot`). Every control carries a
-  one-line tooltip above it (`LibKa0s-Tooltip-1.0`'s `AttachTitleTip`, in `gtip.title`). The title bar background has a companion instead,
+  one-line tooltip above it (`LibKa0s-Tooltip-1.0`'s `AttachTitleTip`, in `gtip.title`; the settings mark's is `W.HeaderButtons`' own). Both of this addon's title bars read, left to right, their extras · settings · close (standalone-windows, *Title-bar controls*, AD-86-MM): the meter strip's seven marks and the Export modal's settings mark and close are built by `LibKa0s-Widgets-1.0`'s `HeaderButtons`, every settings mark opening this addon's settings (the meter's on its own window, the modal's through the launcher's registered opener after hiding the modal, which sits over the panel); the meter strip keeps its own placement and player options (*Documented deviations*). This addon builds no `DragHandle`, so no drag-strip settings mark is owed. The title bar background has a companion instead,
   `header.bgColorFromSkin` (`title.bg`, clear for a skin with no title band). The v21 step put every
   stored window on all six once. Under `class` or `custom` the Shell draws no edge and `ApplyBorder`
   lays the player's LSM edge and fill over it, tinting Core's inner rule from `win.inner`; the stored
@@ -353,7 +396,10 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
   empty state, the session line's dim notes (`mm.dim`) and the TEST MODE word (`mm.testWord`) read
   tokens, and both mode strips are handed the owner. The rows' hover wash (`mm.rowHover`), their
   alternating stripe (`mm.rowStripe`), the self edge (`text.accent`) and a classless name
-  (`text.highlight`) follow the skin too, each Ka0s Default's old pixel. With both settings off a skin
+  (`text.highlight`) follow the skin too, each Ka0s Default's old pixel, except the hover wash and
+  the stripe: AD-82-MM raised them to white .15 and .08 (were .10 and .05) to clear LibKa0s#82 and
+  #84's row floors in CIE L* (a stripe 6 off the window, a hover 12 off it and 3 off a striped row),
+  which `tests/test_skinsetup.lua` holds on Ka0s Default's window. With both settings off a skin
   still draws its stripe and edge through `rows.alternatingBackgroundFromSkin` and
   `rows.highlightSelfFromSkin` (`mm.skinStripe`, `mm.skinSelfEdge`), which are clear under Ka0s Default. `RefreshUpvalues` resolves
   them, the chrome's five `skin` colors and the session line's two escapes, once into the window's `skinLooks`
@@ -426,7 +472,7 @@ Ka0s Multi Meters wears a LibKa0s skin (skinning-§1 to §7), adopted in the 202
 - **What stays.** Chat output (X7), inline help markup (X9), StaticPopups, the class and spell art,
   the statistic palette (D14) and the diagnostics report's escapes (D15).
 
-In-client checks: [smoke-tests.md](smoke-tests.md) SKIN-1 to SKIN-24, SKIN-50, INSTALL-15 and DEGRADED-11.
+In-client checks: [smoke-tests.md](smoke-tests.md) SKIN-1 to SKIN-24, SKIN-50 to SKIN-52, INSTALL-15 and DEGRADED-11.
 
 ## Known limitations
 
@@ -451,9 +497,9 @@ thing is in it before opening it:
 - **A new delve companion stays off the grid** until its creature id is added to
   `Constants.COMPANION_CREATURE_IDS`, because a class alone no longer admits a `None` source
   ([#56](https://github.com/tusharsaxena/MultiMeters/issues/56)).
-- **Test mode at the minimum height.** The test-mode strip takes its 22 px out of the rows and never
+- **Test mode at the minimum height.** The test-mode strip takes its 18 px out of the rows and never
   out of the window, so the resize floor does not move. At the minimum height the one row it leaves is
-  pushed 22 px down, partly past the window's bottom edge (22 px less the padding), until test mode
+  pushed 18 px down, partly past the window's bottom edge (18 px less the padding), until test mode
   ends or the window is made taller ([#59](https://github.com/tusharsaxena/MultiMeters/issues/59)).
 - **What `/mm sim` does not simulate** ([#60](https://github.com/tusharsaxena/MultiMeters/issues/60)).
   No secret value and no `Combat` restriction: its numbers are plain, so a session runs the
@@ -471,9 +517,10 @@ thing is in it before opening it:
   unregistered at their one listener, so little is ever sent to them. The same install has already
   lost the options toolkit, the slash dispatcher and the latch, and says so in chat.
 
-**The tooltip is the one thing this addon positions itself**, and that one `SetPoint` onto a cell
-with secret geometry is the only call in the addon that could raise inside Blizzard's own code while
-tainted by us. It is `pcall`'d; a failure leaves the `SetOwner` token's placement standing.
+**A meter tooltip's bottom is not kept on screen mid-pull.** A tooltip showing a secret amount can
+answer this addon a secret size. It still opens beside the window (`besideBlind`,
+[Tooltip placement](#tooltip-placement); smoke TIP-41), but with no height to measure only its top is
+kept on screen, so a tall tooltip off a row near the screen's bottom can run past the edge.
 
 ## Documentation map
 
@@ -507,7 +554,7 @@ re-check re-runs the count rather than re-arguing the verdict. **All seven ship.
 | `perf-analysis/README.md` | Present | **The performance harness is wired**: `core/PerfSetup.lua` plus `Perf.Note` brackets in eight files (`performance-§12`). `docs/perf-analysis/20260909-014604/` is the standing example. |
 | `compat-layer.md` | Present | **`core/Compat.lua`: 886 lines, 42 shims** (4 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
 | `midnight-quirks.md` | Present | **Four client-version workarounds of the addon's own** (isolated event registrations, `ADDON_RESTRICTION_STATE_CHANGED` against a namespace a client may lack, the settle pass, the secret-value model); the file is required in every addon from v2.102.0 and also carries the vendored client-quirks catalog. The detail moved here from [Taint notes](#taint-notes) rather than being copied. |
-| `debug.md` | Present | **One diagnostics report, three probe verbs, the `tooltip` session flag and the `NS.Debug` channels** (`debug-logging-§14`). Written 2026-09-09, when the row's own re-check trigger fired. |
+| `debug.md` | Present | **One diagnostics report, three probe verbs, the report verbs on `D:Report`, the `tooltip` session flag and the `NS.Debug` channels** (`debug-logging-§14`, `§15`). Written 2026-09-09, when the row's own re-check trigger fired. |
 | `slash-dispatch.md` | Present | **22 verbs in `NS.COMMANDS` (as measured on 2026-11-06) and a sub-command tree** (`window` takes four sub-verbs), against eight or more commands or any tree. The hub's `## Slash commands` detail moved there on 2026-09-24. |
 | `message-bus.md` | Present | **15 distinct messages**, against more than ten; one catalog (`core/Constants.lua` `MSG`), one sender each. Moved out of the hub on 2026-09-24. |
 | `profiles.md` | Present | **User-visible profiles**: `settings/Profiles.lua` registers AceDBOptions-3.0's tree as a settings page. |
@@ -557,6 +604,7 @@ Rows are shaped `| Rule | What differs | Why | Decided | Re-check trigger |`.
 | options-ui-§15 — the per-instance scale, alpha and lock stay on the instance's own page: "the two are different settings and MUST NOT be conflated" | Master controls' **Lock frame** (`master.locked`) is a view over every window's own `frame.locked`, not a separate addon-wide lock. It reads ticked only when every window is locked (`WindowManager:IsLocked`), and ticking or unticking it writes each window's own lock through `WindowManager:SetLocked`, the same switch as `/mm lock on` and `/mm lock off`. The row is `sessionOnly` and stores nothing; `core/Database.lua`'s v13 → v14 step carried a stored `master.locked = true` onto every window and pruned the key. A window's own padlock (its header, or Frame → Lock window) still locks that window alone. Master scale and Master alpha are unchanged and still compose with the per-window pair. | With a separate master lock ORed over the per-window locks, `/mm lock` set the per-window locks, and the Lock frame checkbox could then neither unlock the windows nor visibly lock them (owner-reported bug, 2026-09-16). The owner chose one switch over two. Implementation: the `master.locked` entry in `settings/Schema_Compose.lua`'s Master controls `dress()`, and `WindowProto:RefreshUpvalues` in `modules/Window.lua`. | 2026-09-16 | The standard defines a master lock that coexists with per-window locks without this trap, or MultiMeters drops per-window locks. |
 | `skinning-§6` — a skin's real `bar.borderStyle` wins with the companion on, even with *Show border* off | A cell's outline shows only when `bars.border` (*Show border*) is on, in every skin; `NS.SkinBorderShown` (`core/SkinSetup.lua`) no longer asks `S.BarBorder` whether a real style should draw. Style, thickness and color still follow the skin when it does show. Every other border (window, header, tooltip, icon) keeps its skin. | Owner ruling of 2026-11-02 (smoke feedback SF-MM-2, images 56 to 62): cell borders are off by default in every skin; a skin's edge around every cell read as clutter. | 2026-11-02 | The standard ratifies an addon's own default for a bar border, or `S.BarBorder` gains a way for a host to decline a skin's real style. |
 | `documentation-§6` (v2.102.x) — a present-tense citation of the repo's own code names a symbol or heading, never a bare line number (SHOULD) | Two citations in this register keep their bare line numbers: `settings/ColumnBlocks.lua:61-62` and `modules/Tooltip.lua:107`, in the two `library-stack-§8` rows above. Every other own-code citation in the live docs names a symbol. | `tests/test_texture_paths.lua` parses these two citations and asserts that the line numbers still match the declarations they name, so a line that moves turns the suite red. The rot the rule targets cannot happen here, and a symbol would take away the check that the cited line is the one declared. Owner ruling 2026-11-06. | 2026-11-06 | `tests/test_texture_paths.lua` stops checking these citations, or the two `library-stack-§8` rows retire. |
+| standalone-windows, *Title-bar controls* (v2.113.0) — the marks share "one size, one pitch and one paint path", and an addon that adopted `W.HeaderButtons` "builds every window's marks with it rather than placing them by hand" | The meter window's seven marks are built by `W.HeaderButtons` (the order extras · settings · close, the settings mark, the close through `MakeCloseButton`) with `place = false`, and `modules/HeaderControls.lua` places them itself, at the library's own `HEADER.PAD` and `HEADER.GAP` read at call time. Over the library's paint it keeps the strip's player options: a per-mark show toggle (a hidden mark yields its slot), **Control size** (`frame.controlSize`, 18 by default, the rule's size), the two color modes (`skin` by default, which is the rule's `icon.tint` / `text.link` / `close.rest` / `close.hot`; `class` and `custom` are the player's), the hover reveal (off by default) and the art ladder under the shipped icon. The Export modal is on `W.HeaderButtons` outright. Each `HeaderButton` records a rest repaint with the library that its one per-owner skin listener re-runs after every switch; that listener is registered after WindowManager's Reskin, so `HeaderControls` registers its own after it (at the first build) and re-lays every strip from config, and it drops the skin's font record on a word it adopts as an ASCII glyph, which keeps a Custom or Class color and the header font across a switch (AD-86-MM review). | `HeaderButtons` lays a strip once, at build, and paints only the skin's two colors, while these options are stored schema rows (Windows > Header > Controls and Button style) that re-lay and repaint the strip on every `ApplyHeader`. Building the marks through the library and placing them from the same constants gives the rule's order, settings mark, close, pitch and shipped look while keeping every stored profile's choices; dropping the options would take features players set and migrate every saved window. The shipped profile draws exactly the rule's strip. AD-86-MM (Ka0sAddonsCommonTasks `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`, LibKa0s#86). | 2026-11-17 | `W.HeaderButtons` gains a re-lay for a hidden or resized mark (it could then place this strip), or the owner retires the strip's size, color-mode or toggle options. |
 
 Retired rows keep a one-line pointer here; their reasoning stays in the frozen record that holds it.
 

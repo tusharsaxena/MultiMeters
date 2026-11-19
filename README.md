@@ -4,7 +4,7 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2594%2F2594_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2642%2F2642_passing-green)
 
 Retail only for now; WoW Forever support is planned. Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
@@ -34,14 +34,14 @@ The numbers are Blizzard's. Multi Meters asks the built-in meter for them and ar
 
 ## Usage
 
-The first time you run it after installing, you get a default window, already unlocked. Drag it by the title bar and pull the bottom-right corner to size it. Placing an empty meter between pulls is a pain, so `/mm test` fills every window with placeholder rows while you work, and lays a yellow strip across the top of each one saying the numbers are not yours. A minimized window, which hides the strip, says TEST MODE in its title instead. It switches itself off the moment you pull, and `/mm lock` freezes everything once you're happy with the layout.
+The first time you run it after installing, you get a default window, already unlocked. Drag it by the title bar and pull the bottom-right corner to size it. Placing an empty meter between pulls is a pain, so `/mm test` fills every window with placeholder rows while you work, and lays a yellow strip right under the title bar of each one saying the numbers are not yours. A minimized window, which hides the strip, says TEST MODE in its title instead. It switches itself off the moment you pull, and `/mm lock` freezes everything once you're happy with the layout.
 
 Setting a window up takes four steps. Most of it happens on the Windows page, where the Active window dropdown at the top picks the window you're working on and the list down the left side takes you through the rest.
 
 - Pick your columns. The Columns entry lists every statistic the game offers, and the ticked ones are the columns this window shows. A new window starts with Damage, Healing, Interrupts, Dispels, Avoidable Damage and Deaths. Click a block to show or hide it and drag it by its handle to reorder. Columns only change out of combat.
 - Decide when it shows. On Visibility you tell the window which content it belongs in (dungeons and raids and nothing else, say) and which situations it should get out of the way for. There are ten hide rules: solo, mounted, dead, on a flight path, and six more. Set it once and you can stop thinking about it.
-- Choose your header controls. The title bar has room for seven: close, minimize, lock, settings, segment, reset and export, and the Header entry's Controls tab picks which ones this window draws. The segment control is the three horizontal lines, and it's the one people miss. It picks which fight the window shows, and your pick sticks through a reload.
-- Dig into the numbers. Hover a cell to see the spells behind it, or hover a name to see everything tracked for that player. Click either one to drill in. Clicking a Deaths cell opens the recap instead, which is usually the more interesting trip.
+- Choose your header controls. The title bar has room for seven, reading left to right export, reset, segment, lock, minimize, settings and close (the settings gear beside the close, as on every Ka0s window), and the Header entry's Controls tab picks which ones this window draws. The segment control is the three horizontal lines, and it's the one people miss. It picks which fight the window shows, and your pick sticks through a reload.
+- Dig into the numbers. Hover a cell to see the spells behind it, or hover a name to see everything tracked for that player. Click either one to drill in. Clicking a Deaths cell opens the recap instead, which is usually the more interesting trip. The tooltip opens beside the window, on the right if there's room and on the left if not, so it never covers the rows you're comparing (Tooltip → General → Tooltip side can try the left first).
 
 Want a second window? Click **New window** beside the window picker at the top of the Windows page, or run `/mm window new`, then use Copy settings from instead of building it twice. The minimap button opens the settings on a left-click. A right-click gives you five switches (Enabled, Locked, Test mode, Sim mode and Show window), plus Open settings and Open skin selector. A key can show and hide the windows too: *Toggle meter windows*, under Options → Keybindings → Ka0s Multi Meters, or on General → Keybindings in this addon's settings. Both places set the same key. No key is set for you.
 

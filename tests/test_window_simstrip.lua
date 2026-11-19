@@ -70,10 +70,17 @@ test("Sim strip: shown on every window while a session runs, the reserve re-anch
     for i, w in ipairs(windows(inst)) do
         assertTrue(w.simStrip:IsShown(), "window " .. i .. ": the sim strip is the marker")
         assertFalse(w.testStrip:IsShown(), "window " .. i .. ": the test strip stays hidden")
-        assertEqual(w.layout.stripHeight, 22, "2 + TEST_STRIP.HEIGHT (18) + 2")
+        -- AD-88-MM: the docked strip's BodyOffset, TEST_STRIP.HEIGHT (was 2 + 18 + 2 = 22).
+        assertEqual(w.layout.stripHeight, 18, "TEST_STRIP.HEIGHT")
+        assertEqual(w.simStrip:BodyOffset(), w.layout.stripHeight, "the reserve is the strip's BodyOffset")
+        assertTrue(select(2, w.simStrip:GetPoint(1)) == w.headerBand, "docked under the title band")
         local _, headerTop, bodyTop = w:ChromeOffsets()
-        assertEqual(headerTop, before[i].headerTop + w.layout.stripHeight, "the headers moved down")
-        assertEqual(bodyTop, before[i].bodyTop + w.layout.stripHeight, "the body moved down")
+        -- Flush under the docked strip: the band's bottom plus its BodyOffset (AD-88-MM review; the
+        -- old pin was the strip-less top plus 18, a gap or an overlap of (2 - inset) px).
+        local stripBottom = w:HeaderInset() + w:TitleBandHeight() + w.simStrip:BodyOffset()
+        assertTrue(headerTop > before[i].headerTop, "the headers moved down")
+        assertEqual(headerTop, stripBottom, "the headers sit flush under the strip")
+        assertEqual(bodyTop, headerTop + w.layout.headerHeight, "the body moved down with them")
         assertEqual(w.layout.minHeight, before[i].minHeight, "the resize floor never moves")
         assertFalse(titleHasWord(w), "window " .. i .. ": no mode word in the title")
     end
