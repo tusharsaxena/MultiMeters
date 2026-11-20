@@ -1231,20 +1231,19 @@ end
 --- reaching for: the reason to open this menu at all is almost always to look
 --- back at a fight that just ended.
 ---
---- THE SKINNED MENU, EXCEPT WHILE A LABEL MAY BE SECRET (cause A2). A stored session's duration is
---- secret under the Combat restriction and `..` keeps a secret, so segmentLabel's answer can be one.
---- W.ContextMenu sizes itself by every row's GetStringWidth, in math.min and an addition, which raises
---- on the secret that answers (Widgets minor 21's menuWidth, which `opts.width` does not skip). The
---- client's menu draws a secret, so it stays for exactly that window. It also stays on an install
---- without the library.
+--- THE SKINNED MENU, IN COMBAT TOO (cause A2; the owner's U-21 of 2026-11-20, narrowed). A stored
+--- session's duration is secret under the Combat restriction and `..` keeps a secret, so
+--- segmentLabel's answer can be one. Since WidgetsDropdown minor 3 (LibKa0s v1.108.0) the shared menu
+--- measures no secret label and reads no width that answers a secret: such a row takes the floor,
+--- `opts.width` (SESSION_LINE_WIDTH), so the skinned menu opens mid-pull with no arithmetic on a
+--- secret. The client's menu below is left only for an install without the library.
 function WindowProto:OpenSegmentMenu()
     local Provider = mod("Provider")
     if not (Provider and Provider.GetAvailableSessions) then return false end
 
     local sessions = Provider.GetAvailableSessions()
 
-    local restricted = NS.Secrets and NS.Secrets.IsRestricted and NS.Secrets.IsRestricted()
-    if W and W.ContextMenu and not restricted then return self:OpenSkinnedSegmentMenu(sessions) end
+    if W and W.ContextMenu then return self:OpenSkinnedSegmentMenu(sessions) end
 
     return NS.Compat.OpenContextMenu(self.sessionLine, function(_, root)
         root:CreateTitle(L["Segment"])

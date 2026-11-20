@@ -76,7 +76,7 @@ touching the data path.
 
 ## Settings schema
 
-`NS.Schema` in `settings/Schema.lua` is the single source of truth: **202 rows across 8 page keys**
+`NS.Schema` in `settings/Schema.lua` is the single source of truth: **205 rows across 8 page keys**
 (windows 1, frame 30, header 36, bars 35, tooltip 38, visibility 17, columns 13, general 32; the eight
 skin rows are appended by `settings/Schema_Skin.lua`), each one
 wiring automatically into its panel widget — one tab per distinct `group`, via
@@ -287,7 +287,7 @@ The header strip's **segment control** pins a window to one session the client s
 pin is `window.data.sessionID` (`Constants.NO_SEGMENT` when none), read through
 `Database.PinnedSegment`; every read path honors it, a stale pin is dropped at the top of the refresh,
 and `modules/Provider.lua` stays the only caller of `C_DamageMeter`. The menu, the threading and why
-this control keeps the client's menu under the Combat restriction are in
+the skinned menu now opens under the Combat restriction too are in
 **[data-flow.md](data-flow.md#the-segment-selector)**.
 
 ## Frame layering

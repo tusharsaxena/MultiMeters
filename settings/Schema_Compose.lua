@@ -771,6 +771,9 @@ local FRAME_BG_ROWS = compose("ColorPair", {
     page = "frame", group = L["Background and border"], subgroup = L["Background"],
     key = "backdropColor", label = L["Background color"],
     omit = { useClassColorBackdropColor = true },
+    -- No "Use the skin's color" (compose minor 20's default): the mode beside the swatch already
+    -- has a Skin answer, the default (R-3 / MM-A1), and a bool would be a second control for it.
+    colorFromSkin = false,
     defaults = { backdropColor = { r = 0, g = 0, b = 0, a = 0.75 } },
     -- The window's chrome is about the WINDOW, so the only class it can mean is
     -- the local player's (modules/Window_Header.lua's headerColor makes the same call for
@@ -793,6 +796,10 @@ local FRAME_BORDER_ROWS = compose("BorderGroup", {
     prefix = "window.frame.",
     page = "frame", group = L["Background and border"], subgroup = L["Border"],
     omit = { useClassColorBorder = true },
+    -- No companions (compose minor 20 emits them by default): the window's edge follows the skin
+    -- through `borderColorMode = "skin"`, the Shell drawing the skin's whole edge (MM-A1), and the
+    -- style, thickness and color here are read only under Class or Custom.
+    fromSkin = false,
     labels = {
         borderStyle = L["Border style"], borderSize = L["Border thickness"],
         borderColor = L["Border color"],
@@ -835,6 +842,8 @@ local HEADER_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
         fontFlags = "@skin", fontShadow = true,
     },
     flagsFromSkin = true,
+    -- The color mode's Skin answer (its default) is this title's companion, so no bool (minor 20).
+    colorFromSkin = false,
     classColor = { source = "player" },
     extra = { followRow("window.header.shadowFromSkin", L["Use the skin's shadow"],
         L["Draw the title in the skin's text shadow. Draw shadow is kept but not read while this is on."]) },
@@ -911,6 +920,12 @@ dress(BARS_BAR_ROWS, {
     ["window.bars.customColor"] = {
         desc = L["Fill color used when the color mode is set to Custom color."],
     },
+    -- The swatch's companion, compose minor 20's own row (R-2, SD-SK-MM.2): on, Custom draws the
+    -- skin's bar fill and the swatch is kept, not read.
+    ["window.bars.customColorFromSkin"] = {
+        label = L["Use the skin's color"],
+        desc = L["Draw the bars in the skin's bar fill color while the mode is Custom. The bar color is kept but not read while this is on."],
+    },
 })
 withMode(BARS_BAR_ROWS, "window.bars.customColor", {
     path = "window.bars.colorMode", type = "string", default = "class",
@@ -942,6 +957,10 @@ local BARS_BG_ROWS = compose("ColorPair", {
 })
 dress(BARS_BG_ROWS, {
     ["window.bars.bgColor"] = { desc = L["Color drawn behind the unfilled part of each bar."] },
+    ["window.bars.bgColorFromSkin"] = {
+        label = L["Use the skin's color"],
+        desc = L["Draw the unfilled part in the skin's bar background color while the mode is Custom. The background color is kept but not read while this is on; the opacity stays yours."],
+    },
 })
 withMode(BARS_BG_ROWS, "window.bars.bgColor", {
     path = "window.bars.bgColorMode", type = "string", default = "class",
@@ -1085,6 +1104,10 @@ dress(TIP_BAR_ROWS, {
     },
     ["window.tooltip.barColor"] = {
         desc = L["Color of the filled part, when the mode beside it is Custom."],
+    },
+    ["window.tooltip.barColorFromSkin"] = {
+        label = L["Use the skin's color"],
+        desc = L["Draw the filled part in the skin's bar fill color while the mode is Custom, and for a row with no class. The bar color is kept but not read while this is on."],
     },
 })
 withMode(TIP_BAR_ROWS, "window.tooltip.barColor", {

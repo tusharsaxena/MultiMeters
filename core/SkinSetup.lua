@@ -164,6 +164,11 @@ NS.SKIN_TOKENS = {
     -- Clear is the look here, as a skin's border style of None is no border of its own.
     ["mm.skinStripe"]   = { default = { 1, 1, 1, 0 }, follow = "list.stripe" },
     ["mm.skinSelfEdge"] = { default = { 1, 0.82, 0, 0 }, follow = "text.accent" },
+    -- The fill (and the class tint behind it) of a row with no color to mean: an NPC, an enemy, an
+    -- unknown role, a statistic with no palette entry (modules/Row.lua's barColor). The slate gray
+    -- under Ka0s Default, where `bar.fill` is the gold accent; every other skin's bar fill
+    -- (SD-SK-MM.3 of Ka0sAddonsCommonTasks docs/2026-11-20-SKIN_DEFAULTS_AUDIT, the owner's R-2).
+    ["mm.barNeutral"]   = { default = { 0.45, 0.45, 0.5, 1 }, follow = "bar.fill" },
 }
 
 -- The Ka0s Default library tokens the DEGRADED facade answers, copied from the library and limited
@@ -261,10 +266,17 @@ local WINDOW_LOOKS = {
     -- The rows' companions (cause D4): clear under Ka0s Default, which is "draw none".
     skinStripe   = "mm.skinStripe",
     skinSelfEdge = "mm.skinSelfEdge",
+    -- The cell swatches' companions (SD-SK-MM.2, .4; the owner's R-2): the skin's bar fill under
+    -- Custom while bars.customColorFromSkin is on, and `bar.bg` (its color only, bgAlpha stays,
+    -- SF-MM-3) while bars.bgColorFromSkin is on. A nil look is the stored swatch.
+    barFill      = "bar.fill",
+    barBg        = "bar.bg",
+    -- A classless row's fill (SD-SK-MM.3), resolved degraded too: its default is the old pixel.
+    barNeutral   = "mm.barNeutral",
 }
 
--- The two that have a facade getter of their own (LibKa0s Options doc, Moving to this version).
-local LOOK_GETTERS = { hudText = "HudTextColor", hudLabel = "HudLabelColor" }
+-- The ones that have a facade getter of their own (LibKa0s Options doc, Moving to this version).
+local LOOK_GETTERS = { hudText = "HudTextColor", hudLabel = "HudLabelColor", barFill = "BarFillColor" }
 
 -- A token a skin may set to none (`false`) where none is a look, not a gap: the title bar draws no
 -- band, so its color is clear rather than Ka0s Default's pixel.
@@ -277,6 +289,7 @@ local CHROME_LOOKS = {
     winBg = true, titleText = true, titleBg = true, titleBgTop = true, titleBgBottom = true, controlRest = true, controlHover = true,
     hudText = true, hudLabel = true, barBorder = true, keptShadow = true, headerBand = true,
     sortArrow = true, closeRest = true, closeHot = true, skinStripe = true, skinSelfEdge = true,
+    barFill = true, barBg = true,
 }
 
 --- True while the live seam owns this addon's skin (set at the foot of this file); false on the

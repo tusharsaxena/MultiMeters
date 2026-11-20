@@ -482,6 +482,12 @@ local function lineStyle(config, color)
     -- class and nothing else -- no setting reached it, and the backdrop was a
     -- hard-coded black at 0.35 that no setting reached either.
     local fr, fg, fb = rgba(config.barColor, 0.6, 0.6, 0.6, 1)
+    -- The skin's bar fill while the companion is on (R-2, SD-SK-MM.5): ahead of the swatch and
+    -- behind every mode, so it is Custom's color and a classless row's under Class or Per-statistic.
+    if config.barColorFromSkin == true then
+        local r, g, b = S.BarFillColor()
+        if r then fr, fg, fb = r, g, b end
+    end
     fr, fg, fb = modeColor(config.barColorMode, config.statKey, color, fr, fg, fb)
 
     local br, bg_, bb = rgba(config.barBgColor, 0, 0, 0, 1)

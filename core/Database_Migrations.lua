@@ -948,6 +948,7 @@ Database.FOLLOW_ONCE_KEYS = {
     "header.shadowFromSkin", "columnHeader.shadowFromSkin", "text.shadowFromSkin",
     "tooltip.fontShadowFromSkin",
     "columnHeader.bgColorFromSkin", "icons.borderFromSkin",
+    "bars.customColorFromSkin", "bars.bgColorFromSkin", "tooltip.barColorFromSkin",
     "rows.highlightSelfFromSkin", "rows.alternatingBackgroundFromSkin",
     "header.outline", "columnHeader.outline", "text.outline", "tooltip.fontOutline", "fontOutline",
 }
@@ -1076,6 +1077,72 @@ migrations[26] = function(db)
     end
 end
 
+--- The three swatch companions LibKa0s v1.108.0's composer added (the owner's R-2; SD-SK-MM.2, .4,
+--- .5 of Ka0sAddonsCommonTasks docs/2026-11-20-SKIN_DEFAULTS_AUDIT): `{ group, companion, swatch }`.
+Database.SWATCH_FOLLOW_KEYS = {
+    { "bars", "customColorFromSkin", "customColor" },
+    { "bars", "bgColorFromSkin", "bgColor" },
+    { "tooltip", "barColorFromSkin", "barColor" },
+}
+
+local function near(a, b) return type(a) == "number" and type(b) == "number" and math.abs(a - b) < 1e-4 end
+
+--- True when stored color `c` is still the shipped `d`, channel for channel (both keyed r, g, b).
+local function shippedColor(c, d)
+    if c == nil then return true end
+    if type(c) ~= "table" or type(d) ~= "table" then return false end
+    return near(c.r, d.r) and near(c.g, d.g) and near(c.b, d.b)
+end
+
+--- One window's three swatch companions: on where the swatch is still the value this addon wrote
+--- (a window stores its whole config, copied from the template, so an untouched swatch holds it),
+--- through `Skin.ResetToSkin`; off where the player picked a color, so the pick keeps drawing.
+local function followSwatches(w, Skin)
+    local template, follow = NS.WINDOW_TEMPLATE or {}, {}
+    for _, d in ipairs(Database.SWATCH_FOLLOW_KEYS) do
+        local group = w[d[1]]
+        if type(group) == "table" then
+            local shipped = type(template[d[1]]) == "table" and template[d[1]][d[3]] or nil
+            if shippedColor(group[d[3]], shipped) then
+                follow[#follow + 1] = d[1] .. "." .. d[2]
+            else
+                group[d[2]] = false
+            end
+        end
+    end
+    if #follow == 0 then return end
+    if Skin and type(Skin.ResetToSkin) == "function" then
+        Skin.ResetToSkin(w, follow)
+    else
+        for _, path in ipairs(follow) do
+            local group, leaf = path:match("^([^.]+)%.(.+)$")
+            w[group][leaf] = true
+        end
+    end
+end
+
+--- One profile's swatches onto the skin, once, under a record of their own (`skin.swatchesFollow`).
+--- `skin.fullSkinReset` cannot gate it: the v22 step set that record on every profile it moved, so
+--- `Skin.FollowOnce` with it would move nothing (LibKa0s v1.108.0 Options doc, Moving to this
+--- version). No schema row, as for fullSkinReset, so no Defaults button runs it again over a
+--- companion the player turned off.
+local function followSwatchesOnce(profile)
+    if type(profile) ~= "table" then return end
+    if type(profile.skin) == "table" and profile.skin.swatchesFollow == true then return end
+    local Skin = LibStub and LibStub("LibKa0s-Skin-1.0", true)
+    eachWindow(profile, function(w) followSwatches(w, Skin) end)
+    if type(profile.skin) ~= "table" then profile.skin = {} end
+    profile.skin.swatchesFollow = true
+end
+Database.FollowSwatchesOnce = followSwatchesOnce
+
+--- v27 -> v28: THE CELL AND TOOLTIP SWATCHES ON THE SKIN, ONCE (the owner's R-2 of 2026-11-20). Every
+--- profile; the runner below calls the same gate for the active profile on every pass, so a profile
+--- that arrives after the stamp takes it too. Idempotent.
+migrations[27] = function(db)
+    for _, profile in ipairs(allProfiles(db)) do followSwatchesOnce(profile) end
+end
+
 --- Walk the account forward to CURRENT_DB_VERSION. Runs on Init and on every
 --- profile swap, and is a no-op once at the current version.
 function NS:RunMigrations()
@@ -1113,6 +1180,7 @@ function NS:RunMigrations()
     -- The stamp is per account and following the skin leaves no shape to read, so a profile made
     -- after it is moved here, by its own record (Skin.FollowOnce).
     followSkinOnce(db.profile)
+    followSwatchesOnce(db.profile)
 
     -- Shape normalization runs AFTER the version walk and unconditionally, so a
     -- profile that arrives from a copy or a hand edit is brought to the current

@@ -74,6 +74,49 @@ local function layout()
     s.row:ApplyLayout(s.w.layout)
 end
 
+--- The row laid out and its figures drawn again: the fill's texture and its color, the tint behind it.
+local function drawRow()
+    layout()
+    window().row:Update({ guid = "Player-1-0000000A", name = "Alpha", values = {} }, 1)
+end
+
+--- A second row, drawn as the first, whose stat cell's bar answers no regions and no children: the
+--- kit compares a surface's families across every object it walks, and the bar's gloss (a region of
+--- its own, colored from the skin) would move the color family for a fill that never did. Its own
+--- surfaces see the bar's SetStatusBarColor and SetStatusBarTexture alone. Kept apart from the first
+--- row, whose outline is drawn on the bar's regions.
+local solo
+local function soloCell()
+    local s = window()
+    if not solo then
+        solo = s.w:Acquire()
+        solo:ApplyLayout(s.w.layout)
+        for _, cell in pairs(solo.cells) do
+            if cell.key ~= "name" then
+                rawset(cell.frame, "GetRegions", function() end)
+                rawset(cell.frame, "GetChildren", function() end)
+                solo.stat = cell
+            end
+        end
+    end
+    return solo.stat
+end
+local function drawSolo()
+    local s = window()
+    solo:ApplyLayout(s.w.layout)
+    solo:Update({ guid = "Player-1-0000000B", name = "Bravo", values = {} }, 2)
+end
+
+--- Tooltip line 1, drawn on the client's GameTooltip as a hover draws a spell line, and its carrier.
+local function spellLine()
+    local s, I = window(), live().NS.TooltipInternals
+    local tip = live().mocks.GameTooltip
+    tip:ClearLines()
+    tip:AddLine("Fireball")
+    I.drawLine(1, "1.2K", "40%", 1, 2, I.lineStyle(I.tooltipConfig(s.cfg), nil), "Fireball")
+    return I.lineWidget(1)
+end
+
 local surfaces = {
     { name = "the window's fill and edge", build = function() return window().w.frame end },
     { name = "the window's title",
@@ -110,9 +153,22 @@ local surfaces = {
     { name = "a cell's number",
       companion = rows("text.colorFromSkin", "text.fontFromSkin", "text.shadowFromSkin"),
       build = function() return statCell().left end, paint = layout },
+    -- A data fill (kit revision 58): its texture has to be drawn and move on its own.
     { name = "a cell's bar texture",
       companion = rows("bars.textureFromSkin"),
+      expect = "texture",
       build = function() return statCell().frame end, paint = layout },
+    -- The sample is classless, so its fill is `mm.barNeutral` under the default Class mode
+    -- (SD-SK-MM.3): an owner token, no companion, so the color moves in both passes.
+    { name = "a classless row's fill",
+      companion = rows("bars.textureFromSkin"),
+      expect = { "texture", "color" },
+      build = function()
+          local cell = soloCell()
+          drawSolo()
+          return cell.frame
+      end,
+      paint = drawSolo },
     { name = "a cell's outline",
       companion = rows("bars.borderColorFromSkin", "bars.borderStyleFromSkin"),
       build = function()
@@ -129,27 +185,52 @@ local surfaces = {
       companion = rows("rows.highlightSelfFromSkin"),
       build = function() return window().row.selfHighlight end,
       paint = function() window().row:Update({ guid = "Player-1-0000000A", name = "Alpha", values = {} }, 1) end },
+    -- The name cell's StatusBar is drawn clear (A7): a value holder, no fill reaches the screen.
     { name = "the unit icon's border",
       companion = rows("icons.borderFromSkin"),
+      clear = true,
       build = function() return window().row.nameCell.frame end },
-    { name = "the Export modal", build = function() return live().NS.Export.Open({}) end },
-    { name = "a tooltip's spell bar",
-      companion = rows("tooltip.barBgColorFromSkin", "tooltip.barBorderColorFromSkin", "tooltip.textColorFromSkin"),
+    { name = "the empty state",
       build = function()
-          local proxy = { SetVertexColor = function() end, SetBackdropBorderColor = function() end,
-                          SetTextColor = function() end }
-          return proxy
-      end,
-      paint = function(proxy)
-          local s, I = window(), live().NS.TooltipInternals
-          local style = I.lineStyle(I.tooltipConfig(s.cfg), nil)
-          local c = style.barBgColor
-          proxy:SetVertexColor(c[1], c[2], c[3], c[4])
-          c = style.borderColor
-          proxy:SetBackdropBorderColor(c.r, c.g, c.b, c.a)
-          c = style.textColor
-          proxy:SetTextColor(c[1], c[2], c[3])
+          local w = window().w
+          w:Refresh()
+          return w.empty
       end },
+    { name = "the Export modal", build = function() return live().NS.Export.Open({}) end },
+    -- A REAL spell line, drawn through Tooltip_Lines as a hover draws it (SD-SK-MM.1): its bar's
+    -- texture is a data fill, and the classless sample's fill is the skin's bar fill (SD-SK-MM.5).
+    { name = "a tooltip's spell line",
+      companion = rows("tooltip.barTextureFromSkin", "tooltip.barColorFromSkin", "tooltip.barBgColorFromSkin",
+          "tooltip.barBorderStyleFromSkin", "tooltip.barBorderColorFromSkin", "tooltip.textColorFromSkin",
+          "tooltip.fontFromSkin", "tooltip.fontShadowFromSkin"),
+      expect = "texture",
+      build = function() return spellLine() end,
+      paint = function() spellLine() end },
+    -- LAST, because each moves the shared window onto Custom: the swatches' companions (SD-SK-MM.2, .4).
+    { name = "a Custom cell fill",
+      companion = rows("bars.customColorFromSkin", "bars.textureFromSkin"),
+      expect = { "texture", "color" },
+      build = function()
+          local s = window()
+          s.cfg.bars.colorMode = "custom"
+          -- No outline: a skin's real border style draws one on the bar, a color of its own.
+          s.cfg.bars.border = false
+          s.w:ApplyConfig()
+          local cell = soloCell()
+          drawSolo()
+          return cell.frame
+      end,
+      paint = drawSolo },
+    { name = "a Custom cell background",
+      companion = rows("bars.bgColorFromSkin"),
+      build = function()
+          local s = window()
+          s.cfg.bars.bgColorMode = "custom"
+          s.w:ApplyConfig()
+          drawRow()
+          return statCell().bg
+      end,
+      paint = drawRow },
 }
 
 return {
@@ -164,6 +245,53 @@ return {
             { file = "modules/Tooltip.lua", substring = "fontString:SetTextColor(1, 1, 1)",
               why = "a GameTooltip line handed back to the client, which every addon shares, so a skin token here would leak into the next addon's tooltip; no MultiMeters surface draws it",
               cause = "A7" },
+            -- Kit revision 58 reads tables, keyed r/g/b tables, return triples and RGBA fallbacks
+            -- (SD-LK-97.19). What it finds that draws no look of its own:
+            { file = "modules/HeaderControls.lua", substring = "FULL_TEXTURE = { 0, 1, 0, 1 }",
+              why = "a control's texcoords, the whole of its art", category = "not a color" },
+            { file = "modules/SimWorld.lua", substring = "SPELL_SHARE = { 0.5, 0.3, 0.2 }",
+              why = "the simulator's split of a unit's amount across its spells", category = "not a color" },
+            { file = "modules/Row.lua", substring = "rowHover  = { 1, 1, 1, 0.15 }",
+              why = "a row's look before its window resolved any (NS.SkinWindowLooks runs on every ApplyConfig, before a row draws)",
+              category = "unreachable default" },
+            { file = "modules/Row.lua", substring = "rowStripe = { 1, 1, 1, 0.08 }",
+              why = "a row's look before its window resolved any", category = "unreachable default" },
+            { file = "modules/Row.lua", substring = "selfEdge  = { 1, 0.82, 0, 1 }",
+              why = "a row's look before its window resolved any", category = "unreachable default" },
+            { file = "modules/Row.lua", substring = "nameText  = { 1, 1, 1, 1 }",
+              why = "a row's look before its window resolved any", category = "unreachable default" },
+            { file = "modules/Row.lua", substring = "barNeutral = { 0.45, 0.45, 0.5, 1 }",
+              why = "a row's look before its window resolved any (mm.barNeutral's default)",
+              category = "unreachable default" },
+            -- RGBA(stored, r, g, b, a): the literal is drawn only for a stored swatch that is not a
+            -- color, and AceDB fills every one from defaults/Profile.lua first.
+            { file = "modules/Row.lua", substring = "RGBA(bars.customColor,",
+              why = "the bar's Custom swatch read with its last-resort fallback", category = "unreachable default" },
+            { file = "modules/Row.lua", substring = "RGBA(bars and bars.bgColor,",
+              why = "the cell background's swatch read with its last-resort fallback", category = "unreachable default" },
+            { file = "modules/Row.lua", substring = "RGBA(text and text.color,",
+              why = "the text swatch's alpha read with its last-resort fallback", category = "unreachable default" },
+            { file = "modules/Row.lua", substring = "return RGBA(text.color,",
+              why = "the text swatch read with its last-resort fallback", category = "unreachable default" },
+            { file = "modules/Row_Border.lua", substring = "RGBA(skin.border,",
+              why = "the degraded NS.SKIN border read with its last-resort fallback", category = "unreachable default" },
+            { file = "modules/Window_Header.lua", substring = "RGBA(header.color,",
+              why = "the title swatch read with its last-resort fallback", category = "unreachable default" },
+            { file = "modules/Window_Header.lua", substring = "RGBA(header.bgColor,",
+              why = "the title bar swatch read with its last-resort fallback", category = "unreachable default" },
+            { file = "modules/Tooltip.lua", substring = "SLOT_COLOR_DEFAULT = { 1, 1, 1 }",
+              why = "the number slots' color when the resolved config carries none; tooltipConfig fills it from the stored swatch first",
+              category = "unreachable default" },
+            -- A stored swatch's default, the value defaults/Profile.lua holds (the kit's "defaults
+            -- swatch"): drawn only while its mode is Custom or Class falls through, or while its Use
+            -- the skin's color is off. Every one has a Skin mode or a FromSkin companion on by default.
+            { file = "settings/Schema_Compose.lua", substring = "= { r = ",
+              why = "a composed swatch's default, the companion-off or Custom-mode look", cause = "D4" },
+            { file = "settings/Schema.lua", substring = "default = { r = ",
+              why = "a swatch row's default, read only while its Skin mode or companion is off", cause = "D4" },
+            { file = "core/Database_Migrations.lua", substring = "frame.controlColor = { r = 0.7,",
+              why = "the v17 step's new Custom control color, written only for a profile already on Custom (the Skin mode is the default, MM-A1)",
+              cause = "L6" },
         },
     },
     switch = {

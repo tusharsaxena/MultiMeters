@@ -459,16 +459,19 @@ test("Skin flip: the step puts every window of every profile on the skin and kee
         global   = { schemaVersion = 22 },
     })
     local NS = inst.NS
-    assertEqual(NS.SCHEMA_VERSION, 27)
-    assertEqual(NS.db.global.schemaVersion, 27)
+    assertEqual(NS.SCHEMA_VERSION, 28)
+    assertEqual(NS.db.global.schemaVersion, 28)
     for _, name in ipairs({ "Default", "Raid" }) do
         local p = NS.db.sv.profiles[name]
         assertEqual(p.skin.fullSkinReset, true, name .. ": no record")
         for i, w in ipairs(p.windows) do
             local where = name .. " window " .. i
+            -- The swatch companions keep a picked swatch drawing (the v27 step, R-2): this window's
+            -- bars.customColor is a pick, so its companion is off; tests/test_skin_swatches.lua.
+            local picked = { ["bars.customColorFromSkin"] = w.bars.customColor.g == 0 }
             for _, path in ipairs(NS.Database.FOLLOW_ONCE_KEYS) do
                 if path:match("FromSkin$") and at(w, path:match("^(.*)%.") or "") ~= nil then
-                    assertEqual(at(w, path), true, where .. ": " .. path)
+                    assertEqual(at(w, path), not picked[path], where .. ": " .. path)
                 end
             end
             assertEqual(w.skin, nil, where .. " grew a stray skin table")

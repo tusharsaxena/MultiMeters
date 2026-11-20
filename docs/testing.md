@@ -230,7 +230,7 @@ staying in chat, and the stub streaming to chat.
 
 ## What the mock models, and what it admits it cannot
 
-**The two skin gates (kit revision 50, `skinning-§1`).** `test_skin_values` and `test_skin_switch` are kit suites declared by the pair; `tests/skin_facts.lua` is their facts, not a suite. Its rows are the typed values no token reaches, each with a cause id, and a stale row fails. Its surfaces are what this addon paints: a new painted surface goes in the list, or nothing tests it.
+**The two skin gates (kit revision 50, `skinning-§1`).** `test_skin_values` and `test_skin_switch` are kit suites declared by the pair; `tests/skin_facts.lua` is their facts, not a suite. Its rows are the typed values no token reaches, each with a cause id, and a stale row fails. Its surfaces are what this addon paints: a new painted surface goes in the list, or nothing tests it. Since kit revision 58 (LibKa0s v1.108.0) each family a surface draws (texture, color, font, shadow) has to move on its own, and a row may name a kit category (`not a color`, `unreachable default`) in place of a cause. A data fill is declared `expect = "texture"`, the name cell's clear bar `clear = true`. The kit compares a surface's families across every object it walks, so a fill whose color is the point is declared on a second row whose stat bar answers no regions (`soloCell`): the bar's gloss region would otherwise move the color family for it.
 
 **The mock is three files now, not one.** `tests/wow_mock.lua` layers this addon's half over the
 shared base in `tests/_kit/mock_base.lua`, overwriting per key. Its own header lists what it inherits

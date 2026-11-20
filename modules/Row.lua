@@ -89,6 +89,7 @@ local LOOK_DEFAULT = {
     rowStripe = { 1, 1, 1, 0.08 },
     selfEdge  = { 1, 0.82, 0, 1 },
     nameText  = { 1, 1, 1, 1 },
+    barNeutral = { 0.45, 0.45, 0.5, 1 },
 }
 local function look(window, field)
     local looks = window and window.skinLooks
@@ -290,7 +291,7 @@ local CLASS_TEXTURE = [[Interface\TargetingFrame\UI-Classes-Circles]]
 --- `classFilename` is NeverSecret, which is what makes "class" the default and
 --- what makes it keep working at the height of a pull when every number on the
 --- row is opaque (design §4).
-local function barColor(bars, entry, statKey)
+local function barColor(bars, entry, statKey, looks)
     local mode = bars and bars.colorMode or "class"
 
     if mode == "class" then
@@ -303,6 +304,10 @@ local function barColor(bars, entry, statKey)
         local r, g, b = StatColor(statKey)
         if r then return r, g, b end
     elseif mode == "custom" then
+        -- The skin's bar fill while the companion is on (R-2, SD-SK-MM.2), out of the window's
+        -- cached looks; nil looks, degraded, leave the swatch.
+        local fill = bars.customColorFromSkin == true and looks and looks.barFill
+        if fill then return fill[1], fill[2], fill[3] end
         -- `bars.customColor` is the setting; the literal is the LAST-RESORT
         -- fallback for a profile written before the key existed, not the color
         -- this mode renders. Its authoritative default lives beside every other
@@ -317,8 +322,10 @@ local function barColor(bars, entry, statKey)
 
     -- Every mode falls back to the same neutral rather than to its own, so an
     -- unknown class or an unassigned role reads as "no color information"
-    -- instead of as a fourth palette.
-    return 0.45, 0.45, 0.5
+    -- instead of as a fourth palette. The neutral is the skin's (`mm.barNeutral`,
+    -- the old slate under Ka0s Default, the bar fill elsewhere; SD-SK-MM.3).
+    local n = (looks and looks.barNeutral) or LOOK_DEFAULT.barNeutral
+    return n[1], n[2], n[3]
 end
 
 --- The BACKGROUND color for one cell, per `bars.bgColorMode`.
@@ -334,13 +341,17 @@ end
 --- on the row is opaque.
 ---
 --- @return number r, number g, number b, number a
-local function cellBackground(bars, entry, statKey)
+local function cellBackground(bars, entry, statKey, looks)
     local mode  = bars and bars.bgColorMode or "class"
     local alpha = bars and bars.bgAlpha or 0.15
 
     if mode == "none" then return 0, 0, 0, 0 end
 
     if mode == "custom" then
+        -- The skin's `bar.bg` color while the companion is on (R-2, SD-SK-MM.4); the opacity stays
+        -- the setting's (SF-MM-3). Nil looks, degraded, leave the swatch.
+        local skin = bars and bars.bgColorFromSkin == true and looks and looks.barBg
+        if skin then return skin[1], skin[2], skin[3], alpha end
         local r, g, b = RGBA(bars and bars.bgColor, 0, 0, 0, 1)
         return r, g, b, alpha
     end
@@ -349,7 +360,7 @@ local function cellBackground(bars, entry, statKey)
     -- one color vocabulary for the bar and its background is what keeps a window
     -- looking like one object.
     local r, g, b = barColor({ colorMode = mode, customColor = bars and bars.bgColor },
-        entry, statKey)
+        entry, statKey, looks)
     return r, g, b, alpha
 end
 
@@ -924,11 +935,12 @@ function Cell:SetValue(entry)
     -- more: the bar is what makes the grid readable at a glance, and a
     -- numbers-only column is a worse column. So there is no longer a state in
     -- which a cell paints its fill transparent.
-    local r, g, b = barColor(cfg.bars, entry, self.key)
+    local looks = self.window.skinLooks
+    local r, g, b = barColor(cfg.bars, entry, self.key, looks)
     bar:SetStatusBarColor(r, g, b)
 
     -- The class tint behind the bar, per row. See cellBackground.
-    local br, bg, bb, ba = cellBackground(cfg.bars, entry, self.key)
+    local br, bg, bb, ba = cellBackground(cfg.bars, entry, self.key, looks)
     self.bg:SetColorTexture(br, bg, bb, ba)
 
     -- Both halves of the Damage and Healing columns come off ONE source row:

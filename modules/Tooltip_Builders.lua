@@ -830,13 +830,16 @@ local function statColor(statKey, shown)
     local cr, cg, cb
     if reader then cr, cg, cb = reader(statKey) end
     if not cr then
-        if shown then return 1, 1, 1 end
-        return 0.62, 0.62, 0.62
+        -- No palette entry: the skin's tooltip value color, or its hint gray when the statistic is
+        -- not a column here (skinning-§7, SD-SK-MM.6).
+        if shown then return NS.SkinColor("gtip.value") end
+        return NS.SkinColor("mm.tipHint")
     end
     if shown then return cr, cg, cb end
     local dim = Const.STAT_DIM or 0.6
     return cr * dim, cg * dim, cb * dim
 end
+I.statColor = statColor   -- for tests/test_skin_swatches.lua
 
 --- Which stats the hovered window has on screen, as a lookup.
 ---

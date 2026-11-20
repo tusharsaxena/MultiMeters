@@ -240,8 +240,9 @@ end
 --- which is why this keeps working mid-pull when the numbers under it do not.
 ---
 --- Three returns, for AddDoubleLine's first color triple. A row with no class --
---- an NPC, an enemy, a spell in a breakdown -- keeps white, which is the honest
---- answer rather than a tenth palette entry.
+--- an NPC, an enemy, a spell in a breakdown -- takes the skin's `gtip.value`, the
+--- honest answer rather than a tenth palette entry (white under Ka0s Default;
+--- skinning-§7, SD-SK-MM.6).
 ---
 --- @param row table|nil
 --- @return number r, number g, number b
@@ -249,7 +250,7 @@ local function nameColor(row)
     local classes = _G.RAID_CLASS_COLORS
     local c = classes and row and row.classFilename and classes[row.classFilename]
     if c then return c.r, c.g, c.b end
-    return 1, 1, 1
+    return NS.SkinColor("gtip.value")
 end
 
 -- ---------------------------------------------------------------------------
@@ -294,6 +295,7 @@ local function tooltipConfig(window)
         barTexture         = media("barTexture", "bar.texture", "Ka0s Default"),
         barTextureFromSkin = field("barTextureFromSkin", false),
         barColor           = field("barColor", nil),
+        barColorFromSkin   = field("barColorFromSkin", false),
         barColorMode       = field("barColorMode", "class"),
         barAlpha           = field("barAlpha", 0.85),
         barBgColor         = field("barBgColor", nil),

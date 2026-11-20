@@ -473,7 +473,8 @@ function Cell:SetPlayer(entry, _sortKey)
     -- conspicuously undressed beside it. The background is the cell's own
     -- texture, not the bar, so this stays true of a cell whose bar is flattened
     -- to nothing (which this one always is).
-    local br, bgc, bb, ba = cellBackground((self.window.config.bars or {}), entry, self.key)
+    local br, bgc, bb, ba = cellBackground((self.window.config.bars or {}), entry, self.key,
+        self.window.skinLooks)
     self.bg:SetColorTexture(br, bgc, bb, ba)
 
     -- A `Player-…` GUID is the only thing whose name can carry a realm. A pet, a

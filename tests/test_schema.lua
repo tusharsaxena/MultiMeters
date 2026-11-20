@@ -288,13 +288,14 @@ local PARTITION = {
     -- Tooltip, one Controls tab on Header, one Rules tab on Visibility and one Column header
     -- tab on Columns. Each HUD media picker's "Use the skin's ..." companion (skinning-§6) is one
     -- more row in its tab, and the two meta companions two more in Quick style; the title bar's
-    -- background companion (MM-A1) one more in Title bar.
+    -- background companion (MM-A1) one more in Title bar. The swatch companions of LibKa0s
+    -- v1.108.0 (R-2, SD-SK-MM.2, .4, .5): two more in Bars > Bar, one more in Tooltip > Bar.
     windows    = { { "Window", 1 } },
     frame      = { { "Size and position", 8 }, { "Quick style", 6 },
                    { "Background and border", 6 }, { "Rows", 10 } },
     header     = { { "Title bar", 4 }, { "Title text", 10 }, { "Controls", 16 } },
-    bars       = { { "Bar", 17 }, { "Text", 14 }, { "Icons", 4 } },
-    tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 16 }, { "Text", 9 } },
+    bars       = { { "Bar", 19 }, { "Text", 14 }, { "Icons", 4 } },
+    tooltip    = { { "General", 5 }, { "Contents", 8 }, { "Bar", 17 }, { "Text", 9 } },
     visibility = { { "Rules", 17 } },
     columns    = { { "Column header", 12 } },
 }

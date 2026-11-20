@@ -408,6 +408,9 @@ local SUITES = {
     -- The colors, borders and shadows on the skin: the companions, Ka0s Default's pixels, a skin
     -- switch on the drawing setters, and the one per-profile step.
     "test_skin_flip",
+    -- The cell and tooltip swatches on the skin (R-2, LibKa0s v1.108.0): the companions, the
+    -- classless neutral, the tooltip lines and the v27 step.
+    "test_skin_swatches",
     -- The addon's own gaps: gloss, the header band and unit icon, the segment menu, the Columns
     -- glyph, the small misses and the title bars.
     "test_skin_fix",
