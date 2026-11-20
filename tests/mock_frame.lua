@@ -497,6 +497,10 @@ function FRAME.SetStatusBarTexture(self, t)
     return self
 end
 function FRAME.GetStatusBarTexture(self)
+    -- A region has no bar fill. Answering one there made every fill a frame with a fill of its own,
+    -- an endless chain the kit's skin-switch spy (revision 58, which walks GetStatusBarTexture)
+    -- followed until the heap budget stopped the run.
+    if self.__objectType == "Texture" or self.__objectType == "FontString" then return nil end
     self.__barTextureObj = self.__barTextureObj or makeFrame("Texture", self)
     return self.__barTextureObj
 end

@@ -771,6 +771,9 @@ local FRAME_BG_ROWS = compose("ColorPair", {
     page = "frame", group = L["Background and border"], subgroup = L["Background"],
     key = "backdropColor", label = L["Background color"],
     omit = { useClassColorBackdropColor = true },
+    -- No "Use the skin's color" (compose minor 20's default): the mode beside the swatch already
+    -- has a Skin answer, the default (R-3 / MM-A1), and a bool would be a second control for it.
+    colorFromSkin = false,
     defaults = { backdropColor = { r = 0, g = 0, b = 0, a = 0.75 } },
     -- The window's chrome is about the WINDOW, so the only class it can mean is
     -- the local player's (modules/Window_Header.lua's headerColor makes the same call for
@@ -793,6 +796,10 @@ local FRAME_BORDER_ROWS = compose("BorderGroup", {
     prefix = "window.frame.",
     page = "frame", group = L["Background and border"], subgroup = L["Border"],
     omit = { useClassColorBorder = true },
+    -- No companions (compose minor 20 emits them by default): the window's edge follows the skin
+    -- through `borderColorMode = "skin"`, the Shell drawing the skin's whole edge (MM-A1), and the
+    -- style, thickness and color here are read only under Class or Custom.
+    fromSkin = false,
     labels = {
         borderStyle = L["Border style"], borderSize = L["Border thickness"],
         borderColor = L["Border color"],
@@ -835,6 +842,8 @@ local HEADER_TEXT_ROWS = compose("FontGroup", followsSkin("font", {
         fontFlags = "@skin", fontShadow = true,
     },
     flagsFromSkin = true,
+    -- The color mode's Skin answer (its default) is this title's companion, so no bool (minor 20).
+    colorFromSkin = false,
     classColor = { source = "player" },
     extra = { followRow("window.header.shadowFromSkin", L["Use the skin's shadow"],
         L["Draw the title in the skin's text shadow. Draw shadow is kept but not read while this is on."]) },
@@ -880,6 +889,7 @@ local BARS_BAR_ROWS = compose("BarGroup", followsSkin("texture", {
         barAlpha = 1.0,
         barColor = { r = 0.35, g = 0.55, b = 0.85, a = 1 },
     },
+    colorFromSkin = false,
     -- A CELL IS ABOUT THE ROW IT IS DRAWN ON, so `class` here is the class of the
     -- player that row belongs to and never the local player's -- modules/Row.lua's
     -- ApplyEntryTextColor is where that is decided, off the entry's own
@@ -931,6 +941,7 @@ local BARS_BG_ROWS = compose("ColorPair", {
     key = "bgColor", label = L["Bar background color"],
     omit = { useClassColorBgColor = true },
     defaults = { bgColor = { r = 0, g = 0, b = 0, a = 1 } },
+    colorFromSkin = false,
     classColor = { source = "unit" },
     extra = { {
         path = "window.bars.bgAlpha", type = "number", default = 0.15,
@@ -1064,6 +1075,7 @@ local TIP_BAR_ROWS = compose("BarGroup", followsSkin("texture", {
         barAlpha = 0.85,
         barColor = { r = 0.6, g = 0.6, b = 0.6, a = 1 },
     },
+    colorFromSkin = false,
     -- The hovered PLAYER's class, not the local player's: a tooltip is opened over
     -- one row and is about that row (modules/Tooltip.lua's modeColor).
     classColor = { source = "unit" },
