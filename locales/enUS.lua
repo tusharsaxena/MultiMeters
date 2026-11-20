@@ -827,6 +827,12 @@ L["Draw the title in the skin's text shadow. Draw shadow is kept but not read wh
     "Draw the title in the skin's text shadow. Draw shadow is kept but not read while this is on."
 L["Draw the outline in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."] =
     "Draw the outline in the skin's bar border color while the mode is Custom. The border color is kept but not read while this is on."
+L["Draw the bars in the skin's bar fill color while the mode is Custom. The bar color is kept but not read while this is on."] =
+    "Draw the bars in the skin's bar fill color while the mode is Custom. The bar color is kept but not read while this is on."
+L["Draw the unfilled part in the skin's bar background color while the mode is Custom. The background color is kept but not read while this is on; the opacity stays yours."] =
+    "Draw the unfilled part in the skin's bar background color while the mode is Custom. The background color is kept but not read while this is on; the opacity stays yours."
+L["Draw the filled part in the skin's bar fill color while the mode is Custom, and for a row with no class. The bar color is kept but not read while this is on."] =
+    "Draw the filled part in the skin's bar fill color while the mode is Custom, and for a row with no class. The bar color is kept but not read while this is on."
 L["Draw the numbers in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."] =
     "Draw the numbers in the skin's HUD text color while the mode is Custom. The font color is kept but not read while this is on."
 L["Draw the numbers and names in the skin's text shadow. Draw shadow is kept but not read while this is on."] =

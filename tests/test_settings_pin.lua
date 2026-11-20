@@ -67,6 +67,9 @@ end
 -- step delay slider the other sims have, 0.5 to 10 s in 0.5 s steps, 1 s out of the box.
 -- state.sim (R6-SIM, LibKa0s compose minor 19) is a new session row: the Sim mode checkbox beside
 -- Test mode, stored nowhere, its get / set the launcher's own sim pair.
+-- The three swatch companions (LibKa0s v1.108.0 OptionsCompose minor 20's own rows; the owner's
+-- R-2, SD-SK-MM.2, .4, .5 of Ka0sAddonsCommonTasks docs/2026-11-20-SKIN_DEFAULTS_AUDIT) are new
+-- settings too, each default on.
 -- path|type|default|min|max|step|value keys|sessionOnly|hidden|invert
 local PIN = {
     "data.mergePets|bool|false|nil|nil|nil|-|false|false|false",
@@ -108,6 +111,7 @@ local PIN = {
     "window.bars.bgAlpha|number|0.15|0|1|0.01|-|false|false|false",
     "window.bars.bgColorMode|string|class|nil|nil|nil|class,custom,none,stat|false|false|false",
     "window.bars.bgColor|color|{a=1,b=0,g=0,r=0}|nil|nil|nil|-|false|false|false",
+    "window.bars.bgColorFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.bars.borderColorFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.bars.borderColorMode|string|custom|nil|nil|nil|class,custom|false|false|false",
     "window.bars.borderColor|color|{a=1,b=0,g=0,r=0}|nil|nil|nil|-|false|false|false",
@@ -117,6 +121,7 @@ local PIN = {
     "window.bars.border|bool|false|nil|nil|nil|-|false|false|false",
     "window.bars.colorMode|string|class|nil|nil|nil|class,custom,stat|false|false|false",
     "window.bars.customColor|color|{a=1,b=0.85,g=0.55,r=0.35}|nil|nil|nil|-|false|false|false",
+    "window.bars.customColorFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.bars.fillDirection|string|LEFT|nil|nil|nil|LEFT,RIGHT|false|false|false",
     "window.bars.textureFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.bars.texture|string|Ka0s Default|nil|nil|nil|Ka0s Classic,Ka0s Default,Ka0s Forge,Ka0s Glass Bar,Ka0s Gradient,Ka0s Matte,Ka0s Overline 1,Ka0s Overline 2,Ka0s Overline 4,Ka0s Parchment,Ka0s Satin,Ka0s Solid,Ka0s Underline 1,Ka0s Underline 2,Ka0s Underline 4|false|false|false",
@@ -231,6 +236,7 @@ local PIN = {
     "window.tooltip.barBorderStyle|string|None|nil|nil|nil|Ka0s Glass,Solid|false|false|false",
     "window.tooltip.barColorMode|string|class|nil|nil|nil|class,custom,stat|false|false|false",
     "window.tooltip.barColor|color|{a=1,b=0.6,g=0.6,r=0.6}|nil|nil|nil|-|false|false|false",
+    "window.tooltip.barColorFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.tooltip.barSpacing|number|1|0|12|1|-|false|false|false",
     "window.tooltip.barTextureFromSkin|bool|true|nil|nil|nil|-|false|false|false",
     "window.tooltip.barTexture|string|Ka0s Default|nil|nil|nil|Ka0s Classic,Ka0s Default,Ka0s Forge,Ka0s Glass Bar,Ka0s Gradient,Ka0s Matte,Ka0s Overline 1,Ka0s Overline 2,Ka0s Overline 4,Ka0s Parchment,Ka0s Satin,Ka0s Solid,Ka0s Underline 1,Ka0s Underline 2,Ka0s Underline 4|false|false|false",

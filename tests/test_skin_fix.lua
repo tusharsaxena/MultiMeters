@@ -242,15 +242,42 @@ test("V89A-MM: every segment row is a radio, and the shown one draws the menu's 
     assertTrue(got.menu.buttons[5].__tick:GetText() ~= "", "and onto Overall")
 end)
 
-test("A2: under the Combat restriction the client's menu stays, because a label may be secret", function()
-    -- red under: W.Dropdown handed a secret label, whose menu measures and concatenates each row,
-    -- which raises in tainted code.
+test("U-21: under the Combat restriction the picker is the skinned menu, a secret label measured never", function()
+    -- The owner's U-21 (2026-11-20, narrowed): WidgetsDropdown minor 3 skips a secret label, so the
+    -- in-combat fallback to the client's menu is gone. The segment's label answers secret here, as a
+    -- stored session's duration makes it in the client (the library's own suite models it the same
+    -- way: a string issecretvalue says is one, since this mock traps `..`, which the client allows).
+    -- red under: the restriction branch back in OpenSegmentMenu (the client's menu opens), or
+    -- WidgetsDropdown minor 2, whose menuWidth hands every label to its measure.
     local inst, _, window = scene()
     inst.mocks.setAvailableSessions{ { sessionID = 4, name = "Guard", durationSeconds = 22 } }
+    local first = openPicker(inst, window)   -- builds the shared menu and its measure
+    window.frame:Hide()                      -- and closes it again
+    window.frame:Show()
+    local measure = first.menu.measure
+    assertTrue(measure ~= nil, "the shared menu built no measure: this case asserts nothing")
+    local measured = {}
+    local setText = measure.SetText
+    measure.SetText = function(fs, t) measured[#measured + 1] = t; return setText(fs, t) end
+    local SECRET = "Guard   0:22"
+    local saved = inst.mocks.issecretvalue
+    inst.mocks.issecretvalue = function(v) return v == SECRET or saved(v) end
     inst.mocks.setRestricted(true)
-    assertTrue(window:OpenSegmentMenu())
-    assertTrue(inst.mocks.__lastMenu ~= nil, "no menu while restricted")
-    assertTrue(window.segmentAnchor == nil, "the widget took labels it may not measure")
+    inst.mocks.__lastMenu = nil
+    local ok, got = pcall(openPicker, inst, window)
+    inst.mocks.issecretvalue = saved
+    measure.SetText = setText
+    assertTrue(ok, "the picker raised mid-pull: " .. tostring(got))
+    assertTrue(inst.mocks.__lastMenu == nil, "the client's menu opened mid-pull")
+    assertEqual(got.rows[2].label, SECRET, "the segment's label")
+    assertTrue(got.menu:IsShown(), "no menu on screen")
+    assertEqual(got.opts.owner, OWNER, "the menu must wear this addon's skin")
+    assertTrue(type(got.opts.width) == "number" and got.opts.width > 0, "no floor for the secret row")
+    for _, t in ipairs(measured) do
+        assertTrue(not tostring(t):find(SECRET, 1, true), "the secret label reached the measure")
+    end
+    assertTrue(#measured > 0, "nothing was measured: the plain rows must still be")
+    window.frame:Hide()
 end)
 
 -- ── L6, L4: the Columns editor ───────────────────────────────────────────────────────────────

@@ -358,6 +358,9 @@ local WINDOW_TEMPLATE = {
         -- "custom" that cannot be customized is a mode with no meaning; the
         -- shipped value is the muted blue that mode used to hardcode.
         customColor   = { r = 0.35, g = 0.55, b = 0.85, a = 1 },
+        -- Under Custom, the skin's `bar.fill` while this is on; the swatch is kept, not read (the
+        -- owner's R-2, SD-SK-MM.2). A pick made before it existed is kept by the v27 step.
+        customColorFromSkin = true,
         -- THE ROW TINT LIVES HERE, on the cell background, rather than on the
         -- row. Painting the row tinted the two-pixel seams between columns along
         -- with the cells and lost the separators the grid is read by; painting
@@ -367,6 +370,8 @@ local WINDOW_TEMPLATE = {
         -- NeverSecret, so it keeps working mid-pull when every number is opaque.
         bgColorMode   = "class",   -- class | stat | custom | none
         bgColor       = { r = 0, g = 0, b = 0, a = 1 },
+        -- Under Custom, the skin's `bar.bg` color while this is on; bgAlpha stays (R-2, SD-SK-MM.4).
+        bgColorFromSkin = true,
         bgAlpha       = 0.15,   -- SF-MM-3: a skin never moves it
         border        = false,
         -- The outline's own thickness and color. It used to be one pixel of the
@@ -521,6 +526,8 @@ local WINDOW_TEMPLATE = {
         -- 0.1: these bars sit on the tooltip's own dark backdrop, so a third of
         -- a screen of black over it read as a smear rather than an empty bar.
         barColor           = { r = 0.6, g = 0.6, b = 0.6, a = 1 },
+        -- The skin's `bar.fill` under Custom and for a row with no class (R-2, SD-SK-MM.5).
+        barColorFromSkin   = true,
         barColorMode       = "class",
         barAlpha           = 0.85,
         barBgColor         = { r = 0, g = 0, b = 0, a = 1 },
@@ -907,6 +914,9 @@ NS.defaults = {
             -- step, so no Defaults button can put it back and run the step again over a companion the
             -- player turned off. A profile reset does, against defaults that show nothing new.
             fullSkinReset = false,
+            -- The record of the swatches' move (LibKa0s v1.108.0, the owner's R-2; the v27 step):
+            -- true once this profile's three swatch companions were set. No schema row, as above.
+            swatchesFollow = false,
         },
     },
     global = {

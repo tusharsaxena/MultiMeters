@@ -92,12 +92,13 @@ the shipped v1 shape to v27. Each is one line of the header block at the top of
 | v24 → v25 | the deleted Friz becomes Ka0s Ubuntu (R3-FRIZ): LibKa0s v1.85.0 deleted `Ka0s Friz Quadrata TT` (R3-L7) and WoW Default draws `Ka0s Ubuntu` in its place (R3-L6). `Database.RetireFonts` moves every stored string naming the deleted face, at any depth (a window's fonts, the skin's Font override), to `Ka0s Ubuntu` in every profile. Blizzard's own `Friz Quadrata TT` stays. |
 | v25 → v26 | no line under the title (R4-SEP, the owner's 2026-11-03 sign-off): the title bar divider and its four settings are gone, so every stored window of every profile has `header.divider`, `dividerThickness`, `dividerColorMode` and `dividerColor` (`Database.DIVIDER_KEYS`) pruned, whatever they held. |
 | v26 → v27 | the tooltip opens beside the window (AD-92-MM, the owner's ruling of 2026-11-17, option A): `tooltip.anchor` offers only `BESIDE` and `BESIDE_LEFT`, so every stored window of every profile has its anchor, whatever it held (the eight 3×3 boxes, a `CURSOR` that escaped v10, junk), set to `BESIDE`. The offsets are kept. See [`tooltip`](#tooltip) |
+| v27 → v28 | the cell and tooltip swatches onto the skin (the owner's R-2 of 2026-11-20, LibKa0s v1.108.0): every window of every profile has `bars.customColorFromSkin`, `bars.bgColorFromSkin` and `tooltip.barColorFromSkin` set on where the swatch beside it is still the shipped color (through `Skin.ResetToSkin`) and off where the player picked one, so the pick keeps drawing; once per profile, recorded as `skin.swatchesFollow` (no schema row), and run for the active profile on every pass (`Database.FollowSwatchesOnce`). |
 
-Adding a v28 is two edits and no bootstrap change:
+Adding a v29 is two edits and no bootstrap change:
 
 ```lua
-migrations[27] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
-local CURRENT_DB_VERSION = 28               -- core/Database.lua
+migrations[28] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
+local CURRENT_DB_VERSION = 29               -- core/Database.lua
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.
@@ -178,6 +179,9 @@ its own half. **New keys with defaults, so no migration was owed**: AceDB merges
 stored profile. `pickerSeen` is false on every profile, old and new (owner ruling O3), and is set by
 the player's close of the first-run picker only. `fullSkinReset`, default false, is the v23 step's
 per-profile record: true once the profile has moved. It has **no row**, so no Defaults button walks it.
+`swatchesFollow`, default false, is the v27 step's record of the same kind: true once the profile's
+three swatch companions (`bars.customColorFromSkin`, `bars.bgColorFromSkin`,
+`tooltip.barColorFromSkin`) were set, on over a shipped swatch and off over a pick. No row either.
 
 ### `windows` is an array, and it is empty in the defaults
 
@@ -820,10 +824,18 @@ settings-panel controls answering a question that was already answered one page 
 ### `bars` — the StatusBar in every cell
 
 `texture = "Ka0s Default"` (LSM `statusbar`) · `textureFromSkin = true` · `colorMode = "class"` · `customColor =
-{ r=0.35, g=0.55, b=0.85, a=1 }` · `bgColor = { r=0, g=0, b=0, a=1 }` · `bgColorMode = "class"` ·
-`bgAlpha = 0.15` · `border = false` · `borderStyle = "None"` · `borderStyleFromSkin = true` · `borderThickness = 1` ·
+{ r=0.35, g=0.55, b=0.85, a=1 }` · `customColorFromSkin = true` · `bgColor = { r=0, g=0, b=0, a=1 }` ·
+`bgColorFromSkin = true` · `bgColorMode = "class"` · `bgAlpha = 0.15` · `border = false` · `borderStyle = "None"` · `borderStyleFromSkin = true` · `borderThickness = 1` ·
 `borderColor = { r=0, g=0, b=0, a=1 }` · `borderColorMode = "custom"` · `alpha = 1.0` ·
 `fillDirection = "LEFT"` · `animate = true`.
+
+**The two swatches follow the skin under Custom** (the owner's R-2 of 2026-11-20; LibKa0s v1.108.0's
+composer emits each "Use the skin's color" row): while `customColorFromSkin` is on a Custom fill is
+the skin's bar fill (`S.BarFillColor`), and while `bgColorFromSkin` is on a Custom background is
+`bar.bg`'s color at `bgAlpha` (SF-MM-3: a skin never moves the opacity). Each swatch stays live and
+keeps its value. A row with no class to mean (an NPC, an enemy, an unknown role, a statistic with no
+palette entry) is filled with the owner token `mm.barNeutral`, the old slate gray under Ka0s Default
+and the skin's bar fill under every other skin; a class or per-statistic color still comes first.
 
 **`animate` slides each fill to its new length between refreshes instead of snapping** (issue #23).
 The slide is the client's. Patch 12.0 gave `StatusBar:SetValue` and `:SetMinMaxValues` an optional
@@ -1040,7 +1052,7 @@ every number to its right is opaque.
 
 Its own appearance, kept separate from `bars` and `text` on purpose — a 14px spell line and a 90px
 cell are different surfaces, and a texture or a size that reads across one often does not across the
-other: `barTexture = "Ka0s Default"` · `barTextureFromSkin = true` · `barSpacing = 1` · `scale = 1.0` · `barColorMode = "class"` · `barAlpha = 0.85` · `barBgColorMode = "custom"` ·
+other: `barTexture = "Ka0s Default"` · `barTextureFromSkin = true` · `barSpacing = 1` · `scale = 1.0` · `barColorMode = "class"` · `barColorFromSkin = true` (the skin's bar fill under Custom and for a row with no class, R-2) · `barAlpha = 0.85` · `barBgColorMode = "custom"` ·
 `barBgAlpha = 0.1` · `barBorderStyle = "None"` · `barBorderStyleFromSkin = true` ·
 `barBorderSize = 1` · `barBorderColor = { r = 0, g = 0, b = 0, a = 1 }` ·
 `barBorderColorMode = "custom"` ·

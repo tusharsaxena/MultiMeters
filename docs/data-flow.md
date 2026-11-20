@@ -788,9 +788,13 @@ The **segment control** in the header strip — the three horizontal lines — o
 (`W.ContextMenu`, wearing this owner's skin, cause A2): a title, every session the client is still
 holding — name and duration, newest first as the API returns them — a divider, then the
 two synthetic entries `Current` and `Overall`, every entry a radio row (Widgets 23) and the window's
-own entry ticked. **Under the Combat restriction it opens the client's menu instead**
-(`Compat.OpenContextMenu`, the same shape, plain entries with no tick): a stored session's duration is secret there, `..` keeps a secret, and the Ka0s menu sizes itself from each row's
-`GetStringWidth`, whose answer raises in its arithmetic on a secret string. The menu anchors to the header's session line, which
+own entry ticked. **It is the same menu under the Combat restriction** (the owner's U-21 of
+2026-11-20, narrowed): a stored session's duration is secret there and `..` keeps a secret, and
+since LibKa0s v1.108.0 (WidgetsDropdown minor 3) the shared menu measures no secret label and reads
+no width that answers a secret, so such a row takes the menu's floor, `opts.width` (the session
+line's 220px), and no arithmetic meets a secret. Through v1.107.0 the menu measured every label, and
+this control opened the client's menu mid-pull instead. The client's menu (`Compat.OpenContextMenu`,
+the same shape, plain entries with no tick) is left only for an install without LibKa0s. The menu anchors to the header's session line, which
 is where it has always come out; that line used to be a 220px Button and opened the menu itself,
 which put an invisible click target across the middle of the title bar and was removed.
 

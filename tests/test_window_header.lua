@@ -434,11 +434,16 @@ test("Segment menu: a title, stored segments first, a divider, then Current/Over
     assertEqual(rows[6].label, inst.NS.L["Overall"])
 end)
 
-test("Segment menu: under the restriction the client's menu keeps its title and divider", function()
-    -- red under: the fallback dropped, which leaves a mid-pull click with no menu at all.
+test("Segment menu: without the library the client's menu keeps its title and divider", function()
+    -- The one install the client's menu still serves (the owner's U-21 took it off the restriction).
+    -- red under: the fallback dropped, which leaves a library-less click with no menu at all.
     local inst, window = withSegments()
-    inst.mocks.setRestricted(true)
-    assertTrue(window:OpenSegmentMenu(), "the menu must actually open")
+    local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0", true)
+    local real = W.ContextMenu
+    W.ContextMenu = nil
+    local opened = window:OpenSegmentMenu()
+    W.ContextMenu = real
+    assertTrue(opened, "the menu must actually open")
 
     local menu = inst.mocks.__lastMenu
     local kinds = {}
@@ -477,9 +482,13 @@ end)
 
 test("Segment menu: with no menu API the click is refused, not an error", function()
     local inst, window = withSegments()
-    inst.mocks.setRestricted(true)   -- the one window the client's menu still serves
+    local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0", true)
+    local real = W.ContextMenu
+    W.ContextMenu = nil   -- no library: the one install the client's menu still serves
     inst.mocks.MenuUtil = nil
-    assertFalse(window:OpenSegmentMenu())
+    local opened = window:OpenSegmentMenu()
+    W.ContextMenu = real
+    assertFalse(opened)
 end)
 
 test("Segment: a pinned segment is READ, not merely stored", function()

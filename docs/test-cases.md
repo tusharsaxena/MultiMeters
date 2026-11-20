@@ -1339,7 +1339,7 @@ Total.
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
 - Segment menu: a title, stored segments first, a divider, then Current/Overall
-- Segment menu: under the restriction the client's menu keeps its title and divider
+- Segment menu: without the library the client's menu keeps its title and divider
 - Segment menu: an entry is labeled with its name AND its duration
 - Segment menu: picking a segment pins it and marks the window dirty
 - Segment menu: picking Current CLEARS the pin
@@ -2661,6 +2661,20 @@ Total.
 - Skin flip: a new profile takes the step against a template that shows nothing new
 - Skin flip: without the library the step sets the companions by hand and writes the record
 
+### test_skin_swatches.lua (11)
+
+- Swatches: the three companions ship on, as composed rows beside their swatches, governing none
+- Swatches: under Custom a cell draws the skin's bar fill, the swatch with the companion off
+- Swatches: a classless row's fill is mm.barNeutral, the old slate under Ka0s Default
+- Swatches: under Custom the cell background takes bar.bg's color and keeps its opacity
+- Swatches: degraded, a window has no fill looks, so every swatch draws as stored
+- Swatches: the tooltip bar takes the skin's fill under Custom and for a classless row
+- Swatches: a GameTooltip line with no class or palette reads the skin's tooltip colors
+- Swatches: the v27 step follows a shipped swatch and keeps a pick, in every profile, once
+- Swatches: the step runs once, so a companion turned off after it stays off
+- Swatches: the record has no schema row, so no Defaults button walks it
+- Swatches: without the library the step sets the companions by hand and writes the record
+
 ### test_skin_fix.lua (37)
 
 - Gloss: a cell draws the skin's gloss while its texture follows the skin
@@ -2672,7 +2686,7 @@ Total.
 - A2: the segment picker is the shared context menu, titled, the active entry marked
 - A2: a pinned segment is the marked row, and a window hidden closes the menu
 - V89A-MM: every segment row is a radio, and the shown one draws the menu's tick
-- A2: under the Combat restriction the client's menu stays, because a label may be secret
+- U-21: under the Combat restriction the picker is the skinned menu, a secret label measured never
 - L6: the column glyph takes a Ka0s mark in the skin's tint, the stock art while the panel is ignored
 - L8: the sort arrow takes icon.arrow while the label follows the skin
 - L8: the close control takes the close tokens under the Skin mode
@@ -2973,7 +2987,7 @@ Total.
 - skin values: no typed value outside the kit's categories and the host's rows
 - skin values: the check is falsifiable, a planted value of each shape is reported
 
-### test_skin_switch.lua (24)
+### test_skin_switch.lua (29)
 
 - skin switch: the check is falsifiable, a surface that redraws a literal is reported
 - skin switch: the check is falsifiable, a bar whose texture never moves is reported
@@ -2991,14 +3005,19 @@ Total.
 - skin switch: a header control's tint changes with the Scope ignored
 - skin switch: a cell's number changes
 - skin switch: a cell's bar texture changes
+- skin switch: a classless row's fill changes
 - skin switch: a cell's outline changes
 - skin switch: the row's mouseover wash changes
 - skin switch: the row's mouseover wash changes with the Scope ignored
 - skin switch: the row's self edge changes
 - skin switch: the unit icon's border changes
+- skin switch: the empty state changes
+- skin switch: the empty state changes with the Scope ignored
 - skin switch: the Export modal changes
 - skin switch: the Export modal changes with the Scope ignored
-- skin switch: a tooltip's spell bar changes
+- skin switch: a tooltip's spell line changes
+- skin switch: a Custom cell fill changes
+- skin switch: a Custom cell background changes
 
 ### test_client_globals.lua (3)
 
@@ -3107,6 +3126,7 @@ Total.
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
 | test_skin_flip.lua | 21 |
+| test_skin_swatches.lua | 11 |
 | test_skin_fix.lua | 37 |
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
@@ -3126,7 +3146,7 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | test_skin_values.lua | 3 |
-| test_skin_switch.lua | 24 |
+| test_skin_switch.lua | 29 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2643** |
+| **Total** | **2659** |

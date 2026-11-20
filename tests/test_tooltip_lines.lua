@@ -313,6 +313,7 @@ test("The bar's fill and its backdrop each take their own color and opacity", fu
     local inst, cfg, anchor = bench{ configure = function(c)
         c.tooltip.barColorMode   = "custom"
         c.tooltip.barColor       = { r = 1, g = 0, b = 0, a = 1 }
+        c.tooltip.barColorFromSkin = false     -- the player's own color, off the skin (SD-SK-MM.5)
         c.tooltip.barAlpha       = 0.5
         c.tooltip.barBgColorMode = "custom"
         c.tooltip.barBgColor     = { r = 0, g = 0, b = 1, a = 1 }

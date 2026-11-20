@@ -1074,8 +1074,8 @@ test("Database: v26 -> v27 moves every stored tooltip anchor to BESIDE, in every
         global = { schemaVersion = 26 },
     })
     local ns = inst.NS
-    assertEqual(ns.SCHEMA_VERSION, 27)
-    assertEqual(ns.db.global.schemaVersion, 27)
+    assertEqual(ns.SCHEMA_VERSION, 28)
+    assertEqual(ns.db.global.schemaVersion, 28)
     local a = ns.Database.FindWindow(1).tooltip
     assertEqual(a.anchor, "BESIDE")
     assertEqual(a.offsetX, 25, "the horizontal nudge was not kept")

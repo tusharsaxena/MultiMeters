@@ -889,7 +889,6 @@ local BARS_BAR_ROWS = compose("BarGroup", followsSkin("texture", {
         barAlpha = 1.0,
         barColor = { r = 0.35, g = 0.55, b = 0.85, a = 1 },
     },
-    colorFromSkin = false,
     -- A CELL IS ABOUT THE ROW IT IS DRAWN ON, so `class` here is the class of the
     -- player that row belongs to and never the local player's -- modules/Row.lua's
     -- ApplyEntryTextColor is where that is decided, off the entry's own
@@ -921,6 +920,12 @@ dress(BARS_BAR_ROWS, {
     ["window.bars.customColor"] = {
         desc = L["Fill color used when the color mode is set to Custom color."],
     },
+    -- The swatch's companion, compose minor 20's own row (R-2, SD-SK-MM.2): on, Custom draws the
+    -- skin's bar fill and the swatch is kept, not read.
+    ["window.bars.customColorFromSkin"] = {
+        label = L["Use the skin's color"],
+        desc = L["Draw the bars in the skin's bar fill color while the mode is Custom. The bar color is kept but not read while this is on."],
+    },
 })
 withMode(BARS_BAR_ROWS, "window.bars.customColor", {
     path = "window.bars.colorMode", type = "string", default = "class",
@@ -941,7 +946,6 @@ local BARS_BG_ROWS = compose("ColorPair", {
     key = "bgColor", label = L["Bar background color"],
     omit = { useClassColorBgColor = true },
     defaults = { bgColor = { r = 0, g = 0, b = 0, a = 1 } },
-    colorFromSkin = false,
     classColor = { source = "unit" },
     extra = { {
         path = "window.bars.bgAlpha", type = "number", default = 0.15,
@@ -953,6 +957,10 @@ local BARS_BG_ROWS = compose("ColorPair", {
 })
 dress(BARS_BG_ROWS, {
     ["window.bars.bgColor"] = { desc = L["Color drawn behind the unfilled part of each bar."] },
+    ["window.bars.bgColorFromSkin"] = {
+        label = L["Use the skin's color"],
+        desc = L["Draw the unfilled part in the skin's bar background color while the mode is Custom. The background color is kept but not read while this is on; the opacity stays yours."],
+    },
 })
 withMode(BARS_BG_ROWS, "window.bars.bgColor", {
     path = "window.bars.bgColorMode", type = "string", default = "class",
@@ -1075,7 +1083,6 @@ local TIP_BAR_ROWS = compose("BarGroup", followsSkin("texture", {
         barAlpha = 0.85,
         barColor = { r = 0.6, g = 0.6, b = 0.6, a = 1 },
     },
-    colorFromSkin = false,
     -- The hovered PLAYER's class, not the local player's: a tooltip is opened over
     -- one row and is about that row (modules/Tooltip.lua's modeColor).
     classColor = { source = "unit" },
@@ -1097,6 +1104,10 @@ dress(TIP_BAR_ROWS, {
     },
     ["window.tooltip.barColor"] = {
         desc = L["Color of the filled part, when the mode beside it is Custom."],
+    },
+    ["window.tooltip.barColorFromSkin"] = {
+        label = L["Use the skin's color"],
+        desc = L["Draw the filled part in the skin's bar fill color while the mode is Custom, and for a row with no class. The bar color is kept but not read while this is on."],
     },
 })
 withMode(TIP_BAR_ROWS, "window.tooltip.barColor", {
