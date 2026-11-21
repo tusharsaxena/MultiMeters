@@ -101,7 +101,7 @@ embeds those from CurseForge's own CDN rather than from this repo.
 
 ```sh
 lua tests/run.lua                                                       # the suite — must be green
-luacheck .                                                              # must be 0 warnings / 0 errors
+~/.claude/dev-copilot/bin/ka0s-bounded luacheck .                       # must be 0 warnings / 0 errors
 bash tests/_kit/run-automated-tests.sh --suite complexity --no-bundle   # the complexity report (release-time)
 ```
 

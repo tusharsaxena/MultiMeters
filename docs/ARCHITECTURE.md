@@ -552,7 +552,7 @@ re-check re-runs the count rather than re-arguing the verdict. **All seven ship.
 | Doc | Status | Trigger, as measured |
 |---|---|---|
 | `perf-analysis/README.md` | Present | **The performance harness is wired**: `core/PerfSetup.lua` plus `Perf.Note` brackets in eight files (`performance-§12`). `docs/perf-analysis/20260909-014604/` is the standing example. |
-| `compat-layer.md` | Present | **`core/Compat.lua`: 886 lines, 42 shims** (4 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
+| `compat-layer.md` | Present | **`core/Compat.lua`: 896 lines, 46 shims** (8 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
 | `midnight-quirks.md` | Present | **Four client-version workarounds of the addon's own** (isolated event registrations, `ADDON_RESTRICTION_STATE_CHANGED` against a namespace a client may lack, the settle pass, the secret-value model); the file is required in every addon from v2.102.0 and also carries the vendored client-quirks catalog. The detail moved here from [Taint notes](#taint-notes) rather than being copied. |
 | `debug.md` | Present | **One diagnostics report, three probe verbs, the report verbs on `D:Report`, the `tooltip` session flag and the `NS.Debug` channels** (`debug-logging-§14`, `§15`). Written 2026-09-09, when the row's own re-check trigger fired. |
 | `slash-dispatch.md` | Present | **22 verbs in `NS.COMMANDS` (as measured on 2026-11-06) and a sub-command tree** (`window` takes four sub-verbs), against eight or more commands or any tree. The hub's `## Slash commands` detail moved there on 2026-09-24. |

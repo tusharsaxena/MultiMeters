@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 25,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
+    schemaVersion = 28,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data (+ count, stored)
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -60,8 +60,8 @@ safe because every step is idempotent against a fresh default profile. A step ne
 the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
-**Twenty-six steps are wired today**, `migrations[1]` through `migrations[26]`, walking an account from
-the shipped v1 shape to v27. Each is one line of the header block at the top of
+**Twenty-seven steps are wired today**, `migrations[1]` through `migrations[27]`, walking an account from
+the shipped v1 shape to v28. Each is one line of the header block at the top of
 `core/Database.lua`, the version's home, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -1324,7 +1324,7 @@ the session-only view over every window's own `frame.locked`), `data.mergePets`,
 `sim.stepDelay`, the four `export.*` preferences, the eight `statColors.*` swatches, the eight `skin.*` rows, and
 the three composed `sessionOnly` rows `state.testMode`, `state.sim` and `state.debugConsole`. Those three and
 `master.locked` are the four session rows, whose own `get`/`set` are the whole of their storage. The
-other 170 rows are window rows.
+other 173 rows are window rows.
 
 ```lua
 -- settings/Schema_Paths.lua (abridged)

@@ -313,7 +313,7 @@ timers.
 ```sh
 lua tests/run.lua            # the whole suite; non-zero exit on any failure
 lua tests/run.lua --list     # the inventory, printed; runs nothing, exits 0
-luacheck .                   # must be 0 warnings / 0 errors
+~/.claude/dev-copilot/bin/ka0s-bounded luacheck .   # must be 0 warnings / 0 errors
 ```
 
 **Run these from the repository root.** The Lua cases do not care where you are — they root their

@@ -10,7 +10,7 @@ made it load-bearing is `core/EnvSetup.lua`'s now — but it costs nothing and i
 *is* load-bearing is the line after it: `core/SimSetup.lua`, the simulator seam below, loads straight
 after this file, and the two move together.
 
-**Forty-two shims**, counted the way `documentation-§3` counts them: entry points published on
+**Forty-six shims**, counted the way `documentation-§3` counts them: entry points published on
 this addon's own `Compat` table, over this file alone. The threshold is three. This addon's
 "might not exist" surface is unusually large because `C_DamageMeter` — its entire data source — is
 new in 12.0, so a client one patch behind has none of it and a PTR build can carry the namespace
@@ -88,12 +88,16 @@ LibKa0s absent nothing is wrapped, and `NS.SimSeam` and `NS.Sim` are the library
 
 ## What `LibKa0s-Compat-1.0` answers
 
-Since LibKa0s v1.55.0, four of the forty-two are the library's:
+Eight of the forty-six are the library's. These four since LibKa0s v1.55.0:
 
 - `GetSpellInfo`
 - `GetSpellTexture`
 - `GetSpecialization`
 - `GetSpecializationInfo`
+
+The other four are the identity readers, `RegionalNames`, `UnitCharacterName`, `CharacterKey` and
+`RealmKey` (Compat minor 4, wired here with the LibKa0s v1.105.0 re-vendor; no caller yet), each with
+its own absent answer from the table above.
 
 `core/Compat.lua` binds each name to the library member, and every caller still says
 `NS.Compat.X`. The ladders, the return counts and the absent answers are the library's contract, in
@@ -101,7 +105,7 @@ Since LibKa0s v1.55.0, four of the forty-two are the library's:
 restated here. One correction arrived with it: where only the deprecated `GetSpellInfo` global
 exists, its rank is dropped rather than passed along as the icon.
 
-With the library absent, the four answer `nil` and read nothing. That is the **reader arm**
+With the library absent, the first four answer `nil` and read nothing. That is the **reader arm**
 `options-ui-§1` names. A degraded install draws spell rows with no name or icon, and the player
 with no spec role, the same as a client without the API.
 
