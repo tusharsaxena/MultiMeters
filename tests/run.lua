@@ -119,6 +119,11 @@ do
         -- without WidgetsDropdown.lua there is no W.Dropdown, W.ContextMenu or shared menu, which the
         -- Export modal and the segment menu draw.
         "CorePixel.lua", "SkinPaintHud.lua", "SkinAceConfirm.lua", "WidgetsDropdown.lua",
+        -- v1.109.0 peeled the Master controls block off OptionsCompose.lua: OptionsCompose's attach
+        -- calls lib.__AttachComposeMaster only when the file loaded, so a payload missing it raises
+        -- nothing and has no O.MasterControls -- and settings/Schema_Compose.lua composes the
+        -- General tab's Master controls out of it.
+        "OptionsComposeMaster.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do
