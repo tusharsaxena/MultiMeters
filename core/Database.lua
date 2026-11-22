@@ -61,13 +61,13 @@ NS.Database = Database
 -- v24 moves a stored Ka0s Friz Quadrata TT, which LibKa0s v1.85.0 deleted, to Ka0s Ubuntu (R3-FRIZ).
 -- v25 prunes the title bar divider's four keys: no window draws a line under its title (R4-SEP).
 -- v26 moves every stored tooltip anchor to BESIDE: the tooltip opens beside the window (AD-92-MM).
--- v27 turns the three swatch companions on where the swatch is still the shipped color, off where
--- the player picked one, under the per-profile record skin.swatchesFollow (R-2, SD-SK-MM).
+-- v27 is retired: it put three swatch companions on the skin (R-2). Its stamp alone climbs.
+-- v28 takes back what v27 wrote, where its record skin.swatchesFollow stands (owner, 2026-11-23).
 --
 -- The defaults declare `global.schemaVersion = 0`, which means UNSTAMPED: a fresh
 -- install or an account from before the runner stamped anything. It is never the
 -- current version (savedvariables-§1); see defaults/Profile.lua for why.
-local CURRENT_DB_VERSION = 28
+local CURRENT_DB_VERSION = 29
 
 --- The runner's target, published under the name savedvariables-§1 gives it.
 --- Raising it means registering the step that reaches it; the defaults' 0 never moves.

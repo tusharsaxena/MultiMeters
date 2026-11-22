@@ -92,7 +92,8 @@ the shipped v1 shape to v28. Each is one line of the header block at the top of
 | v24 → v25 | the deleted Friz becomes Ka0s Ubuntu (R3-FRIZ): LibKa0s v1.85.0 deleted `Ka0s Friz Quadrata TT` (R3-L7) and WoW Default draws `Ka0s Ubuntu` in its place (R3-L6). `Database.RetireFonts` moves every stored string naming the deleted face, at any depth (a window's fonts, the skin's Font override), to `Ka0s Ubuntu` in every profile. Blizzard's own `Friz Quadrata TT` stays. |
 | v25 → v26 | no line under the title (R4-SEP, the owner's 2026-11-03 sign-off): the title bar divider and its four settings are gone, so every stored window of every profile has `header.divider`, `dividerThickness`, `dividerColorMode` and `dividerColor` (`Database.DIVIDER_KEYS`) pruned, whatever they held. |
 | v26 → v27 | the tooltip opens beside the window (AD-92-MM, the owner's ruling of 2026-11-17, option A): `tooltip.anchor` offers only `BESIDE` and `BESIDE_LEFT`, so every stored window of every profile has its anchor, whatever it held (the eight 3×3 boxes, a `CURSOR` that escaped v10, junk), set to `BESIDE`. The offsets are kept. See [`tooltip`](#tooltip) |
-| v27 → v28 | the cell and tooltip swatches onto the skin (the owner's R-2 of 2026-11-20, LibKa0s v1.108.0): every window of every profile has `bars.customColorFromSkin`, `bars.bgColorFromSkin` and `tooltip.barColorFromSkin` set on where the swatch beside it is still the shipped color (through `Skin.ResetToSkin`) and off where the player picked one, so the pick keeps drawing; once per profile, recorded as `skin.swatchesFollow` (no schema row), and run for the active profile on every pass (`Database.FollowSwatchesOnce`). |
+| v27 → v28 | retired (the owner, 2026-11-23): the stamp alone climbs. From 2026-11-20 until then, never released, it put the cell and tooltip swatches on the skin and recorded `skin.swatchesFollow`. |
+| v28 → v29 | what that step wrote goes back, in every profile carrying the record: `bars.customColorFromSkin`, `bars.bgColorFromSkin` and `tooltip.barColorFromSkin` go off where on beside a shipped swatch (on beside a pick stays), and the record is cleared. |
 
 Adding a v29 is two edits and no bootstrap change:
 
@@ -179,9 +180,8 @@ its own half. **New keys with defaults, so no migration was owed**: AceDB merges
 stored profile. `pickerSeen` is false on every profile, old and new (owner ruling O3), and is set by
 the player's close of the first-run picker only. `fullSkinReset`, default false, is the v23 step's
 per-profile record: true once the profile has moved. It has **no row**, so no Defaults button walks it.
-`swatchesFollow`, default false, is the v27 step's record of the same kind: true once the profile's
-three swatch companions (`bars.customColorFromSkin`, `bars.bgColorFromSkin`,
-`tooltip.barColorFromSkin`) were set, on over a shipped swatch and off over a pick. No row either.
+The three swatch companions (`bars.customColorFromSkin`, `bars.bgColorFromSkin`,
+`tooltip.barColorFromSkin`) default off (the owner, 2026-11-23, over R-2).
 
 ### `windows` is an array, and it is empty in the defaults
 

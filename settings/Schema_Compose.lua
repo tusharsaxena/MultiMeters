@@ -923,6 +923,7 @@ dress(BARS_BAR_ROWS, {
     -- The swatch's companion, compose minor 20's own row (R-2, SD-SK-MM.2): on, Custom draws the
     -- skin's bar fill and the swatch is kept, not read.
     ["window.bars.customColorFromSkin"] = {
+        default = false,   -- the owner, 2026-11-23, over R-2 (defaults/Profile.lua)
         label = L["Use the skin's color"],
         desc = L["Draw the bars in the skin's bar fill color while the mode is Custom. The bar color is kept but not read while this is on."],
     },
@@ -958,6 +959,7 @@ local BARS_BG_ROWS = compose("ColorPair", {
 dress(BARS_BG_ROWS, {
     ["window.bars.bgColor"] = { desc = L["Color drawn behind the unfilled part of each bar."] },
     ["window.bars.bgColorFromSkin"] = {
+        default = false,   -- the owner, 2026-11-23, over R-2 (defaults/Profile.lua)
         label = L["Use the skin's color"],
         desc = L["Draw the unfilled part in the skin's bar background color while the mode is Custom. The background color is kept but not read while this is on; the opacity stays yours."],
     },
@@ -1106,6 +1108,7 @@ dress(TIP_BAR_ROWS, {
         desc = L["Color of the filled part, when the mode beside it is Custom."],
     },
     ["window.tooltip.barColorFromSkin"] = {
+        default = false,   -- the owner, 2026-11-23, over R-2 (defaults/Profile.lua)
         label = L["Use the skin's color"],
         desc = L["Draw the filled part in the skin's bar fill color while the mode is Custom, and for a row with no class. The bar color is kept but not read while this is on."],
     },

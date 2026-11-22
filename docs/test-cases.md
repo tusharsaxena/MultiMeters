@@ -2661,19 +2661,18 @@ Total.
 - Skin flip: a new profile takes the step against a template that shows nothing new
 - Skin flip: without the library the step sets the companions by hand and writes the record
 
-### test_skin_swatches.lua (11)
+### test_skin_swatches.lua (10)
 
-- Swatches: the three companions ship on, as composed rows beside their swatches, governing none
+- Swatches: the three companions exist as composed rows beside their swatches, governing none
 - Swatches: under Custom a cell draws the skin's bar fill, the swatch with the companion off
 - Swatches: a classless row's fill is mm.barNeutral, the old slate under Ka0s Default
 - Swatches: under Custom the cell background takes bar.bg's color and keeps its opacity
 - Swatches: degraded, a window has no fill looks, so every swatch draws as stored
 - Swatches: the tooltip bar takes the skin's fill under Custom and for a classless row
 - Swatches: a GameTooltip line with no class or palette reads the skin's tooltip colors
-- Swatches: the v27 step follows a shipped swatch and keeps a pick, in every profile, once
-- Swatches: the step runs once, so a companion turned off after it stays off
-- Swatches: the record has no schema row, so no Defaults button walks it
-- Swatches: without the library the step sets the companions by hand and writes the record
+- Swatches: the three companions ship off, in the template and on the rows (owner 2026-11-23)
+- Swatches: an account at v27 is never put on the skin, active or parked
+- Swatches: v29 takes back what v28 wrote, in every profile it reached
 
 ### test_skin_fix.lua (37)
 
@@ -3126,7 +3125,7 @@ Total.
 | test_skin_chrome.lua | 8 |
 | test_skin_hud.lua | 9 |
 | test_skin_flip.lua | 21 |
-| test_skin_swatches.lua | 11 |
+| test_skin_swatches.lua | 10 |
 | test_skin_fix.lua | 37 |
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
@@ -3149,4 +3148,4 @@ Total.
 | test_skin_switch.lua | 29 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2659** |
+| **Total** | **2658** |

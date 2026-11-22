@@ -6,8 +6,8 @@
 -- color under Custom, the opacity the setting's, SF-MM-3) and `tooltip.barColorFromSkin` (the skin's
 -- bar fill under Custom and for a row with no class). A classless row's fill is the owner token
 -- `mm.barNeutral` (the old slate under Ka0s Default), and a GameTooltip line with no class or
--- palette reads `gtip.value` / `mm.tipHint`. The v27 step turns each companion on where the swatch
--- is still the shipped color and off where the player picked one, once, under `skin.swatchesFollow`.
+-- palette reads `gtip.value` / `mm.tipHint`. The companions ship off (owner, 2026-11-23); v29 takes back
+-- what the retired v28 step wrote under its record, `skin.swatchesFollow`.
 --
 -- EACH CASE ON ITS OWN INSTANCE: a skin change is library session state.
 
@@ -80,16 +80,16 @@ end
 
 -- ── the rows and the defaults ────────────────────────────────────────────────────────────────
 
-test("Swatches: the three companions ship on, as composed rows beside their swatches, governing none", function()
-    -- red under: a companion missing from the template or the schema, one off by default (R-2), or a
+test("Swatches: the three companions exist as composed rows beside their swatches, governing none", function()
+    -- red under: a companion missing from the template or the schema, or a
     -- swatch disabled by it (options-ui-§17: a composed swatch stays live and keeps its value).
     local NS = T.load().NS
     for _, path in ipairs(COMPANIONS) do
-        assertEqual(at(NS.WINDOW_TEMPLATE, path), true, path .. " does not ship on")
+        assertEqual(at(NS.WINDOW_TEMPLATE, path), false, path .. " does not ship off")
         local row = rowAt(NS, "window." .. path)
         assertTrue(row ~= nil, "window." .. path .. " is not a schema row")
         assertEqual(row.type, "bool")
-        assertEqual(row.default, true)
+        assertEqual(row.default, false)
         assertEqual(row.composed, true, path .. " is not the composer's row")
         assertEqual(row.label, NS.L["Use the skin's color"])
         local swatch = rowAt(NS, "window." .. path:gsub("FromSkin$", ""))
@@ -105,6 +105,7 @@ test("Swatches: under Custom a cell draws the skin's bar fill, the swatch with t
     local _, NS, window, row, cfg, Skin = scene(function(c)
         c.bars.colorMode = "custom"
         c.bars.customColor = { r = 0.1, g = 0.2, b = 0.3, a = 1 }
+        c.bars.customColorFromSkin = true
     end)
     Skin:SetChoice(OWNER, "ka0s", "obsidian")
     local r, g, b = NS.Skin.BarFillColor()
@@ -133,6 +134,7 @@ test("Swatches: under Custom the cell background takes bar.bg's color and keeps 
         c.bars.bgColorMode = "custom"
         c.bars.bgColor = { r = 0.1, g = 0.2, b = 0.3, a = 1 }
         c.bars.bgAlpha = 0.4
+        c.bars.bgColorFromSkin = true
     end)
     Skin:SetChoice(OWNER, "ka0s", "obsidian")
     local r, g, b = NS.Skin.Color("bar.bg")
@@ -158,7 +160,7 @@ end)
 
 test("Swatches: the tooltip bar takes the skin's fill under Custom and for a classless row", function()
     -- red under: the gray swatch reaching an NPC's tooltip under the default Class mode (SD-SK-MM.5).
-    local inst, NS, _, _, cfg, Skin = scene()
+    local inst, NS, _, _, cfg, Skin = scene(function(c) c.tooltip.barColorFromSkin = true end)
     Skin:SetChoice(OWNER, "ka0s", "obsidian")
     local r, g, b = NS.Skin.BarFillColor()
     sameColor(tipStyle(inst, cfg, nil).barColor, { r, g, b }, "a classless row under Class")
@@ -210,68 +212,54 @@ local function storedWindow(id, picks)
     }
 end
 
-test("Swatches: the v27 step follows a shipped swatch and keeps a pick, in every profile, once", function()
-    -- red under: no step (EnsureWindowShape fills every companion on, over a pick), one that walks
-    -- only the active profile, or one gated on skin.fullSkinReset, which every v22 profile holds.
+test("Swatches: the three companions ship off, in the template and on the rows (owner 2026-11-23)", function()
+    local NS = T.load{}.NS
+    local w = NS.Database.GetWindows()[1]
+    for _, path in ipairs(COMPANIONS) do
+        -- red under: a follow-the-skin sweep flipping one (SD-SK-MM, 2026-11-20)
+        assertEqual(at(w, path), false, path)
+        assertEqual(rowAt(NS, "window." .. path).default, false, path .. " row default agrees")
+    end
+end)
+
+test("Swatches: an account at v27 is never put on the skin, active or parked", function()
     local inst = initWith({
         profiles = {
-            Default = { nextWindowId = 3, skin = { fullSkinReset = true }, windows = {
-                storedWindow(1), storedWindow(2, { customColor = { r = 1, g = 0, b = 0, a = 1 } }) } },
-            Raid    = { nextWindowId = 8, skin = { fullSkinReset = true }, windows = {
-                "junk", storedWindow(7, { bgColor = { r = 0.2, g = 0.2, b = 0.2, a = 1 },
-                                          barColor = { r = 0, g = 1, b = 0, a = 1 } }) } },
+            Default = { nextWindowId = 2, skin = { fullSkinReset = true }, windows = { storedWindow(1) } },
+            Raid    = { nextWindowId = 3, skin = { fullSkinReset = true }, windows = { storedWindow(2) } },
         },
         global = { schemaVersion = 27 },
     })
-    local NS = inst.NS
-    assertEqual(NS.db.global.schemaVersion, 28)
-    local sv = NS.db.sv.profiles
-    local w1, w2, w7 = sv.Default.windows[1], sv.Default.windows[2], sv.Raid.windows[2]
-    for _, path in ipairs(COMPANIONS) do assertEqual(at(w1, path), true, "window 1: " .. path) end
-    assertEqual(w2.bars.customColorFromSkin, false, "window 2's picked fill was taken over")
-    assertEqual(w2.bars.bgColorFromSkin, true)
-    assertEqual(w7.bars.customColorFromSkin, true)
-    assertEqual(w7.bars.bgColorFromSkin, false, "window 7's picked background was taken over")
-    assertEqual(w7.tooltip.barColorFromSkin, false, "window 7's picked tooltip bar was taken over")
-    assertEqual(w2.bars.customColor.r, 1, "a pick was rewritten")
-    assertEqual(sv.Default.skin.swatchesFollow, true, "no record")
-    assertEqual(sv.Raid.skin.swatchesFollow, true, "no record on the profile not active")
+    local sv = inst.NS.db.sv.profiles
+    for _, w in ipairs({ sv.Default.windows[1], sv.Raid.windows[1] }) do
+        -- red under: the v28 step still moving, or a backfill of true
+        for _, path in ipairs(COMPANIONS) do assertTrue(at(w, path) ~= true, path) end
+    end
+    assertEqual(inst.NS.db.global.schemaVersion, 29)
 end)
 
-test("Swatches: the step runs once, so a companion turned off after it stays off", function()
-    -- red under: the step gated on nothing, which would put the companion back on every load.
+test("Swatches: v29 takes back what v28 wrote, in every profile it reached", function()
+    local function moved(id, picks)
+        local w = storedWindow(id, picks)
+        w.bars.customColorFromSkin, w.bars.bgColorFromSkin, w.tooltip.barColorFromSkin = true, true, true
+        return w
+    end
+    local function skin(reached) return { fullSkinReset = true, swatchesFollow = reached or nil } end
     local inst = initWith({
-        profiles = { Default = { nextWindowId = 2, skin = { fullSkinReset = true }, windows = { storedWindow(1) } } },
-        global = { schemaVersion = 27 },
+        profiles = {
+            Default = { nextWindowId = 2, skin = skin(true), windows = { moved(1) } },
+            Raid    = { nextWindowId = 3, skin = skin(true), windows = {
+                "junk", moved(2, { barColor = { r = 0, g = 1, b = 0, a = 1 } }) } },
+            Kept    = { nextWindowId = 4, skin = skin(false), windows = { moved(3) } },
+        },
+        global = { schemaVersion = 28 },
     })
-    local NS = inst.NS
-    local w = NS.Database.GetWindows()[1]
-    assertEqual(w.bars.customColorFromSkin, true)
-    w.bars.customColorFromSkin = false
-    NS:RunMigrations()
-    assertEqual(w.bars.customColorFromSkin, false, "the step ran again over the player's choice")
-end)
-
-test("Swatches: the record has no schema row, so no Defaults button walks it", function()
-    local NS = T.load().NS
-    assertEqual(rowAt(NS, "skin.swatchesFollow"), nil)
-    assertEqual(NS.db.profile.skin.swatchesFollow, true, "a new profile took the step")
-end)
-
-test("Swatches: without the library the step sets the companions by hand and writes the record", function()
-    -- red under: the step leaning on Skin.ResetToSkin with no fallback.
-    local inst = T.load()
-    local NS = inst.NS
-    local profile = { windows = { storedWindow(1, { barColor = { r = 0, g = 0, b = 1, a = 1 } }) } }
-    local skinMajor = inst.mocks.LibStub("LibKa0s-Skin-1.0", true)
-    local reset = skinMajor.ResetToSkin
-    skinMajor.ResetToSkin = nil
-    local ok, err = pcall(NS.Database.FollowSwatchesOnce, profile)
-    skinMajor.ResetToSkin = reset
-    assertTrue(ok, tostring(err))
-    local w = profile.windows[1]
-    assertEqual(w.bars.customColorFromSkin, true)
-    assertEqual(w.bars.bgColorFromSkin, true)
-    assertEqual(w.tooltip.barColorFromSkin, false, "the pick")
-    assertEqual(profile.skin.swatchesFollow, true)
+    local sv = inst.NS.db.sv.profiles
+    local w1, w2, w3 = sv.Default.windows[1], sv.Raid.windows[2], sv.Kept.windows[1]
+    for _, path in ipairs(COMPANIONS) do assertEqual(at(w1, path), false, path) end
+    assertEqual(w2.bars.customColorFromSkin, false, "the parked profile too")
+    assertEqual(w2.tooltip.barColorFromSkin, true, "on beside a picked color was never v28's write")
+    for _, path in ipairs(COMPANIONS) do assertEqual(at(w3, path), true, "no record, untouched: " .. path) end
+    assertEqual(sv.Default.skin.swatchesFollow, nil, "the record cleared")
+    assertEqual(sv.Raid.skin.swatchesFollow, nil, "the record cleared")
 end)
