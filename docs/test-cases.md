@@ -21,6 +21,13 @@ Total.
 - loadorder: the file-scope readers of CoreSetup, EnvSetup and OptionsSetup load after them
 - loadorder: each load-bearing seam line carries a LOAD-BEARING comment at the line
 
+### test_clients.lua (4)
+
+- clients: the TOC carries one interface number and both Retail gating lines
+- clients: the README says Retail only and why, with no port-pending wording
+- clients: docs/ARCHITECTURE.md records the reason and files Clients as Retail
+- clients: no shipped file reads the Forever client
+
 ### test_layout_cap.lua (13)
 
 - layoutcap: every authored file over the 1500-line cap is named in the census
@@ -928,6 +935,16 @@ Total.
 - A floored rung whose floor did not take is not accepted on the K probe alone (#26)
 - The client's defaults under a floor that did not take are not accepted either (#26)
 
+### test_format_secret.lua (7)
+
+- FormatSecret: the mock formatter refuses a secret, as the client does
+- FormatSecret: a secret renders by the window's number format in every mode
+- FormatSecret: a secret never reaches FormatNumber, so no error is raised per cell
+- FormatSecret: the config is built once per mode and dropped by Invalidate
+- FormatSecret: a config the client refuses leaves the old path
+- FormatSecret: a config that renders a probe wrongly is not trusted
+- FormatSecret: a secret duration takes the same route and keeps its unit
+
 ### test_provider.lua (42)
 
 - Provider: core/Compat.lua is the only file that names C_DamageMeter
@@ -1172,7 +1189,7 @@ Total.
 
 ### test_aggregator_identity.lua (32)
 
-- A healer with no damage is on the mid-pull grid, from the healing column
+- The player with no damage is on the mid-pull grid, from the healing column
 - An ambiguous key gets no invented row, because no column could ever fill it
 - A collision the LAST column reveals still blanks the FIRST column's cells
 - A sort column the window does not LIST still builds mid-pull
@@ -1187,7 +1204,7 @@ Total.
 - The identity build keeps that slot too
 - The feign filter cannot run mid-pull, and does not pretend to
 - Identity stats count collided ROWS, not just collided keys
-- Identity stats attribute every miss to one of three causes
+- Identity stats attribute every miss to one of four causes
 - A collided key lands in the collided bucket, not the absent one
 - The standing identity line names collided KEYS and ROWS, and every miss by cause (#22)
 - The sort column is named, and is not part of the correlated rectangle
@@ -1204,6 +1221,22 @@ Total.
 - Identity mode still admits a classed None source whose identifiers are all secret
 - Identity mode does not refuse an Ally pet with an unlisted creature id
 - A refused None NPC takes no identity key, so it cannot collide with a player
+
+### test_aggregator_certain.lua (13)
+
+- Certain: another player's secondary cell is blank mid-fight, even with a unique class
+- Certain: the local player's row fills every column
+- Certain: the local player absent from the sort column still gets a row with their cells
+- Certain: another player absent from the sort column has no row until combat ends
+- Certain: out of combat the GUID join fills every cell as before
+- Certain: a member who left mid-fight cannot lend their number to a row
+- Certain: a half-built roster cannot make a shared class look unique
+- Certain: the Overall segment cannot join a past member onto a present one
+- Certain: an ungrouped ally or an unfolded pet cannot wear a grouped player's number
+- Certain: another player's deaths list and recap stay empty; the local player's are kept
+- Certain: with Deaths sorted, every death is its own filled row
+- Certain: another player's Deaths tooltip shows no correlated death mid-fight
+- Certain: the pass counts every row whose cells wait for the end of combat
 
 ### test_aggregator_preview.lua (12)
 
@@ -1331,10 +1364,10 @@ Total.
 - Show segment off leaves the header line blank again
 - The segment name sits LAST, nearest the picker that changes it
 - The restricted notice COUNTS the rows it could not tell apart — #22
-- The restricted notice stays a bare word when NOTHING collided
+- The restricted notice stays a bare word when NOTHING is withheld
 - The header says the grid was built the restricted way
 - The header names AMBIGUITY when two rows cannot be told apart
-- Once a quarter of the rows are blanked, the notice says BLANK in plain words (#22)
+- The notice names the waiting rows in one sentence, whatever their share (R4)
 - The header line carries no 'Test' while the strip shows (the strip is the marker)
 - Test data never reaches the provider
 - UNLOCKING A WINDOW NO LONGER TURNS TEST DATA ON
@@ -3029,6 +3062,7 @@ Total.
 | Suite | Cases |
 |-------|------:|
 | test_loadorder.lua | 10 |
+| test_clients.lua | 4 |
 | test_layout_cap.lua | 13 |
 | test_complexity_register.lua | 4 |
 | test_deviation_register.lua | 1 |
@@ -3068,6 +3102,7 @@ Total.
 | test_dispatch.lua | 11 |
 | test_vendor_sync.lua | 3 |
 | test_format.lua | 43 |
+| test_format_secret.lua | 7 |
 | test_provider.lua | 42 |
 | test_provider_recap.lua | 26 |
 | test_provider_fields.lua | 11 |
@@ -3075,6 +3110,7 @@ Total.
 | test_feign.lua | 27 |
 | test_aggregator.lua | 70 |
 | test_aggregator_identity.lua | 32 |
+| test_aggregator_certain.lua | 13 |
 | test_aggregator_preview.lua | 12 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 50 |
@@ -3148,4 +3184,4 @@ Total.
 | test_skin_switch.lua | 29 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2658** |
+| **Total** | **2682** |
