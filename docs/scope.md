@@ -101,8 +101,8 @@ one. Not multiply by a weight, not sum across four columns, not divide by a grou
 two scores to rank them. Every one of those raises an immediate Lua error, and it raises in the
 middle of a pull, in every window, four times a second.
 
-There is no escape hatch for it. There *is* one for formatting — `NumericRuleFormatter:FormatNumber`
-performs division and rounding natively and accepts secrets, which is the only reason "12.4M" is
+There is no escape hatch for it. There *is* one for formatting — `AbbreviateNumbers` with a cached
+abbreviation config performs division and rounding natively and accepts secrets, which is the only reason "12.4M" is
 legal at all (see [data-flow.md](data-flow.md#6-the-formatter)). That hatch **renders; it does not
 sum**. The same asymmetry is what forces pet folding to drop a pet's row rather than add it to its
 owner's while restricted.

@@ -13,9 +13,11 @@
 -- C_DamageMeter and is secret for the whole of a pull, so "abbreviate this
 -- number" is not an edge case here, it is the main path.
 --
--- The one legal escape hatch is C_StringUtil.CreateNumericRuleFormatter(),
--- whose :FormatNumber(n) performs that arithmetic NATIVELY and accepts secrets
--- (design §4, "Number formatting"). This file owns those instances — built
+-- The legal escape hatch is the client's native formatters, which perform that
+-- arithmetic NATIVELY. C_StringUtil's formatter instances render a PLAIN value:
+-- their :FormatNumber(n) is AllowedWhenUntainted and refuses a secret from addon
+-- code. A SECRET goes to AbbreviateNumbers with a cached CreateAbbreviateConfig
+-- object (R3, "The secret route" below). This file owns those instances — built
 -- lazily, cached for the session, dropped when the profile or a setting moves —
 -- and it is the only place in the addon that asks for one.
 --
@@ -36,8 +38,9 @@
 --
 -- The degradation ladder for the abbreviated form is three deep, and each rung
 -- is a real client:
---   1. NumericRuleFormatter — 12.x, the intended path.
---   2. AbbreviateNumbers    — Blizzard's own global, which also accepts secrets.
+--   1. NumericRuleFormatter — 12.x, the intended path for a plain value;
+--      AbbreviateNumbers with a proven config for a secret.
+--   2. AbbreviateNumbers    — bare, Blizzard's own global, which also accepts secrets.
 --   3. NS.SafeToString      — LibKa0s's secret-safe renderer, which answers
 --                             "<secret>" rather than raising. Ugly, never wrong.
 -- tonumber() appears nowhere: coercing a meter value is an inspection, and this
@@ -445,6 +448,78 @@ local function numeric(mode)
     return fresh
 end
 
+-- ---------------------------------------------------------------------------
+-- The secret route (owner ruling R3, 2026-11-23)
+-- ---------------------------------------------------------------------------
+--
+-- THE FORMATTER INSTANCES REFUSE A SECRET. `FormatNumber` is documented
+-- `AllowedWhenUntainted` and addon code is always tainted, so every secret cell
+-- used to pay a raised, caught error and then fall to a bare AbbreviateNumbers
+-- that knows no decimals setting and renders a sub-1000 rate digit for digit.
+-- AbbreviateNumbers itself is `AllowedWhenTainted` and takes a cached
+-- `CreateAbbreviateConfig` object, so a secret goes there instead, with the
+-- mode's own ladder. The config is built once per mode and TRUSTED ONLY WHEN IT
+-- RENDERS THE PLAIN PROBES EXACTLY, for the reason ladderTook gives; a config
+-- that is refused or renders anything else leaves the cell on the old path.
+--
+-- `breakpointData` is documented largest first, the reverse of BREAKPOINTS. The
+-- constructor's own order is not documented, so the reversed array is tried
+-- first and the ladder's own order second; the probes decide.
+local SECRET_LADDERS = {
+    abbreviated      = { slot = "configNumeric", ladder = BREAKPOINTS,       probe = PROBE_EXPECTED },
+    abbreviatedWhole = { slot = "configWhole",   ladder = BREAKPOINTS_WHOLE, probe = PROBE_WHOLE },
+    abbreviatedTwo   = { slot = "configTwo",     ladder = BREAKPOINTS_TWO,   probe = PROBE_TWO },
+    full             = { slot = "configFull",    ladder = { FLOOR_SUB_ONE }, probe = tostring(PROBE_VALUE) },
+}
+
+--- `list` largest breakpoint first.
+local function largestFirst(list)
+    local out = {}
+    for i = #list, 1, -1 do out[#out + 1] = list[i] end
+    return out
+end
+
+--- Whether AbbreviateNumbers renders `v` as exactly `want` under `options`.
+local function abbreviatesAs(abbreviate, options, v, want)
+    local ok, out = pcall(abbreviate, v, options)
+    return ok and out == want
+end
+
+--- The NumberAbbrevOptions for one mode's ladder, or nil when no order of it took.
+local function provenOptions(spec)
+    local abbreviate = _G.AbbreviateNumbers
+    if not abbreviate then return nil end
+    for _, list in ipairs({ largestFirst(spec.ladder), spec.ladder }) do
+        local config = Compat.CreateAbbreviateConfig(list)
+        local options = config and { config = config }
+        if options
+            and abbreviatesAs(abbreviate, options, PROBE_VALUE, spec.probe)
+            and abbreviatesAs(abbreviate, options, PROBE_SMALL, PROBE_SMALL_EXPECTED)
+            and abbreviatesAs(abbreviate, options, PROBE_RATE, PROBE_RATE_EXPECTED)
+        then
+            return options
+        end
+    end
+    if State.debug then NS.Debug("Format", "abbreviate config refused; secret numbers keep the old path") end
+    return nil
+end
+
+--- A secret `v` as text by the mode's own ladder, or nil to take the old path.
+--- Cached per mode as the options table, or `false` when the client refused it, so
+--- a refusing client pays the probes once per session, not once per cell.
+local function secretText(v, mode)
+    local spec = SECRET_LADDERS[mode or ""] or SECRET_LADDERS.abbreviated
+    local options = cache[spec.slot]
+    if options == nil then
+        options = provenOptions(spec) or false
+        cache[spec.slot] = options
+    end
+    if not options then return nil end
+    local ok, out = pcall(_G.AbbreviateNumbers, v, options)
+    if ok then return out end
+    return nil
+end
+
 --- The session's NON-abbreviating formatter, for `numberFormat = "full"`.
 ---
 --- Cached separately from `numeric` because they are two different objects with
@@ -510,6 +585,12 @@ function Format.Number(v, mode)
     -- (core/Secrets.lua's contract). Everything below this line treats `v` as
     -- present without ever asking what it is.
     if v == nil then return "" end
+
+    -- A secret skips the formatter instances, which refuse it (R3, above).
+    if Secrets.IsSecret(v) then
+        local text = secretText(v, mode)
+        if text ~= nil then return text end
+    end
 
     if mode == "full" then
         -- "Full" is the un-abbreviated form, which means the RULE formatter with

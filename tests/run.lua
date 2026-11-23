@@ -335,6 +335,8 @@ local SUITES = {
     "test_vendor_sync",
     -- the data path
     "test_format",
+    -- A secret number follows the number format (R3): the formatter refuses one.
+    "test_format_secret",
     "test_provider",
     "test_provider_recap",
     "test_provider_fields",

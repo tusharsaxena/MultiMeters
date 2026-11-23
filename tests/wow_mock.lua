@@ -604,6 +604,7 @@ local function build()
     -- previously implemented the wiki's version — which is how a ladder that put
     -- every number two orders of magnitude too small passed every test. Truncated,
     -- not rounded, also per observation ("4.75" renders "4.7").
+    local renderBreakpoints
     local function decimalsFor(fractionDivisor)
         local d, n = 0, fractionDivisor or 1
         while n >= 10 do n, d = n / 10, d + 1 end
@@ -626,30 +627,43 @@ local function build()
 
         function formatter:FormatNumber(v)
             self.__formatCount = self.__formatCount + 1
-            local n = reveal(v)
-            if type(n) ~= "number" then return tostring(n) end
-
-            local best
-            for _, bp in ipairs(self.__breakpoints or {}) do
-                if n >= (bp.breakpoint or 0)
-                    and (best == nil or (bp.breakpoint or 0) >= (best.breakpoint or 0)) then
-                    best = bp
-                end
+            -- THE CLIENT REFUSES A SECRET HERE. FormatNumber is documented
+            -- `SecretArguments = "AllowedWhenUntainted"` and addon code is always
+            -- tainted; measured raising on Forever 70888 (CombatTrail's quirks file).
+            -- A stub that revealed the value hid MultiMeters' secret-text bug (R3).
+            if isSimulatedSecret(v) then
+                error("Secret values are only allowed during untainted execution", 2)
             end
-
-            -- NO BREAKPOINT MATCHED: the plain render. This is the branch the
-            -- addon lived in for a whole release.
-            if best == nil then return tostring(n) end
-
-            local scaled = n / ((best.significandDivisor or 1) * (best.fractionDivisor or 1))
-            local d = decimalsFor(best.fractionDivisor)
-            local factor = 10 ^ d
-            local truncated = math.floor(scaled * factor) / factor
-            return string.format("%." .. d .. "f", truncated) .. (best.abbreviation or "")
+            return renderBreakpoints(self.__breakpoints, reveal(v))
         end
 
         M.__lastNumericFormatter = formatter
         return formatter
+    end
+
+    -- One render of `n` under a breakpoint array, in the measured semantics above.
+    -- Order-free: the highest breakpoint at or below `n` wins whichever way the
+    -- array runs, so a NumberAbbrevOptions list (largest first) renders the same.
+    function renderBreakpoints(list, n)
+        if type(n) ~= "number" then return tostring(n) end
+
+        local best
+        for _, bp in ipairs(list or {}) do
+            if n >= (bp.breakpoint or 0)
+                and (best == nil or (bp.breakpoint or 0) >= (best.breakpoint or 0)) then
+                best = bp
+            end
+        end
+
+        -- NO BREAKPOINT MATCHED: the plain render. This is the branch the
+        -- addon lived in for a whole release.
+        if best == nil then return tostring(n) end
+
+        local scaled = n / ((best.significandDivisor or 1) * (best.fractionDivisor or 1))
+        local d = decimalsFor(best.fractionDivisor)
+        local factor = 10 ^ d
+        local truncated = math.floor(scaled * factor) / factor
+        return string.format("%." .. d .. "f", truncated) .. (best.abbreviation or "")
     end
 
     M.C_StringUtil = {
@@ -677,12 +691,26 @@ local function build()
         end,
     }
 
-    M.AbbreviateNumbers = function(v)
+    -- AbbreviateNumbers(number, options) is AllowedWhenTainted, so it takes a secret.
+    -- Its options are NumberAbbrevOptions: `breakpointData` (largest first) or
+    -- `config`, a CreateAbbreviateConfig object. Bare, it keeps a sub-1000 value's
+    -- digits, as measured on Forever 70888 (69.5625 drew "69.5625").
+    M.__abbreviateConfigCount = 0
+    M.CreateAbbreviateConfig = function(data)
+        if type(data) ~= "table" or isSimulatedSecret(data) then
+            error("CreateAbbreviateConfig wants a plain breakpoint array", 2)
+        end
+        M.__abbreviateConfigCount = M.__abbreviateConfigCount + 1
+        return { __breakpoints = data }
+    end
+    M.AbbreviateNumbers = function(v, options)
         local n = reveal(v)
         if type(n) ~= "number" then return tostring(n) end
+        local list = options and (options.config and options.config.__breakpoints or options.breakpointData)
+        if list then return renderBreakpoints(list, n) end
         if n >= 1e6 then return string.format("%.1fM", n / 1e6) end
         if n >= 1e3 then return string.format("%.1fK", n / 1e3) end
-        return string.format("%d", n)
+        return tostring(n)
     end
 
     -- ── group / units ──────────────────────────────────────────────────────

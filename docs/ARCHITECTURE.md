@@ -245,7 +245,7 @@ is active, the numeric fields come back to tainted code — which is all of ours
 | concatenate with `..`, and `string.format` / `string.join` them | use them as table **keys** |
 | pass them to `StatusBar:SetValue` / `SetMinMaxValues` and `FontString:SetText` | apply the `#` length operator |
 | call `type()` on them, and test `== nil` | index them |
-| call `NumericRuleFormatter:FormatNumber` on them | call `table.concat` with them |
+| call `AbbreviateNumbers` on them (`FormatNumber` refuses them, R3) | call `table.concat` with them |
 
 Each forbidden operation raises **immediately**. The single exception the addon leans on is that a
 **non-boolean** secret may still be tested for nil-ness, which is why `== nil` appears everywhere a

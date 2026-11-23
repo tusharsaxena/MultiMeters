@@ -480,9 +480,13 @@ Abbreviating `12400000` to `"12.4M"` is a division and a rounding. Both are arit
 number this addon displays is secret for the whole of a pull — so "abbreviate this number" is not an
 edge case here, it is the main path.
 
-`modules/Format.lua` owns the one legal escape hatch: `C_StringUtil.CreateNumericRuleFormatter()`,
-whose `:FormatNumber(n)` performs that arithmetic **natively** and accepts secrets. Instances are
-built lazily, cached in `State.Cache("Format")` (as `false` on failure, so a client without the API
+`modules/Format.lua` owns the client's native formatters, which perform that arithmetic
+**natively**: the `C_StringUtil` formatter instances for a plain value, and `AbbreviateNumbers` with a
+cached `CreateAbbreviateConfig` object for a **secret** one. `:FormatNumber(n)` is documented
+`AllowedWhenUntainted`, so it refuses a secret from addon code; `AbbreviateNumbers` is
+`AllowedWhenTainted` (owner ruling R3, 2026-11-23). The config is built once per number format from
+the same ladder and trusted only when it renders the plain probes exactly; one the client refuses
+leaves a secret on the bare rungs below. Instances are built lazily, cached in `State.Cache("Format")` (as `false` on failure, so a client without the API
 does not pay a fresh failing call per cell per refresh — 280 a frame at seven columns and forty
 rows), and dropped on `CONFIG_CHANGED` / `PROFILE_CHANGED`.
 
@@ -493,8 +497,9 @@ coercing a value is an inspection, and this is not `core/Secrets.lua`.
 
 The degradation ladder for the abbreviated form is three deep, and each rung is a real client:
 
-1. `NumericRuleFormatter` — 12.x, the intended path.
-2. `AbbreviateNumbers` — Blizzard's own global, which also accepts secrets.
+1. `NumericRuleFormatter` for a plain value, `AbbreviateNumbers(v, { config = cfg })` for a secret —
+   12.x, the intended path, the window's own decimals either way.
+2. `AbbreviateNumbers` bare — Blizzard's own global, which also accepts secrets, at its own rounding.
 3. `NS.SafeToString` — LibKa0s's secret-safe renderer, which answers `"<secret>"`. Ugly, never wrong.
 
 | Function | Notes |
