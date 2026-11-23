@@ -265,6 +265,8 @@ local shared = loadInstance()
 local SUITES = {
     -- structure and the shared vocabulary
     "test_loadorder",
+    -- Retail only by the owner's decision (clients-§7): the TOC gating, the recorded reason.
+    "test_clients",
     -- The two size registers, side by side because they are the same bargain twice:
     -- both read a table out of docs/ARCHITECTURE.md, both check membership and
     -- disposition rather than the figures beside them, and neither runs the tool that

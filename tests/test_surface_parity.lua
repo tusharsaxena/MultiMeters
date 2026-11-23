@@ -131,7 +131,7 @@ end)
 local COMPAT_READERS = {
     "GetSpellInfo", "GetSpellName", "GetSpellTexture", "GetSpellCooldown",
     "GetSpecialization", "GetSpecializationInfo",
-    -- LibKa0s v1.92.0 (Compat minor 2) added these four client helpers. No caller here until the Forever port.
+    -- LibKa0s v1.92.0 (Compat minor 2) added these four client helpers. No caller here: the addon is Retail only by decision (clients-§7).
     "IsForever", "IsRetail", "ClientKey", "ForClient",
     -- LibKa0s v1.94.0 (Compat minor 4) added these four identity readers, wired on NS.Compat.
     "RegionalNames", "UnitCharacterName", "CharacterKey", "RealmKey",
@@ -144,7 +144,7 @@ local COMPAT_READERS = {
 local COMPAT_NOT_ON_NS_COMPAT = {
     "IsSecret", "CanAccess", "IsSafeKey",
     "GetSpellName", "GetSpellCooldown",
-    -- LibKa0s v1.92.0 (Compat minor 2) added these four client helpers. No caller here until the Forever port.
+    -- LibKa0s v1.92.0 (Compat minor 2) added these four client helpers. No caller here: the addon is Retail only by decision (clients-§7).
     "IsForever", "IsRetail", "ClientKey", "ForClient",
 }
 

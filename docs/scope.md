@@ -20,7 +20,7 @@ is the single largest scope decision in the project and everything below follows
 
 Identity: folder `MultiMeters` · TOC `MultiMeters.toc` · display name `Ka0s Multi Meters` ·
 `/mm` with a `/multimeters` alias · SavedVariables `MultiMetersDB` + `MultiMetersPerfDB` · MIT ·
-Retail only · English only.
+Retail only, by the owner's decision (see [ARCHITECTURE.md](ARCHITECTURE.md)) · English only.
 
 ## In scope
 
