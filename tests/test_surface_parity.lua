@@ -135,6 +135,10 @@ local COMPAT_READERS = {
     "IsForever", "IsRetail", "ClientKey", "ForClient",
     -- LibKa0s v1.94.0 (Compat minor 4) added these four identity readers, wired on NS.Compat.
     "RegionalNames", "UnitCharacterName", "CharacterKey", "RealmKey",
+    -- LibKa0s v1.110.0 (Compat minor 6): the container groups and bank readers (LibKa0s#101). No
+    -- caller here: a meter reads no bag or bank.
+    "ContainerGroups", "CONTAINER_PATTERNS_BY_CLIENT", "CanViewCharacterBank", "NumPurchasedBankTabs",
+    "BankerKind", "UnreadyBankContainers",
 }
 
 --- What NS.Compat deliberately does not carry: the guard trio (it lives on NS.Secrets) and the two
@@ -146,6 +150,9 @@ local COMPAT_NOT_ON_NS_COMPAT = {
     "GetSpellName", "GetSpellCooldown",
     -- LibKa0s v1.92.0 (Compat minor 2) added these four client helpers. No caller here: the addon is Retail only by decision (clients-§7).
     "IsForever", "IsRetail", "ClientKey", "ForClient",
+    -- LibKa0s v1.110.0 (Compat minor 6): the container groups and bank readers. No caller here.
+    "ContainerGroups", "CONTAINER_PATTERNS_BY_CLIENT", "CanViewCharacterBank", "NumPurchasedBankTabs",
+    "BankerKind", "UnreadyBankContainers",
 }
 
 test("parity: NS.Compat and NS.Secrets carry every LibKa0s-Compat-1.0 member between them", function()
