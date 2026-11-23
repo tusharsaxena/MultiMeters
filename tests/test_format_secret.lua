@@ -95,13 +95,22 @@ test("FormatSecret: a config the client refuses leaves the old path", function()
 end)
 
 test("FormatSecret: a config that renders a probe wrongly is not trusted", function()
-    -- A client that takes the config and keeps its own rules: every call renders bare.
+    -- A client that takes the config but renders it wrongly: it drops the fraction, so
+    -- abbreviatedTwo's probe draws "47K" where the ladder wants "47.50K". The bare call
+    -- (no options) is untouched, so the old path still draws "47.5K".
+    -- red under: trusting a config without the abbreviatesAs probes in provenOptions,
+    -- which hands the cell the wrong render, "47K".
     local inst = restricted(function(mocks)
-        local bare = mocks.AbbreviateNumbers
-        mocks.AbbreviateNumbers = function(v) return bare(v) end
+        local real = mocks.AbbreviateNumbers
+        mocks.AbbreviateNumbers = function(v, options)
+            local out = real(v, options)
+            if options and options.config then out = (out:gsub("%.%d+", "")) end
+            return out
+        end
     end)
     local NS, mocks = inst.NS, inst.mocks
-    assertEqual(NS.Format.Number(mocks.secret(47500), "abbreviatedTwo"), "47.5K")
+    assertEqual(NS.Format.Number(mocks.secret(47500), "abbreviatedTwo"), "47.5K",
+        "a config that failed its probes was trusted")
 end)
 
 test("FormatSecret: a secret duration takes the same route and keeps its unit", function()
