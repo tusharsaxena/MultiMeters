@@ -495,11 +495,12 @@ end
 -- Numeric rule formatter
 -- ---------------------------------------------------------------------------
 --
--- THE ONLY LEGAL WAY TO RENDER "12.4M" FROM A SECRET. Abbreviating a number is
--- division and rounding, and both are arithmetic, which is exactly what tainted
--- code may not do to a secret value. C_StringUtil.CreateNumericRuleFormatter
--- returns an object whose :FormatNumber(n) performs that arithmetic NATIVELY and
--- accepts secrets (design §4, "Number formatting").
+-- Abbreviating a number is division and rounding, and both are arithmetic, which
+-- is exactly what tainted code may not do to a secret value. The client's native
+-- formatters do it instead: C_StringUtil's formatter objects for a PLAIN value
+-- (their :FormatNumber(n) is AllowedWhenUntainted and refuses a secret from addon
+-- code), and AbbreviateNumbers with a CreateAbbreviateConfig object for a secret
+-- (owner ruling R3, 2026-11-23).
 --
 -- modules/Format.lua owns the formatter INSTANCES — one per number style, built
 -- once and reused — and is the only caller of this shim. No call site anywhere
@@ -541,6 +542,25 @@ function Compat.GetDefaultAbbreviationBreakpoints()
     if not (util and util.GetDefaultAbbreviationBreakpoints) then return nil end
     local ok, breakpoints = pcall(util.GetDefaultAbbreviationBreakpoints)
     if ok then return breakpoints end
+    return nil
+end
+
+--- A cached abbreviation config for `AbbreviateNumbers(v, { config = cfg })`, or nil where the
+--- client lacks `CreateAbbreviateConfig` or refuses the breakpoints.
+---
+--- The route for a SECRET number (owner ruling R3, 2026-11-23). Both formatter instances raise
+--- on a secret from addon code (`FormatNumber` is `AllowedWhenUntainted`), while
+--- `AbbreviateNumbers` is `AllowedWhenTainted` and takes this config. The constructor carries the
+--- precondition `RequiresRestrictedAbbreviationBreakpoints` with `FailureMode = "Error"`, so a
+--- refusal raises; the pcall turns it into nil, and modules/Format.lua probes what it gets.
+---
+--- @param data table  array of NumberAbbreviationBreakpoint, plain values only
+--- @return table|nil  an AbbreviateConfig
+function Compat.CreateAbbreviateConfig(data)
+    local create = _G.CreateAbbreviateConfig
+    if not create then return nil end
+    local ok, config = pcall(create, data)
+    if ok then return config end
     return nil
 end
 

@@ -16,6 +16,11 @@
 -- issue #22 asked for, which exists so a raid capture can be read against a
 -- ceiling rather than against a hunch.
 --
+-- UNDER OWNER RULING R4 (2026-11-23) a correlated cell is filled on the LOCAL
+-- player's row only, so the cases below that test what correlation carries (the
+-- rate, the recap, the deaths) put the source on the local player; what another
+-- player's row may hold mid-fight is tests/test_aggregator_certain.lua's subject.
+--
 -- The fixtures are copies of tests/test_aggregator.lua's, small enough that a
 -- duplicate is cheaper to read than a shared file to find.
 
@@ -132,18 +137,20 @@ end
 -- Rows come from the union of every column, exactly as the GUID join takes
 -- them, and a key no column can attribute fills nothing at all.
 
-test("A healer with no damage is on the mid-pull grid, from the healing column", function()
+test("The player with no damage is on the mid-pull grid, from the healing column", function()
     -- THE MISSING ROWS. The identity build took its row list from the SORT
     -- column alone, so a healer who did no damage and a player whose only
     -- contribution was one interrupt were absent for the whole of a pull and
     -- reappeared the instant it ended — rows flickering into existence rather
     -- than a rule. The GUID join has always taken the union of every column.
+    -- Under R4 this holds for the local player only: another player's row could
+    -- be filled from no column but the sort one.
     -- red under: building rows from the sort column only.
     local inst = loaded()
     inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { class = "WARRIOR" }) },
+    install(inst, { src(BETA, 100, { class = "WARRIOR" }) },
         { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(BETA, 500, { class = "PRIEST" }) },
+    install(inst, { src(ALPHA, 500, { class = "PRIEST", localPlayer = true }) },
         { statKey = "HealingDone", maxAmount = 500 })
 
     local result = inst.NS.Aggregator.Build(
@@ -243,9 +250,9 @@ test("A correlated cell carries the RATE, or a rate column renders no text", fun
     -- red under: `row.values[statKey] = { total = value, maxAmount = ... }`.
     local inst = loaded()
     inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { rate = 10 }) },
+    install(inst, { src(ALPHA, 100, { rate = 10, localPlayer = true }) },
         { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(ALPHA, 500, { rate = 50 }) },
+    install(inst, { src(ALPHA, 500, { rate = 50, localPlayer = true }) },
         { statKey = "HealingDone", maxAmount = 500 })
 
     local result = inst.NS.Aggregator.Build(
@@ -265,9 +272,9 @@ test("A correlated Deaths column keeps the recap id the death view opens on", fu
     -- death had no recap to open.
     local inst = loaded()
     inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { rate = 10 }) },
+    install(inst, { src(ALPHA, 100, { rate = 10, localPlayer = true }) },
         { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(ALPHA, 0, { recapID = 4242 }) },
+    install(inst, { src(ALPHA, 0, { recapID = 4242, localPlayer = true }) },
         { statKey = "Deaths", maxAmount = 0 })
 
     local result = inst.NS.Aggregator.Build(
@@ -360,11 +367,11 @@ test("A correlated Deaths column keeps every death too", function()
     -- a pull.
     -- red under: accumulating the array only in setCell.
     local inst = loaded()
-    install(inst, { src(ALPHA, 500, { class = "PALADIN", specIconID = 1 }) },
+    install(inst, { src(ALPHA, 500, { class = "PALADIN", specIconID = 1, localPlayer = true }) },
         { statKey = "DamageDone", maxAmount = 500 })
     install(inst, {
-        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 29 }),
-        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 27 }),
+        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 29, localPlayer = true }),
+        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 27, localPlayer = true }),
     }, { statKey = "Deaths", maxAmount = 0 })
     inst.mocks.setRestricted(true)
 
@@ -403,11 +410,11 @@ test("The identity build keeps that slot too", function()
     -- Two builds, one shape. The GUID build being fixed and the identity build
     -- not would make the lists differ in and out of combat.
     local inst = loaded()
-    install(inst, { src(ALPHA, 500, { class = "PALADIN", specIconID = 1 }) },
+    install(inst, { src(ALPHA, 500, { class = "PALADIN", specIconID = 1, localPlayer = true }) },
         { statKey = "DamageDone", maxAmount = 500 })
     install(inst, {
-        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 29 }),
-        src(ALPHA, 0, { class = "PALADIN", specIconID = 1 }),
+        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 29, localPlayer = true }),
+        src(ALPHA, 0, { class = "PALADIN", specIconID = 1, localPlayer = true }),
     }, { statKey = "Deaths", maxAmount = 0 })
     inst.mocks.setRestricted(true)
 
@@ -424,9 +431,9 @@ test("The feign filter cannot run mid-pull, and does not pretend to", function()
     -- there is a second, GUID-free build. Pinned as behavior so nobody "fixes"
     -- it by keying on something secret.
     local inst = loaded()
-    install(inst, { src(ALPHA, 500, { class = "PALADIN", specIconID = 1 }) },
+    install(inst, { src(ALPHA, 500, { class = "PALADIN", specIconID = 1, localPlayer = true }) },
         { statKey = "DamageDone", maxAmount = 500 })
-    install(inst, { src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 29 }) },
+    install(inst, { src(ALPHA, 0, { class = "PALADIN", specIconID = 1, recapID = 29, localPlayer = true }) },
         { statKey = "Deaths", maxAmount = 0 })
     inst.NS.Feign.Note(ALPHA)
     inst.mocks.setRestricted(true)
@@ -487,59 +494,70 @@ test("Identity stats count collided ROWS, not just collided keys", function()
     assertEqual(stats.keys, 2, "DISTINCT keys, not a per-column count summed")
 end)
 
-test("Identity stats attribute every miss to one of three causes", function()
+test("Identity stats attribute every miss to one of four causes", function()
     -- `filled/possible` alone cannot separate the blank that is CORRECT (a
     -- healer did no damage) from the blank that is the fault the line exists to
     -- surface (the key is in the column and still did not match). One number
     -- covering both is why a live capture could not be acted on.
     -- red under: counting only filled and possible.
+    -- The fourth cause is R4's: another player's cell is WITHHELD by rule.
     local inst = debugging(loaded())
     inst.mocks.setRestricted(true)
     install(inst, {
-        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
+        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9, localPlayer = true }),
         src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
         src(GAMMA,  30, { class = "ROGUE",   specIconID = 3 }),
     }, { statKey = "DamageDone", maxAmount = 100 })
-    -- The priest heals; nobody else appears in the column at all.
-    install(inst, { src(BETA, 500, { class = "PRIEST", specIconID = 5 }) },
+    -- The player and the priest heal; nobody interrupts.
+    install(inst, { src(BETA, 500, { class = "PRIEST", specIconID = 5 }),
+        src(ALPHA, 90, { class = "WARRIOR", specIconID = 9, localPlayer = true }) },
         { statKey = "HealingDone", maxAmount = 500 })
+    install(inst, {}, { statKey = "Interrupts", maxAmount = 0 })
 
     local result = inst.NS.Aggregator.Build(makeWindow{
-        columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" })
+        columns = { "DamageDone", "HealingDone", "Interrupts" }, sortColumn = "DamageDone" })
     local col = result.identityStats.columns.HealingDone
 
     assertEqual(col.rows, 3, "the rectangle is every row, not the rows so far")
-    assertEqual(col.filled, 1)
-    assertEqual(col.absent, 2, "the warrior and the rogue did no healing, honestly")
+    assertEqual(col.filled, 1, "the player's own healing")
+    assertEqual(col.withheld, 2, "the priest's and the rogue's cells wait for combat to end")
+    assertEqual(col.absent, 0)
     assertEqual(col.collided, 0)
     assertEqual(col.unmatched, 0,
         "a key present in the column that still produced no cell is the FAULT bucket")
+    assertEqual(result.identityStats.columns.Interrupts.absent, 1,
+        "the player did no interrupting, honestly")
 end)
 
 test("A collided key lands in the collided bucket, not the absent one", function()
     -- The two are opposite diagnoses: absent means the correlation worked and
     -- the player did nothing, collided means the correlation refused. Reporting
     -- either as the other sends the next change in the wrong direction.
+    -- Under R4 only the local key can collide into a refused cell: a column that
+    -- names it twice cannot say which figure is the player's.
     -- red under: classifying a miss by whether byKey holds the key alone.
     local inst = debugging(loaded())
     inst.mocks.setRestricted(true)
     install(inst, {
-        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
+        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9, localPlayer = true }),
         src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
         src(GAMMA,  30, { class = "PRIEST",  specIconID = 5 }),
     }, { statKey = "DamageDone", maxAmount = 100 })
     install(inst, {
-        src(BETA,  500, { class = "PRIEST", specIconID = 5 }),
-        src(GAMMA, 400, { class = "PRIEST", specIconID = 5 }),
+        src(ALPHA, 500, { class = "WARRIOR", specIconID = 9, localPlayer = true }),
+        src(PET,   400, { class = "WARRIOR", specIconID = 9, localPlayer = true }),
     }, { statKey = "HealingDone", maxAmount = 500 })
+    install(inst, {}, { statKey = "Interrupts", maxAmount = 0 })
 
     local result = inst.NS.Aggregator.Build(makeWindow{
-        columns = { "DamageDone", "HealingDone" }, sortColumn = "DamageDone" })
+        columns = { "DamageDone", "HealingDone", "Interrupts" }, sortColumn = "DamageDone" })
     local col = result.identityStats.columns.HealingDone
 
-    assertEqual(col.collided, 2, "both priest rows were refused, and for that reason")
+    assertEqual(col.collided, 1, "the player's row was refused, and for that reason")
     assertEqual(col.filled, 0, "the only healing in the column belonged to the pair")
-    assertEqual(col.absent, 1, "and the warrior is absent, which is a different fact")
+    assertEqual(col.withheld, 2, "and the priests wait for combat to end, a different fact")
+    assertEqual(result.identityStats.columns.Interrupts.collided, 1,
+        "a collision is pass-wide, so the player's empty Interrupts cell is refused too")
 end)
 
 test("The standing identity line names collided KEYS and ROWS, and every miss by cause (#22)", function()
@@ -556,13 +574,13 @@ test("The standing identity line names collided KEYS and ROWS, and every miss by
         if tag == "Aggregator" then lines[#lines + 1] = fmt:format(...) end
     end
     install(inst, {
-        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }),
+        src(ALPHA, 100, { class = "WARRIOR", specIconID = 9, localPlayer = true }),
         src(BETA,   50, { class = "PRIEST",  specIconID = 5 }),
         src(GAMMA,  30, { class = "PRIEST",  specIconID = 5 }),
     }, { statKey = "DamageDone", maxAmount = 100 })
     install(inst, {
-        src(BETA,  500, { class = "PRIEST", specIconID = 5 }),
-        src(GAMMA, 400, { class = "PRIEST", specIconID = 5 }),
+        src(ALPHA, 500, { class = "WARRIOR", specIconID = 9, localPlayer = true }),
+        src(PET,   400, { class = "WARRIOR", specIconID = 9, localPlayer = true }),
     }, { statKey = "HealingDone", maxAmount = 500 })
 
     local stats = inst.NS.Aggregator.Build(makeWindow{
@@ -571,11 +589,11 @@ test("The standing identity line names collided KEYS and ROWS, and every miss by
     for _, l in ipairs(lines) do
         if l:find("^identity ") then line = l end
     end
-    assertTrue(line:find("collidedKeys=1 collidedRows=2", 1, true) ~= nil, "got: " .. line)
-    assertTrue(line:find("filled=0/3 collided=2 unmatched=0 absent=1", 1, true) ~= nil,
+    assertTrue(line:find("collidedKeys=2 collidedRows=3", 1, true) ~= nil, "got: " .. line)
+    assertTrue(line:find("filled=0/3 withheld=2 collided=1 unmatched=0 absent=0", 1, true) ~= nil,
         "got: " .. line)
-    assertEqual(stats.filled + stats.collided + stats.unmatched + stats.absent, stats.possible,
-        "every correlated cell lands in exactly one bucket")
+    assertEqual(stats.filled + stats.withheld + stats.collided + stats.unmatched + stats.absent,
+        stats.possible, "every correlated cell lands in exactly one bucket")
 end)
 
 test("The sort column is named, and is not part of the correlated rectangle", function()
@@ -584,9 +602,9 @@ test("The sort column is named, and is not part of the correlated rectangle", fu
     -- read for.
     local inst = debugging(loaded())
     inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { class = "WARRIOR", specIconID = 9 }) },
+    install(inst, { src(ALPHA, 100, { class = "WARRIOR", specIconID = 9, localPlayer = true }) },
         { statKey = "DamageDone", maxAmount = 100 })
-    install(inst, { src(ALPHA, 4, { class = "WARRIOR", specIconID = 9 }) },
+    install(inst, { src(ALPHA, 4, { class = "WARRIOR", specIconID = 9, localPlayer = true }) },
         { statKey = "Interrupts", maxAmount = 4 })
 
     local stats = inst.NS.Aggregator.Build(makeWindow{
@@ -717,7 +735,9 @@ test("Identity: the pass publishes how many ROWS wear a collided key", function(
 
     assertTrue(result.ambiguous, "the pair must be found ambiguous")
     assertEqual(#result, 3, "all three rows are on the grid")
-    assertEqual(result.ambiguousRows, 2, "two ROWS wear the collided key, not one key")
+    -- Under R4 the count is every row that waits for combat to end: none of the
+    -- three is the player's, so all three, collided or not.
+    assertEqual(result.ambiguousRows, 3, "three ROWS wait, not one key")
 end)
 
 test("Identity: an unambiguous pass publishes a count of ZERO, never nil", function()
@@ -827,12 +847,12 @@ test("A refused None NPC takes no identity key, so it cannot collide with a play
     -- red under: sweepColumn keying every non-Enemy source.
     local inst = loaded()
     inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100, { class = "WARRIOR" }) },
+    install(inst, { src(ALPHA, 100, { class = "WARRIOR", localPlayer = true }) },
         { statKey = "DamageDone", maxAmount = 100 })
     install(inst, {
-        src(ALPHA, 50, { class = "WARRIOR" }),
+        src(ALPHA, 50, { class = "WARRIOR", localPlayer = true }),
         src("Creature-0-1-2-3-243211-0000ABCDEF", 30, { name = "PvP Training Dummy",
-            class = "WARRIOR", creatureID = 243211,
+            class = "WARRIOR", creatureID = 243211, localPlayer = true,
             displayType = inst.mocks.Enum.DamageMeterSourceDisplayType.None }),
     }, { statKey = "HealingDone", maxAmount = 50 })
 

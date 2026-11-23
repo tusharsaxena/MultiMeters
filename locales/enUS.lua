@@ -938,8 +938,8 @@ L["No combat data yet"] = "No combat data yet"
 L["Your group's numbers appear here once combat starts."] = "Your group's numbers appear here once combat starts."
 -- Shown in gray on the header line for the whole of a pull. The grid is built a
 -- different way while the game restricts combat data — rows come from the
--- engine's own ranking and are matched across columns by class and spec rather
--- than by GUID — and the player is owed the reason a cell can be blank.
+-- engine's own ranking, and only the sort column and the player's own row are
+-- filled (R4) — and the player is owed the reason a cell can be blank.
 -- Printed for the ONE header still refused mid-pull: the Player column. Ordering
 -- by name compares a ConditionalSecret, which raises, and unlike a stat column
 -- there is no engine ranking behind it to fall back on. Picking a stat column
@@ -947,39 +947,27 @@ L["Your group's numbers appear here once combat starts."] = "Your group's number
 L["Sorting is not possible while the game restricts combat data."] =
     "Sorting is not possible while the game restricts combat data."
 L["restricted"] = "restricted"
--- Shown instead of the bare word when two or more players share a class AND a
--- specialization, so their rows cannot be told apart and their secondary cells
--- are left empty rather than filled with a number that might be the other
--- player's. %1$d is how many ROWS that cost, %2$d how many rows there are.
+-- Shown instead of the bare word while cells are withheld mid-fight (owner ruling
+-- R4, 2026-11-23): only the sort column and the player's own row are certain, so
+-- every other player's other cells stay blank until combat ends. The first %d is
+-- how many ROWS wait, the second how many rows there are.
 --
--- THE COUNT IS THE POINT. The old string said only that it was happening. Issue
--- #22 measured both ways out of it -- widening the key, and pairing rows by
--- position -- dead on a live client, so the blanks are permanent, and at raid
--- size they are most of the grid: a captured 18-player pull lost 10 rows. A
--- player who can see 10 in the header can match it to the 10 blank rows in front
--- of them; a player told "some" cannot.
+-- THE COUNT IS THE POINT (issue #22): a player who can see 10 in the header can
+-- match it to the 10 rows in front of them; a player told "some" cannot.
 --
 -- NO LONGER THAN THE STRING IT REPLACED, and that is a constraint rather than a
 -- preference. modules/Window_Header.lua's SESSION_LINE_WIDTH is a fixed 220px --
 -- a constant, because rule R3 forbids measuring the widget -- and its comment
 -- says the number only has to be wide enough for the longest string it can hold.
--- "some rows cannot be told apart" and "%d of %d share a class and spec" are the
--- same length at two digits, so the count arrives free. Dropping the word "rows"
--- is what bought it; the subject is unambiguous beside a grid of them. A
--- translator with a longer phrase should check that constant.
+-- "blank till combat ends" is as long as the "blank: duplicate specs" it
+-- replaced. A translator with a longer phrase should check that constant.
 --
 -- PLAIN SPECIFIERS, NOT POSITIONAL ONES. The client accepts `%1$d`; the headless
 -- harness runs stock Lua 5.1, which answers `invalid option '%$' to 'format'` --
 -- so a positional string would ship untested and raise nowhere the suite could
 -- see. Every other format key in this file is plain for the same reason.
-L["restricted \226\128\148 %d of %d share a class and spec"] =
-    "restricted \226\128\148 %d of %d share a class and spec"
--- The same count once the blanked rows reach a quarter of the grid (issue #22):
--- the player is looking at mostly empty cells and is owed the effect in plain
--- words, not only the cause. No longer than the line above at two digits, for
--- the SESSION_LINE_WIDTH reason given there.
-L["restricted \226\128\148 %d of %d blank: duplicate specs"] =
-    "restricted \226\128\148 %d of %d blank: duplicate specs"
+L["restricted \226\128\148 %d of %d blank till combat ends"] =
+    "restricted \226\128\148 %d of %d blank till combat ends"
 -- The fallback for an ambiguous grid whose row count did not reach the header --
 -- an aggregate from a build older than the count. Kept rather than deleted so a
 -- reader is never told "0 of 0".

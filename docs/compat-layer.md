@@ -26,7 +26,7 @@ without one of its members.
 | `C_DamageMeter` | `IsDamageMeterAvailable`, `GetCombatSessionFromType`, `GetCombatSessionFromID`, `GetCombatSessionSourceFromType`, `GetCombatSessionSourceFromID`, `GetAvailableCombatSessions`, `GetSessionDurationSeconds`, `ResetAllCombatSessions` | `nil`, except as noted below |
 | `C_DeathRecap` | `HasDeathRecap`, `HasRecapEvents`, `GetRecapEvents`, `GetRecapMaxHealth` | `false` / `nil` |
 | Recap discovery | `RecapMembers`, `RecapAPIs`, `CallRecap` | an empty finding, never an error |
-| Number formatting | `CreateAbbreviatedNumberFormatter`, `GetDefaultAbbreviationBreakpoints`, `CreateNumericRuleFormatter` | `nil` |
+| Number formatting | `CreateAbbreviatedNumberFormatter`, `GetDefaultAbbreviationBreakpoints`, `CreateNumericRuleFormatter`, `CreateAbbreviateConfig` | `nil` |
 | Context menus | `OpenContextMenu` | `false` |
 | Icon art | `FirstTexture`, `FirstAtlas` | `nil` |
 | Player context | `IsInDelve`, `IsSkyriding`, `IsInHousing` | `false` |
@@ -212,9 +212,12 @@ and an HP figure, and both are meter values.
 
 ## Number formatting is a compat problem, not a formatting one
 
-`C_StringUtil.CreateAbbreviatedNumberFormatter` is **the only legal way to render "12.4M" from a
-secret**. Abbreviating a number is division and rounding, and both are arithmetic; the formatter
-object performs that arithmetic natively and accepts secrets (design §4, *Number formatting*).
+Abbreviating a number is division and rounding, and both are arithmetic, so "12.4M" comes from the
+client's native formatters. `C_StringUtil.CreateAbbreviatedNumberFormatter` renders a **plain**
+value; its `FormatNumber` is `AllowedWhenUntainted` and refuses a secret from addon code. A
+**secret** goes to `AbbreviateNumbers` (`AllowedWhenTainted`) with a config from
+`Compat.CreateAbbreviateConfig`, a pcall around the client's `CreateAbbreviateConfig` that answers
+nil on a refusal (owner ruling R3, 2026-11-23).
 `modules/Format.lua` owns the instances — one per number style, built once and reused — and is the
 only caller. No call site in this addon divides a meter value.
 

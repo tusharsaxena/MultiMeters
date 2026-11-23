@@ -5,6 +5,14 @@ Orient-yourself map for **Ka0s Multi Meters**. A single-frame, multi-column grou
 `FontString` on it. Every number is read from Blizzard's built-in damage meter through
 `C_DamageMeter`; the addon never parses the combat log.
 
+**Retail only by the owner's decision** (2026-11-23, clients-§7). On WoW Forever the built-in meter
+hides each player's specialization as well as their identity in combat, so players can be matched
+only by class and a number in the middle of a fight cannot be tied to the player it belongs to. The
+owner chose not to ship the addon there rather than show a grid that cannot be trusted. The TOC
+carries one interface number plus `## AllowLoadGameType: standard` and
+`## ExcludeLoadGameType: camelot` (toc-file-§3), so the Forever client never lists it; every feature
+serves Retail, and no file reads the client (`tests/test_clients.lua`).
+
 This file is the hub. Topic detail lives in `docs/` and is linked from each section — a section here
 that outgrows a screen belongs in its topic doc with a summary and a link left behind.
 
@@ -237,7 +245,7 @@ is active, the numeric fields come back to tainted code — which is all of ours
 | concatenate with `..`, and `string.format` / `string.join` them | use them as table **keys** |
 | pass them to `StatusBar:SetValue` / `SetMinMaxValues` and `FontString:SetText` | apply the `#` length operator |
 | call `type()` on them, and test `== nil` | index them |
-| call `NumericRuleFormatter:FormatNumber` on them | call `table.concat` with them |
+| call `AbbreviateNumbers` on them (`FormatNumber` refuses them, R3) | call `table.concat` with them |
 
 Each forbidden operation raises **immediately**. The single exception the addon leans on is that a
 **non-boolean** secret may still be tested for nil-ness, which is why `== nil` appears everywhere a
@@ -484,7 +492,9 @@ thing is in it before opening it:
   identity correlation; two players of one class and spec cannot be told apart, and in a raid
   `specIconID` does not arrive at all, which makes the grid 98% blank mid-pull
   ([#22](https://github.com/tusharsaxena/MultiMeters/issues/22),
-  [#24](https://github.com/tusharsaxena/MultiMeters/issues/24)). Blanking is correct: a mislabeled
+  [#24](https://github.com/tusharsaxena/MultiMeters/issues/24)). Since owner ruling R4
+  (2026-11-23) only the sort column and the player's own row are filled mid-fight, and every other
+  player's other cells wait for the end of combat. Blanking is correct: a mislabeled
   number is a lie the player cannot see.
 - **Arithmetic mid-pull.** Percentages go quiet, pets keep their own rows whatever `data.mergePets`
   says, and the feign-death filter has no plain key to join on until combat ends.
@@ -554,7 +564,7 @@ re-check re-runs the count rather than re-arguing the verdict. **All seven ship.
 | `perf-analysis/README.md` | Present | **The performance harness is wired**: `core/PerfSetup.lua` plus `Perf.Note` brackets in eight files (`performance-§12`). `docs/perf-analysis/20260909-014604/` is the standing example. |
 | `compat-layer.md` | Present | **`core/Compat.lua`: 896 lines, 46 shims** (8 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
 | `midnight-quirks.md` | Present | **Four client-version workarounds of the addon's own** (isolated event registrations, `ADDON_RESTRICTION_STATE_CHANGED` against a namespace a client may lack, the settle pass, the secret-value model); the file is required in every addon from v2.102.0 and also carries the vendored client-quirks catalog. The detail moved here from [Taint notes](#taint-notes) rather than being copied. |
-| `forever-quirks.md` | Not applicable | Clients is `Retail (port pending)`; the Forever catalog is carried only where Clients includes Forever (documentation-§3, forever-quirks-§1) |
+| `forever-quirks.md` | Not applicable | Clients is `Retail`, by the owner's decision; the Forever catalog is carried only where Clients includes Forever (documentation-§3, forever-quirks-§1) |
 | `debug.md` | Present | **One diagnostics report, three probe verbs, the report verbs on `D:Report`, the `tooltip` session flag and the `NS.Debug` channels** (`debug-logging-§14`, `§15`). Written 2026-09-09, when the row's own re-check trigger fired. |
 | `slash-dispatch.md` | Present | **22 verbs in `NS.COMMANDS` (as measured on 2026-11-06) and a sub-command tree** (`window` takes four sub-verbs), against eight or more commands or any tree. The hub's `## Slash commands` detail moved there on 2026-09-24. |
 | `message-bus.md` | Present | **15 distinct messages**, against more than ten; one catalog (`core/Constants.lua` `MSG`), one sender each. Moved out of the hub on 2026-09-24. |

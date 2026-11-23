@@ -265,6 +265,8 @@ local shared = loadInstance()
 local SUITES = {
     -- structure and the shared vocabulary
     "test_loadorder",
+    -- Retail only by the owner's decision (clients-§7): the TOC gating, the recorded reason.
+    "test_clients",
     -- The two size registers, side by side because they are the same bargain twice:
     -- both read a table out of docs/ARCHITECTURE.md, both check membership and
     -- disposition rather than the figures beside them, and neither runs the tool that
@@ -333,6 +335,8 @@ local SUITES = {
     "test_vendor_sync",
     -- the data path
     "test_format",
+    -- A secret number follows the number format (R3): the formatter refuses one.
+    "test_format_secret",
     "test_provider",
     "test_provider_recap",
     "test_provider_fields",
@@ -340,6 +344,8 @@ local SUITES = {
     "test_feign",
     "test_aggregator",
     "test_aggregator_identity",
+    -- Only what is certain mid-fight (R4): the sort column and the local row.
+    "test_aggregator_certain",
     "test_aggregator_preview",
     "test_aggregator_sort",
     -- the display

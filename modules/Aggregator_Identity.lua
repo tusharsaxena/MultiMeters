@@ -110,6 +110,18 @@ local UNRANKED      = Seam.UNRANKED
 --
 -- Verified against Blizzard's field annotations and against Scoot's Damage Meter
 -- Y, which solves it the same way.
+--
+-- ONLY WHAT IS CERTAIN (owner ruling R4, 2026-11-23). The refusal above proves a
+-- key ambiguous only when ONE column lists it twice, and that proof fails in
+-- ordinary play: a member leaves mid-fight, the roster is half built, the Overall
+-- segment holds past members, or an ungrouped ally or an unfolded pet wears a
+-- grouped player's class. Each puts one player's number on another's row with no
+-- warning. So a correlated cell is now filled on the LOCAL player's row alone,
+-- whose `isLocalPlayer` is plain; the sort column still fills every row, because
+-- each of its rows IS its source. Every other cell of another player stays blank
+-- until combat ends, a player the sort column never names gets no row, and
+-- `pass.ambiguousRows` counts the rows that wait, for the header note. The
+-- collision sweep still runs: it guards the local key, and the diagnostics read it.
 
 --- The plain triple that stands in for a GUID while the GUID is secret.
 local function identityKey(src)
@@ -327,6 +339,8 @@ local function identityRow(pass, src, index, localGuid, key, unranked)
         row.isLocalPlayer = false
     end
     row.identityKey   = key
+    -- The one row a correlated column may fill (R4): `isLocalPlayer` is plain.
+    row.identityLocal = isLocal
     -- Past every ranked row, in first-seen order, exactly as the GUID join parks
     -- a player who appears in some other column but not in the sort one.
     row.providerIndex = unranked and (UNRANKED + index) or index
@@ -347,11 +361,12 @@ end
 ---
 --- Only for a key that is unambiguous AND has a figure: a row invented for a
 --- collided key could never be filled from any column, and an always-empty row
---- is noise.
+--- is noise. And only for the LOCAL player (R4): another player's row could be
+--- filled from no column but the sort one, so it would be always empty too.
 local function adoptUnknownSources(pass, column, keys, byKey, collisions, localGuid)
     for index, src in ipairs(column.sources) do
         local key = keys[index]
-        if key ~= nil
+        if key ~= nil and Secrets.PlainTruth(src.isLocalPlayer)
             and pass.byIdentity[key] == nil and byKey[key] ~= nil and not collisions[key] then
             identityRow(pass, src, index, localGuid, key, true)
         end
@@ -377,9 +392,10 @@ local function fillCorrelated(pass, statKey, collisions, localGuid)
         local value = byKey[row.identityKey]
         -- A collided key is left EMPTY rather than filled from a source that
         -- might be the other player's. That refusal is the whole warrant for
-        -- correlating on class and spec at all.
+        -- correlating on class and spec at all. And only the local row is
+        -- filled (R4): another player's key proves nothing, see the header.
         pass.corrPossible = pass.corrPossible + 1
-        if value ~= nil and not collisions[row.identityKey] then
+        if value ~= nil and row.identityLocal and not collisions[row.identityKey] then
             pass.corrFilled = pass.corrFilled + 1
             -- Three fields in the constructor, never four: the literal's size
             -- is fixed at compile time, so spelling `deathRecapID` here would
@@ -506,14 +522,17 @@ end
 --- Score one correlated column against every row on the grid.
 local function scoreColumn(pass, statKey, collisions)
     local seen = pass.corrSeen[statKey] or {}
-    local col = { rows = #pass.rows, filled = 0, collided = 0, absent = 0, unmatched = 0 }
+    local col = { rows = #pass.rows, filled = 0, withheld = 0, collided = 0, absent = 0, unmatched = 0 }
     for i = 1, #pass.rows do
         local row = pass.rows[i]
         local key = row.identityKey
         -- Order matters: a collided key may also have been mentioned and may
         -- also have no cell, and reporting it as `unmatched` would send the next
         -- change hunting a matching bug that is not there.
-        if key ~= nil and collisions[key] then
+        -- Another player's cell is withheld by rule (R4), before any other cause.
+        if not row.identityLocal then
+            col.withheld = col.withheld + 1
+        elseif key ~= nil and collisions[key] then
             col.collided = col.collided + 1
         elseif row.values[statKey] ~= nil then
             col.filled = col.filled + 1
@@ -548,6 +567,7 @@ local function identityStats(pass, collisions)
         -- column, so the standing line can tell the two causes apart without
         -- `/mm debug identity` (issue #22): `collided` is the correlation
         -- refusing, `unmatched` is a key in the column that still found no row.
+        withheld     = 0,
         collided     = 0,
         unmatched    = 0,
         absent       = 0,
@@ -580,6 +600,7 @@ local function identityStats(pass, collisions)
             stats.order[#stats.order + 1] = statKey
             stats.filled    = stats.filled + col.filled
             stats.possible  = stats.possible + col.rows
+            stats.withheld  = stats.withheld + col.withheld
             stats.collided  = stats.collided + col.collided
             stats.unmatched = stats.unmatched + col.unmatched
             stats.absent    = stats.absent + col.absent
@@ -606,11 +627,22 @@ end
 --- Every count here is over OUR OWN plain integers and a set keyed on plain
 --- strings, so it is legal mid-pull where arithmetic on a meter value would not
 --- be.
-local function countAmbiguousRows(rows, collisions)
+---
+--- UNDER R4 IT COUNTS EVERY ROW WHOSE CELLS WAIT: another player's row, whose
+--- correlated cells are withheld until combat ends, and the local row if its key
+--- collided. A grid with no column beside the sort one withholds nothing.
+local function countAmbiguousRows(pass, collisions)
+    local sortKey = pass.sortColumn
+    local correlated = false
+    for _, statKey in ipairs(pass.keys) do
+        if statKey ~= sortKey then correlated = true break end
+    end
+    if not correlated then return 0 end
     local n = 0
-    for i = 1, #rows do
-        local key = rows[i].identityKey
-        if key ~= nil and collisions[key] then n = n + 1 end
+    for i = 1, #pass.rows do
+        local row = pass.rows[i]
+        local key = row.identityKey
+        if not row.identityLocal or (key ~= nil and collisions[key]) then n = n + 1 end
     end
     return n
 end
@@ -640,8 +672,8 @@ local function buildByIdentity(pass)
     end
 
     if sortCount then rescaleCounted(pass, sortKey) end
-    pass.ambiguous = next(collisions) ~= nil
-    pass.ambiguousRows = countAmbiguousRows(pass.rows, collisions)
+    pass.ambiguousRows = countAmbiguousRows(pass, collisions)
+    pass.ambiguous = pass.ambiguousRows > 0
 
     -- ONE line per pass, and only while the flag is on. Every figure on it is
     -- a whole-pass one: `keys` is a cardinality, `collidedKeys` and
@@ -656,9 +688,9 @@ local function buildByIdentity(pass)
         pass.identityStats = stats
         NS.DebugSteady(pass.windowId, "Aggregator",
             "identity rows=%d keys=%d collidedKeys=%d collidedRows=%d"
-                .. " filled=%d/%d collided=%d unmatched=%d absent=%d",
+                .. " filled=%d/%d withheld=%d collided=%d unmatched=%d absent=%d",
             stats.rows, stats.keys, stats.collidedKeys, stats.collidedRows,
-            stats.filled, stats.possible, stats.collided, stats.unmatched, stats.absent)
+            stats.filled, stats.possible, stats.withheld, stats.collided, stats.unmatched, stats.absent)
     end
 end
 

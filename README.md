@@ -4,9 +4,9 @@
 ![CurseForge Version](https://img.shields.io/curseforge/v/1690082)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-2658%2F2658_passing-green)
+![Tests](https://img.shields.io/badge/Tests-2682%2F2682_passing-green)
 
-Retail only for now; WoW Forever support is planned. Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
+Retail only. On WoW Forever the built-in meter hides each player's specialization as well as their name during a fight, so a mid-fight number cannot be tied to the right player, and Multi Meters is not shipped there. Most damage meter addons show you one statistic at a time. Multi Meters puts all of them in one grid: who kicked, who dispelled, who stood in the fire, who died. Every player gets a row and every statistic gets a column.
 
 The numbers are Blizzard's. Multi Meters asks the built-in meter for them and arranges them. It never touches the combat log, so it adds no work on top of what the game is already doing.
 
@@ -63,7 +63,7 @@ That design is also where the one odd behavior comes from. In Midnight, addons g
 |----------|--------|
 | Do I need Details or Skada? | No. It isn't a plugin for another meter and doesn't read one. The only thing it depends on is Blizzard's meter, which has to be switched on. |
 | Does it replace my damage meter? | It can. Add the Damage and Healing columns and the usual numbers sit right next to the ones you'd otherwise switch windows to see. Plenty of people run both anyway. |
-| Why is a cell empty mid-fight, and why is the header gray? | For the length of a fight, Midnight hides the tag the game normally gives addons for each row. The rows still follow the live ranking, and the other columns get matched onto them by class and spec. When a player shares both with someone else, the two can't be told apart, so those cells are left empty. The header keeps a running count, in the form `restricted — 10 of 18 share a class and spec`, so the figure matches the blank rows you can see. |
+| Why is a cell empty mid-fight, and why is the header gray? | For the length of a fight, Midnight hides the tag the game normally gives addons for each row. The rows still follow the live ranking of the column you sort by, and that column is filled for everyone. The other columns can only be matched to a player by class and spec, and that match can be wrong (two of a class, someone who left, a stranger nearby), so only your own row gets them. Everyone else's other cells fill in when the fight ends. The header keeps a running count, in the form `restricted — 17 of 18 blank till combat ends`. |
 | Can nothing be done about that? | Not from an addon. We tried three ways and measured all three, and none of them work. The game refuses to look a row up by the sealed tag it just handed you. No other field it sends mid-fight separates two players of one spec. And the columns disagree about which of a duplicate pair they're even reporting on. A blank cell is what's left, and at least it's honest. |
 | Can I look back at an earlier fight? | Yes. The three horizontal lines in the header list every fight the game still holds, by name and length, with Current and Overall at the bottom. Your pick sticks across reloads. If the game drops that fight, the window quietly falls back to Current. |
 | Can I have one window for damage and another for utility? | Yes. Make a second one on the Windows page and give it different columns. Almost every setting is per window. |

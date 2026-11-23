@@ -375,13 +375,14 @@ local function reportRectangle(stats)
         stats.collidedRows, stats.filled, stats.possible))
     out(string.format("  sort column: %s (nothing is correlated onto it)",
         tostring(stats.sortColumn)))
-    out("  column               rows  filled  collided  absent  unmatched")
+    out("  column               rows  filled  withheld  collided  absent  unmatched")
     for _, statKey in ipairs(stats.order) do
         local c = stats.columns[statKey]
-        out(string.format("  %-20s %4d  %6d  %8d  %6d  %9d",
-            statKey, c.rows, c.filled, c.collided, c.absent, c.unmatched))
+        out(string.format("  %-20s %4d  %6d  %8d  %8d  %6d  %9d",
+            statKey, c.rows, c.filled, c.withheld or 0, c.collided, c.absent, c.unmatched))
     end
-    out("  filled   = the correlation worked.")
+    out("  filled   = the correlation worked (the player's own row).")
+    out("  withheld = another player's cell, blank until combat ends (R4).")
     out("  collided = it refused, because two players share one class+spec.")
     out("  absent   = the column never named this key: an HONEST blank.")
     out("  unmatched= the column DID name it and produced no cell. That is the")

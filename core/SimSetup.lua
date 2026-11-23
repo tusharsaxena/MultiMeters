@@ -52,7 +52,7 @@ local PURE = {
     RecapMembers = true, RecapAPIs = true, CallRecap = true,
     -- text helpers: the client's number formatters
     CreateAbbreviatedNumberFormatter = true, GetDefaultAbbreviationBreakpoints = true,
-    CreateNumericRuleFormatter = true,
+    CreateNumericRuleFormatter = true, CreateAbbreviateConfig = true,
     -- the context menu, texture and atlas helpers, and the bar interpolation enum
     OpenContextMenu = true, FirstTexture = true, FirstAtlas = true, BarInterpolation = true,
     -- the real player's travel state

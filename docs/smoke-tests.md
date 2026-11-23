@@ -17,7 +17,7 @@ secret-value rules the checks refer to.
 
 | ID range | Theme | What it covers |
 |---|---|---|
-| INSTALL-1 to INSTALL-18 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load, the one-time HUD and chrome skin resets |
+| INSTALL-1 to INSTALL-19 | [Install, load and reload](#install) | First login, SavedVariables shape, `/reload`, logout, old-file upgrades, the pruned icon set, the simulator seam at load, the one-time HUD and chrome skin resets, Retail only (the Forever client does not list it) |
 | SLASH-1 to SLASH-33 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding and the General page's Keybindings tab |
 | PANEL-1 to PANEL-59 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
@@ -27,7 +27,7 @@ secret-value rules the checks refer to.
 | GRID-1 to GRID-35 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-41 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips opening beside the window, breakdowns, death list and recap, tooltip styling, Targets |
 | EXPORT-1 to EXPORT-57 | [Export](#export) | The modal, its settings mark, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
-| COMBAT-1 to COMBAT-30 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals |
+| COMBAT-1 to COMBAT-33 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals, the number format mid-pull, only certain cells mid-fight |
 | DIAG-1 to DIAG-46 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, the report verbs in the console with one chat pointer, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-12 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look, a report in chat |
 | SIM-1 to SIM-16 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run, the Master controls Sim mode checkbox and its window rule |
@@ -188,6 +188,14 @@ secret-value rules the checks refer to.
   rather than `/reload`. On your usual account, then on a fresh character → no Lua error, `/mm list` still prints every
   page, the General, Visibility and Columns pages draw every row in the order they did, and
   each dropdown still offers its options. A nil dropdown or an empty page means a file loaded out of order. Result:
+- **INSTALL-19. Retail only: the Forever client does not list it (MKF-MM-01).** On the Retail client,
+  the AddOns list at character select shows **Ka0s Multi Meters**, enabled, and it loads as before. On
+  the WoW Forever client, with the same `MultiMeters` folder in its AddOns directory, the AddOns list
+  at character select does not show it at all (not grayed out, not "incompatible": absent), and no
+  Multi Meters window, minimap button or `/mm` exists in game. The TOC's `## AllowLoadGameType:
+  standard` and `## ExcludeLoadGameType: camelot` are what hide it; a Forever list that shows it means
+  the client read neither line. Result:
+
 ## SLASH
 
 - **SLASH-1. Banner and help.** `/mm help` → the help index; every line the addon prints starts with
@@ -1538,6 +1546,9 @@ stayed empty; "no errors" from a dummy is not evidence here.
   their Damage is right and their other columns are empty; the header reads `restricted — N of M share
   a class and spec` while under a quarter of the rows are affected, and `restricted — N of M blank:
   duplicate specs` from a quarter up, the whole sentence fitting the header at two-digit counts. Result: pass (owner-marked 2026-10-10)
+  (Superseded by MKF-MM-03, 2026-11-23, owner ruling R4: mid-fight every other player's other columns
+  are blank, duplicate or not, and the header reads `restricted — N of M blank till combat ends`.
+  COMBAT-32 checks it; this pass stands for what it checked then.)
 - **COMBAT-14. Sort modes mid-pull.** `/mm set window.data.sortMode roster` before one pull, then
   `/mm set window.data.sortMode provider` before the next → in combat each shows the engine's ranking,
   as COMBAT-11. Click a statistic's column header afterwards to return to value sorting. Result: pass (owner-marked 2026-10-10)
@@ -1585,6 +1596,32 @@ stayed empty; "no errors" from a dummy is not evidence here.
   **Use the skin's border** and pick a **Border style** other than None (an LSM edge, the backdrop
   path), then pull → the borders draw around the cells and no Lua error appears. (Amended by MM-05, 2026-10-29, the skinning rollout: the
   companion.) Result: pass (owner-marked 2026-10-30)
+- **COMBAT-31. Mid-pull numbers follow the number format (MKF-MM-02, R3).** With BugSack cleared and
+  `/mm debug on`, set the first window's Bars → Text → Content → **Number format** to each value in
+  turn, one pull each: *Abbreviated (12.4M)* → mid-pull Damage reads like `24.3M` and a rate like
+  `39`, never `39.714285714286` or `<secret>`; *Abbreviated, no decimals (12M)* → `24M`;
+  *Abbreviated, two decimals (12.40M)* → `24.31M`; *Full (12400000)* → every digit of the whole
+  number, like `24312345`, never a decimal tail. Each
+  mode reads the same mid-pull as between packs, and no Lua error appears. If every mode reads alike
+  mid-pull (Blizzard's own `24.3M` or a float), the debug console shows `abbreviate config refused;
+  secret numbers keep the old path`: record that line and the client build, because the client
+  refused the new route and the old display is the designed fallback. Result:
+- **COMBAT-32. Only what is certain fills mid-fight (MKF-MM-03, R4).** In a five-player group with the
+  six default columns sorted by Damage, pull → every row's Damage cell fills and re-ranks live; your
+  own row fills every column (Healing, Interrupts, Dispels, Damage Taken, Deaths); every other
+  player's other columns stay blank all pull, even a class nobody else plays; a group member with no
+  damage (a healer early in a pull) has no row until combat ends. The header reads `restricted — 4 of
+  5 blank till combat ends` (the count is the other players' rows), the whole sentence fitting the
+  header. Sort by Healing for the next pull → the Healing column fills for everyone instead and
+  Damage for you alone. When combat ends, on the first refresh every cell fills, the missing rows
+  come back and the note returns to nothing. Repeat once in a raid and once with the window on
+  Overall → the same rule, no other player's secondary number mid-fight. Result:
+- **COMBAT-33. Deaths and tooltips follow the same rule (MKF-MM-03, R4).** In a group pull where
+  another player dies: their Deaths cell stays blank and hovering it shows no death line (*No data
+  yet*), while your own death, if you die, shows in your row with its recap hint and opens the recap
+  as before. Sort by Deaths for one pull → each death is its own filled row in the Deaths column with
+  nothing beside it but your own row's cells. Hover another player's name mid-pull → no line from a
+  column other than what the game itself answers for that row. No Lua error. Result:
 
 ## DIAG
 
@@ -2239,3 +2276,8 @@ Owed: SKIN-53 to SKIN-57 (SD-SK-MM: the segment picker mid-pull, U-21; the swatc
 
 Amended by the owner on 2026-11-23 (Ka0sAddonsCommonTasks `docs/2026-11-23-R2_RESTORE_AND_PROBE_FIXES/`, R2P-MM): SKIN-54 to SKIN-57 are superseded wherever they
 expect a swatch companion on by default. Each starts off and draws the skin's only once ticked.
+
+Owed: INSTALL-19 (MKF-MM-01, Retail only), COMBAT-31 (MKF-MM-02, R3), COMBAT-32 and COMBAT-33
+(MKF-MM-03, R4), the MultiMeters and KickCD Forever port (Ka0sAddonsCommonTasks
+`docs/2026-11-23-MULTIMETERS_KICKCD_FOREVER_PORT/`), each with an empty `Result:`. COMBAT-13 keeps its
+pass for what it checked then; its mid-fight half is now COMBAT-32.
