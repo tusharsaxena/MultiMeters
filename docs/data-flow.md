@@ -376,10 +376,20 @@ Identity mode is built out of the fields Blizzard annotates `NeverSecret`:
   did no damage and a player whose only contribution was one interrupt were missing for the whole of
   a pull and reappeared the instant it ended. An **ambiguous** key gets no invented row: no column
   could ever fill it, and an always-empty line is noise.
+- **Only what is certain is filled (owner ruling R4, 2026-11-23).** The uniqueness proof below
+  fails in ordinary play — a member leaves mid-fight, the roster is half built, the Overall segment
+  holds past members, an ungrouped ally or an unfolded pet wears a grouped player's class — and each
+  puts one player's number on another's row with no warning. So a correlated cell is filled on the
+  **local player's row only** (`isLocalPlayer` is plain); the sort column still fills every row,
+  because each of its rows *is* its source. Every other cell of another player stays **blank until
+  combat ends**, and the union above adopts only the local player: another player the sort column
+  never names has no row mid-fight. `kept.ambiguousRows` counts the rows that wait,
+  `kept.ambiguous` says there are some, and the header line reports both —
+  `restricted — 17 of 18 blank till combat ends`. Out of combat the GUID join runs and nothing
+  changes. `tests/test_aggregator_certain.lua` pins the rule and the four failure cases.
 - A key appearing **twice in any column** — two players of one class *and* one spec — is ambiguous,
-  and every secondary cell for it is left **empty**. `kept.ambiguous` says so, `kept.ambiguousRows`
-  says how many rows it cost, and the header line reports both —
-  `restricted — 10 of 18 share a class and spec`. An empty cell is a visible absence; a mislabeled number is a lie the player cannot see.
+  and every secondary cell for it is left **empty**. Under R4 that refusal guards the local key; the
+  diagnostics still count collided keys and rows. An empty cell is a visible absence; a mislabeled number is a lie the player cannot see.
   Every column is swept for duplicates **before any cell is written**; the sweep used to run column
   by column as the fill walked them, which let a key the third column proved ambiguous keep cells the
   second had already filled.
@@ -402,18 +412,18 @@ Identity mode is built out of the fields Blizzard annotates `NeverSecret`:
   `sourceGUID` back to `C_DamageMeter` answers `raised` — the client refuses the argument outright.
   What is left is saying so on screen, which is what the header count does.
 - `/mm debug on` prints one `identity` line per pass —
-  `rows= keys= collidedKeys= collidedRows= filled=/ collided= unmatched= absent=` — where `keys` is a
+  `rows= keys= collidedKeys= collidedRows= filled=/ withheld= collided= unmatched= absent=` — where `keys` is a
   distinct count and collided keys and collided rows are named apart, because the ceiling turns on
   how many ROWS the collided keys cover rather than on how many keys there are. The last three are
   the blank cells of the `filled/possible` rectangle split by cause, summed over every correlated
-  column: `collided` is the correlation refusing a shared class+spec key, `unmatched` is a key the
+  column: `withheld` is another player's cell blank by rule (R4), `collided` is the correlation
+  refusing a shared class+spec key, `unmatched` is a key the
   column named that still found no row (the fault), and `absent` is a player who did none of that
   stat. So the standing line alone tells a collision-driven blank grid from a mismatch
   ([#22](https://github.com/tusharsaxena/MultiMeters/issues/22)). The header's restricted notice
-  says the same thing in words: `N of M share a class and spec`, and once the collided rows reach a
-  quarter of the grid, `N of M blank: duplicate specs`. **`/mm debug identity`** prints
+  says the same thing in words: `N of M blank till combat ends`. **`/mm debug identity`** prints
   the full capture: the correlation rectangle per column with every miss attributed
-  (`filled` / `collided` / `absent` / `unmatched`), the rows-per-key histogram, where each collided
+  (`filled` / `withheld` / `collided` / `absent` / `unmatched`), the rows-per-key histogram, where each collided
   key's sources sat in every column, and an audit of what the running client actually annotates plain
   on a raw source row. See `docs/testing.md` → *Capturing an identity-correlation run*.
 - Enemies are filtered on `sourceDisplayType`, because the roster cannot answer for a source it

@@ -492,7 +492,9 @@ thing is in it before opening it:
   identity correlation; two players of one class and spec cannot be told apart, and in a raid
   `specIconID` does not arrive at all, which makes the grid 98% blank mid-pull
   ([#22](https://github.com/tusharsaxena/MultiMeters/issues/22),
-  [#24](https://github.com/tusharsaxena/MultiMeters/issues/24)). Blanking is correct: a mislabeled
+  [#24](https://github.com/tusharsaxena/MultiMeters/issues/24)). Since owner ruling R4
+  (2026-11-23) only the sort column and the player's own row are filled mid-fight, and every other
+  player's other cells wait for the end of combat. Blanking is correct: a mislabeled
   number is a lie the player cannot see.
 - **Arithmetic mid-pull.** Percentages go quiet, pets keep their own rows whatever `data.mergePets`
   says, and the feign-death filter has no plain key to join on until combat ends.

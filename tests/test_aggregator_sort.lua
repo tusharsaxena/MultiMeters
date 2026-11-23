@@ -47,6 +47,7 @@ local function src(guid, total, opts)
         classFilename   = opts.class or "MAGE",
         totalAmount     = total,
         amountPerSecond = opts.rate,
+        isLocalPlayer   = opts.localPlayer,
     }
 end
 
@@ -469,9 +470,11 @@ test("an ascending mid-pull reverse leads with the rows the sort column never na
     -- is the same answer `value` mode gives out of combat.
     local inst = loaded()
     inst.mocks.setRestricted(true)
-    install(inst, { src(ALPHA, 100), src(BETA, 50) },
+    -- Under R4 only the LOCAL player can be such a row (another player's would be
+    -- always empty), so the unnamed row here is the player's own.
+    install(inst, { src(BETA, 100), src(GAMMA, 50) },
         { statKey = "DamageDone", maxAmount = 100, totalAmount = 150 })
-    install(inst, { src(GAMMA, 4, { class = "ROGUE" }) },
+    install(inst, { src(ALPHA, 4, { class = "ROGUE", localPlayer = true }) },
         { statKey = "Interrupts", maxAmount = 4 })
 
     local window = makeWindow{ sortMode = "value",
@@ -480,7 +483,7 @@ test("an ascending mid-pull reverse leads with the rows the sort column never na
 
     local result = inst.NS.Aggregator.Build(window)
     assertEqual(#result, 3)
-    assertEqual(result[1].guid:sub(1, 6), "ident:",
+    assertEqual(result[1].guid, ALPHA,
         "the row no ranked column named is the zero, and zero leads ascending")
 end)
 

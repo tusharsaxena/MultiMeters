@@ -138,7 +138,9 @@ be the reason a player cannot describe what they are seeing.
 `tests/test_aggregator.lua` kept the build pipeline, the GUID join, the group filter and pet folding.
 `tests/test_aggregator_identity.lua` covers the **second** build — the grid drawn while `sourceGUID`
 is secret, where there is no key to join on and rows are correlated by class plus spec plus "is it
-me" instead. Nearly every case in it is about a **refusal**: an ambiguous key fills no cell, a
+me" instead, filled since owner ruling R4 on the local player's row only
+(`tests/test_aggregator_certain.lua` pins that rule and the four ways the old proof mislabeled).
+Nearly every case in it is about a **refusal**: an ambiguous key fills no cell, a
 collision a later column proves blanks the cells an earlier one already wrote, a sum nobody may
 compute goes quiet rather than reading zero. Correlation can be wrong in a way a join cannot, so the
 refusals are the behavior worth pinning. `tests/test_aggregator_preview.lua` covers the grid with
@@ -705,7 +707,7 @@ It prints four blocks:
 
 | Block | Answers |
 |---|---|
-| **the rectangle** | Every row against every correlated column, each miss attributed: `filled` (the correlation worked), `collided` (it refused — two players share a key), `absent` (the column never named the key: an honest blank), `unmatched` (the column *did* name it and produced no cell — **the fault**, and the one to paste into the issue) |
+| **the rectangle** | Every row against every correlated column, each miss attributed: `filled` (the correlation worked), `withheld` (another player's cell, blank until combat ends by R4), `collided` (it refused — two players share a key), `absent` (the column never named the key: an honest blank), `unmatched` (the column *did* name it and produced no cell — **the fault**, and the one to paste into the issue) |
 | **rows per key** | How many keys are worn by one row, by two, by three. Bounds what widening the key could buy, before anything is spent finding out whether it *can* be widened |
 | **collided key seats** | Where each ambiguous key's sources sat in each column. Two captures of one pull, compared, say whether a duplicate pair could be matched by position instead |
 | **source fields** | What the client actually puts on a **raw** source row, sampled across up to 10 rows plus the local player's, with a state, a `rows` count and a `values` count per field. Read through `Provider.ProbeSourceFields`, which reads the raw row rather than `GetColumn`'s projection — a probe reading the projection could only ever report the fields this addon already copies, and would confirm our own opinion back to us |

@@ -344,6 +344,8 @@ local SUITES = {
     "test_feign",
     "test_aggregator",
     "test_aggregator_identity",
+    -- Only what is certain mid-fight (R4): the sort column and the local row.
+    "test_aggregator_certain",
     "test_aggregator_preview",
     "test_aggregator_sort",
     -- the display

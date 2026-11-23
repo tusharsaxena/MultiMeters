@@ -1318,9 +1318,9 @@ end
 --- REPLACES THE FROZEN-SORT NOTICE, which said the rows had stopped reordering.
 --- They have not: `sourceGUID` is secret for the whole of a pull, so the rows are
 --- the engine's own ranking of the sort column and they re-rank live. What the
---- player is owed instead is why a CELL can be empty — the other columns are
---- matched to those rows by class and spec, and a pair that cannot be told apart
---- has its cells left blank rather than guessed at.
+--- player is owed instead is why a CELL can be empty — only the sort column and
+--- the player's own row are certain mid-fight, so every other player's other
+--- cells are left blank until combat ends rather than guessed at (R4).
 ---
 --- Read off the aggregate the render pass parked here rather than from the
 --- restriction state directly, so the line describes the grid actually on screen
@@ -1347,20 +1347,14 @@ function WindowProto:RestrictedNotice(preview)
     -- build that predates the count answers nil, and "0 of 0 rows" is a worse
     -- sentence than the one it would replace.
     --
-    -- A QUARTER OF THE GRID is where naming the cause stops being enough (issue
-    -- #22). Every secondary cell on a collided row is blank, so the share of rows
-    -- is the share of the grid the blanks cost. Below a quarter the grid mostly
-    -- reads and the cause is the sentence; from a quarter up the player is
-    -- looking at an empty grid and the sentence says BLANK. Integer arithmetic on
-    -- two counts of our own, so it is legal mid-pull, and the string is no longer
-    -- than the one beside it (SESSION_LINE_WIDTH above).
+    -- ONE SENTENCE (R4): the count is every row whose other cells wait for the
+    -- end of combat, which is every other player's, so the quarter split of
+    -- issue #22 has no second case left. No longer than the string it replaced
+    -- (SESSION_LINE_WIDTH above).
     local ambiguous, total = aggregate.ambiguousRows, #(aggregate.rows or aggregate)
     if type(ambiguous) == "number" and ambiguous > 0 and total > 0 then
-        local QUARTER = 4
-        local fmt = (ambiguous * QUARTER >= total)
-            and L["restricted \226\128\148 %d of %d blank: duplicate specs"]
-            or  L["restricted \226\128\148 %d of %d share a class and spec"]
-        return dim .. string.format(fmt, ambiguous, total) .. "|r"
+        return dim .. string.format(L["restricted \226\128\148 %d of %d blank till combat ends"],
+            ambiguous, total) .. "|r"
     end
     return dim .. L["restricted \226\128\148 some rows cannot be told apart"] .. "|r"
 end

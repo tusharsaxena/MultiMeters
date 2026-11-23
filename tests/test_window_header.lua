@@ -266,19 +266,20 @@ test("The restricted notice COUNTS the rows it could not tell apart — #22", fu
     window:ApplyConfig()
     window:Refresh()
 
+    -- Under R4 (2026-11-23) every other player's row waits, collided or not: three
+    -- rows, none of them the local player's, so all three.
     local line = window.sessionText:GetText() or ""
     assertTrue(line:find("restricted", 1, true) ~= nil, "got: " .. line)
-    assertTrue(line:find("2 of 3", 1, true) ~= nil,
+    assertTrue(line:find("3 of 3", 1, true) ~= nil,
         "the notice must name how many rows are affected, got: " .. line)
-    assertTrue(line:find("duplicate spec", 1, true) ~= nil,
+    assertTrue(line:find("blank till combat ends", 1, true) ~= nil,
         "and why they are, got: " .. line)
 end)
 
-test("The restricted notice stays a bare word when NOTHING collided", function()
-    -- A count of zero is not a thing to say. A dungeon where every player has a
-    -- distinct class and spec loses no cells at all, and a notice that talked
-    -- about rows it could not tell apart would be describing a problem the player
-    -- does not have.
+test("The restricted notice stays a bare word when NOTHING is withheld", function()
+    -- A count of zero is not a thing to say. A window whose only column is the sort
+    -- column withholds no cell at all (R4), and a notice that talked about blank rows
+    -- would be describing a problem the player does not have.
     local _, window = scene{
         restricted = true,
         sortMode   = "value",
@@ -286,6 +287,13 @@ test("The restricted notice stays a bare word when NOTHING collided", function()
             src(ALPHA, 100, { class = "MAGE" }),
             src(BETA,   50, { class = "PRIEST" }),
         },
+        configure  = function(cfg)
+            local keep
+            for _, column in ipairs(cfg.columns) do
+                if column.stat == cfg.data.sortColumn then keep = column end
+            end
+            cfg.columns = { keep }
+        end,
     }
     window:ApplyConfig()
     window:Refresh()
@@ -329,24 +337,22 @@ test("The header names AMBIGUITY when two rows cannot be told apart", function()
 
     local line = window.sessionText:GetText() or ""
     assertTrue(line:find("2 of 2", 1, true) ~= nil, "got: " .. line)
-    assertTrue(line:find("blank: duplicate specs", 1, true) ~= nil, "got: " .. line)
+    assertTrue(line:find("blank till combat ends", 1, true) ~= nil, "got: " .. line)
 end)
 
-test("Once a quarter of the rows are blanked, the notice says BLANK in plain words (#22)", function()
-    -- Below the share the grid mostly reads, and naming the cause is enough.
-    -- From a quarter up the player is looking at an empty grid and is owed the
-    -- effect as well as the cause. Both figures are plain integers the
-    -- aggregator counted, so the share is legal mid-pull.
-    -- red under: one sentence for every ambiguous grid, whatever it costs.
+test("The notice names the waiting rows in one sentence, whatever their share (R4)", function()
+    -- Issue #22 split the sentence at a quarter of the grid. Under R4 the count is
+    -- every other player's row, so the cause is one fact and the sentence is one.
+    -- red under: the old "share a class and spec" wording below a quarter.
     local _, window = scene()
     local rows = {}
     for i = 1, 9 do rows[i] = {} end
     window.aggregate = { identityMode = true, ambiguous = true, ambiguousRows = 2, rows = rows }
     local few = window:RestrictedNotice(false)
-    assertTrue(few:find("2 of 9 share a class and spec", 1, true) ~= nil, "got: " .. few)
-    window.aggregate.ambiguousRows = 3
+    assertTrue(few:find("2 of 9 blank till combat ends", 1, true) ~= nil, "got: " .. few)
+    window.aggregate.ambiguousRows = 8
     local many = window:RestrictedNotice(false)
-    assertTrue(many:find("3 of 9 blank: duplicate specs", 1, true) ~= nil, "got: " .. many)
+    assertTrue(many:find("8 of 9 blank till combat ends", 1, true) ~= nil, "got: " .. many)
 end)
 
 test("The header line carries no 'Test' while the strip shows (the strip is the marker)", function()

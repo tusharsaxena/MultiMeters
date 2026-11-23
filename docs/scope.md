@@ -250,9 +250,8 @@ default to total and rate.
   that found the cause — see [testing.md](testing.md#capturing-an-identity-correlation-run) — and two
   ways of saying it. The standing `identity` debug line names collided keys and collided rows apart
   and splits the blank cells into `collided`, `unmatched` and `absent`, so a collision-driven blank
-  grid can be told from a mismatch without a capture. The header says it in words: `N of M share a
-  class and spec`, and once the collided rows reach a quarter of the grid, `N of M blank: duplicate
-  specs`.
+  grid can be told from a mismatch without a capture. The header says it in words; since owner
+  ruling R4 (2026-11-23) that is `N of M blank till combat ends`, see below.
 - **The feign-death filter cannot run mid-pull, and that is structural.** `C_DamageMeter` hands a
   Feign Death a valid `deathRecapID`, so the Deaths column counts a hunter's feign as a death.
   `modules/Feign.lua` records the GUID off the cast and `modules/Aggregator.lua` drops that source —
@@ -352,6 +351,13 @@ default to total and rate.
   **secondary columns are left empty** rather than filled from a source that might be the other
   player's, and an ambiguous key gets no row invented for it at all. The header says `restricted — some rows cannot be told apart`, and the
   full grid returns on the first refresh after combat.
+- **Mid-fight, only the sort column and your own row are filled (owner ruling R4, 2026-11-23).** A
+  key one column names once still need not be the player whose row it lands on: a member who left,
+  a half-built roster, a past member in Overall, or an ungrouped ally or unfolded pet of the same
+  class each mislabel a number. So every other player's other cells stay blank until combat ends,
+  a player the sort column never names has no row until then, and the header counts the waiting
+  rows: `restricted — N of M blank till combat ends`. With Deaths as the sort column, each death is
+  its own row mid-fight.
 - **Pets are separate rows for the whole of a pull, whatever `data.mergePets` says.** Folding needs
   the owner link, the owner link needs a GUID, and there is none while restricted.
 - **Mid-pull the grid can be re-ranked and reversed, but not sorted.** Picking a different stat
