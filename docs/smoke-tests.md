@@ -2236,3 +2236,6 @@ Owed: STATE-9 (re-opened by AD-87-MM, test mode's people are the shared sample c
 Owed: SKIN-52 (AD-82-MM, the rows' hover wash and stripe raised to LibKa0s#82 and #84's row floors), the LibKa0s v1.105.0 adoption wave D, with an empty `Result:`.
 
 Owed: SKIN-53 to SKIN-57 (SD-SK-MM: the segment picker mid-pull, U-21; the swatches and the classless fill and tooltip lines on the skin, R-2; the v27 step), the LibKa0s #94, #97, #99, #100 run (Ka0sAddonsCommonTasks `docs/2026-11-20-LIBKA0S_94_97_99_100/`), each with an empty `Result:`. GRID-25 and SKIN-35 keep their passes for what they checked then; the mid-pull half of each is now SKIN-53.
+
+Amended by the owner on 2026-11-23 (Ka0sAddonsCommonTasks `docs/2026-11-23-R2_RESTORE_AND_PROBE_FIXES/`, R2P-MM): SKIN-54 to SKIN-57 are superseded wherever they
+expect a swatch companion on by default. Each starts off and draws the skin's only once ticked.

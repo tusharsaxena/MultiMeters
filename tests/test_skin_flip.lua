@@ -459,8 +459,8 @@ test("Skin flip: the step puts every window of every profile on the skin and kee
         global   = { schemaVersion = 22 },
     })
     local NS = inst.NS
-    assertEqual(NS.SCHEMA_VERSION, 28)
-    assertEqual(NS.db.global.schemaVersion, 28)
+    assertEqual(NS.SCHEMA_VERSION, 29)
+    assertEqual(NS.db.global.schemaVersion, 29)
     for _, name in ipairs({ "Default", "Raid" }) do
         local p = NS.db.sv.profiles[name]
         assertEqual(p.skin.fullSkinReset, true, name .. ": no record")
