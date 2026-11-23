@@ -2091,7 +2091,7 @@ Total.
 - Export: a one-line dump claims no queued tail
 - Export: a cancel with nothing queued says nothing
 
-### test_export_modal.lua (32)
+### test_export_modal.lua (33)
 
 - Export.Open refuses to open at all while restricted
 - Export.ResolveMetric answers the pinned stat
@@ -2109,6 +2109,7 @@ Total.
 - Export: the copy window comes from LibKa0s-Widgets-1.0
 - Export: showing the copy window puts the text in it
 - Export: the copy window is built once and reused
+- Export: the copy window is a companion of the modal, its title bar the close alone
 - Print to Chat re-checks the restriction at the click, not at the open
 - Print to Chat names a blank whisper recipient before it builds anything
 - Print to Chat asks the game for the target at the click
@@ -2788,16 +2789,15 @@ Total.
 - Title bar: meter-window controls rest in icon.tint and light in text.link; the close lights in close.hot
 - Title bar: the Export modal's close says Close above it and paints icon.tint, then close.hot
 
-### test_header_buttons.lua (8)
+### test_header_buttons.lua (7)
 
 - Header buttons: the meter window's seven marks are HeaderButtons', extras · settings · close
 - Header buttons: the meter strip sits HEADER.PAD in from the band's corner, HEADER.GAP apart
 - Header buttons: the meter window's settings mark opens the settings on its own window
 - Header buttons: a Custom control color survives a skin switch on all seven marks
 - Header buttons: on the ASCII rung a skin switch keeps the glyphs' header font and Custom color
-- Header buttons: the Export modal's title bar reads settings · close, HeaderButtons'
-- Header buttons: the Export modal's settings mark hides the modal, then opens this addon's settings
-- Header buttons: the Export modal's settings mark says Open settings, icon.tint at rest, text.link hovered
+- Header buttons: the Export modal is a companion, its title bar reads the close alone
+- Header buttons: the Export modal's close hides it, in every skin
 
 ### test_header_band.lua (12)
 
@@ -3137,7 +3137,7 @@ Total.
 | test_tooltip_place.lua | 13 |
 | test_drilldown.lua | 59 |
 | test_export.lua | 94 |
-| test_export_modal.lua | 32 |
+| test_export_modal.lua | 33 |
 | test_visibility.lua | 44 |
 | test_windowmanager.lua | 49 |
 | test_schema.lua | 40 |
@@ -3166,7 +3166,7 @@ Total.
 | test_skin_fonts.lua | 15 |
 | test_skin_window.lua | 13 |
 | test_titlebar.lua | 4 |
-| test_header_buttons.lua | 8 |
+| test_header_buttons.lua | 7 |
 | test_header_band.lua | 12 |
 | test_skin_picker.lua | 21 |
 | test_skin_settings.lua | 5 |

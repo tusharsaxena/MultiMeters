@@ -26,7 +26,7 @@ secret-value rules the checks refer to.
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-35 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-41 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips opening beside the window, breakdowns, death list and recap, tooltip styling, Targets |
-| EXPORT-1 to EXPORT-57 | [Export](#export) | The modal, its settings mark, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
+| EXPORT-1 to EXPORT-58 | [Export](#export) | The modal, its close (a companion, no settings mark), the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-33 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals, the number format mid-pull, only certain cells mid-fight |
 | DIAG-1 to DIAG-46 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, the report verbs in the console with one chat pointer, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-12 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look, a report in chat |
@@ -1502,6 +1502,17 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
   not hidden under the modal. Reopen the modal, close it with the X → it closes. Pick Obsidian → the
   same. Fail: no gear, the panel opening under the modal, a mark with no tooltip, or a Lua error.
   Result:
+  Superseded on 2026-11-24 by EXPORT-58: the modal is a companion and carries no gear.
+- **EXPORT-58. The Export modal and its copy window carry the close alone; the meter window keeps
+  the gear (FB-MM-01; standalone-windows, *Settings is on every window but a companion*, standard
+  v2.119.0, S-T5).** Open the Export modal from a meter's export mark → its title bar ends in the close
+  alone, 6 px in from the corner on the bar's middle, with no gear beside it; hover it → *Close*, the X
+  red; click it → the modal closes. Reopen it and press the CSV button → the copy window's title bar
+  carries the close alone too. `/mm export` → the same modal, the close alone. The meter window's own
+  header still carries its gear beside the close, and the gear opens this addon's settings. Pick
+  Obsidian → the same. Fail: a gear on the modal or the copy window, a meter window without its gear,
+  or a Lua error.
+  Result:
 
 ## COMBAT
 
@@ -2281,3 +2292,8 @@ Owed: INSTALL-19 (MKF-MM-01, Retail only), COMBAT-31 (MKF-MM-02, R3), COMBAT-32 
 (MKF-MM-03, R4), the MultiMeters and KickCD Forever port (Ka0sAddonsCommonTasks
 `docs/2026-11-23-MULTIMETERS_KICKCD_FOREVER_PORT/`), each with an empty `Result:`. COMBAT-13 keeps its
 pass for what it checked then; its mid-fight half is now COMBAT-32.
+
+Owed: EXPORT-58 (FB-MM-01, the Export modal and its copy window are companions and carry the close alone;
+LibKa0s v1.112.0), the owner's 2026-11-24 feedback batch (Ka0sAddonsCommonTasks
+`docs/2026-11-24-FEEDBACK_BATCH/`), with an empty `Result:`. EXPORT-57, still unsigned, is
+superseded by EXPORT-58.

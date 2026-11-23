@@ -11,8 +11,9 @@
 --     placing them at the library's HEADER pitch because three player options re-lay the strip on
 --     every ApplyHeader (the per-mark toggles, Control size, the header height), recorded in
 --     docs/ARCHITECTURE.md's deviation register;
---   * the Export modal, whose settings mark and close are HeaderButtons' outright. It sits at
---     DIALOG, over the settings panel, so it hides itself before the panel opens (hideOnSettings).
+--   * the Export modal, whose close is HeaderButtons' outright. It is a companion of the meter
+--     window that opened it (standard v2.119.0, *Settings is on every window but a companion*), so
+--     it is built with companion = true and carries no settings mark (FB-MM-01).
 --
 -- EACH CASE ON ITS OWN INSTANCE: a skin change and an opened modal are session state.
 
@@ -31,12 +32,6 @@ local function sameColor(got, want, msg)
         assertTrue(near(got[i], want[i]), ("%s: channel %d is %s, want %s"):format(msg, i,
             tostring(got[i]), tostring(want[i])))
     end
-end
-
-local function token(NS, name)
-    local r, g, b = NS.Skin.Color(name)
-    assertTrue(r ~= nil, name .. " answers no color")
-    return { r, g, b }
 end
 
 --- The x offset `button` was anchored at off `rel`'s right edge (its RIGHT point), from the
@@ -187,60 +182,32 @@ local function modalScene(skin)
     return inst, NS, modal
 end
 
-test("Header buttons: the Export modal's title bar reads settings · close, HeaderButtons'", function()
-    -- red under: the modal's close built alone through NS.MakeCloseButton (no settings mark).
+test("Header buttons: the Export modal is a companion, its title bar reads the close alone", function()
+    -- The modal opens only from a meter window's export mark (or /mm export, through that window),
+    -- exports that window's segment and keeps no position of its own, so it is a companion
+    -- (standalone-windows, *Settings is on every window but a companion*, standard v2.119.0):
+    -- W.HeaderButtons with companion = true, no settings mark and no waiver reason.
+    -- red under: the modal still building the gear (no companion key), or a waiver in its place.
     local inst, _, modal = modalScene()
     local H = header(inst)
     local hb = modal.headerButtons
     assertTrue(type(hb) == "table", "the modal's marks were not built by W.HeaderButtons")
-    assertEqual(table.concat(hb.order, ","), "settings,close", "the modal's order")
+    assertEqual(hb.companion, true, "the modal is not built as a companion")
+    assertEqual(hb.settings, nil, "the modal still carries a settings mark")
+    assertEqual(hb.optOut, nil, "the modal took the waiver path, not the companion one")
+    assertEqual(table.concat(hb.order, ","), "close", "the modal's order")
     assertTrue(modal.closeButton == hb.close and hb.close ~= nil, "the modal's close is not HeaderButtons'")
-    assertTrue(modal.settingsButton == hb.settings and hb.settings ~= nil, "the modal has no settings mark")
+    assertEqual(modal.settingsButton, nil, "the modal still records a settings mark")
     assertEqual(offsetOf(hb.close, modal.titleBar), -H.PAD, "the close's corner offset")
-    assertEqual(offsetOf(hb.settings, modal.titleBar), -(H.PAD + H.SIZE + H.GAP), "the settings mark's offset")
     modal:Hide()
 end)
 
-test("Header buttons: the Export modal's settings mark hides the modal, then opens this addon's settings", function()
-    -- The modal is DIALOG strata and would sit over the settings panel, so it goes first
-    -- (hideOnSettings); the panel is the launcher's registered opener for this folder.
-    -- red under: no hideOnSettings (the modal stays up over the panel), or an owner other than the
-    -- launcher's `name` (the mark opens nothing).
-    local _, NS, modal = modalScene()
-    local opened, shownAtOpen = 0, nil
-    NS.OpenOptionsPanel = function()
-        opened = opened + 1
-        shownAtOpen = modal:IsShown()
-    end
-    assertTrue(modal:IsShown(), "the modal is not open")
-    modal.settingsButton:_run("OnClick")
-    assertEqual(opened, 1, "the modal's settings mark opened nothing")
-    assertEqual(shownAtOpen, false, "the modal was still up when the panel opened")
-end)
-
-test("Header buttons: the Export modal's settings mark says Open settings, icon.tint at rest, text.link hovered", function()
-    -- red under: a settings mark with no tooltip, or painted outside the title-bar color rule.
+test("Header buttons: the Export modal's close hides it, in every skin", function()
+    -- red under: a close wired to anything but the modal's own Hide.
     for _, skin in ipairs({ "ka0s", "obsidian" }) do
-        local inst, NS, modal = modalScene(skin)
-        local mark = modal.settingsButton
-        local tip = inst.mocks.GameTooltip
-        local said
-        local set = tip.SetText
-        tip.SetText = function(self, text, r, g, b, ...)
-            said = { text = text, r = r, g = g, b = b }
-            return set(self, text, r, g, b, ...)
-        end
-        assertTrue(mark.icon ~= nil, skin .. ": the settings mark draws no art")
-        sameColor(mark.icon.__vertexColor or {}, token(NS, "icon.tint"), skin .. ": the settings mark at rest")
-        mark:_run("OnEnter")
-        tip.SetText = set
-        assertTrue(said ~= nil and said.text == "Open settings", skin .. ": the settings mark says " ..
-            tostring(said and said.text))
-        sameColor({ said.r, said.g, said.b }, token(NS, "gtip.title"), skin .. ": its tooltip")
-        sameColor(mark.icon.__vertexColor or {}, token(NS, "text.link"), skin .. ": the settings mark hovered")
-        mark:_run("OnLeave")
-        assertTrue(not tip:IsShown(), skin .. ": the tooltip outlives the pointer")
-        sameColor(mark.icon.__vertexColor or {}, token(NS, "icon.tint"), skin .. ": back at rest")
-        modal:Hide()
+        local _, _, modal = modalScene(skin)
+        assertTrue(modal:IsShown(), skin .. ": the modal is not open")
+        modal.closeButton:_run("OnClick")
+        assertEqual(modal:IsShown(), false, skin .. ": the close left the modal up")
     end
 end)
