@@ -194,7 +194,7 @@ secret-value rules the checks refer to.
   at character select does not show it at all (not grayed out, not "incompatible": absent), and no
   Multi Meters window, minimap button or `/mm` exists in game. The TOC's `## AllowLoadGameType:
   standard` and `## ExcludeLoadGameType: camelot` are what hide it; a Forever list that shows it means
-  the client read neither line. Result:
+  the client read neither line. Result: pass (owner, 2026-11-24)
 
 ## SLASH
 
@@ -1625,7 +1625,7 @@ stayed empty; "no errors" from a dummy is not evidence here.
   mode reads the same mid-pull as between packs, and no Lua error appears. If every mode reads alike
   mid-pull (Blizzard's own `24.3M` or a float), the debug console shows `abbreviate config refused;
   secret numbers keep the old path`: record that line and the client build, because the client
-  refused the new route and the old display is the designed fallback. Result:
+  refused the new route and the old display is the designed fallback. Result: pass (owner, 2026-11-24)
 - **COMBAT-32. Only what is certain fills mid-fight (MKF-MM-03, R4).** In a five-player group with the
   six default columns sorted by Damage, pull → every row's Damage cell fills and re-ranks live; your
   own row fills every column (Healing, Interrupts, Dispels, Damage Taken, Deaths); every other
@@ -1635,13 +1635,13 @@ stayed empty; "no errors" from a dummy is not evidence here.
   header. Sort by Healing for the next pull → the Healing column fills for everyone instead and
   Damage for you alone. When combat ends, on the first refresh every cell fills, the missing rows
   come back and the note returns to nothing. Repeat once in a raid and once with the window on
-  Overall → the same rule, no other player's secondary number mid-fight. Result:
+  Overall → the same rule, no other player's secondary number mid-fight. Result: pass (owner, 2026-11-24)
 - **COMBAT-33. Deaths and tooltips follow the same rule (MKF-MM-03, R4).** In a group pull where
   another player dies: their Deaths cell stays blank and hovering it shows no death line (*No data
   yet*), while your own death, if you die, shows in your row with its recap hint and opens the recap
   as before. Sort by Deaths for one pull → each death is its own filled row in the Deaths column with
   nothing beside it but your own row's cells. Hover another player's name mid-pull → no line from a
-  column other than what the game itself answers for that row. No Lua error. Result:
+  column other than what the game itself answers for that row. No Lua error. Result: pass (owner, 2026-11-24)
 
 ## DIAG
 
@@ -2247,7 +2247,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
 - **SKIN-50. The picker's preview is test mode, toggled by the eye, put back at every close (R6-PV; LibKa0s R6-L1).** Out of combat, with no meter window on screen (close them with `/mm toggle`, and on a second run set General → Visibility to *Only in combat* instead) and test mode off, `/mm skin` → test mode turns on: every meter window shows the TEST MODE strip and sample rows, the picker sits above them, and the eye is lit. Press the eye → test mode turns off, the windows go away again and the eye dims; press it again → back on, lit. Its tooltip reads per state (test mode on / off). Close the picker by each route in turn, reopening with `/mm skin` between them (the close mark, Escape, Apply, Apply to all, the gear) → test mode turns off and no meter window stays on screen (the gear's settings panel opens as before). On the *Only in combat* run, after a close, change zone or tick any setting on the General page → the windows stay hidden (the close left no forced show). Now with the windows on screen (`/mm toggle`) and test mode off, `/mm skin` → test mode stays off and the eye is dimmed; press the eye → on; close → off, and the windows stay on screen. With test mode already on (`/mm test`), `/mm skin` → it stays on; press the eye → off; close → back on. With the windows on screen, start a pull at a training dummy and press the eye → *Cannot start test mode during combat* and test mode stays off; close → nothing changes. The General page's Test mode box and the launcher's Test mode entry follow every switch. Fail: test mode left on after a close the picker or eye turned it on, a window left on screen that was closed when the picker opened, a window closed that was on screen, a test mode the player had on left off, or a Lua error. Result:
 - **SKIN-51. A new profile wears the client's default skin (AD-DS-MM; skinning-§2, LibKa0s Skin `DefaultSkin()`).** On Retail, Settings → Profiles → create a new profile, or Settings → General → **Reset all settings** → the windows and the settings pages draw Ka0s Default, `/mm get skin.skin` prints `ka0s` and the Skin tab marks Ka0s Default. A profile that stored another skin keeps it after `/reload`. Fail: a new profile on another skin, a stored skin rewritten, or a Lua error. Result:
 - **SKIN-52. The rows' hover and stripe show on Ka0s Default (AD-82-MM; LibKa0s#82 and #84, the row floors).** On Ka0s Default, Frame → Rows → tick **Alternating background** and **Highlight on mouseover**, `/mm test` → every other row wears a white stripe plainly visible against the window (white .08, was .05), and the row under the pointer a white wash (.15, was .10) that stands out from a striped and a plain row alike. Pick Obsidian with no reload → both take the skin's own list stripe and hover, as before. Fail: a stripe that runs into the window, a hover that reads as one more stripe, a gold wash on Ka0s Default, or a Lua error. Result:
-- **SKIN-53. The segment picker is the skinned menu mid-pull (U-21, the owner's ruling of 2026-11-20, narrowed; LibKa0s v1.108.0 WidgetsDropdown minor 3).** After two or three pulls, start a pull at a training dummy and click a window's segment control mid-pull → the skinned Ka0s menu opens (not the client's plain one), titled `Segment`, the stored fights listed with their durations, a divider, then Current and Overall, the window's own entry ticked, the menu at least the session line's width. A long fight name is cut on its row, not widened past it. Pick a stored fight mid-pull → it pins as out of combat. Out of combat the menu is unchanged (SKIN-35). Fail: the client's menu mid-pull, a Lua error (a secret label measured), an empty or zero-width menu, or a pick that does nothing. Result:
+- **SKIN-53. The segment picker is the skinned menu mid-pull (U-21, the owner's ruling of 2026-11-20, narrowed; LibKa0s v1.108.0 WidgetsDropdown minor 3).** After two or three pulls, start a pull at a training dummy and click a window's segment control mid-pull → the skinned Ka0s menu opens (not the client's plain one), titled `Segment`, the stored fights listed with their durations, a divider, then Current and Overall, the window's own entry ticked, the menu at least the session line's width. A long fight name is cut on its row, not widened past it. Pick a stored fight mid-pull → it pins as out of combat. Out of combat the menu is unchanged (SKIN-35). Fail: the client's menu mid-pull, a Lua error (a secret label measured), an empty or zero-width menu, or a pick that does nothing. Result: pass (owner, 2026-11-24)
 - **SKIN-54. Bar color Custom and its background follow the skin (R-2, SD-SK-MM.2 and .4).** On a fresh profile, Bars → Bar → Fill: Bar color mode **Custom color** → every bar takes the skin's bar fill (Ka0s Default's gold accent; pick Obsidian, then Glass, with no reload → each skin's own fill); **Use the skin's color** sits beside the swatch, ticked. Untick it → the swatch's blue comes back, and a color picked there draws. Under Background, set the mode to **Custom color** → the tint behind each bar takes the skin's bar background color at the Bar background opacity (15%; drag the slider → the opacity moves, a skin switch does not move it); untick its **Use the skin's color** → the swatch's black. Fail: a Custom fill or background that keeps the swatch with the companion ticked, a skin's opacity over the slider's, a grayed swatch, or a Lua error. Result:
 - **SKIN-55. A row with no class is filled from the skin (SD-SK-MM.3).** With Bar color mode **Class color** (the default), pull a dummy or join a follower dungeon so a pet, an NPC or an enemy appears in the grid → its bar under Ka0s Default is the same slate gray as before; pick Obsidian with no reload → it takes Obsidian's bar fill, while every player row keeps its class color. Fail: a classless bar that never changes with the skin, a class color moved by a skin, or a Lua error. Result:
 - **SKIN-56. The tooltip's spell bars and lines for a row with no class follow the skin (SD-SK-MM.5, .6).** Hover a classless row (an NPC, an enemy, a pet) on Ka0s Default → its spell bars draw Ka0s Default's bar fill (no longer the flat gray), its name line is white as before; pick Obsidian → the bars take Obsidian's fill and the name line Obsidian's tooltip value color. A player's row still draws its class color. Tooltip → Bar → Fill: untick **Use the skin's color** → the swatch's gray comes back for the classless row and under Custom. On the name tooltip of a row (Show all statistics on name hover), a statistic with no color of its own reads in the tooltip's value color, or the hint gray when it is not a column. Fail: a classless bar or name line that ignores the skin, a class color overridden, or a Lua error. Result:
@@ -2330,3 +2330,10 @@ library's sample crowd, LibKa0s#104; every sim start opening the step panel; a m
 apart; LibKa0s v1.113.0), round 2 of the owner's 2026-11-24 feedback batch (Ka0sAddonsCommonTasks
 `docs/2026-11-24-FEEDBACK_BATCH/R2_SMOKE_FEEDBACK.md`), each with an empty `Result:`. STATE-9, still
 unsigned, is superseded by STATE-12 for its last five names.
+
+Passed: SKIN-53 (the skin-defaults run, Ka0sAddonsCommonTasks `docs/2026-11-20-LIBKA0S_94_97_99_100/`),
+INSTALL-19, COMBAT-31, COMBAT-32 and COMBAT-33 (the MultiMeters and KickCD Forever port, Ka0sAddonsCommonTasks
+`docs/2026-11-23-MULTIMETERS_KICKCD_FOREVER_PORT/`), reported by the owner on 2026-11-24 from their smoke
+sheet (a copy of `Ka0sPendingSmoke-2026-11-23.csv`, the port's rows reported in chat) and recorded on the
+owner's word on each `Result:` line as `pass (owner, 2026-11-24)`. R2P-MM-1, the owner's 2026-11-23
+amendment, passed the same day and is recorded in `docs/2026-11-23-R2_RESTORE_AND_PROBE_FIXES/`.
