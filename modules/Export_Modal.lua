@@ -207,18 +207,19 @@ local function makeTitleBar(frame, text)
     frame.title = caption
 
     -- THE MARKS ARE LibKa0s-Widgets-1.0's HeaderButtons (LibKa0s#86): the close in
-    -- the corner (MakeCloseButton with this addon's folder) and the settings mark
-    -- beside it, laid on the bar at the library's pitch. The settings mark opens
-    -- the opener the launcher registered for this folder (core/LauncherSetup.lua's
-    -- `name` is `addonName`), and hides the modal FIRST: it sits at DIALOG, above
-    -- the settings panel, which would otherwise open underneath it.
+    -- the corner (MakeCloseButton with this addon's folder), laid on the bar at the
+    -- library's pitch. The modal is a COMPANION of the meter window that opened it
+    -- (standalone-windows, *Settings is on every window but a companion*, standard
+    -- v2.119.0): it opens only from that window's export mark (or /mm export, which
+    -- goes through the window), exports that window's segment and keeps no position
+    -- of its own. So `companion = true` (WidgetsHeader 2, LibKa0s v1.112.0): no
+    -- settings mark, and no waiver reason owed.
     local hb = W and type(W.HeaderButtons) == "function" and W.HeaderButtons(bar, {
-        owner = addonName, frame = frame, hideOnSettings = frame,
+        owner = addonName, frame = frame, companion = true,
         close = function() frame:Hide() end,
-        settingsTip = L["Open settings"],
     }) or nil
     if hb then
-        frame.closeButton, frame.settingsButton = hb.close, hb.settings
+        frame.closeButton = hb.close
     elseif NS.MakeCloseButton then
         -- Without HeaderButtons (an older Widgets): the close alone, through the
         -- one wrapper. Two guards, not one: the helper may be absent on a degraded

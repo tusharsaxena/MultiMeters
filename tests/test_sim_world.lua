@@ -122,9 +122,9 @@ end)
 test("SimWorld: pets deal a quarter of their owner's damage as their own row", function()
     local W = World()
     local w = fought(9, 4)
-    local hunter
-    for _, m in ipairs(w.members) do if m.classFilename == "HUNTER" then hunter = m end end
-    assertTrue(hunter and hunter.pet, "the five-player group has no hunter pet")
+    local hunter   -- the group's first pet owner, a Hunter or a Warlock of the library's crowd
+    for _, m in ipairs(w.members) do if m.pet and not hunter then hunter = m end end
+    assertTrue(hunter and hunter.pet, "the five-player group has no pet")
     local byGuid = {}
     for _, src in ipairs(W.Session(w, "current", stat("DamageDone")).combatSources) do byGuid[src.sourceGUID] = src end
     local own, pet = byGuid[hunter.guid].totalAmount, byGuid[hunter.pet.guid].totalAmount
@@ -293,7 +293,9 @@ test("SimWorld: during a session every meter read answers from the world, never 
     local dd = stat("DamageDone")
     assertEqual(C.IsDamageMeterAvailable(), true)
     assertEqual(totals(C.GetCombatSessionFromType(ST.Current, dd)), totals(W.Session(w, "current", dd)))
-    assertEqual(#C.GetCombatSessionFromType(ST.Overall, dd).combatSources, 7)
+    local rowsWanted = #w.members
+    for _, mem in ipairs(w.members) do if mem.pet then rowsWanted = rowsWanted + 1 end end
+    assertEqual(#C.GetCombatSessionFromType(ST.Overall, dd).combatSources, rowsWanted, "a row per member and pet")
     assertEqual(C.GetCombatSessionFromType(ST.Expired, dd), nil)
     local id = w.segments[1].sessionID
     assertTrue(C.GetCombatSessionFromID(id, dd) ~= nil, "FromID missed the simulated segment")

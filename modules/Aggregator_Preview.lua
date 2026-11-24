@@ -36,15 +36,19 @@ local Aggregator = NS.Aggregator
 -- position, never randomized. Test data that jitters every refresh is unusable
 -- for the exact job it exists to do, which is judging column widths.
 
--- THE PEOPLE (AD-87-MM, LibKa0s#87, preview-mode's naming convention). The first
--- five are the collection's shared sample characters, LibKa0s-Sim-1.0's
--- `Sample("retail")`, in its order: the same protagonists every Ka0s test mode and
--- sim draws. This addon ships Retail only, so the Retail set, and the client is
--- named rather than asked. Without the library, the copy below, which
--- tests/test_aggregator_preview.lua holds to the library's rows. Five more of this
--- addon's own follow, on the same convention (one capitalized word of 2 to 12
--- letters starting `Sample` or `Mock`), so the grid still has ten rows and ten
--- classes to lay columns out against. Names are data and never pass through `L`.
+-- THE PEOPLE (AD-87-MM, LibKa0s#87 and #104, preview-mode's naming convention). Every
+-- named row comes from LibKa0s-Sim-1.0, never from a list of this addon's own (FB2-MM-01;
+-- the convention's rule 6 is retired from Sim minor 5). The first five are the collection's
+-- shared protagonists, `Sample("retail")`, in its order: the same people every Ka0s test mode
+-- and sim draws. The other five are the library's shared crowd, `SampleCrowd("retail", 13,
+-- PREVIEW_SEED)`, the first five whose class the grid does not hold yet: a Retail crowd of 13
+-- holds every class, so the grid's ten rows are always ten classes to lay columns out against,
+-- and the fixed seed draws the same five on every load. This addon ships Retail only, so the
+-- Retail set, and the client is named rather than asked. Names are data and never pass through `L`.
+--
+-- Without the library (an install missing its vendored copy) the grid still has ten rows, one
+-- per class of FALLBACK_CLASSES, each named by its class as the client spells it: placeholder
+-- rows, with no sample names of this addon's own to drift from the library's.
 --
 -- `spec` is a real specialization icon file id, so the spec-icon slot has
 -- something to draw. Test mode is used to judge how a row LOOKS, and a row
@@ -53,38 +57,62 @@ local Aggregator = NS.Aggregator
 local SPEC_ICON = {
     WARRIOR = 132342, PRIEST = 135940, MAGE = 135846, ROGUE = 132320, HUNTER = 461112,
     WARLOCK = 136186, MONK = 608951, DRUID = 625336, PALADIN = 135873, DEATHKNIGHT = 135771,
+    SHAMAN = 136052, DEMONHUNTER = 1247264, EVOKER = 4511811,
 }
 
--- LibKa0s-Sim-1.0's Retail `SAMPLE` rows, the fields read here, for an install without it.
-local SAMPLE_COPY = {
-    { name = "Samplehunter", classFile = "HUNTER",  role = "DAMAGER" },
-    { name = "Sampleblade",  classFile = "PALADIN", role = "DAMAGER" },
-    { name = "Mockflame",    classFile = "MAGE",    role = "DAMAGER" },
-    { name = "Samplemender", classFile = "PRIEST",  role = "HEALER"  },
-    { name = "Mockshield",   classFile = "WARRIOR", role = "TANK"    },
+local PREVIEW_SIZE = 10
+local PREVIEW_SEED = 1
+local CROWD_DRAW = 13   -- a Retail crowd this large holds every class (Sim minor 5)
+
+-- The library-absent grid: a class and a role per row, no names.
+local FALLBACK_CLASSES = {
+    { "HUNTER", "DAMAGER" }, { "PALADIN", "DAMAGER" }, { "MAGE", "DAMAGER" }, { "PRIEST", "HEALER" },
+    { "WARRIOR", "TANK" }, { "ROGUE", "DAMAGER" }, { "WARLOCK", "DAMAGER" }, { "MONK", "DAMAGER" },
+    { "DRUID", "DAMAGER" }, { "DEATHKNIGHT", "DAMAGER" },
 }
 
--- This addon's own five, after the shared ones.
-local HOST_MEMBERS = {
-    { name = "Mockshade",   class = "ROGUE",       role = "DAMAGER" },
-    { name = "Samplehex",   class = "WARLOCK",     role = "DAMAGER" },
-    { name = "Mockbrew",    class = "MONK",        role = "DAMAGER" },
-    { name = "Samplegrove", class = "DRUID",       role = "DAMAGER" },
-    { name = "Mockfrost",   class = "DEATHKNIGHT", role = "DAMAGER" },
-}
+--- The library's rows: the five, then the crowd's first people of a class the grid lacks.
+--- @return table|nil  rows shaped as Sample()'s, or nil without the library
+local function libraryPeople()
+    local Sim = LibStub and LibStub("LibKa0s-Sim-1.0", true)
+    if not (Sim and type(Sim.Sample) == "function" and type(Sim.SampleCrowd) == "function") then return nil end
+    local ok, five = pcall(Sim.Sample, "retail")
+    local okCrowd, crowd = pcall(Sim.SampleCrowd, "retail", CROWD_DRAW, PREVIEW_SEED)
+    if not (ok and okCrowd and type(five) == "table" and type(crowd) == "table") then return nil end
+    local rows, used = {}, {}
+    for _, row in ipairs(five) do
+        rows[#rows + 1] = row
+        used[row.classFile] = true
+    end
+    for _, row in ipairs(crowd) do
+        if #rows >= PREVIEW_SIZE then break end
+        if not used[row.classFile] then
+            rows[#rows + 1] = row
+            used[row.classFile] = true
+        end
+    end
+    return rows
+end
+
+--- A class as the client spells it, else its token.
+local function className(classFile)
+    local names = _G.LOCALIZED_CLASS_NAMES_MALE
+    return type(names) == "table" and names[classFile] or classFile
+end
 
 local function previewMembers()
-    local Sim = LibStub and LibStub("LibKa0s-Sim-1.0", true)
-    local ok, shared = false, nil
-    if Sim and type(Sim.Sample) == "function" then ok, shared = pcall(Sim.Sample, "retail") end
-    if not (ok and type(shared) == "table" and #shared > 0) then shared = SAMPLE_COPY end
     local members = {}
-    for _, row in ipairs(shared) do
-        members[#members + 1] = { name = row.name, class = row.classFile, role = row.role,
-            spec = SPEC_ICON[row.classFile] }
+    local people = libraryPeople()
+    if people then
+        for _, row in ipairs(people) do
+            members[#members + 1] = { name = row.name, class = row.classFile, role = row.role,
+                spec = SPEC_ICON[row.classFile] }
+        end
+        return members
     end
-    for _, m in ipairs(HOST_MEMBERS) do
-        members[#members + 1] = { name = m.name, class = m.class, role = m.role, spec = SPEC_ICON[m.class] }
+    for _, pair in ipairs(FALLBACK_CLASSES) do
+        local class, role = pair[1], pair[2]
+        members[#members + 1] = { name = className(class), class = class, role = role, spec = SPEC_ICON[class] }
     end
     return members
 end

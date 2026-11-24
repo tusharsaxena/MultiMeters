@@ -328,6 +328,10 @@ local SUITES = {
     "test_sim_e2e",
     -- The Sim mode checkbox on Master controls (R6-SIM, LibKa0s compose minor 19).
     "test_sim_checkbox",
+    -- Every start of a simulation shows the step panel (FB2-MM-01, LibKa0s Sim minor 5).
+    "test_sim_start_panel",
+    -- Every named sample person comes from the library (FB2-MM-01, LibKa0s#104).
+    "test_sample_names",
     "test_launchersetup",
     "test_launcher_skin_entry",
     "test_lifecycle",
@@ -375,6 +379,8 @@ local SUITES = {
     "test_drilldown",
     "test_export",
     "test_export_modal",
+    -- A menu's selected row reads apart from its plain rows (FB2-MM-01, WidgetsDropdown minor 4).
+    "test_menu_selected",
     "test_visibility",
     "test_windowmanager",
     -- settings and the CLI

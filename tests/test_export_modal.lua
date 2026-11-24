@@ -505,6 +505,16 @@ test("Export: the copy window is built once and reused", function()
         "a rebuild per open leaks a frame per open — frames are never destroyed in WoW")
 end)
 
+test("Export: the copy window is a companion of the modal, its title bar the close alone", function()
+    -- LibKa0s-Widgets-1.0's CopyWindow 7 (v1.112.0) builds the copy window as a companion
+    -- (standalone-windows, *Settings is on every window but a companion*, standard v2.119.0).
+    -- red under: a vendored WidgetsCopyWindow older than 7, which still builds the gear.
+    T.NS.Export.__showCopy("csv")
+    local f = T.NS.Export.__copyWindow:GetFrame()
+    assertEqual(f.settingsButton, nil, "the copy window still carries a settings mark")
+    assertTrue(f.closeButton ~= nil, "the copy window lost its close")
+end)
+
 -- ---------------------------------------------------------------------------
 -- The Print to Chat click
 -- ---------------------------------------------------------------------------

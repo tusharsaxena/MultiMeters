@@ -211,8 +211,9 @@ local function snapshotPins()
 end
 
 --- Build the session: the world (the real player as its local player), the pin snapshot, the real
---- event filter, the SIM_CHANGED edge and the empty simulated meter, the step panel, then ready.
---- No window is force-shown: each window's visibility rules answer the simulated world.
+--- event filter, the SIM_CHANGED edge and the empty simulated meter, then ready. The step panel is
+--- the library's: every successful start shows it (LibKa0s Sim minor 5; FB2-MM-01), so the host
+--- does not. No window is force-shown: each window's visibility rules answer the simulated world.
 function Host.Prepare(session, _, opts, ready)
     local player = NS.SimSeam:Live(realPlayer)
     local World = Host.World
@@ -222,8 +223,6 @@ function Host.Prepare(session, _, opts, ready)
     NS.RealEventFilter = Host.OnRealEvent
     NS:SendMessage(MSG.SIM_CHANGED, { active = true })
     NS.Sim:Fire("DAMAGE_METER_RESET")
-    local sim = NS.Sim
-    if sim and sim.ShowPanel then sim:ShowPanel() end
     debug("world built for %s (seed %s)", tostring(opts and opts.scenario), tostring(opts and opts.seed))
     ready()
 end
@@ -365,8 +364,8 @@ NS.Sim:AddListener(refreshPage)
 -- launcher, the box itself, the window's close mark or Escape, none of which tells a sim listener.
 -- The library builds the frame on the first ShowPanel and hands the host no handle to it, so the
 -- host finds it by its documented name, `<name>SimPanel`, and hooks it once. Every show goes through
--- the instance's ShowPanel (the library's own bare verb calls sim:ShowPanel), so wrapping it reaches
--- the first build whoever asked for it; the first OnShow ran before the hook, hence the one refresh.
+-- the instance's ShowPanel (the library's bare verb and every start call sim:ShowPanel), so wrapping
+-- it reaches the first build whoever asked for it; the first OnShow ran before the hook, hence the one refresh.
 -- Library absent: the stub's ShowPanel answers false and builds nothing.
 Host.PANEL_FRAME = "MultiMetersSimPanel"
 local panelHooked = false

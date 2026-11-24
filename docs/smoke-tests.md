@@ -21,17 +21,17 @@ secret-value rules the checks refer to.
 | SLASH-1 to SLASH-33 | [Slash commands](#slash) | Banner, help, every verb, CLI refusals, the minimap button, the Show window key binding and the General page's Keybindings tab |
 | PANEL-1 to PANEL-59 | [Settings panel](#panel) | Tree, Windows page, entry shapes, text and color controls, Defaults, combat lock, the Columns editor, color drags, widget reuse, scroll kept on refresh, the 2026-10-24 settings-layout pass |
 | PROFILE-1 to PROFILE-17 | [Profiles](#profile) | The Profiles page, resets, the `/mm profile` verb |
-| STATE-1 to STATE-11 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode |
+| STATE-1 to STATE-12 | [Enable, disable, lock and Test mode](#state) | Stand-down, disabled refusals, perf suspension, lock, Test mode, its people all from the library |
 | WIN-1 to WIN-60 | [Windows and the header](#win) | Header controls, the strip's extras · settings · close order, minimize, reset, no line under the title, scale, border, drag, multi-window, the library resize grip, the empty state, the test-mode strip, the title word only while the strip is not shown, the header matched to Ka0s DPS Race's title bar, the 30px title bar, the export bubble at its neighbors' size |
 | VIS-1 to VIS-14 | [Visibility](#vis) | Contexts and hide rules, the group and combat reads through Compat, the one event dispatch entry |
 | GRID-1 to GRID-35 | [What the grid shows](#grid) | Text slots, numbers, names, pets, sorting, empty states, bar animation, segments, the roster reads through Compat |
 | TIP-1 to TIP-41 | [Tooltips, drill-down and deaths](#tip) | Cell and name tooltips opening beside the window, breakdowns, death list and recap, tooltip styling, Targets |
-| EXPORT-1 to EXPORT-57 | [Export](#export) | The modal, its settings mark, the whisper box, the CSV window and file, Print to Chat, `/mm export` |
+| EXPORT-1 to EXPORT-58 | [Export](#export) | The modal, its close (a companion, no settings mark), the whisper box, the CSV window and file, Print to Chat, `/mm export` |
 | COMBAT-1 to COMBAT-33 | [Restricted pulls](#combat) | Secret values mid-pull, live ranking, identity ambiguity, refusals, the number format mid-pull, only certain cells mid-fight |
 | DIAG-1 to DIAG-46 | [Diagnostics](#diag) | Debug console, perf capture, the diagnostics report, the report verbs in the console with one chat pointer, measurement captures, the event trace, rejected events, resizing the console, copy windows and perf panel, the console's Diagnostics link, diagnostics turning logging on, the library's own slash and Lifecycle lines, state lines at enable |
 | DEGRADED-1 to DEGRADED-12 | [LibKa0s absent](#degraded) | The library-absent install, no resize grip, the pre-skin look, a report in chat |
-| SIM-1 to SIM-16 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run, the Master controls Sim mode checkbox and its window rule |
-| SKIN-1 to SKIN-52 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat, a stored pick of the deleted Friz |
+| SIM-1 to SIM-18 | [The simulator](#sim) | `/mm sim`: the step panel and auto-run, the refusals and stops, the four scenarios, the sim strip, export and diagnostics during a run, the Master controls Sim mode checkbox and its window rule, every start opening the step panel, the group from the library's sample crowd |
+| SKIN-1 to SKIN-58 | [Skins](#skin) | Ka0s Default after the one-time HUD and chrome resets, the Skin tab, each skin live on every surface family, the HUD's "Use the skin's ..." companions, the overrides and the Scope (Ignore fonts reaching the HUD), the first-run picker, EllesmereUI on and off, profiles and combat, a stored pick of the deleted Friz, a menu's selected row apart from its plain rows |
 | LOC-1 | [Non-English client](#non-english-client) | The CSV header on another locale |
 
 ## Before you start
@@ -771,6 +771,15 @@ right. Open the panel with `/mm config`.
   mode during combat* and no placeholder rows appear. (The General page's Test mode box is under the
   combat cover then, PANEL-29, so it is not a route.) Leave combat → General → Master controls → Test
   mode reads unticked. Result: pass (owner-marked 2026-10-10)
+- **STATE-12. Test mode's people all come from the library (FB2-MM-01; LibKa0s#104, Sim minor 5's
+  sample crowd).** `/mm test` → ten placeholder members, the first five the collection's protagonists as
+  in STATE-9 (*Samplehunter*, *Sampleblade*, *Mockflame*, *Samplemender*, *Mockshield*), then five of the
+  library's shared crowd: *Samplecliff* (Shaman), *Mockcopper* (Rogue), *Samplecoal* (Warlock),
+  *Samplepalm* (Demon Hunter) and *Sampleiron* (Evoker), each in its class color with its spec icon.
+  Ten rows, ten classes; `/mm test` off and on, and `/reload` → the same ten in the same order. None of
+  *Mockshade*, *Samplehex*, *Mockbrew*, *Samplegrove* or *Mockfrost* appears. Unlock a window with test
+  mode off → its preview rows are the same ten. Fail: a name outside those ten, a row with no spec icon,
+  the order changing between loads, or a Lua error. Result:
 
 ## WIN
 
@@ -1502,6 +1511,17 @@ Everything here works at a target dummy; the combat refusals are COMBAT-23 to CO
   not hidden under the modal. Reopen the modal, close it with the X → it closes. Pick Obsidian → the
   same. Fail: no gear, the panel opening under the modal, a mark with no tooltip, or a Lua error.
   Result:
+  Superseded on 2026-11-24 by EXPORT-58: the modal is a companion and carries no gear.
+- **EXPORT-58. The Export modal and its copy window carry the close alone; the meter window keeps
+  the gear (FB-MM-01; standalone-windows, *Settings is on every window but a companion*, standard
+  v2.119.0, S-T5).** Open the Export modal from a meter's export mark → its title bar ends in the close
+  alone, 6 px in from the corner on the bar's middle, with no gear beside it; hover it → *Close*, the X
+  red; click it → the modal closes. Reopen it and press the CSV button → the copy window's title bar
+  carries the close alone too. `/mm export` → the same modal, the close alone. The meter window's own
+  header still carries its gear beside the close, and the gear opens this addon's settings. Pick
+  Obsidian → the same. Fail: a gear on the modal or the copy window, a meter window without its gear,
+  or a Lua error.
+  Result:
 
 ## COMBAT
 
@@ -1953,6 +1973,23 @@ brackets. Start each from a `/reload`, solo, in the open world, with test mode o
   and idle, the minimap button's right-click menu shows *Sim mode* ticked; click it → the panel closes, and
   the next right-click shows it unticked. Fail: the box or the menu entry out of step with the panel, a
   tick that snaps back to unticked, or a Lua error. Result: pass (owner-marked 2026-11-04)
+- **SIM-17. Every start opens the step panel (FB2-MM-01; LibKa0s Sim minor 5, decision D2).** `/mm sim`,
+  close the step panel with its close mark, then `/mm sim start dungeon` → the step panel opens with the
+  run. Stop it, close the panel, `/mm sim start raid` → it opens again. With a run going, close the
+  panel, then reopen it with `/mm sim` and press Restart → the run starts over and the panel stays open;
+  close it again and type `/mm sim restart` → it opens. From the panel, Start and the picker's Start each
+  start with the panel shown. General → Master controls → **Sim mode** and the launcher's *Sim mode* entry
+  open the panel as SIM-15 and SIM-16 say. A refused start (`/mm test` on, then `/mm sim start dungeon`)
+  opens nothing. Fail: any start that leaves the panel closed, a panel opened by a refused start, or a Lua
+  error. Result:
+- **SIM-18. The simulator's group is the library's sample crowd (FB2-MM-01; LibKa0s#104).** `/mm sim start
+  dungeon` → the four mates beside you have `Sample…` or `Mock…` names (one word, such as *Samplefrost* or
+  *Mockcopper*), a tank, a healer and two damage dealers, each in its class color, and at least one is a
+  Hunter or a Warlock whose pet has its own row with a `Mock…` name (*Mockclaw*, *Mockimp* and the like),
+  following the Merge pets setting. `/mm sim start raid` → every row but yours carries such a name, with no
+  duplicate. None of the old invented names (*Aldrenna*, *Brakthar*, *Quorra* and the rest) appears. Your
+  own row is your character, and your own pet (on a Hunter or Warlock) still reads *Wolf* or *Imp*. Fail: a
+  name off the convention, a five-player group with no pet row, or a Lua error. Result:
 
 ## SKIN
 
@@ -2215,6 +2252,7 @@ so the text is as wide as under Ka0s Default (the stored size is never rewritten
 - **SKIN-55. A row with no class is filled from the skin (SD-SK-MM.3).** With Bar color mode **Class color** (the default), pull a dummy or join a follower dungeon so a pet, an NPC or an enemy appears in the grid → its bar under Ka0s Default is the same slate gray as before; pick Obsidian with no reload → it takes Obsidian's bar fill, while every player row keeps its class color. Fail: a classless bar that never changes with the skin, a class color moved by a skin, or a Lua error. Result:
 - **SKIN-56. The tooltip's spell bars and lines for a row with no class follow the skin (SD-SK-MM.5, .6).** Hover a classless row (an NPC, an enemy, a pet) on Ka0s Default → its spell bars draw Ka0s Default's bar fill (no longer the flat gray), its name line is white as before; pick Obsidian → the bars take Obsidian's fill and the name line Obsidian's tooltip value color. A player's row still draws its class color. Tooltip → Bar → Fill: untick **Use the skin's color** → the swatch's gray comes back for the classless row and under Custom. On the name tooltip of a row (Show all statistics on name hover), a statistic with no color of its own reads in the tooltip's value color, or the hint gray when it is not a column. Fail: a classless bar or name line that ignores the skin, a class color overridden, or a Lua error. Result:
 - **SKIN-57. An old profile keeps a picked Custom color (the v27 step; R-2).** Before updating, on a profile with Bar color mode Custom and a color you picked (not the shipped blue), note it; update and `/reload` → the bars still draw your color and that Fill's **Use the skin's color** is unticked; a second profile whose swatches were never touched shows the companions ticked and the skin's colors under Custom. Tick and untick on either, `/reload` → the choice is kept (the step runs once). Fail: a picked color replaced by the skin's, a companion that turns itself back on after a reload, or a Lua error. Result:
+- **SKIN-58. A menu's selected row reads apart in every skin (FB2-MM-01; LibKa0s WidgetsDropdown minor 4, decision D3).** Under Ka0s Default, click a meter window's segment control → the entry the window shows (Current, Overall or a pinned fight) is ticked and its text is gold, plainly apart from the white rows around it. Open the Export modal and its Metric and Channel dropdowns → the stored entry reads the same gold. Pick Azeroth, then Obsidian, then Glass, then WoW Forever, each with no reload → the selected row in each of the three is Ka0s Default's gold in every skin, never the skin's accent, still plainly apart from a plain row. On WoW Forever the same holds under the default WoW Forever skin: the selected row is gold, not its tan accent. Hovering a row never makes the selected one read like the rest. Fail: a selected row whose text matches the plain rows', a skin's accent (WoW Forever's tan included) on a selected row, or a Lua error. (Amended by FB2-MM-02, 2026-11-24, the owner's ruling on round 2, LibKa0s v1.113.0 re-cut: a selected row is gold in every skin, where round 2 kept a skin's accent and only Azeroth went gold.) Result:
 ## Non-English client
 
 - **LOC-1. The CSV header does not translate.** On a non-English client (German, for example), export
@@ -2281,3 +2319,14 @@ Owed: INSTALL-19 (MKF-MM-01, Retail only), COMBAT-31 (MKF-MM-02, R3), COMBAT-32 
 (MKF-MM-03, R4), the MultiMeters and KickCD Forever port (Ka0sAddonsCommonTasks
 `docs/2026-11-23-MULTIMETERS_KICKCD_FOREVER_PORT/`), each with an empty `Result:`. COMBAT-13 keeps its
 pass for what it checked then; its mid-fight half is now COMBAT-32.
+
+Owed: EXPORT-58 (FB-MM-01, the Export modal and its copy window are companions and carry the close alone;
+LibKa0s v1.112.0), the owner's 2026-11-24 feedback batch (Ka0sAddonsCommonTasks
+`docs/2026-11-24-FEEDBACK_BATCH/`), with an empty `Result:`. EXPORT-57, still unsigned, is
+superseded by EXPORT-58.
+
+Owed: STATE-12, SIM-17, SIM-18 and SKIN-58 (FB2-MM-01: test mode's and the simulator's people from the
+library's sample crowd, LibKa0s#104; every sim start opening the step panel; a menu's selected row
+apart; LibKa0s v1.113.0), round 2 of the owner's 2026-11-24 feedback batch (Ka0sAddonsCommonTasks
+`docs/2026-11-24-FEEDBACK_BATCH/R2_SMOKE_FEEDBACK.md`), each with an empty `Result:`. STATE-9, still
+unsigned, is superseded by STATE-12 for its last five names.

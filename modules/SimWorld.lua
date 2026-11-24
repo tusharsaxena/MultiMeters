@@ -52,48 +52,41 @@ local ZONES = {
 }
 World.ZONES = ZONES
 
--- Forty fixed invented names; a seed shuffles them.
-local NAMES = {
-    "Aldrenna", "Brakthar", "Caelith", "Dornik", "Elowen", "Fenwick", "Garrosa", "Halvard",
-    "Isolde", "Jorrik", "Kaelin", "Lunessa", "Morvane", "Nyreth", "Orlaith", "Pellam",
-    "Quorra", "Rhydian", "Sabeth", "Tormund", "Ulvara", "Vashti", "Wendric", "Xyrell",
-    "Yselde", "Zoravan", "Ashkettle", "Brindlemoor", "Corvanna", "Duskwhit", "Emberlyn", "Frostvale",
-    "Grimtusk", "Hollowen", "Ironhelm", "Jadewind", "Kettleby", "Larkspire", "Mossgrove", "Nightbrook",
-}
-World.NAMES = NAMES
+-- THE MATES ARE THE LIBRARY'S CROWD (FB2-MM-01, LibKa0s#104; LibKa0s-Sim-1.0 minor 5). Every
+-- invented mate, its name, class, role and pet, is `SampleCrowd("retail", POOL_SIZE, seed)`, seeded
+-- with the world's own seed, so one seed is one group on every load and the people are the
+-- collection's, never a list of this addon's own. A forty-player raid is the player and 39 of the
+-- crowd; its roles run tank, healer, damage, damage, damage in turn, so a five-player group is a
+-- dungeon's shape. The crowd draws on no world rng, so the seeded numbers below are the crowd's
+-- order's own.
+local POOL_SIZE = 39
+World.POOL_SIZE = POOL_SIZE
 
--- Per class: the role it plays here, a real spec icon file id, three real spell ids (so the pure
--- GetSpellInfo names them) and whether it brings a pet.
+-- Per class: a real spec icon file id, three real spell ids (so the pure GetSpellInfo names them)
+-- and whether it brings a pet.
 local CLASSES = {
-    WARRIOR     = { name = "Warrior",      role = "TANK",    specIconID = 132342, spells = { 23922, 6572, 6343 } },
-    PALADIN     = { name = "Paladin",      role = "TANK",    specIconID = 236264, spells = { 31935, 53600, 275779 } },
-    PRIEST      = { name = "Priest",       role = "HEALER",  specIconID = 135940, spells = { 2061, 2060, 596 } },
-    DRUID       = { name = "Druid",        role = "HEALER",  specIconID = 136041, spells = { 774, 8936, 48438 } },
-    SHAMAN      = { name = "Shaman",       role = "HEALER",  specIconID = 136052, spells = { 61295, 77472, 1064 } },
-    MAGE        = { name = "Mage",         role = "DAMAGER", specIconID = 135846, spells = { 116, 30455, 44614 } },
-    ROGUE       = { name = "Rogue",        role = "DAMAGER", specIconID = 132320, spells = { 196819, 185438, 53 } },
-    HUNTER      = { name = "Hunter",       role = "DAMAGER", specIconID = 461112, spells = { 34026, 193455, 217200 },
+    WARRIOR     = { name = "Warrior",      specIconID = 132342, spells = { 23922, 6572, 6343 } },
+    PALADIN     = { name = "Paladin",      specIconID = 236264, spells = { 31935, 53600, 275779 } },
+    PRIEST      = { name = "Priest",       specIconID = 135940, spells = { 2061, 2060, 596 } },
+    DRUID       = { name = "Druid",        specIconID = 136041, spells = { 774, 8936, 48438 } },
+    SHAMAN      = { name = "Shaman",       specIconID = 136052, spells = { 61295, 77472, 1064 } },
+    MAGE        = { name = "Mage",         specIconID = 135846, spells = { 116, 30455, 44614 } },
+    ROGUE       = { name = "Rogue",        specIconID = 132320, spells = { 196819, 185438, 53 } },
+    HUNTER      = { name = "Hunter",       specIconID = 461112, spells = { 34026, 193455, 217200 },
                     hasPet = true },
-    WARLOCK     = { name = "Warlock",      role = "DAMAGER", specIconID = 136145, spells = { 172, 980, 686 },
+    WARLOCK     = { name = "Warlock",      specIconID = 136145, spells = { 172, 980, 686 },
                     hasPet = true },
-    DEATHKNIGHT = { name = "Death Knight", role = "DAMAGER", specIconID = 135773, spells = { 49020, 49143, 49184 } },
-    MONK        = { name = "Monk",         role = "DAMAGER", specIconID = 608951, spells = { 100780, 100784, 107428 } },
-    DEMONHUNTER = { name = "Demon Hunter", role = "DAMAGER", specIconID = 1247264, spells = { 162794, 188499, 198013 } },
-    EVOKER      = { name = "Evoker",       role = "DAMAGER", specIconID = 4511811, spells = { 357208, 356995, 361469 } },
+    DEATHKNIGHT = { name = "Death Knight", specIconID = 135773, spells = { 49020, 49143, 49184 } },
+    MONK        = { name = "Monk",         specIconID = 608951, spells = { 100780, 100784, 107428 } },
+    DEMONHUNTER = { name = "Demon Hunter", specIconID = 1247264, spells = { 162794, 188499, 198013 } },
+    EVOKER      = { name = "Evoker",       specIconID = 4511811, spells = { 357208, 356995, 361469 } },
 }
 World.CLASSES = CLASSES
 
--- Class pools per role, sorted, so a seeded pick is the same on every client.
-local BY_ROLE = { TANK = {}, HEALER = {}, DAMAGER = {} }
-for file, spec in pairs(CLASSES) do
-    local list = BY_ROLE[spec.role]
-    list[#list + 1] = file
-end
-for _, list in pairs(BY_ROLE) do sort(list) end
-
--- Pets and enemies cast real spells too.
+-- Pets and enemies cast real spells too. A mate's pet is named by the crowd; the real player's pet
+-- (a Hunter's or a Warlock's) wears its kind, as the client's pet frame would before a rename.
 local PET_SPELLS = { 17253, 16827, 3110 }
-local PET_NAMES = { HUNTER = "Wolf", WARLOCK = "Imp" }
+local PET_KINDS = { HUNTER = "Wolf", WARLOCK = "Imp" }
 local ENEMY_SPELLS = {
     { id = 6603, name = "Auto Attack" }, { id = 133, name = "Fireball" },
     { id = 589, name = "Shadow Word: Pain" }, { id = 8921, name = "Moonfire" },
@@ -136,8 +129,6 @@ local function newRng(seed)
     end
 end
 
-local function pick(rng, list) return list[floor(rng() * #list) + 1] end
-
 -- ── members ───────────────────────────────────────────────────────────────────────────────────
 
 local function rates(rng, role)
@@ -158,34 +149,47 @@ local function newMember(w, guid, name, classFilename, role)
     return m
 end
 
-local function attachPet(w, m, n)
+local function attachPet(w, m, n, name)
     local guid = PET_GUID_FMT:format(n)
-    m.pet = { guid = guid, name = PET_NAMES[m.classFilename] or "Pet", isPet = true, owner = m,
+    m.pet = { guid = guid, name = name or PET_KINDS[m.classFilename] or "Pet", isPet = true, owner = m,
         spells = PET_SPELLS }
     w.known[guid] = m.pet
 end
 
---- The role an invented mate plays: two tanks, four healers, the rest damage dealers.
-local function poolRole(k)
-    if k == 1 or k == 5 then return "TANK" end
-    if k == 2 or (k >= 6 and k <= 8) then return "HEALER" end
-    return "DAMAGER"
+--- The library's crowd for `seed`, or an empty one without it (the simulator needs the library).
+local function crowd(seed)
+    local Sim = LibStub and LibStub("LibKa0s-Sim-1.0", true)
+    if not (Sim and type(Sim.SampleCrowd) == "function") then return {} end
+    local ok, rows = pcall(Sim.SampleCrowd, "retail", POOL_SIZE, tonumber(seed))
+    return (ok and type(rows) == "table") and rows or {}
 end
 
---- The fixed seeded order of invented mates, so a regroup of one seed keeps the same faces.
-local function buildPool(w)
-    local names = {}
-    for i, n in ipairs(NAMES) do names[i] = n end
-    for i = #names, 2, -1 do
-        local j = floor(w.rng() * i) + 1
-        names[i], names[j] = names[j], names[i]
+--- A five-player group (the player and mates 1 to 4) always shows a pet row, which the Merge pets
+--- option is judged by: when the crowd puts no Hunter or Warlock there, its first damage dealer with
+--- a pet trades places with the group's first damage dealer. Roles stay where they were.
+local function petInGroup(rows)
+    for k = 1, 4 do if rows[k] and rows[k].pet then return rows end end
+    local slot
+    for k = 1, 4 do
+        if rows[k] and rows[k].role == "DAMAGER" then slot = k; break end
     end
+    if not slot then return rows end
+    for k = 5, #rows do
+        if rows[k].pet and rows[k].role == "DAMAGER" then
+            rows[slot], rows[k] = rows[k], rows[slot]
+            return rows
+        end
+    end
+    return rows
+end
+
+--- The invented mates, in the crowd's seeded order, so a regroup of one seed keeps the same faces.
+local function buildPool(w, seed)
     local pool = {}
-    for k = 1, #NAMES - 1 do
-        local role = poolRole(k)
-        local class = (k == 3 and "HUNTER") or (k == 4 and "WARLOCK") or pick(w.rng, BY_ROLE[role])
-        local m = newMember(w, GUID_FMT:format(k), names[k], class, role)
-        if CLASSES[class].hasPet then attachPet(w, m, k) end
+    for k, row in ipairs(petInGroup(crowd(seed))) do
+        local class = CLASSES[row.classFile] and row.classFile or "WARRIOR"
+        local m = newMember(w, GUID_FMT:format(k), row.name, class, row.role)
+        if CLASSES[class].hasPet then attachPet(w, m, k, row.pet) end
         pool[k] = m
     end
     return pool
@@ -210,7 +214,7 @@ function World.New(seed, player)
     me.classFilename = player.classFilename or class
     if CLASSES[class].hasPet then attachPet(w, me, 0) end
     w.player = me
-    w.pool = buildPool(w)
+    w.pool = buildPool(w, seed)
     World.SetGroup(w, 1)
     return w
 end
