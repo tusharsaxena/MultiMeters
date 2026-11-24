@@ -2149,7 +2149,7 @@ Total.
 ### test_menu_selected.lua (3)
 
 - Menu selected: the segment menu's shown segment reads apart in every skin (D3)
-- Menu selected: Azeroth's segment menu marks the shown segment in Ka0s Default's gold (D3)
+- Menu selected: Azeroth's and WoW Forever's segment menus mark the shown segment in gold (FB2-MM-02)
 - Menu selected: the Export modal's Metric dropdown marks the stored metric apart in every skin (D3)
 
 ### test_visibility.lua (44)

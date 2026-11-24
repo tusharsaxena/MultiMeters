@@ -1,6 +1,7 @@
 -- tests/test_menu_selected.lua — a menu's selected row always reads apart from its plain rows
 -- (FB2-MM-01; Ka0sAddonsCommonTasks docs/2026-11-24-FEEDBACK_BATCH/R2_SMOKE_FEEDBACK.md, decision
--- D3; LibKa0s v1.113.0, WidgetsDropdown minor 4).
+-- D3, then the owner's ruling of 2026-11-24 on round 2, FB2-MM-02; LibKa0s v1.113.0, WidgetsDropdown
+-- minor 4).
 --
 -- The owner, 2026-11-24: "make the current selected always be a different color than the other
 -- texts - e.g. gold in ka0s default ... Check this for all addons that have a similar pattern".
@@ -16,13 +17,16 @@
 -- pull-out item's text, so their selected color is the library's to set, not this addon's
 -- (FB2-MM-REV). Without the library the segment menu is
 -- the client's MenuUtil menu, which this addon does not paint. These cases walk every shipped
--- skin, Azeroth included (the one whose own `menu.textSel` stands too near its `menu.text`, so its
--- selection is the gold fallback).
+-- skin. The owner ruled on round 2 (WoW Forever's tan accent kept for a selection: the issue "has
+-- not been fixed"; of the gold, "leave it as gold"): a selected row is Ka0s Default's gold in every
+-- skin, the skin's own `menu.textSel` standing in only where the gold sits too near its `menu.text`,
+-- which none of the shipped skins does, so every walked skin is held to the gold.
 
 local T = _G.MULTIMETERS_TEST
 local test, assertEqual, assertTrue = T.test, T.assertEqual, T.assertTrue
 
 local function rgb(r, g, b) return ("%.3f,%.3f,%.3f"):format(r, g, b) end
+local GOLD = rgb(1, 0.82, 0)   -- Ka0s Default's gold, the selection in every shipped skin
 
 --- Run `open` with CreateFrame watched; answer the shared menu, the first unnamed Frame parented
 --- straight to UIParent (every dropdown and W.ContextMenu opens it; the modal and the window are
@@ -58,8 +62,8 @@ local function skinKeys(inst)
     return Skin, out
 end
 
---- For every shipped skin: open the menu, and hold its selected row to W.SelectedColor and apart
---- from its plain row.
+--- For every shipped skin: open the menu, and hold its selected row to W.SelectedColor, to Ka0s
+--- Default's gold, and apart from its plain row.
 local function walkSkins(inst, open, selectedLabel, plainLabel)
     local NS = inst.NS
     local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0")
@@ -72,6 +76,7 @@ local function walkSkins(inst, open, selectedLabel, plainLabel)
         local sel, plain = rowColor(menu, selectedLabel), rowColor(menu, plainLabel)
         assertTrue(sel ~= nil and plain ~= nil, key .. ": both rows are shown")
         assertEqual(sel, rgb(W.SelectedColor(NS.name)), key .. ": the selected row is the library's selected color")
+        assertEqual(sel, GOLD, key .. ": the selected row is Ka0s Default's gold")
         assertTrue(sel ~= plain, key .. ": the selected row reads apart from a plain row (" .. sel .. ")")
         W.CloseMenu()
     end
@@ -90,7 +95,8 @@ test("Menu selected: the segment menu's shown segment reads apart in every skin 
     walkSkins(inst, function() window:OpenSegmentMenu() end, L["Current"], L["Overall"])
 end)
 
-test("Menu selected: Azeroth's segment menu marks the shown segment in Ka0s Default's gold (D3)", function()
+test("Menu selected: Azeroth's and WoW Forever's segment menus mark the shown segment in gold (FB2-MM-02)",
+function()
     local inst = T.load()
     local NS, L = inst.NS, inst.NS.L
     inst.mocks.setAvailableSessions{}
@@ -98,9 +104,17 @@ test("Menu selected: Azeroth's segment menu marks the shown segment in Ka0s Defa
     cfg.data.sessionType = NS.Constants.SESSION_TYPE.Overall
     local window = NS.Window.New(cfg)
     local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0")
-    Skin:SetChoice(NS.name, "ka0s", "azeroth")
-    local menu = captureMenu(inst, function() window:OpenSegmentMenu() end)
-    assertEqual(rowColor(menu, L["Overall"]), rgb(1, 0.82, 0), "Azeroth's selection is the fallback gold")
+    local W = inst.mocks.LibStub("LibKa0s-Widgets-1.0")
+    local menu
+    -- Azeroth: its own gold accent sits too near its parchment; WoW Forever: the default skin on
+    -- Forever, whose tan accent #C9A07A round 2 kept and the owner ruled out.
+    for _, key in ipairs({ "azeroth", "forever" }) do
+        Skin:SetChoice(NS.name, "ka0s", key)
+        if menu then window:OpenSegmentMenu() else menu = captureMenu(inst, function() window:OpenSegmentMenu() end) end
+        assertEqual(rowColor(menu, L["Overall"]), GOLD, key .. ": the selection is Ka0s Default's gold")
+        assertEqual(rgb(W.SelectedColor(NS.name)), GOLD, key .. ": W.SelectedColor answers the gold")
+        W.CloseMenu()
+    end
     Skin:SetChoice(NS.name, "ka0s", "ka0s")
 end)
 
