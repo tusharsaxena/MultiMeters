@@ -203,15 +203,10 @@ end)
 -- ---------------------------------------------------------------------------
 --
 -- Test mode's people are the collection's shared sample characters, LibKa0s-Sim-1.0's
--- `Sample("retail")`, first and in their order, then five of this addon's own that follow the same
--- convention: one capitalized word of 2 to 12 letters starting `Sample` or `Mock`. They used to be
--- `Ka0stank`, `Ka0smage` and the rest, names that read as the author's own characters.
-
-local function names(group)
-    local out = {}
-    for i, m in ipairs(group) do out[i] = m.name .. "/" .. m.classFilename .. "/" .. m.role end
-    return out
-end
+-- `Sample("retail")`, first and in their order, then five of the library's crowd (`SampleCrowd`;
+-- tests/test_sample_names.lua holds which five, and the library-absent grid, FB2-MM-01). Every one
+-- follows the convention: one capitalized word of 2 to 12 letters starting `Sample` or `Mock`.
+-- They used to be `Ka0stank`, `Ka0smage` and the rest, names that read as the author's own characters.
 
 test("Preview: test mode's first five are LibKa0s-Sim's shared sample characters, in order", function()
     -- red under: the old Ka0s-named roster, or a host copy that drifted from the library's rows.
@@ -248,12 +243,4 @@ test("Preview: the test column draws the same people as the test group", functio
     for i, src in ipairs(column.sources) do
         assertEqual(src.name, group[i].name, "source " .. i)
     end
-end)
-
-test("Preview: without the library test mode draws the same people from its own copy", function()
-    -- red under: a copy that drifted from the library's rows, which would show a degraded install
-    -- different people from a full one.
-    local full = names(T.load().NS.Aggregator.TestGroup())
-    local degraded = names(T.load{ libFiles = {} }.NS.Aggregator.TestGroup())
-    assertEqual(table.concat(degraded, ","), table.concat(full, ","))
 end)

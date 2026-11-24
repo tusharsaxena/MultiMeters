@@ -339,7 +339,8 @@ CHECK.raid = function(obs, tag)
     assertEqual(#o.world.segments[1].deaths, 2, tag .. ": two deaths")
     -- Merge pets on (set for the case in `mid`, then restored): the owner's cell includes the pet's.
     -- Merge pets off: the hunter pet's damage is not in its owner's cell; it is its own pet row.
-    local hunter = o.world.pool[3]
+    local hunter   -- the raid's first pet owner (a Hunter or a Warlock of the library's crowd)
+    for _, mate in ipairs(o.world.pool) do if mate.pet and not hunter then hunter = mate end end
     local alone = rowOf(o.current, hunter.guid)
     local petRow = rowOf(o.current, hunter.pet.guid)
     local petDamage = math.floor(o.world.segments[1].totals.DamageDone[hunter.pet.guid] or 0)

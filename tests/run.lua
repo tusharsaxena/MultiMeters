@@ -330,6 +330,8 @@ local SUITES = {
     "test_sim_checkbox",
     -- Every start of a simulation shows the step panel (FB2-MM-01, LibKa0s Sim minor 5).
     "test_sim_start_panel",
+    -- Every named sample person comes from the library (FB2-MM-01, LibKa0s#104).
+    "test_sample_names",
     "test_launchersetup",
     "test_launcher_skin_entry",
     "test_lifecycle",
