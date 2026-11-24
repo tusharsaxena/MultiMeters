@@ -761,6 +761,26 @@ Total.
 - Sim checkbox: unticking a running sim with its window open stops it and closes the window (R7-SIM)
 - Sim checkbox: the sim window's own show and hide refresh an open page (R7-SIM)
 
+### test_sim_start_panel.lua (8)
+
+- Sim start panel: a start shows the panel once, from the library's start, not the host's prepare
+- Sim start panel: the bare /mm sim shows the panel and starts nothing
+- Sim start panel: /mm sim start <scenario> shows the panel
+- Sim start panel: the host's own NS.Sim:Start shows the panel
+- Sim start panel: the panel's Start row and its picker's Start start with the panel shown
+- Sim start panel: a Restart shows a panel the player closed mid-run
+- Sim start panel: the Master controls Sim box and the launcher entry open the panel a start keeps
+- Sim start panel: a refused start shows nothing
+
+### test_sample_names.lua (6)
+
+- Sample names: test mode's last five are the library's crowd, each a class the grid lacks
+- Sample names: the simulator's mates are the library's crowd for the world's seed
+- Sample names: one seed is one group, two seeds two groups
+- Sample names: without the library test mode draws ten rows named by their class
+- Sample names: no Sample*/Mock* name literal lives outside tests/ (D1)
+- Sample names: the literal scan is falsifiable
+
 ### test_launchersetup.lua (57)
 
 - Launcher: Register creates ONE object and registers it against the global table
@@ -1238,7 +1258,7 @@ Total.
 - Certain: another player's Deaths tooltip shows no correlated death mid-fight
 - Certain: the pass counts every row whose cells wait for the end of combat
 
-### test_aggregator_preview.lua (12)
+### test_aggregator_preview.lua (11)
 
 - Test mode substitutes the DATA, and the render path stays one path
 - A test row's tooltip finds a breakdown, because it goes to the provider
@@ -1251,7 +1271,6 @@ Total.
 - Preview: test mode's first five are LibKa0s-Sim's shared sample characters, in order
 - Preview: every test-mode name follows the sample convention
 - Preview: the test column draws the same people as the test group
-- Preview: without the library test mode draws the same people from its own copy
 
 ### test_aggregator_sort.lua (20)
 
@@ -2126,6 +2145,12 @@ Total.
 - Reopening with the metric unchanged writes nothing and announces nothing
 - A metric the seam refuses is not stored around it
 - A refused export names its guard in the log as well as in chat
+
+### test_menu_selected.lua (3)
+
+- Menu selected: the segment menu's shown segment reads apart in every skin (D3)
+- Menu selected: Azeroth's segment menu marks the shown segment in Ka0s Default's gold (D3)
+- Menu selected: the Export modal's Metric dropdown marks the stored metric apart in every skin (D3)
 
 ### test_visibility.lua (44)
 
@@ -3096,6 +3121,8 @@ Total.
 | test_sim_session.lua | 26 |
 | test_sim_e2e.lua | 13 |
 | test_sim_checkbox.lua | 10 |
+| test_sim_start_panel.lua | 8 |
+| test_sample_names.lua | 6 |
 | test_launchersetup.lua | 57 |
 | test_launcher_skin_entry.lua | 2 |
 | test_lifecycle.lua | 40 |
@@ -3111,7 +3138,7 @@ Total.
 | test_aggregator.lua | 70 |
 | test_aggregator_identity.lua | 32 |
 | test_aggregator_certain.lua | 13 |
-| test_aggregator_preview.lua | 12 |
+| test_aggregator_preview.lua | 11 |
 | test_aggregator_sort.lua | 20 |
 | test_window.lua | 50 |
 | test_window_layout.lua | 18 |
@@ -3138,6 +3165,7 @@ Total.
 | test_drilldown.lua | 59 |
 | test_export.lua | 94 |
 | test_export_modal.lua | 33 |
+| test_menu_selected.lua | 3 |
 | test_visibility.lua | 44 |
 | test_windowmanager.lua | 49 |
 | test_schema.lua | 40 |
@@ -3184,4 +3212,4 @@ Total.
 | test_skin_switch.lua | 29 |
 | test_client_globals.lua | 3 |
 | Skipped | 1 |
-| **Total** | **2682** |
+| **Total** | **2698** |
