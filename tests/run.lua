@@ -328,6 +328,8 @@ local SUITES = {
     "test_sim_e2e",
     -- The Sim mode checkbox on Master controls (R6-SIM, LibKa0s compose minor 19).
     "test_sim_checkbox",
+    -- Every start of a simulation shows the step panel (FB2-MM-01, LibKa0s Sim minor 5).
+    "test_sim_start_panel",
     "test_launchersetup",
     "test_launcher_skin_entry",
     "test_lifecycle",
