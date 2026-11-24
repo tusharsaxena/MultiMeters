@@ -10,8 +10,11 @@
 --     W.ContextMenu whose shown segment is a ticked `radio` row (`selected` / `isActive`);
 --   * the Export modal's Metric and Channel dropdowns (modules/Export_Modal.lua): W.Dropdown.
 -- Neither passes a value color (`opt.color`), so the selected row's color is the library's
--- W.SelectedColor(owner) alone. The settings panel's AceGUI dropdowns (settings/Windows.lua's
--- action dropdowns) pick an action and mark no selection. Without the library the segment menu is
+-- W.SelectedColor(owner) alone. The settings panel's dropdowns are AceGUI's (the schema's value
+-- rows, and settings/Windows.lua's Source window and Settings to copy, which SetValue the current
+-- pick): AceGUI marks the picked item with its check, and the library's SkinAce paints every
+-- pull-out item's text, so their selected color is the library's to set, not this addon's
+-- (FB2-MM-REV). Without the library the segment menu is
 -- the client's MenuUtil menu, which this addon does not paint. These cases walk every shipped
 -- skin, Azeroth included (the one whose own `menu.textSel` stands too near its `menu.text`, so its
 -- selection is the gold fallback).
