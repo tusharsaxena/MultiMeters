@@ -377,6 +377,8 @@ local SUITES = {
     "test_drilldown",
     "test_export",
     "test_export_modal",
+    -- A menu's selected row reads apart from its plain rows (FB2-MM-01, WidgetsDropdown minor 4).
+    "test_menu_selected",
     "test_visibility",
     "test_windowmanager",
     -- settings and the CLI
