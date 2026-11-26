@@ -23,7 +23,7 @@ Everything below is about `MultiMetersDB`.
 
 ```lua
 db.global = {
-    schemaVersion = 28,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
+    schemaVersion = 29,    -- as stored; the runner's target, NS.SCHEMA_VERSION (the default is 0)
     roster = { byGuid = {}, pets = {} },   -- the remembered roster; learned data (+ count, stored)
     minimap = { hide = false },            -- LibDBIcon-1.0 owns this table's shape
 }
@@ -60,8 +60,8 @@ safe because every step is idempotent against a fresh default profile. A step ne
 the runner advances it to N+1 only after `migrations[N]` returned, so a step that raises leaves the
 stamp where it was and the next load retries it. `tests/test_migrations.lua` pins all of this.
 
-**Twenty-seven steps are wired today**, `migrations[1]` through `migrations[27]`, walking an account from
-the shipped v1 shape to v28. Each is one line of the header block at the top of
+**Twenty-eight steps are wired today**, `migrations[1]` through `migrations[28]`, walking an account from
+the shipped v1 shape to v29. Each is one line of the header block at the top of
 `core/Database.lua`, the version's home, and each is named where the key it moved is documented below:
 
 | Step | What it does |
@@ -95,11 +95,11 @@ the shipped v1 shape to v28. Each is one line of the header block at the top of
 | v27 → v28 | retired (the owner, 2026-11-23): the stamp alone climbs. From 2026-11-20 until then, never released, it put the cell and tooltip swatches on the skin and recorded `skin.swatchesFollow`. |
 | v28 → v29 | what that step wrote goes back, in every profile carrying the record: `bars.customColorFromSkin`, `bars.bgColorFromSkin` and `tooltip.barColorFromSkin` go off where on beside a shipped swatch (on beside a pick stays), and the record is cleared. |
 
-Adding a v29 is two edits and no bootstrap change:
+Adding a v30 is two edits and no bootstrap change:
 
 ```lua
-migrations[28] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
-local CURRENT_DB_VERSION = 29               -- core/Database.lua
+migrations[29] = function(db) ... end       -- core/Database_Migrations.lua; the runner stamps the version
+local CURRENT_DB_VERSION = 30               -- core/Database.lua
 ```
 
 **Bump the version only for a non-additive change** — a rename, a restructure, a type change.

@@ -56,7 +56,7 @@ load order and the AceAddon lifecycle: **[module-map.md](module-map.md)**. The s
 | Layer | Files | Responsibility |
 |---|---|---|
 | `locales/` | `enUS.lua` | `NS.L`, with the key-is-the-string fallback. Loads first. |
-| `core/` boundary | `Compat.lua` | All 42 shims, including the twelve world reads the simulator answers, the eight `C_DamageMeter` reads and the chat export's `ChatSender`. Four of them, the spell and spec readers, are bound to `LibKa0s-Compat-1.0` and answer `nil` without it. No logic. |
+| `core/` boundary | `Compat.lua` | All 47 shims, including the twelve world reads the simulator answers, the eight `C_DamageMeter` reads and the chat export's `ChatSender`. Four of them, the spell and spec readers, are bound to `LibKa0s-Compat-1.0` and answer `nil` without it. No logic. |
 | `core/` boundary | `EnvSetup.lua` | The `LibKa0s-Env-1.0` seam: `NS.Meta` / `NS.Version`, the TOC-manifest reader `Compat.lua` used to own. |
 | `core/` values | `Constants.lua`, `Namespace.lua`, `State.lua` | The stat catalog, the bus catalog, identity, session-only flags and the shared cache. |
 | `core/` the rule | `Secrets.lua` | **The only file that inspects a meter value.** Its guards `IsSecret` / `CanAccess` / `IsSafeKey` are `LibKa0s-Compat-1.0`'s, with a guard arm that re-implements each body when the library is absent. |
@@ -562,7 +562,7 @@ re-check re-runs the count rather than re-arguing the verdict. **All seven ship.
 | Doc | Status | Trigger, as measured |
 |---|---|---|
 | `perf-analysis/README.md` | Present | **The performance harness is wired**: `core/PerfSetup.lua` plus `Perf.Note` brackets in eight files (`performance-§12`). `docs/perf-analysis/20260909-014604/` is the standing example. |
-| `compat-layer.md` | Present | **`core/Compat.lua`: 896 lines, 46 shims** (8 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
+| `compat-layer.md` | Present | **`core/Compat.lua`: 916 lines, 47 shims** (8 bound to `LibKa0s-Compat-1.0`, 8 `C_DamageMeter`, 4 death-recap), against a trigger of three or more addon-specific shims. |
 | `midnight-quirks.md` | Present | **Four client-version workarounds of the addon's own** (isolated event registrations, `ADDON_RESTRICTION_STATE_CHANGED` against a namespace a client may lack, the settle pass, the secret-value model); the file is required in every addon from v2.102.0 and also carries the vendored client-quirks catalog. The detail moved here from [Taint notes](#taint-notes) rather than being copied. |
 | `forever-quirks.md` | Not applicable | Clients is `Retail`, by the owner's decision; the Forever catalog is carried only where Clients includes Forever (documentation-§3, forever-quirks-§1) |
 | `debug.md` | Present | **One diagnostics report, three probe verbs, the report verbs on `D:Report`, the `tooltip` session flag and the `NS.Debug` channels** (`debug-logging-§14`, `§15`). Written 2026-09-09, when the row's own re-check trigger fired. |
