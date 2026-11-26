@@ -10,7 +10,7 @@ made it load-bearing is `core/EnvSetup.lua`'s now — but it costs nothing and i
 *is* load-bearing is the line after it: `core/SimSetup.lua`, the simulator seam below, loads straight
 after this file, and the two move together.
 
-**Forty-six shims**, counted the way `documentation-§3` counts them: entry points published on
+**Forty-seven shims**, counted the way `documentation-§3` counts them: entry points published on
 this addon's own `Compat` table, over this file alone. The threshold is three. This addon's
 "might not exist" surface is unusually large because `C_DamageMeter` — its entire data source — is
 new in 12.0, so a client one patch behind has none of it and a PTR build can carry the namespace
